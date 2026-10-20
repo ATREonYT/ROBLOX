@@ -6,4 +6,11 @@ return {
 	["Art/CrateCardDojo"] = "",
 	["Art/CrateCardStorm"] = "",
 	["Art/CrateCardBeast"] = "",
+	-- his six crates cut out for the Shop's one backdrop (Oct 20 20:34, tools/crates/cut_crates.py): "" until uploaded
+	["Art/CrateCardCutDojo"] = "",
+	["Art/CrateCardCutStorm"] = "",
+	["Art/CrateCardCutBeast"] = "",
+	["Art/CrateCardCutCandy"] = "",
+	["Art/CrateCardCutWitch"] = "",
+	["Art/CrateCardCutHalloween"] = "",
 }

@@ -1,6 +1,6 @@
 -- Smoke test: every picture shows even when the screen's picture memory is small (owner, Oct 20 14:07: "please fix
 -- all of the placeholders for knifes, coins": in Play the first pictures drew, then the rest of the knife cards and
--- two coin packs stayed stand-ins). UI/ImageLoader's drawing is swapped for a fake with a budget of 110 pictures
+-- two coin packs stayed stand-ins). UI/ImageLoader's drawing is swapped for a fake with a budget of 130 pictures
 -- (all the screens together use more; Roblox's EditableImage memory: past it CreateEditableImage gives nothing). Checks: pictures draw only on screen;
 -- every knife card in ITEMS and every coin pack in COINS draws after other screens used the memory; a failure is
 -- tried again (never kept forever); a picture nobody sees is freed.
@@ -19,11 +19,19 @@ __runScript(game.ServerScriptService.HuzzServer.Bootstrap)
 task.wait(0.1)
 __fireOn(Players, "PlayerAdded", me)
 task.wait(0.3)
+-- own every knife (since Oct 20 20:34 KNIVES shows only the knives you own: they come from crates)
+do
+	local DataService = require(game.ServerScriptService.HuzzServer.DataService)
+	local CoinShop = require(game.ReplicatedStorage.Shared.Config.CoinShop)
+	DataService.update(me, function(d)
+		for _, it in CoinShop.Items do if it.Slot == "Knife" then d.Cosmetics[it.Key] = true end end
+	end)
+end
 
 local UI = game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI
 local ImageLoader = require(UI.ImageLoader)
 -- the fake: at most `budget` live pictures; past it, nothing (as Roblox's CreateEditableImage)
-local budget, live, made, refuse = 116, 0, 0, false -- (116 since Oct 20 20:34: the one-page Shop also holds the ability cards' pictures, all 11 his now, and the harness has no layout, so its whole page counts as on screen)
+local budget, live, made, refuse = 136, 0, 0, false -- (136 since Oct 20 20:34: the one-page Shop also holds the ability cards' (all 11 his now), the dances' and the crates' pictures, and the harness has no layout, so its whole page counts as on screen)
 local images = {} -- [name] = the last fake image made for it
 ImageLoader.make = function(kind, name)
 	if refuse or live >= budget then error("out of picture memory (EditableImage budget)") end

@@ -5,9 +5,12 @@
 	shows its odds (CrateRoll.odds, Shop > CRATES) and a pity counter (the top prize is guaranteed after Pity.After
 	opens without it); no timers, no fake stock. Aura is only earned in the game (never sold for Robux).
 
-	To add one, add a block like Starter's below to Crates.List:
-	  Id      a short unique name ("Starter")
+	To add one, add a block like Dojo's below to Crates.List:
+	  Id      a short unique name ("Dojo")
 	  Price   Aura per open
+	  CoinPrice  coins per open, or nil (Aura only). Owner, Oct 20 20:34: his Halloween crates open for coins or Aura
+	  Picture the crate cut out of his own picture (Images/Art, tools/crates/cut_crates.py): the Shop draws every crate
+	          on one shared backdrop (owner: "make all of the crate pictures have the same background")
 	  Items   what can come out: Kind "Cosmetic" (a Config/CoinShop key or a Robux cosmetic key), "Dance" (a
 	          Config/Dances id) or "Coins" (Amount); Rarity (Config/Round.Rarities names) and Weight (chance share)
 	  Pity    { After = 30, Rarity = "Legendary" }: open 29 without a Legendary or better and the 30th one is one
@@ -22,15 +25,20 @@
 	          far (degrees) his lid already stands open in his model (he built the Storm Vault and the Beast Chest
 	          open, as his mockup draws them; the opening shuts it first, the shop shows it as he built it).
 	          Without it (or before his model is there) the opening draws the plain crate and spins the reel.
-	The opening screen (UI/Screens/CrateOpen) spins a reel of these items; Shop > CRATES lists every item's chance.
+	The opening screen (UI/Screens/CrateOpen) spins a reel of these items. Since Oct 20 20:34 (owner: "remove all of
+	the chances of the knifes, only show it when you click on a crate, then on the side it pops up") tapping a crate in
+	the Shop slides its panel in with every item's chance and the pity counter, next to its open buttons, so the odds
+	always show before a purchase. His Starter and Dance crates are gone ("remove the two crates that dont have pictures,
+	the starter one"): dances are bought one by one in the Shop's DANCES (Config/Dances Coins).
 	Owner, Oct 19: "knifes, dances, from crates". His three knife crates (Oct 20) hold the knives he put beside each in
 	his place (knivesNamed below: a spec checks the lists against his sets); the Halloween Crate is filled from
-	Config/CoinShop (knivesFrom below), so a knife added or renamed there follows by itself; the Dance Crate holds the Robot and seven
-	crate-only dances from his 200-dance pack (Config/Dances, Crate = true: never free, never in the Dance Pack).
+	Config/CoinShop (knivesFrom below), so a knife added or renamed there follows by itself. Knives aren't sold for coins
+	any more (owner, Oct 20 20:34: "make the knifes not be bought but opened from crates"): crates, Robux and the
+	Halloween knives only.
 ]]
 export type CrateItem = { Kind: "Cosmetic" | "Dance" | "Coins", Id: string?, Amount: number?, Name: string, Rarity: string, Weight: number }
 export type CrateModel = { Set: string, Crate: string, Body: string, Built: number? }
-export type Crate = { Id: string, Name: string, Price: number, Colors: { string }?, Items: { CrateItem }, Pity: { After: number, Rarity: string }?, Duplicate: (number | { [string]: number })?, Home: string?, Model: CrateModel? }
+export type Crate = { Id: string, Name: string, Price: number, CoinPrice: number?, Picture: string?, Colors: { string }?, Items: { CrateItem }, Pity: { After: number, Rarity: string }?, Duplicate: (number | { [string]: number })?, Home: string?, Model: CrateModel? }
 
 local CoinShop = require(script.Parent.CoinShop)
 
@@ -76,33 +84,6 @@ local function knivesNamed(keys: { string }, weights: { [string]: number }): { C
 end
 
 Crates.List = {
-	-- CLAUDE'S FIRST PICK, waiting on the owner's own crate design (his to-do: "crate contents"). Only things that
-	-- already exist in the game: coin shop looks (Config/CoinShop), the Robot dance (Config/Dances; also on the reward
-	-- track) and coins. No Dance Pack dances (the pass sells them) and no reward, pass or Spin Wheel items.
-	-- Odds by rarity: Common 50%, Uncommon 27%, Rare 15%, Epic 6%, Legendary 2%; a Legendary at the latest on the
-	-- 30th open. Price: 50 Aura (about 2 to 3 games of stars; the wheel pays 25 Aura where it pays 250 coins).
-	-- A look you already own pays coins back, more for rarer ones (about half its coin shop price or less).
-	{
-		Id = "Starter", Name = "Starter Crate", Price = 50,
-		Duplicate = { Common = 50, Uncommon = 100, Rare = 200, Epic = 400, Legendary = 1000 },
-		Pity = { After = 30, Rarity = "Legendary" },
-		Items = {
-			{ Kind = "Coins", Amount = 150, Name = "150 Coins", Rarity = "Common", Weight = 20 },
-			{ Kind = "Cosmetic", Id = "RustyShiv", Name = "Rusty Shiv", Rarity = "Common", Weight = 10 },
-			{ Kind = "Cosmetic", Id = "BoxCutter", Name = "Box Cutter", Rarity = "Common", Weight = 10 },
-			{ Kind = "Cosmetic", Id = "TagPink", Name = "Pink Name", Rarity = "Common", Weight = 10 },
-			{ Kind = "Coins", Amount = 400, Name = "400 Coins", Rarity = "Uncommon", Weight = 9 },
-			{ Kind = "Cosmetic", Id = "JadeKunai", Name = "Jade Kunai", Rarity = "Uncommon", Weight = 9 },
-			{ Kind = "Cosmetic", Id = "MintTrail", Name = "Mint Trail", Rarity = "Uncommon", Weight = 9 },
-			{ Kind = "Cosmetic", Id = "ThunderFang", Name = "Thunder Fang", Rarity = "Rare", Weight = 5 },
-			{ Kind = "Cosmetic", Id = "OceanTrail", Name = "Ocean Trail", Rarity = "Rare", Weight = 5 },
-			{ Kind = "Dance", Id = "Robot", Name = "Robot", Rarity = "Rare", Weight = 5 },
-			{ Kind = "Cosmetic", Id = "CandyTrail", Name = "Candy Trail", Rarity = "Epic", Weight = 3 },
-			{ Kind = "Cosmetic", Id = "StormKunai", Name = "Storm Kunai", Rarity = "Epic", Weight = 3 },
-			{ Kind = "Cosmetic", Id = "VoidFang", Name = "Void Fang", Rarity = "Legendary", Weight = 1 },
-			{ Kind = "Cosmetic", Id = "GalaxyTrail", Name = "Galaxy Trail", Rarity = "Legendary", Weight = 1 },
-		},
-	},
 	-- His three knife crates (owner, Oct 20, 03:33: "here is the new one with updated crates, make these crates for the
 	-- opening of the normal knifes"): each opens with his own 3D crate (Model) and holds the ten knives he laid out in
 	-- front of it in his place (Workspace > scrates > Standard_Crates > <set>), all 30 of his knives between them.
@@ -113,7 +94,7 @@ Crates.List = {
 	-- A Legendary or better at the latest on the 40th open (each crate counts its own). 100 Aura each (the old Knife
 	-- Crate's price). Colours (the plain crate drawn in Shop > CRATES until his UI pictures come): his crates' own.
 	{
-		Id = "Dojo", Name = "Shinobi Dojo Chest", Price = 100, Colors = { "E0525E", "7A1E2C" },
+		Id = "Dojo", Name = "Shinobi Dojo Chest", Price = 100, Picture = "CrateCardCutDojo", Colors = { "E0525E", "7A1E2C" },
 		Model = { Set = "dojo_set", Crate = "Shinobi_Dojo_Chest", Body = "chest_core" },
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
@@ -121,7 +102,7 @@ Crates.List = {
 			"SpiritKunai", "BloodMoonTanto", "SpinKnife" }, KNIFE_WEIGHT),
 	},
 	{
-		Id = "Storm", Name = "Elemental Storm Vault", Price = 100, Colors = { "4FA8FF", "1F4FA8" },
+		Id = "Storm", Name = "Elemental Storm Vault", Price = 100, Picture = "CrateCardCutStorm", Colors = { "4FA8FF", "1F4FA8" },
 		Model = { Set = "storm_set", Crate = "Elemental_Storm_Vault", Body = "vault_body", Built = 31 }, -- (his lid stands 31 deg open: its front edge 0.75 studs over the body, 1.17 from the hinge)
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
@@ -129,7 +110,7 @@ Crates.List = {
 			"EmberEdge", "StormKunai", "SolarReaper" }, KNIFE_WEIGHT),
 	},
 	{
-		Id = "Beast", Name = "Void Beast Chest", Price = 100, Colors = { "A35CFF", "3E1A6E" },
+		Id = "Beast", Name = "Void Beast Chest", Price = 100, Picture = "CrateCardCutBeast", Colors = { "A35CFF", "3E1A6E" },
 		Model = { Set = "beast_set", Crate = "Void_Beast_Chest", Body = "chest_body", Built = 15 }, -- (his jaw stands 15 deg open: shut, the upper teeth meet the lower ones)
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
@@ -137,9 +118,10 @@ Crates.List = {
 			"TwinFang", "VoidFang", "AbyssEclipse" }, BEAST_WEIGHT),
 	},
 	-- His 18 Halloween knives (Pumpkin, Witch and Candy sets, Oct 19). Odds by rarity: Common 46%, Uncommon 27.6%,
-	-- Rare 16.1%, Epic 6.9%, Legendary 2.3%, Mythic 1.1%; a Legendary or a Mythic at the latest on the 40th. 120 Aura.
+	-- Rare 16.1%, Epic 6.9%, Legendary 2.3%, Mythic 1.1%; a Legendary or a Mythic at the latest on the 40th.
+	-- Owner, Oct 20 20:34 (his picture 2034-ablt1): HALLOWEEN CRATE, 500 coins or 99 Aura, his Halloween chest picture.
 	{
-		Id = "Halloween", Name = "Halloween Crate", Price = 120, Colors = { "FF7A1E", "A8360C" },
+		Id = "Halloween", Name = "Halloween Crate", Price = 99, CoinPrice = 500, Picture = "CrateCardCutHalloween", Colors = { "FF7A1E", "A8360C" },
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
 		Items = knivesFrom(function(it) return it.Set ~= nil end, HALLOWEEN_WEIGHT),
@@ -148,35 +130,19 @@ Crates.List = {
 	-- crates". His two lobby stands (WITCH'S BREW and SWEETS & TREATS) each sell their own set's crate (Home: since Oct 20
 	-- 14:31 a card in Shop > CRATES with a HALLOWEEN tag and a Robux key, Screens/Shop): the 6 Witch knives and the 6 Candy knives, with
 	-- the Halloween Crate's odds by rarity (Common 46%, Uncommon 27.6%, Rare 16.1%, Epic 6.9%, Legendary 2.3%,
-	-- Mythic 1.1%), its pity (a Legendary or the Mythic at the latest on the 40th) and its price (120 Aura).
+	-- Mythic 1.1%) and its pity (a Legendary or the Mythic at the latest on the 40th). Owner, Oct 20 20:34 (his picture
+	-- 2034-ablt1): WITCH CRATE 350 coins or 79 Aura (his cauldron), CANDY CRATE 250 coins or 49 Aura (his candy coffin).
 	{
-		Id = "Witch", Name = "Witch's Brew Crate", Price = 120, Colors = { "B45CFF", "4E1E8C" }, Home = "HalloweenShop",
+		Id = "Witch", Name = "Witch Crate", Price = 79, CoinPrice = 350, Picture = "CrateCardCutWitch", Colors = { "B45CFF", "4E1E8C" }, Home = "HalloweenShop",
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
 		Items = knivesFrom(function(it) return it.Set == "Witch" end, HALLOWEEN_WEIGHT),
 	},
 	{
-		Id = "Sweets", Name = "Sweets & Treats Crate", Price = 120, Colors = { "FF80C4", "B0306E" }, Home = "HalloweenShop",
+		Id = "Sweets", Name = "Candy Crate", Price = 49, CoinPrice = 250, Picture = "CrateCardCutCandy", Colors = { "FF80C4", "B0306E" }, Home = "HalloweenShop",
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
 		Items = knivesFrom(function(it) return it.Set == "Candy" end, HALLOWEEN_WEIGHT),
-	},
-	-- Owner, Oct 19: "dances, from crates". The Robot plus seven dances only crates give (Config/Dances, Crate = true).
-	-- Odds: Common 50%, Uncommon 27%, Rare 15%, Epic 6%, Legendary 2%; the Legendary at the latest on the 30th. 80 Aura.
-	{
-		Id = "Dance", Name = "Dance Crate", Price = 80, Colors = { "FF6FC0", "A8307E" },
-		Duplicate = { Common = 50, Uncommon = 100, Rare = 200, Epic = 400, Legendary = 1000 },
-		Pity = { After = 30, Rarity = "Legendary" },
-		Items = {
-			{ Kind = "Dance", Id = "BoogieBlast", Name = "Boogie Blast", Rarity = "Common", Weight = 25 },
-			{ Kind = "Dance", Id = "HeadBanger", Name = "Head Banger", Rarity = "Common", Weight = 25 },
-			{ Kind = "Dance", Id = "TheTwist", Name = "The Twist", Rarity = "Uncommon", Weight = 13.5 },
-			{ Kind = "Dance", Id = "ZanyZig", Name = "Zany Zig", Rarity = "Uncommon", Weight = 13.5 },
-			{ Kind = "Dance", Id = "Robot", Name = "Robot", Rarity = "Rare", Weight = 7.5 },
-			{ Kind = "Dance", Id = "PowerMoves", Name = "Power Moves", Rarity = "Rare", Weight = 7.5 },
-			{ Kind = "Dance", Id = "Showstopper", Name = "Showstopper", Rarity = "Epic", Weight = 6 },
-			{ Kind = "Dance", Id = "ZombieGroove", Name = "Zombie Groove", Rarity = "Legendary", Weight = 2 },
-		},
 	},
 } :: { Crate }
 

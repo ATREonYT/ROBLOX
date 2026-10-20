@@ -125,7 +125,7 @@ Action.OnServerInvoke = function(player, verb, ...)
 end
 table.clear(toasts)
 local sounds0 = #_G.__sounds
-MM.open("CrateOpen", "Starter")
+MM.open("CrateOpen", "Sweets")
 task.wait(0.3)
 Action.OnServerInvoke = realInvoke
 check("the crate was opened once (Aura taken)", data.Aura < aura0)
@@ -138,7 +138,7 @@ check(`a toast says the prize ({table.concat(toasts, " | ")})`, saidPrize)
 local skip = me.PlayerGui.HuzzUI:FindFirstChild("CrateOpen") and me.PlayerGui.HuzzUI.CrateOpen:FindFirstChild("Skip", true)
 check("no reel playing in the hidden window (no Skip button)", skip == nil or skip.Visible == false)
 -- and it opens normally next time
-MM.open("CrateOpen", "Starter")
+MM.open("CrateOpen", "Sweets")
 task.wait(0.3)
 check("the next open plays as usual", MM.current() == "CrateOpen")
 

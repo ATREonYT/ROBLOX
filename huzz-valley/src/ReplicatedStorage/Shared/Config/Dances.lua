@@ -4,8 +4,10 @@
 -- AnimationId = the published ID; "" plays the raw one in Studio (Shared/AnimationLibrary), and in the live game
 -- it's drawn by hand on the dancer's joints from its moves (UI/DancePlayer, Gameplay/DanceSync) until it's
 -- published (tools/studio/publish-animations.lua, which writes these IDs); never invent one.
---   Starter = owned by everyone. Pack = granted by the Dance Pack pass. Robot = from the reward track (level 3) or the
---   Dance Crate. Crate = only from the Dance Crate (Config/Crates).
+--   Starter = owned by everyone. Pack = granted by the Dance Pack pass. Robot = also on the reward track (level 3).
+--   Coins = its price in the Shop's DANCES (owner, Oct 20 20:34: "make a seperate section for dances, so that the
+--   dances you get by buying them individually ... make them be able to be bought there"; ActionService "BuyDance").
+--   Claude's prices: 400 to 2000 by how fancy (the old Dance Crate's rarities), 800 for a Dance Pack one, 600 Robot.
 --   Color = the card's glow (Dances.Colors, after the owner's Oct 17 mockup: Aerobics pink, Boogie Down blue, Bounce
 --   Bounce green, Breakdown gold, Floss red, Hype violet). Blurb = the one line under the big picture (short, no dashes).
 --   Music = the key of its song in Dances.Tracks (owner, Oct 19: "find the sounds we can use for all of the dances ...
@@ -14,7 +16,7 @@
 --   plays when the first pick's Id is "" (owner, Oct 20: "find popular audios we can use with these dances. But make
 --   them logically fit the dances"; no Fortnite audio: it's Epic's, not ours to upload). Each dance's style, tempo
 --   and both picks with their reasons: docs/dance-music.md. Older research: docs/sound-picks.md.
-export type Dance = { Id: string, Name: string, AnimationId: string, Art: string?, Starter: boolean?, Pack: boolean?, Crate: boolean?, Color: string, Blurb: string, Order: number, Music: string?, Backup: string? }
+export type Dance = { Id: string, Name: string, AnimationId: string, Art: string?, Starter: boolean?, Pack: boolean?, Coins: number?, Color: string, Blurb: string, Order: number, Music: string?, Backup: string? }
 export type Track = { Id: string, Name: string, By: string, Style: string, Source: string, Start: number? }
 
 local Dances = {}
@@ -97,30 +99,30 @@ Dances.List = {
 	{ Id = "SmoothMoves", Name = "Smooth Moves", AnimationId = "", Starter = true, Color = "Green", Blurb = "Glide around with silky smooth steps.", Order = 7, Music = "Ascension", Backup = "Downtown" },
 	{ Id = "SoFresh", Name = "So Fresh", AnimationId = "", Starter = true, Color = "Green", Blurb = "Show everyone how fresh you are.", Order = 8, Music = "ShakeSomethin", Backup = "Downtown" },
 	{ Id = "PopLock", Name = "Pop Lock", AnimationId = "", Starter = true, Color = "Red", Blurb = "Pop, freeze and lock to the beat.", Order = 9, Music = "Moshi", Backup = "Downtown" },
-	{ Id = "Robot", Name = "Robot", AnimationId = "", Color = "Blue", Blurb = "Beep boop! Move like a real robot.", Order = 10, Music = "Moshi", Backup = "CrabRave" },
+	{ Id = "Robot", Name = "Robot", AnimationId = "", Coins = 600, Color = "Blue", Blurb = "Beep boop! Move like a real robot.", Order = 10, Music = "Moshi", Backup = "CrabRave" },
 	{ Id = "PhoneCall", Name = "Phone Call", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Hello? The dance floor is calling!", Order = 11, Music = "Shiawase", Backup = "StayUpbeat" },
 	{ Id = "RunningMan", Name = "Running Man", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Run in place right on the beat.", Order = 12, Music = "StayUpbeat", Backup = "CrabRave" },
 	{ Id = "CrazyFeet", Name = "Crazy Feet", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Your feet go wild in every direction!", Order = 13, Music = "CrabRave", Backup = "Jumpstyle" },
 	{ Id = "Breakdown", Name = "Breakdown", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Drop it low and break it down!", Order = 14, Music = "Akim", Backup = "ShakeSomethin" },
-	{ Id = "SwingTime", Name = "Swing Time", AnimationId = "", Pack = true, Color = "Pink", Blurb = "Swing back in time with this classic.", Order = 15, Music = "SwingWithMe", Backup = "CharlestonDolly" },
+	{ Id = "SwingTime", Name = "Swing Time", AnimationId = "", Coins = 800, Pack = true, Color = "Pink", Blurb = "Swing back in time with this classic.", Order = 15, Music = "SwingWithMe", Backup = "CharlestonDolly" },
 	{ Id = "FreeFlow", Name = "Free Flow", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Let the music move you.", Order = 16, Music = "Ascension", Backup = "ShakeSomethin" },
 	{ Id = "Freestyle", Name = "Freestyle", AnimationId = "", Starter = true, Color = "Red", Blurb = "No rules, just your own moves!", Order = 17, Music = "Akim", Backup = "ShakeSomethin" },
 	{ Id = "CleanGroove", Name = "Clean Groove", AnimationId = "", Starter = true, Color = "Green", Blurb = "Neat, sharp steps that look super clean.", Order = 18, Music = "ShakeSomethin", Backup = "Downtown" },
-	{ Id = "BounceBounce", Name = "Bounce Bounce", AnimationId = "", Pack = true, Color = "Green", Blurb = "Bounce, bounce, bounce to the beat!", Order = 19, Music = "Shiawase", Backup = "CrabRave" },
+	{ Id = "BounceBounce", Name = "Bounce Bounce", AnimationId = "", Coins = 800, Pack = true, Color = "Green", Blurb = "Bounce, bounce, bounce to the beat!", Order = 19, Music = "Shiawase", Backup = "CrabRave" },
 	{ Id = "Flapper", Name = "Flapper", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Flap your arms in this fun old dance.", Order = 20, Music = "SwingWithMe", Backup = "Speakeasy" },
-	{ Id = "SquatKick", Name = "Squat Kick", AnimationId = "", Pack = true, Color = "Red", Blurb = "Squat down low and kick it high!", Order = 21, Music = "Kalinka", Backup = "Jumpstyle" },
+	{ Id = "SquatKick", Name = "Squat Kick", AnimationId = "", Coins = 800, Pack = true, Color = "Red", Blurb = "Squat down low and kick it high!", Order = 21, Music = "Kalinka", Backup = "Jumpstyle" },
 	{ Id = "Sprinkler", Name = "Sprinkler", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Spray your moves all over the place.", Order = 22, Music = "CrabRave", Backup = "Moshi" },
 	{ Id = "CrabDance", Name = "Crab Dance", AnimationId = "", Starter = true, Color = "Red", Blurb = "Scuttle side to side like a crab!", Order = 23, Music = "CrabRave", Backup = "Shiawase" },
-	{ Id = "Toprock", Name = "Toprock", AnimationId = "", Pack = true, Color = "Gold", Blurb = "Rock your feet before the big moves.", Order = 24, Music = "Akim", Backup = "ShakeSomethin" },
+	{ Id = "Toprock", Name = "Toprock", AnimationId = "", Coins = 800, Pack = true, Color = "Gold", Blurb = "Rock your feet before the big moves.", Order = 24, Music = "Akim", Backup = "ShakeSomethin" },
 	{ Id = "Aerobics", Name = "Aerobics", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Get active with this energetic dance!", Order = 25, Music = "StayUpbeat", Backup = "HypeHorns" },
-	-- Crate dances (owner, Oct 19: "dances, from crates"): only the Dance Crate gives them (Config/Crates).
-	{ Id = "BoogieBlast", Name = "Boogie Blast", AnimationId = "", Crate = true, Color = "Pink", Blurb = "Throw a party right where you stand!", Order = 26, Music = "BigDeal", Backup = "HypeHorns" },
-	{ Id = "HeadBanger", Name = "Head Banger", AnimationId = "", Crate = true, Color = "Red", Blurb = "Nod along hard to the beat.", Order = 27, Music = "PunchingTheAir", Backup = "SkullCrusher" },
-	{ Id = "TheTwist", Name = "The Twist", AnimationId = "", Crate = true, Color = "Blue", Blurb = "Twist and turn like it's the old days.", Order = 28, Music = "BoogieWoogie", Backup = "BoogieManBoogie" },
-	{ Id = "ZanyZig", Name = "Zany Zig", AnimationId = "", Crate = true, Color = "Green", Blurb = "Silly steps that zig and zag.", Order = 29, Music = "DoItYourSelf", Backup = "Shiawase" },
-	{ Id = "PowerMoves", Name = "Power Moves", AnimationId = "", Crate = true, Color = "Violet", Blurb = "Big strong moves for big wins.", Order = 30, Music = "Akim", Backup = "HypeHorns" },
-	{ Id = "Showstopper", Name = "Showstopper", AnimationId = "", Crate = true, Color = "Gold", Blurb = "All eyes on you. Steal the show!", Order = 31, Music = "CharlestonDolly", Backup = "HypeHorns" },
-	{ Id = "ZombieGroove", Name = "Zombie Groove", AnimationId = "", Crate = true, Color = "Green", Blurb = "Rise from the grave and dance!", Order = 32, Music = "HalloweenFunk", Backup = "TrickOrTreat" },
+	-- Dances only the Shop sells (owner, Oct 19: "dances, from crates"; the Dance Crate made way for DANCES on Oct 20).
+	{ Id = "BoogieBlast", Name = "Boogie Blast", AnimationId = "", Coins = 400, Color = "Pink", Blurb = "Throw a party right where you stand!", Order = 26, Music = "BigDeal", Backup = "HypeHorns" },
+	{ Id = "HeadBanger", Name = "Head Banger", AnimationId = "", Coins = 400, Color = "Red", Blurb = "Nod along hard to the beat.", Order = 27, Music = "PunchingTheAir", Backup = "SkullCrusher" },
+	{ Id = "TheTwist", Name = "The Twist", AnimationId = "", Coins = 600, Color = "Blue", Blurb = "Twist and turn like it's the old days.", Order = 28, Music = "BoogieWoogie", Backup = "BoogieManBoogie" },
+	{ Id = "ZanyZig", Name = "Zany Zig", AnimationId = "", Coins = 600, Color = "Green", Blurb = "Silly steps that zig and zag.", Order = 29, Music = "DoItYourSelf", Backup = "Shiawase" },
+	{ Id = "PowerMoves", Name = "Power Moves", AnimationId = "", Coins = 800, Color = "Violet", Blurb = "Big strong moves for big wins.", Order = 30, Music = "Akim", Backup = "HypeHorns" },
+	{ Id = "Showstopper", Name = "Showstopper", AnimationId = "", Coins = 1200, Color = "Gold", Blurb = "All eyes on you. Steal the show!", Order = 31, Music = "CharlestonDolly", Backup = "HypeHorns" },
+	{ Id = "ZombieGroove", Name = "Zombie Groove", AnimationId = "", Coins = 2000, Color = "Green", Blurb = "Rise from the grave and dance!", Order = 32, Music = "HalloweenFunk", Backup = "TrickOrTreat" },
 } :: { Dance }
 
 local byId: { [string]: Dance } = {}

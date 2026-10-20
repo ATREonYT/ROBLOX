@@ -127,7 +127,7 @@ for _, k in order do
 	prevY = h and h.Position.Y.Offset or prevY
 end
 check("sections in order: crates, knives, passes, aura, coins, cosmetics", inOrder)
-check("the featured banner on top: a real crate, no timer", products:FindFirstChild("Featured") ~= nil and products.Featured.Position.Y.Offset == 0 and products.Featured.Title.Text == "VOID BEAST CHEST" and products.Featured:FindFirstChild("Timer", true) == nil)
+check("the featured banner on top: a real crate, no timer", products:FindFirstChild("Featured") ~= nil and products.Featured.Position.Y.Offset == 0 and products.Featured.Title.Text == "HALLOWEEN CRATE" and products.Featured:FindFirstChild("Timer", true) == nil)
 for i, p in Products.Coins do
 	local c = products:FindFirstChild(p.Key)
 	check(p.Key .. " card shows", c ~= nil)

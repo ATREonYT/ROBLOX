@@ -21,7 +21,9 @@ ONLY="$*"
 # TAB = the section it opens scrolled to (Crates, Knives, Passes, Aura, Coins, Cosmetics, or a crate id), none = the top.
 shot shop-top none 2560 1408 '{SCREEN="Shop", SCALE=2.5, GEMS=320}' # (vs his video at 0.3 s)
 shot shop-crates none 2560 1408 '{SCREEN="Shop", TAB="Crates", SCALE=2.5, GEMS=320, CRATEPITY=7}'
-shot shop-halloween none 2560 1408 '{SCREEN="Shop", TAB="Witch", SCALE=2.5, GEMS=12000, OWN="CandyReaper"}' # (where WITCH'S BREW opens it)
+shot shop-halloween none 2560 1408 '{SCREEN="Shop", TAB="Witch", SCALE=2.5, GEMS=12000, OWN="CandyReaper"}' # (where WITCH'S BREW opens it: the Witch Crate's panel in)
+shot shop-dances none 2560 1408 '{SCREEN="Shop", TAB="Dances", SCALE=2.5, COINS=900}' # (Oct 20 20:34: every dance for coins, the Dance Pack on top)
+shot shop-dance-panel none 2560 1408 '{SCREEN="Shop", TAB="Dances", SCALE=2.5, COINS=900, SELECT="DanceShowstopper"}' # (a dance's panel: preview and BUY)
 shot shop-knives none 2560 1408 '{SCREEN="Shop", TAB="Knives", SCALE=2.5, OWN="SpinKnife,IceKnife", COINS=1500}'
 shot shop-filter-knives none 2560 1408 '{SCREEN="Shop", TAB="Knives", SCALE=2.5, OWN="SpinKnife,IceKnife", COINS=1500, SELECT="KnivesRarityEpic"}' # (the filters, Oct 20 15:13: EPIC picked)
 shot shop-abilities none 2560 1408 '{SCREEN="Shop", TAB="Abilities", SCALE=2.5, COINS=700, ABILITIES="Invisible,Radar", LOADOUT="Runner=Invisible,CatcherQ=Radar"}' # (bought abilities, Oct 20: buy and pick them here, UI/AbilityCards)
@@ -30,8 +32,8 @@ shot shop-passes none 2560 1408 '{SCREEN="Shop", TAB="Passes", SCALE=2.5, PASSES
 shot shop-aura none 2560 1408 '{SCREEN="Shop", TAB="Aura", SCALE=2.5, GEMS=320}'
 shot shop-coins none 2560 1408 '{SCREEN="Shop", TAB="Coins", SCALE=2.5}' # (vs his video at 1.3 s)
 shot shop-cosmetics none 2560 1408 '{SCREEN="Shop", TAB="Cosmetics", SCALE=2.5, OWN="MidnightOutfit"}'
-shot crate-spin none 1536 864 '{SCREEN="CrateOpen", TAB="Starter", SCALE=1.2, CRATE_T=3.2}' # (the reel mid-spin)
-shot crate-prize none 1536 864 '{SCREEN="CrateOpen", TAB="Starter", SCALE=1.2, CRATEPITY=29, CRATE_T=8}' # (a Legendary: pity)
+shot crate-spin none 1536 864 '{SCREEN="CrateOpen", TAB="Sweets", SCALE=1.2, CRATE_T=3.2}' # (the reel mid-spin)
+shot crate-prize none 1536 864 '{SCREEN="CrateOpen", TAB="Sweets", SCALE=1.2, CRATEPITY=39, CRATE_T=8}' # (a Legendary: pity)
 shot settings-social 06-settings-social 1536 640 '{SCREEN="Settings", TAB="Social", SCALE=2}'
 shot settings-audio 09-settings-audio 1536 636 '{SCREEN="Settings", TAB="Audio", SCALE=2}'
 shot settings-controls 10-settings-controls 1536 636 '{SCREEN="Settings", TAB="Controls", SCALE=2}'

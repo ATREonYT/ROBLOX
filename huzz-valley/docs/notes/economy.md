@@ -8,8 +8,22 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 `GetState` ask is limited (one waiting at a time, a second apart) so it can't be spammed.
 
 ## Coins and the shop
-- **Coins** buy looks in the Shop (KNIVES and COSMETICS > FOR COINS) (`Config/CoinShop`: trails, name colours, knife skins). Items with
-  `Unlock` (quest knives) or `NotForSale` (Spin Knife) are never sold.
+- **Coins** buy looks in the Shop (COSMETICS > FOR COINS) (`Config/CoinShop`: trails, name colours, titles, auras), dances
+  (Shop > DANCES, below) and his Halloween crates (coins or Aura). Items with `Unlock` (quest knives) or `NotForSale`
+  (Spin Knife) are never sold.
+- **Knives are never sold for coins (owner, Oct 20 20:34: "make the knifes not be bought but opened from crates. So
+  remove the buying menu").** They come from the crates, the Halloween knives (Aura or Robux), the Game Passes and
+  quests; `ActionService.BuyWithCoins` refuses any `Slot = "Knife"` ("Knives come from crates."). Every coin knife
+  is in at least one crate (his three crates hold all 30, the Halloween crates his 18 Halloween ones). Shop > KNIVES
+  lists only the knives you own, to wear.
+- **Dances for coins (owner, Oct 20 20:34: "make a seperate section for dances, so that the dances you get by buying
+  them individually, or in the dances section keep them there and make them be able to be bought there").** Shop >
+  DANCES: the Dance Pack pass on top, then every dance with a `Coins` price (`Config/Dances`), bought one by one with
+  `ActionService "BuyDance"` (price, "already yours" (also through the Dance Pack) and "not enough coins" checked in
+  the one save write). Claude's prices: the seven dances only the Shop sells by how fancy (the old Dance Crate's
+  rarities): Boogie Blast, Head Banger 400; The Twist, Zany Zig 600; Power Moves 800; Showstopper 1,200; Zombie Groove
+  2,000; the Robot 600 (also the reward track's level 3); the four Dance Pack dances 800 each (or the pass). The 20
+  starter dances stay free.
 - The COINS section sells coin packs for Robux (cards after the Oct 17 mockup, `docs/previews/coins-vs-mockup.jpg`; art
   cut by `tools/icons/make_screen_art.py`, placeholders until sharp PNGs); its buttons keep the Robux mark, never a
   coin icon.
@@ -117,16 +131,36 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   0.08 thin with a Neon lining, and the outfit can't be had yet (Id 0, coming soon; his Studio progress resets each Play) (where the block
   hunt stands: [knives.md](knives.md)). Not seen in Studio yet: Crown Pose, Midnight cape, worn auras.
 
-## Crates (`Config/Crates`, `Shared/CrateRoll`, ActionService `OpenCrate`, Shop > CRATES, `Screens/CrateOpen`)
-- **One live crate, Claude's first pick** waiting on the owner's own crate design: the **Starter Crate**, 50 Aura, only
+## Crates (`Config/Crates`, `Shared/CrateRoll`, ActionService `OpenCrate`, Shop > HALLOWEEN and CRATES, `Screens/CrateOpen`)
+- **Since Oct 20 20:34 (owner: "remove the two crates that dont have pictures, the starter one ... make the halloween
+  crates be changed out by the sweet and the cauldron pictures"; his picture `design/owner-oct20/2034-ablt1-powers-and-crates.png`,
+  bottom half):** six crates, all with his pictures. Removed: the Starter Crate and the Dance Crate (read as "the two
+  crates that dont have pictures"; their old pity counters stay in old saves, unused). His Halloween crates, renamed
+  and repriced as his picture says, open with **coins or Aura** (`CoinPrice`, `OpenCrate(id, "Coins")`):
+
+  | Crate (id) | Picture | Price | Holds |
+  |---|---|---|---|
+  | Candy Crate (`Sweets`) | his candy coffin | 250 coins or 49 Aura | his 6 Candy knives |
+  | Witch Crate (`Witch`) | his witch cauldron | 350 coins or 79 Aura | his 6 Witch knives |
+  | Halloween Crate (`Halloween`) | his Halloween chest | 500 coins or 99 Aura | his 18 Halloween knives |
+  | Shinobi Dojo Chest / Elemental Storm Vault / Void Beast Chest | his crate cards | 100 Aura (or a Robux key) | his 30 knives (below) |
+
+  Odds and pity are unchanged (Halloween ones: C 46 / U 27.6 / R 16.1 / E 6.9 / L 2.3 / M 1.1%, a Legendary or the
+  Mythic at the latest on the 40th). The Robux keys (Witch, Candy, Dojo, Storm, Beast: Id 0, "coming soon") still open
+  a crate once before any coins or Aura. Every crate is his crate cut out of his own picture
+  (`tools/crates/cut_crates.py`, rembg, his pixels kept; the cauldron's smoke is lost in the cut) on one shared
+  backdrop the Shop draws: [ui.md](ui.md). The Shop page shows no odds; tapping a crate slides its panel in with every
+  chance, the pity and the only buttons that pay, so the odds are always in view when a kid pays.
+- *(Before Oct 20 20:34; kept for the history.)*
+- **Removed Oct 20 20:34. One live crate, Claude's first pick** waiting on the owner's own crate design: the **Starter Crate**, 50 Aura, only
   things that already exist: 150 / 400 coins, coin shop looks (Rusty Shiv, Box Cutter, Pink Name, Jade Kunai, Mint
   Trail, Thunder Fang, Ocean Trail, Candy Trail, Storm Kunai, Void Fang, Galaxy Trail) and the Robot dance. Common 50%,
   Uncommon 27%, Rare 15%, Epic 6%, Legendary 2% (Void Fang 1%, Galaxy Trail 1%); a Legendary at the latest on the
   30th open. A look you own already pays coins back by rarity (50 / 100 / 200 / 400 / 1,000). No Dance Pack dances
   (the pass sells them), no rewards, pass, quest or wheel prizes. Aura is earned, and since Oct 20 14:07 also sold
   in the Shop's AURA section (above).
-- **More crates (Oct 19, owner: "knifes, dances, from crates"):** Halloween Crate (120 Aura, his 18 Halloween knives)
-  and Dance Crate (80 Aura, 7 crate-only dances from his pack: Boogie Blast, Head Banger, The Twist, Zany Zig, Robot,
+- **More crates (Oct 19, owner: "knifes, dances, from crates"; the Dance Crate removed Oct 20 20:34, its dances sold
+  in DANCES):** Halloween Crate (120 Aura then, his 18 Halloween knives) and Dance Crate (80 Aura, 7 crate-only dances from his pack: Boogie Blast, Head Banger, The Twist, Zany Zig, Robot,
   Power Moves, Showstopper, Zombie Groove), each with every chance shown and a pity (40 / 30 opens). The Halloween one
   is built from `Config/CoinShop` (`knivesFrom`), never the pass knives. The two Halloween stands' crates (Witch's
   Brew, Sweets & Treats) are in the same CRATES section with a HALLOWEEN tag (below).
@@ -252,6 +286,12 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   WITCH'S BREW and SWEETS & TREATS (`Config/LobbyProps` `Opens = "Shop"`, `Section = "Witch"` / `"Sweets"`) open the
   Shop scrolled to their crate's card, from the prompt (E) or a click (a stand saved earlier with "HalloweenShop" still
   opens the Shop: `Gameplay/LobbyProps`). A stand saved in his place before it had a menu gets its prompt and click from `LobbyPropService` (backfill).
+- **Since Oct 20 20:34 (owner: "keep the halloween knifes, and put them on the top of the shop ui"):** the Shop's first
+  section is HALLOWEEN: the featured Halloween Crate, his three Halloween crates (Candy, Witch, Halloween: coins or
+  Aura, his new pictures, see Crates above), then these knives. The two stands' crates are now the **Candy Crate**
+  (`Sweets`) and the **Witch Crate** (`Witch`). The knives keep their Aura prices: they are worked out from the crates'
+  old 120 Aura (`HalloweenShop.PriceBasis`), not from the new 49 / 79. A stand opens the Shop at its crate and slides
+  that crate's panel in (its chances, pity, coins / Aura / KEY). The bullets below are the earlier state.
 - **No separate window since Oct 20 14:31** (owner: "make it all logically connected an all close to eachother"):
   its crates are cards in Shop > CRATES (tagged HALLOWEEN, with KEY for Robux) and its knives are the last row of
   Shop > KNIVES (HALLOWEEN KNIVES, Aura and Robux buttons). The rules below are unchanged. Shots `shop-halloween`,

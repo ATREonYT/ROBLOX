@@ -81,7 +81,7 @@ for _ = 1, 3000 do
 end
 check("strip: legendary beside the stop only at its real 5%", math.abs(beside / n - 0.05) < 0.012)
 
--- The live Starter Crate: odds add to 100, every rarity is real, the guarantee is a real rarity in it, the reel
+-- Every live crate: odds add to 100, every rarity is real, the guarantee is a real rarity in it, the reel
 -- fits the prize. (That every item exists in CoinShop / Dances is checked in tools/preview/check_crates.luau.)
 local Env = require("../tools/preview/motion3d/env") -- (Config/Crates reads Config/CoinShop through script.Parent)
 local Crates = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Crates.lua")

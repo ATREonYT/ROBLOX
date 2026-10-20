@@ -46,7 +46,7 @@ local function expected(filter, desc)
 	return table.concat(out, ",")
 end
 local all = expected(function() return true end)
-check("there are 32 dances (25 + the Dance Crate's 7, Oct 19)", #Dances.List == 32)
+check("there are 32 dances (25 + the 7 only the Shop sells, Oct 19)", #Dances.List == 32)
 check("Dances opens", MM.open("Dances") == true and gui.Dances.Visible)
 local panel = gui.Dances.Group.Panel
 local grid = panel.Grid

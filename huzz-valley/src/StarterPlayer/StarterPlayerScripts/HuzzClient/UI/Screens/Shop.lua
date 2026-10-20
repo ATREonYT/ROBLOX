@@ -2,24 +2,42 @@
 -- and in general make it like that, based of this"; 14:31 "make the shop more logical, make it not so spread out as it
 -- is, make it all logically connected an all close to eachother, like other games";
 -- design/owner-oct20/1425-shop-reference.mp4 and its frames 1425-shop-ref-*.jpg). What it copies from the video:
---   * a dark studded title bar with a big chunky white "Shop" (Roblox's FredokaOne, the closest built-in font) and a
---     red X square; a see-through dark green body; one long page split into sections with big coloured headers;
+--   * a studded title bar with a big chunky white "Shop" (Roblox's FredokaOne, the closest built-in font); one long page
+--     split into sections with big coloured headers;
 --   * a column of bright jump buttons on the right (one colour each) that scroll the page to their section; the one
 --     for the section on screen gets a white rim;
---   * a featured banner at the top (his Void Beast Chest: a real thing we sell; no countdown, no "one-time offer");
---   * cards three to a row: a bold title, a big picture, one short line and a small one, a green price button.
+--   * a featured banner at the top (his Halloween Crate: a real thing we sell; no countdown, no "one-time offer");
+--   * cards three to a row: a bold title, a big picture, one short line and a small one, a price button.
 -- Sizes are the video's (1280 x 704) times 0.8 in our window px: the window 869 x 550, cards 251 x 338, 14 px apart,
 -- headers 95 px, jump buttons 128 x 43 every 49 px (docs/notes/ui.md, "Shop").
--- Sections, in this order: CRATES (his Dojo / Storm / Beast cards, the two Halloween stands' crates and the rest, with
--- the pity line, OPEN for Aura or a key, KEY for Robux; then EVERY CHANCE: each crate's every item and its chance),
--- KNIVES (the coin knives by rarity, then the best Halloween knives for Aura or Robux), ABILITIES, PASSES, AURA, COINS,
--- COSMETICS. The Halloween stands, the Aura and Coin "+" buttons and the crate opening's BACK open this window at their
--- section (ModalManager.open("Shop", <section or crate id>)). No gift buttons (we have no gifting), no codes (we have
--- no codes system).
+-- Owner, Oct 20 20:34 ("make the ui for the shop colour match our ui. But keep the layout"; "make a halloween style ui
+-- look, also animate the ui more"): our kit's colours (the purple studded title bar, the see-through navy body and
+-- navy cards, the kit's green and purple buttons) with Halloween trim (an orange line under the title bar, pumpkin
+-- and bats, orange rims on the Halloween cards, warm embers on the featured crate). Motion: the cards pop in one after
+-- another when the Shop opens, the crates rock gently, the featured crate shines (every 6 s: never more than one
+-- flash a second) and its OPEN button breathes, cards lift under the mouse, buttons squish when pressed (Kit), and a
+-- crate's or a dance's panel slides in from the right. Reduced Motion stops all of it (Effects.setCalm, Motion.reduced).
+-- Sections, in this order:
+--   HALLOWEEN  his three Halloween crates (Candy, Witch, Halloween: coins or Aura, his 20:34 picture) and the best
+--              Halloween knives straight away for Aura or Robux;
+--   CRATES     his Dojo / Storm / Beast crates (Aura, or a Robux key);
+--   DANCES     the Dance Pack, then every dance you can buy, one by one, for coins (ActionService "BuyDance");
+--   KNIVES     the knives you own, to wear (owner: "make the knifes not be bought but opened from crates. So remove the
+--              buying menu"), with rarity chips and a search box;
+--   ABILITIES, PASSES, AURA, COINS, COSMETICS.
+-- Every crate shows on the same backdrop (owner: "make all of the crate pictures have the same background so they all
+-- look the same, but just the crate is different": his crates cut out by tools/crates/cut_crates.py). The page shows
+-- no odds (owner: "remove all of the chances of the knifes, only show it when you click on a crate, then on the side it
+-- pops up"): tapping a crate slides its panel in with every item's chance, the pity counter and the only buttons that
+-- spend anything, so the odds are always in view when you pay (kid-safe: never hidden odds). Tapping a dance slides
+-- its panel in with a preview (your avatar dancing it where its animation can play, else its picture) and BUY.
+-- The Halloween stands, the Aura and Coin "+" buttons and the crate opening's BACK open this window at their section
+-- or crate (ModalManager.open("Shop", <section or crate id>); a crate also opens its panel). No gift buttons (we have
+-- no gifting), no codes (we have no codes system).
 -- FILTERS (owner, Oct 20 15:13: "add filters within the ui so people can find trails, titles, knifes easier"): under
--- the KNIVES header a row of rarity chips (ALL, COMMON ... MYTHIC, in their rarity colours), OWNED / NOT OWNED and a
--- search box; under the COSMETICS header type chips (ALL, TRAILS, TITLES, NAME COLOURS, AURAS), rarity chips and
--- OWNED / NOT OWNED. A tap changes what shows at once; the grid closes up (no gaps); the choice stays for the session.
+-- the KNIVES header rarity chips (ALL, COMMON ... MYTHIC, in their rarity colours) and a search box; under the
+-- COSMETICS header type chips (ALL, TRAILS, TITLES, NAME COLOURS, AURAS), rarity chips and OWNED / NOT OWNED. A tap
+-- changes what shows at once; the grid closes up (no gaps); the choice stays for the session.
 -- (The Shop is also where you WEAR what you own: there is no separate inventory screen.)
 -- ABILITIES: a slot for the bought abilities, built by UI/AbilityCards (build(parent)) when that module exists; until
 -- then the section and its jump button stay hidden.
@@ -37,6 +55,8 @@ local Crates = require(Shared.Config.Crates)
 local HalloweenShop = require(Shared.Config.HalloweenShop)
 local CrateRoll = require(Shared.CrateRoll)
 local KnifeLook = require(Shared.KnifeLook)
+local Dances = require(Shared.Config.Dances)
+local AnimationLibrary = require(Shared.AnimationLibrary)
 local UI = script.Parent.Parent
 local CrateArt = require(UI.CrateArt)
 local Theme = require(UI.Theme)
@@ -72,37 +92,41 @@ local SMALL = { W = 149, H = 224, Gap = 12, TitleY = 5, TitleH = 25, TitleSize =
 local HEAD = { H = 95, TextSize = 58 } -- a section header: the gap between two rows of cards, the word in its middle
 local SUB = { H = 50, TextSize = 28 } -- a smaller header inside a section (a rarity, EVERY CHANCE)
 local BANNER = { H = 224 }
-local CARD_T = 0 -- the video's cards are solid
-local BODY_COLOUR = hex("264F31") -- the video's page between the cards (measured the same in every frame: solid)
-local BODY_T = 0.06
+local CARD_T = 0.08 -- (our cards: nearly solid over the see-through body)
 local STUDS = 0.42 -- the video's price buttons: clearly studded (Kit's buttons are 0.22)
+local SIDE = { W = 520, Pad = 14, ButtonH = 54 } -- a crate's or a dance's panel, sliding in over the page's right side
 
--- the video's two card colours, measured on its frames: saturated green (potions, money) and teal (passes, speed)
-local GREEN = { Top = hex("317019"), Bottom = hex("17441A"), Rim = hex("06120A") }
-local TEAL = { Top = hex("1D587A"), Bottom = hex("0F3448"), Rim = hex("040C12") }
+-- our kit's colours (UI/Theme): navy cards with a dark rim; the Halloween cards in deep purple with an orange rim
+local NAVY = { Top = hex("2A4276"), Bottom = hex("1A2A52"), Rim = C.Frame }
+local SPOOKY = { Top = hex("45207A"), Bottom = hex("1E0E3A"), Rim = hex("FF7A1E") }
+local ORANGE = hex("FF7A1E")
+local CANDY = hex("FFB36B")
 
--- the sections, top to bottom, each with its jump button's colour (the video's EGGS orange, POTIONS purple, PASSES
--- blue, CODES teal, MONEY green, SPEED blue) and its cards' colour
+-- the sections, top to bottom, each with its jump button's colour and its cards' colour
 local SECTIONS = {
-	{ Key = "Crates", Text = "CRATES", Fill = hex("CC5C17"), Top = hex("F38D4B"), Look = GREEN },
-	{ Key = "Knives", Text = "KNIVES", Fill = hex("8225D5"), Top = hex("BD79F2"), Look = TEAL },
-	{ Key = "Abilities", Text = "ABILITIES", Fill = hex("D7336F"), Top = hex("F682AE"), Look = TEAL }, -- (shown once UI/AbilityCards exists)
-	{ Key = "Passes", Text = "PASSES", Fill = hex("257AD9"), Top = hex("6FB2F5"), Look = TEAL },
-	{ Key = "Aura", Text = "AURA", Fill = hex("1EBABF"), Top = hex("7FE6E9"), Look = GREEN },
-	{ Key = "Coins", Text = "COINS", Fill = hex("43D416"), Top = hex("8CEB63"), Look = GREEN },
-	{ Key = "Cosmetics", Text = "COSMETICS", Fill = hex("277ADD"), Top = hex("74B0F2"), Look = TEAL },
+	{ Key = "Halloween", Text = "HALLOWEEN", Fill = hex("E8661A"), Top = hex("FFB36B"), Look = SPOOKY },
+	{ Key = "Crates", Text = "CRATES", Fill = hex("7C5CF6"), Top = hex("C4B4FF"), Look = NAVY },
+	{ Key = "Dances", Text = "DANCES", Fill = hex("D9449F"), Top = hex("F69AD4"), Look = NAVY },
+	{ Key = "Knives", Text = "KNIVES", Fill = hex("8225D5"), Top = hex("BD79F2"), Look = NAVY },
+	{ Key = "Abilities", Text = "ABILITIES", Fill = hex("D7336F"), Top = hex("F682AE"), Look = NAVY }, -- (shown once UI/AbilityCards exists)
+	{ Key = "Passes", Text = "PASSES", Fill = hex("257AD9"), Top = hex("6FB2F5"), Look = NAVY },
+	{ Key = "Aura", Text = "AURA", Fill = hex("1EBABF"), Top = hex("7FE6E9"), Look = NAVY },
+	{ Key = "Coins", Text = "COINS", Fill = hex("43D416"), Top = hex("8CEB63"), Look = NAVY },
+	{ Key = "Cosmetics", Text = "COSMETICS", Fill = hex("277ADD"), Top = hex("74B0F2"), Look = NAVY },
 }
 -- what older callers ask for ("Items" was the coin shop tab)
 local ALIAS = { Items = "Knives" }
 
--- The video's buttons: a green price button, a purple one beside it (where the video has its gift: here KEY or the
--- Robux price when a card also sells for Aura), and one colour per jump button. White chunky text, dark rim.
+-- Our kit's buttons: green to buy (Theme's SelectedTab green), purple for Robux (Theme's Action), teal-blue for Aura;
+-- one colour per jump button. White chunky text, dark rim.
 local function look(fill: Color3, top: Color3, rim: Color3)
 	return { Idle = fill, Hover = fill:Lerp(WHITE, 0.1), Pressed = fill:Lerp(Color3.new(0, 0, 0), 0.1), Text = WHITE, Top = top, Rim = rim }
 end
-Kit.Styles.ShopGreen = look(hex("3FCC12"), hex("8EF26A"), hex("15500A"))
-Kit.Styles.ShopPurple = look(hex("9A3BE6"), hex("D08CFF"), hex("3A0E6E"))
-for _, s in SECTIONS do Kit.Styles["Jump" .. s.Key] = look(s.Fill, s.Top, INK) end
+Kit.Styles.ShopGreen = look(C.SelectedTab, C.SelectedTabTop, C.SelectedRim)
+Kit.Styles.ShopPurple = look(C.Action, C.ActionTop, C.ActionRim)
+Kit.Styles.ShopAura = look(hex("2A9FD8"), hex("8AD8FA"), hex("08304A"))
+Kit.Styles.ShopOrange = look(hex("E8661A"), hex("FFB36B"), hex("3E1405"))
+for _, sec in SECTIONS do Kit.Styles["Jump" .. sec.Key] = look(sec.Fill, sec.Top, INK) end
 
 local pending: { [string]: boolean } = {}
 local livePrice: { [string]: number } = {}
@@ -136,7 +160,7 @@ end
 
 -- FILTERS: what each filter row last picked, kept for the session (the Shop is built once per session)
 local FILTER = {
-	Knives = { Rarity = "All", Own = "All", Search = "" },
+	Knives = { Rarity = "All", Own = "All", Search = "" }, -- (KNIVES shows only knives you own: no OWNED chips)
 	Cosmetics = { Type = "All", Rarity = "All", Own = "All", Search = "" },
 }
 local TYPES = { { Key = "Trail", Text = "TRAILS" }, { Key = "Title", Text = "TITLES" }, { Key = "Tag", Text = "NAME COLOURS" }, { Key = "Aura", Text = "AURAS" } }
@@ -266,18 +290,6 @@ local function canOpenHere(): boolean
 	return true
 end
 
--- OPEN: a key (bought with Robux) first, else Aura (Screens/CrateOpen asks the server)
-local function openCrate(crate)
-	if not canOpenHere() then return end
-	local keys = (State.data.CrateKeys or {})[crate.Id] or 0
-	local have = State.data.Aura or 0
-	if keys <= 0 and have < crate.Price then
-		Toast.show(`You need {crate.Price - have} more Aura. Collect stars on the field!`)
-		return
-	end
-	ModalManager.open("CrateOpen", crate.Id)
-end
-
 -- A Robux product sold through the server's own prompt (crate keys: "PromptCrateKey"; the Halloween crate keys and
 -- knives: "PromptHalloween"). Id 0 = "coming soon", never a purchase.
 local function promptVia(verb: string, p)
@@ -300,44 +312,46 @@ end
 
 -- every item of a crate and its exact chance, rarest last, in `cols` columns of `rowW` px from (x, y) in `parent`
 local ODDS = { RowH = 29, RowGap = 1, ColGap = 9 }
-local function oddsRows(parent: Instance, crate, x: number, y: number, cols: number, rowW: number): number
+local function oddsRows(parent: Instance, crate, x: number, y: number, cols: number, rowW: number, z: number?): number
+	local z0 = z or 1
 	local odds = CrateRoll.odds(crate)
 	local rows = math.ceil(#odds / cols)
 	for i, o in odds do
 		local col, r = (i - 1) // rows, (i - 1) % rows
 		local it = o.item
-		local row = new("Frame", { Name = "Odds" .. i, Position = UDim2.fromOffset(x + col * (rowW + ODDS.ColGap), y + r * (ODDS.RowH + ODDS.RowGap)), Size = UDim2.fromOffset(rowW, ODDS.RowH), BackgroundColor3 = hex("0B1E14"), BackgroundTransparency = 0.25, BorderSizePixel = 0, Parent = parent }, { Kit.corner(3) })
-		new("Frame", { Name = "RarityBar", Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = CrateArt.color(it.Rarity), BorderSizePixel = 0, ZIndex = 2, Parent = row }, { Kit.corner(2) })
-		CrateArt.picture(row, it, 40, 25, 4, UDim2.fromOffset(8, 2), 2)
+		local row = new("Frame", { Name = "Odds" .. i, Position = UDim2.fromOffset(x + col * (rowW + ODDS.ColGap), y + r * (ODDS.RowH + ODDS.RowGap)), Size = UDim2.fromOffset(rowW, ODDS.RowH), BackgroundColor3 = C.MenuPanel, BackgroundTransparency = 0.2, BorderSizePixel = 0, ZIndex = z0, Parent = parent }, { Kit.corner(3) })
+		new("Frame", { Name = "RarityBar", Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = CrateArt.color(it.Rarity), BorderSizePixel = 0, ZIndex = z0 + 1, Parent = row }, { Kit.corner(2) })
+		CrateArt.picture(row, it, 40, 25, 4, UDim2.fromOffset(8, 2), z0 + 1)
 		local nameW = rowW - 118
-		local nm = Kit.name({ Name = "Name", Text = it.Name, FontFace = Theme.Fonts.Name, TextSize = 13, Position = UDim2.fromOffset(54, 1), Size = UDim2.fromOffset(nameW, 15), ZIndex = 3, Parent = row })
+		local nm = Kit.name({ Name = "Name", Text = it.Name, FontFace = Theme.Fonts.Name, TextSize = 13, Position = UDim2.fromOffset(54, 1), Size = UDim2.fromOffset(nameW, 15), ZIndex = z0 + 2, Parent = row })
 		Kit.fitLine(nm, nameW, 13, 10, true)
-		local rr = Kit.text({ Name = "Rarity", Text = string.upper(it.Rarity), FontFace = Theme.Fonts.Heading, TextSize = 9, TextColor3 = CrateArt.color(it.Rarity), TextWrapped = false, Position = UDim2.fromOffset(54, 16), Size = UDim2.fromOffset(nameW, 11), ZIndex = 3, Parent = row })
+		local rr = Kit.text({ Name = "Rarity", Text = string.upper(it.Rarity), FontFace = Theme.Fonts.Heading, TextSize = 9, TextColor3 = CrateArt.color(it.Rarity), TextWrapped = false, Position = UDim2.fromOffset(54, 16), Size = UDim2.fromOffset(nameW, 11), ZIndex = z0 + 2, Parent = row })
 		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1, Parent = rr })
-		Kit.text({ Name = "Chance", Text = string.format("%g%%", math.floor(o.chance * 10 + 0.5) / 10), FontFace = Theme.Fonts.Number, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextWrapped = false, Position = UDim2.fromOffset(rowW - 62, 0), Size = UDim2.fromOffset(54, ODDS.RowH), ZIndex = 3, Parent = row })
+		Kit.text({ Name = "Chance", Text = string.format("%g%%", math.floor(o.chance * 10 + 0.5) / 10), FontFace = Theme.Fonts.Number, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextWrapped = false, Position = UDim2.fromOffset(rowW - 62, 0), Size = UDim2.fromOffset(54, ODDS.RowH), ZIndex = z0 + 2, Parent = row })
 	end
 	return rows * (ODDS.RowH + ODDS.RowGap) - ODDS.RowGap
 end
 
--- his crate pictures (his crate shop mockup's cards, Kit.art CrateCard*), cut to the crate above his BUY:
--- { x, y, w, h, W, H } px. The Halloween stands' crates show his Beast (Witch's Brew) and Dojo (Sweets & Treats).
-local PICTURE = {
-	Beast = { Art = "CrateCardBeast", Crop = { 30, 25, 655, 510, 715, 702 } },
-	Dojo = { Art = "CrateCardDojo", Crop = { 30, 25, 657, 510, 717, 702 } },
-	Storm = { Art = "CrateCardStorm", Crop = { 30, 25, 642, 510, 702, 702 } },
-}
-local PIC_H = BIG.PicH - 4
-local PIC_W = math.round(PIC_H * 655 / 510)
+-- The one backdrop every crate stands on (owner, Oct 20 20:34: "make all of the crate pictures have the same background
+-- so they all look the same, but just the crate is different"): a deep purple stage with a warm orange glow behind
+-- the crate, a soft shadow it stands on and a thin orange rim. Drawn with frames (nothing to upload).
+local function backdrop(parent: Instance, name: string, x: number, y: number, w: number, h: number, z: number, glow: Color3?): Frame
+	local f = new("Frame", { Name = name, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), BackgroundColor3 = WHITE, BorderSizePixel = 0, ZIndex = z, Parent = parent }, { Kit.corner(6), Kit.stroke(ORANGE, 1.5, 0.45) })
+	new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex("2B1352")), ColorSequenceKeypoint.new(0.6, hex("3D1A6B")), ColorSequenceKeypoint.new(1, hex("150829")) }), Parent = f })
+	local g = math.min(w, h)
+	local halo = new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(w // 2, math.round(h * 0.52)), Size = UDim2.fromOffset(math.round(g * 1.1), math.round(g * 0.9)), BackgroundColor3 = glow or hex("FF8A2A"), BorderSizePixel = 0, ZIndex = z, Parent = f }, { Kit.corner(math.round(g * 0.45)) })
+	new("UIGradient", { Name = "Soft", Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.55), NumberSequenceKeypoint.new(1, 1) }), Parent = halo })
+	new("Frame", { Name = "Floor", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(w // 2, h - math.max(8, h // 10)), Size = UDim2.fromOffset(math.round(g * 0.8), math.max(6, g // 10)), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.55, BorderSizePixel = 0, ZIndex = z, Parent = f }, { Kit.corner(math.max(3, g // 20)) })
+	return f
+end
 
--- which of his pictures a crate shows (nil: the drawn crate)
-local function pictureOf(crate): (any, any)
-	for _, e in HalloweenShop.Crates do
-		if e.Crate == crate.Id and e.Picture then
-			local lookCrate = Crates.get(e.Picture)
-			return lookCrate and PICTURE[lookCrate.Id], lookCrate
-		end
-	end
-	return PICTURE[crate.Id], crate
+-- his crate, cut out of his picture, standing on the backdrop (rocking gently)
+local function cratePicture(bd: Frame, crate, z: number, rock: boolean?): ImageLabel
+	local w, h = bd.Size.X.Offset, bd.Size.Y.Offset
+	local side = math.min(w - 8, h - 6)
+	local pic = Kit.art(crate.Picture or "CrateCardCutDojo", { Name = "Crate", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(w // 2, h - 2), Size = UDim2.fromOffset(side, side), ScaleType = Enum.ScaleType.Fit, ZIndex = z, Parent = bd })
+	if rock then Effects.rock(pic, { degrees = 2.5, seconds = 1.6 }) end
+	return pic
 end
 
 -- its Robux key: Shop keys go through "PromptCrateKey", the Halloween stands' through "PromptHalloween"
@@ -353,20 +367,8 @@ local function isHalloween(crate): boolean
 	return crate.Home ~= nil or crate.Id == "Halloween"
 end
 
--- The crates in the page's order: his three, the Halloween ones, then the rest.
-local function crateOrder(): { any }
-	local list = {}
-	for i, crate in Crates.List do table.insert(list, { crate = crate, i = i }) end
-	local function rank(c) return if c.Model then 0 elseif c.Home then 1 elseif c.Id == "Halloween" then 2 else 3 end
-	table.sort(list, function(a, b)
-		local ra, rb = rank(a.crate), rank(b.crate)
-		if ra ~= rb then return ra < rb end
-		return a.i < b.i
-	end)
-	local out = {}
-	for _, e in list do table.insert(out, e.crate) end
-	return out
-end
+-- the Halloween crates in his picture's order (Candy, Witch, Halloween), then his three knife crates
+local HALLOWEEN_ORDER = { "Sweets", "Witch", "Halloween" }
 
 -- Coin shop items (small cards) -----------------------------------------------------------------------------------------
 
@@ -413,36 +415,23 @@ end
 
 function Shop.build(parent: Instance)
 	-- Flat (no CanvasGroup): the 3D crates that stand in for his pictures (ViewportFrames) must show.
-	local window = Kit.window({ Name = "Shop", Flat = true, Title = "Shop", Icon = "ShopCart", Width = TOTAL_W, Height = WIN.H, HeaderHeight = WIN.Header, TitleX = 24, TitleSize = WIN.TitleSize, TitleWidth = 120, StudsTo = 300, PanelColor = BODY_COLOUR, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Shop", Flat = true, Title = "Shop", Icon = "ShopCart", Width = TOTAL_W, Height = WIN.H, HeaderHeight = WIN.Header, TitleX = 24, TitleSize = WIN.TitleSize, TitleWidth = 120, StudsTo = 300, CloseSize = Vector2.new(46, 46), Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel, header = window.Panel, window.Header
 	panel.Size = UDim2.fromOffset(WIN.W, WIN.H) -- (the jump column stands outside the window, as in the video)
-	-- the video's body: no studs, its solid mid green (Oct 20 15:13: "brown" over the world before)
-	local fill = panel:FindFirstChild("Fill")
-	if fill and fill:IsA("Frame") then
-		fill.BackgroundColor3, fill.BackgroundTransparency = BODY_COLOUR, BODY_T
-		local studs = fill:FindFirstChild("StudPattern")
-		if studs and studs:IsA("GuiObject") then studs.Visible = false end
-	end
-	-- the video's title bar: dark charcoal, studded, opaque; a big chunky "Shop"
-	header.BackgroundTransparency = 0
-	local gloss = header:FindFirstChild("Gloss")
-	if gloss and gloss:IsA("UIGradient") then gloss.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex("2C2C2F")), ColorSequenceKeypoint.new(0.6, hex("1E1E20")), ColorSequenceKeypoint.new(1, hex("131315")) }) end
-	local topLine = header:FindFirstChild("TopLine")
-	if topLine and topLine:IsA("Frame") then topLine.BackgroundColor3 = hex("3A3A3E") end
+	-- our kit's window as it comes (owner, Oct 20 20:34: "make the ui for the shop colour match our ui"): the purple
+	-- studded title bar, the see-through navy studded body; the title in the video's chunky letters
 	local titleIcon = header:FindFirstChild("TitleIcon")
 	if titleIcon and titleIcon:IsA("GuiObject") then titleIcon.Visible = false end
 	for _, n in { "Title", "TitleShadow" } do
 		local t = header:FindFirstChild(n)
 		if t and t:IsA("TextLabel") then t.FontFace = SHOP_FONT; t.TextSize = WIN.TitleSize end
 	end
-	local titleStroke = window.Title:FindFirstChildOfClass("UIStroke")
-	if titleStroke then titleStroke.Color, titleStroke.Thickness = INK, 3 end
-	-- the red X square, the title bar's full height at its right end, a chunky X
-	Kit.place(window.Close.Instance, UDim2.new(1, 0, 0, 0), UDim2.fromOffset(WIN.Close, WIN.Close), Vector2.new(1, 0))
-	for _, d in window.Close.Instance:GetChildren() do
-		if d.Name == "XBar" and d:IsA("GuiObject") then d.Visible = false end
+	-- Halloween trim: an orange line under the title bar, a pumpkin and two bats beside the title
+	new("Frame", { Name = "HalloweenTrim", Position = UDim2.new(0, 0, 1, -3), Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = ORANGE, BorderSizePixel = 0, ZIndex = 3, Parent = header })
+	for k, e in { { "Pumpkin", "\u{1F383}", 318, 14, 40 }, { "Bat1", "\u{1F987}", 372, 8, 24 }, { "Bat2", "\u{1F987}", 410, 34, 18 } } do
+		local l = Kit.text({ Name = e[1], Text = e[2], TextSize = e[5], TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Position = UDim2.fromOffset(e[3], e[4]), Size = UDim2.fromOffset(e[5] + 8, e[5] + 6), ZIndex = 4, Parent = header })
+		if k > 1 then Effects.rock(l, { degrees = 6, seconds = 1.1 + k * 0.2 }) end
 	end
-	chunky({ Name = "X", Text = "X", TextSize = 56, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = window.Close.Instance }, 3)
 	-- your coins and Aura, small in the title bar (the video shows its money outside the window; ours sits under it)
 	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(520, 21), Width = 121, Parent = header })
 	local gems = Kit.pill({ Name = "Aura", Icon = "AuraStar", Position = UDim2.fromOffset(651, 21), Width = 108, Parent = header })
@@ -495,9 +484,11 @@ function Shop.build(parent: Instance)
 		body.CanvasSize = UDim2.fromOffset(0, y + 2 * PAD + 8)
 	end
 
+	local popList: { { card: GuiObject, scale: UIScale } } = {} -- every card, for the pop-in when the Shop opens
 	local function card(name: string, w: number, h: number, lk): Frame
 		local c = new("Frame", { Name = name, Size = UDim2.fromOffset(w, h), BackgroundColor3 = WHITE, BackgroundTransparency = CARD_T, BorderSizePixel = 0, Parent = body }, { Kit.corner(3), Kit.stroke(lk.Rim, 2) })
 		new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new(lk.Top, lk.Bottom), Parent = c })
+		table.insert(popList, { card = c, scale = Effects.lift(c) }) -- (lifts a little under the mouse)
 		return c
 	end
 	-- the video's card: a bold title, a big picture, one short line and a small one, the buttons at the foot
@@ -570,6 +561,12 @@ function Shop.build(parent: Instance)
 			local v = not any[sec]
 			if line.Visible ~= v then line.Visible = v; changed = true end
 		end
+		local kl = empties.Knives
+		if kl and kl:IsA("TextLabel") then
+			local ownsAny = false
+			for _, e in filterable do if e.sec == "Knives" and e.owned() then ownsAny = true; break end end
+			kl.Text = if ownsAny then "No knives match. Tap ALL or clear the search." else "No knives yet. Open a crate to get one!"
+		end
 		return changed
 	end
 	local layoutRef: { fn: (() -> ())? } = {}
@@ -638,10 +635,10 @@ function Shop.build(parent: Instance)
 	local OWN_DEFS = { { Key = "Owned", Text = "OWNED", Color = OWN_COLOUR.Owned }, { Key = "NotOwned", Text = "NOT OWNED", Color = OWN_COLOUR.NotOwned } }
 	-- the search box (a long list: knives)
 	local function searchBox(parent: GuiObject, sec: string, x: number, y: number, w: number, hint: string)
-		local f = new("Frame", { Name = "Search", Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, CHIP.H), BackgroundColor3 = hex("0D2214"), BorderSizePixel = 0, ZIndex = 3, Parent = parent }, { Kit.corner(3), Kit.stroke(hex("7FA889"), 2) })
+		local f = new("Frame", { Name = "Search", Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, CHIP.H), BackgroundColor3 = C.MenuPanel, BorderSizePixel = 0, ZIndex = 3, Parent = parent }, { Kit.corner(3), Kit.stroke(C.Divider, 2) })
 		local icon = Kit.icon("Search", { Name = "Icon", Position = UDim2.fromOffset(12, 10), Size = UDim2.fromOffset(19, 20), ZIndex = 4, Parent = f })
-		if icon:IsA("ImageLabel") then icon.ImageColor3 = hex("C9DCCD") end
-		local ph = chunky({ Name = "Hint", Text = hint, TextSize = 18, TextColor3 = hex("9DB8A3"), TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(40, 0), Size = UDim2.fromOffset(w - 80, CHIP.H), ZIndex = 4, Parent = f }, 1)
+		if icon:IsA("ImageLabel") then icon.ImageColor3 = C.SubText end
+		local ph = chunky({ Name = "Hint", Text = hint, TextSize = 18, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(40, 0), Size = UDim2.fromOffset(w - 80, CHIP.H), ZIndex = 4, Parent = f }, 1)
 		Kit.fitLine(ph, w - 80, 18, 12, true)
 		local box: TextBox = new("TextBox", { Name = "Box", Text = FILTER[sec].Search or "", PlaceholderText = "", ClearTextOnFocus = false, BackgroundTransparency = 1, FontFace = SHOP_FONT, TextSize = 19, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = false, ClipsDescendants = true, Position = UDim2.fromOffset(40, 0), Size = UDim2.fromOffset(w - 80, CHIP.H), ZIndex = 5, Parent = f })
 		local clear = chunkyButton(Kit.button({ Name = "Clear", Text = "X", Style = (chipStyle("Clear", TYPE_COLOUR.All)), FontFace = SHOP_FONT, TextSize = 18, Corner = 3, Size = UDim2.fromOffset(30, 30), ZIndex = 5, Parent = f }))
@@ -664,195 +661,312 @@ function Shop.build(parent: Instance)
 	end
 	-- a section's "nothing matches" line (only while every card is filtered out)
 	local function emptyLine(sec: string, text: string): TextLabel
-		local l = chunky({ Name = "Nothing" .. sec, Text = text, TextSize = 22, TextColor3 = hex("DDE8DF"), Size = UDim2.fromOffset(CW, 60), Visible = false, ZIndex = 2, Parent = body }, 2)
+		local l = chunky({ Name = "Nothing" .. sec, Text = text, TextSize = 22, TextColor3 = C.NoteText, Size = UDim2.fromOffset(CW, 60), Visible = false, ZIndex = 2, Parent = body }, 2)
 		Kit.fitLine(l, CW - 20, 22, 14, true)
 		empties[sec] = l
 		return l
 	end
 
-	-- FEATURED: his Void Beast Chest (a real crate we sell: no timer, no "one-time offer", nothing scarce)
-	local beast = Crates.get("Beast")
-	if beast then
-		local f = new("Frame", { Name = "Featured", Size = UDim2.fromOffset(CW, BANNER.H), BackgroundColor3 = WHITE, BackgroundTransparency = 0.08, BorderSizePixel = 0, Parent = body }, { Kit.corner(3), Kit.stroke(hex("120424"), 3) })
-		new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new(hex("4C1F86"), hex("230B44")), Parent = f })
-		new("Frame", { Name = "Rim", Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6), BackgroundTransparency = 1, Parent = f }, { Kit.corner(2), Kit.stroke(hex("8E4FE0"), 2, 0.3) })
-		local t = chunky({ Name = "Title", Text = string.upper(beast.Name), TextSize = 46, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(28, 30), Size = UDim2.fromOffset(380, 52), ZIndex = 3, Parent = f }, 3)
-		Kit.fitLine(t, 380, 46, 26, true)
-		new("UIGradient", { Name = "Colour", Rotation = 90, Color = ColorSequence.new(hex("FFB0F4"), hex("C45CFF")), Parent = t })
-		local top = string.upper(beast.Pity and beast.Pity.Rarity or "")
-		local pityLine = chunky({ Name = "Pity", Text = "", TextSize = 24, TextColor3 = CrateArt.color(beast.Pity and beast.Pity.Rarity or "Legendary"), TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(30, 96), Size = UDim2.fromOffset(370, 30), ZIndex = 3, Parent = f }, 2)
-		chunky({ Name = "Line", Text = "His own crate. Every chance is shown.", TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(30, 140), Size = UDim2.fromOffset(370, 24), ZIndex = 3, Parent = f }, 1.5)
-		local pic = PICTURE.Beast
-		CrateArt.hisPicture(f, pic.Art, { Name = "HisPicture", Position = UDim2.fromOffset(384, 22), Size = UDim2.fromOffset(232, 180), ZIndex = 2, Model = beast, Crop = pic.Crop })
-		local open = chunkyButton(Kit.button({ Name = "Open", Text = `OPEN {beast.Price}`, Icon = "AuraStar", IconAfter = true, IconSize = 26, Gap = 4, TextSize = 28, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 3, Position = UDim2.fromOffset(CW - 22 - 172, 40), Size = UDim2.fromOffset(172, 88), ZIndex = 4, Parent = f }))
-		open.onClick(function() openCrate(beast) end)
-		local openIcon = open.Instance:FindFirstChild("Icon", true) :: GuiObject?
-		local keyP, verb = keyOf(beast)
-		if keyP and verb then
-			robuxButton(f, keyP, "KEY", { Name = "BuyKey", Position = UDim2.fromOffset(CW - 22 - 172, 138), Size = UDim2.fromOffset(172, 44), TextSize = 22 }).onClick(function() promptVia(verb, keyP) end)
+	-- THE SIDE PANEL -----------------------------------------------------------------------------------------------------
+	-- Tapping a crate or a dance slides its panel in from the right, over the page (owner, Oct 20 20:34: "only show it
+	-- when you click on a crate, then on the side it pops up"). A crate's panel holds its every item and chance, the
+	-- pity counter and the buttons that spend (so the odds are in view whenever you pay); a dance's panel holds a
+	-- preview and BUY. Tap the dark page beside it, or its X, to close it. Everything is built once (and saved with
+	-- the UI): one view per crate and one dance view, shown as needed.
+	local scrollTo: (string, boolean?) -> ()
+	local side = new("Frame", { Name = "Side", Position = UDim2.fromOffset(BODY.X, BODY.Y), Size = UDim2.fromOffset(BODY.W, BODY.H), BackgroundTransparency = 1, ClipsDescendants = true, Visible = false, ZIndex = 30, Parent = panel })
+	local shade = new("TextButton", { Name = "Shade", Text = "", AutoButtonColor = false, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 30, Parent = side })
+	local SHUT_X, OPEN_X = BODY.W + 4, BODY.W - SIDE.W
+	local sp = new("Frame", { Name = "Panel", Position = UDim2.fromOffset(SHUT_X, 0), Size = UDim2.fromOffset(SIDE.W, BODY.H), BackgroundColor3 = WHITE, BackgroundTransparency = 0, BorderSizePixel = 0, ZIndex = 31, Parent = side }, { Kit.corner(6), Kit.stroke(ORANGE, 2) })
+	new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new(hex("23366A"), hex("141F45")), Parent = sp })
+	local sideTitle = chunky({ Name = "Title", Text = "", TextSize = 30, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(SIDE.Pad, 8), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad - 56, 42), ZIndex = 33, Parent = sp }, 2.5)
+	local sideClose = Kit.button({ Name = "Close", Text = "X", Style = "Close", FontFace = SHOP_FONT, TextSize = 26, Corner = 4, Position = UDim2.fromOffset(SIDE.W - SIDE.Pad - 42, 8), Size = UDim2.fromOffset(42, 42), ZIndex = 34, Parent = sp })
+	chunkyButton(sideClose)
+	local sideOpen = false
+	local showing: any = nil -- the crate or dance in the panel
+	local sideRefresh: { () -> () } = {}
+	local function closeSide(instant: boolean?)
+		if not sideOpen then return end
+		sideOpen, showing = false, nil
+		if instant or Motion.reduced then
+			sp.Position, shade.BackgroundTransparency, side.Visible = UDim2.fromOffset(SHUT_X, 0), 1, false
+			return
 		end
-		Effects.shine(f, { every = 6, corner = 3, strength = 0.22, z = 5 })
+		Motion.tween(sp, "slide", 0.22, { Position = UDim2.fromOffset(SHUT_X, 0) }, Enum.EasingStyle.Quad)
+		Motion.tween(shade, "fade", 0.22, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quad)
+		task.delay(0.24, function() if not sideOpen then side.Visible = false end end)
+	end
+	local function slideIn()
+		side.Visible = true
+		for _, f in sideRefresh do f() end
+		if sideOpen then return end
+		sideOpen = true
+		if Motion.reduced then
+			sp.Position, shade.BackgroundTransparency = UDim2.fromOffset(OPEN_X, 0), 0.45
+			return
+		end
+		sp.Position, shade.BackgroundTransparency = UDim2.fromOffset(SHUT_X, 0), 1
+		Motion.tween(sp, "slide", 0.38, { Position = UDim2.fromOffset(OPEN_X, 0) }, Enum.EasingStyle.Quint)
+		Motion.tween(shade, "fade", 0.3, { BackgroundTransparency = 0.45 }, Enum.EasingStyle.Quad)
+	end
+	shade.Activated:Connect(function() closeSide() end)
+	sideClose.onClick(function() closeSide() end)
+	table.insert(refreshButtons, function() for _, f in sideRefresh do f() end end)
+
+	-- a crate's view: his crate on the backdrop, the pity counter, every chance (scrolls when long), the buttons
+	local crateViews: { [string]: Frame } = {}
+	local CV = { PicY = 58, PicW = 150, PicH = 132, InfoX = SIDE.Pad + 150 + 14, OddsY = 222, ButtonY = BODY.H - SIDE.Pad - SIDE.ButtonH }
+	local function payWith(crate, coins: boolean)
+		if not canOpenHere() then return end
+		local keys = (State.data.CrateKeys or {})[crate.Id] or 0
+		if keys <= 0 then
+			local have = if coins then State.data.Coins or 0 else State.data.Aura or 0
+			local price = if coins then crate.CoinPrice or 0 else crate.Price
+			if have < price then
+				Toast.show(if coins then `You need {Format.commas(price - have)} more coins.` else `You need {price - have} more Aura. Collect stars on the field!`)
+				return
+			end
+		end
+		ModalManager.open("CrateOpen", crate.Id .. (if coins and keys <= 0 then "|Coins" else ""))
+	end
+	local function crateView(crate)
+		local v = new("Frame", { Name = "Crate" .. crate.Id, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 32, Parent = sp })
+		cratePicture(backdrop(v, "Backdrop", SIDE.Pad, CV.PicY, CV.PicW, CV.PicH, 32), crate, 33, true)
+		local infoW = SIDE.W - CV.InfoX - SIDE.Pad
+		local top = crate.Pity and crate.Pity.Rarity or ""
+		local pityTop = chunky({ Name = "PityLabel", Text = if top ~= "" then `GUARANTEED {string.upper(top)}` else "", TextSize = 22, TextColor3 = CrateArt.color(top ~= "" and top or "Common"), TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(CV.InfoX, CV.PicY + 4), Size = UDim2.fromOffset(infoW, 28), ZIndex = 33, Parent = v }, 2)
+		Kit.fitLine(pityTop, infoW, 22, 14, true)
+		local pity = chunky({ Name = "Pity", Text = "", TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(CV.InfoX, CV.PicY + 34), Size = UDim2.fromOffset(infoW, 26), ZIndex = 33, Parent = v }, 1.5)
+		local keysLine = chunky({ Name = "Keys", Text = "", TextSize = 18, TextColor3 = CANDY, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(CV.InfoX, CV.PicY + 64), Size = UDim2.fromOffset(infoW, 24), ZIndex = 33, Parent = v }, 1.5)
+		local note = chunky({ Name = "Note", Text = "Each open gives one item with these chances.", TextSize = 15, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(CV.InfoX, CV.PicY + 98), Size = UDim2.fromOffset(infoW, 22), ZIndex = 33, Parent = v }, 1)
+		Kit.fitLine(note, infoW, 15, 10, true)
+		local oh = chunky({ Name = "OddsHead", Text = "EVERY CHANCE", TextSize = 20, TextColor3 = CANDY, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(SIDE.Pad, CV.OddsY - 26), Size = UDim2.fromOffset(240, 24), ZIndex = 33, Parent = v }, 2)
+		oh.TextColor3 = CANDY
+		local listH = CV.ButtonY - 10 - CV.OddsY
+		local list = new("ScrollingFrame", { Name = "Odds", Position = UDim2.fromOffset(SIDE.Pad, CV.OddsY), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad, listH), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 6, ScrollBarImageColor3 = hex("C8D0D8"), ScrollBarImageTransparency = 0.35, CanvasSize = UDim2.new(), ScrollingDirection = Enum.ScrollingDirection.Y, ZIndex = 33, Parent = v })
+		local rowW = (SIDE.W - 2 * SIDE.Pad - 10 - ODDS.ColGap) // 2
+		local h = oddsRows(list, crate, 0, 0, 2, rowW, 33)
+		list.CanvasSize = UDim2.fromOffset(0, h)
+		-- the buttons: coins and Aura (his Halloween crates), or OPEN for Aura; a Robux KEY where it has one
+		local keyP, verb = keyOf(crate)
+		local W = SIDE.W - 2 * SIDE.Pad
+		local gap = 8
+		local n = (if crate.CoinPrice then 2 else 1) + (if keyP then 1 else 0)
+		local keyW = if keyP then (if n == 3 then 140 else 180) else 0
+		local payW = if crate.CoinPrice then (W - keyW - (n - 1) * gap) // 2 else W - keyW - (n - 1) * gap
+		local x = SIDE.Pad
+		local coinB: any = nil
+		if crate.CoinPrice then
+			coinB = chunkyButton(Kit.button({ Name = "PayCoins", Text = Format.commas(crate.CoinPrice), Icon = "CurrencyCoin", IconAfter = true, IconSize = 26, Gap = 6, TextSize = 26, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 4, Position = UDim2.fromOffset(x, CV.ButtonY), Size = UDim2.fromOffset(payW, SIDE.ButtonH), ZIndex = 34, Parent = v }))
+			coinB.onClick(function() payWith(crate, true) end)
+			x += payW + gap
+		end
+		local auraB = chunkyButton(Kit.button({ Name = "Open", Text = "", Icon = "AuraStar", IconAfter = true, IconSize = 26, Gap = 6, TextSize = 26, FontFace = SHOP_FONT, Style = if crate.CoinPrice then "ShopAura" else "ShopGreen", Corner = 4, Position = UDim2.fromOffset(x, CV.ButtonY), Size = UDim2.fromOffset(payW, SIDE.ButtonH), ZIndex = 34, Parent = v }))
+		auraB.onClick(function() payWith(crate, false) end)
+		local auraIcon = auraB.Instance:FindFirstChild("Icon", true) :: GuiObject?
+		local coinIcon = coinB and coinB.Instance:FindFirstChild("Icon", true) :: GuiObject?
+		x += payW + gap
+		if keyP and verb then
+			robuxButton(v, keyP, "KEY", { Name = "BuyKey", Position = UDim2.fromOffset(x, CV.ButtonY), Size = UDim2.fromOffset(keyW, SIDE.ButtonH), TextSize = 22 }).onClick(function() promptVia(verb, keyP) end)
+		end
+		Effects.breathe(auraB.Instance, { scale = 1.04, seconds = 0.9 })
+		table.insert(sideRefresh, function()
+			local left = CrateRoll.left(crate, (State.data.Pity or {})[crate.Id] or 0)
+			pity.Text = if left == nil then "" elseif left <= 1 then "ON YOUR NEXT OPEN!" else `IN {left} OPENS OR SOONER`
+			Kit.fitLine(pity, infoW, 20, 13, true)
+			pityTop.Visible = left ~= nil
+			local keys = (State.data.CrateKeys or {})[crate.Id] or 0
+			keysLine.Text = if keys > 0 then `YOU HAVE {keys} KEY{if keys == 1 then "" else "S"}` else ""
+			-- a key opens it first (the server uses one before any coins or Aura): one USE KEY button then
+			if coinB then
+				coinB.setText(if keys > 0 then `USE KEY ({keys})` else Format.commas(crate.CoinPrice))
+				if coinIcon then coinIcon.Visible = keys <= 0 end
+				coinB.setStyle(if keys > 0 or (State.data.Coins or 0) >= crate.CoinPrice then "ShopGreen" else "Disabled")
+				chunkyButton(coinB)
+				auraB.Instance.Visible = keys <= 0
+			end
+			auraB.setText(if keys > 0 and not coinB then `USE KEY ({keys})` elseif coinB then tostring(crate.Price) else `OPEN {crate.Price}`)
+			if auraIcon then auraIcon.Visible = keys <= 0 or coinB ~= nil end
+			auraB.setStyle(if keys <= 0 and (State.data.Aura or 0) < crate.Price then "Disabled" elseif coinB then "ShopAura" else "ShopGreen")
+			chunkyButton(auraB)
+		end)
+		crateViews[crate.Id] = v
+		return v
+	end
+
+	-- the dance view: a preview (your avatar dancing it where its animation can play here, else its picture), its line,
+	-- and BUY
+	local DV = { ArtY = 58, ArtH = 250 }
+	local dv = new("Frame", { Name = "DanceView", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 32, Parent = sp })
+	local dBack = backdrop(dv, "Backdrop", SIDE.Pad, DV.ArtY, SIDE.W - 2 * SIDE.Pad, DV.ArtH, 32, hex("E56CFF"))
+	local dStill = Kit.art("DanceStillRobot", { Name = "Still", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(dBack.Size.X.Offset // 2, DV.ArtH - 6), Size = UDim2.fromOffset(220, 220), ScaleType = Enum.ScaleType.Fit, ZIndex = 33, Parent = dBack })
+	Effects.rock(dStill, { degrees = 5, seconds = 0.5 }) -- (a little dance to the beat while no animation plays)
+	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(180, 180, 200), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(-0.5, -1, -0.8), Visible = false, ZIndex = 34, Parent = dBack }, { Kit.corner(6) })
+	local dBlurb = chunky({ Name = "Blurb", Text = "", TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(SIDE.Pad, DV.ArtY + DV.ArtH + 10), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad, 26), ZIndex = 33, Parent = dv }, 1.5)
+	local dNote = chunky({ Name = "Note", Text = "", TextSize = 15, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(SIDE.Pad, DV.ArtY + DV.ArtH + 40), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad, 22), ZIndex = 33, Parent = dv }, 1)
+	local dBuy = chunkyButton(Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconAfter = true, IconSize = 28, Gap = 8, TextSize = 28, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 4, Position = UDim2.fromOffset(SIDE.Pad, CV.ButtonY), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad, SIDE.ButtonH), ZIndex = 34, Parent = dv }))
+	local dBuyIcon = dBuy.Instance:FindFirstChild("Icon", true) :: GuiObject?
+	Effects.breathe(dBuy.Instance, { scale = 1.03, seconds = 0.9 })
+	local function ownsDance(d): boolean
+		return (State.data.Dances or {})[d.Id] == true or (d.Pack == true and State.owns("DancePack"))
+	end
+	local function buyDance(d)
+		if ownsDance(d) then
+			Toast.show(`{d.Name} is yours! Dance it from the Dances menu.`)
+			return
+		end
+		if pending["Dance" .. d.Id] then return end
+		local have = State.data.Coins or 0
+		if have < (d.Coins or 0) then
+			Toast.show(`You need {Format.commas((d.Coins or 0) - have)} more coins.`)
+			return
+		end
+		pending["Dance" .. d.Id] = true
+		local ok, why = State.action("BuyDance", d.Id)
+		pending["Dance" .. d.Id] = nil
+		Toast.show(if ok then `You got {d.Name}! Dance it from the Dances menu.` else (why or "Couldn't buy that. Try again."))
+	end
+	dBuy.onClick(function() if showing and showing.Coins then buyDance(showing) end end)
+	-- your avatar doing the dance (as in the Dances window: a copy of your character in the ViewportFrame)
+	local function showDancer(d): boolean
+		for _, ch in stage:GetChildren() do
+			if not ch:IsA("UICorner") then ch:Destroy() end
+		end
+		local player = Players.LocalPlayer
+		local character = player and player.Character
+		local id = AnimationLibrary.id("Dance_" .. d.Id, d.AnimationId)
+		if not character or id == "" then return false end
+		local ok = pcall(function()
+			local world = Instance.new("WorldModel")
+			world.Parent = stage
+			local was = character.Archivable
+			character.Archivable = true
+			local copy = character:Clone()
+			character.Archivable = was
+			for _, x in copy:GetDescendants() do
+				if x:IsA("LuaSourceContainer") or x:IsA("BillboardGui") or x:IsA("ParticleEmitter") or x:IsA("Highlight") or x:IsA("Trail") or x:IsA("Beam") or x:IsA("Light") then x:Destroy() end
+			end
+			local root = copy:FindFirstChild("HumanoidRootPart") :: BasePart
+			root.Anchored = true
+			copy:PivotTo(CFrame.new(0, 0, 0))
+			copy.Parent = world
+			local cam = Instance.new("Camera")
+			cam.FieldOfView = 34
+			cam.CFrame = CFrame.lookAt(Vector3.new(0, 0.6, -11.5), Vector3.new(0, -0.2, 0))
+			cam.Parent = stage
+			stage.CurrentCamera = cam
+			local humanoid = copy:FindFirstChildOfClass("Humanoid") :: Humanoid
+			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+			local animation = Instance.new("Animation")
+			animation.AnimationId = id
+			local t = (animator :: Animator):LoadAnimation(animation)
+			t.Looped = true
+			t:Play(0)
+		end)
+		return ok
+	end
+	table.insert(sideRefresh, function()
+		if not dv.Visible or not showing then return end
+		local d = showing
+		local owned = ownsDance(d)
+		dBuy.setText(if owned then "YOURS!" else `BUY {Format.commas(d.Coins or 0)}`)
+		if dBuyIcon then dBuyIcon.Visible = not owned end
+		dBuy.setStyle(if owned then "Selected" elseif (State.data.Coins or 0) >= (d.Coins or 0) then "ShopGreen" else "Disabled")
+		chunkyButton(dBuy)
+	end)
+
+	local function openCrateSide(crate)
+		if not crateViews[crate.Id] then return end
+		showing = crate
+		sideTitle.Text = string.upper(crate.Name)
+		Kit.fitLine(sideTitle, SIDE.W - 2 * SIDE.Pad - 56, 30, 18, true)
+		for id, v in crateViews do v.Visible = id == crate.Id end
+		dv.Visible = false
+		slideIn()
+	end
+	local function openDanceSide(d)
+		showing = d
+		sideTitle.Text = string.upper(d.Name)
+		Kit.fitLine(sideTitle, SIDE.W - 2 * SIDE.Pad - 56, 30, 18, true)
+		for _, v in crateViews do v.Visible = false end
+		dv.Visible = true
+		Kit.setArt(dStill, "DanceStill" .. d.Id)
+		local dancing = showDancer(d) -- (a preview before you buy: your avatar dances it, here only)
+		stage.Visible = dancing
+		dStill.Visible = not dancing
+		dBlurb.Text = d.Blurb
+		Kit.fitLine(dBlurb, SIDE.W - 2 * SIDE.Pad, 20, 12, true)
+		dNote.Text = if d.Pack then "Also comes with the Dance Pack." elseif d.Id == "Robot" then "Also on the reward track at Level 3." else "Only sold here."
+		slideIn()
+	end
+
+	-- a crate's card on the page: its name, his crate on the shared backdrop, the pity line and its price, OPEN (the
+	-- panel: the odds and the buttons that pay). The whole card opens the panel too.
+	local function crateCard(crate, lk): Frame
+		local c = bigCard("Card" .. crate.Id, lk, crate.Name)
+		cardsOf[crate.Id] = c
+		cratePicture(backdrop(c, "Backdrop", 12, BIG.PicY, BIG.W - 24, BIG.PicH, 2), crate, 3, true)
+		local top = crate.Pity and crate.Pity.Rarity or ""
+		local pity, price = lines(c, "", if crate.CoinPrice then `{Format.commas(crate.CoinPrice)} COINS OR {crate.Price} AURA` else `{crate.Price} AURA PER OPEN`, CrateArt.color(top ~= "" and top or "Common"), { "Pity", "Price" })
+		price.TextColor3 = if crate.CoinPrice then hex("FFE27A") else hex("CDE7FF")
+		local tap = new("TextButton", { Name = "Tap", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = c })
+		tap.Activated:Connect(function() openCrateSide(crate) end)
+		local open = chunkyButton(Kit.button({ Name = "Open", Text = "OPEN", TextSize = BIG.ButtonText, FontFace = SHOP_FONT, Style = if isHalloween(crate) then "ShopOrange" else "ShopGreen", Corner = 3, Position = UDim2.fromOffset(BIG.ButtonX, BIG.ButtonY), Size = UDim2.fromOffset(BIG.W - 2 * BIG.ButtonX, BIG.ButtonH), ZIndex = 4, Parent = c }))
+		open.onClick(function() openCrateSide(crate) end)
 		table.insert(refreshButtons, function()
-			local left = CrateRoll.left(beast, (State.data.Pity or {})[beast.Id] or 0)
-			pityLine.Text = if left == nil then "" elseif left <= 1 then `{top} ON YOUR NEXT OPEN!` else `{top} IN {left} OPENS!`
-			Kit.fitLine(pityLine, 350, 24, 16, true) -- (stays left of his crate)
-			local keys = (State.data.CrateKeys or {})[beast.Id] or 0
-			open.setText(if keys > 0 then `USE KEY ({keys})` else `OPEN {beast.Price}`)
-			if openIcon then openIcon.Visible = keys <= 0 end
-			open.setStyle(if keys > 0 or (State.data.Aura or 0) >= beast.Price then "ShopGreen" else "Disabled")
+			local left = CrateRoll.left(crate, (State.data.Pity or {})[crate.Id] or 0)
+			pity.Text = if left == nil or top == "" then "" elseif left <= 1 then `{string.upper(top)} ON YOUR NEXT OPEN!` else `{string.upper(top)} IN {left} OPENS`
+			Kit.fitLine(pity, BIG.W - 16, BIG.LineSize, 11, true)
+			local keys = (State.data.CrateKeys or {})[crate.Id] or 0
+			open.setText(if keys > 0 then `OPEN ({keys} KEY{if keys == 1 then "" else "S"})` else "OPEN")
 			chunkyButton(open)
+		end)
+		crateView(crate)
+		return c
+	end
+
+	-- HALLOWEEN -----------------------------------------------------------------------------------------------------------
+	-- Owner, Oct 20 20:34: "keep the halloween knifes, and put them on the top of the shop ui". First the featured banner
+	-- (his Halloween Crate: a real crate we sell, no timer, nothing scarce), then his three Halloween crates, then the
+	-- best Halloween knives straight away for Aura or Robux.
+	mark("Halloween")
+	local featured = Crates.get("Halloween")
+	if featured then
+		local f = new("Frame", { Name = "Featured", Size = UDim2.fromOffset(CW, BANNER.H), BackgroundColor3 = WHITE, BackgroundTransparency = 0.04, BorderSizePixel = 0, Parent = body }, { Kit.corner(4), Kit.stroke(ORANGE, 3) })
+		new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new(hex("4C1F86"), hex("1E0B3A")), Parent = f })
+		new("Frame", { Name = "Rim", Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6), BackgroundTransparency = 1, Parent = f }, { Kit.corner(3), Kit.stroke(hex("B07CFF"), 1.5, 0.4) })
+		local t = chunky({ Name = "Title", Text = string.upper(featured.Name), TextSize = 46, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(28, 26), Size = UDim2.fromOffset(360, 52), ZIndex = 3, Parent = f }, 3)
+		Kit.fitLine(t, 360, 46, 26, true)
+		new("UIGradient", { Name = "Colour", Rotation = 90, Color = ColorSequence.new(hex("FFE0A8"), ORANGE), Parent = t })
+		local top = string.upper(featured.Pity and featured.Pity.Rarity or "")
+		local pityLine = chunky({ Name = "Pity", Text = "", TextSize = 24, TextColor3 = CrateArt.color(featured.Pity and featured.Pity.Rarity or "Legendary"), TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(30, 88), Size = UDim2.fromOffset(350, 30), ZIndex = 3, Parent = f }, 2)
+		local line = chunky({ Name = "Line", Text = `{#featured.Items} spooky knives. {Format.commas(featured.CoinPrice or 0)} coins or {featured.Price} Aura.`, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(30, 128), Size = UDim2.fromOffset(350, 24), ZIndex = 3, Parent = f }, 1.5)
+		Kit.fitLine(line, 350, 18, 12, true)
+		chunky({ Name = "Hint", Text = "Tap to see every knife and its chance.", TextSize = 15, TextColor3 = CANDY, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(30, 158), Size = UDim2.fromOffset(350, 22), ZIndex = 3, Parent = f }, 1.2)
+		local bd = backdrop(f, "Backdrop", 392, 14, 216, BANNER.H - 28, 2)
+		cratePicture(bd, featured, 3, true)
+		Effects.motes(f, { colour = hex("FFA040"), shape = "dot", count = 8, area = Rect.new(402, 40, 598, BANNER.H - 30), z = 4, seed = 31 })
+		local tap = new("TextButton", { Name = "Tap", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = f })
+		tap.Activated:Connect(function() openCrateSide(featured) end)
+		local open = chunkyButton(Kit.button({ Name = "Open", Text = "OPEN", TextSize = 34, FontFace = SHOP_FONT, Style = "ShopOrange", Corner = 4, Position = UDim2.fromOffset(CW - 22 - 150, (BANNER.H - 88) // 2), Size = UDim2.fromOffset(150, 88), ZIndex = 5, Parent = f }))
+		open.onClick(function() openCrateSide(featured) end)
+		Effects.breathe(open.Instance, { scale = 1.05, seconds = 0.8 })
+		Effects.shine(f, { every = 6, corner = 4, strength = 0.22, z = 6 })
+		table.insert(refreshButtons, function()
+			local left = CrateRoll.left(featured, (State.data.Pity or {})[featured.Id] or 0)
+			pityLine.Text = if left == nil then "" elseif left <= 1 then `{top} ON YOUR NEXT OPEN!` else `{top} IN {left} OPENS!`
+			Kit.fitLine(pityLine, 350, 24, 16, true)
 		end)
 		block(f, BANNER.H, 0, 0)
 	end
-
-	-- CRATES ------------------------------------------------------------------------------------------------------------
-	mark("Crates")
-	block(head(bySection.Crates), HEAD.H)
-	local crateCards = {}
-	local oddsBlocks = {}
-	local order = crateOrder()
-	local scrollTo: (string, boolean?) -> ()
-	for _, crate in order do
-		local c = bigCard("Card" .. crate.Id, GREEN, crate.Name)
-		cardsOf[crate.Id] = c
-		local pic, lookCrate = pictureOf(crate)
-		if pic then -- his own picture (never recoloured; his 3D crate if it can't be drawn)
-			CrateArt.hisPicture(c, pic.Art, { Name = "HisPicture", Position = UDim2.fromOffset((BIG.W - PIC_W) // 2, BIG.PicY + 2), Size = UDim2.fromOffset(PIC_W, PIC_H), ZIndex = 2, Model = lookCrate, Crop = pic.Crop })
-		else
-			CrateArt.paint(CrateArt.crate(c, 118, UDim2.fromOffset(BIG.W // 2, BIG.PicY + BIG.PicH // 2), "CratePicture"), crate)
-		end
-		if isHalloween(crate) then -- (where it's from, like the video's NEW! tag; nothing scarce)
-			local tag = new("Frame", { Name = "Tag", Position = UDim2.fromOffset(BIG.W - 8 - 92, BIG.PicY), Size = UDim2.fromOffset(92, 22), BackgroundColor3 = hex("E8661A"), BorderSizePixel = 0, ZIndex = 4, Parent = c }, { Kit.corner(3), Kit.stroke(INK, 2) })
-			chunky({ Name = "Label", Text = "HALLOWEEN", TextSize = 14, Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = tag }, 1.5)
-		end
-		local top = crate.Pity and crate.Pity.Rarity or ""
-		local pityLabel, pity = lines(c, if top ~= "" then `GUARANTEED {string.upper(top)}` else "", "", CrateArt.color(top ~= "" and top or "Common"), { "PityLabel", "Pity" })
-		-- the odds: an "i" on the picture scrolls to this crate's every chance (never hidden odds)
-		local info = chunkyButton(Kit.button({ Name = "Odds", Text = "i", Style = "Slate", FontFace = SHOP_FONT, TextSize = 18, Corner = 13, Position = UDim2.fromOffset(8, BIG.PicY), Size = UDim2.fromOffset(26, 26), ZIndex = 4, Parent = c }))
-		info.onClick(function() scrollTo("Odds" .. crate.Id, true) end)
-		local keyP, verb = keyOf(crate)
-		local openX = if keyP then BIG.ButtonX + 92 else BIG.ButtonX
-		local open = chunkyButton(Kit.button({ Name = "Open", Text = `OPEN {crate.Price}`, Icon = "AuraStar", IconAfter = true, IconSize = 18, Gap = 2, TextSize = 19, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 3, Position = UDim2.fromOffset(openX, BIG.ButtonY), Size = UDim2.fromOffset(BIG.W - BIG.ButtonX - openX, BIG.ButtonH), ZIndex = 4, Parent = c }))
-		open.onClick(function() openCrate(crate) end)
-		local openIcon = open.Instance:FindFirstChild("Icon", true) :: GuiObject?
-		if keyP and verb then
-			robuxButton(c, keyP, "KEY", { Name = "BuyKey", Position = UDim2.fromOffset(BIG.ButtonX, BIG.ButtonY), Size = UDim2.fromOffset(86, BIG.ButtonH), TextSize = 17 }).onClick(function() promptVia(verb, keyP) end)
-		end
-		table.insert(refreshButtons, function()
-			local left = CrateRoll.left(crate, (State.data.Pity or {})[crate.Id] or 0)
-			pity.Text = if left == nil then "" elseif left <= 1 then "ON YOUR NEXT OPEN!" else `IN {left} OPENS`
-			pityLabel.Visible = left ~= nil
-			local keys = (State.data.CrateKeys or {})[crate.Id] or 0
-			open.setText(if keys > 0 then `USE KEY ({keys})` else `OPEN {crate.Price}`)
-			if openIcon then openIcon.Visible = keys <= 0 end
-			open.setStyle(if keys > 0 or (State.data.Aura or 0) >= crate.Price then "ShopGreen" else "Disabled")
-			chunkyButton(open)
-		end)
-		table.insert(crateCards, c)
-		-- its every chance, under the cards
-		local sec = new("Frame", { Name = "Section" .. crate.Id, Size = UDim2.fromOffset(CW, 30), BackgroundTransparency = 1, Parent = body })
-		local nm = chunky({ Name = "Name", Text = string.upper(crate.Name), TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(4, 0), Size = UDim2.fromOffset(CW - 8, 26), ZIndex = 2, Parent = sec }, 2)
-		nm.TextColor3 = WHITE
-		local h = oddsRows(sec, crate, 0, 30, 3, (CW - 2 * ODDS.ColGap) // 3)
-		sec.Size = UDim2.fromOffset(CW, 30 + h)
-		table.insert(oddsBlocks, { el = sec, h = 30 + h, id = crate.Id })
+	block(head(bySection.Halloween), HEAD.H)
+	local hwCrateCards = {}
+	for _, id in HALLOWEEN_ORDER do
+		local crate = Crates.get(id)
+		if crate then table.insert(hwCrateCards, crateCard(crate, SPOOKY)) end
 	end
-	grid(crateCards, 3, BIG.W, BIG.H, BIG.Gap, 6)
-	block(subHead("HeadOdds", "EVERY CHANCE", bySection.Crates.Fill), SUB.H)
-	for _, o in oddsBlocks do
-		mark("Odds" .. o.id)
-		block(o.el, o.h, 0, 14)
-	end
-
-	-- KNIVES ------------------------------------------------------------------------------------------------------------
-	mark("Knives")
-	block(head(bySection.Knives), HEAD.H)
-	local items: { [string]: { card: Frame, item: any } } = {}
-	local function itemCard(item, lk, sec: string): Frame
-		local c = card(item.Key, SMALL.W, SMALL.H, lk)
-		local tint = item.Rarity and rarityColor[item.Rarity]
-		if tint then
-			local rim = c:FindFirstChildOfClass("UIStroke")
-			if rim then rim.Color = tint:Lerp(Color3.new(0, 0, 0), 0.35) end
-		end
-		local t = chunky({ Name = "Title", Text = item.Name, TextSize = SMALL.TitleSize, Position = UDim2.fromOffset(5, SMALL.TitleY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.TitleH), ZIndex = 3, Parent = c }, 2)
-		Kit.fitLine(t, SMALL.W - 10, SMALL.TitleSize, 10, true)
-		if item.Art then
-			Kit.art(item.Art :: string, { Name = "Picture", Position = UDim2.fromOffset(4, SMALL.PicY), Size = UDim2.fromOffset(SMALL.W - 8, SMALL.PicH), ScaleType = Enum.ScaleType.Fit, ZIndex = 2, Parent = c })
-		else
-			swatch(c, item, 96)
-		end
-		local slotText = CoinShop.SlotNames[item.Slot]
-		if item.Rarity then slotText = string.upper(item.Rarity) .. " " .. slotText end
-		local line = chunky({ Name = "Slot", Text = slotText, TextSize = SMALL.LineSize, TextColor3 = tint or hex("BFE8C8"), Position = UDim2.fromOffset(5, SMALL.LineY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.LineH), ZIndex = 3, Parent = c }, 1.2)
-		Kit.fitLine(line, SMALL.W - 10, SMALL.LineSize, 8, true)
-		local b = chunkyButton(Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 24, Gap = 6, TextSize = 20, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 3, Position = UDim2.fromOffset(SMALL.ButtonX, SMALL.ButtonY), Size = UDim2.fromOffset(SMALL.W - 2 * SMALL.ButtonX, SMALL.ButtonH), ZIndex = 4, Parent = c }))
-		local icon = b.Instance:FindFirstChild("Icon", true) :: GuiObject?
-		local function refresh()
-			local owned = State.data.Cosmetics[item.Key] == true
-			local worn = CoinShop.worn(State.data, item.Slot) == item.Key
-			if icon then icon.Visible = not owned and not item.Unlock end
-			if not owned and item.Unlock then
-				b.setText("EARN IT") -- (quest knives: never sold; the tap says where)
-				b.setStyle("Disabled")
-			elseif not owned then
-				b.setText(Format.commas(item.Price))
-				b.setStyle(if (State.data.Coins or 0) >= item.Price then "ShopGreen" else "Disabled")
-			else
-				b.setText(if worn then "WEARING" else "WEAR")
-				b.setStyle(if worn then "Selected" else "Tab")
-			end
-			chunkyButton(b)
-		end
-		b.onClick(function()
-			local owned = State.data.Cosmetics[item.Key] == true
-			if not owned and item.Unlock then
-				Toast.show(`{item.Name}: {item.Unlock}`)
-				return
-			elseif not owned then
-				local ok, why = State.action("BuyWithCoins", item.Key)
-				Toast.show(if ok then `{item.Name} is yours!` else (why or "Couldn't buy that."))
-			else
-				local isWorn = CoinShop.worn(State.data, item.Slot) == item.Key
-				local ok, why = State.action("Wear", item.Slot, if isWorn then nil else item.Key)
-				if not ok then Toast.show(why or "Couldn't change that.") end
-			end
-		end)
-		table.insert(refreshButtons, refresh)
-		refresh()
-		items[item.Key] = { card = c, item = item }
-		table.insert(filterable, { card = c, sec = sec, rarity = item.Rarity, slot = item.Slot, name = item.Name,
-			owned = function() return State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true end,
-			-- (prizes such as the Spin Knife show once you own them)
-			base = function() return (State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true) or not item.NotForSale end })
-		return c
-	end
-	local sorted = {}
-	for _, item in CoinShop.Items do table.insert(sorted, item) end
-	table.sort(sorted, function(a, b) return a.Order < b.Order end)
-	-- the filter row: rarity chips; OWNED / NOT OWNED and the search box under them
-	do
-		local knives = {}
-		for _, item in sorted do if item.Slot == "Knife" then table.insert(knives, item) end end
-		local row = new("Frame", { Name = "KnivesFilters", Size = UDim2.fromOffset(CW, 2 * CHIP.H + CHIP.RowGap), BackgroundTransparency = 1, Parent = body })
-		chipsOf.KnivesRarity = chipRow(row, "KnivesRarity", rarityDefs(knives, "ALL"), 0, 0, CW, function(k) pick("Knives", "Rarity", k) end)
-		local ownChips, ownW = chipRow(row, "KnivesOwn", OWN_DEFS, 0, CHIP.H + CHIP.RowGap, 330, function(k) pick("Knives", "Own", k) end)
-		chipsOf.KnivesOwn = ownChips
-		local sx = ownW + 16
-		searchBox(row, "Knives", sx, CHIP.H + CHIP.RowGap, CW - sx, "Search knives")
-		refreshChips("Knives")
-		block(row, row.Size.Y.Offset, 0, 6)
-	end
-	for _, rarity in RARITY_ORDER do
-		local group = {}
-		for _, item in sorted do
-			if item.Slot == "Knife" and (item.Rarity or "Common") == rarity then table.insert(group, itemCard(item, TEAL, "Knives")) end
-		end
-		if #group > 0 then
-			block(subHead("Head" .. rarity, string.upper(rarity), rarityColor[rarity] or WHITE), SUB.H, 0, 0, group)
-			grid(group, 5, SMALL.W, SMALL.H, SMALL.Gap, 10)
-		end
-	end
+	grid(hwCrateCards, 3, BIG.W, BIG.H, BIG.Gap, 6)
 	-- the best Halloween knives, straight away for Aura or Robux (ActionService "BuyHalloweenKnife", ShopService)
 	local hwCards = {}
 	local hwCols = math.min(4, math.max(1, #HalloweenShop.Knives))
@@ -863,8 +977,13 @@ function Shop.build(parent: Instance)
 		local product = Products.get(entry.Robux)
 		if not item or not product then continue end
 		local tint = CrateArt.color(item.Rarity or "Legendary")
-		local c = bigCard("Halloween" .. item.Key, TEAL, item.Name, hwW)
-		if item.Art then picture(c, item.Art) end
+		local c = bigCard("Halloween" .. item.Key, SPOOKY, item.Name, hwW)
+		backdrop(c, "Backdrop", 10, BIG.PicY, hwW - 20, BIG.PicH, 2, tint)
+		if item.Art then
+			local pic = picture(c, item.Art)
+			pic.ZIndex = 3
+			Effects.rock(pic, { degrees = 3, seconds = 1.8 })
+		end
 		lines(c, `{string.upper(item.Rarity or "")} KNIFE`, "HALLOWEEN, YOURS RIGHT AWAY", tint)
 		local bx = 12 -- (the narrower card keeps both buttons inside)
 		local robux = robuxButton(c, product, nil, { Name = "BuyRobux", Position = UDim2.fromOffset(bx, BIG.ButtonY), Size = UDim2.fromOffset(72, BIG.ButtonH), TextSize = 19 })
@@ -896,15 +1015,181 @@ function Shop.build(parent: Instance)
 			chunkyButton(buyA)
 		end)
 		table.insert(hwCards, c)
-		table.insert(filterable, { card = c, sec = "Knives", rarity = item.Rarity, slot = "Knife", name = item.Name,
-			owned = function() return State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true end,
-			base = function() return true end })
 	end
 	if #hwCards > 0 then
-		block(subHead("HeadHalloween", "HALLOWEEN KNIVES", hex("FF8A2A")), SUB.H, 0, 0, hwCards)
-		local note = chunky({ Name = "Note", Text = "A knife here costs 3x its crate's average Aura.", TextSize = 15, TextColor3 = hex("E6D8C8"), Size = UDim2.fromOffset(CW, 20), ZIndex = 2, Parent = body }, 1.2)
-		block(note, 20, 0, 8, hwCards)
+		block(subHead("HeadHalloweenKnives", "HALLOWEEN KNIVES", ORANGE), SUB.H, 0, 0)
+		local note = chunky({ Name = "Note", Text = "A knife here costs 3x its crate's average Aura.", TextSize = 15, TextColor3 = C.NoteText, Size = UDim2.fromOffset(CW, 20), ZIndex = 2, Parent = body }, 1.2)
+		block(note, 20, 0, 8)
 		grid(hwCards, hwCols, hwW, BIG.H, hwGap, 6)
+	end
+
+	-- CRATES ------------------------------------------------------------------------------------------------------------
+	mark("Crates")
+	block(head(bySection.Crates), HEAD.H)
+	local crateCards = {}
+	for _, crate in Crates.List do
+		if not isHalloween(crate) then table.insert(crateCards, crateCard(crate, NAVY)) end
+	end
+	grid(crateCards, 3, BIG.W, BIG.H, BIG.Gap, 6)
+	-- (a crate this page doesn't list still gets a panel, so its odds can always show)
+	for _, crate in Crates.List do
+		if not crateViews[crate.Id] then crateView(crate) end
+	end
+
+	-- a wide pass banner like the video's GAMEPASSES rows (its big picture, the title, what you get)
+	local function passBanner(p)
+		local accent = p.Accent or C.Action
+		local f = card(p.Key, CW, BANNER.H, NAVY)
+		local rim = f:FindFirstChildOfClass("UIStroke")
+		if rim then rim.Color = INK end
+		local artF = new("Frame", { Name = "Art", Position = UDim2.fromOffset(12, 12), Size = UDim2.fromOffset(220, BANNER.H - 24), BackgroundTransparency = 1, ZIndex = 2, Parent = f })
+		Kit.attach(Kit.corner(3), Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), ScaleType = Enum.ScaleType.Crop, ZIndex = 2, Parent = artF }))
+		local t = chunky({ Name = "Title", Text = string.upper(p.Name), TextSize = 46, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(252, 18), Size = UDim2.fromOffset(340, 54), ZIndex = 3, Parent = f }, 3)
+		Kit.fitLine(t, 340, 46, 24, true)
+		new("UIGradient", { Name = "Colour", Rotation = 90, Color = ColorSequence.new(WHITE, accent:Lerp(WHITE, 0.35)), Parent = t })
+		for j, bf in p.Benefits or {} do
+			local by = 82 + (j - 1) * 40
+			Kit.icon(bf.Icon, { Name = "BenefitIcon" .. j, Position = UDim2.fromOffset(254, by), Size = UDim2.fromOffset(32, 32), ZIndex = 3, Parent = f })
+			local bt = chunky({ Name = "Benefit" .. j, Text = bf.Text, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(294, by), Size = UDim2.fromOffset(300, 32), ZIndex = 3, Parent = f }, 1.5)
+			Kit.fitLine(bt, 300, 20, 12, true)
+		end
+		buyButton(f, p, { Position = UDim2.fromOffset(CW - 20 - 160, (BANNER.H - 92) // 2), Size = UDim2.fromOffset(160, 92), TextSize = 36, IconSize = 30 })
+		block(f, BANNER.H, 0, BIG.Gap)
+		return f
+	end
+
+	-- DANCES ------------------------------------------------------------------------------------------------------------
+	-- Owner, Oct 20 20:34: "make a seperate section for dances, so that the dances you get by buying them individually,
+	-- or in the dances section keep them there and make them be able to be bought there". The Dance Pack first, then
+	-- every dance with a coin price (Config/Dances Coins). Tap one for its preview; BUY (ActionService "BuyDance").
+	mark("Dances")
+	block(head(bySection.Dances), HEAD.H)
+	local pack = Products.get("DancePack")
+	if pack then passBanner(pack) end
+	local danceList = {}
+	for _, d in Dances.List do if d.Coins then table.insert(danceList, d) end end
+	table.sort(danceList, function(a, b) return if a.Coins ~= b.Coins then a.Coins < b.Coins else a.Order < b.Order end)
+	local danceCards = {}
+	for i, d in danceList do
+		local c = card("Dance" .. d.Id, SMALL.W, SMALL.H, NAVY)
+		local colour = Dances.Colors[d.Color] or WHITE
+		local rim = c:FindFirstChildOfClass("UIStroke")
+		if rim then rim.Color = colour:Lerp(Color3.new(0, 0, 0), 0.35) end
+		local t = chunky({ Name = "Title", Text = d.Name, TextSize = SMALL.TitleSize, Position = UDim2.fromOffset(5, SMALL.TitleY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.TitleH), ZIndex = 3, Parent = c }, 2)
+		Kit.fitLine(t, SMALL.W - 10, SMALL.TitleSize, 10, true)
+		local glowF = new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(SMALL.W // 2, SMALL.PicY + SMALL.PicH // 2), Size = UDim2.fromOffset(112, 112), BackgroundColor3 = colour, BorderSizePixel = 0, ZIndex = 2, Parent = c }, { Kit.corner(56) })
+		new("UIGradient", { Name = "Soft", Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.5), NumberSequenceKeypoint.new(1, 1) }), Parent = glowF })
+		local pic = Kit.art("DanceStill" .. d.Id, { Name = "Picture", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(SMALL.W // 2, SMALL.PicY + SMALL.PicH), Size = UDim2.fromOffset(SMALL.PicH, SMALL.PicH), ScaleType = Enum.ScaleType.Fit, ZIndex = 3, Parent = c })
+		Effects.rock(pic, { degrees = 4, seconds = 0.45 + (i % 3) * 0.08 })
+		local line = chunky({ Name = "Kind", Text = if d.Pack then "DANCE PACK DANCE" else "DANCE", TextSize = SMALL.LineSize, TextColor3 = colour:Lerp(WHITE, 0.3), Position = UDim2.fromOffset(5, SMALL.LineY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.LineH), ZIndex = 3, Parent = c }, 1.2)
+		Kit.fitLine(line, SMALL.W - 10, SMALL.LineSize, 8, true)
+		local tap = new("TextButton", { Name = "Tap", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = c })
+		tap.Activated:Connect(function() openDanceSide(d) end)
+		local b = chunkyButton(Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 24, Gap = 6, TextSize = 20, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 3, Position = UDim2.fromOffset(SMALL.ButtonX, SMALL.ButtonY), Size = UDim2.fromOffset(SMALL.W - 2 * SMALL.ButtonX, SMALL.ButtonH), ZIndex = 4, Parent = c }))
+		local icon = b.Instance:FindFirstChild("Icon", true) :: GuiObject?
+		b.onClick(function() buyDance(d) end)
+		table.insert(refreshButtons, function()
+			local owned = ownsDance(d)
+			if icon then icon.Visible = not owned end
+			b.setText(if owned then "OWNED" else Format.commas(d.Coins or 0))
+			b.setStyle(if owned then "Selected" elseif (State.data.Coins or 0) >= (d.Coins or 0) then "ShopGreen" else "Disabled")
+			chunkyButton(b)
+		end)
+		table.insert(danceCards, c)
+	end
+	grid(danceCards, 5, SMALL.W, SMALL.H, SMALL.Gap, 6)
+
+	-- KNIVES ------------------------------------------------------------------------------------------------------------
+	-- The knives you own, to wear (owner, Oct 20 20:34: "make the knifes not be bought but opened from crates. So remove
+	-- the buying menu"): they come from the crates above, the Halloween knives, the Game Passes and quests.
+	mark("Knives")
+	block(head(bySection.Knives), HEAD.H)
+	local items: { [string]: { card: Frame, item: any } } = {}
+	local function itemCard(item, lk, sec: string): Frame
+		local c = card(item.Key, SMALL.W, SMALL.H, lk)
+		local tint = item.Rarity and rarityColor[item.Rarity]
+		if tint then
+			local rim = c:FindFirstChildOfClass("UIStroke")
+			if rim then rim.Color = tint:Lerp(Color3.new(0, 0, 0), 0.35) end
+		end
+		local t = chunky({ Name = "Title", Text = item.Name, TextSize = SMALL.TitleSize, Position = UDim2.fromOffset(5, SMALL.TitleY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.TitleH), ZIndex = 3, Parent = c }, 2)
+		Kit.fitLine(t, SMALL.W - 10, SMALL.TitleSize, 10, true)
+		if item.Art then
+			Kit.art(item.Art :: string, { Name = "Picture", Position = UDim2.fromOffset(4, SMALL.PicY), Size = UDim2.fromOffset(SMALL.W - 8, SMALL.PicH), ScaleType = Enum.ScaleType.Fit, ZIndex = 2, Parent = c })
+		else
+			swatch(c, item, 96)
+		end
+		local slotText = CoinShop.SlotNames[item.Slot]
+		if item.Rarity then slotText = string.upper(item.Rarity) .. " " .. slotText end
+		local line = chunky({ Name = "Slot", Text = slotText, TextSize = SMALL.LineSize, TextColor3 = tint or hex("BFE8C8"), Position = UDim2.fromOffset(5, SMALL.LineY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.LineH), ZIndex = 3, Parent = c }, 1.2)
+		Kit.fitLine(line, SMALL.W - 10, SMALL.LineSize, 8, true)
+		local b = chunkyButton(Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 24, Gap = 6, TextSize = 20, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 3, Position = UDim2.fromOffset(SMALL.ButtonX, SMALL.ButtonY), Size = UDim2.fromOffset(SMALL.W - 2 * SMALL.ButtonX, SMALL.ButtonH), ZIndex = 4, Parent = c }))
+		local icon = b.Instance:FindFirstChild("Icon", true) :: GuiObject?
+		local isKnife = item.Slot == "Knife"
+		local function refresh()
+			local owned = State.data.Cosmetics[item.Key] == true
+			local worn = CoinShop.worn(State.data, item.Slot) == item.Key
+			if icon then icon.Visible = not owned and not item.Unlock and not isKnife end
+			if not owned and (item.Unlock or isKnife) then
+				b.setText(if isKnife then "IN CRATES" else "EARN IT") -- (quest knives: never sold; the tap says where)
+				b.setStyle("Disabled")
+			elseif not owned then
+				b.setText(Format.commas(item.Price))
+				b.setStyle(if (State.data.Coins or 0) >= item.Price then "ShopGreen" else "Disabled")
+			else
+				b.setText(if worn then "WEARING" else "WEAR")
+				b.setStyle(if worn then "Selected" else "Tab")
+			end
+			chunkyButton(b)
+		end
+		b.onClick(function()
+			local owned = State.data.Cosmetics[item.Key] == true
+			if not owned and item.Unlock then
+				Toast.show(`{item.Name}: {item.Unlock}`)
+				return
+			elseif not owned and isKnife then
+				Toast.show(`{item.Name} comes from a crate.`)
+				return
+			elseif not owned then
+				local ok, why = State.action("BuyWithCoins", item.Key)
+				Toast.show(if ok then `{item.Name} is yours!` else (why or "Couldn't buy that."))
+			else
+				local isWorn = CoinShop.worn(State.data, item.Slot) == item.Key
+				local ok, why = State.action("Wear", item.Slot, if isWorn then nil else item.Key)
+				if not ok then Toast.show(why or "Couldn't change that.") end
+			end
+		end)
+		table.insert(refreshButtons, refresh)
+		refresh()
+		items[item.Key] = { card = c, item = item }
+		local function owns() return State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true end
+		table.insert(filterable, { card = c, sec = sec, rarity = item.Rarity, slot = item.Slot, name = item.Name, owned = owns,
+			-- (a knife shows once it's yours; a prize such as a Spin Wheel look shows once you own it)
+			base = function() return owns() or (not isKnife and not item.NotForSale) end })
+		return c
+	end
+	local sorted = {}
+	for _, item in CoinShop.Items do table.insert(sorted, item) end
+	table.sort(sorted, function(a, b) return a.Order < b.Order end)
+	-- the filter row: rarity chips; the search box under them
+	do
+		local knives = {}
+		for _, item in sorted do if item.Slot == "Knife" then table.insert(knives, item) end end
+		local row = new("Frame", { Name = "KnivesFilters", Size = UDim2.fromOffset(CW, 2 * CHIP.H + CHIP.RowGap), BackgroundTransparency = 1, Parent = body })
+		chipsOf.KnivesRarity = chipRow(row, "KnivesRarity", rarityDefs(knives, "ALL"), 0, 0, CW, function(k) pick("Knives", "Rarity", k) end)
+		searchBox(row, "Knives", 0, CHIP.H + CHIP.RowGap, CW, "Search your knives")
+		refreshChips("Knives")
+		block(row, row.Size.Y.Offset, 0, 6)
+	end
+	for _, rarity in RARITY_ORDER do
+		local group = {}
+		for _, item in sorted do
+			if item.Slot == "Knife" and (item.Rarity or "Common") == rarity then table.insert(group, itemCard(item, NAVY, "Knives")) end
+		end
+		if #group > 0 then
+			block(subHead("Head" .. rarity, string.upper(rarity), rarityColor[rarity] or WHITE), SUB.H, 0, 0, group)
+			grid(group, 5, SMALL.W, SMALL.H, SMALL.Gap, 10)
+		end
 	end
 	block(emptyLine("Knives", "No knives match. Tap ALL or clear the search."), 60, 0, 6)
 
@@ -941,7 +1226,7 @@ function Shop.build(parent: Instance)
 	block(head(bySection.Passes), HEAD.H)
 	local passCards = {}
 	for i, p in Products.knifePasses() do
-		local c = bigCard(p.Key, TEAL, p.Name)
+		local c = bigCard(p.Key, NAVY, p.Name)
 		local pic = picture(c, p.Art)
 		local a, b2 = blurbLines(p)
 		lines(c, a, b2, (p.Card and p.Card.Name) or WHITE)
@@ -956,30 +1241,12 @@ function Shop.build(parent: Instance)
 			Effects.motes(c, { colour = el.emit[1].colours[1], shape = shape, count = 7,
 				area = Rect.new(px + 20, py + 10, px + pw - 20, py + ph - 4), z = 3, seed = i })
 		end
-		Effects.lift(c)
 		table.insert(passCards, c)
 	end
 	if #passCards > 0 then grid(passCards, 3, BIG.W, BIG.H, BIG.Gap, BIG.Gap) end
-	-- VIP and the Dance Pack: wide banners like the video's GAMEPASSES rows (its big picture, the title, what you get)
+	-- VIP: a wide banner like the video's GAMEPASSES rows (the Dance Pack's is in DANCES)
 	for _, p in Products.Passes do
-		if p.Knife then continue end
-		local accent = p.Accent or C.Action
-		local f = card(p.Key, CW, BANNER.H, TEAL)
-		local rim = f:FindFirstChildOfClass("UIStroke")
-		if rim then rim.Color = INK end
-		local artF = new("Frame", { Name = "Art", Position = UDim2.fromOffset(12, 12), Size = UDim2.fromOffset(220, BANNER.H - 24), BackgroundTransparency = 1, ZIndex = 2, Parent = f })
-		Kit.attach(Kit.corner(3), Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), ScaleType = Enum.ScaleType.Crop, ZIndex = 2, Parent = artF }))
-		local t = chunky({ Name = "Title", Text = string.upper(p.Name), TextSize = 46, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(252, 18), Size = UDim2.fromOffset(340, 54), ZIndex = 3, Parent = f }, 3)
-		Kit.fitLine(t, 340, 46, 24, true)
-		new("UIGradient", { Name = "Colour", Rotation = 90, Color = ColorSequence.new(WHITE, accent:Lerp(WHITE, 0.35)), Parent = t })
-		for j, bf in p.Benefits or {} do
-			local by = 82 + (j - 1) * 40
-			Kit.icon(bf.Icon, { Name = "BenefitIcon" .. j, Position = UDim2.fromOffset(254, by), Size = UDim2.fromOffset(32, 32), ZIndex = 3, Parent = f })
-			local bt = chunky({ Name = "Benefit" .. j, Text = bf.Text, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(294, by), Size = UDim2.fromOffset(300, 32), ZIndex = 3, Parent = f }, 1.5)
-			Kit.fitLine(bt, 300, 20, 12, true)
-		end
-		buyButton(f, p, { Position = UDim2.fromOffset(CW - 20 - 160, (BANNER.H - 92) // 2), Size = UDim2.fromOffset(160, 92), TextSize = 36, IconSize = 30 })
-		block(f, BANNER.H, 0, BIG.Gap)
+		if not p.Knife and p.Key ~= "DancePack" then passBanner(p) end
 	end
 
 	-- AURA --------------------------------------------------------------------------------------------------------------
@@ -987,7 +1254,7 @@ function Shop.build(parent: Instance)
 	block(head(bySection.Aura), HEAD.H)
 	local auraCards = {}
 	for i, p in Products.Aura do
-		local c = bigCard(p.Key, GREEN, p.Name)
+		local c = bigCard(p.Key, NAVY, p.Name)
 		auraStars(c, i)
 		local a, b2 = blurbLines(p)
 		lines(c, a, b2, hex("E6D2FF"))
@@ -1001,7 +1268,7 @@ function Shop.build(parent: Instance)
 	block(head(bySection.Coins), HEAD.H)
 	local coinCards = {}
 	for _, p in Products.Coins do
-		local c = bigCard(p.Key, GREEN, p.Name)
+		local c = bigCard(p.Key, NAVY, p.Name)
 		picture(c, p.Art)
 		local a, b2 = blurbLines(p)
 		lines(c, a, b2, hex("FFE27A"))
@@ -1030,7 +1297,7 @@ function Shop.build(parent: Instance)
 	end
 	local cosCards = {}
 	for _, p in Products.Cosmetics do
-		local c = bigCard(p.Key, TEAL, p.Name)
+		local c = bigCard(p.Key, NAVY, p.Name)
 		picture(c, p.Art)
 		local a, b2 = blurbLines(p)
 		lines(c, a, b2)
@@ -1043,7 +1310,7 @@ function Shop.build(parent: Instance)
 	-- the looks you buy with coins (trails, name colours, titles, auras: the girls' rewards show their rarity)
 	local looks = {}
 	for _, item in sorted do
-		if item.Slot ~= "Knife" then table.insert(looks, itemCard(item, TEAL, "Cosmetics")) end
+		if item.Slot ~= "Knife" then table.insert(looks, itemCard(item, NAVY, "Cosmetics")) end
 	end
 	if #looks > 0 then
 		block(subHead("HeadLooks", "FOR COINS", bySection.Coins.Fill), SUB.H, 0, 0, looks)
@@ -1165,11 +1432,35 @@ function Shop.build(parent: Instance)
 		for _, f in refreshButtons do f() end
 	end)
 
+	-- The cards in view pop in one after another (Motion.stagger's rhythm; Reduced Motion: they just show).
+	local function popIn()
+		if Motion.reduced then return end
+		local top = body.CanvasPosition.Y - 40
+		local k = 0
+		for _, e in popList do
+			local c = e.card
+			if c.Visible and c.Parent == body and c.Position.Y.Offset + c.Size.Y.Offset > top and c.Position.Y.Offset < top + BODY.H + 40 then
+				e.scale.Scale = 0.8
+				task.delay(k * Theme.Motion.Stagger, function()
+					if e.scale.Parent then Motion.tween(e.scale, "press", 0.32, { Scale = 1 }, Enum.EasingStyle.Back) end
+				end)
+				k += 1
+			end
+		end
+	end
 	ModalManager.register("Shop", {
 		window = window,
-		-- open at a section ("Crates", "Knives", "Passes", "Aura", "Coins", "Cosmetics") or a crate ("Witch", "Beast")
-		onOpen = function(where) if type(where) == "string" then scrollTo(where, false) end end,
-		firstSelect = function() return jumps.Crates and jumps.Crates.Instance end,
+		-- open at a section ("Halloween", "Crates", "Dances", "Knives", "Passes", "Aura", "Coins", "Cosmetics") or a
+		-- crate ("Witch", "Beast": its card, and its panel slides in)
+		onOpen = function(where)
+			closeSide(true)
+			if type(where) == "string" then scrollTo(where, false) end
+			popIn()
+			local crate = type(where) == "string" and Crates.get(where)
+			if crate then task.delay(if Motion.reduced then 0 else 0.15, function() openCrateSide(crate) end) end
+		end,
+		onClose = function() closeSide(true) end,
+		firstSelect = function() return jumps.Halloween and jumps.Halloween.Instance end,
 	})
 	return window
 end

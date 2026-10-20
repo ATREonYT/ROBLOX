@@ -1,6 +1,6 @@
 -- Check: crates end to end offline (Config/Crates, ActionService "OpenCrate", Shop > CRATES, Screens/CrateOpen; owner
--- Oct 19: "create a good case opening animation"). The crate holds only things that exist; the Shop shows every item's
--- chance and the pity counter; the server takes the Aura once, gives the prize and answers with it and an honest reel;
+-- Oct 19: "create a good case opening animation"). The crate holds only things that exist; the Shop shows every crate on
+-- one backdrop and, in the panel a tap slides in, every item's chance, the pity counter and the buttons that pay; the server takes the Aura once, gives the prize and answers with it and an honest reel;
 -- the screen animates to exactly that prize, ticks, never flashes (no rays, beams, rings or sparks either: owner, Oct 20
 -- 07:51 "feels too ai"), fades the prize's name in and runs one glint round its rim, can be skipped, opens again, and
 -- won't open in a round or during the Secret cutscene. Pity and duplicates pay out as shown.
@@ -50,8 +50,13 @@ for _, crate in Crates.List do
 		end
 	end
 end
-local crate = Crates.get("Starter")
-check("the Starter Crate is live", crate ~= nil)
+-- (owner, Oct 20 20:34: "remove the two crates that dont have pictures, the starter one"; dances are sold one by one now)
+check("the Starter and Dance crates are gone", Crates.get("Starter") == nil and Crates.get("Dance") == nil)
+-- the crate the rest of this check opens: his Candy Crate (49 Aura or 250 coins, his 20:34 picture)
+local crate = Crates.get("Sweets")
+check("the Candy Crate is live: 49 Aura or 250 coins", crate ~= nil and crate.Name == "Candy Crate" and crate.Price == 49 and crate.CoinPrice == 250)
+check("the Witch Crate: 79 Aura or 350 coins", Crates.get("Witch") ~= nil and Crates.get("Witch").Name == "Witch Crate" and Crates.get("Witch").Price == 79 and Crates.get("Witch").CoinPrice == 350)
+check("the Halloween Crate: 99 Aura or 500 coins", Crates.get("Halloween") ~= nil and Crates.get("Halloween").Price == 99 and Crates.get("Halloween").CoinPrice == 500)
 
 DataService.update(me, function(d) d.Aura, d.Coins = 120, 1000 end)
 __runScript(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Main)
@@ -60,141 +65,157 @@ local MM = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.ModalMa
 local State = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.State)
 local gui = me.PlayerGui:FindFirstChild("HuzzUI")
 
--- 2. Shop > CRATES (one page since Oct 20 14:31, like his reference video): every crate a card (title, picture, the
--- pity line, OPEN with Aura, KEY for Robux where it has one, the "i"), then each crate's every chance under the cards
+-- 2. the Shop (Oct 20 20:34): HALLOWEEN on top (his three Halloween crates), CRATES (his three knife crates); every
+-- crate a card on the same backdrop, with no odds on the page; a tap slides its panel in with every chance, the pity
+-- counter and the buttons that pay
 MM.open("Shop", "Crates")
 task.wait(0.2)
 local shop = gui:FindFirstChild("Shop")
 local body = shop and shop:FindFirstChild("Products", true)
-local card = body and body:FindFirstChild("CardStarter")
-check("Shop has a CRATES jump button", shop ~= nil and shop:FindFirstChild("CratesTab", true) ~= nil)
-check("the crate card shows", card ~= nil)
-check("OPEN shows the Aura price", card ~= nil and card.Open:FindFirstChild("Label", true).Text == "OPEN " .. crate.Price)
+local side = shop and shop:FindFirstChild("Side", true)
+check("Shop has HALLOWEEN, CRATES and DANCES jump buttons", shop ~= nil and shop:FindFirstChild("HalloweenTab", true) ~= nil and shop:FindFirstChild("CratesTab", true) ~= nil and shop:FindFirstChild("DancesTab", true) ~= nil)
+local chancesOnPage = 0
+for _, d in (body and body:GetDescendants() or {}) do
+	if d.Name == "Chance" or string.match(d.Name, "^Section") or d.Name == "HeadOdds" then chancesOnPage += 1 end
+end
+check(`no chances on the page itself ({chancesOnPage})`, chancesOnPage == 0)
+local card = body and body:FindFirstChild("CardSweets")
+local backSize, backFill = nil, nil
+local sameBack = true
+for _, cr in Crates.List do
+	local cc = body and body:FindFirstChild("Card" .. cr.Id)
+	check(`{cr.Id}: its card`, cc ~= nil)
+	local bd = cc and cc:FindFirstChild("Backdrop")
+	local pic = bd and bd:FindFirstChild("Crate")
+	check(`{cr.Id}: his crate cut out ({cr.Picture}) on the backdrop`, pic ~= nil and pic:IsA("ImageLabel") and pic:GetAttribute("Art") == cr.Picture and pic.ImageColor3 == Color3.new(1, 1, 1))
+	if bd then
+		local fill = bd:FindFirstChild("Fill")
+		backSize = backSize or bd.Size
+		backFill = backFill or (fill and fill.Color)
+		if bd.Size ~= backSize or not fill or fill.Color ~= backFill then sameBack = false end
+	end
+	check(`{cr.Id}: OPEN on its card`, cc ~= nil and cc:FindFirstChild("Open") ~= nil and cc.Open:FindFirstChild("Label", true).Text == "OPEN")
+	check(`{cr.Id}: its pity line`, cc ~= nil and cc:FindFirstChild("Pity") ~= nil and cc.Pity.Text == "LEGENDARY IN 40 OPENS")
+	check(`{cr.Id}: its own panel`, side ~= nil and side.Panel:FindFirstChild("Crate" .. cr.Id) ~= nil)
+	for _, it in cr.Items do
+		local c = it.Kind == "Cosmetic" and CoinShop.get(it.Id)
+		if c then check(`{cr.Id}: {it.Id} is no pass knife`, c.Pass == nil) end
+	end
+end
+check("every crate stands on the same backdrop", sameBack and backSize ~= nil)
+check("the Candy card says both prices", card ~= nil and card.Price.Text == "250 COINS OR 49 AURA")
+-- his Halloween crates first, in his picture's order, above CRATES; his knife crates under the CRATES header
+local function row(ids)
+	local prev = nil
+	for _, id in ids do
+		local c = body and body:FindFirstChild("Card" .. id)
+		if not c or (prev and (c.Position.Y.Offset ~= prev.Position.Y.Offset or c.Position.X.Offset <= prev.Position.X.Offset)) then return false end
+		prev = c
+	end
+	return prev ~= nil and prev.Position.X.Offset + prev.Size.X.Offset <= 795
+end
+check("Candy, Witch, Halloween side by side", row({ "Sweets", "Witch", "Halloween" }))
+check("Dojo, Storm, Beast side by side", row({ "Dojo", "Storm", "Beast" }))
+check("HALLOWEEN sits above CRATES", body ~= nil and body.CardHalloween.Position.Y.Offset < body.HeadCrates.Position.Y.Offset and body.HeadCrates.Position.Y.Offset < body.CardDojo.Position.Y.Offset)
+check("the featured banner is his Halloween Crate", body ~= nil and body:FindFirstChild("Featured") ~= nil and body.Featured.Position.Y.Offset == 0 and body.Featured.Title.Text == "HALLOWEEN CRATE")
+local inKnifeCrates = {}
+for _, id in { "Dojo", "Storm", "Beast" } do
+	local kc = Crates.get(id)
+	check(`the {id} crate holds ten knives ({kc and #kc.Items})`, kc ~= nil and #kc.Items == 10)
+	for _, it in (kc and kc.Items or {}) do inKnifeCrates[it.Id] = true end
+end
+local nKnives = 0
+for _ in inKnifeCrates do nKnives += 1 end
+check(`his three crates hold all 30 of his knives ({nKnives})`, nKnives == 30)
+local halloweenCrate = Crates.get("Halloween")
+check(`the Halloween Crate holds his 18 Halloween knives ({halloweenCrate and #halloweenCrate.Items})`, halloweenCrate ~= nil and #halloweenCrate.Items == 18)
+
+-- the panel: tap the Candy card's OPEN; it slides in with every chance (adding to 100), the pity and the buttons
+local function settle() for _ = 1, 30 do __stepTweens(0.05) end; task.wait(0.35) end
+__fireOn(card.Open, "Activated")
+settle()
+local view = side and side.Panel:FindFirstChild("CrateSweets")
+check("OPEN slides the Candy Crate's panel in", side ~= nil and side.Visible and view ~= nil and view.Visible and side.Panel.Position.X.Offset == side.Size.X.Offset - side.Panel.Size.X.Offset)
+check("... its name on top", side ~= nil and side.Panel.Title.Text == "CANDY CRATE")
 local rows, sum = 0, 0
-for _, ch in (body and body:FindFirstChild("SectionStarter") and body.SectionStarter:GetChildren() or {}) do
+for _, ch in (view and view.Odds:GetChildren() or {}) do
 	if string.match(ch.Name, "^Odds%d+$") then
 		rows += 1
 		sum += tonumber(string.match(ch.Chance.Text, "[%d%.]+")) or 0
 	end
 end
 check(`every item's chance is listed ({rows} of {#crate.Items})`, rows == #crate.Items)
-check(`the chances add to 100 ({sum})`, math.abs(sum - 100) < 0.5)
-check("the pity counter shows", card ~= nil and card.Pity.Text == "IN 30 OPENS" and card.PityLabel.Text == "GUARANTEED LEGENDARY")
--- every crate (owner, Oct 19: "knifes, dances, from crates"), the Halloween stands' too, has its card and its own
--- section with every item's chance, one under the other; no pass knives in any crate
-local spans = {}
-local lowestCard = 0
-for _, cr in Crates.List do
-	local cc = body and body:FindFirstChild("Card" .. cr.Id)
-	check(`{cr.Id}: its card in CRATES`, cc ~= nil)
-	if cc then lowestCard = math.max(lowestCard, cc.Position.Y.Offset + cc.Size.Y.Offset) end
-	local sec = body and body:FindFirstChild("Section" .. cr.Id)
-	local n, total = 0, 0
-	for _, ch in (sec and sec:GetChildren() or {}) do
-		if string.match(ch.Name, "^Odds%d+$") then
-			n += 1
-			total += tonumber(string.match(ch.Chance.Text, "[%d%.]+")) or 0
-		end
-	end
-	check(`{cr.Id}: its section lists all {#cr.Items} chances ({n})`, sec ~= nil and n == #cr.Items)
-	check(`{cr.Id}: shown chances add to about 100 ({total})`, math.abs(total - 100) < 1.5)
-	if sec then table.insert(spans, { cr.Id, sec.Position.Y.Offset, sec.Position.Y.Offset + sec.Size.Y.Offset }) end
-	for _, it in cr.Items do
-		local c = it.Kind == "Cosmetic" and CoinShop.get(it.Id)
-		if c then check(`{cr.Id}: {it.Id} is no pass knife`, c.Pass == nil) end
-	end
+check(`the chances add to 100 ({sum})`, math.abs(sum - 100) < 1.5)
+check("the pity counter shows", view ~= nil and view.Pity.Text == "IN 40 OPENS OR SOONER" and view.PityLabel.Text == "GUARANTEED LEGENDARY")
+check("pay with coins (250) or Aura (49)", view ~= nil and view.PayCoins:FindFirstChild("Label", true).Text == "250" and view.Open:FindFirstChild("Label", true).Text == "49")
+check("... and its Robux KEY", view ~= nil and view:FindFirstChild("BuyKey") ~= nil)
+-- the buttons and the chances sit inside the panel, the list scrolls when long
+local inside = true
+for _, n in { "PayCoins", "Open", "BuyKey", "Odds" } do
+	local e = view and view:FindFirstChild(n)
+	local x0 = e and e.Position.X.Offset - e.AnchorPoint.X * e.Size.X.Offset
+	local y0 = e and e.Position.Y.Offset - e.AnchorPoint.Y * e.Size.Y.Offset
+	if not e or x0 < 0 or x0 + e.Size.X.Offset > side.Panel.Size.X.Offset or y0 + e.Size.Y.Offset > side.Panel.Size.Y.Offset then inside = false; print("outside:", n, x0, y0) end
 end
--- the odds sections stand under the cards, one under the other, never overlapping
-table.sort(spans, function(x, y) return x[2] < y[2] end)
-check("every chance shows under the crate cards", #spans > 0 and spans[1][2] > lowestCard)
-for i = 2, #spans do
-	check(`{spans[i][1]}: its section sits below {spans[i - 1][1]}'s`, spans[i][2] > spans[i - 1][3])
-end
-local halloweenCrate, danceCrate = Crates.get("Halloween"), Crates.get("Dance")
--- his three knife crates (Oct 20): ten of his knives each, all 30 between them, each its card with his own picture
--- (cut to the crate, never recoloured), and under it the pity line, OPEN with Aura, KEY for Robux; the "i" on it
-local inKnifeCrates = {}
-for _, id in { "Dojo", "Storm", "Beast" } do
-	local kc = Crates.get(id)
-	check(`the {id} crate holds ten knives ({kc and #kc.Items})`, kc ~= nil and #kc.Items == 10)
-	for _, it in (kc and kc.Items or {}) do inKnifeCrates[it.Id] = true end
-	local cardK = body and body:FindFirstChild("Card" .. id)
-	if cardK then
-		local box = cardK:FindFirstChild("HisPicture")
-		local pic = box and box:FindFirstChild("Picture")
-		check(`{id}: his own picture, cut to the crate`, pic ~= nil and pic:IsA("ImageLabel") and pic:GetAttribute("Art") == "CrateCard" .. id and box.ClipsDescendants and pic.ImageColor3 == Color3.new(1, 1, 1))
-		local under = true
-		for _, n in { "Open", "BuyKey", "Pity" } do
-			local e = cardK:FindFirstChild(n)
-			if not e or not box or e.Position.Y.Offset < box.Position.Y.Offset + box.Size.Y.Offset then under = false end
-		end
-		check(`{id}: the pity line, OPEN and KEY sit under his picture`, under)
-		check(`{id}: OPEN with Aura shows its price`, cardK:FindFirstChild("Open") ~= nil and cardK.Open:FindFirstChild("Label", true).Text == "OPEN " .. kc.Price)
-		check(`{id}: the pity line shows`, cardK:FindFirstChild("Pity") ~= nil and cardK.Pity.Text == "IN 40 OPENS" and cardK.PityLabel.Text == "GUARANTEED LEGENDARY")
-		check(`{id}: KEY for Robux shows its price`, cardK:FindFirstChild("BuyKey") ~= nil and cardK.BuyKey:FindFirstChild("Price", true).Text == "25")
-		check(`{id}: the odds button`, cardK:FindFirstChild("Odds") ~= nil)
-	end
-end
--- the Halloween stands' crates: his pictures (Witch's Brew = his Beast, Sweets & Treats = his Dojo), a HALLOWEEN tag
-for id, art in { Witch = "CrateCardBeast", Sweets = "CrateCardDojo" } do
-	local cardH = body and body:FindFirstChild("Card" .. id)
-	local pic = cardH and cardH:FindFirstChild("HisPicture") and cardH.HisPicture:FindFirstChild("Picture")
-	check(`{id}: his {art} picture`, pic ~= nil and pic:GetAttribute("Art") == art)
-	check(`{id}: the HALLOWEEN tag and its KEY`, cardH ~= nil and cardH:FindFirstChild("Tag") ~= nil and cardH:FindFirstChild("BuyKey") ~= nil)
-end
-local nKnives = 0
-for _ in inKnifeCrates do nKnives += 1 end
-check(`his three crates hold all 30 of his knives ({nKnives})`, nKnives == 30)
-if body and body:FindFirstChild("CardDojo") and body:FindFirstChild("CardStorm") and body:FindFirstChild("CardBeast") then
-	local a, b2, c3 = body.CardDojo, body.CardStorm, body.CardBeast
-	check("his three cards lead the row, left to right", a.Position.Y.Offset == b2.Position.Y.Offset and b2.Position.Y.Offset == c3.Position.Y.Offset and a.Position.X.Offset < b2.Position.X.Offset and b2.Position.X.Offset < c3.Position.X.Offset)
-	check("the cards fit the page side by side", c3.Position.X.Offset + c3.Size.X.Offset <= 795)
-	-- KEY while its product has no ID: "coming soon", and never a purchase prompt
-	local toasts = {}
-	local Toast = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Toast)
-	local oldShow = Toast.show
-	Toast.show = function(t, ...) table.insert(toasts, t); return oldShow(t, ...) end
-	local prompts = 0
-	local MPS = game:GetService("MarketplaceService")
-	local oldPrompt = MPS.PromptProductPurchase
-	pcall(function() MPS.PromptProductPurchase = function() prompts += 1 end end)
-	__fireOn(a.BuyKey, "Activated")
-	task.wait(0.1)
-	Toast.show = oldShow
-	pcall(function() MPS.PromptProductPurchase = oldPrompt end)
-	check(`KEY with no product ID says coming soon ({toasts[1]})`, toasts[1] ~= nil and string.find(toasts[1], "coming soon") ~= nil)
-	check("KEY with no product ID opens no purchase", prompts == 0)
-	-- the server refuses too
-	local okP, whyP = require(HS.ShopService).promptCrateKey(me, "DojoCrateKey")
-	check(`the server won't prompt a crate key with no ID ({whyP})`, okP == false and string.find(whyP or "", "coming soon") ~= nil)
-	local okH = require(HS.ShopService).promptCrateKey(me, "WitchCrateKey")
-	check("the crate key prompt only takes the knife crates' keys", okH == false)
-	-- the "i" scrolls the page to that crate's every chance
-	__fireOn(c3.Odds, "Activated")
-	for _ = 1, 40 do __stepTweens(0.05) end
-	task.wait(0.3)
-	check(`the "i" scrolls to the Beast's chances ({body.CanvasPosition.Y})`, math.abs(body.CanvasPosition.Y - (body.SectionBeast.Position.Y.Offset + 4)) <= 1)
-end
-check(`the Halloween Crate holds his 18 Halloween knives ({halloweenCrate and #halloweenCrate.Items})`, halloweenCrate ~= nil and #halloweenCrate.Items == 18)
-local danceOnly = 0
-for _, it in (danceCrate and danceCrate.Items or {}) do
-	local d = it.Kind == "Dance" and Dances.get(it.Id)
-	if d and d.Crate then danceOnly += 1 end
-end
-check(`the Dance Crate has its own dances ({danceOnly})`, danceOnly == 7)
+check("the buttons and the chances fit the panel", inside)
+-- the dark page beside it closes it
+__fireOn(side.Shade, "Activated")
+settle()
+check("tapping beside the panel closes it", not side.Visible)
+-- the Dojo's KEY while its product has no ID: "coming soon", and never a purchase prompt
+__fireOn(body.CardDojo.Open, "Activated")
+settle()
+local dojoView = side.Panel.CrateDojo
+check("the Dojo's panel: OPEN 100 and KEY", dojoView.Visible and dojoView.Open:FindFirstChild("Label", true).Text == "OPEN 100" and dojoView:FindFirstChild("BuyKey") ~= nil and dojoView:FindFirstChild("PayCoins") == nil)
+local toasts = {}
+local Toast = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Toast)
+local oldShow = Toast.show
+Toast.show = function(t, ...) table.insert(toasts, t); return oldShow(t, ...) end
+local prompts = 0
+local MPS = game:GetService("MarketplaceService")
+local oldPrompt = MPS.PromptProductPurchase
+pcall(function() MPS.PromptProductPurchase = function() prompts += 1 end end)
+__fireOn(dojoView.BuyKey, "Activated")
+task.wait(0.1)
+Toast.show = oldShow
+pcall(function() MPS.PromptProductPurchase = oldPrompt end)
+check(`KEY with no product ID says coming soon ({toasts[1]})`, toasts[1] ~= nil and string.find(toasts[1], "coming soon") ~= nil)
+check("KEY with no product ID opens no purchase", prompts == 0)
+local okP, whyP = require(HS.ShopService).promptCrateKey(me, "DojoCrateKey")
+check(`the server won't prompt a crate key with no ID ({whyP})`, okP == false and string.find(whyP or "", "coming soon") ~= nil)
+local okH = require(HS.ShopService).promptCrateKey(me, "WitchCrateKey")
+check("the crate key prompt only takes the knife crates' keys", okH == false)
+__fireOn(side.Panel.Close, "Activated")
+settle()
+check("its X closes it", not side.Visible)
+-- the Halloween Crate has no Robux key: coins and Aura only
+__fireOn(body.CardHalloween.Open, "Activated")
+settle()
+check("the Halloween Crate's panel: 500 coins or 99 Aura, no KEY", side.Panel.CrateHalloween.Visible and side.Panel.CrateHalloween.PayCoins:FindFirstChild("Label", true).Text == "500" and side.Panel.CrateHalloween:FindFirstChild("BuyKey") == nil)
+-- opened at a crate (a stand, BACK from the opening): its card and its panel
+MM.close()
+task.wait(0.1)
+MM.open("Shop", "Witch")
+task.wait(0.4)
+settle()
+check("opened at the Witch Crate: its panel slides in", side.Visible and side.Panel.CrateWitch.Visible)
 
--- 3. OPEN: the screen opens, the server takes the Aura once and answers with the prize and an honest reel
+-- 3. OPEN: from the panel; the server takes the Aura once and answers with the prize and an honest reel
+MM.open("Shop", "Sweets")
+task.wait(0.4)
+settle()
+view = side.Panel.CrateSweets
 local Action = RS.Remotes.Action
 local answers = {}
 local realInvoke = Action.InvokeServer
 local flashes, ticks = {}, 0
 local coinsBefore = State.shown("Coins")
-__fireOn(card.Open, "Activated")
+__fireOn(view.Open, "Activated")
 task.wait(0.3)
-check("OPEN goes to the opening screen", MM.current() == "CrateOpen")
+check("the panel's Aura button goes to the opening screen", MM.current() == "CrateOpen")
 local screen = gui:FindFirstChild("CrateOpen")
-check("Aura taken once (120 -> 70)", data.Aura == 70)
-local pityAfter = data.Pity.Starter
+check(`Aura taken once (120 -> 71: {data.Aura})`, data.Aura == 71)
+local pityAfter = data.Pity.Sweets
 check("the pity counter moved", pityAfter == 1 or pityAfter == 0)
 local strip = screen and screen:FindFirstChild("Strip", true)
 local cardCount = 0
@@ -220,7 +241,7 @@ end
 frames(40) -- 1.3 s: shake, pop, the reel opens and starts
 check("the crate popped and the reel is spinning", screen.Group.Crate.Visible == false and screen.Group.Reel.Visible == true)
 check("TAP TO SKIP shows while it spins", hintSeen)
-check("the odds by rarity show under the reel while it spins", screen.Group.Odds.Visible and screen.Group.Odds.Chip1.Visible and screen.Group.Odds.Chip1.Label.Text == "COMMON 50%")
+check("the odds by rarity show under the reel while it spins", screen.Group.Odds.Visible and screen.Group.Odds.Chip1.Visible and string.sub(screen.Group.Odds.Chip1.Label.Text, 1, 6) == "COMMON")
 -- the HUD's coins wait for the prize (a duplicate's coins would give it away)
 DataService.update(me, function(d) d.Coins += 5 end)
 task.wait(0.1)
@@ -259,7 +280,7 @@ end
 -- 4. OPEN AGAIN and skip: tap mid-spin jumps to the prize; the Aura is taken once more
 __fireOn(screen.Group.Bottom.OpenAgain, "Activated")
 task.wait(0.3)
-check("OPEN AGAIN took 50 more (70 -> 20)", data.Aura == 20)
+check(`OPEN AGAIN took 49 more (71 -> 22: {data.Aura})`, data.Aura == 22)
 frames(60)
 __fireOn(screen.Group.Skip, "Activated")
 frames(2)
@@ -275,15 +296,35 @@ check(`no rays, beams, rings, sparks or flash on the screen ({table.concat(shape
 
 -- 5. not enough Aura: refused, nothing taken
 task.wait(0.2)
-local okOpen, why = Action:InvokeServer("OpenCrate", "Starter")
-check("20 Aura can't open a 50 crate", okOpen == false and type(why) == "string" and string.find(why, "more Aura") ~= nil)
-check("nothing taken", data.Aura == 20)
+local okOpen, why = Action:InvokeServer("OpenCrate", "Sweets")
+check("22 Aura can't open a 49 crate", okOpen == false and type(why) == "string" and string.find(why, "more Aura") ~= nil)
+check("nothing taken", data.Aura == 22)
+
+-- 5b. coins (owner, Oct 20 20:34: his Halloween crates cost coins or Aura): taken once; a crate without a coin price refuses
+DataService.update(me, function(d) d.Coins = 300 end)
+task.wait(0.25)
+local okC, resC = Action:InvokeServer("OpenCrate", "Sweets", "Coins")
+check(`250 coins open the Candy Crate (300 -> 50 + its coins back: {data.Coins})`, okC == true and type(resC) == "table" and data.Coins == 50 + resC.coins and data.Aura == 22)
+task.wait(0.25)
+local okC2, whyC2 = Action:InvokeServer("OpenCrate", "Sweets", "Coins")
+check("50 coins can't open it again", okC2 == false and string.find(whyC2 or "", "more coins") ~= nil)
+task.wait(0.25)
+local okC3, whyC3 = Action:InvokeServer("OpenCrate", "Dojo", "Coins")
+check(`the Dojo opens with Aura only ({whyC3})`, okC3 == false)
+-- knives aren't sold for coins any more (owner: "make the knifes not be bought but opened from crates")
+local someKnife
+for _, it in CoinShop.Items do if it.Slot == "Knife" and not it.Pass and not it.Unlock and not it.NotForSale and not data.Cosmetics[it.Key] then someKnife = it; break end end
+DataService.update(me, function(d) d.Coins = 100000 end)
+task.wait(0.25)
+local okK, whyK = Action:InvokeServer("BuyWithCoins", someKnife.Key)
+check(`a knife can't be bought for coins ({whyK})`, okK == false and data.Cosmetics[someKnife.Key] ~= true and data.Coins == 100000)
+DataService.update(me, function(d) d.Coins = 1000 end)
 
 -- 6. pity: 29 opens without a Legendary, the 30th is one
-DataService.update(me, function(d) d.Aura = 500; d.Pity.Starter = 29 end)
+DataService.update(me, function(d) d.Aura = 500; d.Pity.Sweets = 39 end)
 task.wait(0.2)
-local okP, res = Action:InvokeServer("OpenCrate", "Starter")
-check("pity: the 30th open is a Legendary", okP == true and type(res) == "table" and res.rarity == "Legendary" and res.pity == 0 and res.left == 30)
+local okP, res = Action:InvokeServer("OpenCrate", "Sweets")
+check("pity: the 40th open is a Legendary or better", okP == true and type(res) == "table" and (res.rarity == "Legendary" or res.rarity == "Mythic") and res.pity == 0 and res.left == 40)
 check("the answer's reel holds the prize at its spot", okP and res.strip[res.at] == res.index and #res.strip == Crates.Reel.Length)
 
 -- 7. duplicates pay coins back
@@ -294,7 +335,7 @@ DataService.update(me, function(d)
 end)
 local coinsBefore = data.Coins
 task.wait(0.2)
-local okD, dup = Action:InvokeServer("OpenCrate", "Starter")
+local okD, dup = Action:InvokeServer("OpenCrate", "Sweets")
 local dupItem = okD and crate.Items[dup.index]
 if dupItem and dupItem.Kind ~= "Coins" then
 	check("a duplicate says so", dup.new == false and dup.coins == CrateRoll.dupeCoins(crate, dupItem))
@@ -308,18 +349,19 @@ MM.open("Shop", "Crates")
 task.wait(0.2)
 local auraBefore = data.Aura
 me:SetAttribute("HuzzCinematic", true)
-card = gui.Shop:FindFirstChild("Products", true):FindFirstChild("CardStarter")
-__fireOn(card.Open, "Activated")
+__fireOn(gui.Shop:FindFirstChild("Products", true).CardSweets.Open, "Activated")
+settle()
+__fireOn(side.Panel.CrateSweets.Open, "Activated")
 task.wait(0.3)
 check("no crate opens during the cutscene", MM.current() ~= "CrateOpen" and data.Aura == auraBefore)
 me:SetAttribute("HuzzCinematic", false)
 me:SetAttribute("HuzzRole", "Runner")
-MM.open("CrateOpen", "Starter")
+MM.open("CrateOpen", "Sweets")
 task.wait(0.3)
 check("no crate opens in a round", MM.current() ~= "CrateOpen" and data.Aura == auraBefore)
 me:SetAttribute("HuzzRole", "Lobby")
 -- the cutscene starting mid-spin closes the screen (the prize is kept)
-MM.open("CrateOpen", "Starter")
+MM.open("CrateOpen", "Sweets")
 task.wait(0.3)
 frames(20)
 me:SetAttribute("HuzzCinematic", true)

@@ -16,7 +16,6 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Dances = require(Shared.Config.Dances)
 local Products = require(Shared.Config.Products)
 local Progression = require(Shared.Config.Progression)
-local Crates = require(Shared.Config.Crates)
 local AnimationLibrary = require(Shared.AnimationLibrary)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
@@ -67,21 +66,16 @@ local function packSoon(): boolean
 	return pack == nil or Products.status(pack) ~= "Ready"
 end
 
--- The crate a dance can come out of (owner, Oct 19: "dances, from crates"), or nil.
-local function crateFor(id: string): string?
-	for _, c in Crates.List do
-		for _, it in c.Items do
-			if it.Kind == "Dance" and it.Id == id then return c.Name end
-		end
-	end
-	return nil
+-- Where a dance is sold (owner, Oct 20 20:34: dances "be able to be bought" in the Shop's DANCES), or nil.
+local function shopFor(d): string?
+	return if d.Coins then string.format("%d coins in the Shop's DANCES", d.Coins) else nil
 end
 
 -- How a locked dance is unlocked, in one short line.
 local function howToGet(d): string
 	local level = rewardLevel(d.Id)
-	local crate = crateFor(d.Id)
-	local pack = if d.Pack then "the Dance Pack" .. (if packSoon() then " (coming soon)" else "") elseif crate then "the " .. crate else nil
+	local shop = shopFor(d)
+	local pack = if d.Pack then "the Dance Pack" .. (if packSoon() then " (coming soon)" else "") .. (if shop then " or " .. shop else "") elseif shop then shop else nil
 	if level and pack then return string.format("Unlock %s at Level %d, or with %s.", d.Name, level, pack) end
 	if level then return string.format("Unlock %s at Level %d on the reward track.", d.Name, level) end
 	if pack then return string.format("Get %s with %s.", d.Name, pack) end
@@ -301,7 +295,7 @@ function DancesScreen.build(parent: Instance)
 			stage.Visible = false
 		end
 		previewName.Text = d.Name
-		previewBlurb.Text = if mine then d.Blurb else "Locked. " .. (if rewardLevel(d.Id) then "Reach Level " .. rewardLevel(d.Id) .. "." elseif d.Pack then "Get it with the Dance Pack." elseif crateFor(d.Id) then "Get it from the " .. crateFor(d.Id) .. "." else "")
+		previewBlurb.Text = if mine then d.Blurb else "Locked. " .. (if rewardLevel(d.Id) then "Reach Level " .. rewardLevel(d.Id) .. "." elseif d.Pack then "Get it with the Dance Pack." elseif d.Coins then "Buy it in the Shop's DANCES." else "")
 	end
 
 	local cards: { [string]: any } = {}

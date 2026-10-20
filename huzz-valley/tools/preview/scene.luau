@@ -44,8 +44,8 @@ DataService.update(player, function(d)
 	for key in string.gmatch(cfg.ABILITIES or "", "[^,]+") do d.Abilities[key] = true end
 	for k, v in string.gmatch(cfg.LOADOUT or "", "([^,=]+)=([^,]+)") do d.Loadout[k] = v end
 end)
--- CRATEPITY=n: opens since the Starter Crate's Legendary (29 = the next open is one).
-if cfg.CRATEPITY then DataService.update(player, function(d) d.Pity.Starter = tonumber(cfg.CRATEPITY) end) end
+-- CRATEPITY=n: opens since the Candy Crate's Legendary (39 = the next open is one).
+if cfg.CRATEPITY then DataService.update(player, function(d) d.Pity.Sweets = tonumber(cfg.CRATEPITY) end) end
 -- SPINS=n, FREEIN=seconds to the free spin, PITY=spins since a Legendary, BOOST=seconds of x2 coins: the Spin the
 -- Wheel's saved state (SCREEN="SpinWheel").
 if cfg.SPINS then
@@ -244,6 +244,7 @@ if cfg.SELECT then
 	task.wait(0.2)
 	local cardButton = pg:WaitForChild("HuzzUI"):FindFirstChild(cfg.SELECT, true)
 	assert(cardButton, "no card " .. tostring(cfg.SELECT))
+	if not cardButton:IsA("GuiButton") and cardButton:FindFirstChild("Tap") then cardButton = cardButton.Tap end -- (a Shop card: its tap)
 	__fireOn(cardButton, "Activated")
 	task.wait(0.2)
 end

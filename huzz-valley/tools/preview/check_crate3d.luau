@@ -4,7 +4,7 @@
 -- models can't be loaded here (the harness builds the game from src/ only), so this puts a small crate shaped like his
 -- into ReplicatedStorage > HuzzCrates (a body, a lid, the light inside, his knives named like his, each with an aura
 -- ring) and checks that:
---   * Shop > CRATES shows his own picture of the cards (no 3D crate there since Oct 20, 07:23);
+--   * Shop > CRATES shows his crate cut out of his picture on the Shop's one backdrop (Oct 20 20:34; no 3D crate there);
 --   * OPEN plays the 3D opening (no reel) on a calm dark backdrop: the crate hops, the latch pops (the lid cracks, the
 --     one light from inside shows), the lid is flung open, the backdrop fades to the rarity colour (never a flash),
 --     the knife comes out of the crate in its own view (cut at the crate's front edge while inside) with a light rim,
@@ -69,35 +69,27 @@ task.wait(0.3)
 local MM = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.ModalManager)
 local gui = me.PlayerGui:FindFirstChild("HuzzUI")
 
--- 1. the shop card is his picture (Oct 20, 07:23); OPEN on it plays the 3D opening
+-- 1. the shop card is his crate on the shared backdrop (Oct 20 20:34); OPEN in its panel plays the 3D opening
 MM.open("Shop", "Crates")
 task.wait(0.2)
 local body2 = gui.Shop:FindFirstChild("Products", true)
 local card = body2 and body2:FindFirstChild("CardBeast")
-local hisBox = card and card:FindFirstChild("HisPicture")
-local pic = hisBox and hisBox:FindFirstChild("Picture")
-check("the Beast card is his picture", pic ~= nil and pic:GetAttribute("Art") == "CrateCardBeast")
--- (Oct 20 14:07: his picture can't be drawn here, as on his Mac: his 3D crate stands in, never the cardboard glyph)
-local glyph = pic and pic:FindFirstChild("NoPicture")
-if glyph then -- (Roblox fires ChildAdded when ImageLoader adds the glyph; the harness doesn't, so fire it here)
-	_G.__fireOn(pic, "ChildAdded", glyph)
-	task.wait()
-end
-local standIn = hisBox and hisBox:FindFirstChild("StandIn")
-check("no cardboard box glyph on his crate card", glyph == nil or not glyph.Visible)
-check("his 3D crate stands in for the picture", standIn ~= nil and standIn.Visible and standIn:FindFirstChild("Crate3D", true) ~= nil)
-check("... never saved into StarterGui", standIn ~= nil and standIn:GetAttribute("NoPicture") == true)
-local only = true
+local pic = card and card:FindFirstChild("Backdrop") and card.Backdrop:FindFirstChild("Crate")
+check("the Beast card is his crate, cut out, on the Shop's backdrop", pic ~= nil and pic:GetAttribute("Art") == "CrateCardCutBeast")
+local any3d = false
 for _, d in (card and card:GetDescendants() or {}) do
-	if d.Name == "Crate3D" and not (standIn and d:IsDescendantOf(standIn)) then only = false end
+	if d.Name == "Crate3D" then any3d = true end
 end
-check("no other 3D crate on the card", only)
+check("no 3D crate on the card", not any3d)
 
 -- 2. OPEN: the 3D opening
 local screen = gui:FindFirstChild("CrateOpen")
-__fireOn(card.Open, "Activated")
+__fireOn(card.Open, "Activated") -- (its panel slides in with the chances and the buttons that pay)
+for _ = 1, 30 do __stepTweens(0.05) end
 task.wait(0.3)
-check("OPEN goes to the opening screen", MM.current() == "CrateOpen")
+__fireOn(gui.Shop:FindFirstChild("Side", true).Panel.CrateBeast.Open, "Activated")
+task.wait(0.3)
+check("OPEN in its panel goes to the opening screen", MM.current() == "CrateOpen")
 check("Aura taken once (500 -> 400)", data.Aura == 400)
 local stage = screen:FindFirstChild("Stage3D", true)
 local view = stage and stage:FindFirstChild("Crate3D")

@@ -92,6 +92,8 @@ function VERBS.BuyWithCoins(player, key)
 	end
 	if item.Unlock then return false, `Earn it: {item.Unlock}.` end -- (quest / wheel items aren't sold)
 	if item.NotForSale then return false, "That one comes from the Spin the Wheel." end
+	-- owner, Oct 20 20:34: "make the knifes not be bought but opened from crates. So remove the buying menu"
+	if item.Slot == "Knife" then return false, "Knives come from crates." end
 	local ok, why = false, nil
 	DataService.update(player, function(data)
 		if data.Cosmetics[key] then why = "You own this already."; return end
@@ -156,21 +158,31 @@ function VERBS.Wear(player, slot, key)
 	return ok, why
 end
 
--- Crates (Config/Crates, Shared/CrateRoll): costs Aura, rolled here with the shown odds and the pity counter, all in
+-- Crates (Config/Crates, Shared/CrateRoll): costs Aura (or coins, currency "Coins", where it has a CoinPrice), rolled here with the shown odds and the pity counter, all in
 -- one save write (the Aura is taken once, whatever the client does). The client only animates to the answer:
 -- true and { crate, index (in crate.Items), name, rarity, new (first time you own it), coins (what was added: a coin
 -- prize or a duplicate's coins back), pity (opens since the top prize), left (opens until it's certain), strip (the
 -- reel: item numbers, honest draws), at (the prize's card on it) }, or false and why.
 local crateRandom = Random.new()
-function VERBS.OpenCrate(player, crateId)
+function VERBS.OpenCrate(player, crateId, currency)
 	local crate = type(crateId) == "string" and Crates.get(crateId)
 	if not crate then return false, "Unknown crate." end
+	-- currency "Coins": a crate with a coin price (owner, Oct 20 20:34: his Halloween crates cost coins or Aura)
+	local withCoins = currency == "Coins"
+	if withCoins and not crate.CoinPrice then return false, "That crate opens with Aura." end
 	local ok, result = false, nil
 	DataService.update(player, function(data)
 		data.CrateKeys = data.CrateKeys or {}
 		local keys = data.CrateKeys[crate.Id] or 0
 		if keys > 0 then -- a crate key bought with Robux (the Halloween shop) opens it before any Aura is spent
 			data.CrateKeys[crate.Id] = if keys > 1 then keys - 1 else nil
+		elseif withCoins then
+			local price = crate.CoinPrice :: number
+			if (data.Coins or 0) < price then
+				result = `You need {price - (data.Coins or 0)} more coins.`
+				return
+			end
+			data.Coins -= price
 		elseif (data.Aura or 0) < crate.Price then
 			result = `You need {crate.Price - (data.Aura or 0)} more Aura.`
 			return
@@ -201,6 +213,24 @@ function VERBS.OpenCrate(player, crateId)
 		}
 	end)
 	return ok, result
+end
+
+-- Shop > DANCES (owner, Oct 20 20:34: "make a seperate section for dances ... make them be able to be bought there"):
+-- one dance for its coin price (Config/Dances Coins). Price, "already yours" (also through the Dance Pack) and "not
+-- enough coins" are checked in the same save write that takes the coins (a double tap buys it once).
+function VERBS.BuyDance(player, id)
+	local dance = type(id) == "string" and Dances.get(id)
+	local price = dance and dance.Coins
+	if not dance or not price then return false, "That dance isn't sold." end
+	local ok, why = false, nil
+	DataService.update(player, function(data)
+		if DataService.ownedDances(player)[dance.Id] then why = "You own this already."; return end
+		if (data.Coins or 0) < price then why = `You need {price - (data.Coins or 0)} more coins.`; return end
+		data.Coins -= price
+		data.Dances[dance.Id] = true
+		ok = true
+	end)
+	return ok, why
 end
 
 -- The Halloween shop (Config/HalloweenShop): one of its knives straight away for its Aura price. Only the knives on

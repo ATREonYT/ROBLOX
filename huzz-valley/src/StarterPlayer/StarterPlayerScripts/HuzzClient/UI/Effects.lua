@@ -137,6 +137,22 @@ function Effects.breathe(inst: GuiObject, opts: { scale: number?, seconds: numbe
 	return s
 end
 
+-- A slow rock from side to side (a crate in the Shop, owner Oct 20 20:34: "animate the ui more"): `degrees` each way
+-- (default 3) over `seconds` per swing (default 1.4), on the picture's own Rotation. Calm: it stands still.
+function Effects.rock(inst: GuiObject, opts: { degrees: number?, seconds: number?, delay: number? }?)
+	local o = opts or {}
+	local d = o.degrees or 3
+	inst.Rotation = -d
+	local tween = TweenService:Create(inst, TweenInfo.new(o.seconds or 1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, o.delay or 0), { Rotation = d })
+	track(inst, tween, function()
+		tween:Cancel()
+		inst.Rotation = 0
+	end, function()
+		inst.Rotation = -d
+		tween:Play()
+	end)
+end
+
 -- Little bits of a knife's element floating up over a card's picture (owner, Oct 19: "better knife animations ... in
 -- the gamepass sections"): `count` small shapes in `colour` (shape "petal": soft ovals, "diamond": sparkles or ice,
 -- "dot": embers or moon dust), each rising `rise` px over 2.6 to 3.8 s while it fades, staggered, again and again.

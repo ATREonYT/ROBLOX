@@ -27,7 +27,9 @@ end
 for _, id in { "Witch", "Sweets" } do
 	local crate = Crates.get(id)
 	check(`{id}: the crate exists, lives on the Halloween page`, crate ~= nil and crate.Home == "HalloweenShop")
-	check(`{id}: 6 knives, 120 Aura, pity 40`, crate ~= nil and #crate.Items == 6 and crate.Price == 120 and crate.Pity.After == 40)
+	-- (owner, Oct 20 20:34, his picture 2034-ablt1: CANDY CRATE 250 coins / 49 Aura, WITCH CRATE 350 / 79)
+	local price = ({ Witch = { 79, 350 }, Sweets = { 49, 250 } })[id]
+	check(`{id}: 6 knives, {price[1]} Aura or {price[2]} coins, pity 40`, crate ~= nil and #crate.Items == 6 and crate.Price == price[1] and crate.CoinPrice == price[2] and crate.Pity.After == 40)
 	local mythic
 	for _, it in crate.Items do if it.Rarity == "Mythic" then mythic = it end end
 	local pity, opens, got, n = 0, 0, 0, 0
@@ -42,6 +44,9 @@ for _, id in { "Witch", "Sweets" } do
 end
 
 -- 2. the knives: the Legendary and Mythic of each set, Aura price = 3x the crate's average, Robux products with Id 0
+-- (priced from the crates' 120 Aura of Oct 19, HalloweenShop.PriceBasis: the owner kept the knives as they were when he
+-- cut the crates' prices on Oct 20 20:34)
+check("the knives' price basis stays 120 Aura", Shop.PriceBasis == 120)
 print("Halloween shop prices (Aura = 3 x average opens x 120 Aura, to the nearest 100):")
 check("4 knives", #Shop.Knives == 4)
 for _, k in Shop.Knives do
@@ -49,7 +54,7 @@ for _, k in Shop.Knives do
 	local crate = Crates.get(k.Crate)
 	check(`{k.Key}: a Halloween knife`, item ~= nil and item.Slot == "Knife" and item.Set ~= nil)
 	check(`{k.Key}: the top of its set`, item ~= nil and (item.Rarity == "Legendary" or item.Rarity == "Mythic"))
-	local avg = k.Opens * crate.Price
+	local avg = k.Opens * Shop.PriceBasis
 	check(`{k.Key}: 3x its average cost`, math.abs(k.Aura - 3 * avg) <= 50)
 	local p = Products.get(k.Robux)
 	check(`{k.Key}: a Robux product`, p ~= nil and p.Kind == "Knife" and p.Knife == k.Key)
@@ -85,7 +90,7 @@ check("receipt: the knife, worn", okG == true and what == "knife" and fresh.Cosm
 local note
 okG, what, note = Shop.grant(owner, reaper)
 check(`receipt for a knife you own: {reaperEntry.Keys} Sweets keys instead, knife and worn knife untouched`, okG == true and what == "keys" and owner.CrateKeys.Sweets == 1 + reaperEntry.Keys and owner.Wear.Knife == "VineDagger")
-check(`... and the player is told which knife, how many keys, which crate ({note})`, note == "You already had Candy Reaper, so you got 10 Sweets & Treats Crate keys instead.")
+check(`... and the player is told which knife, how many keys, which crate ({note})`, note == "You already had Candy Reaper, so you got 10 Candy Crate keys instead.")
 check("a normal knife receipt needs no extra line", select(3, Shop.grant({ Cosmetics = {}, Wear = {} }, reaper)) == nil)
 -- taken off sale after it was bought: no new prompts, but a paid receipt is still granted (never "not processed")
 local offKnife = table.clone(reaper); offKnife.OnSale = false

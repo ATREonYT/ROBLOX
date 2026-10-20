@@ -1,7 +1,8 @@
 -- Checks the Shop's filters (owner, Oct 20 15:13: "add filters within the ui so people can find trails, titles, knifes
 -- easier") through the real server + client code:
---   * KNIVES: rarity chips (ALL first, in rarity colours), OWNED / NOT OWNED, a search box, right under its header;
---     a tap shows only what matches at once, the grid closes up (rows of 5, no gaps), empty rarity headers hide,
+--   * KNIVES (only the knives you own since Oct 20 20:34: "make the knifes not be bought but opened from crates"):
+--     rarity chips (ALL first, in rarity colours) and a search box, right under its header; a tap shows only what
+--     matches at once, the grid closes up (rows of 5, no gaps), empty rarity headers hide,
 --     "nothing matches" shows only when nothing does; the choice stays when the Shop is closed and opened again;
 --   * COSMETICS: type chips (ALL, TRAILS, TITLES, NAME COLOURS, AURAS), rarity chips, OWNED / NOT OWNED, over both the
 --     Robux looks and the coin looks;
@@ -26,15 +27,17 @@ task.wait(0.2)
 local HS = game.ServerScriptService.HuzzServer
 local DataService = require(HS.DataService)
 local CoinShop = require(game.ReplicatedStorage.Shared.Config.CoinShop)
--- own two knives (an Epic and a Common) before the client starts
+-- own the Dojo crate's ten knives (Common to Legendary) before the client starts
+local Crates = require(game.ReplicatedStorage.Shared.Config.Crates)
 local epic, common
-for _, it in CoinShop.Items do
-	if it.Slot == "Knife" and not it.NotForSale and not it.Unlock and not it.Pass then
-		if it.Rarity == "Epic" and not epic then epic = it end
-		if it.Rarity == "Common" and not common then common = it end
-	end
+local mine = {}
+for _, it in Crates.get("Dojo").Items do
+	local c = CoinShop.get(it.Id)
+	mine[it.Id] = true
+	if c.Rarity == "Epic" and not epic then epic = c end
+	if c.Rarity == "Common" and not common then common = c end
 end
-DataService.update(player, function(d) d.Cosmetics[epic.Key] = true; d.Cosmetics[common.Key] = true end)
+DataService.update(player, function(d) for k in mine do d.Cosmetics[k] = true end end)
 __runScript(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Main)
 task.wait(0.3)
 local UI = game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI
@@ -65,7 +68,7 @@ local all = row and row:FindFirstChild("KnivesRarityAll")
 check("rarity chips: ALL first, picked", all ~= nil and all.Position.X.Offset - all.Size.X.Offset / 2 == 0 and all:GetAttribute("Picked") == true)
 local epicChip = row and row:FindFirstChild("KnivesRarityEpic")
 check("an EPIC chip in Epic's colour", epicChip ~= nil and epicChip:FindFirstChild("Content").Label.Text == "EPIC")
-check("OWNED / NOT OWNED and a search box", row ~= nil and row:FindFirstChild("KnivesOwnOwned") ~= nil and row:FindFirstChild("KnivesOwnNotOwned") ~= nil and row:FindFirstChild("Search") ~= nil)
+check("a search box, no OWNED chips (they're all yours)", row ~= nil and row:FindFirstChild("KnivesOwnOwned") == nil and row:FindFirstChild("Search") ~= nil)
 local inside, tall = true, true
 for _, ch in (row and row:GetChildren() or {}) do
 	if ch:IsA("GuiObject") then
@@ -78,12 +81,12 @@ check("every chip and the box inside the page", inside)
 check("touch-sized: 40 px high", tall)
 check("whole pixels", row ~= nil and wholePixels(row))
 
--- the knife cards by section (the coin knives and the Halloween ones)
+-- the knife cards in KNIVES
 local function knifeCards(): { GuiObject }
 	local out = {}
 	for _, it in CoinShop.Items do
 		if it.Slot == "Knife" then
-			local c = body:FindFirstChild(it.Key) or body:FindFirstChild("Halloween" .. it.Key)
+			local c = body:FindFirstChild(it.Key)
 			if c then table.insert(out, c) end
 		end
 	end
@@ -91,14 +94,19 @@ local function knifeCards(): { GuiObject }
 end
 local function shown(list) local n = 0 for _, c in list do if c.Visible then n += 1 end end return n end
 local total = shown(knifeCards())
-check(`ALL shows every knife on sale ({total})`, total > 30)
+local onlyMine = true
+for _, it in CoinShop.Items do
+	if it.Slot == "Knife" and body:FindFirstChild(it.Key) and body[it.Key].Visible and not mine[it.Key] then onlyMine = false end
+end
+check(`ALL shows the knives you own, and only those ({total})`, total == 10 and onlyMine)
+check("they wear, never buy", body[common.Key].Buy:FindFirstChild("Label", true).Text == "WEAR" or body[common.Key].Buy:FindFirstChild("Label", true).Text == "WEARING")
 
 -- EPIC: only Epic knives, under the EPIC header; the other headers hide; the grid closes up
 click(epicChip)
 local onlyEpic, nEpic = true, 0
 for _, it in CoinShop.Items do
 	if it.Slot == "Knife" then
-		local c = body:FindFirstChild(it.Key) or body:FindFirstChild("Halloween" .. it.Key)
+		local c = body:FindFirstChild(it.Key)
 		if c and c.Visible then
 			nEpic += 1
 			if it.Rarity ~= "Epic" then onlyEpic = false end
@@ -108,7 +116,6 @@ end
 check(`EPIC shows only Epic knives ({nEpic})`, onlyEpic and nEpic > 0)
 check("EPIC is picked, ALL isn't", epicChip:GetAttribute("Picked") == true and all:GetAttribute("Picked") == false)
 check("the EPIC header shows, COMMON's hides", body.HeadEpic.Visible and not body.HeadCommon.Visible)
-check("the Halloween knives' header hides (none is Epic)", not body.HeadHalloween.Visible)
 -- tidy: the shown Epic cards sit in rows of 5 right under the EPIC header, 161 px apart
 local cards = {}
 for _, c in knifeCards() do if c.Visible then table.insert(cards, c) end end
@@ -123,12 +130,7 @@ end
 check("the grid closes up: rows of 5, no gaps", tidy)
 check("ABILITIES follows right after (no empty space)", body.HeadAbilities.Position.Y.Offset < cards[#cards].Position.Y.Offset + 224 + 200)
 
--- OWNED on top: only your Epic knife
-click(row.KnivesOwnOwned)
-check(`EPIC + OWNED: only your Epic knife ({shown(knifeCards())})`, shown(knifeCards()) == 1 and body[epic.Key].Visible)
--- tap OWNED again: back to all Epic
-click(row.KnivesOwnOwned)
-check("OWNED again turns it off", shown(knifeCards()) == nEpic and row.KnivesOwnOwned:GetAttribute("Picked") == false)
+check("your Epic knife is there", body[epic.Key].Visible)
 
 -- the search box: ALL + a word
 click(all)
@@ -139,7 +141,7 @@ task.wait(0.2)
 local allMatch, nMatch = true, 0
 for _, it in CoinShop.Items do
 	if it.Slot == "Knife" then
-		local c = body:FindFirstChild(it.Key) or body:FindFirstChild("Halloween" .. it.Key)
+		local c = body:FindFirstChild(it.Key)
 		if c and c.Visible then
 			nMatch += 1
 			if not string.find(string.lower(it.Name), word, 1, true) then allMatch = false end
@@ -210,6 +212,61 @@ for _, it in CoinShop.Items do
 end
 check("TITLES shows only titles", onlyTitles and not body.SunsetTrail.Visible)
 click(crow.CosmeticsTypeAll)
+
+-- the jump buttons (Oct 20 20:34): HALLOWEEN first, then CRATES, DANCES, KNIVES ... all inside the window's height
+local order = { "Halloween", "Crates", "Dances", "Knives", "Abilities", "Passes", "Aura", "Coins", "Cosmetics" }
+local inOrder, fits = true, true
+for i, k in order do
+	local b = panel:FindFirstChild(k .. "Tab")
+	if not b or b.Position.Y.Offset ~= panel.HalloweenTab.Position.Y.Offset + (i - 1) * 49 then inOrder = false end
+	if b and b.Position.Y.Offset + b.Size.Y.Offset / 2 > 550 then fits = false end
+end
+check("jump buttons: HALLOWEEN, CRATES, DANCES, KNIVES, ABILITIES, PASSES, AURA, COINS, COSMETICS", inOrder)
+check("... all inside the window's height", fits)
+
+-- DANCES (owner, Oct 20 20:34: "make a seperate section for dances ... make them be able to be bought there"): the
+-- Dance Pack, then every dance with a coin price; a tap slides its panel in with a preview and BUY; BUY is checked on
+-- the server (coins taken once, never twice)
+local Dances = require(game.ReplicatedStorage.Shared.Config.Dances)
+local sold, cardsOk = 0, true
+for _, d in Dances.List do
+	if d.Coins then
+		sold += 1
+		local c = body:FindFirstChild("Dance" .. d.Id)
+		if not c or c.Position.Y.Offset < body.HeadDances.Position.Y.Offset or c.Position.Y.Offset > body.HeadKnives.Position.Y.Offset then cardsOk = false end
+	elseif not d.Starter and not d.Pack then
+		print("  not sold anywhere: " .. d.Id)
+		cardsOk = false
+	end
+end
+check(`DANCES: every dance that isn't free has its card there ({sold})`, cardsOk and sold >= 12)
+check("... the Dance Pack on top of it", body:FindFirstChild("DancePack") ~= nil and body.DancePack.Position.Y.Offset == body.HeadDances.Position.Y.Offset + body.HeadDances.Size.Y.Offset)
+local zombie = Dances.get("ZombieGroove")
+local zc = body.DanceZombieGroove
+DataService.update(player, function(d) d.Coins = zombie.Coins + 100 end)
+task.wait(0.2)
+check(`a dance card shows its coin price ({zc.Buy:FindFirstChild("Label", true).Text})`, zc.Buy:FindFirstChild("Label", true).Text == "2,000")
+click(zc.Tap)
+settle()
+local side = panel.Side
+check("tapping a dance slides its panel in: its name, a preview, BUY", side.Visible and side.Panel.DanceView.Visible and side.Panel.Title.Text == "ZOMBIE GROOVE"
+	and side.Panel.DanceView.Backdrop.Still:GetAttribute("Art") == "DanceStillZombieGroove" and side.Panel.DanceView.Buy:FindFirstChild("Label", true).Text == "BUY 2,000")
+click(side.Panel.DanceView.Buy)
+local data = DataService.get(player).Data
+check(`BUY: the dance is yours, the coins taken once ({data.Coins})`, data.Dances.ZombieGroove == true and data.Coins == 100)
+settle()
+check("... and its card says OWNED", zc.Buy:FindFirstChild("Label", true).Text == "OWNED" and side.Panel.DanceView.Buy:FindFirstChild("Label", true).Text == "YOURS!")
+local Action = game.ReplicatedStorage.Remotes.Action
+task.wait(0.25)
+local okA = Action:InvokeServer("BuyDance", "ZombieGroove")
+task.wait(0.25)
+local okB = Action:InvokeServer("BuyDance", "Floss")
+task.wait(0.25)
+DataService.update(player, function(d) d.Coins = 10 end)
+local okC, whyC = Action:InvokeServer("BuyDance", "Robot")
+check(`the server refuses a dance you own, a free one, and one you can't afford ({whyC})`, okA == false and okB == false and okC == false and data.Coins == 10 and data.Dances.Robot ~= true)
+click(side.Shade)
+settle()
 
 -- ABILITIES: UI/AbilityCards builds both sides in its slot, its jump between KNIVES and PASSES
 check("the ABILITIES jump shows, between KNIVES and PASSES", panel.AbilitiesTab.Visible and body.HeadAbilities.Visible

@@ -221,8 +221,8 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`; animations are optional since
     Oct 20 15:13, the live game draws dances by hand: `PublishAnimations`, `docs/STUDIO-STEPS.md` Part 5).
   - An export of their spin wheel model (match its colours); a Speed Boost picture and 256 px copies of his power
-    pictures (today cut from his sheet, ~170 px: [ui.md](docs/notes/ui.md)); a stab animation; his crate design
-    (contents, price, art: the Starter Crate is our first pick, [economy.md](docs/notes/economy.md)); dance names;
+    pictures (today cut from his sheet, ~170 px: [ui.md](docs/notes/ui.md)); a stab animation; the dance prices (400 to
+    2,000 coins, our pick, Oct 20 20:34) and his crate pictures cut out (the cauldron lost its smoke, [economy.md](docs/notes/economy.md)); dance names;
     movement pack licence; sharp PNGs for the Oct 17 screens (today mockup crops, placeholders).
 - **Known gaps (ours):**
   - Not done yet (needs a screen): a dot on Menu when a quest can be claimed.
@@ -230,7 +230,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - The friend knife is a placeholder (his Sakura Blade) until he names one ([economy.md](docs/notes/economy.md)).
   - A refunded pass doesn't take its knives back yet.
   - LIKE THE GAME! opens nothing; titles on the three-pad side sit close. WITCH'S BREW and SWEETS & TREATS open the
-    Shop at their crate (one page since Oct 20 14:31, [ui.md](docs/notes/ui.md)); the 6 Halloween Robux items are Id 0 and their prices are our pick ([economy.md](docs/notes/economy.md)).
+    Shop at their crate with its panel in (HALLOWEEN on top since Oct 20 20:34, [ui.md](docs/notes/ui.md)); the 6 Halloween Robux items are Id 0 and their prices are our pick ([economy.md](docs/notes/economy.md)).
   - The podium boards are hard to read from the spawn (his build, his call: [lobby.md](docs/notes/lobby.md)).
 - **His place:** no Uncommon girls yet; loose plank path and hoop; lobby copies pasted twice; old islands unused
   ([round.md](docs/notes/round.md), [lobby.md](docs/notes/lobby.md)).

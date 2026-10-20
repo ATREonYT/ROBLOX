@@ -10,7 +10,7 @@
 	  Knives  the best knife of each rarity at the top of each set (Legendary and Mythic): bought straight away with
 	          Aura (ActionService "BuyHalloweenKnife") or Robux (Config/Products.Halloween, Kind "Knife").
 	Aura price of a knife = Markup x the Aura it costs on average to get it from its own crate (Shared/CrateRoll
-	.expectedOpens x the crate's price, pity counted), rounded to the nearest 100. tests/HalloweenShop.spec.luau prints
+	.expectedOpens x HalloweenShop.PriceBasis, pity counted), rounded to the nearest 100. tests/HalloweenShop.spec.luau prints
 	and checks the numbers: Legendary 11,800 Aura, Mythic 23,600 Aura. Robux prices sit in Config/Products.Halloween.
 ]]
 local Crates = require(script.Parent.Crates)
@@ -24,12 +24,17 @@ HalloweenShop.Markup = 3 -- a direct knife costs about 3x what its crate costs o
 -- The crates on the page, left to right (each matches a stand: Config/LobbyProps), with their Robux key product and
 -- the picture they show: one of his own crate pictures (owner, Oct 20 14:07: "make the halloween shop have the images
 -- of the crates from the ones i sent you before"), with that crate's 3D model when the picture can't be drawn.
--- Witch's Brew = his Void Beast Chest (purple), Sweets & Treats = his Shinobi Dojo Chest (red, lanterns): Claude's
--- default pick, the owner's to change.
+-- Since Oct 20 20:34 (owner: "make the halloween crates be changed out by the sweet and the cauldron pictures that i
+-- sent you right now") each crate shows its own picture from Config/Crates (Picture): Candy = his candy coffin,
+-- Witch = his witch cauldron.
 HalloweenShop.Crates = {
-	{ Crate = "Witch", Robux = "WitchCrateKey", Picture = "Beast" },
-	{ Crate = "Sweets", Robux = "SweetsCrateKey", Picture = "Dojo" },
+	{ Crate = "Witch", Robux = "WitchCrateKey" },
+	{ Crate = "Sweets", Robux = "SweetsCrateKey" },
 }
+
+-- The crate price the knives' Aura prices were set from (120 Aura, Oct 19). The owner cut the crates to 79 and 49 Aura
+-- on Oct 20 20:34 but said "keep the halloween knifes", so the knives keep their prices.
+HalloweenShop.PriceBasis = 120
 
 -- The knives on the page (Config/CoinShop keys), with the crate their price comes from and their Robux product.
 HalloweenShop.Knives = {
@@ -49,7 +54,7 @@ for _, k in HalloweenShop.Knives do
 	end
 	assert(item, `Halloween shop: {k.Key} isn't in the {k.Crate} crate`)
 	k.Opens = CrateRoll.expectedOpens(crate, item)
-	k.Aura = math.round(HalloweenShop.Markup * (k.Opens :: number) * crate.Price / 100) * 100
+	k.Aura = math.round(HalloweenShop.Markup * (k.Opens :: number) * HalloweenShop.PriceBasis / 100) * 100
 end
 
 -- A Robux knife bought by someone who owns it already (a stale page, or bought on another server first) gives crate

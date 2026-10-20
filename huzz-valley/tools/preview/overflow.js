@@ -18,6 +18,7 @@ const ALLOW = [
   [/LobbyHud\.Right\.Spin\.FreeTag "FREE" spills \d+px out of Spin$/, 'the FREE sticker sits on the Spin button\'s corner'],
   [/PowerBar\.Card\d\.Key\.Text "[^"]*" sticks \d+px out of its window \(PowerBar\)$/, 'the key pills sit on the tiles\' top corners'],
   [/PowerBar\.Card\d\.Icon "[^"]*" overlaps PowerBar\.Card\d\.Count/, 'USED / the seconds print over the dimmed icon'],
+  [/Shop\.Group\.Panel\.Products\..* overlaps Shop\.Group\.Panel\.Side\.Panel\./, 'a crate\'s or a dance\'s panel slides in over the page (solid, the page dimmed behind it)'],
 ];
 
 (async () => {

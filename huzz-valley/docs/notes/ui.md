@@ -172,6 +172,47 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
 - Admin: [economy.md](economy.md).
 
 ## The Shop (`Screens/Shop`: one page since Oct 20 14:31; the golden slice, other menus wait for his yes)
+- **Oct 20 20:34 rework (owner):** "remove the two crates that dont have pictures, the starter one, and then make a
+  seperate section for dances ... make them be able to be bought there. Then can you please remove all of the chances
+  of the knifes, only show it when you click on a crate, then on the side it pops up. And also, make the knifes not be
+  bought but opened from crates. So remove the buying menu ... keep the halloween knifes, and put them on the top of
+  the shop ui, and then also make a halloween style ui look, also animate the ui more ... make all of the crate
+  pictures have the same background ... make the ui for the shop colour match our ui. But keep the layout". What
+  changed (the layout, sizes, jump column and filters below stay):
+  - **Sections:** HALLOWEEN (the featured Halloween Crate, his Candy / Witch / Halloween crates, HALLOWEEN KNIVES),
+    CRATES (Dojo, Storm, Beast), DANCES (the Dance Pack banner, then every dance with a coin price: small cards with
+    the dance's still swaying), KNIVES (only the knives you own, WEAR / WEARING; rarity chips and "Search your knives";
+    no OWNED chips; with none owned the line says "No knives yet. Open a crate to get one!"), ABILITIES, PASSES (knife
+    passes and VIP), AURA, COINS, COSMETICS. Jump buttons: HALLOWEEN orange, CRATES kit purple, DANCES pink, then as before
+    (9 buttons, 49 apart, the last ends at y 518 inside the 550 window).
+  - **No odds on the page.** Tapping a crate (its card, its OPEN, the banner) slides its **panel** in from the right
+    over the page (520 wide, the page dims behind it; tap beside it or its X to close): his crate on the backdrop, the
+    pity ("GUARANTEED LEGENDARY / IN n OPENS OR SOONER"), keys you have, EVERY CHANCE (2 columns, scrolls when long)
+    and the only buttons that pay: coins + Aura (his Halloween crates), OPEN for Aura (his knife crates), a Robux KEY
+    where it has one; a key turns the first button into USE KEY (n). So the odds are always on screen when a kid pays.
+    A stand, or BACK from an opening, opens the Shop at that crate with its panel in. A dance's card slides in the
+    same panel with a preview (your avatar dancing it, as the Dances window does, wherever its animation can play:
+    in Studio, or once the owner publishes the dances; otherwise its still swaying to a beat), its line and BUY / YOURS!.
+  - **One backdrop for every crate:** a deep purple stage (2B1352 / 3D1A6B / 150829), a warm orange glow behind the
+    crate, a soft floor shadow and a thin orange rim, drawn from frames; on it his crate cut out of his own picture
+    (`assets/art/crate-card-cut-*.png`, `tools/crates/cut_crates.py`).
+  - **Colours: our kit's.** The window is Kit.window as it comes (the purple studded title bar, the see-through navy
+    studded body), the title still FredokaOne; cards navy (2A4276 to 1A2A52, rim Theme Frame); buy buttons the kit's
+    green (SelectedTab), Robux buttons the kit's purple (Action), Aura buttons blue (2A9FD8). **Halloween touches:** an
+    orange line under the title bar, a pumpkin and two bats (emoji text, the bats rocking) beside the title, the
+    HALLOWEEN cards deep purple with orange rims and orange OPEN buttons, orange embers rising on the featured crate.
+  - **Motion** (his video `1425-shop-reference.mp4` only scrolls; this is the coordinator's list): the cards in view
+    pop in one after another when the Shop opens (0.8 to 1 with a small overshoot, 0.05 s apart); every crate rocks
+    gently (2.5 degrees, 1.6 s); the featured crate's shine sweeps every 6 s (never more than one flash a second) and
+    its OPEN breathes; cards lift a little under the mouse; buttons squish on press (Kit); the panel slides in (0.38 s)
+    and out (0.22 s). Reduced Motion stops all of it. Film: `tools/preview/shop_film.sh` ->
+    `docs/previews/shop-oct20-2034-motion.mp4`.
+  - Checks: `check_crates` (no odds on the page, every crate on the same backdrop with his picture, the panel's
+    chances / pity / buttons, coins and Aura opens, knives refused for coins), `check_halloween` (stands open the
+    panel, KEY, USE KEY), `check_filters` (owned-only KNIVES, the jump order, DANCES: cards, panel, BUY, server
+    refusals), `check_crate3d`, `check_oct17`. Shots: `shop-top`, `shop-halloween` (the Witch panel in), `shop-crates`,
+    `shop-dances`, `shop-dance-panel`, `shop-knives`.
+- *(The bullets below are the Oct 20 14:31 to 15:13 state: still true for the layout and the filters.)*
 - **Owner, Oct 20:** 14:25 "also make our ui shop and in general make it like that, based of this" (his reference
   video `design/owner-oct20/1425-shop-reference.mp4`, frames `1425-shop-ref-*.jpg`); 14:31 "can you make the shop
   more logical, make it not so spread out as it is, make it all logically connected an all close to eachother, like

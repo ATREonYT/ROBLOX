@@ -294,6 +294,7 @@ function CrateOpen.build(parent: Instance)
 				dot.BackgroundColor3 = col
 				local label = chip:FindFirstChild("Label") :: TextLabel
 				label.Text = string.format("%s %g%%", string.upper(r), math.floor(sum[r] * 10 + 0.5) / 10)
+				Kit.fitLine(label, 136, 15, 10, true) -- ("UNCOMMON 35.7%": smaller words, never past the chip)
 			end
 		end
 	end
@@ -647,10 +648,18 @@ function CrateOpen.build(parent: Instance)
 		return ((State.data.CrateKeys or {})[crateDef.Id]) or 0
 	end
 	local againIcon = again.Instance:FindFirstChild("Icon", true) :: GuiObject?
+	-- paid with coins (Shop: the Halloween crates' coin button, owner Oct 20 20:34) or Aura (everything else)
+	local withCoins = false
+	local function price(): number
+		return if withCoins and crateDef.CoinPrice then crateDef.CoinPrice else crateDef.Price
+	end
 	local function setAgain()
 		local n = keys()
-		again.setText(if n > 0 then `USE KEY ({n})` else `OPEN AGAIN {crateDef.Price}`)
-		if againIcon then againIcon.Visible = n <= 0 end
+		again.setText(if n > 0 then `USE KEY ({n})` else `OPEN AGAIN {price()}`)
+		if againIcon then
+			againIcon.Visible = n <= 0
+			if againIcon:IsA("ImageLabel") then Kit.setIcon(againIcon, if withCoins then "CurrencyCoin" else "AuraStar") end
+		end
 	end
 
 	local function resetScene()
@@ -718,8 +727,12 @@ function CrateOpen.build(parent: Instance)
 	end
 	local function start(crateId: any)
 		if busy then return end
-		local c = type(crateId) == "string" and Crates.get(crateId) or crateDef
+		-- "<id>" opens with Aura, "<id>|Coins" with coins (a crate with a CoinPrice)
+		local id, cur = nil, nil
+		if type(crateId) == "string" then id, cur = string.match(crateId, "^([^|]+)|?(.*)$") end
+		local c = id and Crates.get(id) or crateDef
 		if not c then return end
+		if id then withCoins = cur == "Coins" and c.CoinPrice ~= nil end
 		crateDef = c
 		if blocked() then
 			Toast.show("Open crates in the lobby.")
@@ -730,7 +743,7 @@ function CrateOpen.build(parent: Instance)
 		busy = true
 		State.hold("Coins") -- (the HUD keeps showing the old coins until the prize shows: a duplicate's coins would spoil it)
 		local closesAtAsk = closes
-		local okCall, ok, answer = pcall(function() return (Net.get("Action") :: RemoteFunction):InvokeServer("OpenCrate", crateDef.Id) end)
+		local okCall, ok, answer = pcall(function() return (Net.get("Action") :: RemoteFunction):InvokeServer("OpenCrate", crateDef.Id, if withCoins then "Coins" else nil) end)
 		-- closed while the server answered (X, Escape, the map vote, a round starting): the prize is yours already, so
 		-- say it in a toast instead of playing the reel in a hidden window (bug hunt, Oct 20)
 		if closes ~= closesAtAsk or ModalManager.current() ~= "CrateOpen" then
@@ -776,13 +789,13 @@ function CrateOpen.build(parent: Instance)
 
 	again.onClick(function()
 		if busy then return end
-		local have = State.data.Aura or 0
-		if keys() <= 0 and have < crateDef.Price then
+		local have = if withCoins then State.data.Coins or 0 else State.data.Aura or 0
+		if keys() <= 0 and have < price() then
 			Sfx.play("ui_error")
-			Toast.show(`You need {crateDef.Price - have} more Aura. Collect stars on the field!`)
+			Toast.show(if withCoins then `You need {price() - have} more coins.` else `You need {price() - have} more Aura. Collect stars on the field!`)
 			return
 		end
-		start(crateDef.Id)
+		start(crateDef.Id .. (if withCoins then "|Coins" else ""))
 	end)
 	back.onClick(goHome)
 

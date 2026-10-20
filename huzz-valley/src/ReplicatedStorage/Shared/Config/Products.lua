@@ -106,8 +106,8 @@ Products.Spins = {
 --   CrateKey  one free open of that crate (Config/Crates; saved as CrateKeys, used before Aura)
 --   Knife     that Config/CoinShop knife, worn straight away
 Products.Halloween = {
-	{ Key = "WitchCrateKey", Kind = "CrateKey", Crate = "Witch", Name = "Witch's Brew Crate", Blurb = "One open of the\nWitch's Brew Crate.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
-	{ Key = "SweetsCrateKey", Kind = "CrateKey", Crate = "Sweets", Name = "Sweets & Treats Crate", Blurb = "One open of the\nSweets & Treats Crate.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "WitchCrateKey", Kind = "CrateKey", Crate = "Witch", Name = "Witch Crate", Blurb = "One open of the\nWitch Crate.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "SweetsCrateKey", Kind = "CrateKey", Crate = "Sweets", Name = "Candy Crate", Blurb = "One open of the\nCandy Crate.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
 	{ Key = "HalloweenCovenKatana", Kind = "Knife", Knife = "CovenKatana", Name = "Coven Katana", Blurb = "Legendary knife.", Id = 0, Price = 149, OnSale = true, Icon = "", Art = "KnifeCovenKatana", Why = "needs its Developer Product ID" },
 	{ Key = "HalloweenGrandWitchScythe", Kind = "Knife", Knife = "GrandWitchScythe", Name = "Grand Witch Scythe", Blurb = "Mythic knife.", Id = 0, Price = 249, OnSale = true, Icon = "", Art = "KnifeGrandWitchScythe", Why = "needs its Developer Product ID" },
 	{ Key = "HalloweenSugarRushKatana", Kind = "Knife", Knife = "SugarRushKatana", Name = "Sugar Rush Katana", Blurb = "Legendary knife.", Id = 0, Price = 149, OnSale = true, Icon = "", Art = "KnifeSugarRushKatana", Why = "needs its Developer Product ID" },
