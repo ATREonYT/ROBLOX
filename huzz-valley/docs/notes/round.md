@@ -50,7 +50,7 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   - Every ability is refused while stunned or stuck (`PowerService.use` checks `stuck`).
   - Names, numbers and card text: `Config/Powers`. Their look: [effects.md](effects.md); the cards: [ui.md](ui.md).
 - **Speeds** (`Config/Round.Speeds`): lobby 22, runner 28, catcher 30, holder 27. `Gameplay/Sprint` sets off at 16
-  and reaches the cap in ~0.5 s ([movement-and-camera.md](movement-and-camera.md)). Run animation rate caps keep it calm.
+  and reaches the cap in 1 s, and a let-go from a full run is a short halt ([movement-and-camera.md](movement-and-camera.md)). Run animation rate caps keep it calm.
   **Each round is a tiny bit faster:** +2% per round after the first, capped at +20% (`Config/Round.SpeedUp`,
   `RoundRules.speedScale`), for runners, catchers and the Practice Bot alike (`PracticeBot.setScale`), set on the
   server; the lobby never changes. `State` attribute `SpeedUp` (1.06 = 6% faster) is there for the HUD.

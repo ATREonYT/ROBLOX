@@ -269,6 +269,7 @@ local function attach(character: Model)
 			climbSpeed = v.Y,
 			jumped = jumped,
 			lengths = { Walk = lengthOf("Walk"), Run = lengthOf("Run") },
+			halt = character:GetAttribute("HuzzHalt") == true, -- (Gameplay/Sprint's halt: the feet plant and skid)
 		})
 
 		if jumped and tracks.Jump then

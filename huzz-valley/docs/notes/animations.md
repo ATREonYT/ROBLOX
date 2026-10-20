@@ -23,7 +23,8 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   through 0.15 s network stalls, ignores teleports), never their replicated velocity (that jumpy number made the old
   scripted legs stutter). The velocity is only a yes/no hint (Oct 19): when it says stopped and the body hasn't
   moved, the legs stop at once (their stop shows 0.17-0.30 s after it happens, was ~0.4 s), and a stall while it
-  still says running keeps the run. Fades out for a dance/Action track; downed = speed 0 under the knockdown; carriers' arms go
+  still says running keeps the run. Their halt (Oct 20): their `MoveDirection` at zero while the body still slides at
+  a run plants and skids their legs (`input.halt`, [movement-and-camera.md](movement-and-camera.md)). Fades out for a dance/Action track; downed = speed 0 under the knockdown; carriers' arms go
   to CarryAnimator. LOD: re-sampled every frame within 70 studs, 30/s to 160, 15/s beyond or behind the camera.
   `RunAnimator` now draws only the huss and cast on top (`dashOnly`); its scripted run shows only before the pack's
   folder arrives.

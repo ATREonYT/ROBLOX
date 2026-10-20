@@ -58,7 +58,9 @@ M.EVENTS = {
 	{ at = 5.6, what = "Space: leap" },
 	{ at = 6.8, what = "S: back (shift lock)" },
 	{ at = 7.6, what = "let go: stop" },
-	{ at = 8.8, what = "end" },
+	{ at = 8.8, what = "W: run again" },
+	{ at = 10.2, what = "let go: halt" }, -- (owner, Oct 20 07:55: the halt from a full run, Shared/Halt)
+	{ at = 11.0, what = "end" },
 }
 
 function M.run(fps: number)
@@ -71,6 +73,7 @@ function M.run(fps: number)
 	local HIP = Rig.REST_HEIGHT - 1
 	local speed, built, idleT, held = 0, Run.StartSpeed, 0, 0
 	local dash, push = nil, nil
+	local halt = nil -- the halt after a full run (Gameplay/Sprint + Shared/Halt): { t, cfg }
 	local lastDir = Vector3.new(0, 0, -1)
 	local prevRel, prevTurn = {}, {}
 	local out = {}
@@ -81,22 +84,38 @@ function M.run(fps: number)
 		end
 		return w
 	end
-	for f = 0, math.floor(8.8 * fps) do
+	for f = 0, math.floor(11.0 * fps) do
 		local t = f * DT
 		local moveDir -- in the body's frame
 		if t >= 1.0 and t < 3.4 then moveDir = Vector3.new(0, 0, -1)
 		elseif t >= 3.4 and t < 4.2 then moveDir = Vector3.new(1, 0, 0)
 		elseif t >= 4.2 and t < 6.8 then moveDir = Vector3.new(0, 0, -1)
 		elseif t >= 6.8 and t < 7.6 then moveDir = Vector3.new(0, 0, 1)
+		elseif t >= 8.8 and t < 10.2 then moveDir = Vector3.new(0, 0, -1)
 		end
 		local holding = moveDir ~= nil
 		lastDir = moveDir or lastDir -- (the body slides on the way it went while it slows)
 		if holding and held == 0 then built = Run.StartSpeed end
 		held = if holding then held + DT else 0
 		local cap = Round.Speeds.Runner
-		if holding then built += (cap - built) * (1 - math.exp(-DT / (Run.Ramp / 3))) end
+		if holding and RunMotion.rampSpeed then
+			built = RunMotion.rampSpeed(Run.StartSpeed, cap, held) -- (the 1 s build, Oct 20)
+		elseif holding then
+			built += (cap - built) * (1 - math.exp(-DT / (Run.Ramp / 3)))
+		end
 		local want = if holding then built else 0
-		speed += (want - speed) * (1 - math.exp(-DT * (if holding then 30 else 18)))
+		if holding then
+			halt = nil
+		elseif not halt and RunMotion.haltFrom and speed > 0 and RunMotion.haltFrom(speed, cap, Run.StartSpeed) then
+			halt = { t = 0, cfg = RunMotion.haltPush(speed) }
+		end
+		local haltSpeed = if halt then RunMotion.pushSpeed(halt.cfg, halt.t) else nil
+		if halt then halt.t += DT end
+		if haltSpeed then
+			speed = haltSpeed -- (the body carries on, slowing: Shared/Halt)
+		else
+			speed += (want - speed) * (1 - math.exp(-DT * (if holding then 30 else 18)))
+		end
 		if math.abs(t - 2.4) < DT / 2 then
 			dash = { at = t }
 		end
@@ -110,6 +129,7 @@ function M.run(fps: number)
 		Mix.step(mix, DT, {
 			speed = groundSpeed, state = "ground", jumped = false,
 			lengths = { Walk = A.Walk.length, Run = A.Run.length },
+			halt = haltSpeed ~= nil,
 		})
 		idleT += DT
 		local total = 0

@@ -1,9 +1,18 @@
 --[[
 	Walk first, then run (owner: "make the animations slowly fade in from walking when you press W to running
 	if you continue holding it, just like in the references"). When you start moving you set off at a walk
-	and build up to your full speed (the server's HuzzSpeed on your Humanoid, RoundService) over Config/Run
-	Ramp seconds, easing out (quick to get going, settling softly into the top); let go for a moment and the next start is a walk again. Gameplay/Locomotion cross-fades
-	the owner's Walk into their Run by speed, so the legs follow the build-up on their own.
+	and build up to your full speed (the server's HuzzSpeed on your Humanoid, RoundService) in exactly Config/Run
+	Ramp seconds (owner, Oct 20 07:55: "Make acceleration 1 second long"; Shared/RunMotion.rampSpeed, easing out: the
+	quickest gain at the start, settling softly into the top); let go for a moment and the next start is a walk
+	again. Gameplay/Locomotion cross-fades the owner's Walk into their Run by speed, so the legs follow the build-up
+	on their own.
+	The halt (same message: "after they randomly stop after fully running they move a little forward as a sort of
+	"hault" like in the game Huss valley"): let go of every key while running at Config/Run.Halt.From of your top
+	speed or more and you carry on ~2.3 studs, slowing to a stand over Halt.Time (Shared/Halt moves the real body:
+	walls, the server and every screen see it). Pressing any direction ends it at once (turning round is never a
+	halt: the new key takes over), and so do a huss or a dive, being downed or frozen (HuzzSpeed at or under the
+	walk), sitting or leaving the floor. The local attribute HuzzHalt on your character says it's on, so
+	Gameplay/Locomotion and Gameplay/PlayerMoves plant the legs (a skid, not a run).
 	Only your own character (movement is yours to run); a speed of 0 (frozen on the line, stuck, down) is kept.
 	Feet first (owner, Oct 19: "move when your legs touch the floor", "make when legs touch the floor and then you
 	move"): after you spawn, or the game moves you (the line-up, the lobby, the fall net: any jump of more than
@@ -19,15 +28,44 @@ function M.start()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local RunService = game:GetService("RunService")
 
-	local Run = require(ReplicatedStorage:WaitForChild("Shared").Config.Run)
-	local RAMP = Run.Ramp or 1.1 -- seconds from a walk to full speed
-	local START = Run.StartSpeed or 9 -- studs a second you set off at
+	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	local Run = require(Shared.Config.Run)
+	local RunMotion = require(Shared.RunMotion)
+	local Halt = require(Shared.Halt)
+	local RAMP = Run.Ramp or 1 -- seconds from a walk to full speed
+	local START = Run.StartSpeed or 16 -- studs a second you set off at
 	local GRACE = 0.18 -- seconds you can let go (a quick turn) and keep your speed
+	local CAP_EASE = 0.15 -- seconds: once built up, a new top speed (a boost, carrying, slowed) is followed this softly
 
 	local player = Players.LocalPlayer
 	local idle = math.huge
-	local speed = START -- the speed being built up (follows the cap smoothly)
-	local TAU = RAMP / 3 -- (an easing that gets 95% of the way in RAMP seconds)
+	local speed = START -- the speed being built up
+	local built = 0 -- seconds of the build so far (RunMotion.rampSpeed)
+	local lastRun = Vector3.zero -- your ground velocity on the last frame a key was held (the halt starts from it:
+	-- by the first frame after letting go, Roblox's Humanoid has already braked)
+	local stopHalt: (() -> ())? = nil
+
+	-- The halt: on the first frame with no key after a full run.
+	local function busy(character: Model, h: Humanoid, root: BasePart): boolean
+		return h.Sit or h.PlatformStand or root.Anchored or h.FloorMaterial == Enum.Material.Air
+			or character:GetAttribute("DownedAt") ~= nil
+			or root:FindFirstChild("HuzzDash") ~= nil or root:FindFirstChild("HuzzLunge") ~= nil
+	end
+	local function tryHalt(character: Model, h: Humanoid, cap: number)
+		local root = h.RootPart
+		if stopHalt or not root or not RunMotion.haltFrom(lastRun.Magnitude, cap, START) or busy(character, h, root) then
+			return
+		end
+		character:SetAttribute("HuzzHalt", true)
+		stopHalt = Halt.start(root, lastRun, lastRun.Magnitude, function()
+			local top = h:GetAttribute("HuzzSpeed")
+			return h.Parent ~= nil and h.MoveDirection.Magnitude <= 0.1 and type(top) == "number" and top > START
+				and h.WalkSpeed > 0 and not busy(character, h, root)
+		end, function()
+			stopHalt = nil
+			character:SetAttribute("HuzzHalt", nil)
+		end)
+	end
 
 	-- Feet first: held from a spawn or a teleport until the feet touch the floor.
 	local TELEPORT = 12 -- studs in one frame (faster than any run, huss or leap moves you) = the game moved you
@@ -38,6 +76,10 @@ function M.start()
 	local lastPos: Vector3? = nil
 	player.CharacterAdded:Connect(function()
 		holdSince, lastPos = os.clock(), nil
+		if stopHalt then
+			stopHalt()
+		end
+		lastRun, built = Vector3.zero, 0
 	end)
 	local function feetFirst(h: Humanoid, dt: number): boolean
 		local root = h.RootPart
@@ -75,7 +117,7 @@ function M.start()
 				freeSpeed = h.WalkSpeed
 				h.WalkSpeed = 0 -- (no steering in the air until the feet land)
 			end
-			speed = START
+			speed, built, lastRun = START, 0, Vector3.zero
 			return
 		end
 		local cap = h:GetAttribute("HuzzSpeed")
@@ -86,23 +128,40 @@ function M.start()
 		if type(cap) ~= "number" then
 			return -- (the server hasn't set a speed yet: leave Roblox's)
 		end
+		local root = h.RootPart
 		if h.MoveDirection.Magnitude > 0.1 then
+			if stopHalt then
+				stopHalt() -- (a key again: the halt ends, the run carries on from where it was)
+			end
 			idle = 0
+			if root then
+				local v = root.AssemblyLinearVelocity
+				lastRun = Vector3.new(v.X, 0, v.Z)
+			end
 		else
+			if idle == 0 then
+				tryHalt(character, h, cap) -- (just let go: a halt if you were at full speed)
+			end
 			idle += dt
+			lastRun = Vector3.zero
 			if idle > GRACE then
-				speed = START -- (stopped: the next start is a walk again)
+				speed, built = START, 0 -- (stopped: the next start is a walk again)
 			end
 		end
 		local want
 		if cap <= START then
 			want = cap
-			speed = cap
+			speed, built = cap, 0
 		else
 			if idle == 0 then
-				-- ease out toward the top: quick to get going, then settling softly (no jolt at either end);
-				-- a lower cap (carrying, slowed) is followed down just as smoothly
-				speed += (cap - speed) * (1 - math.exp(-dt / TAU))
+				-- from the walk to the top in exactly RAMP seconds, easing out (no jolt at either end)
+				built += dt
+				local target = RunMotion.rampSpeed(START, cap, built)
+				if built < RAMP then
+					speed = target
+				else
+					speed += (target - speed) * (1 - math.exp(-dt / CAP_EASE)) -- (a new top speed, followed softly)
+				end
 			end
 			speed = math.clamp(speed, START, cap)
 			want = speed

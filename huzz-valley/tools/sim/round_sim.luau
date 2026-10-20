@@ -1248,10 +1248,11 @@ local function simulate(opts)
 			if bot.kind == "afk" and not loneCatcher then
 				target = nil -- (away from the keyboard: never moves)
 			end
-			-- Gameplay/Sprint: a walk (9) building to the top speed, about 95% after Run.Ramp (1.2 s)
+			-- Gameplay/Sprint (Shared/RunMotion.rampSpeed): off at 16, the top speed after exactly 1 s, easing out
 			local moving = target and h.WalkSpeed > 0 and not KnockdownService.isDown(p)
 			bot.runFor = if moving then (bot.runFor or 0) + dt else 0
-			local speed = math.min(h.WalkSpeed, 9 + (h.WalkSpeed - 9) * (1 - math.exp(-bot.runFor / 0.4)))
+			local built = math.min(bot.runFor, 1)
+			local speed = math.min(h.WalkSpeed, 16 + math.max(h.WalkSpeed - 16, 0) * (1 - (1 - built) ^ 2))
 			if moving and bot.leapUntil and clock < bot.leapUntil and (st == "Running" or st == "HeroRun") then
 				-- mid huss or mid lunge: the move carries them
 				local nextPos = root.Position + bot.leapDir * bot.leapSpeed * dt

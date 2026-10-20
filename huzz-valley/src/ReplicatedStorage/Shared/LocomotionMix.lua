@@ -39,7 +39,10 @@
 	      - slowing down follows the speed much faster than speeding up (StopResponse: HV's legs are at the idle
 	        ~0.15 s after the ground stops; ours ran on in place for ~0.3 s, the feet sliding), and a stop from a run
 	        plays a quick plant on top (stopAmount(): the body tips back a little and the arms swing out, gone in
-	        ~0.3 s; HV's 40.7 s frames), cancelled if you set off again.
+	        ~0.3 s; HV's 40.7 s frames), cancelled if you set off again;
+	      - the halt (owner, Oct 20 07:55: "they move a little forward as a sort of "hault""; input.halt, Shared/Halt):
+	        the plant starts at once while the ground still slides, the steps slow to a stop and the legs come together
+	        (Config/Run.Loco.Stop.Halt), so the feet skid instead of running on.
 ]]
 local Run = require(script.Parent.Config.Run)
 
@@ -92,6 +95,9 @@ end
 	lengths     { Walk = s, Run = s } the loops' lengths in seconds
 	jumped      true on the frame you jump (restarts the jump pose)
 	stride      (optional, default 1) scales the stride rate: in the air the legs slow down instead of running on
+	halt        (optional) true while the body halts (Shared/Halt; owner, Oct 20 07:55: "they move a little forward as
+	            a sort of "hault""): the stop's plant starts at once and the legs go to the idle while the ground
+	            still slides, so the feet skid instead of running on
 	Fills s.weights, s.speeds and s.times. ]]
 function LocomotionMix.step(s, dt, input)
 	local C = s.C
@@ -103,16 +109,17 @@ function LocomotionMix.step(s, dt, input)
 
 	-- the stop's plant: armed while running, set off when the ground speed drops to a stand (Config/Run.Loco.Stop)
 	local St = C.Stop
+	local halting = input.halt == true
 	s.stopAge += dt
 	if St then
-		if input.speed > C.RunFull and before > C.RunFull then
+		if input.speed > C.RunFull and before > C.RunFull and not halting then
 			s.armed = true -- (running: the next stand-still is a stop)
 		end
-		if s.armed and input.speed < C.MoveFrom then
+		if s.armed and (input.speed < C.MoveFrom or halting) then
 			s.armed = false
 			s.stopAge = 0
 			s.stopK = smooth((before - C.RunFrom) / (C.RunAt - C.RunFrom))
-		elseif input.speed > C.MoveFull and s.stopAge < St.In + St.Out then
+		elseif input.speed > C.MoveFull and not halting and s.stopAge < St.In + St.Out then
 			s.stopK = approach(s.stopK, 0, 0.04, dt) -- (off again at once: the plant gets out of the way)
 		end
 	end
@@ -130,12 +137,12 @@ function LocomotionMix.step(s, dt, input)
 		run = math.min(run, smooth((s.goAge - C.SetOff.Walk) / C.SetOff.Blend))
 	end
 	-- a stop from a run goes straight from the run to the idle over Stop.Blend (HV: no walk in between)
-	local stopping = St ~= nil and s.stopK > 0 and s.stopAge < St.In + St.Out and input.speed < C.MoveFrom
+	local stopping = St ~= nil and s.stopK > 0 and s.stopAge < St.In + St.Out and (input.speed < C.MoveFrom or halting)
 	if stopping then
 		moving, run = 0, s.running or run
 	end
 	if C.WeightTime then
-		local tau = if stopping then St.Blend else C.WeightTime
+		local tau = if stopping then (if halting and St.Halt then St.Halt.Blend else St.Blend) else C.WeightTime
 		s.moving = approach(s.moving or moving, moving, tau, dt)
 		s.running = approach(s.running or run, run, tau, dt)
 		moving, run = s.moving, s.running
@@ -145,6 +152,11 @@ function LocomotionMix.step(s, dt, input)
 	local walkLen = (input.lengths and input.lengths.Walk) or 1
 	local runLen = (input.lengths and input.lengths.Run) or 0.5
 	local cadence = ((walkRate / walkLen) * (1 - run) + (runRate / runLen) * run) * (input.stride or 1) -- strides a second
+	if stopping and halting and St.Halt then
+		-- (the halt: the steps slow to a stop over Halt.Settle and the legs come together over Halt.Blend while the
+		-- ground still slides, so the feet skid instead of running on; a sudden freeze reversed a swinging arm in one frame)
+		cadence *= math.max(0, 1 - s.stopAge / St.Halt.Settle)
+	end
 	-- (back-pedalling in shift lock: the loops play backwards, LocomotionMix.strafe)
 	s.phase = (s.phase + cadence * dt * (if s.back then -1 else 1)) % 1
 	s.speeds.Walk, s.speeds.Run = cadence * walkLen, cadence * runLen

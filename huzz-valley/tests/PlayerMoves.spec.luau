@@ -109,7 +109,7 @@ local function body(name, at, rigType)
 	end
 	local animator = { GetPlayingAnimationTracks = function() return {} end }
 	local humanoid = {
-		RigType = rigType or roblox.Enum.HumanoidRigType.R15, HipHeight = 2, Sit = false, Health = 100,
+		RigType = rigType or roblox.Enum.HumanoidRigType.R15, HipHeight = 2, Sit = false, Health = 100, MoveDirection = Vector3.zero,
 		GetState = function() return roblox.Enum.HumanoidStateType.Running end,
 		FindFirstChildOfClass = function(_, c) return if c == "Animator" then animator else nil end,
 	}
@@ -220,6 +220,43 @@ do
 	theirs.character:SetAttribute("HuzzLook", nil)
 	frames(60)
 	check(angle(neck0, neckM.Transform) < 6, "and back when it goes")
+end
+-- their halt (owner, Oct 20 07:55: "they move a little forward as a sort of \"hault\""): their key goes (MoveDirection
+-- reaches every screen) while their body still slides from 28 to a stand (Shared/Halt): the feet plant and skid
+-- instead of running on. The same slide with the key still held (a control) keeps stepping.
+do
+	local RunMotion = Env.load("huzz-valley/src/ReplicatedStorage/Shared/RunMotion.lua")
+	local function slide(keyHeld)
+		local pos = theirs.root.CFrame
+		theirs.humanoid.MoveDirection = Vector3.new(0, 0, -1)
+		theirs.root.AssemblyLinearVelocity = Vector3.new(0, 0, -28)
+		frames(60, function()
+			pos = pos * CFrame.new(0, 0, -28 / 60)
+			theirs.root.CFrame = pos
+		end)
+		if not keyHeld then theirs.humanoid.MoveDirection = Vector3.zero end
+		local cfg, t, lo, hi, n = RunMotion.haltPush(28), 0, math.huge, -math.huge, 0
+		frames(24, function()
+			t += 1 / 60
+			local v = RunMotion.pushSpeed(cfg, t) or 0
+			theirs.root.AssemblyLinearVelocity = Vector3.new(0, 0, -v)
+			pos = pos * CFrame.new(0, 0, -v / 60)
+			theirs.root.CFrame = pos
+			n += 1
+			if n >= 6 then
+				local a = hip.Transform:ToEulerAnglesXYZ()
+				lo, hi = math.min(lo, a), math.max(hi, a)
+			end
+		end)
+		theirs.humanoid.MoveDirection = Vector3.zero
+		theirs.root.AssemblyLinearVelocity = Vector3.zero
+		frames(60)
+		return math.deg(hi - lo)
+	end
+	local halted = slide(false)
+	local held = slide(true)
+	print(string.format("  another player's halt: their thigh moves %.0f degrees through the skid (key still held: %.0f)", halted, held))
+	check(halted < held * 0.6, "their halt: the feet plant and skid (the thigh moves far less than running on)")
 end
 -- leaving: dropped
 theirs.character.Parent = nil

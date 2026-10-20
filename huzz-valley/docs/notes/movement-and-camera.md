@@ -5,7 +5,11 @@ changes. Study: `docs/feel-study.md` gaps 4-9 and 14; spec `tests/Movement.spec`
 The huss pose and walk animations: [animations.md](animations.md).
 
 ## Moving
-- `Gameplay/Sprint`: you set off at `Run.StartSpeed` 16 and reach the cap in ~0.5 s (`Ramp`).
+- **The build-up** (`Gameplay/Sprint`, `RunMotion.rampSpeed`): you set off at `Run.StartSpeed` 16 and reach the cap
+  in exactly 1 s (`Ramp` 1, `RampEase` 2: eases out, 44% of the build at 0.25 s, 75% at 0.5 s, 90% at 0.69 s, no
+  jolt at either end). Once built, a new cap (a boost, carrying, slowed) is followed over ~0.15 s. The legs follow
+  the speed (the run's step rate is already at its 1.12x cap from ~16 studs/s, so the slower build adds no foot
+  slide); the forward lean is `Loco.AccelLean` 0.2 (~5° at the start, upright as the build tops out).
 - **Feet first** (`Sprint`): after a spawn or a teleport (more than 12 studs in one frame: the round start, the fall
   net), WalkSpeed is 0 until
   `Humanoid.FloorMaterial` says the feet are on the floor (sets the local attribute `HuzzFeetFirst`; the huss waits
@@ -19,11 +23,24 @@ The huss pose and walk animations: [animations.md](animations.md).
   f1c7bb86, 30.73 s): legs move at once, short steps to ~0.15 s, full stride by ~0.35 s. The ground speed is
   Roblox's (instant), only the legs build, so controls stay sharp.
 - **Stopping** (`Run.Loco.Stop`, `StopResponse` 30, `LocomotionMix.stopAmount` / `stopArm`): let go from a run and
-  the ground stops at once (as Roblox's and Huss Valley's: measured, within one 60 fps frame at 52.13 s); the legs
+  the ground stops at once (as Roblox's; HV's at 52.13 s within ~2 frames, but that was from a walk); the legs
   go straight from the run to the idle (never through the walk), idle at 0.15 s (HV ~0.15 s: the run pose holds
   ~0.15 s, idle at 52.30); a small plant: the body tips back 4°, the arms go 13° out and 12° forward, full at 0.07 s,
   gone by 0.32 s. Only from a full run; pressing again cancels it. Before: the legs ran on in place ~0.3 s.
-  Everyone else's stop: [animations.md](animations.md) (the velocity hint).
+  Everyone else's stop: [animations.md](animations.md) (the velocity hint). From 90% of your top speed or more a
+  stop is a halt instead (below).
+- **The halt** (`Shared/Halt`, `Gameplay/Sprint`, `Run.Halt`, `RunMotion.haltFrom` / `haltPush`): let go of every key
+  at 90% of your top speed or more (`From`) and the body carries on, slowing from your speed to 0 over 0.25 s
+  (`Time`, `Ease` 2): ~2.3 studs at a runner's 28 (2.6 as the game samples it at 60 fps), 1.8 in the lobby, at most
+  3 at the fastest catcher. A LinearVelocity in the ground plane moves the real body (as the huss does), so walls stop
+  it, the server's `HitHistory` sees it and every screen sees the slide. The plant plays at once and the legs come
+  together over 0.08 s while the steps slow to a stop over 0.12 s (`Loco.Stop.Halt`; LocomotionMix `input.halt`): a
+  skid, not a run. It ends at once on any key (turning round is never a halt: the new key takes over the next
+  frame), a huss or dive, being downed or frozen (`HuzzSpeed` at or under 16), sitting or leaving the floor.
+  A lobby tap or a short dash never reaches 90%. Your screen marks it with the local attribute `HuzzHalt`; everyone
+  else's halt shows from their Humanoid's `MoveDirection` going to zero while their body still slides at a run
+  (`Gameplay/PlayerMoves`, only once their MoveDirection has been seen moving). The Practice Bot halts too when it
+  stops after a stab (`PracticeBot`).
 - **The head follows the mouse** (`Gameplay/HeadAim`, `LocomotionMix.look`, `Run.Loco.Look`, `Gameplay/Locomotion`
   and `PlayerMoves`): the head looks at the point under the cursor (a ray from the camera through the mouse, your
   own body skipped; 300 studs along it at the sky), up to 70° each way (`Look.Max`) and 30° up / 35° down (`Up`,
@@ -70,7 +87,7 @@ The huss pose and walk animations: [animations.md](animations.md).
   - **Speed:** Lobby 22, Runner 28, Catcher 30, Holder 27, LastRunner 30, Thief 30 studs/s (`Config/Round.Speeds`),
     against Roblox's 16 (the place's `CharacterWalkSpeed`). They were 20/24/26/23/26 before his "run quicker" asks.
     Plus 2% a round after the first, up to +20% (`Round.SpeedUp`): a runner can reach 33.6, a catcher 36.
-  - **Setting off:** 16 to ~95% of top speed in 0.5 s (`Run.StartSpeed`, `Ramp`), so you're at full speed at once.
+  - **Setting off:** 16 to top speed in 1 s (`Run.StartSpeed`, `Ramp`; 0.5 s until Oct 20).
   - **Huss:** 12 studs in 0.28 s (Dash Speed 120 easing to 16).
   - **Camera:** in rounds the zoom starts at 12 and is capped at 22 (`Shot.RoundZoom` / `RoundMaxZoom`); the lobby
     keeps the place's limits (max 128). FOV only +2 degrees at full sprint (was 11).
@@ -99,10 +116,22 @@ The huss pose and walk animations: [animations.md](animations.md).
   from their video f1c7bb86). When HV's ground stops: `python3 motion3d/ground_flow.py <video> <start> <end>`
   (how far the ground moves each frame; useless while their camera turns). Numbers: `tests/Locomotion.spec` prints
   them (set-off, stop, plant, biggest weight change in a frame 0.30, others' stop).
-- Not seen in Studio yet: the sprint and lunge feel, the Oct 19 huss, the feet-first gate on the owner's floors, the
+- The build-up and the halt: `sh motion3d/halt_side.sh <hv f1c7bb86.mp4> out.mp4 out.jpg` (repo root) films
+  `halt_scene.luau` and puts it next to HV's one full-speed stop, same framing (shift lock, from behind, strafing
+  left), 30 fps → `docs/previews/halt-vs-hv.mp4` / `.jpg`. Specs: `tests/Halt.spec` (the real Sprint and Halt on a
+  fake body: 1 s build, ~2.6 studs, every way it ends, no halt from a tap), `tests/Movement.spec` (the numbers),
+  `tests/Locomotion.spec` (the skid), `tests/PlayerMoves.spec` (another player's halt). Smoothness:
+  `move_smooth_measure.luau` "let go: halt" (worst part turn in a frame at 30 fps 57°, pop 71° on the arms at the
+  worst phase; a running stride's own pops are 60-68°; the plain stop from the same run was 67°/48° at another phase).
+- Not seen in Studio yet: the 1 s build-up and the halt (whether Roblox's Humanoid lets the LinearVelocity carry the
+  body as cleanly as offline, the halt against walls and other players, and whether other players' MoveDirection
+  reaches every screen: if it doesn't, their halt slides with the legs stopping by speed instead), the sprint and lunge feel, the Oct 19 huss, the feet-first gate on the owner's floors, the
   shift-lock back-pedal (negative AdjustSpeed), the AFK rejoin (live game only), the set-off, stop plant and head
   look on a real camera, others' stops over a real network, the head on a real mouse (and whether 5 sends a
   second look smooth enough on others in a full server).
+- Still different from HV's halt: their legs keep running ~0.2 s while the ground slows (41.19 to 41.38 s) and come
+  together as it stops; ours plant at once (the brief: a skid). Their runner also turns to face the camera as he
+  stops; ours doesn't.
 - Still worse than HV: our idle holds the arms wider than theirs, so the stop lands in a different pose; the plant
   is our own made-up motion on the pack's poses (HV's arms swing out on a stop, 40.73 s), not their animation.
 
@@ -130,5 +159,13 @@ The huss pose and walk animations: [animations.md](animations.md).
   go would make the controls slippery (GAME-FEEL.md), and HV's ground stops at once too. The first stop film had a
   bigger plant (7° back, 22° arms): the arms flapped and the head tipped back, so it is 4°/13°/12°. The strafe turn
   went from 70° to 90°, because HV runs fully side-on.
+- Oct 20, 07:55 (owner: "Make acceleration 1 second long and after they randomly stop after fully running they move
+  a little forward as a sort of "hault" like in the game Huss valley"): the build was 0.5 s to ~95%. Measured again:
+  only one HV recording is here (f1c7bb86; 32fe8d21 and 87565d66 aren't in the uploads), and it holds one stop from a
+  full run, at 41 s (52.13 s, the "stops within a frame" above, was from a walk: ~6 studs/s; 59.66 s is a cut to the
+  line-up). At 41 s, calibrated by the floor's 1-stud squares (~120 px each at the measured patches), their run is
+  ~26 studs/s; the ground slows from 41.05 s and stops at 41.47 s: ~5.7 studs in all, ~2.5 studs over the last
+  0.28 s from 60% speed, ~0.8 studs after the legs stop running (41.38 s), idle at ~41.5 s. Ours: 2.3 studs over
+  0.25 s, the legs planting at once. Ease 3 was tried first (65% of the slide in the first 30 fps frame: a jolt).
 - Oct 17 round 2 (owner: "more cinematic", "less ui", "cutscenes dont cut out"): the huss's white trail went (`Feel`
   draws HV's thin speed lines), no letterbox bars, our own footsteps.

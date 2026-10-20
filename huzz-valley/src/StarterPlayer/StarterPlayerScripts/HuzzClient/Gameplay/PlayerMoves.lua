@@ -30,6 +30,9 @@
 	  - Setting off walks first and a stop from a run plays the quick plant (LocomotionMix SetOff / Stop, measured on
 	    Huss Valley's recording): the body tips back a little and the arms swing out, on everyone. Others' stops read
 	    ~0.15 s after their body stops (LocomotionMix.track: a body still for longer than a network stall has stopped).
+	  - The halt (owner, Oct 20 07:55: "they move a little forward as a sort of "hault""): yours from Gameplay/Sprint's
+	    HuzzHalt, anyone else's (and the bot's) from their MoveDirection going to zero while the body still slides at
+	    a run: the plant at once and the feet skid (LocomotionMix input.halt).
 	Off when the owner has published Idle, Walk and Run (Config/Animations): then the real tracks replicate.
 ]]
 local M = {}
@@ -197,6 +200,21 @@ function M.start()
 				interval = 1 / 30
 			end
 		end
+		-- The halt (owner, Oct 20 07:55: "they move a little forward as a sort of "hault""): yours from Gameplay/Sprint
+		-- (HuzzHalt); anyone else's (and the bot's) when their Humanoid says no key is held (MoveDirection) while the
+		-- body still slides at a run. Only once their MoveDirection has been seen moving: if it never reaches this
+		-- screen, it never reads as a halt. The feet plant and skid (LocomotionMix input.halt).
+		local halt = false
+		if isMe then
+			halt = character:GetAttribute("HuzzHalt") == true
+		elseif not downed then
+			local md = humanoid.MoveDirection
+			if typeof(md) == "Vector3" and md.Magnitude > 0.1 then
+				rec.sawMove = true
+			elseif rec.sawMove and typeof(md) == "Vector3" and speed > rec.mix.C.RunFull then
+				halt = true
+			end
+		end
 		rec.acc += dt
 		if rec.pose == nil or rec.acc >= interval then
 			local sdt = math.min(rec.acc, 0.2)
@@ -204,6 +222,7 @@ function M.start()
 			Mix.step(rec.mix, sdt, {
 				speed = speed, state = "ground", stride = if airborne then 0.3 else 1,
 				lengths = { Walk = anims.Walk.length, Run = anims.Run.length },
+				halt = halt,
 			})
 			rec.idleT += sdt
 			local pose = Mix.pose(rec.mix, anims, rec.idleT, Sampler.sample)

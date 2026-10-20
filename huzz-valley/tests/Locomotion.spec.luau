@@ -19,6 +19,7 @@ local Mix = Env.load(SHARED .. "LocomotionMix.lua")
 local Sampler = Env.load(SHARED .. "KeyframeSampler.lua")
 local Run = Env.load(SHARED .. "Config/Run.lua")
 local Round = Env.load(SHARED .. "Config/Round.lua")
+local RunMotion = Env.load(SHARED .. "RunMotion.lua")
 local L = Run.Loco
 
 local failed, passed = 0, 0
@@ -194,7 +195,7 @@ do
 	check(tr.speed < 0.5 and s2.weights.Idle > 0.9, "standing still for a second reads as a stop (idle)")
 end
 
--- Holding W from standing (Gameplay/Sprint: off at 16, 28 in ~0.5 s), measured against Huss Valley's recording
+-- Holding W from standing (Gameplay/Sprint: off at 16, 28 after 1 s, RunMotion.rampSpeed), measured against Huss Valley's recording
 -- (owner, Oct 19: "the slow walking into the running animation", "a quick but nice looking stopping animation"):
 -- HV takes short quick steps for ~0.15 s and has the full stride by ~0.35 s; its ground stops within a frame and the
 -- legs are at the idle ~0.15 s later, the arms swinging out as the feet plant.
@@ -206,7 +207,7 @@ do
 	for i = 1, 150 do
 		local target = if i <= 90 then Round.Speeds.Runner else 0
 		if i == 1 then speed = Run.StartSpeed end
-		speed = if target == 0 then 0 else speed + (target - speed) * (1 - math.exp(-(1 / 60) / (Run.Ramp / 3)))
+		speed = if target == 0 then 0 else RunMotion.rampSpeed(Run.StartSpeed, target, i / 60)
 		Mix.step(s3, 1 / 60, { speed = speed, state = "ground", lengths = lengths })
 		local w = s3.weights
 		if not walkAt and w.Walk > 0.5 then walkAt = i / 60 end
@@ -243,6 +244,36 @@ do
 	for _ = 1, 3 do Mix.step(s5, 1 / 60, { speed = 0, state = "ground", lengths = lengths }) end
 	for _ = 1, 8 do Mix.step(s5, 1 / 60, { speed = 20, state = "ground", lengths = lengths }) end
 	check(Mix.stopAmount(s5) < 0.15, "setting off again straight away takes the plant away (no arms out while running)")
+
+	-- The halt (owner, Oct 20 07:55: "they move a little forward as a sort of \"hault\""): the ground still slides
+	-- (Shared/Halt, from 28 to 0 over Run.Halt.Time) while the feet plant: the plant at once, the legs at the idle
+	-- while the body is still moving fast (a skid, not a run), and one plant only (none again as it comes to a stand).
+	local s6 = Mix.new()
+	for _ = 1, 90 do Mix.step(s6, 1 / 60, { speed = 28, state = "ground", lengths = lengths }) end
+	local cfg = RunMotion.haltPush(28)
+	local idleAt, idleSpeed, plantAt, plants, lastAge, slid, stepsSeen = nil, 0, nil, 0, math.huge, 0, 0
+	local phase0 = s6.phase
+	for i = 1, 40 do
+		local t = i / 60
+		local v = RunMotion.pushSpeed(cfg, t)
+		Mix.step(s6, 1 / 60, { speed = v or 0, state = "ground", lengths = lengths, halt = v ~= nil })
+		slid += (v or 0) / 60
+		if s6.stopAge < lastAge then plants += 1 end
+		lastAge = s6.stopAge
+		if not plantAt and Mix.stopAmount(s6) > 0.85 then plantAt = t end
+		if not idleAt and s6.weights.Idle > 0.75 then idleAt, idleSpeed = t, v or 0 end
+	end
+	print(string.format("  halt from 28: slides %.2f studs; plant up at %.2f s, legs mostly at the idle at %.2f s while still at %.1f studs/s; plants %d",
+		slid, plantAt or -1, idleAt or -1, idleSpeed, plants))
+	check(plantAt and plantAt <= 0.1, "a halt: the plant (body back, arms out) is up within 0.1 s")
+	check(idleAt and idleAt <= 0.15 and idleSpeed > 3, "and the legs are mostly at the idle while the body still slides (feet skid, not run)")
+	check(plants == 1, "one plant only: coming to a stand after the halt doesn't start another")
+	-- a key again mid-halt: the plant gets out of the way and the run comes back
+	local s7 = Mix.new()
+	for _ = 1, 90 do Mix.step(s7, 1 / 60, { speed = 28, state = "ground", lengths = lengths }) end
+	for _ = 1, 4 do Mix.step(s7, 1 / 60, { speed = 24, state = "ground", lengths = lengths, halt = true }) end
+	for _ = 1, 10 do Mix.step(s7, 1 / 60, { speed = 22, state = "ground", lengths = lengths }) end
+	check(Mix.stopAmount(s7) < 0.15 and s7.weights.Run > 0.6, "pressing a key mid-halt: the plant goes and the run is back within ~0.15 s")
 end
 
 -- Shift lock (owner, Oct 19: "make it so when you shift lock the only thing that moves when you press w a s d (etc)

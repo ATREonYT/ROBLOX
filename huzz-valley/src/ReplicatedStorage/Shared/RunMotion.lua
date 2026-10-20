@@ -113,6 +113,31 @@ function RunMotion.pushDistance(cfg)
 	return cfg.Time * (finish + (cfg.Speed - finish) / ((cfg.Ease or 2) + 1))
 end
 
+-- The run's build-up (Gameplay/Sprint; owner, Oct 20 07:55: "Make acceleration 1 second long"): your speed after
+-- holding a direction for `held` seconds, from `start` to `cap` in exactly Config.Ramp seconds, easing out with
+-- Config.RampEase (the quickest gain at the start, none at the top: no jolt at either end).
+function RunMotion.rampSpeed(start: number, cap: number, held: number): number
+	if cap <= start then
+		return cap
+	end
+	local p = clamp(held / (Config.Ramp or 1), 0, 1)
+	return start + (cap - start) * (1 - (1 - p) ^ (Config.RampEase or 2))
+end
+
+-- The halt (owner, Oct 20 07:55: "after they randomly stop after fully running they move a little forward as a sort
+-- of "hault" like in the game Huss valley"): letting go at `speed` (studs/s along the ground) with top speed `cap`
+-- halts when you were running at Config.Halt.From of it or more (a tap, a walk or a build-up just stops).
+function RunMotion.haltFrom(speed: number, cap: number, start: number): boolean
+	local H = Config.Halt
+	return H ~= nil and cap > start and speed >= H.From * cap
+end
+
+-- The halt's push from `speed`, for pushSpeed / pushDistance: down to 0 over Config.Halt.Time, eased (quickest at first).
+function RunMotion.haltPush(speed: number)
+	local H = Config.Halt
+	return { Speed = speed, EndSpeed = 0, Time = H.Time, Ease = H.Ease }
+end
+
 -- The huss's speed lines (Config/Run.Dash.Lines), `age` seconds in: thin lines riding with the body, trailing
 -- behind it along the move (`dir`, world), each from `from` back to `to`, `alpha` opaque at its head (a quarter of
 -- that at its tail). They draw out over the first 0.06 s, hold their length like HV's, and fade out at the end; nil

@@ -4,8 +4,19 @@ return {
 	-- Owner: "walk builds into a run"; Huss Valley's run looks instant (docs/feel-study.md gap 8: 9 -> 16, 1.2 -> 0.5 s),
 	-- so the walk is a short quick build now, not a slow one.
 	StartSpeed = 16, -- you set off at this speed (a fast walk) and build up to full speed... (Gameplay/Sprint)
-	Ramp = 0.5, -- ...reaching ~95% of it after this many seconds of holding a direction (eases out: quick at first,
-	-- then settling gently into the top speed, so there is no jolt at either end)
+	Ramp = 1.0, -- ...reaching it after exactly this many seconds of holding a direction (owner, Oct 20 07:55: "Make
+	-- acceleration 1 second long"; was 0.5 s to ~95%). Shared/RunMotion.rampSpeed: eases out with RampEase (2: the
+	-- quickest gain at the start, none at the top, so no jolt at either end): 44% of the build at 0.25 s, 75% at 0.5 s.
+	RampEase = 2,
+	-- The halt (owner, Oct 20 07:55: "after they randomly stop after fully running they move a little forward as a sort
+	-- of "hault" like in the game Huss valley"). Let go of every key while running at From of your top speed or more
+	-- and you carry on along the ground, slowing from your speed to 0 over Time seconds (Ease 2: quickest at first,
+	-- RunMotion.pushSpeed): ~2.3 studs at a runner's 28 (speed x Time / (Ease + 1)). Huss Valley's one full-speed stop
+	-- (f1c7bb86, 41.19 to 41.47 s, docs/notes/movement-and-camera.md): ~2.5 studs over its last ~0.28 s (Ease 3 put
+	-- 65% of it in the first 30 fps frame: a jolt, not a slide). Pressing any
+	-- direction, a huss, a dive, being downed or frozen, or leaving the floor ends it. Shared/Halt (the push),
+	-- Gameplay/Sprint (you), PracticeBot (the bot's stop after a stab); the legs plant at once (LocomotionMix input.halt).
+	Halt = { From = 0.9, Time = 0.25, Ease = 2 },
 	From = 14, -- below this speed: Roblox's own walk
 	Full = 20, -- from this speed on: the full run (runners go 24)
 	Stride = 12, -- studs per full stride (two steps): 28 studs/s / 12 = 4.7 steps a second, Huss Valley's ~4.6 (feel
@@ -54,7 +65,8 @@ return {
 		-- The procedural touch on top (critically damped): leaning into turns and into speeding up.
 		TurnLean = 3.2, -- degrees of roll per radian a second of turning (at a run)...
 		MaxRoll = 7, -- ...up to this
-		AccelLean = 0.12, -- degrees of forward pitch per stud/s² of speeding up...
+		AccelLean = 0.2, -- degrees of forward pitch per stud/s² of speeding up (0.12 before the 1 s build: its gentler
+		-- push, 24 studs/s² at the start, would only lean ~3 degrees; now ~5 at the start, upright as the build tops out)...
 		MaxPitch = 5, MaxPitchBack = 3, -- ...up to these (leaning back a little when you stop)
 		LeanResponse = 9,
 		-- Setting off and stopping, measured on Huss Valley's recording (Oct 19, owner: "add animations for when you
@@ -71,7 +83,11 @@ return {
 		WeightTime = 0.035, -- seconds: the idle / walk / run shares ease this much on top (a stop at 30 crosses the walk
 		-- in ~2 frames: without it the legs popped to the idle, 0.64 of the blend in one 60 fps frame)
 		SetOff = { Walk = 0.12, Blend = 0.2 },
-		Stop = { In = 0.05, Out = 0.25, Blend = 0.05, Lean = 4, ArmsOut = 13, ArmsForward = 12 }, -- (first film: 7 and 22 flapped the arms and tipped the head back)
+		Stop = { In = 0.05, Out = 0.25, Blend = 0.05, Lean = 4, ArmsOut = 13, ArmsForward = 12, -- (first film: 7 and 22 flapped the arms and tipped the head back)
+			-- the halt (Config/Run.Halt, owner Oct 20): the same plant, but the steps slow to a stop over Settle seconds
+			-- and the legs come together over Blend while the ground slides (Blend 0.05 with the steps frozen at once
+			-- reversed a swinging arm in one 30 fps frame: move_smooth_measure pop 93 degrees)
+			Halt = { Settle = 0.12, Blend = 0.08 } },
 		-- The head without shift lock (owner, Oct 19: "make the head not move for the user when he runs, for example
 		-- when he presses D, the body turns right, but the head and camera stays the same"): Roblox turns the body to
 		-- the move; the head turns back toward where the camera looks, up to Max degrees (a neck's reach; HV's runner at
