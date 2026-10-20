@@ -109,7 +109,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   `UI/{Kit,Theme,Scale,Motion,ModalManager,State,DancePlayer,DancePose,Toast}`, `UI/Screens/*`, `Gameplay/*`.
 - `ServerStorage/HuzzAnimations.rbxm` (generated), `StarterGui/HuzzUI.rbxm` (generated: never edit by hand).
 - `design/`: kit pages, the owner's art zips, `anims/` (movement pack + 200 dances), `aura/`, `shop/`, references.
-- `places/HUSSANIME.rbxl` = the owner's own place as of Oct 20 (his three 3D knife crates in `Workspace > scrates`,
+- `places/HUSSANIME.rbxl` = the owner's own place as of Oct 20 14:57 (hussupd88.rbxl: adds his Combine machine in `Workspace > Combine`; his three 3D knife crates in `Workspace > scrates`,
   moved to `ReplicatedStorage > HuzzCrates` by the build: [economy.md](docs/notes/economy.md)), maps, girls, his **new Halloween lobby** in
   `Workspace > StartingPoint`, one copy in front of each map: the game keeps ONE and puts the others away, Oct 19;
   his old lobby islands moved aside in `Maps > Spawn`);
