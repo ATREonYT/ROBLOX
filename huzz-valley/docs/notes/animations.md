@@ -114,7 +114,8 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 ## Carried girls (`GirlMotion.carried`, `Config/GirlMotion.Carried.Pose`)
 - She sits up in his raised hands (upper body up 24°, legs bent up 62° at the hips, R15 knees bent, arms half hanging),
   dips and dangles on his real footfalls (`CarryMotion` reads his right hip), swings her feet, a small kick, wave or
-  look round now and then; calm (under 6° a frame). Spec `tests/GirlMotion.spec`. Before/after film
+  look round every few seconds (owner Oct 20 "Please do so": every girl livelier, a kick and a glance every
+  2.5-4.5 s, a wave every 5-8 s, 3.5 s of happy kicks after a pickup); calm (under 6° a frame). Spec `tests/GirlMotion.spec`. Before/after film
   `docs/previews/girls-walk-carry.mp4` (`motion3d/girls_walk_carry_scene.luau`). Not seen in Studio yet.
 - **The pickup** (`CarryMotion`, `Config/Carry` PickupTime 0.85, ArcHeight 2.5, PickupSpin 1): won from far away
   (the big girl over the map; anything over `PickupNear` 10 studs) she appears standing on the ground 3.2 studs in

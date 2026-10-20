@@ -16,7 +16,7 @@ return {
 			LegSway = 7, -- her legs dangle this much with his steps
 			ArmSway = 6,
 			HeadNod = 4,
-			Swing = 6, -- her feet swing slowly on their own (more while he stands)
+			Swing = 9, -- her feet swing slowly on their own (more while he stands)
 		},
 		Moods = true, -- excited / struggle / cheer / calm kicks, waves and glances (all small)
 		Inertia = 0.25, -- how much the carrier's starts, stops and turns swing her limbs
@@ -27,13 +27,15 @@ return {
 		LookAround = true, -- slow glances side to side
 		Spring = { Arms = 2.6, Legs = 2.4, Damping = 0.75 }, -- Hz; a little loose, so limbs dangle and settle
 
-		Excited = { Time = 2.4 }, -- after a pickup: happy kicks, arms up a little
+		Excited = { Time = 3.5 }, -- after a pickup: happy kicks, arms up a little
 		Cheer = {}, -- she's been won: waves both arms the whole time
 		Struggle = { Time = 2, Every = { 6, 10 }, Burst = 1 }, -- stolen: a short wriggle, then now and then
+		-- Owner Oct 20: "some of the common girls have a nice animation ... kicking feet up, moving head" / "Please do
+		-- so" (make them all livelier): every girl kicks, glances and waves about twice as often (was 5-9, 4-8, 9-14 s).
 		Calm = {
-			Kick = { Every = { 5, 9 }, Time = 1.6, Size = 14 }, -- a small happy foot kick (degrees)
-			Wave = { Every = { 9, 14 }, Time = 2.2 }, -- one arm waves at the sky
-			Glance = { Every = { 4, 8 }, Time = 2.2, Angle = 35 }, -- she looks round to one side
+			Kick = { Every = { 2.5, 4.5 }, Time = 1.6, Size = 18 }, -- a small happy foot kick (degrees)
+			Wave = { Every = { 5, 8 }, Time = 2.2 }, -- one arm waves at the sky
+			Glance = { Every = { 2.5, 4.5 }, Time = 2.2, Angle = 40 }, -- she looks round to one side
 		},
 	},
 
