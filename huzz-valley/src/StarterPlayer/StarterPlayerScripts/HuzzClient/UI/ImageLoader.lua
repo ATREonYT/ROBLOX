@@ -468,7 +468,8 @@ function ImageLoader.clearStandIn(label: ImageLabel)
 end
 
 -- A knife card that can't be drawn shows the knife itself: a copy of its model (his own from ServerStorage/HuzzKnives,
--- else its stand-in), which only the server can reach, so remote KnifeView puts one in this player's PlayerGui
+-- else its stand-in), which only the server can reach, so remote KnifeView puts one in ReplicatedStorage > HuzzKnifeViews
+-- (one copy a knife for the whole server)
 -- (HuzzServer/KnifeGlbService). Laid diagonal like the card pictures (tip up and right, flat side to us), in a
 -- ViewportFrame named NoPicture (so it goes the moment the real picture draws, and is never saved).
 local CoinShop
@@ -530,8 +531,7 @@ function knifeView(label: ImageLabel, b): boolean
 				local fine, got = pcall(function()
 					local Net = require(Shared:WaitForChild("Net"))
 					local ok = (Net.get("KnifeView") :: RemoteFunction):InvokeServer(key)
-					local player = Players.LocalPlayer
-					local folder = ok and player and player:WaitForChild("PlayerGui"):WaitForChild("HuzzKnifeViews", 5)
+					local folder = ok and game:GetService("ReplicatedStorage"):WaitForChild("HuzzKnifeViews", 5) -- (one copy a knife, shared)
 					return folder and folder:WaitForChild(key, 5)
 				end)
 				if not fine then warnOnce("knifeview", "knife card model: " .. tostring(got)) end

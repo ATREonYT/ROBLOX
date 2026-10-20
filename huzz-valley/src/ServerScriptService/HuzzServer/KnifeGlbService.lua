@@ -8,10 +8,10 @@
 	asks 1, 2, 3 ... until nil), or false past MAX_CALLS a minute a player (a full lobby of knives is about 300): ask
 	again later. Arguments checked.
 	Remote KnifeView (Shared/Net): (knife key) -> true once a plain copy of that knife (HuzzServer/KnifeService.view: his
-	model from ServerStorage/HuzzKnives, else its stand-in) is in the player's PlayerGui > HuzzKnifeViews, which only
-	that player receives. UI/ImageLoader shows it in a ViewportFrame on a knife card whose picture can't be drawn
-	(owner, Oct 20 14:07: "please fix all of the placeholders for knifes"). Only real knife keys, each made once a
-	player, at most MAX_VIEWS a player.
+	model from ServerStorage/HuzzKnives, else its stand-in) is in ReplicatedStorage > HuzzKnifeViews. UI/ImageLoader
+	shows it in a ViewportFrame on a knife card whose picture can't be drawn (owner, Oct 20 14:07: "please fix all of
+	the placeholders for knifes"). Only real knife keys; ONE copy a knife for the whole server, made the first time any
+	screen asks (a copy a player put up to 53 knives x every player on the server), at most MAX_VIEWS in all.
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,7 +20,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local KnifeGlbService = {}
 KnifeGlbService.MAX_CALLS = 900 -- a minute, a player
 KnifeGlbService.MAX_MESHES = 64 -- a knife
-KnifeGlbService.MAX_VIEWS = 80 -- knife copies a player (there are 53 knives)
+KnifeGlbService.MAX_VIEWS = 80 -- knife copies in all, shared by every screen (there are 53 knives)
 
 local cache: { [string]: any } = {} -- [module name] = its mesh table (false: none)
 local calls: { [Player]: { at: number, n: number } } = {}
@@ -40,24 +40,32 @@ function KnifeGlbService.mesh(key: any, n: any)
 	return cache[name] or nil
 end
 
--- Puts a plain copy of a knife in the player's PlayerGui > HuzzKnifeViews (once); true when it's there.
-function KnifeGlbService.view(player: Player, key: any): boolean
+-- Puts one plain copy of a knife in ReplicatedStorage > HuzzKnifeViews (once for the whole server, shared by every
+-- screen); true when it's there.
+local viewMaking: { [string]: boolean } = {}
+function KnifeGlbService.view(_player: Player, key: any): boolean
 	if type(key) ~= "string" or #key > 40 or not string.match(key, "^%w+$") then return false end
 	local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
 	local skin = CoinShop.get(key)
 	if not skin or skin.Slot ~= "Knife" then return false end
-	local gui = player:FindFirstChildOfClass("PlayerGui")
-	if not gui then return false end
-	local folder = gui:FindFirstChild("HuzzKnifeViews")
+	local folder = ReplicatedStorage:FindFirstChild("HuzzKnifeViews")
 	if not folder then
 		folder = Instance.new("Folder")
 		folder.Name = "HuzzKnifeViews"
-		folder.Parent = gui
+		folder.Parent = ReplicatedStorage
 	end
 	if folder:FindFirstChild(key) then return true end
-	if #folder:GetChildren() >= KnifeGlbService.MAX_VIEWS then return false end
+	for _ = 1, 50 do -- (another screen asked for it a moment ago: wait for that copy, at most 5 s)
+		if not viewMaking[key] then break end
+		task.wait(0.1)
+	end
+	if folder:FindFirstChild(key) then return true end
+	if viewMaking[key] or #folder:GetChildren() >= KnifeGlbService.MAX_VIEWS then return false end
+	viewMaking[key] = true
 	local ok, model = pcall(function() return require(script.Parent.KnifeService).view(skin) end)
+	viewMaking[key] = nil
 	if not ok or not model then return false end
+	if folder:FindFirstChild(key) then model:Destroy() return true end
 	model.Parent = folder
 	return true
 end

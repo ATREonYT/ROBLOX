@@ -44,7 +44,7 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   labels of each picture (all gone: freed; none on screen for 30 s: freed); frees the longest-unseen picture to make
   room when the budget is full; retries a failure after 5 s, doubling to a minute. A knife card that still can't be
   drawn shows its own 3D model in a ViewportFrame (remote `KnifeView`: `HuzzServer/KnifeGlbService` puts a plain copy
-  from `KnifeService.view` in that player's `PlayerGui > HuzzKnifeViews`). The empty box was the coin emoji (U+1FA99,
+  from `KnifeService.view`, one copy a knife for the whole server in `ReplicatedStorage > HuzzKnifeViews`). The empty box was the coin emoji (U+1FA99,
   too new for Roblox's font): coins now use a money bag, the Bear Trap a bear (its mouse-trap emoji was too new as
   well). `[HuzzUI]` now says which it was: the setting, or the memory. Test: `tools/preview/smoke_picture_memory.luau`
   (a fake budget of 100: every ITEMS knife card and coin pack draws after other screens filled it; a failure retries;
