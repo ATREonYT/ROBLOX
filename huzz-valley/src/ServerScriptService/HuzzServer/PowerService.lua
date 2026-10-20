@@ -27,6 +27,10 @@ local BearTrap = require(Shared.BearTrap)
 local DownMotion = require(Shared.DownMotion)
 
 local PowerService = {}
+-- The powers' look is the one they had before the Oct 19 renames (owner, Oct 20: "bring back the nice effects with
+-- the power ups ... just keep the same effects, change the name"): pink bubble, pink speed trail, a pink glow on the
+-- trap, "💘 STUCK!" and "😍" on a slowed runner. The new names and rules stay.
+local PINK = Color3.fromRGB(255, 110, 190)
 local ctx = nil -- from RoundService: match(), running(), rootOf(id), playerOf(id), isDown(player), sync(id),
 -- startZone(), inZone(zone, pos), ground(pos)
 local state = {} -- UserId -> { ready = {slot -> time}, pick, shieldUntil, dizzyUntil, boostUntil, boost, slowUntil, slow,
@@ -145,7 +149,7 @@ local function boost(id, amount, seconds, color)
 		trail.Name = "HuzzRushTrail"
 		trail.Attachment0, trail.Attachment1 = a0, a1
 		trail.Lifetime = 0.35
-		trail.Color = ColorSequence.new(color or Powers.SpeedBoost.Accent, Color3.new(1, 1, 1))
+		trail.Color = ColorSequence.new(color or PINK, Color3.new(1, 1, 1))
 		trail.Transparency = NumberSequence.new(0.35, 1)
 		trail.LightEmission = 0.5
 		trail.Parent = root
@@ -187,7 +191,7 @@ function USE.Shield(id, def)
 		bubble.Shape = Enum.PartType.Ball
 		bubble.Size = Vector3.new(7, 7, 7)
 		bubble.Material = Enum.Material.ForceField
-		bubble.Color = def.Accent
+		bubble.Color = PINK
 		bubble.CanCollide, bubble.CanQuery, bubble.CanTouch, bubble.Massless, bubble.CastShadow = false, false, false, true, false
 		bubble.CFrame = root.CFrame
 		local weld = Instance.new("WeldConstraint")
@@ -205,7 +209,7 @@ function USE.SpeedBoost(id, def)
 	if def.CarrierOnly and match.holder ~= id then
 		return false, "Carry the girl"
 	end
-	boost(id, def.Boost, def.Time, def.Accent)
+	boost(id, def.Boost, def.Time, PINK)
 	return true
 end
 
@@ -320,7 +324,7 @@ function USE.BearTrap(id, def)
 		if ctx.match() ~= match or not table.find(traps, trap) then
 			return
 		end
-		local model = BearTrap.build(def.Accent)
+		local model = BearTrap.build(PINK)
 		BearTrap.pose(model, CFrame.new(at) * CFrame.Angles(0, yaw, 0), 0)
 		model:SetAttribute("Owner", id)
 		model:SetAttribute("ArmAt", trap.armAt)
@@ -354,7 +358,7 @@ function USE.SlowWave(id, def)
 			if r and (r.Position - from.Position).Magnitude <= def.Radius and not (start and ctx.inZone(start, r.Position)) then
 				local s = stateOf(runnerId)
 				s.slow, s.slowUntil = def.Slow, now() + def.Time
-				badge(runnerId, "HuzzSlowed", "🐌 SLOW", Color3.fromRGB(220, 200, 255), def.Time)
+				badge(runnerId, "HuzzSlowed", "😍", Color3.new(1, 1, 1), def.Time)
 				ctx.sync(runnerId)
 			end
 		end
@@ -573,7 +577,7 @@ function PowerService.blocks(catcherId, runnerId)
 		badge(catcherId, "HuzzDizzy", "💫 DIZZY", Color3.fromRGB(255, 230, 120), def.Dizzy)
 		ctx.sync(catcherId)
 	end
-	boost(runnerId, def.Boost, def.BoostTime, def.Accent)
+	boost(runnerId, def.Boost, def.BoostTime, PINK)
 	return true
 end
 
@@ -595,7 +599,7 @@ function PowerService.step()
 					if Vector3.new(d.X, 0, d.Z).Magnitude <= def.Radius and math.abs(d.Y) < 6 then
 						local s = stateOf(runnerId)
 						s.stuckUntil = t + def.Hold
-						badge(runnerId, "HuzzStuck", "🪤 STUCK!", def.Accent, def.Hold)
+						badge(runnerId, "HuzzStuck", "💘 STUCK!", PINK, def.Hold)
 						-- (it snaps round their feet, not where it lay: Radius reaches past the jaws)
 						local feet = Vector3.new(r.Position.X, trap.at.Y, r.Position.Z)
 						Net.get("Round"):FireAllClients("Power", { name = "TrapSprung", id = runnerId, by = trap.owner, at = feet, yaw = trap.yaw, hold = def.Hold })

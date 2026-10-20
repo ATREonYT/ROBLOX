@@ -3,20 +3,15 @@
 	overly crazy, i want them to be nice"). Pure numbers; HuzzServer/KnifeService builds them on the knife, so
 	everyone sees the same and nothing runs every frame.
 
-	Effects climb with the rarity (Config/CoinShop Rarity), always in the knife's own glow colour (its glowing parts,
-	Config/CoinShop Glow, else its blade's colour), calm, with no flashes. Oct 19 evening, one step up (owner: "add
-	some vfx ... make the knifes more advanced"), still nothing laid over his model:
-	  Common     a soft slash trail in its own colour on a swing (faint: trailSoft);
-	  Uncommon   + a faint glow round the blade (it had a white sheen glint: gone Oct 19, it hid his model);
-	  Rare       a soft glow, the trail a little stronger, + a few sparkles (1.5 a second);
-	  Epic       + more sparkles (3 a second, never more than 4) and the slash arc in its colour (arc: SlashColor);
-	  Legendary  + a small light (Range 4), its glow and sparkles stay on while it's on your back, and a star glint
-	             at the tip now and then in hand (glint: one about every 3 s, grows and fades over half a second);
-	  Mythic     + a few embers drifting up off the blade.
-	Below Legendary, the knife on your back is just the model (its own Neon parts still glow); effects show in hand.
-	Particles come off the whole blade: a knife made of many blade blocks (the stand-ins) gets an invisible FxBlade
-	part over all of them (HuzzServer/KnifeService), so a stand-in's fire or petals don't all leave one slice.
-	Particles use Roblox's stand-in pictures until the owner uploads ours (Shared/FxTexture).
+	Effects: only the swing (owner, Oct 20: "please fix the knifes finally, they are still missing pixels, and please
+	just make them be normal"): no particles, sparkles, star glints, embers, element emitters or lights on any knife,
+	in hand, worn or on a stand (they were Oct 18 / 19 asks: "add some vfx to the knifes ... dont make it overly
+	crazy"; they read as bits scattered round the blade). What stays, by rarity (Config/CoinShop Rarity):
+	  Common, Uncommon  a soft slash trail in the knife's own colour on a swing (faint: trailSoft);
+	  Rare              the trail a little stronger;
+	  Epic and up       + the catcher's slash arc in its colour (arc: SlashColor).
+	A Game Pass knife's trail takes its element's colours (ELEMENTS below: their emit lists are kept as data for the
+	previews but nothing builds them in the game any more).
 
 	Where it sits (owner, Oct 18: "make the knifes please be equipped when you have them, like be shown on the back of
 	the character"; Oct 19: "make the knifes when equipped be worn either on the back of the character or on the side.
@@ -39,17 +34,16 @@ KnifeLook.ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic" 
 -- Each rarity's effects (numbers are per second / studs). Every rarity has everything the one below it has.
 KnifeLook.LADDER = {
 	Common = { trailTint = true, trailSoft = true },
-	Uncommon = { trailTint = true, trailSoft = true, glow = { range = 2, brightness = 0.35 } },
-	Rare = { glow = { range = 2.5, brightness = 0.5 }, sparkles = 1.5, trailTint = true },
-	Epic = { glow = { range = 2.5, brightness = 0.6 }, sparkles = 3, trailTint = true, arc = true },
-	Legendary = { glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, arc = true, back = true, glint = 3 },
-	Mythic = { glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, arc = true, back = true, glint = 3, embers = 1.5 },
+	Uncommon = { trailTint = true, trailSoft = true },
+	Rare = { trailTint = true },
+	Epic = { trailTint = true, arc = true },
+	Legendary = { trailTint = true, arc = true },
+	Mythic = { trailTint = true, arc = true },
 }
 -- The default knife (no skin): nothing, the plain white smear.
 KnifeLook.NONE = {}
--- The Game Pass knives (Config/CoinShop Pass, rarity "Exclusive"): Mythic's calm effects, nothing louder.
+-- The Game Pass knives (Config/CoinShop Pass, rarity "Exclusive"): Mythic's.
 KnifeLook.LADDER.Exclusive = KnifeLook.LADDER.Mythic
-KnifeLook.MAX_SPARKLES = 4 -- a second (owner: "dont make it overly crazy")
 
 -- The effects for a skin's rarity (nil / unknown = the default knife: none).
 function KnifeLook.fx(rarity: string?)
@@ -347,15 +341,14 @@ end
 
 --[[
 	Each Game Pass knife's own element (owner, Oct 19: "better knife animations ... in the lobby and in the gamepass
-	sections"; each one matches its card, design/knives/Five_Elemental_Knife_Cards.png). Replaces Mythic's plain
-	sparkles and embers on that knife; the glow stays. Calm: a few particles a second, nothing flashes.
+	sections"; each one matches its card, design/knives/Five_Elemental_Knife_Cards.png). Since Oct 20 ("just make them
+	be normal") the game builds only its trail colours; emit and burst stay as data (old previews read them).
 	  emit      the steady emitters (on the blade; "tip" = at the tip): texture (Shared/FxTexture name), colours,
 	            rate (per second on a stand; half in hand), life, speed, size, accel (studs/s^2), spin (degrees/s),
 	            box (from the whole blade, not a point), lock (stay on the blade).
 	  burst     how many petals/feathers/sparks one big moment throws out (a stand's spin, a catcher's slash).
 	  trail     the slash trail's colours (start, end).
 	  light     the glow's colour.
-	Particles use Roblox's stand-in pictures (sparkles, fire) until the owner uploads ours (Shared/FxTexture).
 ]]
 local function rgb(h: string): Color3
 	return Color3.fromRGB(tonumber(string.sub(h, 1, 2), 16), tonumber(string.sub(h, 3, 4), 16), tonumber(string.sub(h, 5, 6), 16))

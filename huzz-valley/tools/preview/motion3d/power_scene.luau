@@ -102,6 +102,7 @@ local RUNNER_LOOK = { shirt = "#3d7be0", pants = "#262a36" }
 local runnerRig = named(scene:addRig(Rig.r15("Runner", RUNNER_LOOK)))
 local catcherRig = named(scene:addRig(Rig.r15("Catcher", { shirt = "#e0473d", pants = "#2a2026" })))
 local decoyRig = named(Rig.r15("Decoy", RUNNER_LOOK)) -- (drawn while the Body Double runs)
+local SERVER_PINK = Color3.fromRGB(255, 110, 190) -- (HuzzServer/PowerService PINK: the bubble, the rush trail, the trap's glow)
 local runnerChar, runnerRoot = body("Runner", runnerRig)
 local catcherChar, catcherRoot = body("Catcher", catcherRig)
 local byId = {
@@ -185,7 +186,7 @@ end
 local bubble
 local function serverShield()
 	bubble = Instance.new("Part")
-	bubble.Name, bubble.Shape, bubble.Size, bubble.Material, bubble.Color = "HuzzShield", roblox.Enum.PartType.Ball, Vector3.new(7, 7, 7), roblox.Enum.Material.ForceField, Powers.Shield.Accent
+	bubble.Name, bubble.Shape, bubble.Size, bubble.Material, bubble.Color = "HuzzShield", roblox.Enum.PartType.Ball, Vector3.new(7, 7, 7), roblox.Enum.Material.ForceField, SERVER_PINK
 	bubble.CFrame = runnerRoot.CFrame
 	bubble.Position = runnerRoot.CFrame.Position
 	bubble.Parent = folder("HuzzShields")
@@ -197,7 +198,7 @@ local function serverTrail()
 	a0.Parent, a1.Parent = runnerRoot, runnerRoot
 	trail = Instance.new("Trail")
 	trail.Attachment0, trail.Attachment1, trail.Lifetime = a0, a1, 0.35
-	trail.Color = roblox.ColorSequence.new(Powers.SpeedBoost.Accent, Color3.new(1, 1, 1))
+	trail.Color = roblox.ColorSequence.new(SERVER_PINK, Color3.new(1, 1, 1))
 	trail.Transparency = roblox.NumberSequence.new(0.35, 1)
 	trail.Parent = runnerRoot
 end
@@ -209,7 +210,7 @@ local TRAP_AT = CATCHER_AT + TRAP_DIR * TRAP.Throw
 local trap -- { model, armAt }
 local function serverTrapThrow(t)
 	fakeTask.delay(TRAP.Flight, function()
-		local model = BearTrap.build(TRAP.Accent)
+		local model = BearTrap.build(SERVER_PINK)
 		BearTrap.pose(model, CFrame.new(TRAP_AT) * CFrame.Angles(0, math.atan2(-TRAP_DIR.X, -TRAP_DIR.Z), 0), 0)
 		model.Parent = folder("HuzzTraps")
 		trap = { model = model, armAt = t + TRAP.Flight + TRAP.Arm }
@@ -267,7 +268,7 @@ local EVENTS = {
 	{ 17.0, function() roundHandler("Power", { name = "SlowWave", id = CATCHER_ID, radius = Powers.SlowWave.Radius }) end },
 }
 -- a still of each ability at its peak (MOTION3D_KEEP), for powers_vs_og.py
-local STILL_AT = { 0.4 + wind("Shield") + 0.12, 3.6, 6.4 + wind("Glitchy") + 0.06, 8.0 + wind("BodyDouble") + 0.9, 11.8 + wind("SpeedBoost") + 0.15, 13.2 + 0.45, 15.15, 17.0 + wind("SlowWave") + 0.2 }
+local STILL_AT = { 0.4 + wind("Shield") + 0.12, 2.2 + wind("Invisible") + 0.15, 6.4 + wind("Glitchy") + 0.06, 8.0 + wind("BodyDouble") + 0.35, 11.8 + wind("SpeedBoost") + 0.15, 13.2 + TRAP.Flight + 0.12, 15.15, 17.0 + wind("SlowWave") + 0.2 } -- (Invisible as it starts to fade, the Body Double as it sets off, the trap as it lands)
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- Reading the instances back
@@ -349,7 +350,7 @@ local function drawTrail(tr, now, ribbons)
 		table.insert(w, r3((k.p0 - k.p1).Magnitude))
 		table.insert(a, r3(1 - nsample(tr.Transparency, s)))
 	end
-	table.insert(ribbons, { pts = pts, w = w, a = a, c = hex(Powers.SpeedBoost.Accent), add = true })
+	table.insert(ribbons, { pts = pts, w = w, a = a, c = hex(SERVER_PINK), add = true })
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -420,7 +421,9 @@ for f = 0, total - 1 do
 		decoyRig.root.CFrame = copyRoot.CFrame
 		RunMotion.step(decoyRec, DT, 16, true, false)
 		Rig.fk(decoyRig)
-		decoyRig.look = { Alpha = 1 - ltm(copyRoot) }
+		-- (its pink Highlight drawn as a soft white fill: the renderer has no coloured Highlight or outline)
+		local hl = copy:FindFirstChild("HuzzDoubleGlow")
+		decoyRig.look = { Alpha = 1 - ltm(copyRoot), Emit = if hl then 0.6 * (1 - hl.FillTransparency) else nil }
 		if not decoyIn then scene:addRig(decoyRig); decoyIn = true end
 	elseif decoyIn then
 		for i, r in scene.rigs do

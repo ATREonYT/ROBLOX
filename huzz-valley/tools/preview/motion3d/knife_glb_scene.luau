@@ -192,7 +192,7 @@ local function draw(model, key, handleCF, before)
 			table.insert(meshes, { m = nodeMesh(key, nodeIndex[key][m.node], col, glow, pbr), p = p, r = r, s = per })
 		else -- a plain part (the stand-in)
 			table.insert(plain, { CFrame = handleCF * handle.CFrame:ToObjectSpace(d.CFrame), Size = d.Size, Color = "#" .. d.Color:ToHex():lower(),
-				Neon = neon or nil, Shape = if d:IsA("Part") and d.Shape == roblox.Enum.PartType.Cylinder then "cyl" else nil })
+				Neon = neon or nil, Shape = if d:IsA("WedgePart") then "wedge" elseif d:IsA("Part") and d.Shape == roblox.Enum.PartType.Cylinder then "cyl" else nil })
 		end
 	end
 	return meshes, plain

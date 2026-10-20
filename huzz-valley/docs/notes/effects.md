@@ -15,29 +15,43 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
 - Smoke test: `smoke_feel_fx.luau` (harness).
 
 ## Abilities (`Gameplay/PowerEffects`, `Config/Powers.Fx`, the other game's ability timing)
+- **The look is the pre-rename one** (Oct 20, owner: "bring back the nice effects with the power ups, because right
+  now it just looks like a bare copy, i mean just keep the same effects, change the name"): every ability in the old
+  pink: white core, pink glow (`Fx.Glow`), purple edges (`Fx.Edge`), with hearts (emoji, no upload); the server's
+  bubble, speed trail and trap glow in `PowerService` PINK (255, 110, 190), "💘 STUCK!" and "😍" on a slowed runner, as
+  Heart Shield, Rizz Rush, Love Trap and Charm Wave had. The new names and rules stay (Speed Boost only while
+  carrying, the Bear Trap thrown). The cards keep their own `Accent` colours (the card UI only).
 - A glow builds (`Fx.WindUp` 0.25 s; Shield and Speed Boost 0.15 s, Invisible and Body Double 0.12, Glitchy 0.05),
-  one bright frame (`Gameplay/Burst.flashOk`: at most one a second per screen), the effect 0.35 s, a 0.15 s fade; each
-  ability glows in its own `Accent` (the colour on its card).
-- **Shield** (blue, once per round): a bubble bursts out; a blocked stab pops it in a blue ring.
-- **Speed Boost** (only while carrying her): a ring standing up behind you and white speed lines (the trail is the
-  server's).
-- **Invisible** (Lasts 4 s): a puff, then the body fades on every screen (`LocalTransparencyModifier`): others see it
-  at `Seen` 0.88 with a slow shimmer (`Shimmer` 0.8 Hz, a soft swell, never a blink: "so it's fair"), you see
-  yourself at `Self` 0.55; name tag and outline hide on other screens; still catchable.
-- **Glitchy**: your own screen pushes you `Distance` 9 studs in `Time` 0.14 s (a LinearVelocity, so walls stop it);
-  everyone sees two see-through ghosts (cyan and magenta) left behind sliding apart, and thin glitch slivers. No flicker.
-- **Body Double**: every screen clones the runner (scripts, sounds and constraints removed, the root anchored) and runs
-  the copy straight on with `RunMotion` legs, following the floor, for `Lasts` 3.5 s or until a wall, then it puffs.
-  Only a look, on each screen.
-- **Bear Trap** (owner Oct 19: "you throw the beartrap infront of you with a small animation"): the throw pose
-  (`Config/Run.Cast.Throw`: the free arm swings back with the chest turning away, then whips forward; character
-  attribute HuzzCastKind "Throw" from `Fx.BearTrap.Pose`), the trap (`Shared/BearTrap`, plain parts: two jaws of
-  teeth, springs, a plate, a faint danger disc) leaves the left hand at the end of the wind-up, tumbles once along an
-  arc (`Arc` 3.5 studs high), growing from 0.4 to full size, and lands where the server says, open, with a dust ring;
-  a ring and a click when it arms. Caught: it snaps shut round the runner's feet in 0.08 s, holds, fades.
-- **Slow Wave**: a ring gathers, then two rings run out (its slow lands when they do: PowerService waits
-  `Fx.WindUp`); 16 pieces a ring, no haze, every ring's pieces moved with one `Workspace:BulkMoveTo` a frame
-  (`Burst.bulkMove`).
+  one bright frame (`Gameplay/Burst.flashOk`: at most one a second per screen), the effect 0.35 s, a 0.15 s fade to
+  purple.
+- **Shield** (was Heart Shield, once per round): the pink bubble bursts out with a ring and 💖 hearts; a blocked stab
+  pops it in a pink ring with 💖 hearts.
+- **Speed Boost** (was Rizz Rush; only while carrying her): a pink ring standing up behind you and white speed lines
+  turning pink (the pink trail is the server's).
+- **Invisible** (Lasts 4 s): the pink glow, then a shimmering pink bubble shrinks into the body with a ring, sparks and
+  ✨, and the body fades on every screen (`LocalTransparencyModifier`): others see it at `Seen` 0.88 with a slow
+  shimmer (`Shimmer` 0.8 Hz, a soft swell, never a blink: "so it's fair"), you see yourself at `Self` 0.55; name tag
+  and outline hide on other screens; still catchable.
+- **Glitchy**: a pink ring where you were; your own screen pushes you `Distance` 9 studs in `Time` 0.14 s (a
+  LinearVelocity, so walls stop it); everyone sees two see-through ghosts (cyan and magenta) left behind sliding apart,
+  thin glitch slivers, and sparks where you land. No flicker.
+- **Body Double**: a pink ring, sparks and ✨ where it starts; every screen clones the runner (scripts, sounds,
+  constraints, its name tag and outline removed, the root anchored) and runs the copy straight on with `RunMotion`
+  legs, following the floor, for `Lasts` 3.5 s or until a wall, a touch see-through (0.15) under a pink Highlight with
+  a white outline that swells softly (one swell in 1.4 s, `DOUBLE_SWELL`), leaving a fading pink afterimage every
+  0.45 s (`DOUBLE_GHOST`); then it puffs (ring, sparks, ✨). Oct 20 (coordinator, from the owner's "bare copy"): it
+  was a plain copy, now it reads as an ability. Only a look, on each screen.
+- **Bear Trap** (was Love Trap; owner Oct 19: "you throw the beartrap infront of you with a small animation"): the
+  throw pose (`Config/Run.Cast.Throw`: the free arm swings back with the chest turning away, then whips forward;
+  character attribute HuzzCastKind "Throw" from `Fx.BearTrap.Pose`), the trap (`Shared/BearTrap`, plain parts: two
+  jaws of teeth, springs, a plate, a faint danger disc in pink) leaves the left hand at the end of the wind-up,
+  tumbles once along an arc (`Arc` 3.5 studs high), growing from 0.4 to full size, and lands where the server says,
+  open: the Love Trap's pink ring slams out round it and settles to its size, with 💘 hearts; a purple ring when it
+  arms. Caught: it snaps shut round the runner's feet in 0.08 s, a pink ring closes in, 💘 hearts pop, it holds,
+  fades.
+- **Slow Wave** (was Charm Wave): a pink ring gathers, then a pink and a purple ring run out with 💞 hearts (its slow
+  lands when they do: PowerService waits `Fx.WindUp`); 16 pieces a ring, no haze, every ring's pieces moved with one
+  `Workspace:BulkMoveTo` a frame (`Burst.bulkMove`).
 - **Dive stun**: three cartoon stars circle slowly over a stunned catcher's head on every screen (character
   StunnedFrom / StunnedUntil), with the server's 💫 STUNNED badge; the body lies dazed ([stab-lunge-catch.md](stab-lunge-catch.md)).
 - Each has a sound; others' abilities pop their name over them (root +7, clear of their name tag); during the wind-up
@@ -46,8 +60,13 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   rim glows in the ability's colour when the server takes it.
 - All plain neon parts (`Gameplay/Burst`: real rings of short pieces, glow orbs, world text), so nothing waits for an
   upload. Film: `motion3d/power_scene.luau` → `docs/previews/powers.mp4` (each ability in turn, the trap thrown, landing
-  and snapping), sheet `docs/previews/abilities-sheet.jpg` (`tools/preview/powers_vs_og.py`, next to the other game's
-  ability); the dive and stun: `docs/previews/dive-stun.mp4`.
+  and snapping). Old vs now: `docs/previews/powers-old-vs-now.jpg` (`tools/preview/powers_old_vs_now.py`: each power
+  before the renames, as the Oct 19 batch left it, and now; the old film is `power_scene.luau` at ed870f6 with
+  POWER_STILLS=1). Older sheet `docs/previews/abilities-sheet.jpg` (`tools/preview/powers_vs_og.py`, next to the other
+  game's ability); the dive and stun: `docs/previews/dive-stun.mp4`.
+- Not seen in Studio yet: all of the above. The film draws the Body Double's pink Highlight as a soft white fill (no
+  coloured Highlight or outline offline). The trap itself is the Oct 19 bear trap (pink glow), not the old pink heart
+  disc with its 💘 sign; "😍" over a runner slowed by a wave named Slow Wave is the old Charm Wave badge, kept as asked.
 
 ## The heartbeat (`Gameplay/Heartbeat`)
 - Owner Oct 19: "add a heartbeat effect when someone gets closer" and "add a heartbeat sound when your screen turns
@@ -125,8 +144,10 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
 ## Why it is this way / history
 - **Abilities** (Oct 19 batch: "make simple lingo", "runner abilities (invisible, glitchy, body double", "bear trap you
   throw the beartrap infront of you with a small animation", "add a heartbeat effect when someone gets closer"). The
-  four Oct 17 powers were pink and heart-themed (their sheet: `feel-powers-after.jpg`); the new set takes one colour
-  each from its card so a glance tells them apart. Invisible stays faintly visible on purpose ("so it's fair").
+  four Oct 17 powers were pink and heart-themed (their sheet: `feel-powers-after.jpg`); the Oct 19 set took one colour
+  each from its card, and the owner missed the old look (Oct 20: "bring back the nice effects with the power ups ...
+  just keep the same effects, change the name"), so the effects are pink again and only the cards keep the colours.
+  Invisible stays faintly visible on purpose ("so it's fair").
 - **Juice** came from the feel study (gap 15). Oct 17 round 2 (owner: "more cinematic", "less ui", "cutscenes dont cut
   out") added harder shakes, the danger glow and the red hit tint. The caught shake came down from 0.7: with the red
   tint, the words and the fall it stacked up too much. Knife pass 2 swapped the catch's 30 red-and-white sparks for

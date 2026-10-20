@@ -53,7 +53,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 - **Knives:** everyone wears one, placed by knife (owner Oct 19 "worn either on the back of the character or on the
   side ... based on what knife/sword it is"): long blades across the back, short knives at the right hip, per knife
   in `Config/CoinShop` `Wear`; catchers hold theirs in a round. The owner's own 30 knives (Oct 18, `design/knives/`) are the skins
-  ([knives.md](docs/notes/knives.md)): calm effects by rarity, "dont make it overly crazy". Huss Valley's knives (on
+  ([knives.md](docs/notes/knives.md)): nothing on the knife but the swing trail (Oct 20 "just make them be normal"); stand-ins solid. Huss Valley's knives (on
   the back at the belt, slash with no wind-up, catch = red fill, no sparks or shake): `docs/knife-study.md`.
 - **Aura** = Huss Valley's gems. **Coins** buy looks (the owner picked "Coin cosmetics shop").
 - **Never invent IDs** (assets, sounds, animations, passes, products): leave 0/"" and add a README checklist line.

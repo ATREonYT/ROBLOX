@@ -13,7 +13,7 @@
 // screen, each from the square's edge inwards, see Gameplay/SecretReveal's impact frame; bg optional; also rects, texts and dim:
 // ScreenGui frames and TextScaled text in 1280 x 720 pixels, and a black fade, drawn in the page). Boxes may add sh ("ball"),
 // n (Neon: unlit), a (opacity), add (additive) and e (0-1: a white Highlight fill); sh "cyl" is a Roblox Cylinder
-// (round along its X axis). Ribbons may add u (a texture coordinate per point, wrapping: Beam TextureMode Wrap).
+// (round along its X axis), sh "wedge" a Roblox WedgePart (its slope from the bottom front edge up to the top back edge). Ribbons may add u (a texture coordinate per point, wrapping: Beam TextureMode Wrap).
 // labels [{p, text, h (studs tall), c, o (outline colour), a (opacity)}]: BillboardGui text, camera-facing, Gotham-like.
 // Sprite/ribbon t may also be a drawn shape: '@disc', '@ring<px>', '@runner<px>' (AuraFX's SurfaceGui circles).
 // Optional at the top: sky, ground (colours), grid (false to hide), dim (0-1: daylight strength, for evening scenes),
@@ -190,6 +190,25 @@ const ribbonMeshes = [];
 const unit = new THREE.BoxGeometry(1, 1, 1);
 const ball = new THREE.SphereGeometry(0.5, 32, 16);
 const cyl = new THREE.CylinderGeometry(0.5, 0.5, 1, 40).rotateZ(Math.PI / 2); // (Roblox's Cylinder: round along X)
+const wedge = (() => { // Roblox's WedgePart in a unit box: its side (Y, Z) is the triangle (-y,-z) (-y,+z) (+y,+z), along X
+  const P = [[-0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]; // (y, z)
+  const v = (x, i) => [x, P[i][0], P[i][1]];
+  const tris = [
+    [v(0.5, 0), v(0.5, 1), v(0.5, 2)], [v(-0.5, 0), v(-0.5, 2), v(-0.5, 1)], // the two triangle sides
+    [v(-0.5, 0), v(0.5, 1), v(0.5, 0)], [v(-0.5, 0), v(-0.5, 1), v(0.5, 1)], // the bottom
+    [v(-0.5, 1), v(0.5, 2), v(0.5, 1)], [v(-0.5, 1), v(-0.5, 2), v(0.5, 2)], // the back
+    [v(-0.5, 2), v(0.5, 0), v(0.5, 2)], [v(-0.5, 2), v(-0.5, 0), v(0.5, 0)], // the slope
+  ];
+  for (const t of tris) { // each face wound outwards (away from the prism's middle)
+    const [a, b, c] = t.map((p) => new THREE.Vector3(...p));
+    const n = b.clone().sub(a).cross(c.clone().sub(a));
+    if (n.dot(a.clone().sub(new THREE.Vector3(0, -1 / 6, 1 / 6))) < 0) [t[1], t[2]] = [t[2], t[1]];
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(tris.flat(2), 3));
+  g.computeVertexNormals();
+  return g;
+})();
 const labelTex = {}, labelSprites = [];
 const textTexture = (q) => { // one canvas per text + colours, cached
   const key = q.text + '|' + q.c + '|' + (q.o || '');
@@ -281,7 +300,7 @@ window.draw = (f) => {
       mesh.matrixAutoUpdate = false;
       scene.add(mesh);
     }
-    mesh.geometry = b.sh === 'ball' ? ball : b.sh === 'cyl' ? cyl : unit;
+    mesh.geometry = b.sh === 'ball' ? ball : b.sh === 'cyl' ? cyl : b.sh === 'wedge' ? wedge : unit;
     const lit = !b.n && !b.add && (b.a ?? 1) >= 1;
     mesh.material = lit ? mesh.userData.lit : mesh.userData.neon;
     mesh.castShadow = lit;

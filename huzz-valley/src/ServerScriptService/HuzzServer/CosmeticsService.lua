@@ -7,7 +7,9 @@
 	  Pose    the character's HuzzPose attribute: Crown Pose plays when you win (RoundService sets HuzzPoseAt;
 	          HuzzClient/Gameplay/CrownPose draws the pose and the crown).
 	  Outfit  Midnight Outfit, made here: your clothes tinted midnight blue and a starry night cape. (Real outfit
-	          clothing needs asset IDs from the owner; this is our own look until then.)
+	          clothing needs asset IDs from the owner; this is our own look until then.) The cape is welded to the
+	          torso the character has now; when Roblox swaps in the avatar's own torso the cape is made again on it
+	          (Oct 20: the old weld died and the cape fell off as a "floating black block"; tests/Cape.spec).
 	Pictures come from Shared/FxTexture (Roblox's stand-ins until the owner uploads ours).
 ]]
 local Players = game:GetService("Players")
@@ -133,8 +135,16 @@ local function outfitOn(character: Model)
 			c.Color3 = NIGHT
 		end
 	end
-	if character:FindFirstChild("MidnightCape") then return end
 	local torso = (character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")) :: BasePart?
+	local old = character:FindFirstChild("MidnightCape")
+	if old then
+		-- (Oct 20, owner: "fix the little thing near the chaaracter floating ( black block)": the cape was welded at
+		-- spawn, then Roblox swapped in the avatar's own torso, the weld died with the old one and the cape fell away
+		-- as a loose dark slab. A cape not held by the current torso is made again on it.)
+		local w = old:FindFirstChildOfClass("WeldConstraint")
+		if w and torso and w.Part0 == torso and w.Part1 == old then return end
+		old:Destroy()
+	end
 	if not torso then return end
 	local cape = Instance.new("Part")
 	cape.Name = "MidnightCape"
@@ -244,9 +254,12 @@ function CosmeticsService.start()
 			local root = character:WaitForChild("HumanoidRootPart", 10)
 			character:WaitForChild("UpperTorso", 2) -- (the cape hangs from it; R6 bodies have Torso)
 			apply(player)
-			-- avatar clothes load after the body: tint them when they arrive (Midnight Outfit)
+			-- avatar clothes load after the body: tint them when they arrive (Midnight Outfit); the avatar's own torso
+			-- can arrive after it too (it replaces the first one): the cape moves onto it
 			character.ChildAdded:Connect(function(c)
-				if c:IsA("Shirt") or c:IsA("Pants") then apply(player) end
+				if c:IsA("Shirt") or c:IsA("Pants") or (c:IsA("BasePart") and (c.Name == "UpperTorso" or c.Name == "Torso")) then
+					task.defer(apply, player)
+				end
 			end)
 			-- trail twinkles only while running
 			local humanoid = character:FindFirstChildOfClass("Humanoid")

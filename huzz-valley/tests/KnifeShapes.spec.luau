@@ -97,8 +97,15 @@ for _, key in SHEET do
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") and d.Transparency < 1 then
 			count += 1
-			local c, h = d.CFrame.Position, d.Size / 2
-			mlo, mhi = mlo:Min(c - h), mhi:Max(c + h)
+			-- its real corners (a turned block's 8, a wedge's 6: since Oct 20 the stand-ins are wedges turned about X)
+			local h = d.Size / 2
+			local corners = if d:IsA("WedgePart")
+				then { { 1, -1, -1 }, { -1, -1, -1 }, { 1, -1, 1 }, { -1, -1, 1 }, { 1, 1, 1 }, { -1, 1, 1 } }
+				else { { 1, 1, 1 }, { 1, 1, -1 }, { 1, -1, 1 }, { 1, -1, -1 }, { -1, 1, 1 }, { -1, 1, -1 }, { -1, -1, 1 }, { -1, -1, -1 } }
+			for _, k in corners do
+				local q = d.CFrame * Vector3.new(h.X * k[1], h.Y * k[2], h.Z * k[3])
+				mlo, mhi = mlo:Min(q), mhi:Max(q)
+			end
 			if not cols[d.Color:ToHex():lower()] then foreign += 1 end
 		end
 	end
@@ -161,18 +168,12 @@ for _, key in PASS do
 	end
 	check(key .. string.format(": nothing laid over the blade (%d glow shell parts)", shells), shells == 0)
 	check(key .. ": the slash starts halfway up the blade", m:FindFirstChild("StandTrailBase", true) ~= nil)
-	local el = KnifeLook.element(key)
-	check(key .. ": its element on the stand (" .. el.name .. ")", m:GetAttribute("Element") == el.name and m:FindFirstChild("KnifeBurst", true) ~= nil
-		and m:FindFirstChild("KnifeTipGlint", true) ~= nil and m:GetAttribute("Burst") == el.burst)
-	local rate = 0
+	-- nothing on the knife (owner, Oct 20: "just make them be normal"): no particles, sparkles or lights at all
+	local extras = 0
 	for _, d in m:GetDescendants() do
-		if d:IsA("ParticleEmitter") and d.Name ~= "KnifeBurst" then rate += d.Rate end
+		if d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Sparkles") or d:IsA("Fire") or d:IsA("Smoke") then extras += 1 end
 	end
-	check(key .. string.format(": steady, not a storm, on a stand (%.1f particles a second, at most 32)", rate), rate <= 32)
-	check(key .. ": no doubled Mythic sparkles or embers on top of the element", m:FindFirstChild("KnifeSparkles", true) == nil and m:FindFirstChild("KnifeEmbers", true) == nil)
-	check(key .. ": its burst is a handful (" .. el.burst .. ")", el.burst <= 20)
-	local glint = m:FindFirstChild("KnifeTipGlint", true)
-	check(key .. ": the tip glint at most once a second", glint and glint.Rate <= 1)
+	check(key .. string.format(": plain on the stand, nothing scattered round it (%d particle emitters or lights)", extras), extras == 0)
 end
 do -- one of the owner's own models (he'll import the pass ones the same way): scaled to the same length
 	local skin = CoinShop.get("VoidFang")
@@ -191,7 +192,7 @@ do -- the hand: the same knife at its real size, half the element
 	local rate = 0
 	for _, d in held:GetDescendants() do if d:IsA("ParticleEmitter") and d.Name ~= "KnifeBurst" then rate += d.Rate end end
 	check(string.format("in hand: its real size (%.2f studs), not the stand's", lengthOf(held)), lengthOf(held) < 3.6)
-	check(string.format("in hand: about a third of the element (%.1f a second)", rate), rate <= 11)
+	check(string.format("in hand: no particles (%.1f a second)", rate), rate == 0 and held:FindFirstChildWhichIsA("Light", true) == nil)
 	check("in hand: the slash arc colour is set (Epic and up)", typeof(held:GetAttribute("SlashColor")) == "Color3")
 	local trail = held:FindFirstChild("SlashTrail", true)
 	check("in hand: the trail in the element's colours, a little longer", trail and math.abs(trail.Lifetime - KnifeLook.TRAIL.ElementLifetime) < 1e-4)

@@ -17,16 +17,17 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `assets/art/knife-*.png` (packed 192 px; they show in Play only, EditableImage); `docs/previews/knife-cards.jpg`.
 - `KnifeService` takes `ServerStorage/HuzzKnives/<Key>` when there, else the built-in knife tinted in the skin's colours.
   Hand by the model's `Grip`.
-- **Effects** `KnifeLook.LADDER` (Oct 19 evening, one calm step up: "make the knifes more advanced"): every skin's
-  slash trail in its own colour (`KnifeLook.trailLook`; Common and Uncommon faint, `trailSoft`; only the default
-  knife keeps the faint white one), Uncommon + a faint light (0.35, range 2), Rare soft light + 1.5 sparkles a
-  second, Epic 3 sparkles + the slash arc (`arc`: the knife's `SlashColor`, as before Epic and up), Legendary light
-  Range 4 + effects on the back + a star glint at the tip in hand (`glint`: one about every 3 s, grows and fades over
-  half a second), Mythic + embers. Nothing laid over his model (Uncommon's old white sheen glint stays gone). The
-  particles come off the whole blade: a knife of 3+ blade blocks (the stand-ins) gets an invisible `KnifeFxArea`
-  over them (`KnifeService` fxPartOf; before, a stand-in's fire or petals left its one biggest slice). Stand-in
-  particle textures until uploads. Film `docs/previews/knife-fx-ladder.mp4` + `.jpg` (one of his knives a rarity,
-  slashing; `motion3d/knife_fx_scene.luau`); older `docs/previews/knives-vs-hv.jpg`, `knife-leap.mp4`.
+- **Effects: only the swing** (Oct 20, owner: "please fix the knifes finally, they are still missing pixels, and
+  please just make them be normal"): nothing on any knife, in hand, worn or on a stand: no particles, sparkles, star
+  glints, embers, element emitters (petals, feathers, fire, frost, moon glints, the KnifeBurst) or lights
+  (`KnifeService` plain: also strips any a model came with). What stays (`KnifeLook.LADDER`): every skin's slash trail
+  in its own colour on a swing (`KnifeLook.trailLook`, no picture; Common and Uncommon faint, `trailSoft`; the default
+  knife the faint white one; a pass knife's in its element's colours, `KnifeLook.ELEMENTS` trail), and Epic and up the
+  catcher's slash arc (`arc`: `SlashColor`, a plain Beam, gone in 0.2 s). (Oct 18 / 19 the ladder had lights,
+  sparkles, glints and embers, and the pass knives their elements: "add some vfx ... dont make it overly crazy";
+  they read as bits scattered round the blade. The ELEMENTS emit lists stay as data for the old films:
+  `docs/previews/knife-fx-ladder.mp4` + `.jpg`, `motion3d/knife_fx_scene.luau`, older `docs/previews/knives-vs-hv.jpg`,
+  `knife-leap.mp4`.)
 - **His look, one to one** (`KnifeLook.glbMaterial`, the one rule for all of them): every part takes the Roblox
   material nearest his .glb's metallic and roughness (his blades and guards metallic 0.6 to 0.9, roughness 0.2 to
   0.3; grips metallic 0, roughness 0.8): glowing = Neon, metallic 0.5+ = Metal (Reflectance 0.12 when roughness is
@@ -34,8 +35,7 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   it: 84 SurfaceAppearances (his colour picture + emissive mask, EmissiveStrength 0.9) on 15 knives, a softer real
   glow than Neon; Neon only on glowing parts without one (78 parts). `Config/Look` EnvironmentSpecularScale went
   0.2 to 0.4 so Metal mirrors the sky at all (0.2 was the Oct 19 matte lighting match: set it back if the plaza
-  looks glossy). Nothing is laid over his model: no widening, no glow shell, no sheen (only particles, light and
-  the trail, calm).
+  looks glossy). Nothing is laid over his model: no widening, no glow shell, no sheen (only the trail).
 
 ## The worn knife
 - `KnifeLook.pick` = the shop's pick, else your first owned knife, else the default knife.
@@ -111,16 +111,25 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   card lifts to 104% under the mouse (`Effects.lift`). All saved twins, hidden until their loop runs, stopped by
   Reduced Motion. Still `docs/previews/knife-cards-alive.jpg` (the motes are small and calm; the pulse shows only in motion).
 - **Stand-ins until his import** (`Shared/KnifeShapes`, data `Shared/KnifeStandIns` = the list, one module a knife in
-  `Shared/KnifeStandInParts`, 4-13 KB each, baked by `tools/knives/bake_stand_ins.py`): plain blocks cut from his own
-  `Gamepass_Knives.glb` and `Halloween_Knives.glb` (owner's Oct 19 screenshot:
-  the first hand-made ones, "an orange blocky jagged blade" and "a small cyan stub", were nothing like his model):
-  his knife in 0.04 stud slices, one block per stretch of each of his looks (colour, glow, material), joined up the
-  blade while it barely changes, a smaller look a hair proud of a bigger one under it; 52 to 177 blocks a knife, his
-  colours and `glbMaterial`, his length; the tassel blocks are named Tassel so pommel to tip stays his. Spec
-  `tests/KnifeShapes.spec` (lengths, his .glb's box within 0.06 studs, his colours only, at most 200 parts, scaler,
-  stand size, even scale and no shell, elements, budget, arc). They are the server's knife (length, grip, trail
-  points, particles) and the fallback on any screen that can't draw his model; each screen dresses them as his .glb
-  (next). The round 1 hand-made ones: `docs/previews/stand-knives-standins.jpg`.
+  `Shared/KnifeStandInParts`, 8-18 KB each, baked by `tools/knives/bake_stand_ins.py`, needs shapely): solid plain
+  parts cut from his own `Gamepass_Knives.glb` and `Halloween_Knives.glb`. Each look of his (colour, glow, material)
+  seen from the blade's broad side, its outline filled solid and cut into triangles, each triangle two WedgeParts
+  turned about the blade's thin axis (a plain rectangle is one block), each piece as thick as his triangles there, a
+  smaller piece a hair proud of a bigger one under it; at most 199 parts a knife (98 to 199): the piece costing the
+  most is smoothed first (his bandage wraps and chain links before anything else), rings never smoothed square and
+  real cut-outs never filled (Hollow Eclipse's moon, the Seraph's halo). His colours and `glbMaterial`, his length;
+  hanging bits are named Tassel so pommel to tip stays his. Oct 20 (owner: "please fix the knifes finally, they are
+  still missing pixels, and please just make them be normal"; his screenshots `design/owner-oct19/2010-knife-red.png`
+  and `2010-knife-gold.png` are these stand-ins: Crimson Requiem and Celestial Seraph in his hand): the Oct 19 cut
+  (0.04 stud slices of blocks) read as scattered bits, stepped edges and loose feather strips; now each outline is
+  whole and smooth. Seen edge on they are flat slabs (his model is rounder). Picture
+  `docs/previews/knife-standins-solid.jpg` (the 5 pass knives: his .glb | Oct 19 slices | solid now | his model on
+  screen; `knife_glb_scene.luau` with `OLD_SHAPES` = the old `KnifeShapes.lua` and its data, render.mjs draws wedges).
+  Spec `tests/KnifeShapes.spec` (lengths, his .glb's box within 0.06 studs from each part's real corners, his colours
+  only, at most 200 parts, scaler, stand size, even scale and no shell, nothing on the knife, arc). They are the
+  server's knife (length, grip, trail points) and the fallback on any screen that can't draw his model; each screen
+  dresses them as his .glb (next). The round 1 hand-made ones: `docs/previews/stand-knives-standins.jpg` (owner's
+  Oct 19 screenshot: "an orange blocky jagged blade" and "a small cyan stub", nothing like his model).
 - **His .glb on every screen until his import** (`Gameplay/KnifeDress`, data `ServerStorage/HuzzKnifeGlb/<Key>_<n>`,
   handed out by `HuzzServer/KnifeGlbService`): the server tags a pass or Halloween stand-in `GlbKnife` (attribute
   `Glb` = its key, `KnifeService.template`); the first time a screen shows a knife it asks the server for that knife's
@@ -206,14 +215,12 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `GlowShell` over the blade are gone (owner, Oct 19: "they dont look as good as in the glb file": both hid his
   model).
 - **Trail:** a `StandSlash` Trail from `StandTrailBase` (45% up the blade, added by display) to TrailTip, on only in
-  the cuts, `TRAIL_LIFETIME` 0.2 s in the element's colours (Sunrise gold, never white), tapered. The steady rarity
-  glow is the display knife's own.
-- **Elements** (`KnifeLook.ELEMENTS`, in place of Mythic's sparkles and embers; stand rate, about a third in hand, a
-  sixth on the back, `KnifeLook.elementRate`): Hunter red petals (10/s, 0.55) + twinkles, Moonlit moon glint at the tip
-  + violet wisps (6/s), Sunrise gold feathers + twinkles, Inferno flames along the blade (24/s, size 1.3) + rising
-  embers, Frost ice shards + snowflakes + a faint mist (stand only); on a stand also a soft light (0.6, range 4: the
-  Oct 19 lighting keeps glow on the object, so Neon and particles carry it) and a star glint at the tip about every
-  2.5 s.
+  the cuts, `TRAIL_LIFETIME` 0.2 s in the element's colours (Sunrise gold, never white), tapered. No glow or
+  particles on the knife (Oct 20); its own Neon parts still glow.
+- **Elements** (`KnifeLook.ELEMENTS`): off since Oct 20 ("just make them be normal": see Effects above); each pass
+  knife keeps only its trail colours from it. (They were: Hunter red petals + twinkles, Moonlit moon glint + violet
+  wisps, Sunrise gold feathers, Inferno flames + embers, Frost shards + snowflakes + mist, a stand light and a tip
+  glint; `KnifeLook.elementRate` stays for the old films.)
 - **The aura, no disc** (Oct 19 evening, owner: "make the gamepass characters look better without that green circle
   on the bottom, and add some vfx, make the characters more atrractive so people buy the knifes"): the green Neon
   disc under the feet is gone (no base: the copy stands on the floor where his block was). `KnifeLook.AURA`, built by
@@ -226,8 +233,8 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `docs/previews/pass-stands-before-after.jpg` (his screenshot | ours before | now with his model | now with the switch
   off; `tools/preview/pass_stands_sheet.py` over `stand_knives_scene.luau` `STAND_SET=pass2`, `STAND_LOOK=old` for the
   disc), film `docs/previews/pass-stands-aura.mp4`. `check_lobby_boards` checks no disc, invisible holders, the
-  knife's colour, under 10 a second and the light. At most 32 particles a second per stand knife (Inferno 31), nothing
-  flashes. Until he uploads `assets/fx`, Studio shows Roblox's sparkle and fire pictures instead.
+  knife's colour, under 10 a second and the light; nothing on the knife itself (Oct 20). The aura's pictures are
+  Roblox's own built-in sparkle until he uploads `assets/fx` (`Shared/FxTexture` falls back, never a blank square).
 - **Moves:** each knife has a `STYLES` entry (hold + 3 moves): Inferno = Low hold, Whirl (a full-body spin into a
   lunging slash), Scrape (the reference cleaver's ground sweep: a crouch with the blade back low on the right, then
   one big arc low across the front), Cleave (overhead and one big arc down); Moonlit = Low, Cleave, Scrape, Whirl;
@@ -279,29 +286,28 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 - Gaps: no "HALLOWEEN" heading in the shop (they sit together by Order, after the pass knives); the reapers and the
   scythe are held like every knife (blade down at the side, the blade near the floor) and worn on the back/hip by
   length (Oct 19 evening: the reapers and scythe on the back head up, the rest at the hip); a shuriken in the hand
-  is small; the elements and stand showcase are the pass knives' only.
+  is small; the stand showcase is the pass knives' only.
 
 ## Honest gaps
-- Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, glow, sparkles, the leap and
-  dive), the knife showcase (the big stand knives, element particles with stand-in pictures, the spins, the card
-  motes/pulse, the slash arc), the long blades' forward grip and its ease back in a stab. The 5 pass models still need
-  his import (`Gamepass_Knives.glb` + SetupKnives) to be real everywhere; until then each screen dresses the stand-ins
-  as his .glb with EditableMesh (`Gameplay/KnifeDress`): his first Studio Play (Oct 19) showed the plain stand-ins
-  because Rojo never sent the meshes (fixed d6db14f); whether EditableMesh then runs needs the "Allow Mesh / Image
-  APIs" switch (his `[HuzzKnife]` Output line says on or why not); the triangle facing (counter-clockwise assumed) and the look under Studio light are unproven;
-  otherwise the stand-ins show, now cut from his .glb but still blocky (stepped edges on the curved katana, the
-  feather guard as grey blocks, Dragon's Maw more orange than his). How Metal, his SurfaceAppearance glow and the
-  0.4 specular really look only Studio shows (the offline picture approximates materials); the 5 pass knives' glow
-  is Neon (no SurfaceAppearance pictures of his for them until his import). The offline picture draws his imported knives'
-  parts with the .glb part each came from (his uploaded meshes themselves only Studio shows). A refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a
-  player's own avatar animations or a short R6 arm can still bring a long tip nearer the floor.
-- Oct 19 evening (effects step up, aura): only offline so far. The aura and the knife sparkles use Roblox's sparkle
-  picture until he uploads `assets/fx` (Glow, Twinkle, StarFlare), so in Studio the rising specks are small 4-point
-  sparkles, not soft dots; how bright the aura light reads under his lobby light only Studio shows (the film's light
-  is an approximation). The stand-ins (switch off) stay blocky next to his .glb: stepped edges on curves, the
-  Seraph's feather guard as blocks, the scythe's thin pole; the long scythes and reapers are still held like a knife
-  (blade low by the leg). The aura is calmer than the reference stands' fire clouds on purpose ("dont make it overly
-  crazy").
+- Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, the leap and dive), the knife
+  showcase (the big stand knives, the spins, the card motes/pulse, the slash arc), the long blades' forward grip and
+  its ease back in a stab. The 5 pass and 18 Halloween models still need his import (`Gamepass_Knives.glb`,
+  `Halloween_Knives.glb` + SetupKnives) to be exactly his everywhere. Until then each screen dresses the stand-ins as
+  his .glb with EditableMesh (`Gameplay/KnifeDress`), which needs the "Allow Mesh / Image APIs" switch: his Oct 20
+  screenshots still show the stand-ins, so on his screen it isn't running (his `[HuzzKnife]` Output line says why;
+  we haven't seen it). Checked offline (`tools/knives/mesh_audit.py`): none of his meshes is wound inside out (rings
+  and chains only look so to the centre test; open edges are where two looks meet), so one-sided triangles are not
+  why; no back faces added. The solid stand-ins (Oct 20) are not his model: flat seen edge on, rounded parts as
+  slabs, small details smoothed (the Seraph's halo a little many-sided, the bandage wraps and chain links simplified),
+  Neon and Metal approximated offline; they are only checked offline, not in Studio. How Metal, his SurfaceAppearance
+  glow and the 0.4 specular really look only Studio shows; the pass knives' glow is Neon. The offline picture draws
+  his imported knives' parts with the .glb part each came from (his uploaded meshes themselves only Studio shows). A
+  refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a player's own
+  avatar animations or a short R6 arm can still bring a long tip nearer the floor.
+- Oct 19 evening (aura): only offline so far. The aura uses Roblox's sparkle picture until he uploads `assets/fx`
+  (Glow, Twinkle), so in Studio the rising specks are small 4-point sparkles, not soft dots; how bright the aura light
+  reads under his lobby light only Studio shows. The long scythes and reapers are still held like a knife (blade low
+  by the leg). The aura is calmer than the reference stands' fire clouds on purpose ("dont make it overly crazy").
 
 ## Why it is this way / history
 - **Skins** (owner, Oct 18: "add some vfx to the knifes, but make it fit it, and dont make it overly crazy").

@@ -253,7 +253,7 @@ do
 	n, k = knives(c)
 	check("skin change: one knife, the new one", n == 1 and k:GetAttribute("Skin") == "SpinKnife")
 	check("Celestial Edge (a long blade): on the back, on the UpperTorso", k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "UpperTorso")
-	check("Legendary: its glow stays on while worn", k:FindFirstChildWhichIsA("PointLight", true) ~= nil)
+	check("worn: plain, no light or particles (owner Oct 20: \"just make them be normal\")", k:FindFirstChildWhichIsA("Light", true) == nil and k:FindFirstChildWhichIsA("ParticleEmitter", true) == nil)
 	-- the avatar's look swaps the UpperTorso: the knife goes on the new one
 	c.UpperTorso:Destroy()
 	local lt = Instance.new("Part")

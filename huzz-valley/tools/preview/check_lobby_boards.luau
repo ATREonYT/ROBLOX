@@ -200,8 +200,8 @@ if copy then
 		end
 	end
 	check(string.format("the stand's knife is big (%.1f studs, was 1.9)", hi - lo), hi - lo > 4 and hi - lo < 5.2)
-	check("its element: red petals, a burst for the big moves, a glint at the tip", knife ~= nil and knife:GetAttribute("Element") == "Petals"
-		and knife:FindFirstChild("KnifeBurst", true) ~= nil and knife:FindFirstChild("KnifeTipGlint", true) ~= nil)
+	check("plain: no particles or lights on the knife (owner Oct 20: \"just make them be normal\")", knife ~= nil
+		and knife:FindFirstChildWhichIsA("ParticleEmitter", true) == nil and knife:FindFirstChildWhichIsA("Light", true) == nil)
 	local blade = knife and knife:FindFirstChild("Blade", true)
 	local glowing = 0
 	for _, d in (knife and knife:GetDescendants() or {}) do

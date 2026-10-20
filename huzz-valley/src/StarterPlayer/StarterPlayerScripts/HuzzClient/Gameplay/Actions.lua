@@ -6,8 +6,8 @@
 	Also plays everyone's stab (Shared/StabMotion, or Config/Animations.Stab when set), the Practice Bot's
 	too (RoundService sends "Stab" with bot = true), and lights the knife's slash trail. Oct 19 (owner: "better knife
 	animations, not only during gameplay"): an Epic or better knife also draws a thin crescent round the front and
-	right of the catcher as the arm sweeps (Shared/KnifeLook.ARC, in the knife's SlashColor, gone in 0.2 s) and a
-	Game Pass knife throws a few of its element's petals, feathers, sparks or shards (its KnifeBurst). Buttons sit bottom right, above a phone's jump
+	right of the catcher as the arm sweeps (Shared/KnifeLook.ARC, in the knife's SlashColor, gone in 0.2 s); a knife's
+	KnifeBurst would throw a few particles, and since Oct 20 no knife has one ("just make them be normal"). Buttons sit bottom right, above a phone's jump
 	button, and only show when the move is available.
 	Knife pass 2 (Oct 19, the lunge): your own lunge plays the moment you press Space (M.lungeLocal from Gameplay/Dash;
 	it used to wait for the server's echo, a network round trip late); the echo is ignored. A lunge's slash (and its

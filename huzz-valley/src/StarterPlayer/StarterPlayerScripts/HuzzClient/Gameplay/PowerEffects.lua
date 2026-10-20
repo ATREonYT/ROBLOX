@@ -2,25 +2,35 @@
 	How the round powers look when they're used, drawn on every client from the server's "Power" messages on the
 	Round remote (HuzzServer/PowerService). Owner: "make the usage of items smoother ... make it feel like the
 	references". Timed like the other game's ability (docs/feel-study.md section 6; Config/Powers.Fx):
-	  1. wind-up (0.05 to 0.25 s): a glow builds on the user in the power's colour (Accent), with a soft light;
+	  1. wind-up (0.05 to 0.25 s): a glow builds on the user, white in the middle, pink round it, with a soft light;
 	  2. one bright frame (at most one a second on a screen: kid-safe);
-	  3. the effect (0.35 s);
-	  4. a 0.15 s fade.
-	  Shield:      the glow at the chest bursts into the blue bubble (the server's bubble shows from that moment).
-	  Speed Boost: a ring stands up behind the runner and flies back, with white speed lines (the trail is the server's).
-	  Bear Trap:   the catcher throws (Config/Run.Cast.Throw, Shared/RunMotion): the trap (Shared/BearTrap) leaves the
-	               free hand and flies in an arc, tumbling, to where the server says it lands; it lands open with a
-	               dust ring (the server's trap shows from that moment) and a click and a ring when it arms.
-	  Slow Wave:   a ring gathers round the catcher, then a wave of two rings runs out to its reach (its slow lands on
-	               runners as it goes out: PowerService waits the wind-up).
-	  Invisible:   a shimmer puff, then the body fades (others see a faint shimmer, Seen; you see yourself at Self);
-	               the name tag and team outline hide on other screens. Still catchable.
-	  Glitchy:     your screen pushes you forward (Distance in Time, the walls still stop you); everyone sees two
-	               see-through ghosts of the body, cyan and magenta, left behind and fading (no flicker).
-	  Body Double: every screen makes its own copy of the runner that runs straight on (Shared/RunMotion legs) for
-	               Lasts seconds, then vanishes in a puff. Only a look.
-	  ShieldPop:   a blocked stab: the bubble bursts in a blue ring.
-	  TrapSprung:  the trap snaps shut round the runner's feet and holds for Hold seconds.
+	  3. the effect (0.35 s), white core -> pink -> purple edges;
+	  4. a 0.15 s fade to purple.
+	The look is the one the powers had before the Oct 19 renames (owner, Oct 20: "bring back the nice effects with the
+	power ups, because right now it just looks like a bare copy, i mean just keep the same effects, change the name"):
+	pink and purple, with hearts. The new names and rules stay (Speed Boost only while carrying, the Bear Trap thrown).
+	  Shield:      (was Heart Shield) the glow at the chest bursts into the pink bubble (the server's bubble shows from
+	               that moment) with a ring round the middle and hearts.
+	  Speed Boost: (was Rizz Rush) the glow at the feet bursts into a ring that stands up behind the runner and flies
+	               back, with white speed lines (the pink trail is the server's).
+	  Bear Trap:   (was Love Trap) the catcher throws (Config/Run.Cast.Throw, Shared/RunMotion): the trap
+	               (Shared/BearTrap, its glow pink) leaves the free hand and flies in an arc, tumbling, to where the
+	               server says it lands; there a pink ring slams out round it and settles to its size, with hearts (the
+	               server's trap shows from that moment), and a ring when it arms.
+	  Slow Wave:   (was Charm Wave) a ring gathers round the catcher, then a wave of two rings runs out to its reach,
+	               with hearts (its slow lands on runners as it goes out: PowerService waits the wind-up).
+	  Invisible:   the pink glow, then a shimmering pink bubble shrinks into the body with a ring and sparkles, and the
+	               body fades (others see a faint shimmer, Seen; you see yourself at Self); the name tag and team outline
+	               hide on other screens. Still catchable.
+	  Glitchy:     a pink ring where you were; your screen pushes you forward (Distance in Time, the walls still stop
+	               you); everyone sees two see-through ghosts of the body, cyan and magenta, left behind and fading (no
+	               flicker), and a pop of sparks where you land.
+	  Body Double: a pink ring and sparkles, then every screen makes its own copy of the runner that runs straight on
+	               (Shared/RunMotion legs) for Lasts seconds with a pink shimmer over it (a Highlight, white outline,
+	               one slow swell a second at most) and a fading afterimage now and then, then vanishes in a puff.
+	               Only a look.
+	  ShieldPop:   a blocked stab: the bubble bursts in a pink ring with hearts.
+	  TrapSprung:  the trap snaps shut round the runner's feet and holds for Hold seconds: a ring closes in and hearts pop.
 	  Dive stun:   (owner Oct 19: "after they use it they are stunned for 2 seconds") three cartoon stars circle slowly
 	               over a stunned catcher's head while they lie dazed (character StunnedFrom / StunnedUntil).
 	During the wind-up the user strikes a cast pose (arms forward and up, or the throw: Shared/RunMotion, on everyone).
@@ -45,7 +55,7 @@ function M.start()
 	local okRun, RunMotion = pcall(require, Shared.RunMotion)
 	local RoundNet = Net.get("Round") :: RemoteEvent
 	local FX = Powers.Fx
-	local WHITE, PURPLE = FX.Core, FX.Edge
+	local WHITE, PINK, PURPLE = FX.Core, FX.Glow, FX.Edge
 	local UP = Vector3.new(0, 1, 0)
 	local NEAR = 180 -- studs: casts further from the camera than this are skipped
 
@@ -182,12 +192,13 @@ function M.start()
 				shell.CFrame = CFrame.new(root.Position)
 				shell.Size = Vector3.one * (1.5 + 6.1 * Burst.ease(g, "back"))
 				shell.Transparency = if age > burst then (age - burst) / fade else 0
+				shell.Color = color:Lerp(PURPLE, k)
 			end, function() shell:Destroy() end)
 			Burst.ring(CFrame.new(root.Position), {
 				r0 = 0.8, r1 = 4.4, time = burst + fade, ease = "quart", width = 0.16, glow = 0.6, color = color,
 				fade = fade / (burst + fade) + 0.25, follow = function() return CFrame.new(root.Position) end,
 			})
-			glyphs(root.Position + UP, 5, "✨", 3)
+			glyphs(root.Position + UP, 6, "💖", 3)
 		end)
 	end
 
@@ -250,16 +261,17 @@ function M.start()
 				BearTrap.pose(model, CFrame.new(p) * CFrame.Angles(0, yaw, 0) * tumble, 0, scale0 + (1 - scale0) * Burst.ease(s))
 			end, function()
 				model:Destroy()
-				-- landed: a dust ring and a clack, then it arms (a click and a ring)
-				Burst.ring(CFrame.new(spot + UP * 0.1), {
-					r0 = 1.2, r1 = 3.2, time = 0.35, ease = "quart", width = 0.12, glow = 0.5, color = Color3.fromRGB(200, 190, 170),
-					fade = 0.5, segs = 16, alpha = 0.3,
+				-- landed: the ring slams out round the trap and settles to its size, hearts, a clack; then it arms
+				Burst.ring(CFrame.new(spot + UP * 0.15), {
+					r0 = 0.6, r1 = def.Radius + 0.4, time = 0.5, ease = "back", width = 0.2, glow = 0.8, color = color,
+					fade = 0.5,
 				})
+				glyphs(spot + UP * 0.8, 5, "💘", 1.8)
 				if near(spot) then Sfx.play("trap_set", { at = root }) end
 				task.delay(def.Arm, function()
 					Burst.ring(CFrame.new(spot + UP * 0.08), {
 						r0 = def.Radius + 0.6, r1 = def.Radius, time = 0.3, ease = "quart", width = 0.1, glow = 0.45,
-						color = color, fade = 0.45, segs = 20,
+						color = PURPLE, fade = 0.45, segs = 20,
 					})
 				end)
 			end)
@@ -289,6 +301,7 @@ function M.start()
 					color = PURPLE, fade = fade / (burst + fade) + 0.35, segs = 16, alpha = 0.3,
 				})
 			end)
+			glyphs(root.Position + UP, 6, "💞", 4)
 		end)
 	end
 
@@ -296,11 +309,21 @@ function M.start()
 		windUp(function() return root.Position + UP * 0.6 end, wind, flash, 0.8, color)
 		task.delay(wind + flash, function()
 			if not root.Parent then return end
+			-- a shimmering bubble that shrinks into the body as it fades out of sight
+			local shell = Burst.piece(color, Enum.PartType.Ball)
+			shell.Material = Enum.Material.ForceField
+			Burst.run(burst + fade, function(age, k)
+				shell.CFrame = CFrame.new(root.Position)
+				shell.Size = Vector3.one * (6.4 - 4.6 * Burst.ease(k))
+				shell.Transparency = math.clamp((age - burst * 0.5) / (burst * 0.5 + fade), 0, 1)
+				shell.Color = color:Lerp(PURPLE, k)
+			end, function() shell:Destroy() end)
 			Burst.ring(CFrame.new(root.Position - UP * 2.6), {
-				r0 = 0.8, r1 = 3.4, time = burst + fade, ease = "quart", width = 0.12, glow = 0.5, color = color,
-				fade = 0.6, segs = 16, alpha = 0.25,
+				r0 = 0.8, r1 = 3.4, time = burst + fade, ease = "quart", width = 0.14, glow = 0.6, color = color,
+				fade = 0.6, segs = 16,
 			})
-			Burst.sparks(root.Position, { WHITE, color }, 10)
+			Burst.sparks(root.Position, { WHITE, color, PURPLE }, 12)
+			glyphs(root.Position + UP, 5, "✨", 2.6)
 		end)
 	end
 
@@ -314,6 +337,12 @@ function M.start()
 			if not (character and root.Parent) then return end
 			local dir = if typeof(data.dir) == "Vector3" then data.dir else flatLook(root)
 			local right = dir:Cross(UP).Unit
+			Burst.ring(CFrame.new(root.Position - UP * 2.6), {
+				r0 = 0.6, r1 = 3, time = 0.35, ease = "quart", width = 0.14, glow = 0.6, color = color, fade = 0.5, segs = 16,
+			})
+			task.delay(def.Time + 0.02, function() -- where you land
+				if root.Parent then Burst.sparks(root.Position, { WHITE, color, PURPLE }, 10) end
+			end)
 			for i, tint in { CYAN, MAGENTA } do
 				local shift = right * (if i == 1 then -0.35 else 0.35)
 				local ghosts = ghostOf(character, tint)
@@ -362,6 +391,8 @@ function M.start()
 	end
 
 	-- A copy of the runner that runs straight on, then vanishes in a puff (this screen only: a look).
+	local DOUBLE_SWELL = 1.4 -- seconds a shimmer swell takes (kid-safe: slower than once a second)
+	local DOUBLE_GHOST = 0.45 -- seconds between afterimages
 	function CAST.BodyDouble(root: BasePart, data, wind, flash, _burst, _fade, color)
 		local def = Powers.BodyDouble
 		local character = root.Parent :: Model
@@ -390,6 +421,17 @@ function M.start()
 			local copyRoot = copy:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if not copyRoot then copy:Destroy() return end
 			copy.Name = "HuzzBodyDouble"
+			for _, d in copy:GetDescendants() do -- (the runner's own name tag and outline stay off the copy)
+				if (d:IsA("BillboardGui") and d.Name == "HuzzTag") or d:IsA("Highlight") then d:Destroy() end
+			end
+			-- the shimmer: a pink Highlight with a white outline, swelling softly (one swell in Swell seconds, never a blink)
+			local glow = Instance.new("Highlight")
+			glow.Name = "HuzzDoubleGlow"
+			glow.FillColor, glow.OutlineColor = color, WHITE
+			glow.FillTransparency, glow.OutlineTransparency = 0.7, 0.15
+			glow.DepthMode = Enum.HighlightDepthMode.Occluded
+			glow.Adornee = copy
+			glow.Parent = copy
 			copy.Parent = Burst.home()
 			local dir = if typeof(data.dir) == "Vector3" then data.dir else flatLook(root)
 			local speed = if type(data.speed) == "number" then data.speed else 24
@@ -415,14 +457,31 @@ function M.start()
 				for _, d in copy:GetDescendants() do
 					if d:IsA("BasePart") or d:IsA("Decal") then table.insert(parts, d) end
 				end
+				glyphs(copyRoot.Position + UP * 0.5, 4, "✨", 2)
 				Burst.run(0.25, function(_, k)
-					for _, p in parts do p.LocalTransparencyModifier = k end
+					for _, p in parts do p.LocalTransparencyModifier = 0.15 + 0.85 * k end
+					glow.FillTransparency, glow.OutlineTransparency = 0.7 + 0.3 * k, 0.15 + 0.85 * k
 				end, function() copy:Destroy() end)
 			end
+			for _, d in copy:GetDescendants() do -- (a touch see-through: a projection, not a person)
+				if d:IsA("BasePart") or d:IsA("Decal") then d.LocalTransparencyModifier = 0.15 end
+			end
 			local t0 = os.clock()
+			local nextGhost = 0.2
 			local conn
 			conn = RunService.Heartbeat:Connect(function(dt)
 				if puffed or not copy.Parent then conn:Disconnect() return end
+				local age = os.clock() - t0
+				glow.FillTransparency = 0.7 - 0.12 * math.sin(age * 2 * math.pi / DOUBLE_SWELL) -- (a soft swell, slower than once a second)
+				if age >= nextGhost then -- an afterimage left behind now and then, fading
+					nextGhost += DOUBLE_GHOST
+					local ghosts = ghostOf(copy, color)
+					Burst.run(0.35, function(_, k)
+						for _, g in ghosts do g.part.Transparency = 0.7 + 0.3 * k end
+					end, function()
+						for _, g in ghosts do g.part:Destroy() end
+					end)
+				end
 				if os.clock() - t0 >= lasts then
 					conn:Disconnect()
 					puff()
@@ -441,7 +500,11 @@ function M.start()
 				copyRoot.CFrame = CFrame.new(pos) * CFrame.Angles(0, yaw, 0)
 				if motion then RunMotion.step(motion, dt, speed, true, false) end
 			end)
-			Burst.sparks(root.Position, { WHITE, color }, 8)
+			Burst.sparks(root.Position, { WHITE, color, PURPLE }, 10)
+			Burst.ring(CFrame.new(root.Position - UP * (height - 0.2)), {
+				r0 = 0.6, r1 = 3.2, time = 0.4, ease = "quart", width = 0.14, glow = 0.6, color = color, fade = 0.5, segs = 16,
+			})
+			glyphs(root.Position + UP * 0.5, 4, "✨", 2.2)
 		end)
 	end
 
@@ -567,30 +630,30 @@ function M.start()
 				body:SetAttribute("HuzzCastLen", wind + flash)
 				body:SetAttribute("HuzzCastKind", fx.Pose)
 			end
-			task.spawn(CAST[data.name], root, data, wind, flash, burst, fade, def.Accent, mine)
+			task.spawn(CAST[data.name], root, data, wind, flash, burst, fade, PINK, mine)
 			if not mine then
 				-- (root +7: clear above their name tag, which ends ~root +6)
-				Burst.pop(root.Position + UP * 7, string.upper(def.Name), def.Accent, { height = 1.1, rise = 1.2, time = 1.1, onTop = false })
+				Burst.pop(root.Position + UP * 7, string.upper(def.Name), PINK, { height = 1.1, rise = 1.2, time = 1.1, onTop = false })
 			end
 			return
 		end
 		local at = data.at
 		if typeof(at) ~= "Vector3" or not near(at) then return end
 		if data.name == "ShieldPop" then
-			local color = Powers.Shield.Accent
+			local color = PINK
 			if mine or data.by == me then Sfx.play("heart_shield", { pitch = 0.9 }) end
 			if Burst.flashOk() then
 				Burst.orb({ at = function() return at end, time = 0.12, color = color, size = function(k) return 2.6 * (1 - k) + 0.4 end,
 					alpha = function(k) return 0.2 + 0.8 * k end, light = function(k) return 4 * (1 - k) end })
 			end
 			Burst.ring(CFrame.new(at), { r0 = 3.2, r1 = 7.5, time = 0.45, ease = "quart", width = 0.2, glow = 0.8, haze = 2, color = color, fade = 0.5 })
-			glyphs(at, 6, "✨", 3.5)
+			glyphs(at, 8, "💖", 3.5)
 		elseif data.name == "TrapSprung" then
 			-- the trap snaps shut round the runner (0.08 s), holds while they're stuck, then fades
 			local def = Powers.BearTrap
 			if mine or data.by == me then Sfx.play("trap_snap") end
 			local yaw = if type(data.yaw) == "number" then data.yaw else 0
-			local model = BearTrap.build(def.Accent)
+			local model = BearTrap.build(PINK)
 			model.Parent = Burst.home()
 			local hold = if type(data.hold) == "number" then data.hold else def.Hold
 			local parts = {}
@@ -604,7 +667,8 @@ function M.start()
 					for _, p in parts do p.LocalTransparencyModifier = (age - hold) / 0.3 end
 				end
 			end, function() model:Destroy() end)
-			Burst.ring(CFrame.new(at + UP * 0.15), { r0 = 3.2, r1 = 1.2, time = 0.25, ease = "in", width = 0.2, glow = 0.7, color = def.Accent, fade = 0.4, segs = 16 })
+			Burst.ring(CFrame.new(at + UP * 0.15), { r0 = 4.2, r1 = 1.2, time = 0.3, ease = "in", width = 0.24, glow = 0.8, color = PINK, fade = 0.4 })
+			glyphs(at + UP, 5, "💘", 2)
 		end
 	end)
 end
