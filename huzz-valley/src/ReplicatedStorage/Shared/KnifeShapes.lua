@@ -16,8 +16,8 @@
 	Space: the Handle's (+Y to the tip, X the blade's thin way, Z its width), studs. Each part: name, kind (Block or
 	Wedge), size, at, rot (degrees about X, Y, Z; only X here), paint (a key of the knife's palette: his colour), mat (Enum.Material name), refl (Reflectance), hidden
 	(the tiny Handle at the grip's middle). trail: where the slash trail runs from and to (y).
-	fromBaked turns one baked module into a recipe (HuzzServer/KnifeService also uses it for his 30 knives' hidden
-	backups in ServerStorage/HuzzKnifeBackups, baked the same way: shown only where his uploaded meshes don't load).
+	fromBaked turns one baked module into a recipe (his 30 knives' cuts in ServerStorage/HuzzKnifeBackups are baked the
+	same way; Shared/KnifeCut builds those straight from the rows, on a screen that needs one).
 ]]
 local KnifeShapes = {}
 

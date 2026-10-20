@@ -12,6 +12,10 @@
 	shows it in a ViewportFrame on a knife card whose picture can't be drawn (owner, Oct 20 14:07: "please fix all of
 	the placeholders for knifes"). Only real knife keys; ONE copy a knife for the whole server, made the first time any
 	screen asks (a copy a player put up to 53 knives x every player on the server), at most MAX_VIEWS in all.
+	Remote KnifeBackup (Shared/Net): (knife key) -> the plain cut's baked rows of one of his 30 knives
+	(ServerStorage/HuzzKnifeBackups/<Key>, tools/knives/bake_stand_ins.py backups, 3-17 KB), nil when it has none,
+	false past MAX_CALLS (shared with KnifeGlb). Gameplay/KnifeMeshCheck asks only on a screen where his meshes don't
+	load, once a knife (owner, Oct 20 15:13: "make it so that the knifes also appear inside of the actual roblox game").
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -38,6 +42,20 @@ function KnifeGlbService.mesh(key: any, n: any)
 		cache[name] = if ok and type(g) == "table" then g else false
 	end
 	return cache[name] or nil
+end
+
+-- The plain cut's baked rows of one of his knives, or nil.
+local backupCache: { [string]: any } = {}
+function KnifeGlbService.backup(key: any)
+	if type(key) ~= "string" or #key > 40 or not string.match(key, "^%w+$") then return nil end
+	if backupCache[key] == nil then
+		local folder = ServerStorage:FindFirstChild("HuzzKnifeBackups")
+		local m = folder and folder:FindFirstChild(key)
+		local ok, g = false, nil
+		if m and m:IsA("ModuleScript") then ok, g = pcall(require, m) end
+		backupCache[key] = if ok and type(g) == "table" then g else false
+	end
+	return backupCache[key] or nil
 end
 
 -- Puts one plain copy of a knife in ReplicatedStorage > HuzzKnifeViews (once for the whole server, shared by every
@@ -73,7 +91,7 @@ end
 function KnifeGlbService.start()
 	local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
 	local remote = Net.get("KnifeGlb") :: RemoteFunction
-	remote.OnServerInvoke = function(player, key, n)
+	local function allowed(player): boolean
 		local now = os.clock()
 		local c = calls[player]
 		if not c or now - c.at > 60 then
@@ -81,8 +99,16 @@ function KnifeGlbService.start()
 			calls[player] = c
 		end
 		c.n += 1
-		if c.n > KnifeGlbService.MAX_CALLS then return false end -- (false = "ask again later", never "no more")
+		return c.n <= KnifeGlbService.MAX_CALLS
+	end
+	remote.OnServerInvoke = function(player, key, n)
+		if not allowed(player) then return false end -- (false = "ask again later", never "no more")
 		return KnifeGlbService.mesh(key, n)
+	end
+	local backup = Net.get("KnifeBackup") :: RemoteFunction
+	backup.OnServerInvoke = function(player, key)
+		if not allowed(player) then return false end
+		return KnifeGlbService.backup(key)
 	end
 	local view = Net.get("KnifeView") :: RemoteFunction
 	view.OnServerInvoke = function(player, key)

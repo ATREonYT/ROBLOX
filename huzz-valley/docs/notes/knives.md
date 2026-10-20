@@ -229,15 +229,22 @@ What can't show live, and what shows instead (nothing here needs a setting):
   120038515596009 "not approved"). Such a knife was simply gone, with nothing in its place: the one path with no
   fallback (every other knife already had one). Cause not proven from here (cloud sessions can't reach Roblox): only
   the live game shows which meshes load.
-  Fix: every copy of his knife carries the plain cut of his own .glb, hidden (`ServerStorage/HuzzKnifeBackups/<Key>`,
-  baked by `tools/knives/bake_stand_ins.py backups`, the same cut as the pass and Halloween stand-ins: 30 knives,
-  40-199 parts, 399 KB, server only; `KnifeService.addBackup`, parts `KnifeBackup<n>` welded to his Handle, turned
-  half round where his import is: Solar Reaper). Each screen's `Gameplay/KnifeMeshCheck` loads his meshes
-  (`ContentProvider:PreloadAsync`) for every such knife in the Workspace and in the 3D knife on a card: one of his
-  meshes failing (or no answer in 8 s, until they load) hides his parts and shows the cut; a texture failing doesn't
-  count. One `[HuzzKnife] <key>: his mesh rbxassetid://... didn't load here` line in Output (F9 in the live game).
-  Test: `tools/preview/smoke_knife_backup.luau` (16 checks: all 30 carry their cut, hidden, welded, no trail points
-  of its own, same tip, bottom and width as his model, left out of the measured shape; the screen swaps both ways).
+  Fix: a plain cut of his own .glb for each of the 30, kept as data on the server (`ServerStorage/HuzzKnifeBackups/<Key>`,
+  baked by `tools/knives/bake_stand_ins.py backups`, the same cut as the pass and Halloween stand-ins: 40-199 parts a
+  knife, 3-17 KB, 399 KB in all). A copy of his knife carries only its `Backup` attribute (`KnifeService.addBackup`).
+  Each screen's `Gameplay/KnifeMeshCheck` loads his meshes (`ContentProvider:PreloadAsync`) for every such knife in
+  the Workspace and in the 3D knife on a card. Where one of his meshes fails (or no answer in 8 s), that screen asks
+  for the cut's rows once a knife (remote `KnifeBackup`, `KnifeGlbService.backup`), builds it on that copy
+  (`Shared/KnifeCut`: parts `KnifeBackup<n>` in a Folder, welded to his Handle, turned half round where his import
+  is: Solar Reaper) and hides his parts; his meshes loading later remove it. A texture failing doesn't count. One
+  `[HuzzKnife] <key>: his mesh rbxassetid://... didn't load here` line in Output (F9 in the live game).
+  Parts (critic, Oct 20 evening: the first version carried the cut, hidden, in every copy): his 30 copies summed are
+  710 parts now against 5,182 then (24 a copy on average instead of 173; Moonlit Knife's cut alone was 199), so about
+  3,000 to 5,000 fewer replicated parts in a full game; the cut's parts exist only on a screen that needs them.
+  Test: `tools/preview/smoke_knife_backup.luau` (20 checks: copies carry nothing extra, the server hands out all 30
+  cuts and nothing else, each cut welded, no trail points of its own, same tip, bottom and width as his model, left
+  out of the measured shape; the screen builds and removes it both ways, asks once a knife, keeps his parts when no
+  cut can be had).
 - **The 5 pass and 18 Halloween knives** are drawn as his model with EditableMesh (`Gameplay/KnifeDress`) only where
   Roblox allows it (live: Game Settings > Security > "Allow Mesh / Image APIs", which needs the owner 13+ and ID
   verified); everywhere else their stand-in shows, cut from his .glb (as before: EditableMesh is only the extra).
@@ -408,8 +415,8 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
 ## Honest gaps
 - Live knives (Oct 20 15:13): which of his 680 meshes load live, and whether the swap to the cut looks right on a
   real screen, only the live game shows; checked offline with a stub for Roblox's loader. The cut is flat slabs
-  (his model is rounder) and leaves out Abyss Eclipse's thin hanging chain. No picture of the 30 cuts yet. Each copy
-  of his knife now carries up to 199 more hidden parts (about 20 knives on screen in a full game).
+  (his model is rounder) and leaves out Abyss Eclipse's thin hanging chain. No picture of the 30 cuts yet. Building a
+  cut (up to 199 parts) happens on the screen at the moment a mesh fails: a short hitch is possible on a slow phone.
 - Knife effects (Oct 20): only seen offline, drawn with our look-alikes of Roblox's built-in particle pictures; how
   smoke_main and sparkles_main really read, the PointLight, the Neon glow ball under the bloom and the size of a
   mote only Studio shows. Third pass (crisp Neon ball motes, a solid gem ball): the film and the stands now read

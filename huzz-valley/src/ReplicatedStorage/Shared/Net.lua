@@ -20,6 +20,9 @@
 --   KnifeView      RemoteFunction  client -> server: (knife key) -> true when a copy of that knife's model is in
 --                                  ReplicatedStorage > HuzzKnifeViews (one a knife, shared) (UI/ImageLoader's last fallback for a knife card
 --                                  it can't draw; HuzzServer/KnifeGlbService)
+--   KnifeBackup    RemoteFunction  client -> server: (knife key) -> the plain cut's baked rows of one of his 30 knives, nil
+--                                  when none, false to ask again later (HuzzServer/KnifeGlbService; Gameplay/KnifeMeshCheck
+--                                  builds it only on a copy whose meshes don't load on that screen)
 --   HeadLook       RemoteEvent     client -> server: (turn, tilt) where your head looks, whole degrees, ~5 a second
 --                                  (Gameplay/HeadAim); HuzzServer/HeadLookService puts it on your character (HuzzLook)
 --   Place          RemoteEvent     server -> client: (character, CFrame) move your own body there (HuzzServer/PlaceService,
@@ -51,6 +54,7 @@ local SPEC = {
 	Admin = "RemoteEvent",
 	KnifeGlb = "RemoteFunction",
 	KnifeView = "RemoteFunction",
+	KnifeBackup = "RemoteFunction",
 	HeadLook = "RemoteEvent",
 	Place = "RemoteEvent",
 	Combine = "RemoteEvent",

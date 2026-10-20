@@ -208,7 +208,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     EditableMesh: only with Game Settings > Security > "Allow Mesh / Image APIs", which needs his ID check; his Oct 19
     Play showed the plain stand-ins because Rojo never sent the meshes (fixed), so turn it on and send the `[HuzzKnife]` line);
     his own place still holds the broken 8 and his 30 without the Oct 19 materials ([knives.md](docs/notes/knives.md),
-    "Owner how-to"). Live (Oct 20 15:13): every knife shows with no setting (a hidden cut of his own model where his
+    "Owner how-to"). Live (Oct 20 15:13): every knife shows with no setting (a plain cut of his own model, built on a screen where his
     mesh doesn't load); publish the newest place and send any `[HuzzKnife]` line (`docs/STUDIO-STEPS.md` Part 6).
   - Import `Lobby_Props.glb`, run SetupLobbyProps, send `HuzzLobbyProps.rbxm` ([lobby.md](docs/notes/lobby.md)).
   - Developer Product IDs (Sunset Trail, Blossom Aura, coin packs, spins 1/10/100 at 24/170/600 Robux since Oct 19;

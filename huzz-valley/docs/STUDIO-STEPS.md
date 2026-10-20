@@ -173,7 +173,7 @@ ones play as real Roblox animations (a little smoother and lighter), so do this 
 Since Oct 20 every knife shows in the real game with no setting: if one of your knife's 3D pieces can't load there,
 that screen shows a plain copy cut from your own model instead. These steps make the real ones show.
 1. Open the newest **HuzzValley-yours.rbxl** in Studio (see "Before you start"). It already has all 30 of your
-   knives with their colours fixed, plus the plain copies. (If you publish your own place with Rojo instead: connect
+   knives with their colours fixed, plus what the game needs for the plain copies. (If you publish your own place with Rojo instead: connect
    Rojo first, then in **Explorer** check that **ServerStorage** has **HuzzKnives**, **HuzzKnifeGlb** and
    **HuzzKnifeBackups**.)
 2. Optional, for the Game Pass and Halloween knives to look exactly like your files and the pictures to draw:

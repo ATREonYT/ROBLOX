@@ -1,12 +1,17 @@
 -- Smoke test: every knife shows in the live game (owner, Oct 20 15:13: "make it so that the knifes also appear inside
 -- of the actual roblox game"). His 30 imported knives are his uploaded meshes on an invisible Handle; a live screen
 -- loads each mesh from Roblox, and one Roblox hasn't finished or approved shows nothing. Checks:
---   * HuzzServer/KnifeService: each copy of his 30 carries the plain cut of his own .glb (ServerStorage/
---     HuzzKnifeBackups), hidden, welded to his Handle, no trail points of its own, in the same place and length as his
---     model (Handle space), and left out of the knife's measured shape; a pass knife (its own stand-in) gets none;
---   * Gameplay/KnifeMeshCheck (ContentProvider swapped for a stub): one of his meshes failing shows the cut and hides
---     his parts; all loading, or only a texture failing, changes nothing; no answer in time shows the cut meanwhile
---     and his model comes back once the meshes load.
+--   * HuzzServer/KnifeService: a copy of his knife carries nothing extra, only its "Backup" attribute (the critic,
+--     Oct 20 evening: the hidden cut in every copy was up to 199 parts a knife on every screen); prints the part
+--     counts before and after; a pass knife (its own stand-in) isn't marked;
+--   * HuzzServer/KnifeGlbService.backup hands out each of the 30 cuts' rows (ServerStorage/HuzzKnifeBackups), nothing
+--     for a pass knife or an odd key;
+--   * Shared/KnifeCut builds each cut on a copy: welded to his Handle, no trail points of its own, the same tip,
+--     bottom and width as his model (turned half round where his import is), left out of the knife's measured shape;
+--   * Gameplay/KnifeMeshCheck (Roblox's loader and the remote swapped for stubs): one of his meshes failing builds the
+--     cut on that copy and hides his parts, saying so once; loading later removes it; all loading, or only a texture
+--     failing, builds nothing; no answer in time builds it meanwhile and removes it once the meshes load; the cut's
+--     data is asked once a knife; no data: his parts stay.
 -- From tools/preview: lune run harness.luau ../../src - @smoke_knife_backup.luau setup_ui.luau
 local ok, fails = 0, 0
 local function check(name, cond)
@@ -19,6 +24,8 @@ folder.Name = "HuzzKnives"
 folder.Parent = SS
 
 local KnifeService = require(game.ServerScriptService.HuzzServer.KnifeService)
+local KnifeGlbService = require(game.ServerScriptService.HuzzServer.KnifeGlbService)
+local KnifeCut = require(RS.Shared.KnifeCut)
 local CoinShop = require(RS.Shared.Config.CoinShop)
 
 -- a part set's box in a frame: lo, hi
@@ -36,42 +43,55 @@ local function box(parts, frame)
 	end
 	return lo, hi
 end
+local function count(model)
+	local n = 0
+	for _, d in model:GetDescendants() do if d:IsA("BasePart") then n += 1 end end
+	return n
+end
 
 local keys = {}
 for _, k in folder:GetChildren() do table.insert(keys, k.Name) end
 table.sort(keys)
 check("his 30 knives are here", #keys == 30)
-local carried, hidden, welded, clean, placed, measured = 0, 0, 0, 0, 0, 0
+local marked, bare, served, welded, clean, placed, measured = 0, 0, 0, 0, 0, 0, 0
+local partsNow, partsBefore, biggest, biggestKey = 0, 0, 0, ""
 local worst = ""
 for _, key in keys do
 	local skin = CoinShop.get(key)
 	local model, his = KnifeService.template(skin)
 	local handle = model:FindFirstChild("Handle", true)
-	local cut = model:FindFirstChild("KnifeBackup")
-	if his and cut and #cut:GetChildren() > 0 and model:GetAttribute("Backup") == key then carried += 1 end
-	if cut and handle then
-		local allHidden, allWelded, noExtras = true, true, true
+	if his and model:GetAttribute("Backup") == key then marked += 1 end
+	local n = count(model)
+	if model:FindFirstChild("KnifeBackup") == nil and n == count(folder:FindFirstChild(key)) then bare += 1 end
+	local baked = KnifeGlbService.backup(key)
+	if type(baked) == "table" and #baked.parts > 1 then served += 1 end
+	if baked and handle then
+		partsNow += n
+		partsBefore += n + #baked.parts - 1 -- (the old copy carried every row but the Handle as a hidden part)
+		if #baked.parts - 1 > biggest then biggest, biggestKey = #baked.parts - 1, key end
+		local mine = {}
+		for _, d in model:GetDescendants() do
+			if d:IsA("MeshPart") then table.insert(mine, d) end
+		end
+		local cut = KnifeCut.build(baked, model, handle, KnifeCut.turned(baked, handle, mine))
+		local allWelded, noExtras = true, true
 		for _, p in cut:GetChildren() do
-			if not (p:IsA("BasePart") and p.Transparency == 1 and type(p:GetAttribute("Shown")) == "number" and string.find(p.Name, "^KnifeBackup")) then allHidden = false end
 			local w = p:FindFirstChildOfClass("Weld")
-			if not (w and w.Part0 == handle and w.Part1 == p) then allWelded = false end
+			if not (p:IsA("BasePart") and string.find(p.Name, "^KnifeBackup") and w and w.Part0 == handle and w.Part1 == p) then allWelded = false end
 			for _, c in p:GetChildren() do
 				if not c:IsA("Weld") then noExtras = false end
 			end
 		end
-		if allHidden then hidden += 1 end
-		if allWelded then welded += 1 end
-		if noExtras and model:FindFirstChild("TrailTip", true) == nil or (model:FindFirstChild("TrailTip", true) and not model:FindFirstChild("TrailTip", true):FindFirstAncestor("KnifeBackup")) then clean += 1 end
+		if allWelded and #cut:GetChildren() == #baked.parts - 1 then welded += 1 end
+		if noExtras then clean += 1 end
 		-- his parts vs the cut, in his Handle's space: the same tip, and the same bottom with or without his hanging
 		-- chain / tassel (the cut can leave a thin one out: Abyss Eclipse's)
 		local all, core = {}, {}
-		for _, d in model:GetDescendants() do
-			if d:IsA("MeshPart") and not d:IsDescendantOf(cut) then
-				local n = string.lower(d.Name)
-				local hangs = string.find(n, "chain") or string.find(n, "tassel") or string.find(n, "cord") or string.find(n, "charm") or string.find(n, "rope")
-				table.insert(all, d)
-				if not hangs then table.insert(core, d) end
-			end
+		for _, d in mine do
+			local nm = string.lower(d.Name)
+			local hangs = string.find(nm, "chain") or string.find(nm, "tassel") or string.find(nm, "cord") or string.find(nm, "charm") or string.find(nm, "rope")
+			table.insert(all, d)
+			if not hangs then table.insert(core, d) end
 		end
 		local alo, ahi = box(all, handle.CFrame)
 		local clo = box(core, handle.CFrame)
@@ -88,54 +108,69 @@ for _, key in keys do
 	end
 	model:Destroy()
 end
-check("each copy of his 30 carries his knife's cut (" .. carried .. ")", carried == 30)
-check("the cut is hidden until needed (" .. hidden .. ")", hidden == 30)
-check("the cut is welded to his Handle (" .. welded .. ")", welded == 30)
+print(string.format("parts in a copy of his knife, all 30 summed: %d now, %d before (each carried its hidden cut); the most a knife added: %d (%s)",
+	partsNow, partsBefore, biggest, biggestKey))
+check("each copy of his 30 is marked with its key (" .. marked .. ")", marked == 30)
+check("... and carries nothing extra: the same parts as his model (" .. bare .. ")", bare == 30)
+check("the server hands out each cut's rows (" .. served .. ")", served == 30)
+check("nothing for a pass knife or an odd key", KnifeGlbService.backup("CrimsonRequiem") == nil and KnifeGlbService.backup("../x") == nil and KnifeGlbService.backup(5) == nil)
+check("each cut is welded to his Handle, every row a part (" .. welded .. ")", welded == 30)
 check("the cut brings no trail points of its own (" .. clean .. ")", clean == 30)
 check("the cut sits where his knife is, at its length (" .. placed .. ")" .. worst, placed == 30)
 check("the cut isn't measured as the knife (" .. measured .. ")", measured == 30)
 local pass = KnifeService.template(CoinShop.get("CrimsonRequiem"))
-check("a pass knife (its own stand-in) gets no cut", pass:FindFirstChild("KnifeBackup") == nil and pass:GetAttribute("Backup") == nil)
+check("a pass knife (its own stand-in) isn't marked", pass:FindFirstChild("KnifeBackup") == nil and pass:GetAttribute("Backup") == nil)
 
 -- the screen side
 local Check = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay.KnifeMeshCheck)
+local asked = {}
+Check.fetch = function(key)
+	asked[key] = (asked[key] or 0) + 1
+	return KnifeGlbService.backup(key)
+end
 local function fresh(key)
 	local model = KnifeService.template(CoinShop.get(key))
 	model.Parent = workspace
-	local his, cut = Check.partsOf(model)
-	return model, his, cut
+	local his = Check.partsOf(model)
+	return model, his
 end
 local function visible(parts) for _, p in parts do if p.Transparency >= 1 then return false end end return true end
 local function gone(parts) for _, p in parts do if p.Transparency < 1 then return false end end return true end
-local function cutShows(cut)
-	for _, p in cut do if p.Transparency ~= p:GetAttribute("Shown") then return false end end
+local function cutShows(model)
+	local cut = model:FindFirstChild("KnifeBackup")
+	if not cut or #cut:GetChildren() == 0 then return false end
+	for _, p in cut:GetChildren() do if p.Transparency >= 1 then return false end end
 	return true
 end
 local warned = {}
 Check.say = function(s) table.insert(warned, s) end
 
-local model, his, cut = fresh("EmberEdge")
+local model, his = fresh("EmberEdge")
 local before = {}
 for i, p in his do before[i] = p.Transparency end
 local meshId = Check.meshIdOf(his[1])
-Check.preload = function(list, cb)
+local function failOne(list, cb)
 	for _, p in list do cb(Check.meshIdOf(p), if Check.meshIdOf(p) == meshId then Enum.AssetFetchStatus.Failure else Enum.AssetFetchStatus.Success) end
 end
+Check.preload = failOne
 Check.check(model)
 check("one of his meshes failing hides his parts", gone(his))
-check("... and shows the cut", cutShows(cut) and #cut > 0)
-check("... saying so once in Output", #warned == 1 and string.find(warned[1], "^%[HuzzKnife%] EmberEdge") ~= nil)
+check("... and builds the cut on that copy", cutShows(model))
+check("... saying so once in Output", #warned == 1 and string.find(warned[1], "^%[HuzzKnife%] EmberEdge") ~= nil and string.find(warned[1], "showing the plain cut") ~= nil)
+local other = fresh("EmberEdge")
+Check.check(other)
+check("the cut's data is asked once a knife (" .. tostring(asked.EmberEdge) .. ")", asked.EmberEdge == 1 and cutShows(other))
 Check.preload = function(list, cb)
 	for _, p in list do cb(Check.meshIdOf(p), Enum.AssetFetchStatus.Success) end
 end
 Check.check(model)
 local back = true
 for i, p in his do if p.Transparency ~= before[i] then back = false end end
-check("loading later brings his model back (his own transparency)", back and gone(cut))
+check("loading later removes the cut and brings his model back", back and model:FindFirstChild("KnifeBackup") == nil)
 
-model, his, cut = fresh("FrostFang")
+model, his = fresh("FrostFang")
 Check.check(model)
-check("all his meshes load: nothing changes", visible(his) and gone(cut) and model:GetAttribute("ShowingBackup") == nil)
+check("all his meshes load: nothing is built", visible(his) and model:FindFirstChild("KnifeBackup") == nil and asked.FrostFang == nil)
 Check.preload = function(list, cb)
 	for _, p in list do
 		cb(Check.meshIdOf(p), Enum.AssetFetchStatus.Success)
@@ -143,9 +178,9 @@ Check.preload = function(list, cb)
 	end
 end
 Check.check(model)
-check("only a texture failing: his model stays", visible(his) and gone(cut))
+check("only a texture failing: his model stays", visible(his) and model:FindFirstChild("KnifeBackup") == nil)
 
-model, his, cut = fresh("VoidFang")
+model, his = fresh("VoidFang")
 Check.WAIT = 0.2
 local release = false
 Check.preload = function(list, cb)
@@ -154,8 +189,17 @@ Check.preload = function(list, cb)
 end
 task.spawn(Check.check, model)
 task.wait(0.4)
-check("no answer in time: the cut shows meanwhile", gone(his) and cutShows(cut))
+check("no answer in time: the cut is built meanwhile", gone(his) and cutShows(model))
 release = true
 task.wait(0.2)
-check("... and his model comes back when the meshes load", visible(his) and gone(cut))
+check("... and removed when the meshes load", visible(his) and model:FindFirstChild("KnifeBackup") == nil)
+
+Check.WAIT = 8
+Check.fetch = function() return nil end
+model, his = fresh("NightTanto")
+meshId = Check.meshIdOf(his[1])
+Check.preload = failOne
+Check.check(model)
+check("no cut to be had: his parts stay as they are", visible(his) and model:FindFirstChild("KnifeBackup") == nil
+	and string.find(warned[#warned], "couldn't be fetched") ~= nil)
 print(string.format("knife backup smoke: %d ok, %d failed", ok, fails))
