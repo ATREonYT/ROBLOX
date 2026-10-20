@@ -42,7 +42,9 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 
 ## Your own moves: never a stiff body (Oct 20)
 - `Gameplay/Locomotion` checks itself: within 3 s (`LOAD_WAIT`) Idle, Walk and Run must have a length and a knee,
-  hip or elbow must really move (joints only the Animator writes). If not, if attaching throws, or if the frame step
+  hip or elbow must really move (joints only the Animator writes, looked up again on every check: Roblox swaps the
+  avatar's own limbs in, with new Motor6Ds, after the body appears, and the old joints never move; critic Oct 20,
+  the "limbs swapped" case in `tests/AvatarAnims.spec`). If not, if attaching throws, or if the frame step
   fails 30 times in a row, it lets go (`ctl.fail`): our tracks stop, Roblox's `Animate` comes back on, and
   `Gameplay/PlayerMoves` draws the pack by hand over it (`Locomotion.drives` turns false). If AvatarAnimations can't
   load Locomotion at all, Roblox's own walk stays.

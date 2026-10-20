@@ -9,7 +9,8 @@
 	  Outfit  Midnight Outfit, made here: your clothes tinted midnight blue and a starry night cape. (Real outfit
 	          clothing needs asset IDs from the owner; this is our own look until then.) The cape is welded to the
 	          torso the character has now; when Roblox swaps in the avatar's own torso the cape is made again on it
-	          (Oct 20: the old weld died and the cape fell off as a "floating black block"; tests/Cape.spec).
+	          (the old weld dies with the old torso; tests/Cape.spec). Not the owner's Oct 20 "floating black block":
+	          that block is thick and has no purple lining, and nobody can have the outfit yet (Id 0).
 	Pictures come from Shared/FxTexture (Roblox's stand-ins until the owner uploads ours).
 ]]
 local Players = game:GetService("Players")
@@ -138,9 +139,9 @@ local function outfitOn(character: Model)
 	local torso = (character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")) :: BasePart?
 	local old = character:FindFirstChild("MidnightCape")
 	if old then
-		-- (Oct 20, owner: "fix the little thing near the chaaracter floating ( black block)": the cape was welded at
-		-- spawn, then Roblox swapped in the avatar's own torso, the weld died with the old one and the cape fell away
-		-- as a loose dark slab. A cape not held by the current torso is made again on it.)
+		-- (the cape is welded at spawn; when Roblox swaps in the avatar's own torso the weld dies with the old one and
+		-- the cape would fall away. A cape not held by the current torso is made again on it. This was first blamed
+		-- for the owner's Oct 20 "floating black block"; it wasn't that: docs/notes/economy.md.)
 		local w = old:FindFirstChildOfClass("WeldConstraint")
 		if w and torso and w.Part0 == torso and w.Part1 == old then return end
 		old:Destroy()

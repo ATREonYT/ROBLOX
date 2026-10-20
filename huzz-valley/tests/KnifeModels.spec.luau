@@ -320,8 +320,9 @@ for _, key in PASS do
 			if p.Name == "GlbShell" then shells += 1 else parts += 1 end
 		end
 		for i, p in dressed:GetChildren() do
-			local w = p:FindFirstChildOfClass("WeldConstraint")
-			placed = placed and w ~= nil and w.Part0 == handle
+			local w = p:FindFirstChildOfClass("Weld")
+			placed = placed and w ~= nil and w.Part0 == handle and w.Part1 == p
+				and ((handle.CFrame * w.C0 * w.C1:Inverse()).Position - p.CFrame.Position).Magnitude < 1e-3
 		end
 		-- each part's place and size: its .glb box times the stand's stretch
 		local fits = true
@@ -357,6 +358,33 @@ for _, key in PASS do
 		check(key .. " in hand: the .glb's own size", (p.Size - Vector3.new(g.hi[1] - g.lo[1], g.hi[2] - g.lo[2], g.hi[3] - g.lo[3]):Max(Vector3.one * 0.01)).Magnitude < 1e-3)
 	else
 		check(key .. " in hand: dressed", false)
+	end
+	-- the knife moves while its meshes are made (CreateMeshPartAsync waits; a worn knife on a walking body, the
+	-- owner's Oct 20 "little thing near the character floating"): every piece still sits in its .glb place on the
+	-- Handle, its Weld holding that place (a WeldConstraint made against where the Handle was would keep the piece
+	-- floating off the knife by however far it moved)
+	do
+		local c2 = body()
+		KnifeService.giveBack(c2, CoinShop.get(key))
+		local worn = c2:FindFirstChild("HuzzBackKnife")
+		local wh = worn and worn:FindFirstChild("Handle", true)
+		local moving = worn and Dress.dress(worn, meshes, function()
+			wh.CFrame = wh.CFrame * CFrame.new(1.5, -0.4, 2) * CFrame.Angles(0, 0.3, 0.1) -- (the body walks on meanwhile)
+			return Instance.new("MeshPart")
+		end)
+		local ok = moving ~= nil
+		if moving then
+			local list = moving:GetChildren()
+			for i, g in meshes do
+				local pc = list[i]
+				local w = pc and pc:FindFirstChildOfClass("Weld")
+				local want = CFrame.new((Vector3.new(g.lo[1], g.lo[2], g.lo[3]) + Vector3.new(g.hi[1], g.hi[2], g.hi[3])) / 2)
+				local at = pc and wh.CFrame:ToObjectSpace(pc.CFrame)
+				ok = ok and w ~= nil and w.Part0 == wh and (w.C0.Position - want.Position).Magnitude < 1e-3
+					and (at.Position - want.Position).Magnitude < 1e-3
+			end
+		end
+		check(key .. " worn, the body moving while it's dressed: every piece in its place on the knife, none left floating", ok)
 	end
 	-- all or nothing: one mesh that can't be made leaves the stand-in as it was
 	local n = 0

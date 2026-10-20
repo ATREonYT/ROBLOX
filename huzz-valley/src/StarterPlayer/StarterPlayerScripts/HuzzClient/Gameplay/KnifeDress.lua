@@ -8,8 +8,10 @@
 	  Workspace (in a hand, on a back or hip, on a lobby stand) gets his model instead: every triangle and colour of
 	  his .glb (baked by tools/knives/bake_pass_meshes.py into ServerStorage/HuzzKnifeGlb; this screen asks
 	  HuzzServer/KnifeGlbService for a knife's meshes the first time it shows one, so nobody downloads all 3.3 MB at
-	  join), one MeshPart per look, welded to the
-	  Handle, sized by the knife's Stretch (a stand's big copy); then the stand-in's parts are hidden on this screen.
+	  join), one MeshPart per look, held on the Handle by a Weld whose C0 is its place in the Handle's space (never
+	  where the Handle happened to be: making each mesh waits, and a knife on a walking body moves meanwhile, so
+	  pieces welded where they were made floated off it), sized by the knife's Stretch (a stand's big copy); then
+	  the stand-in's parts are hidden on this screen.
 	  Each look is the Roblox material nearest his .glb's (its mat / refl, from Shared/KnifeLook.glbMaterial: Neon for
 	  his glowing parts, Metal for his metal, Plastic for matte grips). Nothing is laid over it (owner, Oct 19: "they
 	  dont look as good as in the glb file": the old see-through glow shell on the stands is gone).
@@ -86,15 +88,18 @@ function M.meshesOf(folder: Instance, key: string)
 end
 
 -- Puts a knife's dress on: one part per baked mesh (made by make(mesh) -> a MeshPart, or nil), placed in the
--- Handle's space times stretch, welded to the Handle; then hides the stand-in's own parts. All or nothing: nil when
--- any part couldn't be made (the stand-in stays as it is).
+-- Handle's space times stretch, held there by a Weld (C0 = that place); then hides the stand-in's own parts. All or
+-- nothing: nil when any part couldn't be made (the stand-in stays as it is). make() can wait (CreateMeshPartAsync),
+-- and the Handle moves meanwhile on a walking body: so nothing is placed until every part is made, and each Weld
+-- carries its own offset (a WeldConstraint keeps wherever the part was when it was made: the pieces made first
+-- floated off the knife by however far it had moved).
 function M.dress(model: Instance, meshes, make)
 	local handle = model:FindFirstChild("Handle", true)
 	if not (handle and handle:IsA("BasePart")) or #meshes == 0 then return nil end
 	if model:FindFirstChild("GlbDress") then return model:FindFirstChild("GlbDress") end
 	local stretch = model:GetAttribute("Stretch")
 	if typeof(stretch) ~= "Vector3" then stretch = Vector3.one * (model:GetAttribute("Scale") or 1) end
-	local made = {}
+	local made, places = {}, {}
 	for _, g in meshes do
 		local ok, part = pcall(make, g)
 		if not ok or not part then
@@ -104,22 +109,25 @@ function M.dress(model: Instance, meshes, make)
 		local lo, hi = Vector3.new(g.lo[1], g.lo[2], g.lo[3]), Vector3.new(g.hi[1], g.hi[2], g.hi[3])
 		part.Name = if g.blade then "GlbBlade" else "GlbPart"
 		part.Size = ((hi - lo) * stretch):Max(Vector3.one * 0.01)
-		part.CFrame = handle.CFrame * CFrame.new((lo + hi) / 2 * stretch)
 		part.Color = Color3.fromHex(g.col)
 		part.Material = (Enum.Material :: any)[g.mat or (if g.glow then "Neon" else "SmoothPlastic")]
 		part.Reflectance = g.refl or 0
 		part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.Massless, part.CastShadow = false, false, false, false, true, false
 		table.insert(made, part)
+		table.insert(places, CFrame.new((lo + hi) / 2 * stretch)) -- (its place in the Handle's space: set below, once all are made)
 	end
 	local folder = Instance.new("Folder")
 	folder.Name = "GlbDress"
 	for _, d in model:GetDescendants() do -- the stand-in hides, its grip (the Handle) too; its emitters, lights and trail points stay
 		if d:IsA("BasePart") then d.Transparency = 1 end
 	end
-	for _, p in made do
+	for i, p in made do -- (no waiting from here on: placed and welded against where the Handle is now)
+		local at = places[i]
+		p.CFrame = handle.CFrame * at
 		p.Parent = folder
-		local w = Instance.new("WeldConstraint")
-		w.Part0, w.Part1 = handle, p
+		local w = Instance.new("Weld")
+		w.Name = "GlbWeld"
+		w.Part0, w.Part1, w.C0 = handle, p, at
 		w.Parent = p
 	end
 	folder.Parent = model

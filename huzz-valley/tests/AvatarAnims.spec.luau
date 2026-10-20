@@ -10,7 +10,9 @@
 --   step fails    the walk blend errors every frame;
 --   attach throws something in the set-up errors;
 --   no Animate    a character without Roblox's Animate script, and the tracks never load;
---   R6            an R6 avatar.
+--   R6            an R6 avatar;
+--   limbs swapped Roblox swaps in the avatar's own limbs (new Motor6Ds) after Locomotion attached: the pack still
+--                 counts as playing (critic, Oct 20: the six joints were looked up once, so the old ones never moved).
 -- After 5 s each must leave the body moving (the pack on the Animator, or Roblox's Animate on with the pack drawn by
 -- hand by PlayerMoves), and print exactly one [HuzzAnim] line saying which. The fake Animator writes a pose on the
 -- knees for the pack's tracks and on the elbows for Roblox's Animate, so the test can tell who animates.
@@ -85,6 +87,24 @@ local function scenario(name, opts)
 		joint(s .. "Hip", "LowerTorso", s .. "UpperLeg", v(x * 0.5, -0.2, 0), v(0, 0.6, 0))
 		joint(s .. "Knee", s .. "UpperLeg", s .. "LowerLeg", v(0, -0.6, 0), v(0, 0.6, 0))
 		joint(s .. "Ankle", s .. "LowerLeg", s .. "Foot", v(0, -0.6, 0), v(0, 0.15, 0))
+	end
+	-- Roblox swapping in the avatar's own limbs after the body appears: new parts with new Motor6Ds for the hips,
+	-- knees and elbows (the old joints are left behind and never move again)
+	local function swapLimbs()
+		for _, s in { "Left", "Right" } do
+			for _, n in { "UpperLeg", "LowerLeg", "LowerArm" } do
+				local old = parts[s .. n]
+				for _, k in old.kids do k.Transform = CFrame.identity end
+				old.Parent = nil
+				part(s .. n, Vector3.new(1, 1.2, 1))
+			end
+			local x = if s == "Right" then 1 else -1
+			joint(s .. "Elbow", s .. "UpperArm", s .. "LowerArm", v(0, -0.5, 0), v(0, 0.5, 0))
+			joint(s .. "Wrist", s .. "LowerArm", s .. "Hand", v(0, -0.55, 0), v(0, 0.15, 0))
+			joint(s .. "Hip", "LowerTorso", s .. "UpperLeg", v(x * 0.5, -0.2, 0), v(0, 0.6, 0))
+			joint(s .. "Knee", s .. "UpperLeg", s .. "LowerLeg", v(0, -0.6, 0), v(0, 0.6, 0))
+			joint(s .. "Ankle", s .. "LowerLeg", s .. "Foot", v(0, -0.6, 0), v(0, 0.15, 0))
+		end
 	end
 	local animate = if opts.noAnimate then nil else { Name = "Animate", Disabled = false, IsA = function(_, c) return c == "LocalScript" end }
 	local tracks = {}
@@ -215,7 +235,10 @@ local function scenario(name, opts)
 			if not ok then errors += 1 end
 		end
 	end
-	for _ = 1, 60 * 5 do frame() end
+	for i = 1, 60 * 5 do
+		if opts.swapAt == i then swapLimbs() end
+		frame()
+	end
 	local moving = false
 	for _, n in LIVE do
 		local _, a = motors[n].Transform:ToAxisAngle()
@@ -239,6 +262,7 @@ local cases = {
 	{ "attach throws", { loads = true, attachThrows = true } },
 	{ "no Animate", { loads = false, noAnimate = true } },
 	{ "R6", { loads = true, r6 = true } },
+	{ "limbs swapped", { loads = true, swapAt = 1 } },
 }
 print("What Output shows for your own moves, case by case:")
 for _, c in cases do
@@ -251,9 +275,9 @@ for _, c in cases do
 	if name == "step fails" then
 		check(string.find(r.logs[2] or "", "failed 30 frames", 1, true) ~= nil, "step fails: Output says the blend kept failing")
 	end
-	if name == "works" then
-		check(r.drives and not r.animateOn and not r.handDrawn, "works: the pack plays on your Animator, Roblox's Animate off")
-		check(r.logs[1] and string.find(r.logs[1], "your moves", 1, true) ~= nil, "works: Output says the pack plays")
+	if name == "works" or name == "limbs swapped" then
+		check(r.drives and not r.animateOn and not r.handDrawn, name .. ": the pack plays on your Animator, Roblox's Animate off")
+		check(r.logs[1] and string.find(r.logs[1], "your moves", 1, true) ~= nil, name .. ": Output says the pack plays")
 	elseif name == "R6" then
 		check(not r.drives and r.animateOn and not r.handDrawn, "R6: Roblox's own walk, nothing drawn over it")
 	else

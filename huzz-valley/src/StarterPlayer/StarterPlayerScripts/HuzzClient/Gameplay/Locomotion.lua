@@ -29,7 +29,8 @@
 	Never a stiff body (owner Oct 20: "also the user animations isnt there", a screenshot standing in the rest pose):
 	a track can load without an error and still never play (a Studio copy that doesn't take), and with Animate off
 	that left the body frozen. So it checks itself: within LOAD_WAIT seconds Idle, Walk and Run must have a length
-	and the body must really move (knees, hips, elbows: joints only the Animator writes); if not, or when attaching
+	and the body must really move (knees, hips, elbows: joints only the Animator writes, looked up again on every
+	check, since Roblox swaps the avatar's own limbs in after the body appears); if not, or when attaching
 	throws, or the frame step keeps failing, it lets go (ctl.fail): our tracks stop, Roblox's Animate comes back on,
 	and Gameplay/PlayerMoves draws the pack by hand over it (Locomotion.drives turns false). Each way says why on
 	one `[HuzzAnim]` line in Output.
@@ -165,14 +166,6 @@ local function attach(character: Model)
 	end
 
 	local ctl = { character = character, failed = false, verified = false, bornAt = os.clock(), fails = 0 }
-	local liveJoints = {}
-	for _, pair in LIVE_JOINTS do
-		local part = character:FindFirstChild(pair[1])
-		local j = part and part:FindFirstChild(pair[2])
-		if j and j:IsA("Motor6D") then
-			table.insert(liveJoints, j)
-		end
-	end
 	local moved = false
 	local wasJumping = false
 	local quietUntil = 0
@@ -238,11 +231,18 @@ local function attach(character: Model)
 		-- (do the tracks really play? a length each, and the Animator moving the body)
 		if not ctl.verified then
 			if not moved then
-				for _, j in liveJoints do
-					local _, angle = j.Transform:ToAxisAngle()
-					if math.abs(angle) > math.rad(0.5) then
-						moved = true
-						break
+				-- (the six joints looked up again on every check: Roblox swaps in the avatar's own limbs, with new
+				-- Motor6Ds, after the body appears; the old ones never move again, so a list kept from the start
+				-- would fail a body that's playing fine)
+				for _, pair in LIVE_JOINTS do
+					local part = character:FindFirstChild(pair[1])
+					local j = part and part:FindFirstChild(pair[2])
+					if j and j:IsA("Motor6D") then
+						local _, angle = j.Transform:ToAxisAngle()
+						if math.abs(angle) > math.rad(0.5) then
+							moved = true
+							break
+						end
 					end
 				end
 			end

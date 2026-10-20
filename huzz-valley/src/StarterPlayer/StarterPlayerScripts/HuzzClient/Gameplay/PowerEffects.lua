@@ -28,8 +28,9 @@
 	               flicker), and a pop of sparks where you land.
 	  Body Double: a pink ring and sparkles, then every screen makes its own copy of the runner that runs straight on
 	               (Shared/RunMotion legs) for Lasts seconds with a pink shimmer over it (a Highlight, white outline,
-	               one slow swell a second at most) and a fading afterimage now and then, then vanishes in a puff.
-	               Only a look.
+	               one slow swell a second at most) and a fading afterimage every Powers.BodyDouble.AfterimageEvery
+	               (1.2) seconds, never more than one a second (kid-safe), then vanishes in a puff. Only a look.
+	The ghosts and afterimages are Gameplay/Ghosts copies of the body: a hat keeps its mesh (no plain block).
 	  ShieldPop:   a blocked stab: the bubble bursts in a pink ring with hearts.
 	  TrapSprung:  as the Love Trap's: a ring closes in round the runner's feet and hearts pop.
 	  Dive stun:   (owner Oct 19: "after they use it they are stunned for 2 seconds") three cartoon stars circle slowly
@@ -48,6 +49,7 @@ function M.start()
 	local RunService = game:GetService("RunService")
 	local Sfx = require(script.Parent.Sfx)
 	local Burst = require(script.Parent.Burst)
+	local Ghosts = require(script.Parent.Ghosts)
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local Net = require(Shared.Net)
@@ -147,27 +149,9 @@ function M.start()
 		})
 	end
 
-	-- Copies of a character's visible parts (no joints, no scripts), anchored where they are now: ghosts.
+	-- Copies of a character's visible parts, anchored where they are now, in one glowing colour: ghosts (Gameplay/Ghosts).
 	local function ghostOf(character: Model, color: Color3): { { part: BasePart, at: CFrame } }
-		local list = {}
-		for _, d in character:GetDescendants() do
-			if d:IsA("BasePart") and d.Name ~= "HumanoidRootPart" and d.Transparency < 0.9 then
-				local ok, copy = pcall(function()
-					local c = d:Clone()
-					c:ClearAllChildren()
-					return c
-				end)
-				if ok and copy then
-					copy.Anchored, copy.CanCollide, copy.CanQuery, copy.CanTouch, copy.CastShadow = true, false, false, false, false
-					copy.Material = Enum.Material.Neon
-					copy.Color = color
-					pcall(function() (copy :: any).TextureID = "" end)
-					copy.Parent = Burst.home()
-					table.insert(list, { part = copy, at = d.CFrame })
-				end
-			end
-		end
-		return list
+		return Ghosts.copy(character, color, Burst.home())
 	end
 
 	local CAST = {}
@@ -404,7 +388,7 @@ function M.start()
 
 	-- A copy of the runner that runs straight on, then vanishes in a puff (this screen only: a look).
 	local DOUBLE_SWELL = 1.4 -- seconds a shimmer swell takes (kid-safe: slower than once a second)
-	local DOUBLE_GHOST = 0.45 -- seconds between afterimages
+	local DOUBLE_GHOST = math.max(1, Powers.BodyDouble.AfterimageEvery or 1.2) -- seconds between afterimages (one a second at most)
 	function CAST.BodyDouble(root: BasePart, data, wind, flash, _burst, _fade, color)
 		local def = Powers.BodyDouble
 		local character = root.Parent :: Model

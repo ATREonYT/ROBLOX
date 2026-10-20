@@ -292,4 +292,67 @@ function LobbyPropBuild.grow(api, spots, config)
 	return out
 end
 
+--[[
+	Props saved before their Config Grow came in (a place saved with Workspace > HuzzLobbyProps from an older build, or
+	one he kept): the game doesn't build those again (LobbyPropService keeps what the place has, so he can drag them
+	and type another Title or Scale), so nothing ever made them bigger. Here each saved LobbyProp whose Config prop
+	has a Grow and that has no Grow attribute yet (never grown) is grown the same way a new one is: his pad under it
+	scaled by LobbyPropBuild.grow (moved outward only when it would reach the pad before it), then the LobbyProp built
+	again on the bigger pad by LobbyPropBuild.make with his attributes (Title, Line, Color, Glow, Opens, Action) and
+	its Scale times Grow (2.5 -> 3.75: Config's number; a Scale he typed grows by the same factor). Props without a
+	Grow, props already grown, and any he moved off its pad (more than 1.5 studs) are left exactly as they are.
+	`spots` = LobbyLayout.propSpots rows for the lobby the folder sits in; `real(key)` = his set-up model or nil.
+	Returns { { Prop, Shift, Grow, Scale } } for the props it grew.
+]]
+function LobbyPropBuild.growSaved(api, spots, folder, config, shapes, real, texture: string)
+	local CFrame, Vector3 = api.CFrame, api.Vector3
+	local function flat(v) return Vector3.new(v.X, 0, v.Z) end
+	local need = {}
+	for _, lp in folder:GetChildren() do
+		local key = lp:GetAttribute("Prop")
+		local cfg = type(key) == "string" and config.Props[key]
+		local pad = lp:FindFirstChild("Pad")
+		if cfg and (cfg.Grow or 1) ~= 1 and lp:GetAttribute("Grow") == nil and pad and shapes[key] then
+			for _, s in spots do
+				if s.Prop == key and (flat(s.at.Position) - flat(pad.CFrame.Position)).Magnitude <= 1.5 then
+					local propModel = lp:FindFirstChild("Prop")
+					local root = propModel and propModel:FindFirstChild("Root") -- (the prop's middle: where he dragged it)
+					local off = if root and root:IsA("BasePart") then (flat(root.CFrame.Position) - flat(pad.CFrame.Position)).Magnitude else 0
+					if off <= 1.5 then need[key] = { lp = lp, spot = s } end
+				end
+			end
+		end
+	end
+	if next(need) == nil then return {} end
+	-- grow only those pads: every other prop's Grow left out, so its pad stays as it is (LobbyPropBuild.grow still
+	-- reads its pad's reach to keep the grown one clear of it)
+	local only = table.clone(config)
+	only.Props = {}
+	for key, cfg in config.Props do
+		local c = table.clone(cfg)
+		if not need[key] then c.Grow = nil end
+		only.Props[key] = c
+	end
+	local out = {}
+	for _, m in LobbyPropBuild.grow(api, spots, only) do
+		local n = need[m.Prop]
+		if n then
+			local old, cfg = n.lp, config.Props[m.Prop]
+			local scale = (old:GetAttribute("Scale") or (cfg.Scale or 2) / m.Grow) * m.Grow
+			local mine = table.clone(config)
+			mine.Props = { [m.Prop] = {
+				Title = old:GetAttribute("Title") or cfg.Title, Line = old:GetAttribute("Line"), Scale = scale, Grow = m.Grow,
+				Color = old:GetAttribute("Color") or cfg.Color, Glow = old:GetAttribute("Glow") or cfg.Glow,
+				Opens = old:GetAttribute("Opens") or cfg.Opens, Action = old:GetAttribute("Action") or cfg.Action,
+			} }
+			local fresh = LobbyPropBuild.make(api, { at = n.spot.at, Prop = m.Prop }, mine, shapes[m.Prop], real and real(m.Prop), texture)
+			fresh.Name = old.Name
+			fresh.Parent = old.Parent
+			old:Destroy()
+			table.insert(out, { Prop = m.Prop, Shift = m.Shift, Grow = m.Grow, Scale = scale })
+		end
+	end
+	return out
+end
+
 return LobbyPropBuild

@@ -78,8 +78,11 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - **Rewards** (`Earn` items, Price 0): Secret/Mythic/Legendary girls give a title, aura and trail; Girl Collector, Huss
   Hero, Guardian from stats. `RewardService.sync` grants them (never over a paid look).
 - Worn auras: `AuraLook.worn` (their look: [effects.md](effects.md)); Crown Pose: `Shared/CrownPose` +
-  `Gameplay/CrownPose` (cooldown); Midnight = tint + cape (re-made on the avatar's own torso when Roblox swaps it in: Oct 20, the loose cape was the
-  owner's "floating black block"; `tests/Cape.spec`, `docs/previews/cape-fix.jpg` from `motion3d/cape_scene.luau`). Not seen in Studio yet: Crown Pose, Midnight cape, worn auras.
+  `Gameplay/CrownPose` (cooldown); Midnight = tint + cape (re-made on the avatar's own torso when Roblox swaps it in; `tests/Cape.spec`,
+  `docs/previews/cape-fix.jpg` from `motion3d/cape_scene.luau`). Oct 20 this was blamed for the owner's "floating
+  black block"; it wasn't: his block is thick (a visible top face, about 0.3 deep) with no purple lining, the cape is
+  0.08 thin with a Neon lining, and the outfit can't be had yet (Id 0, coming soon; his Studio progress resets each Play) (where the block
+  hunt stands: [knives.md](knives.md)). Not seen in Studio yet: Crown Pose, Midnight cape, worn auras.
 
 ## Crates (`Config/Crates`, `Shared/CrateRoll`, ActionService `OpenCrate`, Shop > CRATES, `Screens/CrateOpen`)
 - **One live crate, Claude's first pick** waiting on the owner's own crate design: the **Starter Crate**, 50 Aura, only

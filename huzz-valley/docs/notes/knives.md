@@ -144,7 +144,10 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   Halloween knives; before that the 5 lived in Shared/KnifeGlb and every player got them). Each client builds his
   model as it is (every triangle, 1,662 to 19,156 a knife, 3 to 14 looks: one MeshPart per colour,
   glow and material, each in its `mat` / `refl` from `glbMaterial`) with `AssetService:CreateEditableMesh` (not
-  FixedSize: that refuses AddVertex) + `CreateMeshPartAsync(Content.fromObject(mesh))`, welds it to the Handle sized
+  FixedSize: that refuses AddVertex) + `CreateMeshPartAsync(Content.fromObject(mesh))`, holds it on the Handle with a
+  Weld whose C0 is its .glb place, set once every mesh is made (Oct 20: making a mesh waits, a knife on a walking
+  body moves meanwhile, and the old WeldConstraints, made against wherever the Handle had been, left the first-made
+  pieces floating off the knife by however far it moved; "worn, the body moving" in `tests/KnifeModels.spec`), sized
   by the model's `Stretch` (a stand's big copy, set by `KnifeService.scale`, even every way) and hides the stand-in's
   parts (Transparency 1 on that screen; its particles, lights and trail stay). A stand's copy is a Clone of the
   server's (tags and attributes come along) parented into the Workspace, which the client watches. All or nothing
@@ -310,6 +313,22 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   his imported knives' parts with the .glb part each came from (his uploaded meshes themselves only Studio shows). A
   refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a player's own
   avatar animations or a short R6 arm can still bring a long tip nearer the floor.
+- **The owner's Oct 20 "floating black block"** (`design/owner-oct19/2010-floating-block.png`): not identified for
+  certain from one still. Measured in the picture: a box about 45 x 110 px with a top face (thick, not a sheet),
+  colour (10, 12, 29), while his black clothes read (0-6, 2-17, 21-41) in the same light: so it is black or near
+  black, not navy. It hangs in the air just past the plaza's front edge at about floor height, beside him; he had
+  just respawned (the blue spawn bubble) and stood in the rest pose. Nothing in the evening's download
+  (his place with our code) is there (no part of any colour past the front edge near the spawn pad), so the game
+  made it while playing. Ruled out:
+  the Midnight cape (0.08 thin with a Neon lining, and nobody can have it yet), the dress pieces above (the dress
+  wasn't running on his screen: his knives showed as stand-ins). The one dark box that fits is the default knife's
+  grip (`KnifeService` `build()`: a visible 0.22 x 0.75 x 0.26 dark Handle, worn by a save with no knife, as his
+  Studio save is each Play), but its steel guard and blade aren't in the picture, so that's unproven too. To settle it:
+  `tools/studio/find-floating-parts.lua` (Command Bar, in Play, server and client view) lists every small part near
+  you, its size, colour and what holds it (`[HuzzFind]` lines). Found on the way and fixed: the dress welds above
+  (a real way for a knife piece to float beside a body, just not on his screen that evening), and Locomotion's
+  self-check, which wrongly let go of a body that was playing fine when Roblox swapped its limbs in
+  ([animations.md](animations.md)).
 - Oct 19 evening (aura): only offline so far. The aura uses Roblox's sparkle picture until he uploads `assets/fx`
   (Glow, Twinkle), so in Studio the rising specks are small 4-point sparkles, not soft dots; how bright the aura light
   reads under his lobby light only Studio shows. The long scythes and reapers are still held like a knife (blade low

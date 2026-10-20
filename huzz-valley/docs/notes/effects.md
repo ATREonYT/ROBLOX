@@ -38,12 +38,15 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   and outline hide on other screens; still catchable.
 - **Glitchy**: a pink ring where you were; your own screen pushes you `Distance` 9 studs in `Time` 0.14 s (a
   LinearVelocity, so walls stop it); everyone sees two see-through ghosts (cyan and magenta) left behind sliding apart,
-  thin glitch slivers, and sparks where you land. No flicker.
+  thin glitch slivers, and sparks where you land. No flicker. Ghosts and afterimages are `Gameplay/Ghosts` copies:
+  each part keeps its mesh (a classic hat's SpecialMesh, its picture cleared), so a hat ghosts as a hat, not as its
+  Handle's plain box (critic Oct 20); `tests/PowerGhosts.spec`.
 - **Body Double**: a pink ring, sparks and ✨ where it starts; every screen clones the runner (scripts, sounds,
   constraints, its name tag and outline removed, the root anchored) and runs the copy straight on with `RunMotion`
   legs, following the floor, for `Lasts` 3.5 s or until a wall, a touch see-through (0.15) under a pink Highlight with
   a white outline that swells softly (one swell in 1.4 s, `DOUBLE_SWELL`), leaving a fading pink afterimage every
-  0.45 s (`DOUBLE_GHOST`); then it puffs (ring, sparks, ✨). Oct 20 (coordinator, from the owner's "bare copy"): it
+  1.2 s (`Config/Powers` `BodyDouble.AfterimageEvery`, never under 1 s: at 0.45 one popped about twice a second,
+  critic Oct 20, kid-safe); then it puffs (ring, sparks, ✨). Oct 20 (coordinator, from the owner's "bare copy"): it
   was a plain copy, now it reads as an ability. Only a look, on each screen.
 - **Bear Trap** (was Love Trap; owner Oct 19: "you throw the beartrap infront of you with a small animation"): the
   throw pose (`Config/Run.Cast.Throw`: the free arm swings back with the chest turning away, then whips forward;

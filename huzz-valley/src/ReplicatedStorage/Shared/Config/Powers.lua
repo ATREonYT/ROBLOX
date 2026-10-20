@@ -59,6 +59,9 @@ return {
 		Name = "Body Double", Card = "BODY DOUBLE", Icon = "AbilityBodyDouble", Emoji = "👯", Text = "Send out a decoy",
 		Accent = Color3.fromRGB(255, 176, 96),
 		Cooldown = 14, Lasts = 3.5,
+		-- seconds between its fading afterimages (each a pink glowing copy: kid-safe, never more than one a second;
+		-- 0.45 made one pop about twice a second, critic Oct 20). tests/PowerGhosts.spec checks it.
+		AfterimageEvery = 1.2,
 	},
 	-- A burst of speed with a trail, only while you carry the girl.
 	SpeedBoost = {

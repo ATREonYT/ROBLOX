@@ -7,7 +7,9 @@
 
 	1. Props the place already has (Workspace > HuzzLobbyProps, saved by the place build, so he can drag them or type
 	   another Title or Scale) are kept. If the place has none (his own place synced by Rojo), they are made here,
-	   the ones with a Grow (the two Halloween stands) on his pads scaled up first (LobbyPropBuild.grow).
+	   the ones with a Grow (the two Halloween stands) on his pads scaled up first (LobbyPropBuild.grow). A kept prop
+	   saved before its Grow came in (no Grow attribute) is grown once the same way (LobbyPropBuild.growSaved: its
+	   pad, glow, title and Scale; his other props never move), so an older save gets the bigger stands too.
 	2. His real models: once he has run the SetupLobbyProps helper (ServerStorage > HuzzLobbyProps > <name>), any
 	   stand-in (plain parts, attribute StandIn) on a pad is swapped for his model at the same place and size.
 	The menus open on the client (no remote: the prompt and the click are seen on the screen that used them).
@@ -56,9 +58,10 @@ local function swap(lp: Instance)
 	local pad = lp:FindFirstChild("Pad")
 	if not shape or not pad then return end
 	-- build a fresh one on the same spot, then keep where he dragged the old prop to
-	-- (with what's typed on the pad's LobbyProp: its Scale above all, so his model comes out the stand-in's size)
+	-- (with what's typed on the pad's LobbyProp: its Scale above all, so his model comes out the stand-in's size, and
+	-- its Grow, so a grown stand's pad, glow and title stay grown and it's never grown a second time)
 	local cfg = table.clone(Config)
-	cfg.Props = { [key] = { Title = lp:GetAttribute("Title") or key, Scale = lp:GetAttribute("Scale"), Color = lp:GetAttribute("Color"),
+	cfg.Props = { [key] = { Title = lp:GetAttribute("Title") or key, Scale = lp:GetAttribute("Scale"), Grow = lp:GetAttribute("Grow"), Color = lp:GetAttribute("Color"),
 		Glow = lp:GetAttribute("Glow"), Opens = lp:GetAttribute("Opens"), Action = lp:GetAttribute("Action"), Line = lp:GetAttribute("Line") } }
 	local fresh = LobbyPropBuild.make(api, { at = pad.CFrame * CFrame.new(0, -0.1, 0), Prop = key }, cfg, shape, model, FxTexture.get("Twinkle"))
 	local prop = fresh:FindFirstChild("Prop") :: Model
@@ -123,6 +126,20 @@ function LobbyPropService.start()
 			end
 		end
 		if made == 0 then return end
+	else
+		-- (props saved before their Config Grow: grown once now, on his pads in the one lobby)
+		local floor = LobbyLayout.main(Workspace)
+		local okS, grown = pcall(function()
+			local spots = LobbyLayout.propSpots(api, Workspace, floor, Config.ThreePads, Config.TwoPads)
+			return LobbyPropBuild.growSaved(api, spots, folder, Config, Shapes, real, FxTexture.get("Twinkle"))
+		end)
+		if not okS then
+			warn("[Huzz] lobby props bigger: " .. tostring(grown))
+		elseif #grown > 0 then
+			for _, g in grown do
+				print(string.format("[Huzz] Lobby prop %s made %.2gx bigger (saved before its Grow; Scale now %.3g)", g.Prop, g.Grow, g.Scale))
+			end
+		end
 	end
 	local n, standIns = 0, 0
 	for _, lp in folder:GetChildren() do

@@ -139,7 +139,11 @@ inspection with Lune: core `CLAUDE.md` section 4.
   WITCH'S BREW's title top (27.5) would rise into the tree's lowest branch (bottom 27.0), which hangs just in front
   of it. Checked in `tests/LobbyLayout.spec` ("bigger:": pads apart, each turning circle on its pad and clear of its
   neighbours, the tree, the spawn pad, the stands and the plaza's edge, the titles clear of the branches and of each
-  other; the title width is an estimate, 0.62 of the letter height a letter) and `check_new_lobby.luau`. Before /
+  other; the title width is an estimate, 0.62 of the letter height a letter) and `check_new_lobby.luau`. A place
+  saved with props from before the grow (no `Grow` attribute) gets it at game start too: `LobbyPropBuild.growSaved`
+  (from `LobbyPropService`) grows just those two once (his pad, the prop's pad and title, its Scale times Grow, his
+  typed Title kept), never moves his other props or one he dragged off its pad, and swapping a stand-in for his
+  model keeps its `Grow` (so it's never grown twice); "saved props:" in `tests/LobbyLayout.spec`. Before /
   after from about the angle of his `design/owner-oct19/1840-halloween-crates.png`:
   `docs/previews/halloween-stands-bigger.jpg` (`tools/preview/motion3d/halloween_stands_scene.luau`, plain boxes,
   no studs). A place saved with the props before this keeps them as they were (saved props are his). `LobbyLayout`

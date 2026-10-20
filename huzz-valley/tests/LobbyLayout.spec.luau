@@ -405,5 +405,73 @@ do
 	end
 end
 
+-- Props saved before their Grow (critic, Oct 20: LobbyPropService only grew them when the place had no
+-- HuzzLobbyProps, so a place saved earlier kept the small Halloween stands): his place with the five props built the
+-- old way (no Grow, WITCH'S BREW at Scale 2.5, SWEETS & TREATS at 2.3, a Title he typed on one), then
+-- LobbyPropBuild.growSaved as the game runs it: the two stands grown (his pad, the prop's pad, Scale), his typed
+-- Title kept, the other three props untouched, and a second run changes nothing.
+do
+	local luau = require("@lune/luau")
+	local Build = require("../src/ReplicatedStorage/Shared/LobbyPropBuild")
+	local Shapes = require("../src/ServerScriptService/HuzzServer/LobbyPropShapes")
+	local env = setmetatable({ Color3 = roblox.Color3 }, { __index = _G })
+	local Props = luau.load(fs.readFile("src/ReplicatedStorage/Shared/Config/LobbyProps.lua"), { debugName = "LobbyProps", environment = env })()
+	local ws2 = roblox.deserializePlace(fs.readFile("places/HUSSANIME.rbxl")):GetService("Workspace")
+	local floor2 = Layout.main(ws2)
+	local bapi = Build.api(roblox)
+	local old = table.clone(Props)
+	old.Props = {}
+	for key, cfg in Props.Props do
+		local c = table.clone(cfg)
+		if c.Grow then c.Scale, c.Grow = c.Scale / c.Grow, nil end
+		old.Props[key] = c
+	end
+	old.Props.Witch_Brew_Cauldron.Title = "BREW!" -- (one he typed)
+	local folder = roblox.Instance.new("Folder")
+	folder.Name = Props.Folder
+	folder.Parent = ws2
+	local hisPad = {}
+	for _, s in Layout.propSpots(api, ws2, floor2, Props.ThreePads, Props.TwoPads) do
+		local lp = Build.make(bapi, s, old, Shapes[s.Prop], nil, "")
+		lp.Parent = folder
+		hisPad[s.Prop] = { part = s.pad:FindFirstChildWhichIsA("BasePart", true), size = s.pad:FindFirstChildWhichIsA("BasePart", true).Size }
+	end
+	local before = {}
+	for _, lp in folder:GetChildren() do
+		before[lp:GetAttribute("Prop")] = { lp = lp, pivot = lp:FindFirstChild("Prop"):FindFirstChild("Root").CFrame, scale = lp:GetAttribute("Scale") }
+	end
+	local spots2 = Layout.propSpots(api, ws2, floor2, Props.ThreePads, Props.TwoPads)
+	check("saved props: his five pads still found with the props on them", #spots2 == 5)
+	local ok, grown = pcall(Build.growSaved, bapi, spots2, folder, Props, Shapes, nil, "")
+	check("saved props: growSaved runs (" .. tostring(if ok then #grown else grown) .. ")", ok)
+	grown = if ok then grown else {}
+	local got = {}
+	for _, g in grown do got[g.Prop] = g end
+	check("saved props: WITCH'S BREW and SWEETS & TREATS grown, nothing else", #grown == 2 and got.Witch_Brew_Cauldron ~= nil and got.Sweets_Treats_Coffin ~= nil)
+	local now = {}
+	for _, lp in folder:GetChildren() do now[lp:GetAttribute("Prop")] = lp end
+	check("saved props: still five", #folder:GetChildren() == 5)
+	for key, want in { Witch_Brew_Cauldron = 3.75, Sweets_Treats_Coffin = 3.45 } do
+		local lp = now[key]
+		local pad = lp and lp:FindFirstChild("Pad")
+		check("saved props: " .. key .. " at Config's Scale " .. want, lp ~= nil and math.abs(lp:GetAttribute("Scale") - want) < 1e-3 and lp:GetAttribute("Grow") == 1.5)
+		check("saved props: " .. key .. "'s glow pad 1.5x", pad ~= nil and math.abs(pad.Size.X - 9) < 1e-3)
+		check("saved props: " .. key .. "'s pad (his) 1.5x", (hisPad[key].part.Size - hisPad[key].size * 1.5).Magnitude < 0.01)
+	end
+	check("saved props: the Title he typed kept", now.Witch_Brew_Cauldron and now.Witch_Brew_Cauldron:GetAttribute("Title") == "BREW!")
+	for _, key in { "Shop_Stall", "Like_Reward_Gift", "Pumpkin_Patch_Chest" } do
+		local lp = now[key]
+		check("saved props: " .. key .. " untouched (same prop, place, Scale, pad)", lp == before[key].lp
+			and (lp:FindFirstChild("Prop"):FindFirstChild("Root").CFrame.Position - before[key].pivot.Position).Magnitude < 1e-4
+			and lp:GetAttribute("Scale") == before[key].scale and (hisPad[key].part.Size - hisPad[key].size).Magnitude < 1e-4)
+	end
+	local again = Build.growSaved(bapi, Layout.propSpots(api, ws2, floor2, Props.ThreePads, Props.TwoPads), folder, Props, Shapes, nil, "")
+	check("saved props: a second start grows nothing more", #again == 0
+		and (hisPad.Witch_Brew_Cauldron.part.Size - hisPad.Witch_Brew_Cauldron.size * 1.5).Magnitude < 0.01)
+	if show then
+		for _, g in grown do print(string.format("  saved %s grown %.2gx, Scale %.3g, moved %.2f", g.Prop, g.Grow, g.Scale, g.Shift)) end
+	end
+end
+
 print(string.format("LobbyLayout: %d ok, %d failed", passed, failed))
 if failed > 0 then process.exit(1) end
