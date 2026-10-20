@@ -117,7 +117,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; every spec in `tests/` (each topic file names
   its own); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots that run, stab,
-  lunge, rescue, use powers; 11 setups, one of them "edge cases": leaving mid-lunge and mid-cutscene, a reset
+  lunge, rescue, use powers; 10 setups, one of them "edge cases": leaving mid-lunge and mid-cutscene, a reset
   mid-lunge, the admin's NEXT GAME Secret girl twice). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo
   root) prints the loop numbers for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function RoundService calls, or games stop
   with "attempt to call a nil value".

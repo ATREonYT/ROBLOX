@@ -38,10 +38,6 @@ return {
 	-- cross has stood in the start zone (where nobody can stab them) for Wait seconds, the clock drops to Time
 	-- seconds ("Hurry!"). A Hero who stays in the start zone for HeroWait seconds loses the solo run: everyone runs.
 	Hurry = { Wait = 5, Time = 6, HeroWait = 6 },
-	-- An AFK catcher (our default while the owner decides, Oct 19: one caught nobody, so the game ran all MaxRounds,
-	-- about 11 min): a catcher who hasn't moved more than Move studs for After seconds of Running (counted across
-	-- rounds) sits out the rest of that round and the Practice Bot takes his spot. He gets it back next round (and sits out again at GO if he still hasn't moved). Runners: never.
-	AwayCatcher = { After = 20, Move = 2 },
 	GameOverTime = 8,
 	MaxRounds = 20, -- safety net only (runners who never get caught): the runners left win, she goes to her carrier
 	-- Rescue (as in Huss Valley): a runner still out on the field stands within Range studs of a downed

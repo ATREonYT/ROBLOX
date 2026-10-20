@@ -14,8 +14,12 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   (`RoundRules` "LastStanding", GirlMoved "Last"). No runners left = catchers win. A game that started with one
   runner (practice with the bot, or 1 runner vs 1 catcher) still ends after `Crossings` 3 clean rounds in a row.
   `MaxRounds` 20 is only a safety net (the runners left win). HUD: "ROUND n · N RUNNERS LEFT". Loop audit: games
-  with 4-12 players last about 4-5 min, 6-9 rounds; a few hit the 20-round net (a lone catcher against 5 runners can take
-  13-20 rounds). An AFK catcher no longer stalls a game: see "AFK catcher" under Practice Bot.
+  with 4-12 players last about 4-5 min, 6-9 rounds; a few hit the 20-round net. **Known gap (Oct 19):** an AFK
+  player drawn as the only catcher catches nobody, so the game runs all 20 rounds (about 11 min, runners crossing
+  an empty field); the owner chose to leave it as is (Oct 20, "Leave it" on swapping in the Practice Bot) (audit "6 + 1 AFK": 4 of 23 games hit the net; a traced run showed
+  the AFK catcher's game going all 20 rounds, and a lone real catcher against 5 runners sometimes taking 13-20).
+  The sim's "AFK runner" scenario lets its AFK bot play only when he is the only catcher, so it tests the AFK
+  runner, not this gap.
 - `lune run huzz-valley/tools/sim/round_sim.luau audit` prints stage times, waiting and win rates by player count,
   on the real map size.
 - Lineup 3 s, ChooseTime 6, ShowTime 2, RoundEndPause 2.5, HeroTime 30, RoundTime 60. One runner on the line skips
@@ -136,23 +140,6 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   the live game too (`minPlayers` 1). Red outline like catchers; round walls it follows a PathfindingService path
   (computed in a task.spawn when a raycast to the target hits something solid), and sidesteps when stuck. The sim
   tests it with a fake body. Its stab animation: [stab-lunge-catch.md](stab-lunge-catch.md).
-- **AFK catcher** (`Config/Round.AwayCatcher` After 20 / Move 2, `RoundRules.awayCatchers`, RoundService
-  `watchAwayCatchers`; our default while the owner decides, Oct 19): an AFK player drawn as the only catcher caught
-  nobody, so the game ran all 20 rounds (about 11 min; audit "6 + 1 AFK": 4 of 23 games). Now a catcher who hasn't
-  moved more than 2 studs, or pressed a move key (`Humanoid.MoveDirection`), for 20 s of Running sits out the rest
-  of that round (held like on the line: no moving, stabbing or diving) and the Practice Bot comes in from the
-  middle: "X is away, the Practice Bot takes over" (said once a game). The count runs across rounds (Running is
-  often 10 s), not while down or trapped, and the line-up's move doesn't count as moving (`markIdle` at GO). He
-  keeps his role and his place in the game: next round he's back, and sits out again at GO if he still hasn't
-  moved. Runners are never counted (an AFK runner gets the Hurry clock, as before). Standing in, the bot never
-  "wins" and doesn't adapt its speed: the game's real catchers win by the usual rules, except that a catcher who
-  sat out and caught nobody himself wins nothing (not her, not the winner's pay; nobody gets her if he'd have been
-  the one). Sim: "an AFK catcher" makes whoever is drawn as catcher AFK in every game (rule off: 20, 20 and 4
-  rounds, the bot never in; on: 3-19, usually under 12, since the bot is beatable on purpose) and
-  checks the bot steps in and catches and at most one game hits the net; every scenario checks nobody who is
-  playing gets called away (the bots fill MoveDirection while they push to move).
-- Honest gap: with only the bot catching for him a game can still run long (the bot's catch rate is unchanged),
-  and `MoveDirection` reaching the server is from Roblox's usual replication, not yet seen in Studio.
 
 ## Maps and the field (`MapService`)
 - In his place maps are in `Workspace.Maps` (Base_Map, BasketBall_Map, Halloween_Map; zone parts named

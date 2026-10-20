@@ -592,25 +592,6 @@ test("stalling: only when every runner still to cross is in the start zone", fun
 	eq(Rules.stalling(s, { [2] = true }), false, "nobody left to cross")
 end)
 
-test("awayCatchers: only a catcher who stood still long enough, once, never a runner", function()
-	local s = game(4) -- catcher 1, runners 2, 3, 4
-	eq(#Rules.awayCatchers(s, { [1] = 19.9 }, 20), 0, "not long enough yet")
-	local out = Rules.awayCatchers(s, { [1] = 20, [2] = 99, [3] = 99 }, 20)
-	eq(#out, 1, "only the catcher (AFK runners keep the Hurry clock, nothing worse)")
-	eq(out[1], 1, "catcher 1 is away")
-	eq(#Rules.awayCatchers(s, { [1] = 30 }, 20, { [1] = true }), 0, "already sitting out: named once")
-	Rules.tag(s, 1, 2)
-	Rules.reachSafe(s, 3)
-	Rules.reachSafe(s, 4)
-	Rules.endRound(s, false)
-	Rules.startRound(s) -- runner 2 was caught: a catcher now
-	out = Rules.awayCatchers(s, { [1] = 25, [2] = 21 }, 20)
-	eq(#out, 2, "a caught runner turned catcher counts too")
-	eq(out[1] .. "," .. out[2], "1,2", "sorted")
-	s.over = true
-	eq(#Rules.awayCatchers(s, { [1] = 99 }, 20), 0, "the game is over")
-end)
-
 test("stalling: a Hero's solo run only looks at the Hero", function()
 	local s = game(4)
 	Rules.pickRunner(s)
