@@ -41,7 +41,7 @@ Products.Passes = {
 	{
 		Key = "DancePack", Kind = "Pass", Name = "Dance Pack", Blurb = "4 dances +\nthemed items.",
 		Id = 0, Price = 149, OnSale = false, Icon = "DancesNote", Art = "DancePack", Giftable = true, Accent = Color3.fromHex("E85BC4"), ButtonStyle = "PassPink",
-		Benefits = { { Icon = "MusicBenefit", Text = "4 Exclusive Dances" }, { Icon = "GiftBenefit", Text = "Dance Themed Items" } },
+		Benefits = { { Icon = "MusicBenefit", Text = "4 Dances" }, { Icon = "GiftBenefit", Text = "Dance Themed Items" } },
 		Why = "needs the 4 dance animations",
 	},
 	-- The 5 knife Game Passes (owner, Oct 18: "please add the knifes into the ui for the gamepass menu, these are going

@@ -295,7 +295,7 @@ function DancesScreen.build(parent: Instance)
 			stage.Visible = false
 		end
 		previewName.Text = d.Name
-		previewBlurb.Text = if mine then d.Blurb else "Locked. " .. (if rewardLevel(d.Id) then "Reach Level " .. rewardLevel(d.Id) .. "." elseif d.Pack then "Get it with the Dance Pack." elseif d.Coins then "Buy it in the Shop's DANCES." else "")
+		previewBlurb.Text = if mine then d.Blurb else "Locked. " .. (if rewardLevel(d.Id) then "Reach Level " .. rewardLevel(d.Id) .. (if d.Coins then " or Shop > DANCES." else ".") elseif d.Coins then "Buy it in Shop > DANCES." elseif d.Pack then "Get it with the Dance Pack." else "") -- (coins first: the Dance Pack may still be coming soon)
 	end
 
 	local cards: { [string]: any } = {}
