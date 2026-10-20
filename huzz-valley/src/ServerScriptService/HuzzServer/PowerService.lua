@@ -28,8 +28,9 @@ local DownMotion = require(Shared.DownMotion)
 
 local PowerService = {}
 -- The powers' look is the one they had before the Oct 19 renames (owner, Oct 20: "bring back the nice effects with
--- the power ups ... just keep the same effects, change the name"): pink bubble, pink speed trail, a pink glow on the
--- trap, "💘 STUCK!" and "😍" on a slowed runner. The new names and rules stay.
+-- the power ups ... just keep the same effects, change the name"): pink bubble, pink speed trail, the Love Trap's pink
+-- heart disc with its 💘 sign as the Bear Trap (Shared/BearTrap), "💘 STUCK!" and "😍" on a slowed runner. The new
+-- names and rules stay.
 local PINK = Color3.fromRGB(255, 110, 190)
 local ctx = nil -- from RoundService: match(), running(), rootOf(id), playerOf(id), isDown(player), sync(id),
 -- startZone(), inZone(zone, pos), ground(pos)
@@ -326,6 +327,7 @@ function USE.BearTrap(id, def)
 		end
 		local model = BearTrap.build(PINK)
 		BearTrap.pose(model, CFrame.new(at) * CFrame.Angles(0, yaw, 0), 0)
+		BearTrap.arm(model, false) -- (dim until it can catch)
 		model:SetAttribute("Owner", id)
 		model:SetAttribute("ArmAt", trap.armAt)
 		model.Parent = folder("HuzzTraps")

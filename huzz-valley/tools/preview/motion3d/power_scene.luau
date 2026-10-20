@@ -5,10 +5,12 @@
 -- Shared/RunMotion (the run, and the throw pose from the HuzzCast* attributes PowerEffects sets), makes what the
 -- server would make (the shield bubble, the rush trail, the Bear Trap from Shared/BearTrap) and reads every part,
 -- light, trail and billboard back each frame. Each part is its own short shot (the film cuts between them):
---    0.4 s Shield         2.2 s Invisible (4 s; drawn as the other players see it: faint, a slow shimmer)
+--    0.4 s Shield         2.2 s Invisible (4 s; drawn as the other players see it: faint, a slow shimmer;
+--                         POWER_ME=1 films it as the runner sees it, with the big bubble)
 --    6.4 s Glitchy        8.0 s Body Double (the copy runs off into the distance and puffs)
 --   11.8 s Speed Boost (only while carrying the girl; she isn't drawn)
---   13.2 s Bear Trap: thrown ahead with the throw pose, arcs, lands, arms; the runner runs into it and it snaps shut
+--   13.2 s Bear Trap (the Love Trap's heart disc): thrown ahead with the throw pose, arcs, lands, arms; the runner runs
+--          into it and it springs
 --   17.0 s Slow Wave
 -- The renderer lights everything evenly and draws wedges as boxes, so this shows shapes, colours and timing, not
 -- Roblox's light levels. Studio is the real check (the decoy is a real clone of the character there).
@@ -17,6 +19,7 @@
 local roblox = require("@lune/roblox")
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
+local process = require("@lune/process")
 local CFrame, Vector3, Color3, Instance = roblox.CFrame, roblox.Vector3, roblox.Color3, roblox.Instance
 local Rig = require("./rig")
 local Scene = require("./scene")
@@ -113,7 +116,7 @@ local roundHandler
 local services = {
 	-- (the viewer is a third player: everything is drawn as the other players see it)
 	Players = {
-		LocalPlayer = { UserId = 99 },
+		LocalPlayer = { UserId = tonumber(process.env.POWER_ME or "") or 99 }, -- (99: a third player watching)
 		GetPlayerByUserId = function(_, id) return byId[id] end,
 		GetPlayers = function() return { byId[RUNNER_ID], byId[CATCHER_ID] } end,
 	},
@@ -462,7 +465,7 @@ for f = 0, total - 1 do
 		if t >= s - DT / 2 and t < s + DT / 2 - 1e-6 then table.insert(stills, f) end
 	end
 	local caption = string.format("%.2f s  %s%s", t, string.upper(shot.name),
-		if shot.name == "Invisible" then "  (as others see you)" elseif snapped and t < snapped + TRAP.Hold then "  STUCK!" else "")
+		if shot.name == "Invisible" then (if process.env.POWER_ME == "1" then "  (your own screen)" else "  (as others see you)") elseif snapped and t < snapped + TRAP.Hold then "  STUCK!" else "")
 	scene:frame(camPos, camLook, {
 		sprites = sprites, ribbons = ribbons, lights = lights, labels = labels, grades = grades, bloom = bloom, caption = caption,
 		fov = 70,

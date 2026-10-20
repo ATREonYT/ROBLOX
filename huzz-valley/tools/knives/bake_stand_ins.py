@@ -16,7 +16,7 @@
 # triangles there. So the outline is his: the moon hole, the teeth, the spikes, the feathers, solid, with smooth
 # slanted edges and nothing loose round it, in his colour and the Roblox material nearest his
 # (Shared/KnifeLook.glbMaterial). Where a smaller piece lies over a bigger one (a gem on the guard, an inlay on the
-# blade), the smaller one is drawn a hair thicker (OVER for each bigger piece it lies over), so it shows on top as on
+# blade), the smaller one is drawn thicker (OVER, 0.02 studs each side for each bigger piece it lies over), so it shows on top as on
 # his model instead of flickering in the same place. Seen edge on, a stand-in is flat slabs (his model is rounder):
 # the broad side is what shows in a hand, on a back and on a stand.
 # Each knife: { trail = { base y, tip y }, parts = { { name, size x, y, z, centre x, y, z, col (rrggbb), material
@@ -48,7 +48,8 @@ KEEP_ROUND = 0.12  # a ring (a piece with a real cut-out) is never smoothed by m
 KEEP_HOLE = 0.04   # a hole of this share of its piece or more is a real cut-out: never filled
 AMIN = 0.0008     # pieces smaller than this (square studs) are left out
 MIN = 0.02        # thinnest piece (studs)
-OVER = 0.004      # studs a smaller piece sits proud of each bigger piece it lies over, each side (at most 3 deep)
+OVER = 0.02       # studs a smaller piece sits proud of each bigger piece it lies over, each side (at most 3 deep;
+                  # 0.02 and not less: Roblox flickers between faces closer than about that, seen from across a room)
 SQUARE = 0.97     # an outline filling this much of its tightest rectangle is one block
 DANGLES = ('tassel', 'chain', 'cloth', 'rope', 'charm')  # hanging bits (Shared/KnifeLook.shape leaves them out of
 # pommel to tip): their parts are named Tassel<n>

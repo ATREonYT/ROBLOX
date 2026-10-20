@@ -10,6 +10,11 @@
 -- KNIFE_MESHES=/tmp/knives.json MOTION3D_KEEP=<dir> sh huzz-valley/tools/preview/motion3d/video.sh \
 --   huzz-valley/tools/preview/motion3d/knife_wear_scene.luau /tmp/x.mp4
 -- then python3 -I huzz-valley/tools/preview/motion3d/knife_wear_sheet.py <dir> (docs/previews/knife-on-back.jpg).
+-- KNIFE_SET=solid (no KNIFE_MESHES needed): the plain-part stand-ins as every screen draws them when it can't show his
+-- mesh (Shared/KnifeStandIns: wedge pairs, coloured layers 0.02 studs proud of the blade each side), worn by 11 bodies (the 5
+-- pass knives and 6 Halloween ones, among them the four that hit the 200-part cap), each seen from about 3 studs
+-- square on and from a second angle (still 2i-2, 2i-1), to look for seams between wedges and layers fighting the
+-- blade; python3 -I huzz-valley/tools/preview/motion3d/knife_solid_sheet.py <dir> makes docs/previews/knife-solid-worn.jpg.
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local process = require("@lune/process")
@@ -25,7 +30,8 @@ local KnifeLook = Env.load(SHARED .. "KnifeLook.lua")
 local CoinShop = Env.load(SHARED .. "Config/CoinShop.lua")
 local Stand = Env.load(SHARED .. "KnifeStandIns.lua")
 
-local MESHES = process.env.KNIFE_MESHES or error("set KNIFE_MESHES (python3 -I tools/knives/knife_meshes.py <file>)")
+local SOLID = process.env.KNIFE_SET == "solid"
+local MESHES = process.env.KNIFE_MESHES or (if SOLID then nil else error("set KNIFE_MESHES (python3 -I tools/knives/knife_meshes.py <file>)"))
 local baked = {}
 for _, k in serde.decode("json", fs.readFile("huzz-valley/tools/knives/knives.json")) do baked[k.key] = k end
 local models = {}
@@ -41,7 +47,7 @@ local function shapeOf(key)
 		end
 	else
 		for _, r in Stand[key].parts do
-			table.insert(parts, { name = r[1], cf = CFrame.new(r[5], r[6], r[7]), size = Vector3.new(r[2], r[3], r[4]) })
+			table.insert(parts, { name = r[1], cf = CFrame.new(r[5], r[6], r[7]) * CFrame.Angles(math.rad(r[11] or 0), 0, 0), size = Vector3.new(r[2], r[3], r[4]) })
 		end
 	end
 	return KnifeLook.shape(parts)
@@ -63,6 +69,51 @@ local function knifeAt(key, handleCF)
 end
 
 local scene = Scene.new()
+if SOLID then
+	local KEYS = { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath", -- the pass knives
+		"CandyReaper", "ThornKarambit", "ToadstoolSickle", "GrandWitchScythe", "TaffyKarambit", "CupcakeCleaver" }
+	local GAPX = 8
+	local cams = {}
+	for i, key in KEYS do
+		local x = (i - (#KEYS + 1) / 2) * GAPX
+		local rig = scene:addRig(Rig.r15("Body" .. i, { shirt = "#3a6fd8", pants = "#2b2f3a" }))
+		rig.root.CFrame = CFrame.new(x, Rig.REST_HEIGHT, 0)
+		local mix = Mix.new()
+		Mix.step(mix, 1, { speed = 0, state = "ground", lengths = { Walk = 1, Run = 1 } })
+		KFS.apply(Idle, rig, 0.5 + i * 0.4, 1)
+		Rig.fk(rig)
+		local shape = shapeOf(key)
+		local wear = KnifeLook.wearOf(CoinShop.get(key).Wear, shape)
+		local torso = rig.parts[KnifeLook.mountPart(wear, false)]
+		local handleCF = torso.CFrame * KnifeLook.wornC0(wear, torso.Name, torso.Size, shape)
+		local n = 0
+		for _, r in Stand[key].parts do
+			if r[1] ~= "Handle" then
+				n += 1
+				local box = scene:addBox(handleCF * CFrame.new(r[5], r[6], r[7]) * CFrame.Angles(math.rad(r[11] or 0), 0, 0),
+					Vector3.new(r[2], r[3], r[4]), "#" .. r[8])
+				box.Neon = if r[9] == "Neon" then true else nil
+				box.Shape = if r[12] == "W" then "wedge" else nil
+			end
+		end
+		local mid = handleCF * Vector3.new(0, (shape.length or 2) * 0.3, 0)
+		if wear == "Back" then -- (flat on the back: square on, then from up over the left shoulder)
+			table.insert(cams, { mid + Vector3.new(0.6, 0.4, 2.9), mid })
+			table.insert(cams, { mid + Vector3.new(-1.6, 1.7, 1.9), mid })
+		else -- (at the right hip: from behind and to the right, then from the front right, under the arm)
+			table.insert(cams, { mid + Vector3.new(1.4, 0.3, 2.6), mid })
+			table.insert(cams, { mid + Vector3.new(2.5, -0.7, -1.4), mid })
+		end
+		print(string.format("%s: %s on %s, %d parts, %.2f studs", key, wear, torso.Name, n, shape.length))
+	end
+	local stills = {}
+	for f, c in cams do
+		scene:frame(c[1], c[2], { fov = 70 })
+		table.insert(stills, f - 1)
+	end
+	scene:save(nil, 30, 960, 720, { stills = stills })
+	return
+end
 for i = -6, 6 do
 	for j = -3, 3 do scene:addBox(CFrame.new(i * 4, 0.03, j * 4), Vector3.new(0.4, 0.06, 0.4), "#b9a06a") end
 end

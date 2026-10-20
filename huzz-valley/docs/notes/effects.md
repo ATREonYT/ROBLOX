@@ -18,9 +18,11 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
 - **The look is the pre-rename one** (Oct 20, owner: "bring back the nice effects with the power ups, because right
   now it just looks like a bare copy, i mean just keep the same effects, change the name"): every ability in the old
   pink: white core, pink glow (`Fx.Glow`), purple edges (`Fx.Edge`), with hearts (emoji, no upload); the server's
-  bubble, speed trail and trap glow in `PowerService` PINK (255, 110, 190), "💘 STUCK!" and "😍" on a slowed runner, as
-  Heart Shield, Rizz Rush, Love Trap and Charm Wave had. The new names and rules stay (Speed Boost only while
-  carrying, the Bear Trap thrown). The cards keep their own `Accent` colours (the card UI only).
+  bubble and speed trail in `PowerService` PINK (255, 110, 190), the Love Trap's heart disc as the Bear Trap,
+  "💘 STUCK!" and "😍" on a slowed runner, as Heart Shield, Rizz Rush, Love Trap and Charm Wave had. The new names and
+  rules stay (Speed Boost only while carrying, the Bear Trap thrown). The cards keep their own `Accent` colours: before
+  the renames (ed870f6) the cards had no colour per power at all (the kit's navy, pink only as the rim glow and the
+  shield-on cover); the per-power colours came with his card pictures b and c (Oct 19), which the cards copy one to one.
 - A glow builds (`Fx.WindUp` 0.25 s; Shield and Speed Boost 0.15 s, Invisible and Body Double 0.12, Glitchy 0.05),
   one bright frame (`Gameplay/Burst.flashOk`: at most one a second per screen), the effect 0.35 s, a 0.15 s fade to
   purple.
@@ -28,8 +30,10 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   pops it in a pink ring with 💖 hearts.
 - **Speed Boost** (was Rizz Rush; only while carrying her): a pink ring standing up behind you and white speed lines
   turning pink (the pink trail is the server's).
-- **Invisible** (Lasts 4 s): the pink glow, then a shimmering pink bubble shrinks into the body with a ring, sparks and
-  ✨, and the body fades on every screen (`LocalTransparencyModifier`): others see it at `Seen` 0.88 with a slow
+- **Invisible** (Lasts 4 s; new Oct 19, there was no old one): the pink glow, then on your own screen a shimmering
+  pink bubble (6.4 studs) shrinks into the body with a ring, sparks and ✨; other screens get only a faint ring at the
+  feet and a few sparks (Oct 20: the big bubble on everyone's screen pointed at who was vanishing; this is what the
+  Oct 19 batch showed others, in pink). The body fades on every screen (`LocalTransparencyModifier`): others see it at `Seen` 0.88 with a slow
   shimmer (`Shimmer` 0.8 Hz, a soft swell, never a blink: "so it's fair"), you see yourself at `Self` 0.55; name tag
   and outline hide on other screens; still catchable.
 - **Glitchy**: a pink ring where you were; your own screen pushes you `Distance` 9 studs in `Time` 0.14 s (a
@@ -43,14 +47,18 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   was a plain copy, now it reads as an ability. Only a look, on each screen.
 - **Bear Trap** (was Love Trap; owner Oct 19: "you throw the beartrap infront of you with a small animation"): the
   throw pose (`Config/Run.Cast.Throw`: the free arm swings back with the chest turning away, then whips forward;
-  character attribute HuzzCastKind "Throw" from `Fx.BearTrap.Pose`), the trap (`Shared/BearTrap`, plain parts: two
-  jaws of teeth, springs, a plate, a faint danger disc in pink) leaves the left hand at the end of the wind-up,
-  tumbles once along an arc (`Arc` 3.5 studs high), growing from 0.4 to full size, and lands where the server says,
-  open: the Love Trap's pink ring slams out round it and settles to its size, with 💘 hearts; a purple ring when it
-  arms. Caught: it snaps shut round the runner's feet in 0.08 s, a pink ring closes in, 💘 hearts pop, it holds,
-  fades.
+  character attribute HuzzCastKind "Throw" from `Fx.BearTrap.Pose`), the trap leaves the left hand at the end of
+  the wind-up: the old Love Trap exactly (`Shared/BearTrap`: a dark pink disc 2 x `Radius` across, a neon pink disc on
+  it, a floating 💘 sign 1.2 studs up; Oct 20, "just keep the same effects, change the name": the metal toothed trap
+  of the Oct 19 batch is gone, in the history at d6db14f). It spins flat along an arc (`Arc` 3.5 studs high), growing
+  from 0.25 to full size, and lands where the server says: the Love Trap's pink ring slams out round it and settles
+  to its size, with 💘 hearts; its neon disc is dim until it arms, then bright, with a purple ring. Caught: as the Love
+  Trap, a pink ring closes in round the runner's feet and 💘 hearts pop (the server takes the disc away and shows
+  "💘 STUCK!").
 - **Slow Wave** (was Charm Wave): a pink ring gathers, then a pink and a purple ring run out with 💞 hearts (its slow
-  lands when they do: PowerService waits `Fx.WindUp`); 16 pieces a ring, no haze, every ring's pieces moved with one
+  lands when they do: PowerService waits `Fx.WindUp`), "😍" over each slowed runner. The old Charm Wave left no disc
+  under slowed runners in any version (ece0c68 to ed870f6: only the badge); the pink disc in the old film's Charm Wave
+  still is the Love Trap dropped earlier at the catcher's feet; 16 pieces a ring, no haze, every ring's pieces moved with one
   `Workspace:BulkMoveTo` a frame (`Burst.bulkMove`).
 - **Dive stun**: three cartoon stars circle slowly over a stunned catcher's head on every screen (character
   StunnedFrom / StunnedUntil), with the server's 💫 STUNNED badge; the body lies dazed ([stab-lunge-catch.md](stab-lunge-catch.md)).
@@ -65,8 +73,10 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   POWER_STILLS=1). Older sheet `docs/previews/abilities-sheet.jpg` (`tools/preview/powers_vs_og.py`, next to the other
   game's ability); the dive and stun: `docs/previews/dive-stun.mp4`.
 - Not seen in Studio yet: all of the above. The film draws the Body Double's pink Highlight as a soft white fill (no
-  coloured Highlight or outline offline). The trap itself is the Oct 19 bear trap (pink glow), not the old pink heart
-  disc with its 💘 sign; "😍" over a runner slowed by a wave named Slow Wave is the old Charm Wave badge, kept as asked.
+  coloured Highlight or outline offline). The card's picture is still his metal bear trap icon (picture b) while the
+  thrown thing is the heart disc; "😍" over a runner slowed by a wave named Slow Wave is the old Charm Wave badge, kept
+  as asked. Invisible, your screen vs everyone else's: `docs/previews/invisible-own-vs-others.jpg` (`power_scene.luau`
+  with POWER_ME=1 films it as the runner sees it).
 
 ## The heartbeat (`Gameplay/Heartbeat`)
 - Owner Oct 19: "add a heartbeat effect when someone gets closer" and "add a heartbeat sound when your screen turns

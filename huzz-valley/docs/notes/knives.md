@@ -115,7 +115,8 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   parts cut from his own `Gamepass_Knives.glb` and `Halloween_Knives.glb`. Each look of his (colour, glow, material)
   seen from the blade's broad side, its outline filled solid and cut into triangles, each triangle two WedgeParts
   turned about the blade's thin axis (a plain rectangle is one block), each piece as thick as his triangles there, a
-  smaller piece a hair proud of a bigger one under it; at most 199 parts a knife (98 to 199): the piece costing the
+  smaller piece 0.02 studs proud of each bigger one under it, each side (`OVER`; it was 0.004, Oct 20: Roblox flickers
+  between faces that close from a distance, which the offline renderer can't show); at most 199 parts a knife (98 to 199): the piece costing the
   most is smoothed first (his bandage wraps and chain links before anything else), rings never smoothed square and
   real cut-outs never filled (Hollow Eclipse's moon, the Seraph's halo). His colours and `glbMaterial`, his length;
   hanging bits are named Tassel so pommel to tip stays his. Oct 20 (owner: "please fix the knifes finally, they are
@@ -125,6 +126,11 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   whole and smooth. Seen edge on they are flat slabs (his model is rounder). Picture
   `docs/previews/knife-standins-solid.jpg` (the 5 pass knives: his .glb | Oct 19 slices | solid now | his model on
   screen; `knife_glb_scene.luau` with `OLD_SHAPES` = the old `KnifeShapes.lua` and its data, render.mjs draws wedges).
+  Worn, close up: `docs/previews/knife-solid-worn.jpg` (the 5 pass knives and Candy Reaper, Thorn Karambit, Toadstool
+  Sickle, Grand Witch Scythe, Taffy Karambit, Cupcake Cleaver on the back or at the hip, each from about 3 studs at two
+  angles; `knife_wear_scene.luau` with KNIFE_SET=solid, `tools/preview/motion3d/knife_solid_sheet.py`): no seams between wedges
+  and no layer fighting the blade offline; one small white tick inside Hollow Eclipse's black blade (a sliver of its
+  white edge). Flicker in Studio is still unchecked.
   Spec `tests/KnifeShapes.spec` (lengths, his .glb's box within 0.06 studs from each part's real corners, his colours
   only, at most 200 parts, scaler, stand size, even scale and no shell, nothing on the knife, arc). They are the
   server's knife (length, grip, trail points) and the fallback on any screen that can't draw his model; each screen

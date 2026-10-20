@@ -13,13 +13,14 @@
 	               that moment) with a ring round the middle and hearts.
 	  Speed Boost: (was Rizz Rush) the glow at the feet bursts into a ring that stands up behind the runner and flies
 	               back, with white speed lines (the pink trail is the server's).
-	  Bear Trap:   (was Love Trap) the catcher throws (Config/Run.Cast.Throw, Shared/RunMotion): the trap
-	               (Shared/BearTrap, its glow pink) leaves the free hand and flies in an arc, tumbling, to where the
-	               server says it lands; there a pink ring slams out round it and settles to its size, with hearts (the
-	               server's trap shows from that moment), and a ring when it arms.
+	  Bear Trap:   (was Love Trap) the catcher throws (Config/Run.Cast.Throw, Shared/RunMotion): the Love Trap's pink
+	               heart disc with its 💘 sign (Shared/BearTrap) leaves the free hand small and flies in an arc, spinning
+	               flat, to where the server says it lands; there a pink ring slams out round it and settles to its
+	               size, with hearts (the server's disc shows from that moment), and a ring when it arms.
 	  Slow Wave:   (was Charm Wave) a ring gathers round the catcher, then a wave of two rings runs out to its reach,
 	               with hearts (its slow lands on runners as it goes out: PowerService waits the wind-up).
-	  Invisible:   the pink glow, then a shimmering pink bubble shrinks into the body with a ring and sparkles, and the
+	  Invisible:   the pink glow, then on your own screen a shimmering pink bubble shrinks into the body with a ring and
+	               sparkles (other screens: only a faint ring and a few sparks, so it doesn't point at you), and the
 	               body fades (others see a faint shimmer, Seen; you see yourself at Self); the name tag and team outline
 	               hide on other screens. Still catchable.
 	  Glitchy:     a pink ring where you were; your screen pushes you forward (Distance in Time, the walls still stop
@@ -30,7 +31,7 @@
 	               one slow swell a second at most) and a fading afterimage now and then, then vanishes in a puff.
 	               Only a look.
 	  ShieldPop:   a blocked stab: the bubble bursts in a pink ring with hearts.
-	  TrapSprung:  the trap snaps shut round the runner's feet and holds for Hold seconds: a ring closes in and hearts pop.
+	  TrapSprung:  as the Love Trap's: a ring closes in round the runner's feet and hearts pop.
 	  Dive stun:   (owner Oct 19: "after they use it they are stunned for 2 seconds") three cartoon stars circle slowly
 	               over a stunned catcher's head while they lie dazed (character StunnedFrom / StunnedUntil).
 	During the wind-up the user strikes a cast pose (arms forward and up, or the throw: Shared/RunMotion, on everyone).
@@ -252,13 +253,14 @@ function M.start()
 		task.delay(wind + flash, function()
 			local from = hand()
 			local model = BearTrap.build(color)
+			BearTrap.arm(model, false)
 			model.Parent = Burst.home()
-			local scale0 = 0.4 -- (small in the hand, full size as it lands)
+			local scale0 = 0.25 -- (small in the hand, full size as it lands)
 			Burst.run(flight, function(age)
 				local s = math.clamp(age / flight, 0, 1)
 				local p = from:Lerp(spot, s) + UP * (def.Arc * 4 * s * (1 - s))
-				local tumble = CFrame.Angles(-(1 - s) * math.pi * 2, 0, 0) -- (one turn forward, flat as it lands)
-				BearTrap.pose(model, CFrame.new(p) * CFrame.Angles(0, yaw, 0) * tumble, 0, scale0 + (1 - scale0) * Burst.ease(s))
+				local spin = CFrame.Angles(0, (1 - s) * math.pi * 3, 0) * CFrame.Angles(-(1 - s) * 0.5, 0, 0) -- (spins flat like a frisbee, tipped back, level as it lands)
+				BearTrap.pose(model, CFrame.new(p) * CFrame.Angles(0, yaw, 0) * spin, 0, scale0 + (1 - scale0) * Burst.ease(s))
 			end, function()
 				model:Destroy()
 				-- landed: the ring slams out round the trap and settles to its size, hearts, a clack; then it arms
@@ -305,11 +307,21 @@ function M.start()
 		end)
 	end
 
-	function CAST.Invisible(root: BasePart, _data, wind, flash, burst, fade, color)
+	function CAST.Invisible(root: BasePart, _data, wind, flash, burst, fade, color, mine)
 		windUp(function() return root.Position + UP * 0.6 end, wind, flash, 0.8, color)
 		task.delay(wind + flash, function()
 			if not root.Parent then return end
-			-- a shimmering bubble that shrinks into the body as it fades out of sight
+			if not mine then
+				-- other screens: only a faint ring at the feet and a few sparks (a big bubble with hearts would
+				-- point at the runner who is about to vanish)
+				Burst.ring(CFrame.new(root.Position - UP * 2.6), {
+					r0 = 0.8, r1 = 3.4, time = burst + fade, ease = "quart", width = 0.12, glow = 0.5, color = color,
+					fade = 0.6, segs = 16, alpha = 0.25,
+				})
+				Burst.sparks(root.Position, { WHITE, color }, 8)
+				return
+			end
+			-- your own screen: a shimmering bubble that shrinks into the body as it fades out of sight
 			local shell = Burst.piece(color, Enum.PartType.Ball)
 			shell.Material = Enum.Material.ForceField
 			Burst.run(burst + fade, function(age, k)
@@ -649,24 +661,9 @@ function M.start()
 			Burst.ring(CFrame.new(at), { r0 = 3.2, r1 = 7.5, time = 0.45, ease = "quart", width = 0.2, glow = 0.8, haze = 2, color = color, fade = 0.5 })
 			glyphs(at, 8, "💖", 3.5)
 		elseif data.name == "TrapSprung" then
-			-- the trap snaps shut round the runner (0.08 s), holds while they're stuck, then fades
-			local def = Powers.BearTrap
+			-- the Love Trap's spring, as it was: a ring closes in round the runner's feet and hearts pop (the server
+			-- takes the disc away and pins the runner with its "💘 STUCK!" badge)
 			if mine or data.by == me then Sfx.play("trap_snap") end
-			local yaw = if type(data.yaw) == "number" then data.yaw else 0
-			local model = BearTrap.build(PINK)
-			model.Parent = Burst.home()
-			local hold = if type(data.hold) == "number" then data.hold else def.Hold
-			local parts = {}
-			for _, d in model:GetDescendants() do
-				if d:IsA("BasePart") and d.Name ~= "Glow" then table.insert(parts, d) end
-			end
-			Burst.run(hold + 0.3, function(age)
-				local shut = math.clamp(age / 0.08, 0, 1)
-				BearTrap.pose(model, CFrame.new(at) * CFrame.Angles(0, yaw, 0), 1 - (1 - shut) ^ 2)
-				if age > hold then
-					for _, p in parts do p.LocalTransparencyModifier = (age - hold) / 0.3 end
-				end
-			end, function() model:Destroy() end)
 			Burst.ring(CFrame.new(at + UP * 0.15), { r0 = 4.2, r1 = 1.2, time = 0.3, ease = "in", width = 0.24, glow = 0.8, color = PINK, fade = 0.4 })
 			glyphs(at + UP, 5, "💘", 2)
 		end
