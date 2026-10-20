@@ -1,6 +1,6 @@
 -- Huzz Valley: listen to each dance's two songs in Studio, and try a song you found yourself (owner, Oct 20: "find
 -- popular audios we can use with these dances. But make them logically fit the dances that we have in game").
--- The picks and why: huzz-valley/docs/dance-music.md. Your step-by-step: huzz-valley/docs/STUDIO-STEPS.md Part 5.
+-- The picks and why: huzz-valley/docs/dance-music.md. Your step-by-step: huzz-valley/docs/STUDIO-STEPS.md Part 7.
 --
 -- How: open the place in Studio (Edit mode is fine), View > Command Bar, paste ALL of this file, press Enter.
 -- Turn your volume up a little. For each dance it plays pick 1, then pick 2, for SECONDS each (from a quarter of the

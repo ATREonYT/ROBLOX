@@ -188,13 +188,13 @@ that screen shows a plain copy cut from your own model instead. These steps make
 
 ---
 
-## Part 5: listen to the dance songs (about 7 minutes)
+## Part 7: listen to the dance songs (about 7 minutes)
 
 Every dance now has two songs from Roblox's own free music (APM Music and Monstercat). You don't upload anything:
 they already play in Studio and in the live game. Fortnite's own songs can't be used (they belong to Epic Games, and
 Roblox removes copied music). The list and why each song fits: `huzz-valley/docs/dance-music.md`.
 
-### 5a. Hear them all
+### 7a. Hear them all
 1. Open the game in Studio (Edit mode is fine). Turn your volume up a little.
 2. In Finder, open `huzz-valley/tools/studio/` and open **try-dance-songs.lua** with TextEdit. **Cmd+A**, **Cmd+C**.
 3. In Studio: **View > Command Bar** and **View > Output**. Click in the Command Bar, **Cmd+V**, **Enter**.
@@ -204,7 +204,7 @@ Roblox removes copied music). The list and why each song fits: `huzz-valley/docs
    "Flapper: use pick 2". Claude makes the swap.
 6. To hear only a few dances: at the top of the file, change `local ONLY = {}` to `local ONLY = { "Flapper", "TheTwist" }`.
 
-### 5b. Found a better song yourself? (optional)
+### 7b. Found a better song yourself? (optional)
 1. In Studio: **View > Toolbox**. At the top, pick **Audio** (in the Creator Store tab).
 2. Type the search words for the dance (table below). Click the play button on a result to hear it.
 3. Only take songs whose uploader is **APMOfficial** or **Monstercat** (it says under the name). Other uploads may

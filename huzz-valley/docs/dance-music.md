@@ -124,7 +124,7 @@ Moves (Hype Horns to Akim), So Fresh and Clean Groove (Downtown, 1:00, to Shake 
 ## Honest gaps
 
 - **Not heard by us.** Cloud sessions can't play Roblox audio. Descriptions come from the store pages (via search).
-  The owner listens with `tools/studio/try-dance-songs.lua` (docs/STUDIO-STEPS.md Part 5) and says which to swap.
+  The owner listens with `tools/studio/try-dance-songs.lua` (docs/STUDIO-STEPS.md Part 7) and says which to swap.
 - **Most to check by ear:** Kalinka A (it starts slow: the dance may need `Start` set past the slow part), The
   Speakeasy (genre "Kitsch", no description we could trust), Skull Crusher (may be too heavy: it's only pick 2), Do It
   Your Self (quirky jazz: may be too calm for Zany Zig; pick 2 Shiawase is the safe swap), Shake Somethin' (tempo
