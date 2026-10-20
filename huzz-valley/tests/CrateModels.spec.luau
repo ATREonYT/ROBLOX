@@ -125,6 +125,18 @@ for _, c in knifeCrates do
 		check(c.Id .. ": his MeshParts as he imported them", meshParts == #parts)
 	end
 	for _, it in c.Items do inCrates[it.Id] = true end
+	-- every rarer tier is rarer (kid-fair odds: an Epic never likelier than a Rare)
+	local tier, total = {}, 0
+	for _, it in c.Items do tier[it.Rarity] = (tier[it.Rarity] or 0) + it.Weight; total += it.Weight end
+	local order, prev, fair, line = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic" }, math.huge, true, {}
+	for _, r in order do
+		if tier[r] then
+			if tier[r] > prev + 1e-9 then fair = false end
+			prev = tier[r]
+			table.insert(line, string.format("%s %.1f%%", string.sub(r, 1, 1), tier[r] / total * 100))
+		end
+	end
+	check(`{c.Id}: each rarer tier is rarer ({table.concat(line, " / ")})`, fair)
 end
 for _, c in Crates.List do
 	for _, it in c.Items do

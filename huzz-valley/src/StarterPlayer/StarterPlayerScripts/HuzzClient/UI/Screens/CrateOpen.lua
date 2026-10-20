@@ -36,6 +36,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Crates = require(Shared.Config.Crates)
+local CoinShop = require(Shared.Config.CoinShop)
 local CrateRoll = require(Shared.CrateRoll)
 local Format = require(Shared.Format)
 local Net = require(Shared.Net)
@@ -134,6 +135,9 @@ function CrateOpen.build(parent: Instance)
 	local cratePop = crate:FindFirstChild("Pop") :: UIScale
 	local lidHome = lid.Position
 	-- his 3D crate (UI/Crate3D builds its ViewportFrame in here at run time), and the knife's name and rarity under it
+	-- a soft light behind the knife as it rises (CrateMotion.backlight: nearly white for a black blade, so Hollow Moon
+	-- never reads as a thin dark sliver on the coloured light), moved behind the knife's show spot at run time
+	local backlight = Kit.art("DanceFxGlow", { Name = "KnifeLight", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, 205), Size = UDim2.fromOffset(250, 250), ScaleType = Enum.ScaleType.Stretch, ImageTransparency = 1, Visible = false, ZIndex = 3, Parent = group })
 	local stage = new("Frame", { Name = "Stage3D", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, STAGE.Y), Size = UDim2.fromOffset(STAGE.W, STAGE.H), BackgroundTransparency = 1, Visible = false, ZIndex = 4, Parent = group })
 	local knifeName = words({ Name = "KnifeName", Text = "", FontFace = F.Big, TextSize = 36, Position = UDim2.fromOffset(240, WORDS3.Name), Size = UDim2.fromOffset(800, 40), Visible = false, ZIndex = 25, Parent = group }, 3)
 	local knifeRarity = words({ Name = "KnifeRarity", Text = "", FontFace = F.Big, TextSize = 22, Position = UDim2.fromOffset(240, WORDS3.Rarity), Size = UDim2.fromOffset(800, 26), Visible = false, ZIndex = 25, Parent = group }, 2.5)
@@ -446,6 +450,16 @@ function CrateOpen.build(parent: Instance)
 		crateRays.ImageColor3 = C.Accent:Lerp(col, mix)
 		crateRays.ImageTransparency = 0.8 - 0.4 * bright
 		crateRays.Rotation += dt * (if calm then 10 else 20 + 70 * bright)
+		if item then
+			local shop = CoinShop.get(item.Id)
+			local lift, lightA, pale = CrateMotion.backlight(t, shop and shop.Colors and shop.Colors[1])
+			backlight.Visible = lightA < 1
+			backlight.ImageColor3, backlight.ImageTransparency = col:Lerp(Color3.new(1, 1, 1), lift), lightA
+			crateRays.ImageColor3 = crateRays.ImageColor3:Lerp(Color3.new(1, 1, 1), pale)
+			backlight.Position = UDim2.fromOffset(CX, STAGE.Y - math.round(view3d.knifeAt() * STAGE.H))
+		else
+			backlight.Visible = false
+		end
 		-- a wooden knock on each jump, the pop as it opens, a thunk as the knife stops
 		for k, at in CrateMotion.Ticks do
 			if t >= at and t < T3.Build and not fired["knock" .. k] and not skipped then
@@ -729,7 +743,7 @@ function CrateOpen.build(parent: Instance)
 		crate.Visible, crateRays.Visible, lid.Visible = true, true, true
 		crate.Rotation, cratePop.Scale, lid.Position, lid.Rotation = 0, 1, lidHome, 0
 		reel.Visible, prize.Visible, status.Visible, sub.Visible, bottom.Visible, hint.Visible = false, false, false, false, false, false
-		chipRow.Visible, pityNow.Visible = false, false
+		chipRow.Visible, pityNow.Visible, backlight.Visible = false, false, false
 		for _, rail in rails do rail.Visible = false end
 		markerGlow.BackgroundColor3 = C.Accent
 		for _, p in pointers do p.BackgroundColor3 = C.Accent end

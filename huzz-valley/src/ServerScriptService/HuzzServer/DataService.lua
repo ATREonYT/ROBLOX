@@ -154,6 +154,8 @@ local function onPlayerAdded(player: Player)
 		profile.Data.Aura = (profile.Data.Aura or 0) + profile.Data.Gems
 		profile.Data.Gems = nil
 	end
+	-- The Oct 19 Knife Crate became his three knife crates: its pity counter (and any keys) carry over (Shared/CrateSaves).
+	require(game:GetService("ReplicatedStorage").Shared.CrateSaves).migrate(profile.Data)
 	-- Drop settings that no longer exist and fix any saved value that is no longer allowed.
 	local clean = table.clone(Settings.Defaults)
 	for k, v in profile.Data.Settings do

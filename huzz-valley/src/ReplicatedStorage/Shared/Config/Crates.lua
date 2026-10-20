@@ -37,6 +37,9 @@ local Crates = {}
 
 -- Chance share per item by rarity (the crate's odds are these over their total, shown exactly in the Shop).
 local KNIFE_WEIGHT = { Common = 12, Uncommon = 10, Rare = 6, Epic = 4, Legendary = 2, Mythic = 1 }
+-- The Void Beast Chest's own weights: his set holds three Epics but one Rare, so KNIFE_WEIGHT made Epic (18.5%) likelier
+-- than Rare (9.2%). These keep every rarer tier rarer, with the same knives: C 40, U 30, R 15, E 10.5, L 3, M 1.5%.
+local BEAST_WEIGHT = { Common = 40, Uncommon = 30, Rare = 30, Epic = 7, Legendary = 6, Mythic = 3 }
 local HALLOWEEN_WEIGHT = { Common = 40, Uncommon = 24, Rare = 14, Epic = 6, Legendary = 2, Mythic = 1 }
 -- Coins back for a knife you own already (about a third of its coin shop price or less).
 local KNIFE_DUPLICATE = { Common = 60, Uncommon = 150, Rare = 300, Epic = 600, Legendary = 1200, Mythic = 2500 }
@@ -102,10 +105,10 @@ Crates.List = {
 	-- His three knife crates (owner, Oct 20, 03:33: "here is the new one with updated crates, make these crates for the
 	-- opening of the normal knifes"): each opens with his own 3D crate (Model) and holds the ten knives he laid out in
 	-- front of it in his place (Workspace > scrates > Standard_Crates > <set>), all 30 of his knives between them.
-	-- Odds by rarity, from KNIFE_WEIGHT over each crate's items (exact chances in Shop > CRATES):
+	-- Odds by rarity, from KNIFE_WEIGHT (the Beast Chest: BEAST_WEIGHT) over each crate's items (exact chances in Shop > CRATES):
 	--   Shinobi Dojo Chest:    Common 42.9%, Uncommon 35.7%, Rare 14.3%, Epic 4.8%, Legendary 2.4%
 	--   Elemental Storm Vault: Common 45%, Uncommon 25%, Rare 22.5%, Epic 5%, Legendary 2.5%
-	--   Void Beast Chest:      Common 36.9%, Uncommon 30.8%, Rare 9.2%, Epic 18.5%, Legendary 3.1%, Mythic 1.5%
+	--   Void Beast Chest:      Common 40%, Uncommon 30%, Rare 15%, Epic 10.5%, Legendary 3%, Mythic 1.5% (BEAST_WEIGHT)
 	-- A Legendary or better at the latest on the 40th open (each crate counts its own). 100 Aura each (the old Knife
 	-- Crate's price). Colours (the plain crate drawn in Shop > CRATES until his UI pictures come): his crates' own.
 	{
@@ -130,7 +133,7 @@ Crates.List = {
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
 		Items = knivesNamed({ "RustyShiv", "BoneKnife", "SerratedFang", "HunterKnife", "VenomKris", "MoonlitKnife", "ShadowKnife",
-			"TwinFang", "VoidFang", "AbyssEclipse" }, KNIFE_WEIGHT),
+			"TwinFang", "VoidFang", "AbyssEclipse" }, BEAST_WEIGHT),
 	},
 	-- His 18 Halloween knives (Pumpkin, Witch and Candy sets, Oct 19). Odds by rarity: Common 46%, Uncommon 27.6%,
 	-- Rare 16.1%, Epic 6.9%, Legendary 2.3%, Mythic 1.1%; a Legendary or a Mythic at the latest on the 40th. 120 Aura.

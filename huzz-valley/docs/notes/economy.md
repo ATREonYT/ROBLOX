@@ -110,8 +110,12 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   | Void Beast Chest (`Beast`) | `beast_set` / `Void_Beast_Chest` (jaw built open 15 deg) | Rusty Shiv, Bone Knife, Serrated Fang, Hunter's Hook, Venom Kris, Hollow Moon, Shadow Knife, Twin Fang, Void Fang, Abyss Eclipse |
 
   100 Aura each, a Legendary at the latest on the 40th open (each its own counter), odds by rarity from
-  `KNIFE_WEIGHT` (Dojo C 42.9 / U 35.7 / R 14.3 / E 4.8 / L 2.4%; Storm 45 / 25 / 22.5 / 5 / 2.5%; Beast 36.9 / 30.8 /
-  9.2 / 18.5 / 3.1% and Mythic 1.5%). They also hold the three quest knives (Training Kunai, Hunter's Hook, Hollow
+  `KNIFE_WEIGHT` (Dojo C 42.9 / U 35.7 / R 14.3 / E 4.8 / L 2.4%; Storm 45 / 25 / 22.5 / 5 / 2.5%) and, for the Beast
+  Chest, `BEAST_WEIGHT` (C 40 / U 30 / R 15 / E 10.5 / L 3 / M 1.5%): its mix of items (one Rare, three Epics) made
+  Epic 18.5% beside Rare 9.2% with the shared weights, so it has its own and every rarer tier is rarer
+  (`tests/CrateModels.spec` checks each crate). Old saves: the Oct 19 Knife Crate's pity counter (and any keys) move
+  on load into the knife crate with the highest count, the Dojo Chest by default, keeping the higher number
+  (`Shared/CrateSaves`, `tests/CrateSaves.spec`); nothing else in a save counts per crate. They also hold the three quest knives (Training Kunai, Hunter's Hook, Hollow
   Moon) and the wheel's Celestial Edge, which had no other way to get them besides the quest or the wheel. Every
   knife now has a crate, coins, Aura or Robux way (the spec lists them).
 - **His models in the game** (`Shared/CrateModels`): the crates stand on a spare lobby copy (put away), so they are
@@ -123,19 +127,29 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   far his model already stands open (measured from his lid: the front edge comes down onto the body; the spec checks).
 - **Shop > CRATES = his crate shop mockup** (Oct 20, 03:48: "Here are the ui mock ups",
   `design/owner-oct20/0348-crate-shop-mockup.png`): his three crates as three cards in a row (the mockup's 695 x 679
-  card at 214 px wide: navy panel, lighter rim, faint square pattern at the top, sparkle diamonds, his crate as he
-  built it in a ViewportFrame, a wide violet **BUY** with the Robux mark). BUY is a crate key Developer Product
+  card at 214 px wide: navy panel, lighter rim, faint square pattern at the top, his crate as he built it in a
+  ViewportFrame, a wide violet **BUY** with the Robux mark). Each card has the mockup's own sparkles at about his
+  spots: white 4-point stars on the Dojo, orange, cyan and yellow diamonds on the Storm, magenta diamonds (and two
+  small white stars) on the Beast (`SPARKLES` in `Screens/Shop`; white pictures tinted, `tools/icons/make_sparkles.py`).
+  His crate stands a little smaller than on the mockup so it stays above the OPEN line. If `HuzzCrates` reaches the
+  client after the Shop was built (a slow join), the card shows the plain crate and swaps in his the moment it arrives
+  (`Crate3D.whenReady`, listening, never waiting). BUY is a crate key Developer Product
   (`Products.Crates`: `DojoCrateKey`, `StormCrateKey`, `BeastCrateKey`, 25 R$ our pick, **Id = 0**, so BUY only says
   "coming soon"; `ShopService.promptCrateKey` refuses too, and the receipt grants +1 key only on the server). Not on
-  the mockup, kept small: **OPEN 100** with Aura (or "OPEN · N KEYS"), the pity line ("LEGENDARY IN 40") and an "i"
+  the mockup, kept for kid safety but as quiet as we could (small, see-through): **OPEN 100** with Aura (or "OPEN · N KEYS"), the pity line ("LEGENDARY IN 40") and an "i"
   that scrolls to that crate's full odds list under the row. The Starter and Dance crates keep their old cards below.
   Side by side: `docs/previews/crate-shop-vs-mockup.jpg` (his crates as stand-in boxes offline).
 - **The 3D opening** (`Screens/CrateOpen` with `UI/Crate3D`; timeline `Shared/CrateMotion` (T), one maths for the game
   and the film): shut (a crate built open is shut first), it rocks and jumps harder and faster for 2.1 s with a
   knock on each of 9 closer-and-closer jumps; the top swings open with a small overshoot (to 100 deg from shut) and a
-  ring and sparks in the prize's rarity colour, his glow parts and the light behind it turn that colour; his own
+  ring and sparks in the prize's rarity colour, his glow parts and the light behind it turn that colour (if Roblox refuses the tint on his SurfaceAppearance, the
+  part's own colour takes it); his own
   little knife from the same set rises out, spinning 3 turns and slowing, and stops facing you (1.1 s); at 3.35 s its
-  name and rarity, NEW! or the coins, the buttons; it keeps a slow sway and bob. No reel for these crates; the odds
+  name and rarity, NEW! or the coins, the buttons; it keeps a slow sway and bob. A soft light fades in right behind the knife as it rises (`KnifeLight`,
+  `CrateMotion.backlight`): nearly white, and the big light behind everything turns pale too, for a dark knife (its
+  first `CoinShop` colour darker than 0.3, like Hollow Moon or Shadow Cleaver), so it never reads as a thin dark
+  sliver; the rarity colour lifted towards white for the rest. The lid swings on its back hinge (checked from the
+  side, `SIDE=1` on the film scene), it never lifts flat. No reel for these crates; the odds
   chips and pity line show under it while it builds up; one soft flash for Epic and up, at most once a second; tap to
   skip; reduced motion goes straight to the prize. Without his model loaded it plays the old crate and reel. Film:
   `docs/previews/crate-open-3d.mp4` and `docs/previews/crate-open-3d-strip.jpg` (`tools/preview/motion3d/crate_open_scene.luau`).
@@ -246,7 +260,7 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - Not seen in Studio yet: stars in the playing zone, the spin animation, Crown Pose, Midnight cape, worn auras, the
   crate opening (its feel, the sounds' levels, the blur behind it).
 - Not seen in Studio yet: daily quests, the winner page, friend rewards (need two real accounts), prestige effects.
-- The friend knife is a placeholder (Sakura Blade, also sold and in the Knife Crate); a Mythic girl's prestige only
+- The friend knife is a placeholder (Sakura Blade, also sold and in the Shinobi Dojo Chest); a Mythic girl's prestige only
   shows as PRESTIGE N/3 (she already has the top look).
 - Crates: contents, price and odds are Claude's first pick; the Starter and Dance crate pictures are drawn
   (stand-in); the sounds are our made stand-ins (no whoosh or riser of its own yet).

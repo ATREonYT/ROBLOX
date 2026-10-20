@@ -5,7 +5,7 @@
 --   * the first time a friend joins a server you're in, you get the friend knife (Knife, once per account). If you
 --     already own it, FriendKnifeCoins coins instead.
 -- PLACEHOLDER: the friend knife is our pick from his own 30 (Sakura Blade, pink, Rare) until he names one or sends a
--- friend knife model; it can still be bought or won in the Knife Crate too. A dedicated row (never sold) waits for
+-- friend knife model; it can still be bought or won in the Shinobi Dojo Chest too. A dedicated row (never sold) waits for
 -- the knife files to be free (Config/CoinShop, owned by the knife work today).
 -- The INVITE button on the lobby HUD opens Roblox's own invite window (SocialService); nothing is paid for an invite.
 return {

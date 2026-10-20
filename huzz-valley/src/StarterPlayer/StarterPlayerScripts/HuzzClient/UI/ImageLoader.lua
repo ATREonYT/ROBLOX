@@ -137,7 +137,7 @@ end
 -- Stand-in glyphs for pictures that can't be drawn (see the header). Icons by name; art by its name's start.
 -- Decorations (rays, wedges, studs, glows) have none: without them the screen still reads.
 local GLYPH: { [string]: string } = {
-	AudioMusic = "🎵", AudioSpeaker = "🔊", AudioWaveform = "🎶", AuraStar = "✨", AuraStarWhite = "✨", ChatBenefit = "💬",
+	AudioMusic = "🎵", AudioSpeaker = "🔊", AudioWaveform = "🎶", AuraStar = "✨", AuraStarWhite = "✨", SparkleDiamond = "✨", SparkleStar = "✨", ChatBenefit = "💬",
 	CheckEquipped = "✅", CheckOwned = "✔", Close = "✖", CollectionBook = "📖", CompanionEffects = "✨", ControlsDash = "💨",
 	ControlsKeyboard = "⌨", ControlsMenu = "☰", CurrencyCoin = "🪙", CurrencyGem = "💎", CurrencyPlus = "➕", DancesNote = "🎵",
 	Envelope = "✉", FavouriteFilled = "⭐", FavouriteOutline = "☆", GiftAction = "🎁", GiftBenefit = "🎁",

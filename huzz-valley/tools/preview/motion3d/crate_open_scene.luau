@@ -138,7 +138,7 @@ local function aim(c, view, grow)
 	local reach = math.max(c.size.X, c.size.Y, c.size.Z)
 	local down = if view == "Card" then math.rad(24) else math.rad(14)
 	local look = if view == "Card" then Vector3.new(0, c.h * 0.48, 0) else Vector3.new(0, c.h * 0.95, 0)
-	local dist = (reach * (if view == "Card" then 0.54 else 1.02)) / math.tan(math.rad(15)) / grow
+	local dist = (reach * (if view == "Card" then 0.57 else 1.02)) / math.tan(math.rad(15)) / grow
 	local pos = look + Vector3.new(0, math.sin(down) * dist, -math.cos(down) * dist)
 	return c.at * pos, c.at * look
 end
@@ -171,6 +171,8 @@ for _, it in crate.Items do
 end
 item = item or crate.Items[#crate.Items]
 local rarity = rarityHex(item.Rarity)
+local knifeShop = CoinShop.get(item.Id)
+local knifeColor = knifeShop and knifeShop.Colors and knifeShop.Colors[1]
 local c = makeCrate(scene, crate, CFrame.new())
 -- his knife: the .glb mesh (its own units are his little knife's studs), made show size as UI/Crate3D does
 local mesh = meshes[item.Id]
@@ -224,13 +226,22 @@ for f = 0, math.floor((t1 - t0) * FPS) do
 		kb.box.Size = kb.size * scale
 		kb.box.CFrame = at * (CFrame.new(kb.off.Position * scale) * kb.off.Rotation)
 	end
-	-- the opening screen's light behind it (UI CrateRays: green while it builds up, the rarity colour once open)
-	local glowCol = lerpHex("#5be07a", rarity, mix)
-	table.insert(extra.sprites, { p = { 0, c.h * 1.25, c.size.Z * 1.6 }, s = c.h * (1.6 + 0.8 * bright), c = glowCol, a = 0.12 + 0.28 * bright, t = "@disc", add = true })
+	-- the opening screen's light behind it (UI CrateRays: green while it builds up, the rarity colour once open), kept
+	-- inside the frame
+	local lift, lightA, pale = CrateMotion.backlight(t, knifeColor)
+	local glowCol = lerpHex(lerpHex("#5be07a", rarity, mix), "#ffffff", pale)
+	table.insert(extra.sprites, { p = { 0, c.h * 1.05, c.size.Z * 1.6 }, s = c.h * (1.15 + 0.35 * bright), c = glowCol, a = 0.12 + 0.24 * bright, t = "@disc", add = true })
+	-- and the soft light right behind the knife (UI KnifeLight, Shared/CrateMotion.backlight: nearly white for a black blade)
+	if lightA < 1 then
+		table.insert(extra.sprites, { p = { 0, c.h * 1.3, c.size.Z * 0.9 }, s = c.h * 1.6, c = lerpHex(rarity, "#ffffff", lift), a = 1 - lightA, t = "glow", add = true })
+	end
 	local phase = if t < T.Build then "builds up" elseif t < T.Rise then "opens" elseif t < T.Reveal then "the knife rises" else "reveal: " .. item.Name .. " (" .. item.Rarity .. ")"
 	extra.caption = string.format("%s  t=%.2fs  %s  (his crate parts as stand-in boxes; his knife's .glb)", crate.Name, math.max(t, 0), phase)
 	local s2 = CrateMotion.shake(t)
 	local pos, look = aim(c, "Open", s2.grow)
+	if process.env.SIDE then -- (SIDE=1: from the right, to see the top swing on its hinge rather than lift)
+		pos = look + Vector3.new((pos - look).Magnitude, c.h * 0.15, 0)
+	end
 	scene:frame(pos, look, extra)
 	for _, mk in marks do
 		if math.abs(t - mk) < 0.5 / FPS then table.insert(stills, n) end

@@ -15,6 +15,8 @@
 	            full size, and stops facing you with a small tilt
 	  3.35      the reveal (UI/Screens/CrateOpen): the name and rarity, NEW or the coins back; the knife keeps a slow
 	            turn and a gentle bob
+	Behind the knife as it rises, a soft light (CrateMotion.backlight) so even a black blade (Hollow Moon, Shadow
+	Cleaver) stands out: nearly white for a dark knife, the rarity colour lifted towards white for the rest.
 	Kid-safe: no flashes here (the screen's one soft flash for Epic and up is limited to one a second there).
 ]]
 local CrateMotion = {}
@@ -142,6 +144,28 @@ function CrateMotion.split(parts: { { name: string, y: number, z: number, sy: nu
 		end
 	end
 	return out, top, back
+end
+
+-- How light a colour looks (0 black .. 1 white).
+function CrateMotion.luminance(c: Color3): number
+	return 0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B
+end
+
+-- A knife whose main colour (its first Config/CoinShop Colors entry) is this dark reads as a thin sliver on the
+-- coloured light behind it, so it gets a nearly white light instead.
+CrateMotion.DarkKnife = 0.3
+function CrateMotion.isDark(knife: Color3?): boolean
+	return knife ~= nil and CrateMotion.luminance(knife) < CrateMotion.DarkKnife
+end
+
+-- The light behind the knife at time t: how far its rarity colour is lifted towards white (the caller does
+-- rarity:Lerp(white, mix)) and how see-through it is (0 = solid). Fades in as the knife rises, then stays.
+-- The third number: how far the big light behind everything (UI CrateRays) is lifted towards white too, so a dark
+-- knife stands on a pale disc (0 for the rest).
+function CrateMotion.backlight(t: number, knife: Color3?): (number, number, number)
+	local u = easeOut(math.clamp((t - CrateMotion.T.Rise) / (CrateMotion.T.RiseLen * 0.7), 0, 1), 2)
+	local dark = CrateMotion.isDark(knife)
+	return if dark then 0.8 else 0.4, 1 - 0.75 * u, if dark then 0.6 * u else 0
 end
 
 return CrateMotion
