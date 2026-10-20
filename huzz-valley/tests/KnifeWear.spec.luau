@@ -274,6 +274,21 @@ do
 	KnifeService.take(c)
 	KnifeService.takeBack(c)
 	check("take + takeBack: none left", (knives(c)) == 0)
+	-- the default knife (no knife owned: every Studio Play, the save is Mock) on a blocky R15: the owner's Oct 20
+	-- "black thing attached to my character" looks like its dark grip, so where it really sits is measured here
+	KnifeService.giveBack(c, nil)
+	n, k = knives(c)
+	local m = k and mountOf(k)
+	local at = m and (m.C0 * m.C1:Inverse()).Position
+	check(string.format("R15, no knife owned: the default knife at the right hip (grip at %.2f, %.2f, %.2f in the LowerTorso)",
+		at and at.X or 0, at and at.Y or 0, at and at.Z or 0),
+		n == 1 and k:GetAttribute("WornAt") == "Side" and m.Part0.Name == "LowerTorso" and at.X > 1 and at.X < 1.3
+			and math.abs(at.Y) < 0.2 and at.Z > 0.5 and at.Z < 1)
+	local steel = 0
+	for _, d in k:GetDescendants() do
+		if d:IsA("WeldConstraint") and d.Part0 and d.Part0.Name == "Handle" then steel += 1 end
+	end
+	check("R15, no knife owned: its pommel, guard, blade and tip all welded to its grip", steel == 4)
 end
 do
 	local c = body(true)

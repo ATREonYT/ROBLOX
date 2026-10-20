@@ -138,14 +138,15 @@ When you're done testing, set `StudioTestRarity` back to `""`.
 
 ## Part 4: name the floating black block (2 minutes)
 Your Oct 20 picture shows a little black block floating near your character. One picture can't tell us what it is;
-this does.
+this does. (The first version stopped before printing anything on your avatar; this one is fixed.)
 1. In GitHub Desktop, click **Repository > Show in Finder**, open **huzz-valley > tools > studio**, and open
    **find-floating-parts.lua** with TextEdit. Press **Cmd+A**, then **Cmd+C**.
 2. In Studio, click **Play** and walk up to the block.
 3. Click inside the **Command Bar**, paste with **Cmd+V**, press **Enter**.
 4. On the **Test** tab, switch **Server** to **Client** (the button near the top while playing), then click the Command
    Bar again and press **Enter** once more (the same text is still there).
-5. Take a screenshot of the Output lines starting with `[HuzzFind]` and send it to Claude.
+5. Take a screenshot of the Output lines starting with `[HuzzFind]` and send it to Claude. It always ends with a
+   `[HuzzFind] Done` line; if that line isn't there, screenshot the red text instead.
 
 ---
 

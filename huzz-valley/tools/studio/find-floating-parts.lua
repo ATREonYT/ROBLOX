@@ -8,8 +8,10 @@
 -- Output prints, nearest first, every small visible part within RANGE studs of your character that isn't part of
 -- your body's own limbs (your hats and hair are listed too, near the top: skip those):
 --   [HuzzFind] 3.2 studs  Workspace.<where it is>.<its name>  Part 0.45x1.20x0.30  colour 20,20,30  anchored  held by: ...
--- "held by" names what keeps it there (its welds, or "nothing: anchored"). Screenshot the Output and send it to
--- Claude: the line for the block says exactly what made it. Untested here (needs Studio).
+-- "held by" names what keeps it there (its welds, or "nothing: anchored"); "shadow OFF" marks the parts the game
+-- makes (his Oct 20 ground picture: the block casts no shadow, his lantern does). Screenshot the Output and send it
+-- to Claude: the line for the block says exactly what made it. Checked offline with fake parts
+-- (tests/FindFloating.spec.luau), not in Studio.
 local RANGE = 12 -- studs round your character
 local BIGGEST = 4 -- studs: anything longer than this is a building, not the little block
 
@@ -22,10 +24,24 @@ if not root then
 	return
 end
 
+-- The two parts a joint holds together. Welds and Motor6Ds name them (Part0 / Part1); constraints (an avatar's
+-- AccessoryRigidConstraint, AnimationConstraint, BallSocketConstraint) name two Attachments instead and have no Part0
+-- at all: reading it threw, so the Oct 20 run stopped at his first hat and printed nothing.
+local function ends(j)
+	local ok0, a = pcall(function() return j.Part0 end)
+	local ok1, b = pcall(function() return j.Part1 end)
+	if ok0 and ok1 then return a, b end
+	local okA, a0 = pcall(function() return j.Attachment0 end)
+	local okB, a1 = pcall(function() return j.Attachment1 end)
+	return okA and a0 and a0.Parent or nil, okB and a1 and a1.Parent or nil
+end
+
 local function holders(p)
 	local list = {}
-	for _, j in p:GetJoints() do
-		local other = if j.Part0 == p then j.Part1 else j.Part0
+	local ok, joints = pcall(function() return p:GetJoints() end)
+	for _, j in (if ok then joints else {}) do
+		local a, b = ends(j)
+		local other = if a == p then b else a
 		table.insert(list, j.ClassName .. "->" .. (if other then other:GetFullName() else "nothing (its part is gone)"))
 	end
 	if #list == 0 then return if p.Anchored then "nothing: anchored" else "nothing (falling?)" end
@@ -46,10 +62,14 @@ for _, d in workspace:GetDescendants() do
 end
 table.sort(found, function(a, b) return a.dist < b.dist end)
 for _, f in found do
-	local d, c = f.d, f.d.Color
-	print(string.format("[HuzzFind] %.1f studs  %s  %s %.2fx%.2fx%.2f  colour %d,%d,%d  %s  held by: %s", f.dist,
-		d:GetFullName(), d.ClassName, d.Size.X, d.Size.Y, d.Size.Z, c.R * 255, c.G * 255, c.B * 255,
-		if d.Anchored then "anchored" else "loose", holders(d)))
+	local d = f.d
+	local ok, err = pcall(function()
+		local c = d.Color
+		print(string.format("[HuzzFind] %.1f studs  %s  %s %.2fx%.2fx%.2f  colour %d,%d,%d  shadow %s  %s  held by: %s", f.dist,
+			d:GetFullName(), d.ClassName, d.Size.X, d.Size.Y, d.Size.Z, c.R * 255, c.G * 255, c.B * 255,
+			if d.CastShadow then "on" else "OFF", if d.Anchored then "anchored" else "loose", holders(d)))
+	end)
+	if not ok then print(string.format("[HuzzFind] %.1f studs  %s  (could not read it: %s)", f.dist, d:GetFullName(), tostring(err))) end
 end
 print(string.format("[HuzzFind] Done: %d small parts within %d studs of %s (%s view)", #found, RANGE, me.Name,
 	if game:GetService("RunService"):IsServer() then "server" else "client"))

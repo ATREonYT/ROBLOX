@@ -215,8 +215,10 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - Crate meshes: his Output said some uploads were still "being generated" and asset 120038515596009 "not approved"
     (only `dojo_set > Plain_Tanto > handle_3`'s texture uses it): check them in Studio; a `.glb` of the crates would let
     the offline pictures show the real look.
-  - Name the Oct 20 floating black block: `tools/studio/find-floating-parts.lua` in Play (`docs/STUDIO-STEPS.md`
-    Part 4), send the `[HuzzFind]` lines (not identified offline: [knives.md](docs/notes/knives.md), "Honest gaps").
+  - Name the black block by his character: run `tools/studio/find-floating-parts.lua` again in Play
+    (`docs/STUDIO-STEPS.md` Part 4; its Oct 20 run printed nothing because it stopped on his hair's
+    AccessoryRigidConstraint, fixed) and send the `[HuzzFind]` lines (not identified offline, most likely one of ours:
+    [knives.md](docs/notes/knives.md), "Honest gaps").
   - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`, `tools/studio/publish-animations.lua`).
   - An export of their spin wheel model (match its colours); power icons; a stab animation; his crate design
     (contents, price, art: the Starter Crate is our first pick, [economy.md](docs/notes/economy.md)); dance names;

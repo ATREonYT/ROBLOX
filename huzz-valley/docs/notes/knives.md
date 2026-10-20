@@ -398,22 +398,30 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   his imported knives' parts with the .glb part each came from (his uploaded meshes themselves only Studio shows). A
   refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a player's own
   avatar animations or a short R6 arm can still bring a long tip nearer the floor.
-- **The owner's Oct 20 "floating black block"** (`design/owner-oct19/2010-floating-block.png`): not identified for
-  certain from one still. Measured in the picture: a box about 45 x 110 px with a top face (thick, not a sheet),
-  colour (10, 12, 29), while his black clothes read (0-6, 2-17, 21-41) in the same light: so it is black or near
-  black, not navy. It hangs in the air just past the plaza's front edge at about floor height, beside him; he had
-  just respawned (the blue spawn bubble) and stood in the rest pose. Nothing in the evening's download
-  (his place with our code) is there (no part of any colour past the front edge near the spawn pad), so the game
-  made it while playing. Ruled out:
-  the Midnight cape (0.08 thin with a Neon lining, and nobody can have it yet), the dress pieces above (the dress
-  wasn't running on his screen: his knives showed as stand-ins). The one dark box that fits is the default knife's
-  grip (`KnifeService` `build()`: a visible 0.22 x 0.75 x 0.26 dark Handle, worn by a save with no knife, as his
-  Studio save is each Play), but its steel guard and blade aren't in the picture, so that's unproven too. To settle it:
-  `tools/studio/find-floating-parts.lua` (Command Bar, in Play, server and client view) lists every small part near
-  you, its size, colour and what holds it (`[HuzzFind]` lines). Found on the way and fixed: the dress welds above
-  (a real way for a knife piece to float beside a body, just not on his screen that evening), and Locomotion's
-  self-check, which wrongly let go of a body that was playing fine when Roblox swapped its limbs in
-  ([animations.md](animations.md)).
+- **The owner's "floating black block"** (Oct 19 evening `design/owner-oct19/2010-floating-block.png`; Oct 20 14:07
+  "please remove that black thing that is attacthed to my character": `design/owner-oct20/1407-black-block-character.png`
+  is the same file byte for byte, `1407-black-block-ground.png` is new): still not identified for certain, so nothing
+  was removed. What is measured:
+  - A plain box, about 3:1, a visible top face, colour (21, 27, 54) lit, (10, 12, 29) in shade, bluer than his black
+    hoodie (8, 11, 19) beside it.
+  - In the ground picture it casts **no shadow** while his lantern next to it casts a long one: almost every part the
+    game makes has shadows off, his own avatar's and his place's parts have them on. So it is most likely ours.
+  - He wears the default knife (0 coins, the Mock save), and in the Oct 19 picture no grip or steel blade shows at his
+    right hip. The default knife's dark grip (`KnifeService` `build()`: 0.22 x 0.75 x 0.26, colour (32, 30, 38), shadow
+    off) fits the box's shape and colour under the lobby's blue light. But its four steel pieces (pommel, guard,
+    blade, tip) aren't in either picture.
+  - On a blocky R15 the default knife sits right: the grip at (1.18, -0.10, 0.82) in the LowerTorso, just behind the
+    right hip, all four steel pieces welded on (`tests/KnifeWear.spec`). So if it is the grip, what moves it is
+    something only Studio does (his avatar is built on AnimationConstraints and AccessoryRigidConstraints, like his
+    girls: `Shared/GirlRig`), not the placement numbers.
+  - Ruled out: the Midnight cape (0.08 thin with a purple lining, and nobody can have it yet), the knife dress pieces
+    (fixed Oct 20, `312e64b`), his imported knife folders (`Workspace > Halloween knives / Gamepass knifes`: loose
+    and collidable, but 100+ studs below the lobby), and every other dark part in his place.
+  - The Studio finder `tools/studio/find-floating-parts.lua` printed nothing on Oct 20 because it read `Part0` on
+    every joint. His hair and hats are held by AccessoryRigidConstraints, which have no `Part0`, so it stopped at the
+    first hat. Fixed: it reads a constraint's two Attachments, each line is tried on its own, and each line now says
+    `shadow OFF` for the game's parts (`tests/FindFloating.spec`, which fails on the old finder). One run in Play
+    (`docs/STUDIO-STEPS.md` Part 4) names the block, its size and what holds it.
 - Oct 19 evening (aura): only offline so far. The aura uses Roblox's sparkle picture until he uploads `assets/fx`
   (Glow, Twinkle), so in Studio the rising specks are small 4-point sparkles, not soft dots; how bright the aura light
   reads under his lobby light only Studio shows. The long scythes and reapers are still held like a knife (blade low
