@@ -153,7 +153,7 @@ end
 -- character ... selling a gamepass", then "equipped with some exclusive knifes", then the new lobby: "add ... all of
 -- the gamepass things to the new lobby"): in his new lobby, one invisible stand per round pad, in a row along the side
 -- of the plaza opposite his podiums, facing into it (the pads hold his props now: Oct 18; Workspace > HuzzAvatarStands,
--- tagged; VIP three, Dance Pack two, one Game Pass knife each; Shared/LobbyLayout.standSpots). In older places, his plain
+-- tagged; three since Oct 20 20:34, Hunter, Moonlit and Sunrise, one Game Pass knife each; Shared/LobbyLayout.standSpots). In older places, his plain
 -- grey blocks beside each spin wheel (4 x 7.5 x 4.5, standing on the floor) become stands (renamed "AvatarStand",
 -- Pass = VIP and DancePack in turn: both show SOON until their Game Pass IDs are in Config/Products; Knife = that
 -- pass's exclusive knives in turn). The rule is Shared/AvatarStandRules.findBlocks; in his own Rojo-synced place

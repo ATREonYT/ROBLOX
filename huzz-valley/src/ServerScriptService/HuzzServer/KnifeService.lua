@@ -261,7 +261,12 @@ KnifeService.fits = fits
 KnifeService.BACKUP = "KnifeBackup"
 local function addBackup(model, skin)
 	local folder = ServerStorage:FindFirstChild("HuzzKnifeBackups")
-	if skin and folder and folder:FindFirstChild(skin.Key) then model:SetAttribute("Backup", skin.Key) end
+	local okS, standIns = pcall(function() return ReplicatedStorage.Shared:FindFirstChild("KnifeStandInParts") end)
+	if not okS then standIns = nil end
+	-- (his 30's cut, or the stand-in of a Game Pass or Halloween knife: HuzzServer/KnifeGlbService.backup)
+	if skin and ((folder and folder:FindFirstChild(skin.Key)) or (standIns and standIns:FindFirstChild(skin.Key))) then
+		model:SetAttribute("Backup", skin.Key)
+	end
 end
 KnifeService.addBackup = addBackup
 

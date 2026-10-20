@@ -75,6 +75,10 @@ local function character()
 	local r = Instance.new("Part"); r.Name = "HumanoidRootPart"; r.Size = Vector3.new(2, 2, 1); r.CFrame = CFrame.new(-227, 23, -690); r.Parent = c
 	local h = Instance.new("Part"); h.Name = "Head"; h.Size = Vector3.new(2, 1, 1); h.CFrame = CFrame.new(-227, 25, -690); h.Parent = c
 	local hand = Instance.new("Part"); hand.Name = "RightHand"; hand.Size = Vector3.new(0.6, 0.6, 0.6); hand.CFrame = CFrame.new(-225.5, 22, -690); hand.Parent = c
+	-- (his avatar is on Roblox's newer joints: an AnimationConstraint between two attachments, as his Oct 20 one)
+	local a0 = Instance.new("Attachment"); a0.Name = "NeckRigAttachment"; a0.CFrame = CFrame.new(0, 1, 0); a0.Parent = r
+	local a1 = Instance.new("Attachment"); a1.Name = "NeckRigAttachment"; a1.CFrame = CFrame.new(0, -0.5, 0); a1.Parent = h
+	local neck = Instance.new("AnimationConstraint"); neck.Name = "Neck"; neck.Attachment0 = a0; neck.Attachment1 = a1; neck.Parent = h
 	c.Parent = workspace
 	return c
 end
@@ -228,6 +232,26 @@ if copy then
 		if d:IsA("BasePart") and d.Material == Enum.Material.Neon and d.Transparency < 1 then glowing += 1 end
 	end
 	check("the stand-in is cut from his .glb (a blade and his glowing parts, " .. glowing .. ")", blade ~= nil and glowing >= 5)
+	-- one rigid piece (owner, Oct 20 20:34: Moonlit's knife lay on the floor by its copy): his newer joints became Motor6Ds
+	local motor = copy:FindFirstChild("Neck", true)
+	check("the copy's joints are plain Motor6Ds (no AnimationConstraint left)", motor ~= nil and motor:IsA("Motor6D")
+		and copy:FindFirstChildWhichIsA("AnimationConstraint", true) == nil)
+	-- a knife that came off its hand is put back, with one [HuzzKnife] line
+	if knife and handle then
+		rootPart.Name = "HumanoidRootPart"
+		rootPart.CFrame = CFrame.new(-262, 23, -720)
+		local hand = copy:FindFirstChild("RightHand")
+		check("the stand knife starts in the fist", hand ~= nil and (handle.CFrame.Position - hand.CFrame.Position).Magnitude < 3)
+		handle.CFrame = handle.CFrame + Vector3.new(0, -9, 0)
+		task.wait(1.1) -- (a just-mounted knife gets a second)
+		frames(2)
+		local again = copy:FindFirstChild("StandKnife")
+		local h2 = again and again:FindFirstChild("Handle", true)
+		local w2 = again and again:FindFirstChild("StandKnifeGrip", true)
+		check("a stand knife that came off its hand is put back in it", again ~= nil and again ~= knife and h2 ~= nil and w2 ~= nil
+			and w2.Part0 ~= nil and w2.Part0.Name == "RightHand")
+		rootPart.Name = "Gone"
+	end
 end
 check("block hidden on this screen", block.LocalTransparencyModifier == 1)
 -- the aura (owner, Oct 19 evening: "without that green circle on the bottom, and add some vfx"): no disc, no solid

@@ -203,14 +203,11 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 - **Owner, in Studio:**
   - Game Pass IDs (VIP 199, Dance Pack 149, and the 5 knife passes, Price 0 until he sets them: the cards and
     stands wait for them).
-  - Import `Gamepass_Knives.glb` and `Halloween_Knives.glb` + rerun SetupKnives and send `HuzzKnives.rbxm` again: we
-    have his 30 knives (Oct 18, finished offline Oct 19) but not the 5 pass or 18 Halloween knives (until then each
-    screen draws them from the .glb with
-    EditableMesh: only with Game Settings > Security > "Allow Mesh / Image APIs", which needs his ID check; his Oct 19
-    Play showed the plain stand-ins because Rojo never sent the meshes (fixed), so turn it on and send the `[HuzzKnife]` line);
-    his own place still holds the broken 8 and his 30 without the Oct 19 materials ([knives.md](docs/notes/knives.md),
-    "Owner how-to"). Live (Oct 20 15:13): every knife shows with no setting (a plain cut of his own model, built on a screen where his
-    mesh doesn't load); publish the newest place and send any `[HuzzKnife]` line (`docs/STUDIO-STEPS.md` Part 6).
+  - Knives: nothing to import any more. All 53 are his own models in every build since Oct 20 20:34 (the 23 pass and
+    Halloween ones set up offline from the imports already in his place, [knives.md](docs/notes/knives.md), "All 53 his
+    own"). Test the downloaded place, not his own place (that still holds the broken 8 and the 23 unset). Live (Oct 20
+    15:13): every knife shows with no setting (a plain cut of his model where a mesh doesn't load); publish the newest
+    place and send any `[HuzzKnife]` line (`docs/STUDIO-STEPS.md` Part 6).
   - Import `Lobby_Props.glb`, run SetupLobbyProps, send `HuzzLobbyProps.rbxm` ([lobby.md](docs/notes/lobby.md)).
   - Developer Product IDs (Sunset Trail, Blossom Aura, coin packs, spins 1/10/100 at 24/170/600 Robux since Oct 19;
     the three knife crate keys `DojoCrateKey`, `StormCrateKey`, `BeastCrateKey`, 25 Robux our pick, Oct 20; the three

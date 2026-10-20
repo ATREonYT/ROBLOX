@@ -90,14 +90,20 @@ inspection with Lune: core `CLAUDE.md` section 4.
   button. Reference `design/lobby-ref/stands-ref.jpg`.
 - **Where:** in his new lobby an invisible flat `AvatarStand` part each, in a row along the plaza's empty side,
   opposite the podium boards (`Shared/LobbyLayout.standSpots` + `pickRow`: a spot is clear when nothing over 1 stud
-  stands in its box and nothing over 8 between it and the edge; lobby A x -183.5, z 18 / 28 at the front, 53.5 / 63.5 /
-  73.5 further back, either side of the spin wheel; `Workspace > HuzzAvatarStands`, tagged, `StandOn` Top, facing into
-  the plaza).
-- **Which pass:** the back three sell Hunter, Moonlit and Sunrise Knife, the front two Inferno and Frost Knife: each
-  stand one knife Game Pass and its knife, the five once each in every lobby copy (`AvatarStandRules.assign`, used by
-  AvatarStandService and the place build; a stand on VIP / Dance Pack is moved onto the next knife pass; standSpots
-  lists the back three first so they keep his card order). Older places: six grey-block stands, five knives (the
-  sixth repeats Hunter Knife).
+  stands in its box and nothing over 8 between it and the edge). **Three stands** since Oct 20 20:34 (owner: "make 3
+  characters be there, not 5", `LobbyLayout.STANDS`), in an even row: the widest gap that is clear at all three
+  (`ROW.GAPS` 13 down to 8), then the line nearest the edge, then nearest the front; else the old tightest row with
+  holes. His main lobby at (-131, 49): x -190.5, z 56 / 69 / 82, 13 studs apart, behind the spin wheel (z 43);
+  `Workspace > HuzzAvatarStands`, tagged, `StandOn` Top, facing into the plaza.
+- **Which pass:** Hunter, Moonlit and Sunrise Knife, the three in his Oct 20 picture, once each in every lobby copy
+  (`AvatarStandRules.assign` on three stands that start as VIP: it moves each onto the next knife pass in his card
+  order). Inferno and Frost Knife stay in the Shop only. Older places: six grey-block stands, five knives (the sixth
+  repeats Hunter Knife).
+- **One rigid copy** (Oct 20 20:34, his picture: Moonlit's knife lay flat on the floor by its copy): his avatar is on
+  Roblox's newer joints (AnimationConstraints, physics springs), so the copy's hand and the big knife welded to it hung
+  on physics alone. The copy's joints now become Motor6Ds and its accessories are welded on (`Shared/GirlRig`, as the
+  girls' copies), and a stand knife found more than 4 studs from its hand is mounted again, with one
+  `[HuzzKnife] stand knife ...` line in Output. The cause is the likeliest one, not proven: offline there's no physics.
 - `HuzzServer/AvatarStandService` makes them at game start when the place has no stands (his Rojo-synced place); the
   place build saves the same ones. Places without pads: his grey blocks beside the big spin wheels
   (`AvatarStandRules.findBlocks`; his old islands' blocks stay plain blocks). It puts a ready copy of each pass knife

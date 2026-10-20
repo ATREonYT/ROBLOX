@@ -245,14 +245,16 @@ What can't show live, and what shows instead (nothing here needs a setting):
   cuts and nothing else, each cut welded, no trail points of its own, same tip, bottom and width as his model, left
   out of the measured shape; the screen builds and removes it both ways, asks once a knife, keeps his parts when no
   cut can be had).
-- **The 5 pass and 18 Halloween knives** are drawn as his model with EditableMesh (`Gameplay/KnifeDress`) only where
-  Roblox allows it (live: Game Settings > Security > "Allow Mesh / Image APIs", which needs the owner 13+ and ID
-  verified); everywhere else their stand-in shows, cut from his .glb (as before: EditableMesh is only the extra).
+- **The 5 pass and 18 Halloween knives** are his own imported models since Oct 20 20:34 (below, "All 53 his own"),
+  his uploaded meshes like the 30, with their stand-in's rows as the backup cut (`KnifeGlbService.backup` falls back
+  to `Shared/KnifeStandInParts/<Key>`; a copy carries `Backup` for them too). Only in a place without them in
+  `HuzzKnives` (his own older place) do they still start as stand-ins, dressed with EditableMesh
+  (`Gameplay/KnifeDress`) where Roblox allows it (Game Settings > Security > "Allow Mesh / Image APIs").
 - **Knife pictures on cards** are drawn with EditableImage (the same setting); without it a card shows the knife's own
   3D model (`UI/ImageLoader` fallback, remote KnifeView), which now carries the backup too.
 - **Folders only Rojo sends** (`HuzzKnifeGlb`, `HuzzKnifeBackups`) reach the published game only if they were in the
   place when he published: the place build (`build_yours.luau`) puts both in; his own Rojo place has them while
-  Rojo is connected and keeps them once saved. `HuzzKnives` (his 30) is in the place build, not in Rojo.
+  Rojo is connected and keeps them once saved. `HuzzKnives` (all 53 since Oct 20 20:34) is in the place build, not in Rojo.
 - Owner's steps: `docs/STUDIO-STEPS.md` Part 6.
 
 ## Knife effects: the Huss Valley study (Oct 20)
@@ -283,6 +285,24 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
 `docs/previews/knife-vfx.mp4` (Dragon's Maw, Frostbound Oath, Abyss Eclipse slashing, 30 fps). Made with
 `motion3d/knife_vfx_scene.luau` (the real KnifeService + KnifeFx, every emitter run) and `knife_vfx_sheet.py`.
 
+## All 53 his own (Oct 20 20:34)
+- Owner: "render the knives fully. they arent rednered, is it something i didnt input?" His picture
+  (`design/owner-oct20/2034-black-block-stands.png`): the stands' Sunrise knife a thin white line, Moonlit's lying on
+  the floor. Cause, measured: he HAD imported both files of several into his place (`places/HUSSANIME.rbxl`,
+  Workspace > "Gamepass knifes" and "Halloween knives", 735 of his uploaded meshes, 106 glows), but SetupKnives was
+  never run on them, so `HuzzKnives` held only his 30 and those 23 fell back to the stand-ins: flat slabs (seen edge on,
+  a thin line), or his .glb drawn by EditableMesh only with "Allow Mesh / Image APIs" on. His 30 were fine.
+- Fix (ours, no step for him): `tools/knives/add_import_knives.luau --write` runs his own SetupKnives offline on
+  those imports, exactly as his Command Bar would (as `colour_knives.luau` for the 30), checks every part against
+  `knife_boxes.json` (turn, place within 0.12 studs, colour and look) and writes all 53 into
+  `assets/knives/HuzzKnives.rbxm` (790 KB). All 23 lined up; all 106 of his glows kept; his meshes untouched.
+- SetupKnives step 2c (new): a flat knife whose import turned its parts (Peppermint Shuriken: its thin way came in as
+  the parts' Z, so "keep the blade part's turn" was a quarter off and it came out sideways) is turned from where its
+  parts' centres sit, two ways across it (rings one way, wrapper twists the other), or one way plus the blade part's
+  own side (Hex Shuriken). Three parts sit 0.02 to 0.03 studs from their .glb centre (Grand Witch Scythe's hat cone,
+  Taffy Karambit's blade and twists): the fit's leftover on his import, too small to see.
+- Moonlit's knife on the floor: see [lobby.md](lobby.md), "One rigid copy".
+
 ## Owner how-to: SetupKnives (Studio, once)
 1. File > Import 3D > `huzz-valley/design/knives/Knives/All_Knives.glb`, Import (and
    `design/knives/gamepass/Gamepass_Knives.glb` and `design/knives/halloween/Halloween_Knives.glb` the same way).
@@ -293,7 +313,8 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
 4. File > Save.
 5. Right-click ServerStorage > HuzzKnives > Save to File, send `HuzzKnives.rbxm`; we put it in `assets/knives/` and
    `build_yours.luau` puts it in every build.
-- Received Oct 18 (30 of 30; the 5 pass knives and the 18 Halloween knives need steps 1-5 again). His place still holds the broken 8 and
+- Received Oct 18 (30 of 30); the 5 pass and 18 Halloween knives set up offline from his place's imports on Oct 20
+  (above: nothing for him to do). His place still holds the broken 8 and
   uncoloured parts: importing Gamepass_Knives.glb and running step 2 once fixes them too (Output: "repaired: it was
   the wrong size or way round" x8, "fixed colours and glow" for the rest).
 - SetupKnives matches "name + digits", refits by position (his shurikens, a star round one spot, by their blade
@@ -430,11 +451,9 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   takes the colour).
 - Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, the leap and dive), the knife
   showcase (the big stand knives, the spins, the card motes/pulse, the slash arc), the long blades' forward grip and
-  its ease back in a stab. The 5 pass and 18 Halloween models still need his import (`Gamepass_Knives.glb`,
-  `Halloween_Knives.glb` + SetupKnives) to be exactly his everywhere. Until then each screen dresses the stand-ins as
-  his .glb with EditableMesh (`Gameplay/KnifeDress`), which needs the "Allow Mesh / Image APIs" switch: his Oct 20
-  screenshots still show the stand-ins, so on his screen it isn't running (his `[HuzzKnife]` Output line says why;
-  we haven't seen it). Checked offline (`tools/knives/mesh_audit.py`): none of his meshes is wound inside out (rings
+  its ease back in a stab. The 5 pass and 18 Halloween models are his since Oct 20 20:34 (set up offline from his
+  imports): not seen in Studio yet, and whether their 735 uploads load live only the live game shows (else the backup
+  cut, their stand-in, shows). His own place still has the two imports loose in Workspace (the build leaves them). Checked offline (`tools/knives/mesh_audit.py`): none of his meshes is wound inside out (rings
   and chains only look so to the centre test; open edges are where two looks meet), so one-sided triangles are not
   why; no back faces added. The solid stand-ins (Oct 20) are not his model: flat seen edge on, rounded parts as
   slabs, small details smoothed (the Seraph's halo a little many-sided, the bandage wraps and chain links simplified),

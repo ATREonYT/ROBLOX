@@ -4,8 +4,9 @@
 --   * HuzzServer/KnifeService: a copy of his knife carries nothing extra, only its "Backup" attribute (the critic,
 --     Oct 20 evening: the hidden cut in every copy was up to 199 parts a knife on every screen); prints the part
 --     counts before and after; a pass knife (its own stand-in) isn't marked;
---   * HuzzServer/KnifeGlbService.backup hands out each of the 30 cuts' rows (ServerStorage/HuzzKnifeBackups), nothing
---     for a pass knife or an odd key;
+--   * HuzzServer/KnifeGlbService.backup hands out each of the 53 cuts' rows (his 30's in ServerStorage/HuzzKnifeBackups;
+--     since Oct 20 20:34 his 23 of the files of several are his models too, their cut their stand-in's rows,
+--     Shared/KnifeStandInParts), nothing for an odd key;
 --   * Shared/KnifeCut builds each cut on a copy: welded to his Handle, no trail points of its own, the same tip,
 --     bottom and width as his model (turned half round where his import is), left out of the knife's measured shape;
 --   * Gameplay/KnifeMeshCheck (Roblox's loader and the remote swapped for stubs): one of his meshes failing builds the
@@ -34,6 +35,14 @@ local function box(parts, frame)
 	for _, p in parts do
 		local r = frame:ToObjectSpace(p.CFrame)
 		local h = p.Size / 2
+		if p:IsA("WedgePart") then
+			-- (a wedge is half its block: its 6 real corners, or a big turned one reads wider than it is: Hollow Eclipse)
+			for _, k in { { 1, -1, -1 }, { -1, -1, -1 }, { 1, -1, 1 }, { -1, -1, 1 }, { 1, 1, 1 }, { -1, 1, 1 } } do
+				local q = r * Vector3.new(h.X * k[1], h.Y * k[2], h.Z * k[3])
+				lo, hi = lo:Min(q), hi:Max(q)
+			end
+			continue
+		end
 		local e = Vector3.new(
 			math.abs(r.RightVector.X) * h.X + math.abs(r.UpVector.X) * h.Y + math.abs(r.LookVector.X) * h.Z,
 			math.abs(r.RightVector.Y) * h.X + math.abs(r.UpVector.Y) * h.Y + math.abs(r.LookVector.Y) * h.Z,
@@ -52,7 +61,7 @@ end
 local keys = {}
 for _, k in folder:GetChildren() do table.insert(keys, k.Name) end
 table.sort(keys)
-check("his 30 knives are here", #keys == 30)
+check("his 53 knives are here", #keys == 53)
 local marked, bare, served, welded, clean, placed, measured = 0, 0, 0, 0, 0, 0, 0
 local partsNow, partsBefore, biggest, biggestKey = 0, 0, 0, ""
 local worst = ""
@@ -108,18 +117,22 @@ for _, key in keys do
 	end
 	model:Destroy()
 end
-print(string.format("parts in a copy of his knife, all 30 summed: %d now, %d before (each carried its hidden cut); the most a knife added: %d (%s)",
+print(string.format("parts in a copy of his knife, all 53 summed: %d now, %d before (each carried its hidden cut); the most a knife added: %d (%s)",
 	partsNow, partsBefore, biggest, biggestKey))
-check("each copy of his 30 is marked with its key (" .. marked .. ")", marked == 30)
-check("... and carries nothing extra: the same parts as his model (" .. bare .. ")", bare == 30)
-check("the server hands out each cut's rows (" .. served .. ")", served == 30)
-check("nothing for a pass knife or an odd key", KnifeGlbService.backup("CrimsonRequiem") == nil and KnifeGlbService.backup("../x") == nil and KnifeGlbService.backup(5) == nil)
-check("each cut is welded to his Handle, every row a part (" .. welded .. ")", welded == 30)
-check("the cut brings no trail points of its own (" .. clean .. ")", clean == 30)
-check("the cut sits where his knife is, at its length (" .. placed .. ")" .. worst, placed == 30)
-check("the cut isn't measured as the knife (" .. measured .. ")", measured == 30)
+check("each copy of his 53 is marked with its key (" .. marked .. ")", marked == 53)
+check("... and carries nothing extra: the same parts as his model (" .. bare .. ")", bare == 53)
+check("the server hands out each cut's rows (" .. served .. ")", served == 53)
+check("nothing for an odd key", KnifeGlbService.backup("../x") == nil and KnifeGlbService.backup(5) == nil and KnifeGlbService.backup("NoSuchKnife") == nil)
+check("each cut is welded to his Handle, every row a part (" .. welded .. ")", welded == 53)
+check("the cut brings no trail points of its own (" .. clean .. ")", clean == 53)
+check("the cut sits where his knife is, at its length (" .. placed .. ")" .. worst, placed == 53)
+check("the cut isn't measured as the knife (" .. measured .. ")", measured == 53)
+-- (a place without his pass model: its stand-in shows, unmarked: nothing of his to fail)
+local his = folder:FindFirstChild("CrimsonRequiem")
+his.Parent = nil
 local pass = KnifeService.template(CoinShop.get("CrimsonRequiem"))
-check("a pass knife (its own stand-in) isn't marked", pass:FindFirstChild("KnifeBackup") == nil and pass:GetAttribute("Backup") == nil)
+his.Parent = folder
+check("a pass knife's stand-in isn't marked", pass:FindFirstChild("KnifeBackup") == nil and pass:GetAttribute("Backup") == nil)
 
 -- the screen side
 local Check = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay.KnifeMeshCheck)

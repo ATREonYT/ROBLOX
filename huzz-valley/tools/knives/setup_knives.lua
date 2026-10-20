@@ -375,6 +375,104 @@ local function lineUp(k, parts: { BasePart })
 			if err < 0.05 then return s, R, cb - ca * s, matches, err end
 		end
 	end
+	-- 2c. A flat knife whose import turned its parts (his Peppermint Shuriken, Oct 20: the .glb's thin way came in as
+	-- the parts' Z, so 2b's "keep the part's turn" was a quarter off): the turn from where the parts' centres sit,
+	-- when they spread two ways across it (its centre rings one way, its wrapper twists the other). Each way's column
+	-- of the least-squares fit B = M A, made square to each other; the third way is their cross.
+	if #matches >= 3 then
+		local A, B, ca, cb = {}, {}, Vector3.zero, Vector3.zero
+		for _, pr in matches do
+			local a = Vector3.new(pr.node[2], pr.node[3], pr.node[4])
+			table.insert(A, a)
+			table.insert(B, pr.part.CFrame.Position)
+			ca += a
+			cb += pr.part.CFrame.Position
+		end
+		ca, cb = ca / #A, cb / #B
+		local C = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } }
+		local D = { Vector3.zero, Vector3.zero, Vector3.zero }
+		for i, a in A do
+			local d = { a.X - ca.X, a.Y - ca.Y, a.Z - ca.Z }
+			for r = 1, 3 do
+				for c = 1, 3 do C[r][c] += d[r] * d[c] end
+				D[r] += (B[i] - cb) * d[r]
+			end
+		end
+		local spread = { C[1][1], C[2][2], C[3][3] }
+		local damp = 1e-6 * (C[1][1] + C[2][2] + C[3][3])
+		for r = 1, 3 do C[r][r] += damp end
+		local function cof(r, c)
+			local rs, cs = {}, {}
+			for i = 1, 3 do if i ~= r then table.insert(rs, i) end end
+			for i = 1, 3 do if i ~= c then table.insert(cs, i) end end
+			local v = C[rs[1]][cs[1]] * C[rs[2]][cs[2]] - C[rs[1]][cs[2]] * C[rs[2]][cs[1]]
+			return if (r + c) % 2 == 0 then v else -v
+		end
+		local det = C[1][1] * cof(1, 1) + C[1][2] * cof(1, 2) + C[1][3] * cof(1, 3)
+		local cols, strong = {}, {}
+		for j = 1, 3 do
+			local v = Vector3.zero
+			for r = 1, 3 do v += D[r] * (cof(j, r) / det) end
+			cols[j] = v
+			strong[j] = spread[j] > 1e-4 * k.len * k.len and v.Magnitude > 1e-6
+		end
+		-- two strong ways: the third is their cross (X x Y = Z, Y x Z = X, Z x X = Y)
+		local X, Y, Z
+		if strong[1] and strong[3] then
+			X = cols[1].Unit
+			Z = (cols[3] - X * cols[3]:Dot(X)).Unit
+			Y = Z:Cross(X)
+		elseif strong[1] and strong[2] then
+			X = cols[1].Unit
+			Y = (cols[2] - X * cols[2]:Dot(X)).Unit
+			Z = X:Cross(Y)
+		elseif strong[2] and strong[3] then
+			Y = cols[2].Unit
+			Z = (cols[3] - Y * cols[3]:Dot(Y)).Unit
+			X = Y:Cross(Z)
+		elseif strong[1] or strong[2] or strong[3] then
+			-- only one way shows (his Hex Shuriken: two rings either side of a round star, across its thin way): that
+			-- way from the fit, the next along one of its blade part's own sides square to it (a star looks the same
+			-- turned in its own flat), the third their cross
+			local j = if strong[1] then 1 elseif strong[2] then 2 else 3
+			local known = cols[j].Unit
+			local part = matches[1].part
+			for _, pr in matches do
+				if string.find(string.lower(pr.node[1]), "blade", 1, true) then part = pr.part break end
+			end
+			local cf, most, side = part.CFrame, math.huge, nil
+			for _, ax in { cf.RightVector, cf.UpVector, cf.LookVector } do
+				if math.abs(ax:Dot(known)) < most then most, side = math.abs(ax:Dot(known)), ax end
+			end
+			side = (side - known * side:Dot(known)).Unit
+			if j == 1 then
+				X, Y = known, side
+				Z = X:Cross(Y)
+			elseif j == 2 then
+				Y, Z = known, side
+				X = Y:Cross(Z)
+			else
+				Z, X = known, side
+				Y = Z:Cross(X)
+			end
+		end
+		if X then
+			local R = CFrame.fromMatrix(Vector3.zero, X, Y, Z)
+			local num, den = 0, 0
+			for i, a in A do
+				local ra = R:VectorToWorldSpace(a - ca)
+				num += ra:Dot(B[i] - cb)
+				den += ra:Dot(ra)
+			end
+			if den > 1e-8 and num > 0 then
+				local s = num / den
+				local err = 0
+				for i, a in A do err += ((R:VectorToWorldSpace(a - ca) * s + cb) - B[i]).Magnitude ^ 2 end
+				err = math.sqrt(err / #A) / (s * k.len)
+				if err < 0.05 then return s, R, cb - R:VectorToWorldSpace(ca) * s, matches, err end
+			end
+		end
+	end
 	-- 3. Fallback (too few names matched): the knife is the long way of the parts' box, its tip at the end its blade
 	-- parts are nearer, its thin way the box's thinnest side. (Never assume the import stands upright: Studio laid the
 	-- knives of All_Knives.glb flat.)

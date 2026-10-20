@@ -35,6 +35,13 @@
 	the feet, a few stars twinkling round the body, a soft light on the character). Above: the tag,
 	the title plate and the subtitle; at the waist the price button ("1,799 · VIEW"). No timers, no "limited",
 	no "ends in" (kid-safe, even though the reference has them).
+	The copy is one rigid piece (owner, Oct 20 20:34, his picture of the stands: Moonlit's Hollow Eclipse lay flat on
+	the floor beside its copy, nothing in the hand). His avatar is built on Roblox's newer joints (AnimationConstraints
+	with BallSockets: physics springs, each limb its own loose piece), so the copy's hand and the big knife welded to
+	it were held up by physics alone (the likely way it came off; offline there is no physics to prove it). Now the copy's joints become plain Motor6Ds and its accessories are welded on
+	(Shared/GirlRig, as the girls' copies), so the whole copy hangs off its anchored root. And a knife found more than
+	DROPPED studs from the hand it's welded to is put back (mounted again), with one "[HuzzKnife] stand knife ..." line
+	in Output naming what was off.
 	Buying: only through Shared/AvatarStandRules (a real Game Pass ID AND a pass the game already grants);
 	otherwise the button says SOON and tapping it only says it's coming soon. Ownership is the server's
 	(ShopService asks Roblox), read here from State.
@@ -56,6 +63,7 @@ function M.start()
 	local FxTexture = require(Shared.FxTexture)
 	local LeaderConfig = require(Shared.Config.Leaderboards)
 	local Rules = require(Shared.AvatarStandRules)
+	local GirlRig = require(Shared.GirlRig)
 	local LeaderRules = require(Shared.LeaderboardRules)
 	local RunMotion = require(Shared.RunMotion)
 	local StandShowcase = require(Shared.StandShowcase)
@@ -158,6 +166,10 @@ function M.start()
 		end
 		copy.Name = "StandAvatar"
 		for _, name in { "HuzzDance", "HuzzDanceAt", "HuzzCastAt", "DashAt" } do pcall(function() copy:SetAttribute(name, nil) end) end
+		-- one rigid piece: Roblox's newer joints (physics springs) become Motor6Ds, accessories welded on (Shared/GirlRig)
+		local okM, errM = pcall(GirlRig.toMotors, copy)
+		if not okM then warn("[Huzz] avatar stand joints: " .. tostring(errM)) end
+		pcall(GirlRig.joinAccessories, copy)
 		return copy
 	end
 
@@ -207,6 +219,27 @@ function M.start()
 
 	-- The sword showcase (Shared/StandShowcase) on a copy holding a knife: the pose, the knife's turn in the fist
 	-- (twirls) and the trail during cuts.
+	local DROPPED = 4 -- studs from its hand: the knife came off (it's at most ~1 from the fist when held)
+	local droppedTold = false
+	local mountKnife -- (below)
+	-- A knife more than DROPPED studs off the hand it's welded to is mounted again (one Output line the first time).
+	local function keepKnife(rec)
+		local weld = rec.knifeWeld
+		local hand, handle = weld and weld.Part0, weld and weld.Part1
+		if hand and handle and rec.copy and rec.knifeKey and os.clock() - (rec.knifeAt or 0) > 1
+			and (handle.CFrame.Position - hand.CFrame.Position).Magnitude > DROPPED then
+			if not droppedTold then
+				droppedTold = true
+				warn(string.format("[HuzzKnife] stand knife %s was %.1f studs off its hand (weld %s, hand %s, knife anchored %s): put back. Send Claude this line.",
+					rec.knifeKey, (handle.CFrame.Position - hand.CFrame.Position).Magnitude, if weld.Parent then "on" else "gone",
+					tostring(hand.Parent ~= nil), tostring(handle.Anchored)))
+			end
+			local template = ReplicatedStorage:FindFirstChild("HuzzStandKnives")
+			template = template and template:FindFirstChild(rec.knifeKey)
+			if template then pcall(mountKnife, rec, rec.knifeKey, template) end
+		end
+	end
+
 	local function stepShowcase(rec)
 		local pose = StandShowcase.step(rec.showcase, os.clock())
 		local weld = rec.knifeWeld
@@ -223,6 +256,7 @@ function M.start()
 	end
 
 	local function stepRun(rec, dt: number)
+		if rec.knifeWeld then keepKnife(rec) end
 		if rec.showcase then
 			stepShowcase(rec)
 			return
@@ -242,7 +276,7 @@ function M.start()
 
 	-- The pass's exclusive knife in the copy's right hand (the hand's grip, the knife's own Grip attachment, as
 	-- HuzzServer/KnifeService holds a catcher's knife). The ready model comes from ReplicatedStorage.HuzzStandKnives.
-	local function mountKnife(rec, knifeKey: string, template: Instance)
+	function mountKnife(rec, knifeKey: string, template: Instance)
 		local copy = rec.copy
 		if not copy or not copy.Parent then return end
 		local old = copy:FindFirstChild("StandKnife")
@@ -266,6 +300,7 @@ function M.start()
 		weld.Part0, weld.Part1 = hand, handle
 		weld.C0 = KnifeLook.handC0(at)
 		weld.C1 = if own and own:IsA("Attachment") then own.CFrame else CFrame.identity
+		handle.CFrame = hand.CFrame * weld.C0 * weld.C1:Inverse() -- (in the fist now, before the weld's first step)
 		weld.Parent = handle
 		knife:SetAttribute("Knife", knifeKey)
 		-- the slash trail for the showcase's cuts (as KnifeService's, a little longer so the arc reads)
@@ -289,6 +324,7 @@ function M.start()
 		end
 		knife.Parent = copy
 		rec.knifeWeld, rec.gripAt, rec.handTurn, rec.trail = weld, at, KnifeLook.handC0(at).Rotation, trail
+		rec.knifeAt = os.clock()
 		local burster = knife:FindFirstChild("KnifeBurst", true)
 		rec.burster = if burster and burster:IsA("ParticleEmitter") then burster else nil
 		rec.burstCount = knife:GetAttribute("Burst") or 12

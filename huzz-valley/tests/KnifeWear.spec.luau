@@ -73,7 +73,7 @@ for _, m in folder:GetChildren() do
 end
 table.sort(broken)
 print("  models the wrong size (shown as the plain knife until fixed): " .. (if #broken > 0 then table.concat(broken, ", ") else "none"))
-check("all 30 models are the right size (tools/knives/repair_knives.luau fixed 8 on Oct 18)", #folder:GetChildren() == 30 and #broken == 0)
+check("all 53 models are the right size (tools/knives/repair_knives.luau fixed 8 on Oct 18)", #folder:GetChildren() == 53 and #broken == 0)
 check("the shop table wins", KnifeLook.wearOf("Side", { length = 3.4, bladeLength = 2.4, bladeWidth = 0.3 }, "Back") == "Side"
 	and KnifeLook.wearOf("Back", { length = 2, bladeLength = 1, bladeWidth = 1 }) == "Back")
 check("then the model's Wear attribute", KnifeLook.wearOf(nil, { length = 2, bladeLength = 1, bladeWidth = 1 }, "Back") == "Back")
@@ -391,7 +391,7 @@ do
 	local all = {}
 	for key, m in good do table.insert(all, { key, m, CoinShop.get(key) }) end
 	for _, item in CoinShop.Items do
-		if item.Slot == "Knife" and item.Model and string.find(item.Model, "/", 1, true) then table.insert(all, { item.Key, KnifeService.template(item), item }) end
+		if item.Slot == "Knife" and item.Model and string.find(item.Model, "/", 1, true) and not good[item.Key] then table.insert(all, { item.Key, KnifeService.template(item), item }) end
 	end
 	table.insert(all, { "the default knife", KnifeService.template(nil), nil })
 	for _, b in guardBodies do

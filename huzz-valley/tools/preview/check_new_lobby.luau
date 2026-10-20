@@ -7,7 +7,7 @@
 -- The plaza is the lobby (spawn on it), not the old island; the five boards stand on the podiums and the steps,
 -- facing the plaza; his five props on the five pads (owner, Oct 18: "implementing these objects into the lobby on top
 -- of the already placed circles"): floating, titled, the shop and the chest opening their menus; the invisible stands
--- (3 VIP, 2 Dance Pack, one Game Pass knife each) in a row along the side opposite the podiums, clear of his spin wheel
+-- (three since Oct 20 20:34: Hunter, Moonlit, Sunrise) in a row along the side opposite the podiums, clear of his spin wheel
 -- there, get your copy standing on the floor; his old grey block stays a block.
 -- From tools/preview: lune run harness.luau ../../src - "$(cat check_new_lobby.luau)" setup_ui.luau
 local ok, fails = 0, 0
@@ -101,7 +101,7 @@ check("two on the terrace steps (" .. onStep .. ")", onStep == 2)
 -- the stands: a row along the side opposite the podiums (-x), his old block left alone
 local standFolder = workspace:FindFirstChild("HuzzAvatarStands")
 local stands = standFolder and standFolder:GetChildren() or {}
-check("five stands (" .. #stands .. ")", #stands == 5)
+check("three stands (owner, Oct 20 20:34: \"make 3 characters be there, not 5\") (" .. #stands .. ")", #stands == 3)
 local vip, dance, knives = 0, 0, {}
 for _, s in stands do
 	check("stand tagged", s:HasTag("HuzzAvatarStand"))
@@ -121,23 +121,12 @@ for _, s in stands do
 	check("not in front of the spin wheel", not (math.abs(p.Z - 43) < 7 + 3.5))
 	check("faces into the plaza", s.CFrame.LookVector.X > 0.9)
 end
-check("each stand sells its knife's own Game Pass (owner Oct 18: one pass per knife)", vip == 5)
-local five = 0
-for _, k in { "CelestialSeraph", "CrimsonRequiem", "HollowEclipse", "DragonsMaw", "FrostboundOath" } do
-	if knives[k] then five += 1 end
+check("each stand sells its knife's own Game Pass (owner Oct 18: one pass per knife)", vip == 3)
+local three = 0
+for _, k in { "CelestialSeraph", "CrimsonRequiem", "HollowEclipse" } do
+	if knives[k] then three += 1 end
 end
-check("each Game Pass knife once (" .. five .. ")", five == 5)
-check("the VIP three (furthest from the front) show Hunter, Moonlit and Sunrise (his card order)", (function()
-	local first = { HunterKnifePass = true, MoonlitKnifePass = true, SunriseKnifePass = true }
-	local zs = {}
-	for _, s in stands do table.insert(zs, s.CFrame.Position.Z) end
-	table.sort(zs)
-	local cut = zs[#zs - 2] or math.huge
-	for _, s in stands do
-		if (first[s:GetAttribute("Pass")] == true) ~= (s.CFrame.Position.Z >= cut) then return false end
-	end
-	return true
-end)())
+check("Hunter, Moonlit and Sunrise once each (his card order; Inferno and Frost stay in the Shop) (" .. three .. ")", three == 3)
 
 -- his props: one on each pad, his model's parts (the stand-in until he imports his meshes) floating over it
 local Config = require(game.ReplicatedStorage.Shared.Config.LobbyProps)
@@ -247,8 +236,8 @@ for _, c in (copies and copies:GetChildren() or {}) do
 		if root and root.CFrame.Position.Y > 12.5 and root.CFrame.Position.Y < 12.5 + 6 then onTop += 1 end
 	end
 end
-check("your copy on every stand (" .. count .. ")", count == 5)
-check("standing on the floor", onTop == 5)
+check("your copy on every stand (" .. count .. ")", count == 3)
+check("standing on the floor", onTop == 3)
 
 -- the props move on your screen (bob and turn) and the FREE SPIN line counts down
 local shop = byName.Shop_Stall and byName.Shop_Stall.Prop.PrimaryPart

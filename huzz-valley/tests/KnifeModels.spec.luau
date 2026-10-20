@@ -2,7 +2,9 @@
 -- Every knife is the owner's .glb model, wherever it shows (owner, Oct 19: "the knifes dont even have their shapes,
 -- they all dont look good, please fix them and use the glb file to get them one to one, whenever you wear or use
 -- them" / "all of the knifes"):
---   * his 30 imported models (assets/knives/HuzzKnives.rbxm): every part is one of his meshes (never a plain box),
+--   * his 53 imported models (assets/knives/HuzzKnives.rbxm: his 30, and since Oct 20 20:34 his 5 Game Pass and 18
+--     Halloween knives, set up offline from his place's imports by tools/knives/add_import_knives.luau, which keeps
+--     their 106 glows too): every part is one of his meshes (never a plain box),
 --     sits where its .glb part sits (Handle space, tools/knives/knife_boxes.json; as imported or half a turn round,
 --     never a quarter: the blade's flat across the back and the fist), and has that part's look (owner, Oct 19: "they
 --     dont look as good as in the glb file"): his import's own glow (84 SurfaceAppearances with an emissive mask, on
@@ -98,11 +100,16 @@ local function hisGlows(f)
 	return n
 end
 
--- 1. his 30 models: meshes, places, colours, looks
+-- 1. his 53 models: meshes, places, colours, looks
 local folder = roblox.deserializeModel(fs.readFile(ROOT .. "assets/knives/HuzzKnives.rbxm"))[1]
 local received = roblox.deserializeModel(fs.readFile(ROOT .. "assets/knives/HuzzKnives-received.rbxm"))[1]
-local kept, had = hisGlows(folder), hisGlows(received)
+local kept, had, kept23 = 0, hisGlows(received), 0
+for _, model in folder:GetChildren() do
+	if received:FindFirstChild(model.Name) then kept += hisGlows(model) else kept23 += hisGlows(model) end
+end
 check(string.format("his import's own glow kept: %d of the %d glowing SurfaceAppearances he had", kept, had), kept == had and had == 84)
+-- (his place's imports of the 23 had 38 + 68, every one with an emissive mask: counted Oct 20 from places/HUSSANIME.rbxl)
+check(string.format("his 23's own glow kept: %d of the 106 his imports had", kept23), kept23 == 106)
 local his, metalParts = 0, 0
 for _, model in folder:GetChildren() do
 	local nodes = boxes[model.Name]
@@ -145,7 +152,7 @@ for _, model in folder:GetChildren() do
 	check(model.Name .. ": every part in its .glb colour (" .. wrongCol .. " not)", wrongCol == 0)
 	check(model.Name .. ": every part in its .glb look: his glow kept, else Neon / Metal / Plastic by the .glb (" .. wrongLook .. " not)", wrongLook == 0)
 end
-check("all 30 of his models are in the file (" .. his .. ")", his == 30)
+check("all 53 of his models are in the file (" .. his .. ")", his == 53)
 check("his metal parts are Metal (" .. metalParts .. ")", metalParts > 200)
 
 -- 2. the real KnifeService, every knife key, every way it shows
@@ -254,8 +261,15 @@ for _, item in CoinShop.Items do
 	end
 	check(key .. ": nothing laid over his model (no glow shell, no sheen glint)", next(over) == nil)
 	if isPass[key] then
+		-- his import is in the file since Oct 20 20:34: the game uses it; set aside (an older place), the stand-in
+		-- is still tagged for the .glb dress
+		local _, own = KnifeService.template(item)
+		check(key .. ": his import in the file, so his model", own == true)
+		local his = folder:FindFirstChild(key)
+		if his then his.Parent = nil end
 		local t = KnifeService.template(item)
 		check(key .. ": without his import, the stand-in is tagged for the .glb dress", t:GetAttribute("Glb") == key)
+		if his then his.Parent = folder end
 	end
 end
 check("53 knife keys checked (" .. knives .. ")", knives == 53)

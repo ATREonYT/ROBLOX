@@ -177,7 +177,10 @@ for _, floor in floors do
 			check(name .. ": stands " .. j .. " and " .. i .. " apart", (stands[j].at.Position - p).Magnitude >= 8)
 		end
 	end
-	check(name .. ": five stands, 3 VIP + 2 Dance Pack (one per Game Pass knife)", #stands == 5 and vip == 3 and dance == 2)
+	check(name .. ": three stands (owner, Oct 20 20:34: \"make 3 characters be there, not 5\")", #stands == 3 and vip == 3 and dance == 0)
+	for j = 2, #stands do
+		check(name .. ": stands " .. (j - 1) .. " and " .. j .. " spaced at least 10 apart (signs don't overlap)", (stands[j].at.Position - stands[j - 1].at.Position).Magnitude >= 10)
+	end
 	local props = Layout.propSpots(api, ws, floor, { "Pumpkin_Patch_Chest", "Sweets_Treats_Coffin", "Witch_Brew_Cauldron" }, { "Shop_Stall", "Like_Reward_Gift" })
 	local used, byName = {}, {}
 	for _, s in props do

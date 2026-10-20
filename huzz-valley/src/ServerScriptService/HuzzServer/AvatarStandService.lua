@@ -8,8 +8,9 @@
 	   Workspace > HuzzAvatarStands, so he can drag them). If the place has none (his own place synced by Rojo):
 	   - his new lobby (owner Oct 18: "please add ... all of the gamepass things to the new lobby"): an invisible
 	     stand per small round pad, in a row along the side of the plaza opposite his podiums, facing into it (the
-	     pads hold his lobby props now; Shared/LobbyLayout.standSpots: VIP three, Dance Pack two, one Game Pass knife
-	     each), made here in Workspace > HuzzAvatarStands;
+	     pads hold his lobby props now; Shared/LobbyLayout.standSpots: three stands since Oct 20 20:34, "make 3
+	     characters be there, not 5", Hunter, Moonlit and Sunrise; Inferno and Frost stay in the Shop), made here in
+	     Workspace > HuzzAvatarStands;
 	   - else (his older places) his plain grey blocks beside the big spin wheels (Shared/AvatarStandRules.findBlocks),
 	     tagged here with Pass = VIP / DancePack in turn.
 	   Nothing of his is renamed and nothing typed in Studio is overwritten.

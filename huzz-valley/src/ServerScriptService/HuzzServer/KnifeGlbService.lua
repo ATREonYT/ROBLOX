@@ -12,8 +12,9 @@
 	shows it in a ViewportFrame on a knife card whose picture can't be drawn (owner, Oct 20 14:07: "please fix all of
 	the placeholders for knifes"). Only real knife keys; ONE copy a knife for the whole server, made the first time any
 	screen asks (a copy a player put up to 53 knives x every player on the server), at most MAX_VIEWS in all.
-	Remote KnifeBackup (Shared/Net): (knife key) -> the plain cut's baked rows of one of his 30 knives
-	(ServerStorage/HuzzKnifeBackups/<Key>, tools/knives/bake_stand_ins.py backups, 3-17 KB), nil when it has none,
+	Remote KnifeBackup (Shared/Net): (knife key) -> the plain cut's baked rows of one of his knives
+	(ServerStorage/HuzzKnifeBackups/<Key> for his 30, tools/knives/bake_stand_ins.py backups, 3-17 KB; the 23 of his
+	files of several use their stand-in's rows, Shared/KnifeStandInParts/<Key>), nil when it has none,
 	false past MAX_CALLS (shared with KnifeGlb). Gameplay/KnifeMeshCheck asks only on a screen where his meshes don't
 	load, once a knife (owner, Oct 20 15:13: "make it so that the knifes also appear inside of the actual roblox game").
 ]]
@@ -51,6 +52,13 @@ function KnifeGlbService.backup(key: any)
 	if backupCache[key] == nil then
 		local folder = ServerStorage:FindFirstChild("HuzzKnifeBackups")
 		local m = folder and folder:FindFirstChild(key)
+		if not m then
+			-- the 5 Game Pass and 18 Halloween knives: their cut is their stand-in (Shared/KnifeStandInParts), since
+			-- Oct 20 20:34 their imported models are in HuzzKnives too
+			local shared = ReplicatedStorage:FindFirstChild("Shared")
+			local parts = shared and shared:FindFirstChild("KnifeStandInParts")
+			m = parts and parts:FindFirstChild(key)
+		end
 		local ok, g = false, nil
 		if m and m:IsA("ModuleScript") then ok, g = pcall(require, m) end
 		backupCache[key] = if ok and type(g) == "table" then g else false

@@ -20,8 +20,9 @@
 	                      the SpawnBaseplates (his older places).
 	pads(root, floor)     the round pads at the front (three on one side, two on the other).
 	propSpots(...)        his five lobby props, one on each pad (Config/LobbyProps says which goes where).
-	standSpots(...)       the avatar stands: a row along the side of the plaza opposite his podiums, facing into it,
-	                      where nothing is in the way (as many per Game Pass as pads: VIP three, Dance Pack two).
+	standSpots(...)       the avatar stands: a row of STANDS (3) along the side of the plaza opposite his podiums,
+	                      facing into it, where nothing is in the way (owner, Oct 20 20:34: "make 3 characters be
+	                      there, not 5": Hunter, Moonlit and Sunrise; the other knife passes stay in the Shop).
 	boardSpots(...)       the leaderboards: his grey Podiums by the plaza first, then the lowest terrace step on each
 	                      side behind the plaza (clear of the house in the middle), facing the plaza; else along the
 	                      back edge of the floor.
@@ -298,9 +299,11 @@ local ROW = {
 	FRONT = 20, -- studs from the front edge at least (and 12 behind the pads: clear of his props on them)
 	BACK = 20,
 	INSETS = { 9, 24 }, -- studs in from the side edge, tried from the edge inwards (every half stud)
-	GAPS = { 10, 9, 8 }, -- studs between stands (their signs are 9 wide), the widest that fits
+	GAPS = { 13, 12, 11, 10, 9, 8 }, -- studs between stands (their signs are 9 wide), the widest that fits (3 stands
+	-- since Oct 20 20:34: room for wider gaps, so the signs don't overlap seen from the plaza)
 }
 LobbyLayout.ROW = ROW
+LobbyLayout.STANDS = 3 -- avatar stands in the row (owner, Oct 20 20:34: "make 3 characters be there, not 5")
 
 --[[
 	Pure: a row of `count` avatar stands along one side of the plaza, facing into it (owner, Oct 18: the stands came off
@@ -309,7 +312,7 @@ LobbyLayout.ROW = ROW
 	studs from the front edge where the row may start) }, `rows` =
 	facts() of the parts round the lobby. Spots stand on the floor where nothing is in the way (a grave, a lantern)
 	and nothing tall is hidden behind them (the spin wheel), from the front back; the line nearest the edge where all
-	fit, with the widest gap that fits. Returns { x, z, yaw, depth } front to back ({} when none fit).
+	fit: an even row at the widest gap that has one, else the tightest row with holes. Returns { x, z, yaw, depth } front to back ({} when none fit).
 ]]
 function LobbyLayout.pickRow(o, rows: { any }, count: number): { any }
 	local function frame(x, z)
@@ -338,6 +341,35 @@ function LobbyLayout.pickRow(o, rows: { any }, count: number): { any }
 		return true
 	end
 	local yaw = yawTo(0, 0, -o.sx, -o.sz)
+	local function place(list, inset)
+		local out = {}
+		for _, dd in list do
+			local a, b = dd - o.depth, o.across - inset -- (inward and sideways from the centre)
+			table.insert(out, { x = o.cx + o.ix * a + o.sx * b, z = o.cz + o.iz * a + o.sz * b, yaw = yaw, depth = dd, inset = inset })
+		end
+		return out
+	end
+	-- first an even row (the same gap between every two stands, nothing in the way at any of them), the widest gap,
+	-- the line nearest the edge, the row nearest the front (Oct 20 20:34: three stands, spaced so their signs read)
+	local back = 2 * o.depth - ROW.BACK
+	for _, gap in ROW.GAPS do
+		for inset = ROW.INSETS[1], ROW.INSETS[2], 0.5 do
+			local d = o.front or ROW.FRONT
+			while d + gap * (count - 1) <= back do
+				local all = true
+				for k = 0, count - 1 do
+					if not clear(inset, d + gap * k) then all = false break end
+				end
+				if all then
+					local list = {}
+					for k = 0, count - 1 do table.insert(list, d + gap * k) end
+					return place(list, inset)
+				end
+				d += 0.5
+			end
+		end
+	end
+	-- else the tightest row with holes where something's in the way
 	for _, gap in ROW.GAPS do
 		-- every line from the edge inwards; the tightest row wins (fewest holes where something's in the way), then the
 		-- line nearest the edge
@@ -357,22 +389,16 @@ function LobbyLayout.pickRow(o, rows: { any }, count: number): { any }
 				if not best or span < bestSpan - 0.5 then best, bestSpan, bestInset = got, span, inset end
 			end
 		end
-		if best then
-			local out = {}
-			for _, dd in best do
-				local a, b = dd - o.depth, o.across - bestInset -- (inward and sideways from the centre)
-				table.insert(out, { x = o.cx + o.ix * a + o.sx * b, z = o.cz + o.iz * a + o.sz * b, yaw = yaw, depth = dd, inset = bestInset })
-			end
-			return out
-		end
+		if best then return place(best, bestInset) end
 	end
 	return {}
 end
 
 --[[
-	The avatar stand spots: a row along the side of the plaza opposite his podiums (the boards are there), facing into
-	the plaza; as many stands per Game Pass as pads before (the side with more pads VIP, the other Dance Pack), so
-	every stand keeps its knife. Dance Pack nearest the front, then VIP. { at, Pass, Turn }
+	The avatar stand spots: a row of STANDS along the side of the plaza opposite his podiums (the boards are there),
+	facing into the plaza (owner, Oct 20 20:34: "make 3 characters be there, not 5"). Each is listed as a VIP stand
+	(VIP gives no knife now), so AvatarStandRules.assign hands them the first three knife passes in his card order:
+	Hunter, Moonlit, Sunrise. { at, Pass, Turn }
 ]]
 function LobbyLayout.standSpots(api, root, floor): { any }
 	local pads = LobbyLayout.pads(api, root, floor)
@@ -417,7 +443,7 @@ function LobbyLayout.standSpots(api, root, floor): { any }
 		front = math.max(front, (p.wx - centre.X) * ix + (p.wz - centre.Z) * iz + o.depth + 12)
 	end
 	o.front = front
-	local count = counts.VIP + counts.DancePack
+	local count = math.min(counts.VIP + counts.DancePack, LobbyLayout.STANDS)
 	local spots = LobbyLayout.pickRow(o, rows, count)
 	if #spots < count then
 		-- nothing fits: evenly along that side anyway, 10 in from the edge
@@ -427,16 +453,12 @@ function LobbyLayout.standSpots(api, root, floor): { any }
 			table.insert(spots, { x = o.cx + ix * a + sx * b, z = o.cz + iz * a + sz * b, yaw = yawTo(0, 0, -sx, -sz) })
 		end
 	end
-	-- listed VIP first, then Dance Pack (as the pads were): AvatarStandRules.assign hands out the knife passes in
-	-- this order, so the VIP group keeps Hunter, Moonlit and Sunrise (his card order) and Dance Pack the other two
-	local out, dance = {}, {}
+	-- front to back; AvatarStandRules.assign hands out the knife passes in this order (Hunter, Moonlit, Sunrise)
+	local out = {}
 	for i, s in spots do
-		local pass, turn = "DancePack", i
-		if i > counts.DancePack then pass, turn = "VIP", i - counts.DancePack end
 		local at = api.CFrame.new(s.x, f.top + 0.2, s.z) * api.CFrame.Angles(0, s.yaw, 0)
-		table.insert(if pass == "VIP" then out else dance, { at = at, Pass = pass, Turn = turn })
+		table.insert(out, { at = at, Pass = "VIP", Turn = i })
 	end
-	table.move(dance, 1, #dance, #out + 1, out)
 	return out
 end
 

@@ -67,6 +67,13 @@ for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")
 	if string.find(k.file, "/", 1, true) then table.insert(SHEET, k.key) end
 end
 check("23 stand-ins cut from his files (" .. #SHEET .. ")", #SHEET == 23)
+-- (a stand-in shows where his model isn't in ServerStorage > HuzzKnives. Since Oct 20 20:34 the file holds his own
+-- models of these 23 too, tools/knives/add_import_knives.luau: set aside for part 1, checked in part 1b)
+local his23 = {}
+for _, key in SHEET do
+	local m = folder:FindFirstChild(key)
+	if m then his23[key] = m; m.Parent = nil end
+end
 local function count(model, class)
 	local n = 0
 	for _, d in model:GetDescendants() do if d:IsA(class) then n += 1 end end
@@ -127,6 +134,28 @@ for _, key in SHEET do
 		end
 	end
 	check(key .. ": every part welded to the handle", loose == 0)
+end
+
+-- 1b. his own models of the 23, as the file has them since Oct 20 20:34
+do
+	local ownN, meshOnly, sane, trail = 0, 0, 0, 0
+	for _, key in SHEET do
+		if his23[key] then his23[key].Parent = folder end
+		local skin = CoinShop.get(key)
+		local model, own = KnifeService.template(skin)
+		if own then ownN += 1 end
+		local handle, plain = model:FindFirstChild("Handle", true), 0
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and d ~= handle and not d:IsA("MeshPart") then plain += 1 end
+		end
+		if plain == 0 and count(model, "MeshPart") > 0 then meshOnly += 1 end
+		if KnifeLook.sane(KnifeService.shapeOf(model), skin.Studs, skin.Wide) then sane += 1 end
+		if model:FindFirstChild("TrailBase", true) and model:FindFirstChild("TrailTip", true) then trail += 1 end
+	end
+	check("his 23: the game uses his own model (" .. ownN .. ")", ownN == 23)
+	check("his 23: every part one of his meshes (" .. meshOnly .. ")", meshOnly == 23)
+	check("his 23: shaped like a knife, its length (" .. sane .. ")", sane == 23)
+	check("his 23: slash trail points (" .. trail .. ")", trail == 23)
 end
 
 -- 2. the scaler
