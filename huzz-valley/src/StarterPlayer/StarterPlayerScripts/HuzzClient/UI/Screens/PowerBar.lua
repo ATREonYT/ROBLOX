@@ -12,7 +12,7 @@
 	  * The cards above it (194 x 77): ABILITY, the picture, the title, "<key> · LET'S GO!" or the state in the
 	    power's colour (Config/Powers Accent; STUNNED / STUCK while the server refuses powers), and a line that fills
 	    as it charges. A runner has one (this round's
-	    Q ability, his picture c: the one they bring, Screens/Loadout) and, only while carrying the girl, Speed Boost on
+	    Q ability, his picture c: the one they bring, Shop > ABILITIES) and, only while carrying the girl, Speed Boost on
 	    E; a catcher has the two they bring (Bear Trap and Slow Wave to start).
 	What it shows comes from the server: PowerName1/2 and PowerReady1/2 (HuzzServer/PowerService), DashReady (the
 	huss's or the dive's ready time), ShieldUntil, DizzyUntil, StunnedFrom/StunnedUntil (a dive's stun); KnifeReady

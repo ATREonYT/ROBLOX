@@ -7,7 +7,9 @@
 	path (worked out off the round's clock, so the round never waits for it). It is plainly a bot: its name tag says so, it is not a
 	player, it never wins a girl and is never paid; if it downs every runner, nobody wins that game.
 	RoundService drives it: spawn() at the line-up, setFrozen() with the catchers, step() while play is live,
-	remove() when a real catcher exists or the game ends. A runner's Banana Peel trips it too (trip(), PowerService). The body is Roblox's default blocky one
+	remove() when a real catcher exists or the game ends. A runner's Banana Peel trips it too (trip(), PowerService);
+	a Smoke Bomb's cloud slows it (slow(), PowerService), and it loses an Invisible runner while they're faded (it
+	chases someone else or waits): so the owner feels the abilities testing alone (critic, Oct 20). The body is Roblox's default blocky one
 	(Players:CreateHumanoidModelFromDescription), so no asset IDs; its run and idle play from the IDs inside that
 	body's own Animate script (that LocalScript can't run on a model nobody owns). The sim swaps in a fake body
 	(PracticeBot.makeBody) to test the chase.
@@ -101,12 +103,16 @@ local scale = 1
 function PracticeBot.setScale(k: number)
 	scale = if type(k) == "number" and k > 0 then k else 1
 	if humanoid and humanoid.WalkSpeed > 0 then
-		humanoid.WalkSpeed = speed * scale
+		humanoid.WalkSpeed = walkSpeed()
 	end
 end
 
+local slowK, slowUntil = 1, 0 -- (a Smoke Bomb's cloud: PracticeBot.slow)
+local function walkSpeed(): number
+	return speed * scale * (if os.clock() < slowUntil then slowK else 1)
+end
 local function setSpeed(on: boolean)
-	if humanoid then humanoid.WalkSpeed = if on then speed * scale else 0 end
+	if humanoid then humanoid.WalkSpeed = if on then walkSpeed() else 0 end
 	if not on and humanoid and root then humanoid:MoveTo(root.Position) end
 end
 
@@ -121,6 +127,24 @@ function PracticeBot.trip(seconds: number)
 	pauseUntil = math.max(pauseUntil, os.clock() + seconds)
 	setSpeed(false)
 	model:SetAttribute("SlipUntil", Workspace:GetServerTimeNow() + seconds)
+end
+
+-- Inside a runner's Smoke Bomb cloud (HuzzServer/PowerService, Oct 20): it walks at `k` of its speed for `seconds`
+-- (PowerService renews it every frame it stays inside), as a catcher does.
+function PracticeBot.slow(k: number, seconds: number)
+	if not PracticeBot.active() then return end
+	slowK, slowUntil = math.clamp(k, 0.1, 1), os.clock() + seconds
+end
+
+-- A runner it can't see: faded by Invisible (character InvisibleFrom / InvisibleUntil, server time). It loses them
+-- for that long, as a player would lose a faint shimmer; they can still bump into it.
+local function hidden(target: BasePart): boolean
+	local c = target.Parent
+	if not c then return false end
+	local from, untilT = c:GetAttribute("InvisibleFrom"), c:GetAttribute("InvisibleUntil")
+	if type(untilT) ~= "number" then return false end
+	local t = Workspace:GetServerTimeNow()
+	return t < untilT and (type(from) ~= "number" or t >= from)
 end
 
 -- Its body while it's in the round (for effects drawn on it), else nil.
@@ -263,6 +287,7 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 	local moving = humanoid.WalkSpeed > 0
 	local go = not frozen and now >= goAt and now >= pauseUntil
 	if go ~= moving then setSpeed(go) end
+	if go and moving and humanoid.WalkSpeed ~= walkSpeed() then humanoid.WalkSpeed = walkSpeed() end -- (into or out of smoke)
 	-- the run plays while it moves (sped up with its speed), the idle while it stands
 	if tracks.run then
 		local v = root.AssemblyLinearVelocity
@@ -278,7 +303,7 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 	local best, bestD = nil, math.huge
 	for _, t in targets do
 		local d = (t.Position - root.Position).Magnitude
-		if d < bestD then best, bestD = t, d end
+		if d < bestD and not hidden(t) then best, bestD = t, d end
 	end
 	if best and bestD <= B.Reach * speed / B.Speed then -- (its reach grows and shrinks with its speed)
 		if stab(root) then

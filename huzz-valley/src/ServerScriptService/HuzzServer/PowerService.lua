@@ -52,6 +52,7 @@ local traps = {} -- { model, owner, at (Vector3), armAt, untilT }
 local peels = {} -- { model, owner, at, armAt, untilT }
 local clouds = {} -- { owner, at, from, untilT, radius }
 local ropes = {} -- { owner, dir, t0, match }: lassos in flight
+local pulls = {} -- { runner, fromX, fromZ, towardX, towardZ, dist, checkAt, match }: lasso pulls the server checks
 local lastSpeedCheck = {} -- UserId -> true while an effect changes their speed ("stunned" while a dive's stun holds them)
 
 local function now()
@@ -92,6 +93,14 @@ end)
 if not okData or type(DataService) ~= "table" then
 	DataService = nil
 end
+-- Moving a body by its owner's screen, the server only if it doesn't (the Lasso's fallback pull). None in a test.
+local okPlace, PlaceService = pcall(function()
+	return require(script.Parent.PlaceService)
+end)
+if not okPlace or type(PlaceService) ~= "table" then
+	PlaceService = nil
+end
+PowerService.lassoFallbacks = 0 -- (pulls a runner's screen skipped, so the server made them: the sim reads it)
 
 local function wind(name: string): number
 	local fx = Powers.Fx[name]
@@ -604,7 +613,7 @@ function PowerService.clear(keepPowers: boolean?)
 			end
 		end
 	end
-	traps, peels, clouds, ropes = {}, {}, {}, {}
+	traps, peels, clouds, ropes, pulls = {}, {}, {}, {}, {}
 	for id, s in state do
 		removeShield(id)
 		local p = ctx.playerOf(id)
@@ -800,6 +809,17 @@ stepClouds = function(t, match)
 	if #clouds == 0 then
 		return
 	end
+	-- the Practice Bot slows in it too (alone in Studio, the owner's catcher is the bot)
+	local bot = ctx.bot and ctx.bot()
+	local botAt = bot and bot.position()
+	if botAt and bot.slow then
+		for _, c in clouds do
+			if t >= c.from and near(botAt, c.at, c.radius, 9) then
+				bot.slow(Powers.SmokeBomb.Slow, 0.25)
+				break
+			end
+		end
+	end
 	for catcherId, role in match.roles do
 		local r = role == "Catcher" and ctx.rootOf(catcherId)
 		if r then
@@ -858,10 +878,54 @@ stepRopes = function(t, match)
 					s.slow, s.slowUntil = def.Slow, t + def.PullTime + def.Hold
 					badge(best, "HuzzLassoed", "YOINK!", def.Accent, def.PullTime + def.Hold)
 					ctx.sync(best)
+					-- their own screen pulls them (PowerEffects pullMe); the server checks it did (stepPulls)
+					if dist > 0 then
+						local p = ctx.playerOf(best)
+						local ok, ping = pcall(function() return p and p:GetNetworkPing() end)
+						table.insert(pulls, {
+							runner = best, fromX = bestRoot.Position.X, fromZ = bestRoot.Position.Z, towardX = from.Position.X,
+							towardZ = from.Position.Z, dist = dist, match = match,
+							checkAt = t + AbilityRules.pullCheckAfter(def.PullTime, if ok then ping else nil),
+						})
+					end
 				end
 			elseif tip >= def.Range then
 				table.remove(ropes, i)
 				Net.get("Round"):FireAllClients("Power", { name = "LassoMiss", id = rope.owner })
+			end
+		end
+	end
+end
+
+-- A lasso pull the runner's screen didn't make (a skipped or blocked pull: their client moves their body, so a cheat
+-- could ignore it): once the pull and a round trip are over, a runner who didn't come at least AbilityRules.PULL_MIN
+-- of the way is pulled by the server, through PlaceService (their screen is asked; the server moves them only if it
+-- doesn't). Never while they're safe, frozen, down or out of the round.
+local function stepPulls(t, match)
+	for i = #pulls, 1, -1 do
+		local pull = pulls[i]
+		local r = ctx.rootOf(pull.runner)
+		-- (done the first frame they've come far enough: they may run back off once the pull ends)
+		if r and not pull.done and AbilityRules.pulled(pull.fromX, pull.fromZ, r.Position.X, r.Position.Z, pull.towardX, pull.towardZ, pull.dist) then
+			pull.done = true
+		end
+		if pull.match ~= match or match.over or pull.done then
+			table.remove(pulls, i)
+		elseif t >= pull.checkAt then
+			table.remove(pulls, i)
+			local p = ctx.playerOf(pull.runner)
+			local fine = match.status[pull.runner] == "Active" and not (ctx.frozen and ctx.frozen(pull.runner)) and not (p and ctx.isDown(p))
+			if r and p and fine then
+				local x, z = AbilityRules.pullSpot(pull.fromX, pull.fromZ, pull.towardX, pull.towardZ, pull.dist)
+				local start = ctx.startZone()
+				local spot = Vector3.new(x, r.Position.Y, z)
+				if PlaceService and not (start and ctx.inZone(start, spot)) then
+					PowerService.lassoFallbacks += 1
+					local runner = pull.runner
+					PlaceService.place(p, CFrame.new(spot) * r.CFrame.Rotation, "lasso", function() -- (still in play when it moves)
+						return ctx.match() == match and not match.over and match.status[runner] == "Active"
+					end)
+				end
 			end
 		end
 	end
@@ -909,6 +973,7 @@ function PowerService.step()
 	stepPeels(t, match)
 	stepClouds(t, match)
 	stepRopes(t, match)
+	stepPulls(t, match)
 	-- Speeds go back when an effect ends; a shield that ran out pops quietly.
 	for id, s in state do
 		local active = (s.slowUntil and t < s.slowUntil) or (s.dizzyUntil and t < s.dizzyUntil)

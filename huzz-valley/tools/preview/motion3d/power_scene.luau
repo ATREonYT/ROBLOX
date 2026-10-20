@@ -37,6 +37,9 @@ local GAMEPLAY = SRC .. "/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay
 local scene = Scene.new()
 local FPS, DT = 30, 1 / 30
 local LENGTH = 37.6
+-- POWER_FROM / POWER_TO (seconds): draw only that part (everything still runs from 0, so the effects are the same);
+-- e.g. POWER_FROM=34.6 for the Lasso alone
+local DRAW_FROM, DRAW_TO = tonumber(process.env.POWER_FROM or "") or 0, tonumber(process.env.POWER_TO or "") or LENGTH
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- A small Roblox for the module: a DataModel, a camera, players, a fake clock for task.delay and os.clock
@@ -577,7 +580,7 @@ for f = 0, total - 1 do
 	end
 	camera.CFrame = CFrame.new(camPos)
 	for _, s in STILL_AT do
-		if t >= s - DT / 2 and t < s + DT / 2 - 1e-6 then table.insert(stills, f) end
+		if DRAW_FROM == 0 and t >= s - DT / 2 and t < s + DT / 2 - 1e-6 then table.insert(stills, f) end -- (stills only for the whole film)
 	end
 	local caption = string.format("%.2f s  %s%s", t, string.upper(shot.name),
 		if shot.name == "Invisible" then (if process.env.POWER_ME == "1" then "  (your own screen)" else "  (as others see you)")
@@ -587,10 +590,10 @@ for f = 0, total - 1 do
 		elseif shot.name == "Radar" then "  (glow drawn white here; pink in the game)"
 		elseif shot.name == "Lasso" and lassoAt and t < lassoAt + LASSO.PullTime + LASSO.Hold then "  YOINK!"
 		else "")
-	scene:frame(camPos, camLook, {
+	if t >= DRAW_FROM - 1e-6 and t < DRAW_TO then scene:frame(camPos, camLook, {
 		sprites = sprites, ribbons = ribbons, lights = lights, labels = labels, grades = grades, bloom = bloom, caption = caption,
 		fov = 70,
-	})
+	}) end
 end
 assert(snapped, "the runner never ran into the trap")
 assert(slipAt, "the catcher never slipped on the peel")

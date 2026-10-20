@@ -24,10 +24,10 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   the top bar's (`LobbyHud`, was a toast plus Quests).
 - Shop passes copy the owner's banners: [ui.md](ui.md). Shop > PASSES opens on the knife pass cards: [knives.md](knives.md).
 
-## Abilities for coins (`Config/Powers`, `Shared/AbilityRules`, ActionService `BuyAbility` / `EquipAbility`, `Screens/Loadout`)
+## Abilities for coins (`Config/Powers`, `Shared/AbilityRules`, ActionService `BuyAbility` / `EquipAbility`, Shop > ABILITIES)
 - **Owner, Oct 20 15:13:** "Please then make the abilities be bought, add a few more abilities". Round abilities are
-  bought with **coins only** (never Robux) and kept for good (`Abilities` in the save); you pick what you bring in the
-  ABILITIES window (Menu > Abilities): the runner's Q (or **Random**: a new one you own each round, the old way) and the
+  bought with **coins only** (never Robux) and kept for good (`Abilities` in the save); you buy them AND pick what
+  you bring in the Shop's ABILITIES section (one place: an 8th Menu row didn't fit the Menu, critic Oct 20): the runner's Q (or **Random**: a new one you own each round, the old way) and the
   catcher's Q and E (`Loadout` in the save; picking the other key's one swaps them). A change plays from the next
   round (PowerService reads the loadout when a round starts). Speed Boost stays free (only while carrying the girl).
 - **Prices** (`Config/Powers` `Price`; 25 coins a game, 50 a win, so 20 to 40 games' pay, spec-checked between 8 and
@@ -42,9 +42,9 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   CatcherE), the side and that you own it. Both go through ActionService's shared rate limit. A save with a bad or
   unowned pick falls back to the defaults (`AbilityRules.loadout`). Rules and prices: `tests/AbilityRules.spec`.
 - The cards are `UI/AbilityCards` (picture or glyph, what it does, its cooldown, "Beat it:", BUY / EQUIP / Q and E):
-  the Shop's ABILITIES section (between KNIVES and PASSES) is `AbilityCards.build(slot)`: both sides, titled RUNNERS
-  and CATCHERS, no RANDOM card (shot `shop-abilities`, `tools/preview/check_filters.luau`).
-  Pictures: `docs/previews/loadout.jpg` and `docs/previews/loadout-catcher.jpg` (shots.sh `loadout`, `loadout-catcher`).
+  the Shop's ABILITIES section (between KNIVES and PASSES) is `AbilityCards.build(slot)`: a green "YOU BRING" line
+  (your runner Q, catcher Q and E), then RUNNERS (RANDOM first) and CATCHERS. Picture `docs/previews/shop-abilities.jpg`
+  (shots.sh `shop-abilities`; `tools/preview/check_filters.luau`).
 
 ## Aura stars
 - The owner's star art in `design/aura`, packed `AuraStar` + white `AuraStarWhite` for tinting.

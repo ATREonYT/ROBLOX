@@ -132,11 +132,11 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   Speed Boost on E only while carrying the girl; a catcher has two (the two they bring; Bear Trap Q, Slow Wave E to
   start): picture b shows one, so the second card is ours. A card back from its cooldown chimes (`power_ready`) and
   its rim glows a moment. The Oct 20 abilities have no picture yet: their card shows the glyph (`Config/Powers` Emoji).
-- **ABILITIES window** (`Screens/Loadout`, Menu > Abilities, Oct 20): the loadout in two lines, RUNNER / CATCHER tabs,
-  and a padded ScrollingFrame of `UI/AbilityCards` (116 high, two columns: picture or glyph on a disc in the ability's
-  colour, name, STARTER / OWNED, what it does, "Beat it: ..." on up to two lines, the cooldown in its colour, then a
-  coin BUY button, EQUIP / EQUIPPED, or Q and E that glow green when that key holds it). Shots `loadout`,
-  `loadout-catcher`. Rules: [economy.md](economy.md).
+- **Shop > ABILITIES** (Oct 20; the Menu keeps its 7 rows: an 8th "Abilities" row pushed MENU off a 658 px screen,
+  critic): `UI/AbilityCards` in the Shop's slot: a "YOU BRING" line, then the cards (116 high, two columns: picture
+  or glyph on a disc in the ability's colour, name, STARTER / OWNED, what it does, "Beat it: ..." on up to two lines,
+  the cooldown in its colour, then a coin BUY button, EQUIP / EQUIPPED, or Q and E that glow green when that key holds
+  it). Shot `shop-abilities`. Rules: [economy.md](economy.md).
 - Side by side: `docs/previews/ability-bar-vs-owner.png` (`tools/preview/side_by_side_bar.py`, which also prints each
   text box's position in his pixels next to ours: within 1 to 3 px, the state 3 to 6 px wider: Gotham, his font looks
   like Montserrat). Shots `power-bar`, `power-bar-catcher`, `power-bar-stunned`, `power-bar-carrying`,

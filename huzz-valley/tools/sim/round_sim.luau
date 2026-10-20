@@ -323,6 +323,29 @@ local function simulate(opts)
 						end
 					end
 					table.insert(roundEvents, e)
+					-- the Lasso: the runner's own screen pulls them (Gameplay/PowerEffects pullMe) a round trip later;
+					-- every 4th caught bot's screen skips it, so the server's own pull is tested too (PowerService stepPulls)
+					if type(data) == "table" and data.name == "LassoHit" and not data.blocked and type(data.dist) == "number" and data.dist > 0 then
+						stats.lassoHits = (stats.lassoHits or 0) + 1
+						if stats.lassoHits % 4 == 0 then
+							stats.lassoSkipped = (stats.lassoSkipped or 0) + 1
+						else
+							task.delay(0.12 + (data.time or 0.3), function()
+								for _, q in Players:GetPlayers() do
+									local c = q.UserId == data.target and q.Character
+									local rt = c and c:FindFirstChild("HumanoidRootPart")
+									-- (the pull holds their velocity, so it ends dist on from where they were caught)
+									if rt and typeof(data.at) == "Vector3" then
+										local flat = Vector3.new(data.toward.X - data.at.X, 0, data.toward.Z - data.at.Z)
+										if flat.Magnitude > 0.5 then
+											local to = data.at + flat.Unit * math.min(data.dist, flat.Magnitude)
+											c:PivotTo(CFrame.new(Vector3.new(to.X, rt.Position.Y, to.Z)))
+										end
+									end
+								end
+							end)
+						end
+					end
 				end
 				function r:FireClient(_, kind, data)
 					table.insert(roundEvents, { kind = kind, data = data, t = clock, one = true })
@@ -602,6 +625,11 @@ local function simulate(opts)
 			local k = (p.UserId % 4) + 1
 			saves[p] = { Stats = {}, Characters = {}, Abilities = owned,
 				Loadout = { Runner = RUNNER_PICKS[k], CatcherQ = CATCHER_PICKS[k][1], CatcherE = CATCHER_PICKS[k][2] } }
+			if require("@lune/process").env.SIM_OLD_ABILITIES == "1" then
+				-- (to compare: the abilities as before Oct 20: a random one of the four runner ones, Bear Trap and Slow Wave)
+				saves[p].Abilities = { Invisible = true, Glitchy = true, BodyDouble = true }
+				saves[p].Loadout = { Runner = "Random", CatcherQ = "BearTrap", CatcherE = "SlowWave" }
+			end
 		end
 		return saves[p]
 	end
@@ -1427,6 +1455,13 @@ local function simulate(opts)
 	if unloads > 0 then
 		problem(`the map was removed {unloads} times outside a swap (it should stay until the next vote)`)
 	end
+	-- the Lasso's server check: it pulls the runners whose screen skipped it, and never one whose screen pulled them
+	stats.lassoFallbacks = PowerService.lassoFallbacks or 0
+	allPowers.LassoSkipped = (allPowers.LassoSkipped or 0) + (stats.lassoSkipped or 0)
+	allPowers.LassoServerPull = (allPowers.LassoServerPull or 0) + stats.lassoFallbacks
+	if stats.lassoFallbacks > (stats.lassoSkipped or 0) then
+		problem(`the server pulled {stats.lassoFallbacks} lassoed runners but only {stats.lassoSkipped or 0} screens skipped it`)
+	end
 	stats.placeFallbacks = modules.PlaceService.fallbacks
 	if stats.placeFallbacks > 0 then
 		problem(`the server moved {stats.placeFallbacks} bodies itself although every screen answered (HuzzServer/PlaceService)`)
@@ -1607,8 +1642,13 @@ for _, name in { "Shield", "Invisible", "Glitchy", "BodyDouble", "BananaPeel", "
 		failed += 1
 	end
 end
-print(string.format("Oct 20 abilities over the run: BananaPeel %d (slips %d), SmokeBomb %d, Radar %d, Lasso %d (hits %d, misses %d)",
-	allPowers.BananaPeel or 0, allPowers.PeelSlip or 0, allPowers.SmokeBomb or 0, allPowers.Radar or 0, allPowers.Lasso or 0, allPowers.LassoHit or 0, allPowers.LassoMiss or 0))
+print(string.format("Oct 20 abilities over the run: BananaPeel %d (slips %d), SmokeBomb %d, Radar %d, Lasso %d (hits %d, misses %d; screens that skipped the pull %d, the server pulled %d)",
+	allPowers.BananaPeel or 0, allPowers.PeelSlip or 0, allPowers.SmokeBomb or 0, allPowers.Radar or 0, allPowers.Lasso or 0, allPowers.LassoHit or 0, allPowers.LassoMiss or 0,
+	allPowers.LassoSkipped or 0, allPowers.LassoServerPull or 0))
+if (allPowers.LassoSkipped or 0) >= 3 and (allPowers.LassoServerPull or 0) == 0 then
+	print("   PROBLEM screens skipped the lasso pull and the server never pulled anyone (PowerService stepPulls)")
+	failed += 1
+end
 print(if failed == 0 then "simulation ok" else failed .. " problems")
 if failed > 0 then
 	error("simulation found problems")

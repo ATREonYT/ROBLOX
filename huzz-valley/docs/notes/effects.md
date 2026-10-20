@@ -88,8 +88,14 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
 - **Lasso** (new Oct 20, catcher, bought): the throw pose, then a rope with a loop flies straight ahead (`Speed` 70, up
   to `Range` 24). The first active runner it touches (never one in the start zone or frozen) is pulled `Pull` 7 studs
   in over `PullTime` 0.3 s (never closer than `MinGap` 4) and slowed (`Slow` 0.6) for `Hold` 0.6 s, with "YOINK!"; a
-  Shield blocks it. The pull is a LinearVelocity on the runner's own body, by their own screen (as Glitchy), so walls
-  stop it. A miss reels back in. Tell: the wind-up and the rope. Counter: huss sideways.
+  Shield blocks it. The rope is 0.4 thick (critic Oct 20: 0.22 barely showed). The catch: the loop snaps tight round
+  the waist (rope and loop white for a blink: a colour, not a flash), a ring slams out at the feet, "YOINK!" and a
+  few sparks, `lasso_hit`; one short glow only through `Burst.flashOk`. A miss: the loop falls open to the floor with
+  a dust ring, "MISSED" and `power_end`, lies a moment, then reels in. The pull is a LinearVelocity on the runner's
+  own body, by their own screen (as Glitchy), so walls stop it; the server checks it (`PowerService` stepPulls,
+  `AbilityRules.pulled`: at least 40% of the pull towards the catcher within the pull plus a round trip) and if their
+  screen skipped it, pulls them itself through `PlaceService` (never once they're safe or out: its `still` check).
+  Tell: the wind-up and the rope. Counter: huss sideways.
 - **Stun stars**: three cartoon stars circle slowly over the head of anyone stunned 1 s or more on every screen
   (character StunnedFrom / StunnedUntil), with the server's 💫 STUNNED badge. A dive's 0.4 s stun shows neither
   (Oct 20 15:13: the dive pops straight back up, [stab-lunge-catch.md](stab-lunge-catch.md)).

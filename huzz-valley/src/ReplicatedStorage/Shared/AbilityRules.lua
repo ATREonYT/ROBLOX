@@ -1,7 +1,7 @@
 --[[
 	Bought abilities (owner, Oct 20 15:13: "Please then make the abilities be bought, add a few more abilities").
 	Pure rules (no Instances) for ActionService ("BuyAbility", "EquipAbility"), HuzzServer/PowerService (which power
-	goes in each slot, the cooldown check), DataService (old saves) and the UI (UI/AbilityCards, Screens/Loadout);
+	goes in each slot, the cooldown check), DataService (old saves) and the UI (UI/AbilityCards in the Shop);
 	tests/AbilityRules.spec.
 	  * Saved: Abilities[name] = true for each one bought; Loadout = { Runner, CatcherQ, CatcherE } (Config/Powers.Loadout).
 	  * Owned = Starter (Shield, Bear Trap, Slow Wave), Free (Speed Boost) or bought. Coins only, never Robux.
@@ -164,6 +164,32 @@ function AbilityRules.migrate(data: any, hadAbilities: boolean): boolean
 		end
 	end
 	return gave
+end
+
+-- The Lasso's pull is done by the runner's own screen (Gameplay/PowerEffects pullMe: their client moves their
+-- body). The server checks it once the pull and a round trip are over: they must have come at least PULL_MIN of the
+-- pull's distance towards where the catcher stood. If not (a screen that skipped it), the server pulls them itself
+-- (HuzzServer/PlaceService). Plain numbers on the floor plane (X, Z), so it's testable without a game.
+AbilityRules.PULL_MIN = 0.4 -- (not all of it: once the pull ends they may run back a little, slowed)
+function AbilityRules.pulled(fromX: number, fromZ: number, nowX: number, nowZ: number, towardX: number, towardZ: number, dist: number): boolean
+	local dx, dz = towardX - fromX, towardZ - fromZ
+	local len = math.sqrt(dx * dx + dz * dz)
+	if dist <= 0 or len < 1e-3 then return true end -- (nothing to pull)
+	local moved = ((nowX - fromX) * dx + (nowZ - fromZ) * dz) / len
+	return moved >= dist * AbilityRules.PULL_MIN
+end
+-- Where the pull ends: dist towards the catcher from where they were caught.
+function AbilityRules.pullSpot(fromX: number, fromZ: number, towardX: number, towardZ: number, dist: number): (number, number)
+	local dx, dz = towardX - fromX, towardZ - fromZ
+	local len = math.sqrt(dx * dx + dz * dz)
+	if len < 1e-3 then return fromX, fromZ end
+	local d = math.clamp(dist, 0, len)
+	return fromX + dx / len * d, fromZ + dz / len * d
+end
+-- When to check: after the pull, plus the runner's round trip (ping both ways, at most 1 s), plus a little slack.
+function AbilityRules.pullCheckAfter(pullTime: number, ping: number?): number
+	local rtt = if type(ping) == "number" then math.clamp(ping * 2, 0, 1) else 0.3
+	return pullTime + rtt + 0.15
 end
 
 return AbilityRules

@@ -24,7 +24,7 @@ shot shop-crates none 2560 1408 '{SCREEN="Shop", TAB="Crates", SCALE=2.5, GEMS=3
 shot shop-halloween none 2560 1408 '{SCREEN="Shop", TAB="Witch", SCALE=2.5, GEMS=12000, OWN="CandyReaper"}' # (where WITCH'S BREW opens it)
 shot shop-knives none 2560 1408 '{SCREEN="Shop", TAB="Knives", SCALE=2.5, OWN="SpinKnife,IceKnife", COINS=1500}'
 shot shop-filter-knives none 2560 1408 '{SCREEN="Shop", TAB="Knives", SCALE=2.5, OWN="SpinKnife,IceKnife", COINS=1500, SELECT="KnivesRarityEpic"}' # (the filters, Oct 20 15:13: EPIC picked)
-shot shop-abilities none 2560 1408 '{SCREEN="Shop", TAB="Abilities", SCALE=2.5, COINS=700, ABILITIES="Invisible,Radar"}' # (bought abilities, Oct 20: UI/AbilityCards in the Shop)
+shot shop-abilities none 2560 1408 '{SCREEN="Shop", TAB="Abilities", SCALE=2.5, COINS=700, ABILITIES="Invisible,Radar", LOADOUT="Runner=Invisible,CatcherQ=Radar"}' # (bought abilities, Oct 20: buy and pick them here, UI/AbilityCards)
 shot shop-filter-cosmetics none 2560 1408 '{SCREEN="Shop", TAB="Cosmetics", SCALE=2.5, SELECT="CosmeticsTypeTrail"}' # (TRAILS picked)
 shot shop-passes none 2560 1408 '{SCREEN="Shop", TAB="Passes", SCALE=2.5, PASSES="VIP"}' # (vs his video at 2.5 s)
 shot shop-aura none 2560 1408 '{SCREEN="Shop", TAB="Aura", SCALE=2.5, GEMS=320}'
@@ -55,8 +55,6 @@ shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'
 shot how-to-play none 1536 694 '{SCREEN="HowToPlay", SCALE=2}' # (vs the Oct 17 mockup: side_by_side.py how-to-play)
 shot results none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", XP=1073}' # (the winner page vs his picture a: side_by_side.py winner)
 shot results-catchers none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", TEAM="Catchers", XP=1073}'
-shot loadout none 1536 1100 '{SCREEN="Loadout", TAB="Runner", SCALE=2, COINS=700, ABILITIES="Invisible,Glitchy", LOADOUT="Runner=Invisible"}' # (Oct 20: bought abilities)
-shot loadout-catcher none 1536 1100 '{SCREEN="Loadout", TAB="Catcher", SCALE=2, COINS=900, ABILITIES="Radar", LOADOUT="CatcherQ=Radar,CatcherE=BearTrap"}'
 shot daily-quests none 1536 980 '{SCREEN="DailyQuests", SCALE=2}' # (vs his picture d: side_by_side.py daily-quests)
 shot combine none 1536 900 '{SCREEN="Combine", SCALE=2, GIRLS=true, COPIES="t_kurumi:Normal=3,Silver=1;t_zero:Normal=1;t_rem:Gold=2", TAB="t_kurumi"}' # (the Combine machine's window, Oct 20)
 shot index-prestige none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_kurumi", DUPES="t_kurumi=2", PRESTIGE="t_kurumi=1"}'

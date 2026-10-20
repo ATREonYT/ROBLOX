@@ -106,6 +106,23 @@ do
 	check("nothing pending after the fallback", not PS.pending(p))
 end
 
+-- still (the Lasso's fallback pull): a move no longer wanted when it would happen is dropped, never made
+do
+	local PS = loadPlaceService()
+	local c, root = body(HERE)
+	local p = player(c)
+	local ok = true
+	PS.place(p, SPOT, "lasso", function() return ok end)
+	ok = false -- (became safe meanwhile)
+	task.wait(WAIT)
+	check("a move whose still() turned false is never made, by the screen or the server", PS.fallbacks == 0 and root.Position == HERE and not PS.pending(p))
+	local c2, root2 = body(HERE)
+	local p2 = player(c2)
+	PS.place(p2, SPOT, "lasso", function() return true end)
+	task.wait(WAIT)
+	check("a still() that stays true moves as usual (server fallback for a silent screen)", PS.fallbacks == 1 and root2.Position == SPOT.Position)
+end
+
 -- Respawned while the move was on its way: the old body is left alone.
 do
 	local PS = loadPlaceService()

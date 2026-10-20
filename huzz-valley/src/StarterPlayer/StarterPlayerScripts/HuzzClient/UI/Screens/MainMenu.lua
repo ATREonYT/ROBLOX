@@ -16,7 +16,6 @@ MainMenu.Entries = {
 	{ Key = "Index", Text = "Index", Icon = "CollectionBook" },
 	{ Key = "Tiers", Text = "Tiers", Icon = "TierCrown" },
 	{ Key = "Dances", Text = "Dances", Icon = "AudioMusic" },
-	{ Key = "Loadout", Text = "Abilities", Icon = "AbilityShield" }, -- (Oct 20: pick and buy round abilities, Screens/Loadout)
 	{ Key = "Progression", Text = "Progression", Icon = "RewardsTrophy" },
 	{ Key = "Settings", Text = "Settings", Icon = "SettingsGear" },
 	{ Key = "HowToPlay", Text = "How to Play", Icon = "Players" },

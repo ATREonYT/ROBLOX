@@ -105,7 +105,7 @@ function VERBS.BuyWithCoins(player, key)
 end
 
 -- Round abilities (owner, Oct 20 15:13: "make the abilities be bought"; Shared/AbilityRules): coins only, kept for
--- good, checked and written here in one save write. The UI (UI/AbilityCards, Screens/Loadout) only asks.
+-- good, checked and written here in one save write. The UI (UI/AbilityCards, in the Shop's ABILITIES) only asks.
 -- BuyAbility(name) -> true, or false and why. EquipAbility(key, name): key = "Runner" / "CatcherQ" / "CatcherE",
 -- name = an owned ability of that side (or "Random" for the runner); it plays from the next round
 -- (HuzzServer/PowerService reads the loadout when a round starts). Both pass the shared 0.15 s limit below.

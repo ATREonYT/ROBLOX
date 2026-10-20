@@ -705,8 +705,11 @@ function M.start()
 		end)
 	end
 
-	-- Lassos in flight on this screen, by catcher id: { rope, loop ring parts, state, ... }.
-	local ROPE = Color3.fromRGB(246, 196, 120) -- (a warm light rope, thick enough to read across the field: film Oct 20)
+	-- Lassos in flight on this screen, by catcher id: { rope, loop ring parts, state, ... }. States: "out" (flying),
+	-- "hit" (the loop snaps tight round the runner while they're pulled in), "drop" (a miss: the loop falls to the
+	-- floor with a puff and MISSED), "back" (reeling in).
+	local ROPE = Color3.fromRGB(246, 196, 120) -- (a warm light rope, 0.4 thick to read across the field: critic Oct 20)
+	local ROPE_W = 0.4
 	local lassos = {}
 	local function endLasso(id: number)
 		local l = lassos[id]
@@ -720,10 +723,12 @@ function M.start()
 		local speed = if type(data.speed) == "number" then data.speed else def.Speed
 		local range = if type(data.range) == "number" then data.range else def.Range
 		local hand = handOf(root)
-		windUp(hand, wind, flash, 0.45, def.Accent, feetOf(root))
+		local feet = feetOf(root)
+		windUp(hand, wind, flash, 0.45, def.Accent, feet)
 		task.delay(wind + flash, function()
 			if not root.Parent then return end
 			endLasso(id) -- (an old one still out ends)
+			local floorY = feet().Position.Y
 			local rope = Burst.piece(ROPE)
 			rope.Material = Enum.Material.SmoothPlastic
 			local loop = {}
@@ -732,7 +737,7 @@ function M.start()
 				seg.Material = Enum.Material.SmoothPlastic
 				loop[i] = seg
 			end
-			local l = { state = "out", t0 = os.clock(), tip = hand(), loopR = 0.9 }
+			local l = { state = "out", t0 = os.clock(), tip = hand(), loopR = 1.1 }
 			lassos[id] = l
 			local maxLife = range / speed + 2
 			Burst.run(maxLife, function(age)
@@ -740,12 +745,26 @@ function M.start()
 				if l.state == "out" then
 					local reach = math.min(age * speed, range)
 					l.tip = h + dir * reach + UP * (-0.6 * reach / range) -- (it dips a little as it flies)
-					if reach >= range and not l.backAt then l.backAt = age + 0.15 end -- (a miss: reels back on its own)
-					if l.backAt and age >= l.backAt then l.state, l.from, l.backT = "back", l.tip, age end
+					if reach >= range or l.missed then l.state, l.from, l.dropT = "drop", l.tip, age end -- (a miss)
 				elseif l.state == "hit" and l.target and l.target.Parent then
 					l.tip = l.target.Position + UP * 0.2
-					l.loopR = math.max(1.0, l.loopR - 0.04)
+					l.loopR = math.max(1.0, l.loopR - 0.08) -- (snaps tight in a few frames)
 					if l.releaseAt and age >= l.releaseAt then l.state, l.from, l.backT = "back", l.tip, age end
+				elseif l.state == "drop" then
+					-- the loop falls to the floor (0.22 s), puffs with MISSED, lies a moment, then reels in
+					local k = math.clamp((age - l.dropT) / 0.22, 0, 1)
+					local ground = Vector3.new(l.from.X, floorY + 0.2, l.from.Z)
+					l.tip = l.from:Lerp(ground, Burst.ease(k, "in"))
+					l.loopR = 1.1 + 0.4 * k -- (it falls open)
+					if k >= 1 and not l.landed then
+						l.landed = true
+						Burst.ring(CFrame.new(ground), {
+							r0 = 0.8, r1 = 2.6, time = 0.4, ease = "quart", width = 0.16, glow = 0.3, color = Color3.fromRGB(214, 196, 170), fade = 0.6, segs = 16,
+						})
+						Burst.pop(ground + UP * 2.2, "MISSED", Color3.fromRGB(200, 200, 210), { height = 0.8, rise = 0.6, time = 0.8 })
+						if near(ground) then Sfx.play("power_end", { at = rope }) end
+					end
+					if age >= l.dropT + 0.55 then l.state, l.from, l.backT = "back", l.tip, age end
 				elseif l.state ~= "back" then
 					l.state, l.from, l.backT = "back", l.tip, age
 				end
@@ -756,16 +775,20 @@ function M.start()
 				end
 				local span = l.tip - h
 				local len = math.max(span.Magnitude, 0.05)
-				rope.Size = Vector3.new(0.22, 0.22, len)
+				rope.Size = Vector3.new(ROPE_W, ROPE_W, len)
 				rope.CFrame = CFrame.lookAt(h + span / 2, l.tip)
 				rope.Transparency = if l.state == "back" then 0.4 else 0
+				-- the snap: the rope and loop go white for a blink as it catches, then back to rope (no flash: a colour)
+				local snapping = l.snapUntil ~= nil and os.clock() < l.snapUntil
+				rope.Color = if snapping then WHITE else ROPE
 				-- the loop: a flat ring of rope at the tip (tightening round a caught runner)
 				local r = if l.state == "back" then 0.5 else l.loopR
 				for i, seg in loop do
 					local a = (i - 0.5) / #loop * math.pi * 2
-					seg.Size = Vector3.new(0.24, 0.24, 2 * math.pi * r / #loop * 1.15)
+					seg.Size = Vector3.new(ROPE_W + 0.04, ROPE_W + 0.04, 2 * math.pi * r / #loop * 1.15)
 					seg.CFrame = CFrame.new(l.tip) * CFrame.Angles(0, -a, 0) * CFrame.new(r, 0, 0)
 					seg.Transparency = rope.Transparency
+					seg.Color = rope.Color
 				end
 				if l.done then error("done") end -- (ends this run; Burst stops it and tidies up)
 			end, function()
@@ -1030,18 +1053,33 @@ function M.start()
 			end
 			if not l then return end
 			if data.name == "LassoMiss" then
-				l.backAt = 0 -- (reel it back now)
+				if l.state == "out" then l.missed = true end -- (falls to the floor: CAST.Lasso's "drop")
 			elseif data.blocked then
 				l.state = "back"
 				if target then
 					Burst.ring(CFrame.new(target.Position), { r0 = 2.6, r1 = 4.6, time = 0.4, ease = "quart", width = 0.14, glow = 0.6, color = PINK, fade = 0.5, segs = 16 })
 				end
 			elseif target then
-				l.state, l.target, l.loopR = "hit", target, 1.8
+				-- the catch: the loop snaps tight round the waist (white for a blink), a ring slams out at the feet,
+				-- YOINK! pops over them with a few sparks; one short glow only if no flash went in the last second
+				local accent = Powers.Lasso.Accent
+				l.state, l.target, l.loopR = "hit", target, 1.9
+				l.snapUntil = os.clock() + 0.12
 				l.releaseAt = (os.clock() - l.t0) + (if type(data.time) == "number" then data.time else 0.3) + 0.25
 				Burst.ring(CFrame.new(target.Position + UP * 0.2), {
-					r0 = 2.4, r1 = 1, time = 0.3, ease = "quart", width = 0.12, glow = 0.5, color = Powers.Lasso.Accent, fade = 0.5, segs = 16,
+					r0 = 2.6, r1 = 1, time = 0.25, ease = "quart", width = 0.2, glow = 0.6, color = accent, fade = 0.5, segs = 16,
 				})
+				Burst.ring(CFrame.new(target.Position - UP * 2.8), {
+					r0 = 1, r1 = 3.8, time = 0.45, ease = "quart", width = 0.22, glow = 0.6, color = accent, edge = WHITE, fade = 0.6, segs = 20,
+				})
+				Burst.pop(target.Position + UP * 4.4, "YOINK!", accent, { height = 1.1, rise = 1, time = 0.9 })
+				Burst.sparks(target.Position, { accent, WHITE }, 10)
+				if Burst.flashOk() then
+					Burst.orb({
+						at = function() return target.Position + UP * 0.2 end, time = 0.18, color = accent, range = 10, glowScale = 2.4,
+						size = function(k) return 1.6 * (1 - k) end, alpha = function(k) return 0.5 + 0.5 * k end, light = function(k) return 1.5 * (1 - k) end,
+					})
+				end
 			end
 			return
 		end

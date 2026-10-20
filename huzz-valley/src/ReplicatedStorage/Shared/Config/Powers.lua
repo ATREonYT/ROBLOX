@@ -1,7 +1,7 @@
 -- Round powers (owner, Oct 19: "make simple lingo such as rizz rush, just make it simple"; Oct 20 15:13: "Please then
 -- make the abilities be bought, add a few more abilities, but make them well made, right now they are kind of quick
 -- and feel cheap"). Reset at the start of every round. Times in seconds, speeds in studs per second, distances in studs.
---   Runners  Q: the runner ability you bring (your loadout, Screens/Loadout), or RANDOM: one of the runner abilities
+--   Runners  Q: the runner ability you bring (your loadout, picked in the Shop's ABILITIES), or RANDOM: one of the runner abilities
 --               you own, picked for you each round (never the same twice in a row). One ability on Q, like his
 --               picture c ("ONE HIT SHIELD").
 --            E: Speed Boost, only while you carry the girl ("give the rush to a person only having the girl"); its

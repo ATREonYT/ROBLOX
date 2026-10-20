@@ -43,9 +43,9 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   in a round is a dive** (the code says lunge) that catches whoever it reaches (forward, or sideways with A/D, never
   back: owner Oct 18 "leaps forward/sideways to catch the person"), then a short slide and pop up, 0.4 s stun (Oct 20 15:13, was 2 s); hold W = walk building
   into a run; G = dance wheel; Q = your ability, E = the second (simple names, Oct 19 "just make it simple"): abilities are bought with
-  coins and picked in the ABILITIES window (Oct 20 "make the abilities be bought"): runner Q = the one you bring
+  coins and picked in the Shop's ABILITIES section (Oct 20 "make the abilities be bought"): runner Q = the one you bring
   (or Random, a new one you own each round), E = Speed Boost only while carrying the girl; catcher Q and E = the two
-  you bring (Bear Trap and Slow Wave to start; [economy.md](docs/notes/economy.md), [effects.md](docs/notes/effects.md)); click = stab (1 s knife charge); shift lock in rounds
+  you bring (Bear Trap and Slow Wave to start; no Menu row: [economy.md](docs/notes/economy.md), [effects.md](docs/notes/effects.md)); click = stab (1 s knife charge); shift lock in rounds
   (Alt frees the mouse).
 - **No girl toss** (removed). **Safe means safe:** once across you stay across. During a Hero run only the Hero and
   catchers move.

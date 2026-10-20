@@ -157,6 +157,9 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   the live game too (`minPlayers` 1). Red outline like catchers; round walls it follows a PathfindingService path
   (computed in a task.spawn when a raycast to the target hits something solid), and sidesteps when stuck. The sim
   tests it with a fake body. Its stab animation: [stab-lunge-catch.md](stab-lunge-catch.md).
+- Runner abilities work on it (critic Oct 20, so the owner feels them testing alone): a Banana Peel trips it
+  (`PracticeBot.trip`), a Smoke Bomb's cloud slows it like a catcher (`PracticeBot.slow`, renewed while it's inside),
+  and it loses an Invisible runner while they're faded (chases someone else or goes back to the middle).
 
 ## Maps and the field (`MapService`)
 - In his place maps are in `Workspace.Maps` (Base_Map, BasketBall_Map, Halloween_Map; zone parts named

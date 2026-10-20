@@ -9,13 +9,15 @@
 	catcher out of the safe zones, keep a safe runner in, keep a runner on the line) kept fighting the owner's own
 	movement from the server's older copy of where it was.
 	Now:
-	  - place(player, cf, why): the owner is told to move (Net "Place": its character and the CFrame;
+	  - place(player, cf, why, still?): the owner is told to move (Net "Place": its character and the CFrame;
 	    HuzzClient/Gameplay/PlaceSelf moves it, stops it and the next physics update carries it everywhere);
 	  - the server watches for Config/Round.Place.Grace seconds plus the player's round trip: if its copy never came
 	    within Near studs of the spot (an old client, a body not loaded yet), it moves the body itself, once, and says
 	    so once in Output ([Huzz] Place);
 	  - pending(player): a move is on its way and the server's copy isn't there yet (the every-frame corrections wait
 	    for it instead of sending again, and go again as soon as it has arrived);
+	  - still (optional): asked again just before the owner is told and before the server's own move; false drops the
+	    move (the Lasso's fallback pull: never once the runner is safe or out);
 	  - a body whose root is anchored (lying caught, KnockdownService: the server owns it) is moved by the server.
 	His place streams with StreamingIntegrityMode PauseOutsideLoadedArea: a body moved where nothing has loaded yet
 	stands frozen until it has. So the spot is streamed in around the player first (RequestStreamAroundAsync, at most
@@ -63,7 +65,7 @@ function PlaceService.pending(player): boolean
 	return true
 end
 
-function PlaceService.place(player, cf: CFrame, why: string?)
+function PlaceService.place(player, cf: CFrame, why: string?, still: (() -> boolean)?)
 	local character = player and player.Character
 	local root = rootOf(character)
 	if not (character and root) then
@@ -82,6 +84,10 @@ function PlaceService.place(player, cf: CFrame, why: string?)
 			pcall(function() player:RequestStreamAroundAsync(cf.Position, P.StreamWait) end)
 		end
 		if waiting[player] == nil or waiting[player].token ~= mine or player.Character ~= character then
+			return
+		end
+		if still and not still() then
+			waiting[player] = nil
 			return
 		end
 		waiting[player].sent = true
@@ -104,6 +110,9 @@ function PlaceService.place(player, cf: CFrame, why: string?)
 			end
 		end
 		waiting[player] = nil
+		if still and not still() then
+			return
+		end
 		serverMove(character, cf)
 		PlaceService.fallbacks += 1
 		local key = why or "move"

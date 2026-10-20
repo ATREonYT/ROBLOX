@@ -1,10 +1,11 @@
 --[[
 	The ability cards (owner, Oct 20 15:13: "Please then make the abilities be bought, add a few more abilities"): one
-	card per round ability of a side (Config/Powers.Shop order), in the kit's navy rows. Built by Screens/Loadout (the
-	ABILITIES window) and by the Shop's ABILITIES section:
-	  local cards = AbilityCards.build(parent, { side = "Runner", width = 600, y = 0 }) -- one side (Loadout)
-	  -- cards.height: how tall the grid is (for a ScrollingFrame's canvas); cards.refresh(): redraw from the save
-	  local h = AbilityCards.build(slot) -- no opts: both sides titled RUNNERS / CATCHERS at the slot's width (the Shop)
+	card per round ability of a side (Config/Powers.Shop order), in the kit's navy rows. Built by the Shop's ABILITIES
+	section, which is where you buy them AND pick what you bring (there is no separate window: an 8th Menu row didn't
+	fit the Menu, critic Oct 20):
+	  local h = AbilityCards.build(slot) -- no opts: your loadout line, then RUNNERS and CATCHERS at the slot's width
+	  local cards = AbilityCards.build(parent, { side = "Runner", width = 600, y = 0 }) -- one side's grid
+	  -- cards.height: how tall the grid is; cards.refresh(): redraw from the save
 	Each card: the ability's picture (his card icon, or the glyph for the Oct 20 ones: no generated art), its name, what
 	it does, its cooldown in its colour, how to beat it, and a button:
 	  not owned  BUY 600 (coins, ActionService "BuyAbility": the server checks and takes the coins; Toast says why not)
@@ -162,24 +163,38 @@ local function buildSide(parent: Instance, o: { [string]: any })
 	return { frame = grid, cards = cards, height = height, refresh = refresh }
 end
 
--- Both sides in one frame, for the Shop's ABILITIES section: a RUNNERS title and its cards (no RANDOM: nothing to
--- buy), then CATCHERS and its cards. Sizes the parent frame and returns the height.
+-- Both sides in one frame, for the Shop's ABILITIES section: what you bring (one line, green; a change plays from the
+-- next round), then a RUNNERS
+-- title and its cards (RANDOM first), then CATCHERS and its cards. Sizes the parent frame and returns the height.
+local function nameOf(key: string): string
+	if key == "Random" then return "RANDOM" end
+	local d = Powers[key]
+	return if d then string.upper(d.Name) else key
+end
 local function buildBoth(parent: Instance): number
 	local width = if parent:IsA("GuiObject") and parent.Size.X.Offset > 0 then parent.Size.X.Offset else 600
-	local y = 0
+	local now = line({ Name = "YourLoadout", Text = "", FontFace = F.Name, TextSize = 16, TextColor3 = C.Accent, Position = UDim2.fromOffset(2, 0),
+		Size = UDim2.fromOffset(width - 4, 20), ZIndex = 2, Parent = parent }, 1.5)
+	local function paintNow()
+		local l = AbilityRules.loadout(State.data or {})
+		now.Text = string.format("YOU BRING   RUNNER Q: %s   ·   CATCHER Q: %s  E: %s", nameOf(l.Runner), nameOf(l.CatcherQ), nameOf(l.CatcherE))
+	end
+	paintNow()
+	State.changed(function() if now.Parent then paintNow() end end)
+	local y = 30
 	for i, side in { "Runner", "Catcher" } do
 		if i > 1 then y += 14 end
 		line({ Name = side .. "Title", Text = string.upper(side) .. "S", FontFace = F.Name, TextSize = 18, Position = UDim2.fromOffset(2, y),
 			Size = UDim2.fromOffset(width - 4, 22), ZIndex = 2, Parent = parent }, 1.5)
 		y += 28
-		local g = buildSide(parent, { side = side, width = width, y = y, random = false })
+		local g = buildSide(parent, { side = side, width = width, y = y })
 		y += g.height
 	end
 	if parent:IsA("GuiObject") then parent.Size = UDim2.new(parent.Size.X, UDim.new(0, y)) end
 	return y
 end
 
--- build(parent, { side = ... }): one side's grid, returns { frame, cards, height, refresh } (Screens/Loadout).
+-- build(parent, { side = ... }): one side's grid, returns { frame, cards, height, refresh }.
 -- build(parent) with no opts: both sides for the Shop's ABILITIES slot; returns the height (and sizes parent).
 function AbilityCards.build(parent: Instance, opts: { [string]: any }?): any
 	if opts == nil then
