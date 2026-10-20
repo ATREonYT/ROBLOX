@@ -322,6 +322,23 @@ function LocomotionMix.strafe(s, dt, localVel: Vector3, on: boolean, quiet: numb
 	return s.turn, s.back
 end
 
+--[[ The way to the point under the mouse, from the body: l = that point from your eyes in the root part's space (x
+	right, y up, z back). Returns (turn, tilt) in radians, + = to your right / up. A point behind you (the camera in
+	front of you, the cursor on the ground or sky past you: owner Oct 20 14:07, facing the camera the head never
+	moved with the mouse) is mirrored to the front: it turns the head toward the side of the screen the cursor is on,
+	straight at the camera when the cursor is in the middle, and never past 90 degrees. ]]
+function LocomotionMix.aimFrom(l: Vector3): (number, number)
+	local flat = math.sqrt(l.X * l.X + l.Z * l.Z)
+	local turn = math.atan2(l.X, -l.Z)
+	if turn > pi / 2 then
+		turn = pi - turn
+	elseif turn < -pi / 2 then
+		turn = -pi - turn
+	end
+	local tilt = if flat > 1e-4 or math.abs(l.Y) > 1e-4 then math.atan2(l.Y, flat) else 0
+	return turn, tilt
+end
+
 --[[ The head's turn toward where the camera looks, one frame (no shift lock: Roblox has turned the body to the move,
 	so pressing D turns the body right while the head keeps looking ahead with the camera). aim: the camera's look,
 	relative to the body (radians, + = to the body's right, as strafe()); on: false fades the turn out (shift lock: the

@@ -42,6 +42,17 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   turned, the head stays on the mouse), on everyone's screen through `HuzzLook`; [movement-and-camera.md](movement-and-camera.md). `strafePose` solves the neck exactly (the
   head's turn is undone through the hunched run pose); a plain counter-turn on the neck tipped the head sideways.
 
+## The owner's Oct 20 14:07 check ("it doesnt seem fixed")
+- His recording (`design/owner-oct20/1407-animations.mov`): standing facing the camera, a dark shape across his
+  chest looks like arms carrying something. It is his avatar's own item: Huss Valley's f1c7bb86 shows the same
+  shape on the same avatar ("alex", 41.5 s) with his arms hanging at his sides. Not a stuck pose: no carry, brace,
+  huss or dance layer holds the arms (our idle is the pack's, arms at the sides, slightly out).
+- What was really wrong: the head didn't follow the mouse while he faced the camera (the cursor points past him, and
+  a point behind faded the look to straight). Fixed with `LocomotionMix.aimFrom` ([movement-and-camera.md](movement-and-camera.md)).
+- Film: `docs/previews/moves-check-oct20.mp4` / `.jpg` (`motion3d/moves_check_scene.luau`, the real layers: standing
+  with the cursor swept past him, A and D with the head on the far field, W's 1 s build-up and the halt; next to his
+  recording and HV's stop). It prints the head's turn and the speed every 0.2 s.
+
 ## Your own moves: never a stiff body (Oct 20)
 - `Gameplay/Locomotion` checks itself: within 3 s (`LOAD_WAIT`) Idle, Walk and Run must have a length and a knee,
   hip or elbow must really move (joints only the Animator writes, looked up again on every check: Roblox swaps the

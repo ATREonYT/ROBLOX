@@ -407,6 +407,33 @@ do
 	local locked = headFor(-90, false, 0.8)
 	check(math.abs(locked.head) < 0.5, "in shift lock the body already faces the camera: the look stays out")
 
+	-- Oct 20 14:07 (owner: "it doesnt seem fixed"): standing facing the camera, the cursor always points past you.
+	-- The point behind is mirrored to the front, so the head follows the cursor's side of the screen.
+	do
+		local function aimDeg(x, y, z)
+			local turn, tilt = Mix.aimFrom(Vector3.new(x, y, z))
+			return math.deg(turn), math.deg(tilt)
+		end
+		local mid = aimDeg(0, -1, 40) -- (straight behind: the cursor in the middle of the screen, past you)
+		local right = aimDeg(14, -1, 40) -- (behind and to your right: the screen's left as you face the camera)
+		local left = aimDeg(-14, -1, 40)
+		local front = aimDeg(10, 0, -10) -- (in front: as before)
+		print(string.format("  the mouse past you (facing the camera): middle %.0f, your right %.0f, your left %.0f; in front 45 right reads %.0f",
+			mid, right, left, front))
+		check(math.abs(mid) < 0.5, "facing the camera, the cursor in the middle of the screen: the head looks at the camera")
+		check(right > 15 and right < 25 and left < -15 and left > -25, "the cursor to one side, past you: the head turns that way (it used to stay still)")
+		check(math.abs(front - 45) < 0.5, "a point in front of you: unchanged")
+		local s2, biggest, last = Mix.new(), 0, nil
+		for i = 0, 60 do -- (the cursor swept across behind you: the head follows, never a flip)
+			local x = -30 + i
+			local turn = Mix.aimFrom(Vector3.new(x, -1, 40))
+			local look = Mix.look(s2, 1 / 30, turn, true, 0)
+			if last then biggest = math.max(biggest, math.abs(math.deg(look - last))) end
+			last = look
+		end
+		check(biggest < 12, string.format("sweeping the cursor past you: the head follows smoothly (at most %.1f degrees a frame)", biggest))
+	end
+
 	-- Oct 19 19:48 (owner: "make the users head move but make it follow mouse movements"): up and down too, a neck's
 	-- reach, shift lock or not, the turn and the tilt together without tipping the head over
 	local function tiltFor(aimDeg, upDeg, on)

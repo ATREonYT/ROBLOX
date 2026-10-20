@@ -4,7 +4,9 @@
 	  - aim(root): the way to the point under the mouse (a ray from the camera through the cursor: the first thing it
 	    hits past your head, your own body and see-through parts skipped, or 300 studs along it at the sky), as
 	    (turn, tilt) from your body: turn + = to your right, tilt + = up, radians. On a touch screen or a gamepad
-	    (no cursor) it is the camera's middle, the same as before. Worked out once a frame; Gameplay/Locomotion and Gameplay/PlayerMoves spring the head toward
+	    (no cursor) it is the camera's middle, the same as before. A point behind you (you face the camera) is
+	    mirrored to the front (LocomotionMix.aimFrom: owner Oct 20 14:07, "it doesnt seem fixed": facing the camera,
+	    the cursor is always past you and the head stayed still). Worked out once a frame; Gameplay/Locomotion and Gameplay/PlayerMoves spring the head toward
 	    it (Shared/LocomotionMix.look: a neck's reach, Config/Run.Loco.Look).
 	  - report(turn, tilt): the head's turn and tilt as your screen draws it this frame (after the spring and the
 	    limits). start() sends it to the server (the HeadLook remote) Look.SendRate times a second at most, only when
@@ -21,6 +23,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Run = require(Shared.Config.Run)
+local Mix = require(Shared.LocomotionMix)
 
 local LOOK = Run.Loco.Look
 local FAR = 300 -- studs along the cursor's ray when it points at the sky
@@ -102,10 +105,8 @@ function HeadAim.aim(root: BasePart): (number, number)
 		return 0, 0
 	end
 	local eyes = root.Position + root.CFrame.UpVector * HEAD
-	local l = root.CFrame:VectorToObjectSpace(point - eyes)
-	local flat = math.sqrt(l.X * l.X + l.Z * l.Z)
-	lastTurn = math.atan2(l.X, -l.Z)
-	lastTilt = if flat > 1e-4 or math.abs(l.Y) > 1e-4 then math.atan2(l.Y, flat) else 0
+	-- (a point behind you, the camera in front: mirrored to the front, so the head still follows the cursor's side)
+	lastTurn, lastTilt = Mix.aimFrom(root.CFrame:VectorToObjectSpace(point - eyes))
 	return lastTurn, lastTilt
 end
 

@@ -50,7 +50,10 @@ The huss pose and walk animations: [animations.md](animations.md).
 - **The head follows the mouse** (`Gameplay/HeadAim`, `LocomotionMix.look`, `Run.Loco.Look`, `Gameplay/Locomotion`
   and `PlayerMoves`): the head looks at the point under the cursor (a ray from the camera through the mouse, your
   own body skipped; 300 studs along it at the sky), up to 70° each way (`Look.Max`) and 30° up / 35° down (`Up`,
-  `Down`), fading to straight when the point is behind you past 110°. Touch screens and gamepads have no cursor:
+  `Down`). A point behind you is mirrored to the front (`LocomotionMix.aimFrom`, Oct 20): standing facing the camera,
+  the cursor always lands on the field past you, and the old fade kept the head still ("it doesnt seem fixed",
+  14:07); now the head turns toward the cursor's side of the screen (20-26° with the cursor out to the side of the screen,
+  in `motion3d/moves_check_scene.luau`) and looks at the camera when it is in the middle. Touch screens and gamepads have no cursor:
   the camera's middle. Without shift lock D turns the body right (Roblox's AutoRotate) while the head stays on the
   mouse; in shift lock the strafe keeps the turn and the head still tilts up and down. Same exact neck solve as the
   strafe (tilt about the body's level, then the turn: no tip), the chest takes 40% of the turn. Spring 10 (~0.35 s
