@@ -151,6 +151,54 @@ these steps. (The first version stopped before printing anything on your avatar;
 
 ---
 
+## Part 5: listen to the dance songs (about 7 minutes)
+
+Every dance now has two songs from Roblox's own free music (APM Music and Monstercat). You don't upload anything:
+they already play in Studio and in the live game. Fortnite's own songs can't be used (they belong to Epic Games, and
+Roblox removes copied music). The list and why each song fits: `huzz-valley/docs/dance-music.md`.
+
+### 5a. Hear them all
+1. Open the game in Studio (Edit mode is fine). Turn your volume up a little.
+2. In Finder, open `huzz-valley/tools/studio/` and open **try-dance-songs.lua** with TextEdit. **Cmd+A**, **Cmd+C**.
+3. In Studio: **View > Command Bar** and **View > Output**. Click in the Command Bar, **Cmd+V**, **Enter**.
+4. For each dance it plays **pick 1** (the one the game uses) and then **pick 2** (the backup), 6 seconds each, and
+   prints a line starting with `[HuzzSfx]`: the dance, the song, who uploaded it and `PLAYS`.
+5. Write down the dances whose song you don't like. Screenshot the Output and send it to Claude with, for example,
+   "Flapper: use pick 2". Claude makes the swap.
+6. To hear only a few dances: at the top of the file, change `local ONLY = {}` to `local ONLY = { "Flapper", "TheTwist" }`.
+
+### 5b. Found a better song yourself? (optional)
+1. In Studio: **View > Toolbox**. At the top, pick **Audio** (in the Creator Store tab).
+2. Type the search words for the dance (table below). Click the play button on a result to hear it.
+3. Only take songs whose uploader is **APMOfficial** or **Monstercat** (it says under the name). Other uploads may
+   be copied music and can be removed. Skip anything shorter than about 1:30 (it will restart too often).
+4. Right-click the song > **Copy Asset ID**.
+5. In **try-dance-songs.lua**, change `local TRY = {}` to `local TRY = { Flapper = "rbxassetid://PASTE" }`
+   (paste the number after `rbxassetid://`), then run it again (5a, step 3). It plays your song and prints
+   `[HuzzSfx] SEND Flapper = rbxassetid://...`. Screenshot that line and send it to Claude, who puts it in the game.
+   (Editing the game's files in Studio doesn't stick while Rojo is connected, so Claude makes the change.)
+
+| Dance | Search words in Toolbox > Audio |
+|---|---|
+| Floss, Crab Dance, Sprinkler, Crazy Feet | Crab Rave, Monstercat house |
+| Citrus Groove, Phone Call, Bounce Bounce | Shiawase, kawaii, cute pop |
+| Hype Up | Hype Horns, hype hip hop |
+| Shock Shuffle, Pop Lock, Robot | Moshi, electro, robot |
+| Classic Groove, Boogie Down, Boogie Blast | Big Deal, disco, funk |
+| Smooth Moves, Free Flow | Ascension, progressive house |
+| So Fresh, Clean Groove | Shake Somethin, hip hop beds |
+| Breakdown, Freestyle, Toprock, Power Moves | Akim, breakbeat |
+| Swing Time, Flapper | electro swing, Charleston, speakeasy |
+| Squat Kick | Kalinka, Russian folk |
+| Running Man, Aerobics | Stay Upbeat, 80s pop |
+| Head Banger | rock, Punching The Air |
+| The Twist | Boogie Woogie, rock and roll, 60s |
+| Zany Zig | quirky, Do It Your Self |
+| Showstopper | Charleston Dolly, big band |
+| Zombie Groove | Halloween Funk, Trick or Treat |
+
+---
+
 ## If something goes wrong
 - **"UploadPictures is not a valid member of Folder ServerStorage.HuzzStudioTools"**: the newest code isn't in
   this place yet. Pull in GitHub Desktop and reconnect Rojo, or open the newest downloaded game file (see "Before you start").

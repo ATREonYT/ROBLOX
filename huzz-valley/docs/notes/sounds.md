@@ -29,9 +29,15 @@ core `CLAUDE.md` section 6.
   the riser partway in so its top (`Peak`, a 5.2 s guess) lands on the burst. Every sound with an ID is preloaded at
   start (a first play downloads first and starts late). Pro Sound Effects + APM IDs in `Config/SoundIds`. Beat times:
   `docs/secret-beats.md`.
-- **Dances:** 11 Monstercat/APM tracks for 25 dances by style (`Config/Dances` `Music` -> `Tracks`; Crab Rave for the
-  meme dances, breakbeat for b-boy, electro swing for Swing/Flapper...); dance tempos measured by
-  `motion3d/dance_tempo.luau` (reliable only where it says strength > 0.4). `Gameplay/Music.dance` plays it for you
+- **Dances:** every one of the 32 dances has two picks, both with a real ID (`Config/Dances` `Music` = pick 1,
+  `Backup` = pick 2, keys into `Tracks`; `Dances.track` plays pick 2 only when pick 1's Id is ""): 22 Monstercat/APM
+  songs, each pick 1 for at most 4 dances, picked by the dance's style and its Fortnite emote's genre (Crab Rave for
+  the meme dances, breakbeat for b-boy, Kalinka for the Cossack Squat Kick, rock 'n' roll for The Twist, rock for Head
+  Banger, kids' Halloween funk for Zombie Groove, big band for Showstopper...). Table, reasons, rejected tracks and
+  gaps: `docs/dance-music.md`. **Never Fortnite's own songs** (Epic's; a re-upload is still theirs). Dance tempos
+  measured by `motion3d/dance_tempo.luau` (reliable only where it says strength > 0.4). The owner listens with
+  `tools/studio/try-dance-songs.lua` (pick 1 then pick 2 per dance; `TRY` plays a Toolbox ID he found and prints a
+  `[HuzzSfx] SEND` line for us; it can't change the game: Rojo would put files back), `docs/STUDIO-STEPS.md` Part 5. `Gameplay/Music.dance` plays it for you
   only, looped, at 0.22 (background 0.3) and dips the background to 15% (two songs at near the same level clash);
   `danceStop` fades it (DancePlayer calls both, also when the dance animation stops some other way). `Start` offsets
   are 0 until someone listens (set again once the song has downloaded).
@@ -77,6 +83,10 @@ core `CLAUDE.md` section 6.
 ## Why it is this way / history
 - **Licensed sounds** (owner Oct 19: "don't create random sound by yourself, do a research of what sounds good and
   not, and then logically select the best sounds/songs").
+- **Dance music deep dive** (owner Oct 20: "do a deep dive on these dances as they are from fortnite, the songs come
+  from fortnite, then you either find the non copyright fortnite sounds, or find popular audios we can use with these
+  dances. But make them logically fit the dances that we have in game"): there are no "non copyright" Fortnite songs,
+  so every dance got two licensed picks by its style (`docs/dance-music.md`).
 - **The audit** (owner Oct 19: "check the audios to make sure they are actually good"): IDs re-checked, clipping clicks
   remade, riser and sting re-timed, preload, deeper dip, groove song swapped (`docs/sound-picks.md` section 7).
 - **Button sounds** (owner Oct 18: "they sound glitchy, and dont feel too premium").

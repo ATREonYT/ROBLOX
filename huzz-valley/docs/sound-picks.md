@@ -128,6 +128,9 @@ couldn't listen, so the owner's ear decides (swap any slot by changing its ID in
 
 ## 4. The dances
 
+**Oct 20: the current picks are in `docs/dance-music.md`** (two per dance, 22 songs; the owner's Fortnite deep
+dive). The research below still holds; the "Dances" column of the table is the Oct 19 set.
+
 **What fits (research and logic):**
 - Each dance style has a home genre: meme and internet dances (Floss, Crab, Sprinkler, Running Man) live on electro
   house; b-boy moves (Toprock, Breakdown, Freestyle) on breakbeat; Swing and the Flapper (Charleston) on (electro) swing;

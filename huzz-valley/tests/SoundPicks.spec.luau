@@ -3,7 +3,8 @@
 -- better, also find the sounds we can use for all of the dances, but don't create random sound by yourself";
 -- docs/sound-picks.md):
 --   * every ID is "" or "rbxassetid://<number>", and every real one names its source page (never invented);
---   * every dance has a song from Dances.Tracks, Dances.track falls back to nil (silence) for "" or unknown;
+--   * every dance has two picks from Dances.Tracks (docs/dance-music.md, Oct 20); Dances.track plays pick 2 when pick
+--     1 is "", and nil (silence) when both are "" or the dance is unknown; no song is pick 1 for more than 4 dances;
 --   * dance songs sit under the background music, and the background dips (never to silence);
 --   * the Secret cutscene's cues: known beats and slots, fades only at a later beat, the riser cut at the burst;
 --   * Sfx.beat on fake Sounds: Build starts riser + bed (the riser partway in, so its top lands on the burst), Burst
@@ -49,11 +50,19 @@ for name, id in ids do
 end
 check("button sounds wait for the owner's upload (\"\", never a made-up ID)", ids.ui_click == "" and ids.ui_hover == "" and ids.ui_open == "" and ids.ui_close == "")
 
--- 2. dances and their songs
-local used = {}
+-- 2. dances and their songs (Oct 20: two picks per dance, docs/dance-music.md)
+local danceDoc = if fs.isFile(ROOT .. "docs/dance-music.md") then fs.readFile(ROOT .. "docs/dance-music.md") else ""
+check("docs/dance-music.md exists", danceDoc ~= "")
+local used, firstUses = {}, {}
 for _, d in Dances.List do
 	check(d.Id .. " has a song", type(d.Music) == "string" and Dances.Tracks[d.Music] ~= nil)
-	if d.Music then used[d.Music] = true end
+	check(d.Id .. " has a second pick, different from the first", type(d.Backup) == "string" and Dances.Tracks[d.Backup] ~= nil and d.Backup ~= d.Music)
+	check(d.Id .. " is in docs/dance-music.md", string.find(danceDoc, "| " .. d.Name .. " |", 1, true) ~= nil)
+	if d.Music then used[d.Music] = true; firstUses[d.Music] = (firstUses[d.Music] or 0) + 1 end
+	if d.Backup then used[d.Backup] = true end
+end
+for key, n in firstUses do
+	check("track " .. key .. " is the first pick of at most 4 dances (each song stays a clear style)", n <= 4)
 end
 for key, t in Dances.Tracks do
 	check("track " .. key .. " Id is \"\" or rbxassetid://<number>", goodId(t.Id))
@@ -61,16 +70,21 @@ for key, t in Dances.Tracks do
 	if t.Id ~= "" then
 		local n = string.match(t.Id, "%d+")
 		check("track " .. key .. " Source is its store page", string.find(t.Source, "create.roblox.com/store/asset/" .. n, 1, true) ~= nil)
-		check("track " .. key .. " is in docs/sound-picks.md", string.find(doc, n, 1, true) ~= nil)
+		check("track " .. key .. " is in docs/sound-picks.md or docs/dance-music.md", string.find(doc, n, 1, true) ~= nil or string.find(danceDoc, n, 1, true) ~= nil)
+		check("track " .. key .. " is in docs/dance-music.md with its store page", string.find(danceDoc, "create.roblox.com/store/asset/" .. n, 1, true) ~= nil)
 	end
 	check("track " .. key .. " Start is a time", t.Start == nil or (type(t.Start) == "number" and t.Start >= 0))
 end
 check("Dances.track gives CrabDance its song", Dances.track("CrabDance") ~= nil and Dances.track("CrabDance").Id == Dances.Tracks.CrabRave.Id)
+check("Dances.track gives Squat Kick the Russian folk dance (Kalinka)", Dances.track("SquatKick") ~= nil and Dances.track("SquatKick").Id == Dances.Tracks.Kalinka.Id)
 check("Dances.track: unknown dance = nil", Dances.track("NoSuchDance") == nil)
-local saved = Dances.Tracks.CrabRave.Id
+local crab = Dances.get("CrabDance")
+local saved, savedBackup = Dances.Tracks.CrabRave.Id, Dances.Tracks[crab.Backup].Id
 Dances.Tracks.CrabRave.Id = ""
-check("Dances.track: a track with Id \"\" = nil (dances in silence)", Dances.track("CrabDance") == nil)
-Dances.Tracks.CrabRave.Id = saved
+check("Dances.track: pick 1 with Id \"\" falls back to pick 2", Dances.track("CrabDance") ~= nil and Dances.track("CrabDance").Id == savedBackup)
+Dances.Tracks[crab.Backup].Id = ""
+check("Dances.track: both picks \"\" = nil (dances in silence)", Dances.track("CrabDance") == nil)
+Dances.Tracks.CrabRave.Id, Dances.Tracks[crab.Backup].Id = saved, savedBackup
 check("dance songs are quieter than the background songs", Dances.MusicVolume > 0 and Dances.MusicVolume < MusicCfg.Volume)
 check("the background dips under a dance song but never goes silent", Dances.MusicDuck > 0.1 and Dances.MusicDuck < 1)
 check("the dip is deep enough that the dance song clearly wins (at least ~12 dB under it)", Dances.MusicDuck * MusicCfg.Volume <= Dances.MusicVolume / 4)
@@ -170,6 +184,8 @@ end
 check("Kenney's licence is next to the files", fs.isFile(ROOT .. "assets/sfx/LICENSE-kenney.txt"))
 check("the old synthesized Secret sounds are gone", not fs.isFile(ROOT .. "assets/sfx/secret_riser.ogg"))
 check("the Studio check script exists", fs.isFile(ROOT .. "tools/studio/check-sound-picks.lua"))
+check("the Studio dance-song helper exists and reports on [HuzzSfx] lines", fs.isFile(ROOT .. "tools/studio/try-dance-songs.lua")
+	and string.find(fs.readFile(ROOT .. "tools/studio/try-dance-songs.lua"), "[HuzzSfx] SEND", 1, true) ~= nil)
 
 print(`SoundPicks: {passed} ok, {failed} failed`)
 if failed > 0 then error("SoundPicks spec failed") end

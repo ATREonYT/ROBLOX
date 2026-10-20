@@ -54,6 +54,10 @@ if dances and dances.Tracks then
 			users[d.Music] = users[d.Music] or {}
 			table.insert(users[d.Music], d.Name)
 		end
+		if d.Backup then -- (pick 2: plays only if pick 1's Id is "")
+			users[d.Backup] = users[d.Backup] or {}
+			table.insert(users[d.Backup], d.Name .. " (pick 2)")
+		end
 	end
 	local keys = {}
 	for key in dances.Tracks do table.insert(keys, key) end
