@@ -13,7 +13,8 @@
 	  Pity    { After = 30, Rarity = "Legendary" }: open 29 without a Legendary or better and the 30th one is one
 	  Duplicate  coins given back when you already own what came out: one number, or one per rarity
 	  Colors  the drawn box's colour, { top, bottom } hex (UI/CrateArt.paint); none = the kit purple
-	  Home    the page that sells it when it isn't Shop > CRATES ("HalloweenShop": the two Halloween stands' page)
+	  Home    "HalloweenShop": one of the two Halloween stands' crates (in the Shop's CRATES with a HALLOWEEN tag since
+	          Oct 20 14:31; its key goes through ShopService.promptHalloween)
 	  Model   his 3D crate the opening shows (owner, Oct 20: "make these crates for the opening of the normal knifes"):
 	          Set = the set Model in his Workspace > scrates > Standard_Crates (published to ReplicatedStorage >
 	          HuzzCrates by Shared/CrateModels at game start and in the place build), Crate = the crate Model in it,
@@ -144,8 +145,8 @@ Crates.List = {
 		Items = knivesFrom(function(it) return it.Set ~= nil end, HALLOWEEN_WEIGHT),
 	},
 	-- Owner, Oct 19 17:41: "make a halloween shop when you press on one of the two crates. and then you can buy the
-	-- crates". His two lobby stands (WITCH'S BREW and SWEETS & TREATS) each sell their own set's crate on the Halloween
-	-- shop page (Home; Screens/HalloweenShop), not in Shop > CRATES: the 6 Witch knives and the 6 Candy knives, with
+	-- crates". His two lobby stands (WITCH'S BREW and SWEETS & TREATS) each sell their own set's crate (Home: since Oct 20
+	-- 14:31 a card in Shop > CRATES with a HALLOWEEN tag and a Robux key, Screens/Shop): the 6 Witch knives and the 6 Candy knives, with
 	-- the Halloween Crate's odds by rarity (Common 46%, Uncommon 27.6%, Rare 16.1%, Epic 6.9%, Legendary 2.3%,
 	-- Mythic 1.1%), its pity (a Legendary or the Mythic at the latest on the 40th) and its price (120 Aura).
 	{

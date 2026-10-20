@@ -61,8 +61,8 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   `*-long`). The preview draws TextScaled with its UITextSizeConstraint and TextTruncate.
 
 ## Shop passes and living UI
-- Shop passes copy the owner's banners (`design/shop/pass-banners.png`): navy glass rows, coloured rim and button per
-  pass (`Products` `Accent`, Kit styles `PassViolet` / `PassPink`). The knife pass cards: [knives.md](knives.md).
+- Shop passes: since Oct 20 14:31 the video's cards and wide rows ("The Shop" above); the old navy pass banners
+  (`design/shop/pass-banners.png`) are gone. The knife pass cards: [knives.md](knives.md).
 - **Living UI** (`UI/Effects`): `shine` (white streak every 4-5 s: pass rows, buy buttons, coin cards, the HUD Shop
   button), `rays` (our `assets/art/light-rays.png` turning behind the Spin wheel, and green behind the HUD Spin button
   while a free spin waits; its icon spins and FREE breathes), plus the knife cards' `pulse`, `motes` and `lift`.
@@ -157,14 +157,49 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   the green x2 tag when both show.
 - Admin: [economy.md](economy.md).
 
+## The Shop (`Screens/Shop`: one page since Oct 20 14:31; the golden slice, other menus wait for his yes)
+- **Owner, Oct 20:** 14:25 "also make our ui shop and in general make it like that, based of this" (his reference
+  video `design/owner-oct20/1425-shop-reference.mp4`, frames `1425-shop-ref-*.jpg`); 14:31 "can you make the shop
+  more logical, make it not so spread out as it is, make it all logically connected an all close to eachother, like
+  other games, make the ui logical layout also way better".
+- **Layout, as in the video:** one window (869 x 550, title bar 77, red X 73 square) and ONE scrolling page; a column
+  of six jump buttons right of the window (128 x 43, 49 apart, from y 83), each its section's colour (CRATES orange,
+  KNIVES purple, PASSES blue, AURA teal, COINS green, COSMETICS blue: the video's EGGS / POTIONS / PASSES / CODES /
+  MONEY / SPEED colours); the button of the section at the top wears a white rim. Sections in order: a featured banner
+  (the Void Beast Chest: a real crate, no timer, no "one-time offer"), CRATES (every crate, then EVERY CHANCE: each
+  crate's full odds), KNIVES (coin knives by rarity, then HALLOWEEN KNIVES for Aura or Robux), PASSES (the 5 knife
+  passes, then VIP and the Dance Pack as wide rows), AURA, COINS, COSMETICS (Robux looks, then FOR COINS). No codes
+  (we have no codes system) and no gift button (no gifting).
+- **Sizes** are the video's at 0.8 (his window is 1086 px wide at 1280): content 795 wide; big cards 251 x 338, 14
+  apart, 3 to a row (bold title 32, picture 152 high, one line 18 + a small line 13, green price button 54 high);
+  small cards 149 x 224, 5 to a row (coin knives, coin looks); Halloween knives 189 wide, 4 to a row; section header
+  95 with its word at 53 in a two-tone gradient; a short last row is centred. Whole pixels only (check_oct17).
+- **Look:** charcoal title bar (1E1E20 to 131315), "Shop" 50 in chunky white with a dark outline; dark green and teal
+  cards (top-to-bottom gradients 2C5C1F/12321A and 1B4A5E/0F2C3A, near-black rims); green price buttons (3FCC12,
+  Robux mark + price; violet for Robux next to an Aura price). **Font: FredokaOne** (Roblox's built-in rounded heavy
+  font, the closest to the video's): the Shop only, so this overrides the Gotham rule for the Shop (his newer call).
+  Coins and Aura pills stay in the title bar (the video has none; ours have the +).
+- **Where it opens:** every way in names a section (`ModalManager.open("Shop", key)`: a section, or a crate id for
+  its card): the HUD Shop button opens the top; Coins "+" COINS; every Aura "+" AURA; WITCH'S BREW / SWEETS & TREATS
+  their crate's card (no separate Halloween window any more: [economy.md](economy.md)); BACK from a crate opening
+  returns to that crate's card. The page jumps without a tween when it opens and glides on a jump button.
+- **Rules kept:** every chance shown (EVERY CHANCE, and the "i" on a card scrolls to it), pity on every crate card,
+  Id 0 = "coming soon" and never a prompt, grants only on the server, UI saved into StarterGui (cards made once).
+- Checks: `check_oct17` (jump buttons, order, banner, COINS/AURA cards), `check_crates`, `check_crate3d`,
+  `check_halloween`, `check.luau` (pass cards). Shots `shop-top`, `shop-crates`, `shop-halloween`, `shop-knives`,
+  `shop-passes`, `shop-aura`, `shop-coins`, `shop-cosmetics` (2560 x 1408 at SCALE 2.5 = his video's 1280 x 704
+  halved). Side by side: `docs/previews/shop-oct20-1425-vs-video.jpg` (`tools/preview/shop_vs_video.py`).
+- **Gaps (vs the video):** his cards are brighter and more saturated, with a gift button by each price (we have no
+  gifting); his titles and jump words are a little bigger and bolder; his banner is a full-width picture (ours is his
+  crate on a violet card); his price buttons carry stud texture; the page is long (about 47 coin knives); the preview
+  draws the body over a flat background (in game the world shows through, see-through 0.42). Not seen in Studio.
+
 ## Oct 17 screens
 - Shop ITEMS/COINS, DANCES and HOW TO PLAY (`Screens/HowToPlay`, was `Welcome`: first join + Menu) built from the
   `design/ui-oct17` mockups (`docs/previews/*-vs-mockup.jpg`, `tools/preview/side_by_side.py`, checks in
   `tools/preview/check_oct17.luau`). Their pictures are mockup crops (placeholders): ask for sharp PNGs. Not seen in
   Studio yet.
-- Shop tabs since Oct 20 14:07: PASSES, COSMETICS, ITEMS, CRATES, COINS, AURA, six of 106 px, 7 px apart, over the
-  kit's 16..687 row (even widths so the centred tabs sit on whole pixels). AURA reuses the COINS card layout
-  (`COIN`, `COIN_BODY`). His crate pictures (Shop > CRATES and the Halloween crates) never show ImageLoader's glyph:
+- The Shop's tabs are gone since Oct 20 14:31 (one page, above). His crate pictures never show ImageLoader's glyph:
   `UI/CrateArt.hisPicture` puts his 3D crate in their place (economy.md).
 
 ## Honest gaps

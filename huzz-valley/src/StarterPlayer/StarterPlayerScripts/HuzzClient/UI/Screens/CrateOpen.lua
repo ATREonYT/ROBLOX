@@ -684,9 +684,9 @@ function CrateOpen.build(parent: Instance)
 		return role == "Runner" or role == "Catcher" or player:GetAttribute("HuzzChoosing") == true or player:GetAttribute("HuzzCinematic") == true
 	end
 
-	-- back to the page that sells this crate (Config/Crates Home: the Halloween stands' crates), else Shop > CRATES
+	-- back to the Shop, at this crate's card (the Halloween stands' crates are in the Shop too since Oct 20 14:31)
 	local function goHome()
-		if crateDef.Home and ModalManager.has(crateDef.Home) then ModalManager.open(crateDef.Home, "Crates") else ModalManager.open("Shop", "Crates") end
+		ModalManager.open("Shop", crateDef.Id)
 	end
 	-- what you won, in one line (a toast when the window closed before the reel could show it)
 	local closes = 0 -- onClose counts up: a start that sees it change was closed while it asked the server

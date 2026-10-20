@@ -2,7 +2,8 @@
 --[[
 	The Halloween shop (owner, Oct 19 17:41: "make a halloween shop when you press on one of the two crates. and then
 	you can buy the crates, or the best knifes for either aura or robux"). Pressing either lobby stand (WITCH'S BREW or
-	SWEETS & TREATS, Config/LobbyProps Opens) opens Screens/HalloweenShop:
+	SWEETS & TREATS, Config/LobbyProps Opens) opens the Shop at its crate (Screens/Shop; one page since Oct 20 14:31, owner: "make it
+	all logically connected an all close to eachother"; the crates in CRATES, the knives in KNIVES):
 	  Crates  the two stands' crates (Config/Crates Witch and Sweets): open one for its Aura price, or buy a crate key
 	          with Robux (Config/Products.Halloween, Kind "CrateKey"); a key opens that crate once instead of Aura.
 	          Odds and the pity counter always show, as in Shop > CRATES.

@@ -71,14 +71,15 @@ MM.open("Shop", "Crates")
 task.wait(0.2)
 local body2 = gui.Shop:FindFirstChild("Products", true)
 local card = body2 and body2:FindFirstChild("CardBeast")
-local pic = card and card:FindFirstChild("Picture")
+local hisBox = card and card:FindFirstChild("HisPicture")
+local pic = hisBox and hisBox:FindFirstChild("Picture")
 check("the Beast card is his picture", pic ~= nil and pic:GetAttribute("Art") == "CrateCardBeast")
 -- (Oct 20 14:07: his picture can't be drawn here, as on his Mac: his 3D crate stands in, never the cardboard glyph)
 local glyph = pic and pic:FindFirstChild("NoPicture")
-local standIn = pic and pic:FindFirstChild("StandIn")
+local standIn = hisBox and hisBox:FindFirstChild("StandIn")
 check("no cardboard box glyph on his crate card", glyph == nil or not glyph.Visible)
 check("his 3D crate stands in for the picture", standIn ~= nil and standIn.Visible and standIn:FindFirstChild("Crate3D", true) ~= nil)
-check("... with his BUY bar, never saved into StarterGui", standIn ~= nil and standIn:FindFirstChild("BuyBar") ~= nil and standIn:GetAttribute("NoPicture") == true)
+check("... never saved into StarterGui", standIn ~= nil and standIn:GetAttribute("NoPicture") == true)
 local only = true
 for _, d in (card and card:GetDescendants() or {}) do
 	if d.Name == "Crate3D" and not (standIn and d:IsDescendantOf(standIn)) then only = false end

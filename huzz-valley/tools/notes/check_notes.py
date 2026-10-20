@@ -24,6 +24,10 @@ DROPPED = {
     "Safe, but no girl": "the Chicken card now says 'First across wins her' (owner Oct 19)",
     "Nobody went HERO": "Chicken no longer blocks the girl, so this HUD line is gone (owner Oct 19)",
     "Chicken gets nothing. Go HERO to win her!": "Chicken no longer blocks the girl (owner Oct 19)",
+    "PassViolet": "the Shop became one page like his video (owner Oct 20 14:31): the navy pass banners are gone",
+    "PassPink": "the Shop became one page like his video (owner Oct 20 14:31): the navy pass banners are gone",
+    "shots.sh shop-knife-cards": "the pass cards are the one-page Shop's cards since Oct 20 14:31 (shots.sh shop-passes)",
+    "side_by_side.py knife-cards": "the pass cards are the one-page Shop's cards since Oct 20 14:31 (shop_vs_video.py)",
 }
 # Paths the notes name that only exist once the owner sends a file (path -> why).
 NOT_YET = {

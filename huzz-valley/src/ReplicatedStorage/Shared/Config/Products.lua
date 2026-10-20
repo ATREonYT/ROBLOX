@@ -100,7 +100,7 @@ Products.Spins = {
 	{ Key = "Spins100", Kind = "Spins", Name = "100 Spins", Blurb = "A hundred spins\non the wheel.", Id = 0, Price = 600, Amount = 100, OnSale = true, Icon = "SpinWheel", Art = "" },
 } :: { Product }
 
--- The Halloween shop's Robux items (Config/HalloweenShop, Screens/HalloweenShop; owner, Oct 19: "buy the crates, or
+-- The Halloween shop's Robux items (Config/HalloweenShop, sold in Screens/Shop; owner, Oct 19: "buy the crates, or
 -- the best knifes for either aura or robux"). Developer Products: create each on the Creator Dashboard and put its ID
 -- here. While Id = 0 the button shows its price and only says "coming soon", never a purchase. Prices are Claude's pick.
 --   CrateKey  one free open of that crate (Config/Crates; saved as CrateKeys, used before Aura)

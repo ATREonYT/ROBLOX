@@ -148,7 +148,7 @@ local function processReceipt(info)
 			end
 		end)
 		if not ok then return Enum.ProductPurchaseDecision.NotProcessedYet end
-		-- tell the player when a paid knife became keys (Screens/HalloweenShop shows it as a toast). A player
+		-- tell the player when a paid knife became keys (Screens/Shop shows it as a toast). A player
 		-- attribute, so no new remote: "<n>|<line>", n new each time so the same line twice still shows twice
 		if note then
 			noticeCount += 1

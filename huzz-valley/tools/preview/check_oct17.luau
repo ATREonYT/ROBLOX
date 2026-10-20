@@ -98,77 +98,96 @@ MM.close()
 task.wait(0.4)
 check("it doesn't pop up again by itself", MM.current() == nil)
 
-check("Shop opens on COINS", open("Shop", "Coins") and gui.Shop.Visible)
+-- SHOP (owner, Oct 20 14:25 / 14:31: one page like his reference video, "all close to eachother"): one window, one
+-- scrolling page, a jump button per section right of the window; COINS and AURA cards like the video's (251 x 338)
+check("Shop opens at COINS", open("Shop", "Coins") and gui.Shop.Visible)
 local shop = gui.Shop.Group.Panel
 local products = shop.Products
 local Products = require(game.ReplicatedStorage.Shared.Config.Products)
 local prompts = #(_G.__prompts or {})
+local order = { "Crates", "Knives", "Passes", "Aura", "Coins", "Cosmetics" }
+local okJ, lastY = true, -1
+for _, k in order do
+	local b = shop:FindFirstChild(k .. "Tab")
+	if not b then okJ = false; continue end
+	local x, y, w = box(b, shop)
+	if x < 869 or x + w > 1005 or y <= lastY then okJ = false end
+	lastY = y
+end
+check("six jump buttons right of the window, in the page's order", okJ)
+local function atTop(key: string): boolean
+	local h = products:FindFirstChild("Head" .. key)
+	return h ~= nil and math.abs(products.CanvasPosition.Y - (h.Position.Y.Offset + 4)) <= 1
+end
+check("opened at COINS: its header at the top of the page", atTop("Coins"))
+local inOrder, prevY = true, -1
+for _, k in order do
+	local h = products:FindFirstChild("Head" .. k)
+	if not h or h.Position.Y.Offset <= prevY then inOrder = false end
+	prevY = h and h.Position.Y.Offset or prevY
+end
+check("sections in order: crates, knives, passes, aura, coins, cosmetics", inOrder)
+check("the featured banner on top: a real crate, no timer", products:FindFirstChild("Featured") ~= nil and products.Featured.Position.Y.Offset == 0 and products.Featured.Title.Text == "VOID BEAST CHEST" and products.Featured:FindFirstChild("Timer", true) == nil)
 for i, p in Products.Coins do
 	local c = products:FindFirstChild(p.Key)
 	check(p.Key .. " card shows", c ~= nil)
 	if c then
-		local title = c:FindFirstChild("Name") :: TextLabel?
-		check(p.Key .. " title", title ~= nil and title.Text == p.Name)
-		local pic = c:FindFirstChild("Art") and c.Art:FindFirstChild("Picture")
+		check(p.Key .. " title", c.Title.Text == p.Name)
+		local pic = c:FindFirstChild("Picture")
 		check(p.Key .. " picture is the mockup's coin art", pic ~= nil and pic:GetAttribute("Art") == "CoinPack" .. p.Amount)
 		local buy = c:FindFirstChild("Buy")
 		local badge = buy and buy:FindFirstChild("RobuxBadge", true)
 		check(p.Key .. " price button keeps the Robux mark (not a coin)", badge ~= nil and badge.Visible and buy:FindFirstChild("Icon", true) == nil)
 		check(p.Key .. " price shows", buy ~= nil and buy.Content.Label.Text == tostring(p.Price))
-		local x, y, w, h = box(c, shop)
-		local inside = x >= 16 and y >= 85 and x + w <= 701 - 16 and y + h <= 320 - 8
-		check(p.Key .. " card sits inside the window", inside)
-		if not inside then print("  box", x, y, w, h) end
+		check(p.Key .. " card is the video's size", c.Size == UDim2.fromOffset(251, 338))
 		if i == 1 then
 			click(buy)
 			check("a coin pack that isn't on sale says so and never opens a purchase", toast():find("coming soon") ~= nil and #(_G.__prompts or {}) == prompts)
 		end
 	end
 end
-check("COINS: whole pixels only", wholePixels(products))
+local c1, c2, c3 = products:FindFirstChild("Coins500"), products:FindFirstChild("Coins2000"), products:FindFirstChild("Coins5000")
+check("COINS: three in a row, 14 px apart", c1 ~= nil and c2 ~= nil and c3 ~= nil and c1.Position.Y == c2.Position.Y and c2.Position.X.Offset - c1.Position.X.Offset == 265 and c3.Position.X.Offset - c2.Position.X.Offset == 265)
+check("the page: whole pixels only", wholePixels(products))
 check("tapping a coin pack grants nothing (only the server's receipt does)", profile.Data.Coins == 0)
 
--- AURA (owner, Oct 20 14:07: "make a buy section for aura"): 3 packs like COINS, Id 0 only says "coming soon"
+-- AURA (owner, Oct 20 14:07: "make a buy section for aura"): 3 packs, Id 0 only says "coming soon"
 local aura0 = profile.Data.Aura
 click(shop.AuraTab)
-task.wait(0.6) -- (let the slide-in finish)
 for _ = 1, 40 do __stepTweens(0.05) end
-local ax, _, aw = box(shop.AuraTab, shop)
-local cx = box(shop.CoinsTab, shop)
-check("the AURA tab sits next to COINS, inside the window", ax > cx and ax + aw <= 701 - 12)
+task.wait(0.5)
+check("the AURA jump button scrolls the page to AURA", atTop("Aura"))
+check("... and wears the white rim", shop.AuraTab.Rim.Color == Color3.new(1, 1, 1) and shop.CoinsTab.Rim.Color ~= Color3.new(1, 1, 1))
 check("AURA: 3 packs", #Products.Aura == 3)
 for i, p in Products.Aura do
 	local c = products:FindFirstChild(p.Key)
-	check(p.Key .. " card shows", c ~= nil and c.Visible ~= false)
+	check(p.Key .. " card shows", c ~= nil)
 	if c then
-		check(p.Key .. " title", c:FindFirstChild("Name") ~= nil and c:FindFirstChild("Name").Text == p.Name)
-		local star = c:FindFirstChild("Art") and c.Art:FindFirstChild("Star1")
-		check(p.Key .. " picture is his Aura star", star ~= nil and (star:GetAttribute("Icon") == "AuraStar" or star:GetAttribute("Art") == "AuraStar" or star.Name == "Star1"))
+		check(p.Key .. " title", c.Title.Text == p.Name)
+		check(p.Key .. " picture is his Aura star", c:FindFirstChild("Star1") ~= nil)
 		check(p.Key .. " price shows", c.Buy.Content.Label.Text == tostring(p.Price))
 		check(p.Key .. " has no ID yet (never invented)", p.Id == 0)
-		local x, y, w, h = box(c, shop)
-		check(p.Key .. " card sits inside the window", x >= 16 and y >= 85 and x + w <= 701 - 16 and y + h <= 320 - 8)
-		if not (x >= 16 and y >= 85 and x + w <= 701 - 16 and y + h <= 320 - 8) then print("  box", x, y, w, h) end
 		if i == 1 then
 			click(c.Buy)
 			check("an Aura pack without its ID only says coming soon, no purchase", toast():find("coming soon") ~= nil and #(_G.__prompts or {}) == prompts)
 		end
 	end
 end
-check("AURA: whole pixels only", wholePixels(products))
 check("tapping an Aura pack grants nothing (only the server's receipt does)", profile.Data.Aura == aura0)
 MM.close()
 task.wait(0.2)
 local hudPlus
 for _, d in gui:GetDescendants() do
-	if d.Name == "Plus" and d.Parent and d.Parent.Name == "Aura" and not d:IsDescendantOf(gui.Shop) and not (gui:FindFirstChild("HalloweenShop") and d:IsDescendantOf(gui.HalloweenShop)) then hudPlus = d; break end
+	if d.Name == "Plus" and d.Parent and d.Parent.Name == "Aura" and not d:IsDescendantOf(gui.Shop) then hudPlus = d; break end
 end
 check("the top bar has an Aura +", hudPlus ~= nil)
 if hudPlus then click(hudPlus) end
-check("the top bar's Aura + opens Shop > AURA", MM.current() == "Shop" and products:FindFirstChild("Aura200") ~= nil)
+check("the top bar's Aura + opens the Shop at AURA", MM.current() == "Shop" and atTop("Aura"))
 open("Shop", "Coins")
-click(shop.Parent.Parent:FindFirstChild("Aura", true).Plus)
-check("the Shop's own Aura + opens AURA", products:FindFirstChild("Aura200") ~= nil)
+click(shop.Header.Aura.Plus)
+for _ = 1, 40 do __stepTweens(0.05) end
+task.wait(0.5)
+check("the Shop's own Aura + scrolls to AURA", atTop("Aura"))
 MM.close()
 task.wait(0.2)
 

@@ -8,20 +8,20 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 `GetState` ask is limited (one waiting at a time, a second apart) so it can't be spammed.
 
 ## Coins and the shop
-- **Coins** buy looks in the Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins). Items with
+- **Coins** buy looks in the Shop (KNIVES and COSMETICS > FOR COINS) (`Config/CoinShop`: trails, name colours, knife skins). Items with
   `Unlock` (quest knives) or `NotForSale` (Spin Knife) are never sold.
-- The COINS tab sells coin packs for Robux (cards after the Oct 17 mockup, `docs/previews/coins-vs-mockup.jpg`; art
+- The COINS section sells coin packs for Robux (cards after the Oct 17 mockup, `docs/previews/coins-vs-mockup.jpg`; art
   cut by `tools/icons/make_screen_art.py`, placeholders until sharp PNGs); its buttons keep the Robux mark, never a
   coin icon.
-- **The AURA tab (Oct 20 14:07, owner: "make a buy section for aura")** sits next to COINS and is laid out like it:
+- **The AURA section (Oct 20 14:07, owner: "make a buy section for aura")** sits just above COINS, laid out like it:
   3 Developer Products in `Products.Aura` (`Aura200`, `Aura700`, `Aura1500`: 200 / 700 / 1,500 Aura for 49 / 149 /
   299 R$, **Id = 0**, so each only says "coming soon", README checklist). Amounts are Claude's pick, matched to the
   crate keys: a key is 25 R$ for one 100 Aura open, so 200 Aura for 49 R$ is two opens at the key's price and the
   bigger packs are a little cheaper per open (the coordinator's 500 / 2,000 / 5,000 would have made Aura opens far
   cheaper than keys). Granted only in ShopService's ProcessReceipt (`grant`, Kind "Aura": once per PurchaseId,
   "granted" only after the save; `check_bughunt` section 5). The picture is his own Aura star (the kit's `AuraStar`,
-  one, two or three stars on a violet glow), no new art. Every Aura "+" opens this tab: the Shop header's, the top
-  bar's (`LobbyHud`, was a toast plus Quests) and the Halloween shop's.
+  one, two or three stars on a violet glow), no new art. Every Aura "+" opens the Shop scrolled to AURA: the Shop header's and
+  the top bar's (`LobbyHud`, was a toast plus Quests).
 - Shop passes copy the owner's banners: [ui.md](ui.md). Shop > PASSES opens on the knife pass cards: [knives.md](knives.md).
 
 ## Aura stars
@@ -100,12 +100,12 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   Uncommon 27%, Rare 15%, Epic 6%, Legendary 2% (Void Fang 1%, Galaxy Trail 1%); a Legendary at the latest on the
   30th open. A look you own already pays coins back by rarity (50 / 100 / 200 / 400 / 1,000). No Dance Pack dances
   (the pass sells them), no rewards, pass, quest or wheel prizes. Aura is earned, and since Oct 20 14:07 also sold
-  in the AURA tab (above).
+  in the Shop's AURA section (above).
 - **More crates (Oct 19, owner: "knifes, dances, from crates"):** Halloween Crate (120 Aura, his 18 Halloween knives)
   and Dance Crate (80 Aura, 7 crate-only dances from his pack: Boogie Blast, Head Banger, The Twist, Zany Zig, Robot,
   Power Moves, Showstopper, Zombie Groove), each with every chance shown and a pity (40 / 30 opens). The Halloween one
   is built from `Config/CoinShop` (`knivesFrom`), never the pass knives. The two Halloween stands' crates (Witch's
-  Brew, Sweets & Treats) live on the Halloween shop page instead (below).
+  Brew, Sweets & Treats) are in the same CRATES section with a HALLOWEEN tag (below).
 - **His three knife crates (Oct 20, 03:33: "here is the new one with updated crates, make these crates for the opening
   of the normal knifes ... and make all of the knifes earned either through crates/bought/ or robux. and make the
   opening animations look appropriate").** They replace the Oct 19 Knife Crate. In his place he built
@@ -139,21 +139,20 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   the ui picture i sent you, no need to try recreate" / "For the crates"): `design/owner-oct20/0348-crate-shop-mockup.png`
   cut down the middle of the gaps into its three cards at full size (`tools/crates/cut_mockup_cards.py` ->
   `assets/art/crate-card-{dojo,storm,beast}.png`, packed at 448 px as `Art/CrateCardDojo`, `CrateCardStorm`,
-  `CrateCardBeast`; nothing redrawn or cleaned), shown side by side at their own proportions (193 px high, centred in
-  the row) so the row is his picture again: his crate renders, sparkles and BUY buttons as he drew them. An invisible
-  button lies over each of his BUY buttons: a crate key Developer Product (`Products.Crates`: `DojoCrateKey`,
-  `StormCrateKey`, `BeastCrateKey`, 25 R$ our pick, **Id = 0**, so it only says "coming soon"; `ShopService.promptCrateKey`
-  refuses too, and the receipt grants +1 key only on the server). Kept for kid safety on a slim line UNDER each card
-  (never on his art), small and in his colours (BUY violet, his lilac, his card navy): **OPEN 100** with Aura (or
-  "OPEN · N KEYS"), the pity line ("LEGENDARY IN 40") and an "i" that scrolls to that crate's full odds list under the
-  row. A card and its line fit the Shop's body, so they show without scrolling. **Never a cardboard box** (Oct 20
+  `CrateCardBeast`; nothing redrawn or cleaned), shown since Oct 20 14:31 on the one-page Shop's cards ([ui.md](ui.md), "The Shop"): each crate one 251 x 338
+  card, its title, his picture cut to the crate (never recoloured), then the pity line ("GUARANTEED LEGENDARY" /
+  "IN 40 OPENS"), **OPEN 100** with Aura (or "USE KEY (n)") and **KEY** for Robux: a crate key Developer Product
+  (`Products.Crates`: `DojoCrateKey`, `StormCrateKey`, `BeastCrateKey`, 25 R$ our pick, **Id = 0**, so it only says
+  "coming soon"; `ShopService.promptCrateKey` refuses too, and the receipt grants +1 key only on the server). An "i"
+  scrolls to that crate's full odds under the cards (EVERY CHANCE). **Never a cardboard box** (Oct 20
   14:07: his Play showed ImageLoader's glyph on all three, and to him the crates looked missing): when his picture
   can't be drawn, `CrateArt.hisPicture` hides the glyph and stands his real 3D crate (`HuzzCrates`, `Crate3D` view
-  "Card": the whole crate, turned a little as on his cards) on a card in his navy with his violet BUY bar where he
-  drew it; without his model yet, the drawn crate in his crate's colours. The stand-in is made at run time, tagged
+  "Card": the whole crate, turned a little as on his cards) in the picture's box; without his model yet, the drawn
+  crate in his crate's colours. The stand-in is made at run time, tagged
   NoPicture, never saved into StarterGui. In Studio's editor the cards stay blank
   until he uploads them (`Config/ImageIds`, README checklist); in Play the game draws them (`UI/ImageLoader`). The
-  Starter and Dance crates keep their old cards below. Side by side: `docs/previews/crate-shop-vs-mockup.jpg`.
+  Starter, Dance and Halloween crates follow in the same rows with the drawn crate. The old full-card row
+  (`docs/previews/crate-shop-vs-mockup.jpg`) was before the Oct 20 14:31 one-page Shop.
 - **The 3D opening** (`Screens/CrateOpen` with `UI/Crate3D`; timeline `Shared/CrateMotion` (T), one maths for the game
   and the film). Owner, Oct 20 07:51: "Can you please make the opening animation of the crates feel more premium,
   right now it feels too ai, as now they have the circle around the knife when it opens, remove it, add s nice
@@ -191,8 +190,8 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   and answers `{ index, name, rarity, new, coins, pity, left, strip, at }`. `strip` is the reel: 48 honest draws with
   the shown odds (never pity, nothing planted next to the stop: `CrateRoll.strip`, spec checks the cards beside the
   stop are Legendary only at the real rate), the prize on card 40.
-- **Shop > CRATES** (a 5th tab): the crate card (drawn crate, "GUARANTEED LEGENDARY in N opens" + bar from the save,
-  OPEN 50 with the Aura star) and every item's exact chance in two columns. OPEN is refused in a round or the Secret
+- **Shop > CRATES** (the first section of the one-page Shop): a card per crate (picture, "GUARANTEED LEGENDARY" /
+  "IN N OPENS" from the save, OPEN with the Aura star) and, under the cards, every item's exact chance per crate. OPEN is refused in a round or the Secret
   cutscene ("Open crates in the lobby.") and with too little Aura.
 - **The opening** (`Screens/CrateOpen`, 1280 x 720 like the Spin wheel, one RenderStepped loop on its own clock, so
   the film matches the game): the crate rattles harder for 0.6 s (six `roulette_tick` knocks, closer and closer), the
@@ -225,24 +224,26 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   `shop-crates`, `crate-spin`, `crate-prize`; film `tools/preview/crate_film.sh` → `docs/previews/crate-open.mp4` and
   `crate-open.jpg`.
 
-## Halloween shop (`Config/HalloweenShop`, `Screens/HalloweenShop`, ActionService `BuyHalloweenKnife`)
+## Halloween shop (`Config/HalloweenShop`, part of `Screens/Shop` since Oct 20 14:31, ActionService `BuyHalloweenKnife`)
 - **Owner, Oct 19 17:41:** "make a halloween shop when you press on one of the two crates. and then you can buy the
   crates, or the best knifes for either aura or robux." His stands: `design/owner-oct19/1840-halloween-crates.png`.
-  WITCH'S BREW and SWEETS & TREATS (`Config/LobbyProps` `Opens = "HalloweenShop"`) open it from the prompt (E) or a
-  click. A stand saved in his place before it had a menu gets its prompt and click from `LobbyPropService` (backfill).
-- **The page:** the Shop's 701 x 320 window, header pumpkin orange (FFAA4C to D2560E), plum body (2A1646), tabs
-  CRATES / KNIVES. Side by side with our Shop: `docs/previews/halloween-shop-vs-shop.jpg` (shots `halloween-crates`,
-  `halloween-knives`; `side_by_side.py pages`).
+  WITCH'S BREW and SWEETS & TREATS (`Config/LobbyProps` `Opens = "Shop"`, `Section = "Witch"` / `"Sweets"`) open the
+  Shop scrolled to their crate's card, from the prompt (E) or a click (a stand saved earlier with "HalloweenShop" still
+  opens the Shop: `Gameplay/LobbyProps`). A stand saved in his place before it had a menu gets its prompt and click from `LobbyPropService` (backfill).
+- **No separate window since Oct 20 14:31** (owner: "make it all logically connected an all close to eachother"):
+  its crates are cards in Shop > CRATES (tagged HALLOWEEN, with KEY for Robux) and its knives are the last row of
+  Shop > KNIVES (HALLOWEEN KNIVES, Aura and Robux buttons). The rules below are unchanged. Shots `shop-halloween`,
+  `shop-knives`.
 - **CRATES:** two set crates, one per stand (Claude's reading of "the two crates"): **Witch's Brew Crate** (his 6
   Witch knives) and **Sweets & Treats Crate** (his 6 Candy knives). Same odds by rarity as the Halloween Crate
   (Common 46%, Uncommon 27.6%, Rare 16.1%, Epic 6.9%, Legendary 2.3%, Mythic 1.1%), pity 40 (a Legendary or the
-  Mythic), 120 Aura an open. They have `Home = "HalloweenShop"`, so they are only on this page, not in Shop > CRATES
-  (the 18-knife Halloween Crate stays there). Every chance and the pity counter show on the page, like Shop > CRATES.
+  Mythic), 120 Aura an open. They have `Home = "HalloweenShop"`, which now only gives their card the HALLOWEEN tag and the
+  Robux KEY (the 18-knife Halloween Crate has neither). Every chance and the pity counter show, as for every crate.
   Their picture is his own crate card (Oct 20 14:07, "make the halloween shop have the images of the crates from the
   ones i sent you before"), cut to the crate above his BUY, never recoloured: Witch's Brew = his Beast card (purple),
   Sweets & Treats = his Dojo card (red, lanterns), Claude's pick (`Config/HalloweenShop.Crates[].Picture`). His 3D
   crate stands in when it can't be drawn, as in Shop > CRATES.
-  OPEN plays `Screens/CrateOpen`; its BACK returns to the page.
+  OPEN plays `Screens/CrateOpen`; its BACK returns to the Shop at that crate's card (every crate).
 - **Crate keys (Robux):** one key = one open of that crate. Saved as `CrateKeys[crateId]`; `OpenCrate` uses a key
   before any Aura, in the same save write. The button then reads USE KEY (n). A key open counts toward pity as usual.
 - **KNIVES:** the Legendary and the Mythic of each set, as his pictures (Art): Coven Katana, Grand Witch Scythe, Sugar
@@ -268,7 +269,7 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   rounded (Legendary 149 / 25 = 6 keys, Mythic 249 / 25 = 10 keys). Keys, not Aura, because Aura is only earned,
   never sold for Robux. Uses the configured prices, not Roblox's live ones. The player is told: "You already had
   Candy Reaper, so you got 10 Sweets & Treats Crate keys instead." (ShopService sets the Player attribute
-  `HuzzShopNotice` = "<n>|<line>", the Halloween screen shows it as a toast; no new remote).
+  `HuzzShopNotice` = "<n>|<line>", the Shop shows it as a toast; no new remote).
 - **A paid receipt is always granted,** even if the item was taken off sale while the purchase was on its way:
   `OnSale` only stops new prompts (`canPrompt`); `HalloweenShop.grant` ignores it (second critic, Oct 19: it used to
   answer "not processed yet" until Roblox gave up). Since the Oct 20 bug hunt the rest of the products (coins,
@@ -279,13 +280,13 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   both prices, not enough Aura, already owned, double tap, a knife not sold here, Id 0 never prompts, an ID prompts,
   the server refuses to prompt an owned knife, receipts once and after the save, an owned knife's receipt gives keys,
   a key used before Aura, OPEN plays the opening).
-- **Gaps:** not seen in Studio; the Robux IDs are 0 and the prices are ours; the crate is the drawn stand-in box, not
-  his stand models; the header icon is the Shop cart (no pumpkin icon in his kit); his coin shop also sells these
+- **Gaps:** not seen in Studio; the Robux IDs are 0 and the prices are ours; the crate is his Beast / Dojo card picture, not
+  his stand models; his coin shop also sells these
   four knives for coins (4,000 / 8,000), which is the cheaper way to get them, so Aura buyers pay more on purpose.
   The knife cards are pictures rendered from his own meshes (`assets/art/knife-*.png`), drawn by script until he
   uploads them; the knife you then hold is the server's plain stand-in, dressed as his .glb only where Studio allows
   Mesh / Image APIs, until he imports `Halloween_Knives.glb` ([knives.md](knives.md)). The "you got keys instead" line
-  only shows if the Halloween screen was built (it always is in the game; checked offline only).
+  shows from the Shop screen (always built in the game; checked offline only).
 
 ## Admin panel (`Screens/Admin` + `HuzzServer/AdminService` + `Shared/AdminRules`)
 - Only the game's owner: Studio, else `player.UserId == game.CreatorId` (a game he owns) or rank 255 in the creator

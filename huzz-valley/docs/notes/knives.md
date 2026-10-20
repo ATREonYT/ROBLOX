@@ -148,13 +148,12 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   Knife slot is empty. Same pipeline (cards with a GAME PASS label). A refunded pass doesn't take them back yet.
   Once owned, a pass knife's card in the coin shop's items has an EXCLUSIVE rim and label in pink
   (`Screens/Shop` `rarityColor.Exclusive`, as in the admin panel; it had no rarity colour before the knife check).
-- **Shop > PASSES** opens on 5 cards one-to-one with his mockup (`design/knives/Five_Elemental_Knife_Cards.png`,
-  scaled 0.2993 to 120 x 214 so a whole card fits; art cut by `tools/icons/cut_pass_knife_cards.py` into
-  `assets/art/pass-knife-*.png`, 240 px, Play only until uploaded), the VIP and Dance Pack banners under them;
-  BUY + Robux mark, "coming soon" and never a prompt while `Id = 0`, Price 0 = not set (the live price shows once
-  there's an ID). Side by side `docs/previews/knife-cards-vs-mockup.jpg` (`shots.sh shop-knife-cards` +
-  `side_by_side.py knife-cards`). The card names use Gotham (the owner's font rule), wider than his mockup's
-  rounded font.
+- **Shop > PASSES** starts with the 5 knife pass cards: since Oct 20 14:31 the Shop's 251 x 338 cards ([ui.md](ui.md),
+  "The Shop"), each with his card's knife art (cut from `design/knives/Five_Elemental_Knife_Cards.png` by
+  `tools/icons/cut_pass_knife_cards.py` into `assets/art/pass-knife-*.png`, 240 px, Play only until uploaded), the
+  name in his card's colour line, and the VIP and Dance Pack rows under them; BUY + Robux mark, "coming soon" and
+  never a prompt while `Id = 0`, Price 0 = not set (the live price shows once there's an ID). The older one-to-one
+  copy of his card row (`docs/previews/knife-cards-vs-mockup.jpg`) was before the one-page Shop.
 - **The cards are alive:** animated card art, not a 3D viewport (his pass models aren't in his place yet and the art
   already is the knife): each card's element colour swells softly over the picture (`Effects.pulse`, about every 5 s,
   never under 0.78 see-through), 7 small shapes of its element float up over it (`Effects.motes`: petals for Hunter

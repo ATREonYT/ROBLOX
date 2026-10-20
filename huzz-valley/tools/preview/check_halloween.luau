@@ -1,8 +1,10 @@
 -- Check: the Halloween shop end to end offline (owner, Oct 19 17:41: "make a halloween shop when you press on one of
--- the two crates. and then you can buy the crates, or the best knifes for either aura or robux").
---   1. his two stands open it (a stand saved before it had a menu gets its prompt and click);
---   2. the page: both crates with every chance (adding to 100) and the pity counter, the four knives as pictures,
---      each with its Aura price and its Robux price;
+-- the two crates. and then you can buy the crates, or the best knifes for either aura or robux"). Since Oct 20 14:31
+-- ("make it all logically connected an all close to eachother") it is part of the one Shop page, not its own window.
+--   1. his two stands open the Shop at their crate (a stand saved before it had a menu gets its prompt and click; an
+--      old stand saved as "HalloweenShop" opens the Shop too);
+--   2. the page: both crates in CRATES with the HALLOWEEN tag, every chance (adding to 100) and the pity counter; the
+--      Halloween knives in KNIVES as pictures, each with its Aura price and its Robux price;
 --   3. Aura buys on the server: not enough Aura, already owned, a double tap (bought once, paid once), a knife that
 --      isn't sold here; the crate opens for Aura from the page;
 --   4. Robux: with Id 0 a tap only says "coming soon" and never prompts; with an Id it prompts; a receipt grants once
@@ -39,8 +41,8 @@ local profile = DataService.get(me)
 local data = profile.Data
 
 -- 1. the two stands open it, also a stand saved in his place before it had a menu
-check("WITCH'S BREW opens the Halloween shop", LobbyProps.Props.Witch_Brew_Cauldron.Opens == "HalloweenShop")
-check("SWEETS & TREATS opens the Halloween shop", LobbyProps.Props.Sweets_Treats_Coffin.Opens == "HalloweenShop")
+check("WITCH'S BREW opens the Shop at its crate", LobbyProps.Props.Witch_Brew_Cauldron.Opens == "Shop" and LobbyProps.Props.Witch_Brew_Cauldron.Section == "Witch")
+check("SWEETS & TREATS opens the Shop at its crate", LobbyProps.Props.Sweets_Treats_Coffin.Opens == "Shop" and LobbyProps.Props.Sweets_Treats_Coffin.Section == "Sweets")
 local folder = workspace:FindFirstChild("HuzzLobbyProps") or Instance.new("Folder")
 folder.Name = "HuzzLobbyProps"
 folder.Parent = workspace
@@ -51,8 +53,8 @@ local prop = Instance.new("Model"); prop.Name = "Prop"; prop.Parent = old
 old.Parent = folder
 require(HS.LobbyPropService).start()
 local prompt = pad:FindFirstChild("PropPrompt")
-check("an old saved stand gets its prompt", prompt ~= nil and prompt:GetAttribute("HuzzOpens") == "HalloweenShop" and prompt.ActionText == "Halloween Shop")
-check("... and its click", prop:FindFirstChild("PropClick") ~= nil and old:GetAttribute("Opens") == "HalloweenShop")
+check("an old saved stand gets its prompt", prompt ~= nil and prompt:GetAttribute("HuzzOpens") == "Shop" and prompt.ActionText == "Halloween Shop")
+check("... and its click", prop:FindFirstChild("PropClick") ~= nil and old:GetAttribute("Opens") == "Shop")
 require(HS.LobbyPropService).start() -- (started again: still one prompt)
 local prompts = 0
 for _, ch in pad:GetChildren() do if ch.Name == "PropPrompt" then prompts += 1 end end
@@ -69,29 +71,38 @@ check("the stands' script starts: " .. tostring(err), okS)
 task.wait(0.1)
 __fireOn(game:GetService("ProximityPromptService"), "PromptTriggered", prompt, me)
 task.wait(0.2)
-check(`pressing the stand opens the Halloween shop ({MM.current()})`, MM.current() == "HalloweenShop")
+check(`pressing the stand opens the Shop ({MM.current()})`, MM.current() == "Shop")
 
--- 2. the page: the Shop's size, both crates with their odds and pity, the four knives as pictures with both prices
-local page = gui:FindFirstChild("HalloweenShop")
+-- 2. the page: both crates in CRATES (tagged HALLOWEEN) with their odds and pity, the knives with both prices
 local shopWin = gui:FindFirstChild("Shop")
-check("the page shows", page ~= nil and page.Visible)
-check("the Shop's size", page and shopWin and page.Size == shopWin.Size)
-local panel = page and page.Group.Panel
-local cratesPage = panel and panel:FindFirstChild("Crates")
+check("no separate Halloween window any more", gui:FindFirstChild("HalloweenShop") == nil)
+local panel = shopWin and shopWin.Group.Panel
+local body = panel and panel:FindFirstChild("Products")
+local function settle() for _ = 1, 40 do __stepTweens(0.05) end task.wait(0.3) end
+settle()
+local sweetsCard = body and body:FindFirstChild("CardSweets")
+check(`the Sweets stand scrolls the page to its crate ({body and body.CanvasPosition.Y})`, sweetsCard ~= nil and math.abs(body.CanvasPosition.Y - (sweetsCard.Position.Y.Offset - 8 + 4)) <= 1)
+-- an old stand saved in his place as "HalloweenShop" still opens the Shop
+MM.close()
+task.wait(0.2)
+prompt:SetAttribute("HuzzOpens", "HalloweenShop")
+__fireOn(game:GetService("ProximityPromptService"), "PromptTriggered", prompt, me)
+task.wait(0.2)
+check(`an old "HalloweenShop" stand opens the Shop ({MM.current()})`, MM.current() == "Shop")
 for _, entry in HalloweenShop.Crates do
 	local crate = Crates.get(entry.Crate)
-	local sec = cratesPage and cratesPage:FindFirstChild("Section" .. entry.Crate)
+	local sec = body and body:FindFirstChild("Section" .. entry.Crate)
 	local n, total = 0, 0
 	for _, ch in (sec and sec:GetChildren() or {}) do
 		if string.match(ch.Name, "^Odds%d+$") then n += 1; total += tonumber(string.match(ch.Chance.Text, "[%d%.]+")) or 0 end
 	end
 	check(`{entry.Crate}: all {#crate.Items} chances shown ({n})`, n == #crate.Items)
 	check(`{entry.Crate}: chances add to about 100 ({total})`, math.abs(total - 100) < 1.5)
-	local card = sec and sec:FindFirstChild(entry.Crate)
-	check(`{entry.Crate}: pity shows ({card and card.Pity.Text})`, card ~= nil and card.Pity.Text == "in 40 opens" and card.PityLabel.Text == "GUARANTEED LEGENDARY")
-	check(`{entry.Crate}: OPEN for its Aura price`, card ~= nil and card.Open.Content.Label.Text == "OPEN " .. crate.Price)
-	check(`{entry.Crate}: a Robux key with its price`, card ~= nil and card.BuyKey.Content.Price.Text == tostring(Products.get(entry.Robux).Price) and card.BuyKey.Content.RobuxBadge.Text == Format.RobuxMark)
-	check(`{entry.Crate}: not in Shop > CRATES (its own page)`, crate.Home == "HalloweenShop")
+	local card = body and body:FindFirstChild("Card" .. entry.Crate)
+	check(`{entry.Crate}: pity shows ({card and card.Pity.Text})`, card ~= nil and card.Pity.Text == "IN 40 OPENS" and card.PityLabel.Text == "GUARANTEED LEGENDARY")
+	check(`{entry.Crate}: OPEN for its Aura price`, card ~= nil and card.Open:FindFirstChild("Label", true).Text == "OPEN " .. crate.Price)
+	check(`{entry.Crate}: a Robux key with its price`, card ~= nil and card.BuyKey:FindFirstChild("Price", true).Text == tostring(Products.get(entry.Robux).Price) and card.BuyKey:FindFirstChild("RobuxBadge", true) ~= nil)
+	check(`{entry.Crate}: in CRATES with the HALLOWEEN tag`, card ~= nil and card:FindFirstChild("Tag") ~= nil and crate.Home == "HalloweenShop")
 	-- (Oct 20 14:07: his crate pictures, Witch's Brew = Beast, Sweets & Treats = Dojo; his 3D crate if it can't draw)
 	local box = card and card:FindFirstChild("HisPicture")
 	local pic = box and box:FindFirstChild("Picture")
@@ -100,15 +111,14 @@ for _, entry in HalloweenShop.Crates do
 	check(`{entry.Crate}: no glyph, a stand-in instead`, (glyph == nil or not glyph.Visible) and (glyph == nil or (box:FindFirstChild("StandIn") ~= nil and box.StandIn.Visible)))
 	check(`{entry.Crate}: the old drawn chest is gone`, card ~= nil and card:FindFirstChild("CratePicture") == nil and card:FindFirstChild("CrateRays") == nil)
 end
-__fireOn(panel.KnivesTab, "Activated")
-task.wait(0.1)
-local knivesPage = panel:FindFirstChild("Knives")
-check("KNIVES tab shows the knives", knivesPage.Visible and not cratesPage.Visible)
+local function knifeCard(key) return body and body:FindFirstChild("Halloween" .. key) end
+local hw = knifeCard(HalloweenShop.Knives[1].Key)
+check("the Halloween knives sit in KNIVES (below its header, above PASSES)", hw ~= nil and hw.Position.Y.Offset > body.HeadKnives.Position.Y.Offset and hw.Position.Y.Offset < body.HeadPasses.Position.Y.Offset)
 for _, entry in HalloweenShop.Knives do
-	local card = knivesPage:FindFirstChild(entry.Key)
+	local card = knifeCard(entry.Key)
 	check(`{entry.Key}: shown as his picture`, card ~= nil and card:FindFirstChild("Picture") ~= nil)
-	check(`{entry.Key}: its Aura price ({card and card.BuyAura.Content.Label.Text})`, card ~= nil and card.BuyAura.Content.Label.Text == Format.commas(entry.Aura))
-	check(`{entry.Key}: its Robux price`, card ~= nil and card.BuyRobux.Content.Price.Text == tostring(Products.get(entry.Robux).Price))
+	check(`{entry.Key}: its Aura price ({card and card.BuyAura:FindFirstChild("Label", true).Text})`, card ~= nil and card.BuyAura:FindFirstChild("Label", true).Text == Format.commas(entry.Aura))
+	check(`{entry.Key}: its Robux price`, card ~= nil and card.BuyRobux:FindFirstChild("Price", true).Text == tostring(Products.get(entry.Robux).Price))
 end
 
 -- 3. Aura buys, all checked on the server
@@ -132,27 +142,27 @@ DataService.update(me, function(d) d.Aura = covenAura * 2 end)
 okA, why = act("BuyHalloweenKnife", "CovenKatana")
 check(`already owned: refused, nothing taken ({why})`, okA == false and data.Aura == covenAura * 2 and tostring(why):find("own") ~= nil)
 task.wait(0.2)
-local coven = knivesPage:FindFirstChild("CovenKatana")
-check("the card says OWNED and hides its Robux price", coven.BuyAura.Content.Label.Text == "OWNED" and coven.BuyRobux.Visible == false)
+local coven = knifeCard("CovenKatana")
+check("the card says OWNED and hides its Robux price", coven.BuyAura:FindFirstChild("Label", true).Text == "OWNED" and coven.BuyRobux.Visible == false)
 
 -- the page's own Aura buy button (the client asks; the server decides)
 DataService.update(me, function(d) d.Aura = HalloweenShop.knife("SugarRushKatana").Aura end)
 task.wait(1.1)
-__fireOn(knivesPage.SugarRushKatana.BuyAura, "Activated")
+__fireOn(knifeCard("SugarRushKatana").BuyAura, "Activated")
 task.wait(0.3)
 check("the page's Aura button buys the knife", data.Cosmetics.SugarRushKatana == true and data.Aura == 0)
 
 -- 4. Robux: Id 0 never prompts, an ID prompts, a receipt grants once
 _G.__prompts = {}
-__fireOn(knivesPage.GrandWitchScythe.BuyRobux, "Activated")
+__fireOn(knifeCard("GrandWitchScythe").BuyRobux, "Activated")
 task.wait(0.1)
 check("a Robux knife with Id 0 only says coming soon", #_G.__prompts == 0 and gui.Toast.Text:find("coming soon") ~= nil)
 __fireOn(panel.CratesTab, "Activated")
 task.wait(0.1)
-__fireOn(cratesPage.SectionSweets.Sweets.BuyKey, "Activated")
+__fireOn(body.CardSweets.BuyKey, "Activated")
 task.wait(0.1)
 check("a Robux key with Id 0 only says coming soon", #_G.__prompts == 0 and gui.Toast.Text:find("coming soon") ~= nil)
-__fireOn(cratesPage.SectionWitch.Witch.BuyKey, "Activated")
+__fireOn(body.CardWitch.BuyKey, "Activated")
 task.wait(0.1)
 check("a key with its ID opens Roblox's prompt", #_G.__prompts == 1 and _G.__prompts[1][2] == 444)
 local function receipt(id, purchase) return MarketplaceService.ProcessReceipt({ PlayerId = 1, ProductId = id, PurchaseId = purchase }) end
@@ -178,7 +188,7 @@ check("a paid receipt is granted after the item went off sale", receipt(555, "h4
 reaperProduct.OnSale = true
 check("the receipts are in the saved data", table.find(profile.LastSavedData.Receipts, "h1") ~= nil and table.find(profile.LastSavedData.Receipts, "h2") ~= nil)
 task.wait(0.2)
-check(`the crate shows USE KEY ({cratesPage.SectionWitch.Witch.Open.Content.Label.Text})`, cratesPage.SectionWitch.Witch.Open.Content.Label.Text == "USE KEY (1)")
+check(`the crate shows USE KEY ({body.CardWitch.Open:FindFirstChild("Label", true).Text})`, body.CardWitch.Open:FindFirstChild("Label", true).Text == "USE KEY (1)")
 
 -- the crate: a key is used before Aura; then Aura; then "not enough"
 DataService.update(me, function(d) d.Aura = 130 end)
@@ -193,10 +203,10 @@ check("pity counts every open", data.Pity.Witch == 2 or data.Pity.Witch == 1 or 
 -- the page's OPEN starts the opening screen for that crate
 DataService.update(me, function(d) d.Aura = 500 end)
 task.wait(1.2)
-MM.open("HalloweenShop", "Crates")
+MM.open("Shop", "Sweets")
 task.wait(0.2)
 local sweetsKeys = data.CrateKeys.Sweets or 0 -- (the keys from the owned knife's receipt above)
-__fireOn(cratesPage.SectionSweets.Sweets.Open, "Activated")
+__fireOn(body.CardSweets.Open, "Activated")
 task.wait(0.4)
 check(`OPEN plays the crate opening with a key ({MM.current()})`, MM.current() == "CrateOpen" and data.Aura == 500 and (data.CrateKeys.Sweets or 0) == sweetsKeys - 1)
 MM.close()

@@ -42,8 +42,8 @@ def ours_box(im, size=(701, 320)):
 
 def pages(out, pairs):
     # Our own windows side by side, two to a row, each cropped to its 701 x 320 window and shown at the same size
-    # (python3 tools/preview/side_by_side.py pages <out.jpg> "<label>=<render.png>" ...; e.g. the Halloween shop next
-    # to Shop: shots.sh shop-crates shop-knives halloween-crates halloween-knives).
+    # (python3 tools/preview/side_by_side.py pages <out.jpg> "<label>=<render.png>" ...; made for the old 701 x 320
+    # Shop; the one-page Shop since Oct 20 14:31 is compared with tools/preview/shop_vs_video.py).
     cell = WIDTH // 2
     ims = []
     for pair in pairs:

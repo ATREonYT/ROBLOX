@@ -105,17 +105,17 @@ task.wait(0.05)
 check("items without an ID or not on sale never prompt", #_G.__prompts == 0)
 MM.close()
 
--- The knife Game Pass cards (owner Oct 18: "add the knifes into the ui for the gamepass menu"): five on PASSES, named
--- as he wrote them, each with its picture, KNIFE and BUY; BUY says "coming soon" and never prompts without a pass ID.
+-- The knife Game Pass cards (owner Oct 18: "add the knifes into the ui for the gamepass menu"): five in PASSES, named
+-- as he wrote them, each with its picture and BUY; BUY says "coming soon" and never prompts without a pass ID.
 _G.__prompts = {}
 MM.open("Shop", "Passes")
 products = gui.Shop.Group.Panel.Products
 local cardNames = {}
 for _, key in { "HunterKnifePass", "MoonlitKnifePass", "SunriseKnifePass", "InfernoKnifePass", "FrostKnifePass" } do
 	local card = products:FindFirstChild(key)
-	check(key .. " card: picture, KNIFE, BUY", card ~= nil and card:FindFirstChild("Picture") ~= nil and card.Kind.Text == "KNIFE" and card.Buy.Content.Label.Text == "BUY")
+	check(key .. " card: picture, knife line, BUY", card ~= nil and card:FindFirstChild("Picture") ~= nil and card.Line.Text:find("knife") ~= nil and card.Buy.Content.Label.Text == "BUY")
 	if card then
-		table.insert(cardNames, card:FindFirstChild("Name").Text)
+		table.insert(cardNames, card.Title.Text)
 		__fireOn(card.Buy, "Activated")
 	end
 end

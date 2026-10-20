@@ -242,12 +242,14 @@ end
 for _ = 1, 40 do __stepTweens(0.05) end
 task.wait(0.6) -- staggered slide-ins start on real-time delays; let them start, then finish them
 for _ = 1, 40 do __stepTweens(0.05) end
--- SCROLL=<points> shows a scrolled list (the renderer draws from the top): moves a ScrollingFrame's cards up.
-if cfg.SCROLL then
-	for _, d in pg:GetDescendants() do
-		if d:IsA("ScrollingFrame") and d.Visible then
+-- SCROLL=<points> shows a scrolled list (the renderer draws from the top): moves a ScrollingFrame's cards up. Without
+-- it, a list the screen scrolled itself (the Shop opened at a section: CanvasPosition) is drawn scrolled the same way.
+for _, d in pg:GetDescendants() do
+	if d:IsA("ScrollingFrame") and d.Visible then
+		local by = tonumber(cfg.SCROLL) or d.CanvasPosition.Y
+		if by ~= 0 then
 			for _, ch in d:GetChildren() do
-				if ch:IsA("GuiObject") then ch.Position = ch.Position - UDim2.fromOffset(0, cfg.SCROLL) end
+				if ch:IsA("GuiObject") then ch.Position = ch.Position - UDim2.fromOffset(0, by) end
 			end
 		end
 	end

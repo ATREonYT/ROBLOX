@@ -60,13 +60,14 @@ local MM = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.ModalMa
 local State = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.State)
 local gui = me.PlayerGui:FindFirstChild("HuzzUI")
 
--- 2. Shop > CRATES: the crate, its price, every item's chance (adding to 100), the pity counter
+-- 2. Shop > CRATES (one page since Oct 20 14:31, like his reference video): every crate a card (title, picture, the
+-- pity line, OPEN with Aura, KEY for Robux where it has one, the "i"), then each crate's every chance under the cards
 MM.open("Shop", "Crates")
 task.wait(0.2)
 local shop = gui:FindFirstChild("Shop")
 local body = shop and shop:FindFirstChild("Products", true)
-local card = body and body:FindFirstChild("Starter", true)
-check("Shop has a CRATES tab", shop ~= nil and shop:FindFirstChild("CratesTab", true) ~= nil)
+local card = body and body:FindFirstChild("CardStarter")
+check("Shop has a CRATES jump button", shop ~= nil and shop:FindFirstChild("CratesTab", true) ~= nil)
 check("the crate card shows", card ~= nil)
 check("OPEN shows the Aura price", card ~= nil and card.Open:FindFirstChild("Label", true).Text == "OPEN " .. crate.Price)
 local rows, sum = 0, 0
@@ -78,15 +79,15 @@ for _, ch in (body and body:FindFirstChild("SectionStarter") and body.SectionSta
 end
 check(`every item's chance is listed ({rows} of {#crate.Items})`, rows == #crate.Items)
 check(`the chances add to 100 ({sum})`, math.abs(sum - 100) < 0.5)
-check("the pity counter shows", card ~= nil and card.Pity.Text == "in 30 opens" and card.PityLabel.Text == "GUARANTEED LEGENDARY")
--- every crate (owner, Oct 19: "knifes, dances, from crates") has its own section with every item's chance, one under
--- the other; the Knife Crate holds his coin shop knives, the Halloween Crate his 18 Halloween ones, no pass knives
+check("the pity counter shows", card ~= nil and card.Pity.Text == "IN 30 OPENS" and card.PityLabel.Text == "GUARANTEED LEGENDARY")
+-- every crate (owner, Oct 19: "knifes, dances, from crates"), the Halloween stands' too, has its card and its own
+-- section with every item's chance, one under the other; no pass knives in any crate
 local spans = {}
+local lowestCard = 0
 for _, cr in Crates.List do
-	if cr.Home then -- (the Halloween stands' crates live on their own page: tools/preview/check_halloween.luau)
-		check(`{cr.Id}: not in Shop > CRATES`, body ~= nil and body:FindFirstChild("Section" .. cr.Id) == nil)
-		continue
-	end
+	local cc = body and body:FindFirstChild("Card" .. cr.Id)
+	check(`{cr.Id}: its card in CRATES`, cc ~= nil)
+	if cc then lowestCard = math.max(lowestCard, cc.Position.Y.Offset + cc.Size.Y.Offset) end
 	local sec = body and body:FindFirstChild("Section" .. cr.Id)
 	local n, total = 0, 0
 	for _, ch in (sec and sec:GetChildren() or {}) do
@@ -103,51 +104,52 @@ for _, cr in Crates.List do
 		if c then check(`{cr.Id}: {it.Id} is no pass knife`, c.Pass == nil) end
 	end
 end
--- the sections stand one under the other (his crates' odds first, under the cards), never overlapping
+-- the odds sections stand under the cards, one under the other, never overlapping
 table.sort(spans, function(x, y) return x[2] < y[2] end)
+check("every chance shows under the crate cards", #spans > 0 and spans[1][2] > lowestCard)
 for i = 2, #spans do
 	check(`{spans[i][1]}: its section sits below {spans[i - 1][1]}'s`, spans[i][2] > spans[i - 1][3])
 end
 local halloweenCrate, danceCrate = Crates.get("Halloween"), Crates.get("Dance")
--- his three knife crates (Oct 20): ten of his knives each, all 30 between them, each its own card (his own picture,
--- Oct 20 07:23 "Just put the ui picture i sent you"), an invisible BUY over his drawn one (Id 0: "coming soon", never
--- a prompt), and under his picture (never on it) OPEN with Aura, the pity line and the odds "i"
-local inKnifeCrates, cardsSeen = {}, 0
+-- his three knife crates (Oct 20): ten of his knives each, all 30 between them, each its card with his own picture
+-- (cut to the crate, never recoloured), and under it the pity line, OPEN with Aura, KEY for Robux; the "i" on it
+local inKnifeCrates = {}
 for _, id in { "Dojo", "Storm", "Beast" } do
 	local kc = Crates.get(id)
 	check(`the {id} crate holds ten knives ({kc and #kc.Items})`, kc ~= nil and #kc.Items == 10)
 	for _, it in (kc and kc.Items or {}) do inKnifeCrates[it.Id] = true end
 	local cardK = body and body:FindFirstChild("Card" .. id)
-	check(`{id}: its card shows`, cardK ~= nil)
 	if cardK then
-		cardsSeen += 1
-		local pic = cardK:FindFirstChild("Picture")
-		check(`{id}: his own picture of the card`, pic ~= nil and pic:IsA("ImageLabel") and pic:GetAttribute("Art") == "CrateCard" .. id)
-		check(`{id}: his picture at its own proportions`, pic ~= nil and math.abs(pic.Size.X.Offset / pic.Size.Y.Offset - ({ Dojo = 717 / 702, Storm = 1, Beast = 715 / 702 })[id]) < 0.01)
-		check(`{id}: nothing of ours drawn on his picture`, cardK:FindFirstChild("Crate3D", true) == nil and cardK:FindFirstChild("CratePicture", true) == nil and cardK:FindFirstChild("Stage") == nil)
-		local buyK = cardK:FindFirstChild("Buy")
-		check(`{id}: an invisible BUY over his`, buyK ~= nil and buyK.BackgroundTransparency == 1 and buyK:GetAttribute("OverHisArt") == true)
-		if pic then
-			local under = true
-			for _, n in { "Open", "Pity", "Odds" } do
-				local e = cardK:FindFirstChild(n)
-				if not e or e.Position.Y.Offset < pic.Size.Y.Offset then under = false end
-			end
-			check(`{id}: OPEN, the pity line and the "i" sit under his picture`, under)
+		local box = cardK:FindFirstChild("HisPicture")
+		local pic = box and box:FindFirstChild("Picture")
+		check(`{id}: his own picture, cut to the crate`, pic ~= nil and pic:IsA("ImageLabel") and pic:GetAttribute("Art") == "CrateCard" .. id and box.ClipsDescendants and pic.ImageColor3 == Color3.new(1, 1, 1))
+		local under = true
+		for _, n in { "Open", "BuyKey", "Pity" } do
+			local e = cardK:FindFirstChild(n)
+			if not e or not box or e.Position.Y.Offset < box.Position.Y.Offset + box.Size.Y.Offset then under = false end
 		end
+		check(`{id}: the pity line, OPEN and KEY sit under his picture`, under)
 		check(`{id}: OPEN with Aura shows its price`, cardK:FindFirstChild("Open") ~= nil and cardK.Open:FindFirstChild("Label", true).Text == "OPEN " .. kc.Price)
-		check(`{id}: the pity line shows`, cardK:FindFirstChild("Pity") ~= nil and cardK.Pity.Text == "LEGENDARY IN 40")
+		check(`{id}: the pity line shows`, cardK:FindFirstChild("Pity") ~= nil and cardK.Pity.Text == "IN 40 OPENS" and cardK.PityLabel.Text == "GUARANTEED LEGENDARY")
+		check(`{id}: KEY for Robux shows its price`, cardK:FindFirstChild("BuyKey") ~= nil and cardK.BuyKey:FindFirstChild("Price", true).Text == "25")
 		check(`{id}: the odds button`, cardK:FindFirstChild("Odds") ~= nil)
 	end
+end
+-- the Halloween stands' crates: his pictures (Witch's Brew = his Beast, Sweets & Treats = his Dojo), a HALLOWEEN tag
+for id, art in { Witch = "CrateCardBeast", Sweets = "CrateCardDojo" } do
+	local cardH = body and body:FindFirstChild("Card" .. id)
+	local pic = cardH and cardH:FindFirstChild("HisPicture") and cardH.HisPicture:FindFirstChild("Picture")
+	check(`{id}: his {art} picture`, pic ~= nil and pic:GetAttribute("Art") == art)
+	check(`{id}: the HALLOWEEN tag and its KEY`, cardH ~= nil and cardH:FindFirstChild("Tag") ~= nil and cardH:FindFirstChild("BuyKey") ~= nil)
 end
 local nKnives = 0
 for _ in inKnifeCrates do nKnives += 1 end
 check(`his three crates hold all 30 of his knives ({nKnives})`, nKnives == 30)
 if body and body:FindFirstChild("CardDojo") and body:FindFirstChild("CardStorm") and body:FindFirstChild("CardBeast") then
 	local a, b2, c3 = body.CardDojo, body.CardStorm, body.CardBeast
-	check("the three cards stand in one row, left to right", a.Position.Y.Offset == b2.Position.Y.Offset and b2.Position.Y.Offset == c3.Position.Y.Offset and a.Position.X.Offset < b2.Position.X.Offset and b2.Position.X.Offset < c3.Position.X.Offset)
-	check("the cards fit the window side by side", c3.Position.X.Offset + c3.Size.X.Offset <= body.Size.X.Offset - 8)
-	-- BUY while its product has no ID: "coming soon", and never a purchase prompt
+	check("his three cards lead the row, left to right", a.Position.Y.Offset == b2.Position.Y.Offset and b2.Position.Y.Offset == c3.Position.Y.Offset and a.Position.X.Offset < b2.Position.X.Offset and b2.Position.X.Offset < c3.Position.X.Offset)
+	check("the cards fit the page side by side", c3.Position.X.Offset + c3.Size.X.Offset <= 795)
+	-- KEY while its product has no ID: "coming soon", and never a purchase prompt
 	local toasts = {}
 	local Toast = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Toast)
 	local oldShow = Toast.show
@@ -156,17 +158,22 @@ if body and body:FindFirstChild("CardDojo") and body:FindFirstChild("CardStorm")
 	local MPS = game:GetService("MarketplaceService")
 	local oldPrompt = MPS.PromptProductPurchase
 	pcall(function() MPS.PromptProductPurchase = function() prompts += 1 end end)
-	__fireOn(a.Buy, "Activated")
+	__fireOn(a.BuyKey, "Activated")
 	task.wait(0.1)
 	Toast.show = oldShow
 	pcall(function() MPS.PromptProductPurchase = oldPrompt end)
-	check(`BUY with no product ID says coming soon ({toasts[1]})`, toasts[1] ~= nil and string.find(toasts[1], "coming soon") ~= nil)
-	check("BUY with no product ID opens no purchase", prompts == 0)
+	check(`KEY with no product ID says coming soon ({toasts[1]})`, toasts[1] ~= nil and string.find(toasts[1], "coming soon") ~= nil)
+	check("KEY with no product ID opens no purchase", prompts == 0)
 	-- the server refuses too
 	local okP, whyP = require(HS.ShopService).promptCrateKey(me, "DojoCrateKey")
 	check(`the server won't prompt a crate key with no ID ({whyP})`, okP == false and string.find(whyP or "", "coming soon") ~= nil)
 	local okH = require(HS.ShopService).promptCrateKey(me, "WitchCrateKey")
-	check("the crate key prompt only takes Shop > CRATES' keys", okH == false)
+	check("the crate key prompt only takes the knife crates' keys", okH == false)
+	-- the "i" scrolls the page to that crate's every chance
+	__fireOn(c3.Odds, "Activated")
+	for _ = 1, 40 do __stepTweens(0.05) end
+	task.wait(0.3)
+	check(`the "i" scrolls to the Beast's chances ({body.CanvasPosition.Y})`, math.abs(body.CanvasPosition.Y - (body.SectionBeast.Position.Y.Offset + 4)) <= 1)
 end
 check(`the Halloween Crate holds his 18 Halloween knives ({halloweenCrate and #halloweenCrate.Items})`, halloweenCrate ~= nil and #halloweenCrate.Items == 18)
 local danceOnly = 0
@@ -301,7 +308,7 @@ MM.open("Shop", "Crates")
 task.wait(0.2)
 local auraBefore = data.Aura
 me:SetAttribute("HuzzCinematic", true)
-card = gui.Shop:FindFirstChild("Products", true):FindFirstChild("Starter", true)
+card = gui.Shop:FindFirstChild("Products", true):FindFirstChild("CardStarter")
 __fireOn(card.Open, "Activated")
 task.wait(0.3)
 check("no crate opens during the cutscene", MM.current() ~= "CrateOpen" and data.Aura == auraBefore)

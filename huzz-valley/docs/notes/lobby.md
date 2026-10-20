@@ -127,7 +127,7 @@ inspection with Lune: core `CLAUDE.md` section 4.
   game who liked it, so no reward). Three-pad side: FREE SPIN (Pumpkin_Patch_Chest, opens Spin the Wheel; the line
   under it counts down to your real free spin), WITCH'S BREW (cauldron) and SWEETS & TREATS (coffin), both open the
   Halloween shop (owner, Oct 19 17:41: "make a halloween shop when you press on one of the two crates";
-  [economy.md](economy.md)). A stand saved in his place before that gets its prompt and click from
+  since Oct 20 14:31 that is the Shop scrolled to their crate: [economy.md](economy.md)). A stand saved in his place before that gets its prompt and click from
   `LobbyPropService` (backfill, checked in `tools/preview/check_halloween.luau`). A ProximityPrompt and a click open the menu (never in a round, never during `HuzzCinematic`).
 - **The two Halloween stands are 1.5x** (owner, Oct 20: "in general go make the halloween shop objects bigger so they
   stand out more"): WITCH'S BREW Scale 3.75 (was 2.5), SWEETS & TREATS 3.45 (was 2.3), and `Grow = 1.5` on both

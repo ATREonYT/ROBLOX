@@ -17,15 +17,16 @@ shot() { # name, reference page, width, height, options
 	node shoot.js "$OUT/$1.json" "$OUT/$1.png" "$3" "$4" "$R"
 }
 ONLY="$*"
-shot shop-passes 01-shop-passes 1536 710 '{SCREEN="Shop", TAB="Passes", SCALE=2, PASSES="VIP"}'
-shot shop-knife-cards none 1536 730 '{SCREEN="Shop", TAB="Passes", SCALE=2}' # (vs his Five_Elemental_Knife_Cards.png: side_by_side.py knife-cards)
-shot shop-cosmetics 07-shop-cosmetics 1536 730 '{SCREEN="Shop", TAB="Cosmetics", SCALE=2, OWN="MidnightOutfit"}'
-shot shop-items 07-shop-cosmetics 1536 730 '{SCREEN="Shop", TAB="Items", SCALE=2, OWN="MintTrail"}'
-shot shop-knives none 1536 730 '{SCREEN="Shop", TAB="Items", SCALE=2, OWN="SpinKnife,IceKnife", COINS=1500, SCROLL=890}' # (the owner's knives, Oct 18)
-shot shop-coins none 1536 730 '{SCREEN="Shop", TAB="Coins", SCALE=2}' # (vs the Oct 17 mockup: side_by_side.py coins)
-shot shop-crates none 1536 730 '{SCREEN="Shop", TAB="Crates", SCALE=2, CRATEPITY=7}' # (no mockup: crates are ours)
-shot halloween-crates none 1536 730 '{SCREEN="HalloweenShop", TAB="Crates", SCALE=2, GEMS=320}' # (the Halloween stands' page, Oct 19: vs shop-crates, side_by_side.py halloween)
-shot halloween-knives none 1536 730 '{SCREEN="HalloweenShop", TAB="Knives", SCALE=2, GEMS=12000, OWN="CandyReaper"}'
+# The Shop: one page since Oct 20 14:31 (his reference video 1425-shop-reference.mp4, 1280 x 704 when halved: tools/preview/shop_vs_video.py);
+# TAB = the section it opens scrolled to (Crates, Knives, Passes, Aura, Coins, Cosmetics, or a crate id), none = the top.
+shot shop-top none 2560 1408 '{SCREEN="Shop", SCALE=2.5, GEMS=320}' # (vs his video at 0.3 s)
+shot shop-crates none 2560 1408 '{SCREEN="Shop", TAB="Crates", SCALE=2.5, GEMS=320, CRATEPITY=7}'
+shot shop-halloween none 2560 1408 '{SCREEN="Shop", TAB="Witch", SCALE=2.5, GEMS=12000, OWN="CandyReaper"}' # (where WITCH'S BREW opens it)
+shot shop-knives none 2560 1408 '{SCREEN="Shop", TAB="Knives", SCALE=2.5, OWN="SpinKnife,IceKnife", COINS=1500}'
+shot shop-passes none 2560 1408 '{SCREEN="Shop", TAB="Passes", SCALE=2.5, PASSES="VIP"}' # (vs his video at 2.5 s)
+shot shop-aura none 2560 1408 '{SCREEN="Shop", TAB="Aura", SCALE=2.5, GEMS=320}'
+shot shop-coins none 2560 1408 '{SCREEN="Shop", TAB="Coins", SCALE=2.5}' # (vs his video at 1.3 s)
+shot shop-cosmetics none 2560 1408 '{SCREEN="Shop", TAB="Cosmetics", SCALE=2.5, OWN="MidnightOutfit"}'
 shot crate-spin none 1536 864 '{SCREEN="CrateOpen", TAB="Starter", SCALE=1.2, CRATE_T=3.2}' # (the reel mid-spin)
 shot crate-prize none 1536 864 '{SCREEN="CrateOpen", TAB="Starter", SCALE=1.2, CRATEPITY=29, CRATE_T=8}' # (a Legendary: pity)
 shot settings-social 06-settings-social 1536 640 '{SCREEN="Settings", TAB="Social", SCALE=2}'

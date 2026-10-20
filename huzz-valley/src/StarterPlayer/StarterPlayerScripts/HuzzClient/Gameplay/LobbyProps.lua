@@ -30,19 +30,25 @@ function M.start()
 	local State = require(UI.State)
 	local player = Players.LocalPlayer
 
-	local function open(what: string?)
+	-- lp: the stand's LobbyProp (its Config Section says where the Shop scrolls to: the Halloween stands' crates).
+	-- "HalloweenShop" (saved on his stands before Oct 20 14:31) is the Shop now.
+	local function open(what: string?, lp: Instance?)
+		if what == "HalloweenShop" then what = "Shop" end
 		if type(what) ~= "string" or not ModalManager.has(what) then return end
 		local role = player:GetAttribute("HuzzRole")
 		if role == "Runner" or role == "Catcher" or player:GetAttribute("HuzzChoosing") == true then return end
 		if player:GetAttribute("HuzzCinematic") == true then return end -- (the Secret cutscene plays in the lobby, before roles)
-		if ModalManager.current() == what then return end
-		ModalManager.open(what)
+		local cfg = lp and Config.Props[lp:GetAttribute("Prop")]
+		local section = cfg and cfg.Section
+		if ModalManager.current() == what and not section then return end
+		ModalManager.open(what, section)
 	end
 
 	ProximityPromptService.PromptTriggered:Connect(function(prompt, who)
 		if who ~= player then return end
 		local what = prompt:GetAttribute("HuzzOpens")
-		if what then open(what) end
+		local lp = prompt.Parent and prompt.Parent.Parent -- (the pad's LobbyProp)
+		if what then open(what, lp) end
 	end)
 
 	-- [LobbyProp model] = { lp, phase, light, base, line, clicks }; homes[Root] = its place as the server put it
@@ -56,7 +62,7 @@ function M.start()
 				hooked[d] = true
 				pcall(function()
 					d.MouseClick:Connect(function(who)
-						if who == player then open(lp:GetAttribute("Opens")) end
+						if who == player then open(lp:GetAttribute("Opens"), lp) end
 					end)
 				end)
 				d.Destroying:Connect(function() hooked[d] = nil end)
