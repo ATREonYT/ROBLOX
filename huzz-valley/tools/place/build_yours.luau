@@ -263,7 +263,11 @@ do
 	if okCfg then
 		local holder, made, standIns = nil, {}, 0
 		for _, floor in { Layout.main(ws) } do
-			for _, spot in Layout.propSpots(layoutApi, ws, floor, Props.ThreePads, Props.TwoPads) do
+			local spots = Layout.propSpots(layoutApi, ws, floor, Props.ThreePads, Props.TwoPads)
+			for _, g in Build.grow(api, spots, Props) do -- (the bigger Halloween stands: his pads scaled, moved outward)
+				print(string.format("lobby props: %s %.2gx, moved %.2f studs outward", g.Prop, g.Grow, g.Shift))
+			end
+			for _, spot in spots do
 				local shape = Shapes[spot.Prop]
 				if shape and Props.Props[spot.Prop] then
 					holder = holder or roblox.Instance.new("Folder")

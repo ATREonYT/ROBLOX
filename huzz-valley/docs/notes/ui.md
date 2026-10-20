@@ -7,6 +7,13 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
 ## Building
 - Build with `Kit.new` / helpers and `Parent`; saved parts are reused by name ("twins"), and the saved look wins.
 - Windows 701 x 320, one at a time (`ModalManager`). `Kit.button` adds shade, outline and stud texture.
+- **Windows step aside for the round** (bug hunt, Oct 20): a full window closes when you become a runner or catcher,
+  or the line-up starts for you (`ModalManager.watchRound` / `roundWants`); the Menu side panel stays, except for the
+  runner picked for HERO/CHICKEN (Picking with your PickId), so the pick always shows. A player watching from the
+  lobby keeps their window. Before, an open Shop hid the whole round HUD (RoundHud is off while a full window is open)
+  and the kid missed the countdown and the pick.
+- **Escape** closes a window whether or not Roblox already handled the key (its own menu takes Escape), and so does
+  Roblox's menu opening (`GuiService.MenuOpened`). Gamepad B too.
 - **Never use CanvasGroup for animation** (it lagged). Fade with scale/position tweens instead.
 - **Rounded corners:** Lune writes `UICorner.CornerRadius` only under newer per-corner names that Studio may not read,
   so the build also stores the size in attribute `HuzzRadius` and `HuzzClient/Main` restores it at start.
@@ -20,7 +27,8 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   uploaded pictures only (ShowPictures plugin). One fix for him: STUDIO-STEPS Part 1 (top note there).
   Until then: a picture that can't be drawn gets a stand-in (`ImageLoader.standIn`: an emoji per icon from `GLYPH`,
   a TextLabel named NoPicture, removed the moment the picture shows or is uploaded; never saved into HuzzUI.rbxm),
-  and Studio Play shows one red note bottom left (`ImageLoader.studioNote`). Set icons with `Kit.setIcon` /
+  and Output gets one `[HuzzUI]` line with the fix (no box on screen: owner, Oct 19, "please remove the red pop up";
+  the old Studio note was removed in the Oct 20 bug hunt). Set icons with `Kit.setIcon` /
   `Kit.setArt` (they clear the stand-in). A new icon needs a `GLYPH` entry (`check_pictures.luau` fails without).
   The preview hides stand-ins unless STUDIO=1 (Studio's look). One real miss found: ArrowNext was never packed
   (`pack_images.py` listed it as unused), so NEXT MAP's arrow was blank everywhere.
@@ -71,6 +79,9 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   the HUD's number until it shows: `State.hold("Coins")` before the call, `State.release("Coins")` at the reveal, on
   failure and on close. Pills that show a held number read `State.shown(key)` (LobbyHud and Shop coin pills), never
   `State.data` directly. Aura isn't held: the price is paid at OPEN and showing that at once is honest.
+- **Closed while the server answers** (X, Escape, the map vote, a round starting): `CrateOpen` sees the window went
+  (a close counter) and shows the prize as a toast instead of playing the reel in a hidden window (bug hunt, Oct 20).
+- Check for these and the round-start closing: `tools/preview/check_bughunt.luau`.
 - Rarity colours on reward screens: the Spin wheel's (`Config/SpinWheel.RarityColors`, Legendary pink FF6FC0) through
   `CrateArt.color`. `Config/Round.Rarities` (Legendary orange 255,190,60) still colours the girls' screens and the
   Shop's ITEMS knife rarities (to change only when the owner says).

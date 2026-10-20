@@ -1,6 +1,11 @@
 -- Only one main window is open at a time. Opening another switches to it (no stacking, no second blur);
 -- Close / Escape / gamepad B returns to play. While a window is open the player's "MenuOpen" attribute is true,
 -- so gameplay input (dash, tag) can ignore clicks meant for the menu.
+-- Escape: Roblox's own menu takes that key, so a game script often gets it already handled (or not at all). A window
+-- closes on Escape whether or not Roblox handled it, and also when Roblox's menu opens (bug hunt, Oct 20).
+-- Pulled into a round: a full window (the Shop...) closes when you become a runner or catcher, or the line-up or the
+-- HERO/CHICKEN pick starts for you, since it hides the round's HUD (RoundHud) and would cover the pick. The picked
+-- runner's side panel (the Menu) closes too, so nothing sits over HERO and CHICKEN (bug hunt, Oct 20).
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -36,11 +41,55 @@ function ModalManager.mount(screenGui: ScreenGui)
 	blur.Parent = Lighting
 	-- No dim layer: on phones it only covered the safe area and left grey bands at the sides. The blur alone
 	-- covers the whole screen.
-	UserInputService.InputBegan:Connect(function(input, processed)
+	UserInputService.InputBegan:Connect(function(input)
 		if not current then return end
-		if input.KeyCode == Enum.KeyCode.ButtonB or (input.KeyCode == Enum.KeyCode.Escape and not processed) then
+		if input.KeyCode == Enum.KeyCode.ButtonB or input.KeyCode == Enum.KeyCode.Escape then
+			if UserInputService:GetFocusedTextBox() then return end -- (Escape leaves a text box first)
 			ModalManager.close()
 		end
+	end)
+	pcall(function() -- (guarded: the offline preview's GuiService has no MenuOpened)
+		GuiService.MenuOpened:Connect(function()
+			if current then ModalManager.close() end
+		end)
+	end)
+	task.spawn(ModalManager.watchRound) -- (its own thread: it waits for the Round remote)
+end
+
+-- Should the open window close now that the round needs the screen? role: HuzzRole; stage: the Round's Stage;
+-- picked: this player is the HERO/CHICKEN runner; side: the open window is a side panel (the Menu).
+function ModalManager.roundWants(role: string?, stage: string?, picked: boolean, side: boolean): boolean
+	if role ~= "Runner" and role ~= "Catcher" then return false end -- (the lobby, or watching from the bench)
+	if picked and stage == "Picking" then return true end -- (HERO and CHICKEN must show, side panel or not)
+	return not side
+end
+
+-- Closes a window that's in the way when the round starts for this player (see the header).
+function ModalManager.watchRound()
+	local player = Players.LocalPlayer
+	local ok, round = pcall(function()
+		return require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Net).get("Round")
+	end)
+	if not player or not ok or not round then return end
+	local function check(trigger: boolean)
+		if not current or not trigger then return end
+		local s = screens[current]
+		local stage = round:GetAttribute("Stage")
+		local picked = round:GetAttribute("PickId") == player.UserId
+		if ModalManager.roundWants(player:GetAttribute("HuzzRole"), stage, picked, s ~= nil and s.side == true) then
+			ModalManager.close()
+		end
+	end
+	player:GetAttributeChangedSignal("HuzzRole"):Connect(function()
+		local role = player:GetAttribute("HuzzRole")
+		check(role == "Runner" or role == "Catcher")
+	end)
+	round:GetAttributeChangedSignal("Stage"):Connect(function()
+		local stage = round:GetAttribute("Stage")
+		check(stage == "Lineup" or stage == "Picking")
+	end)
+	round:GetAttributeChangedSignal("PickId"):Connect(function()
+		check(round:GetAttribute("Stage") == "Picking")
 	end)
 end
 

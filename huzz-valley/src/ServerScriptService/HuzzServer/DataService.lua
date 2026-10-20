@@ -196,10 +196,23 @@ local function onPlayerAdded(player: Player)
 end
 
 function DataService.start()
+	-- The client asks once at start (UI/State); later changes arrive by themselves (the State remote). Only one ask
+	-- waits for the save at a time, and asks closer than a second apart get nothing, so a client can't pile up
+	-- waiting threads or whole-save copies (bug hunt, Oct 20).
+	local asking: { [Player]: boolean } = {}
+	local askedAt: { [Player]: number } = {}
 	(Net.get("GetState") :: RemoteFunction).OnServerInvoke = function(player)
+		local now = os.clock()
+		if asking[player] or (askedAt[player] and now - askedAt[player] < 1) then return nil end
+		askedAt[player] = now
+		asking[player] = true
 		DataService.waitFor(player, 60)
+		asking[player] = nil
 		return DataService.snapshot(player)
 	end
+	Players.PlayerRemoving:Connect(function(player)
+		asking[player], askedAt[player] = nil, nil
+	end)
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	for _, p in Players:GetPlayers() do task.spawn(onPlayerAdded, p) end
 	Players.PlayerRemoving:Connect(function(player)

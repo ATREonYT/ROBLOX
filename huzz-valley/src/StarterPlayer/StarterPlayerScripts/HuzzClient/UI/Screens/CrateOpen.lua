@@ -623,6 +623,12 @@ function CrateOpen.build(parent: Instance)
 	local function goHome()
 		if crateDef.Home and ModalManager.has(crateDef.Home) then ModalManager.open(crateDef.Home, "Crates") else ModalManager.open("Shop", "Crates") end
 	end
+	-- what you won, in one line (a toast when the window closed before the reel could show it)
+	local closes = 0 -- onClose counts up: a start that sees it change was closed while it asked the server
+	local function prizeLine(r): string
+		local item = crateDef.Items[r.index]
+		return if r.new then `You got {item.Name}!` elseif item.Kind == "Coins" then `You got {item.Name}!` else `{item.Name} again: +{r.coins} coins`
+	end
 	local function start(crateId: any)
 		if busy then return end
 		local c = type(crateId) == "string" and Crates.get(crateId) or crateDef
@@ -636,7 +642,18 @@ function CrateOpen.build(parent: Instance)
 		resetScene()
 		busy = true
 		State.hold("Coins") -- (the HUD keeps showing the old coins until the prize shows: a duplicate's coins would spoil it)
+		local closesAtAsk = closes
 		local okCall, ok, answer = pcall(function() return (Net.get("Action") :: RemoteFunction):InvokeServer("OpenCrate", crateDef.Id) end)
+		-- closed while the server answered (X, Escape, the map vote, a round starting): the prize is yours already, so
+		-- say it in a toast instead of playing the reel in a hidden window (bug hunt, Oct 20)
+		if closes ~= closesAtAsk or ModalManager.current() ~= "CrateOpen" then
+			busy = false
+			State.release("Coins")
+			if okCall and ok and type(answer) == "table" and crateDef.Items[answer.index] then
+				Toast.show(prizeLine(answer))
+			end
+			return
+		end
 		if not okCall or not ok or type(answer) ~= "table" or type(answer.strip) ~= "table" or not crateDef.Items[answer.index] or answer.strip[answer.at] ~= answer.index then
 			busy = false
 			State.release("Coins")
@@ -681,9 +698,9 @@ function CrateOpen.build(parent: Instance)
 
 	local function onClose()
 		-- closed mid-animation (Escape, the cutscene): the prize is yours already; say what it was
+		closes += 1
 		if result and running then
-			local item = crateDef.Items[result.index]
-			Toast.show(if result.new then `You got {item.Name}!` elseif item.Kind == "Coins" then `You got {item.Name}!` else `{item.Name} again: +{result.coins} coins`)
+			Toast.show(prizeLine(result))
 		end
 		stop()
 		running, busy = false, false

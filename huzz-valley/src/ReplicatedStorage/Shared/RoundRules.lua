@@ -366,6 +366,13 @@ function RoundRules.speedScale(round: number?, cfg): number
 	return 1 + math.min((round - 1) * (cfg.PerRound or 0), cfg.Max or 0)
 end
 
+-- Does an Active runner's death (a reset, a fall off the map) count as being caught? Only while they could be
+-- caught: in Running, or in the Hero's solo run for whoever isn't held on the line (the Hero, never the runners
+-- waiting). Before that (Lineup, Picking, Countdown) the new body just goes back to its line spot (bug hunt, Oct 20).
+function RoundRules.deathCounts(stage: string?, frozen: boolean): boolean
+	return stage == "Running" or (stage == "HeroRun" and not frozen)
+end
+
 -- The only runner still out on the field (nil when none or several): they get a catch-up (Config Speeds.LastRunner).
 function RoundRules.lastRunner(s)
 	if s.over then

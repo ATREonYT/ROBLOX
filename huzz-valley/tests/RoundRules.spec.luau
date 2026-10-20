@@ -628,6 +628,17 @@ test("speed goes up a tiny bit every round, capped (owner Oct 19)", function()
 	eq(Rules.speedScale(5, nil), 1, "no config: unchanged")
 end)
 
+test("a death counts as a catch only while you can run (bug hunt, Oct 20)", function()
+	eq(Rules.deathCounts("Running", false), true, "running: a reset is a catch")
+	eq(Rules.deathCounts("HeroRun", false), true, "the Hero on their solo run")
+	eq(Rules.deathCounts("HeroRun", true), false, "a runner waiting on the line during the Hero run")
+	for _, stage in { "Lineup", "Picking", "Chosen", "Countdown", "RoundOver", "GameOver" } do
+		eq(Rules.deathCounts(stage, true), false, stage .. ": back to the line, no catch")
+		eq(Rules.deathCounts(stage, false), false, stage .. " (not frozen): no catch")
+	end
+	eq(Rules.deathCounts(nil, false), false, "no stage")
+end)
+
 print(`RoundRules: {passed} passed, {failed} failed`)
 if failed > 0 then
 	error("RoundRules tests failed")

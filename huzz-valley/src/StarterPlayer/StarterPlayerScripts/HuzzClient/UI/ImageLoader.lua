@@ -5,12 +5,11 @@
 -- until he runs Upload Pictures once, so every picture is drawn here with EditableImage, which Roblox only allows when
 -- Game Settings > Security > "Allow Mesh / Image APIs" is on (and the place is published). With it off nothing can
 -- be drawn. Then each picture gets a stand-in glyph instead of staying blank (a coin for coins, a knife for knife
--- pictures..., GLYPH below; decorations like rays get none), and in Studio a small red note says the one fix
--- (docs/STUDIO-STEPS.md Part 1). The glyphs carry the NoPicture attribute: never saved into StarterGui, never drawn by
--- the offline preview, and removed as soon as the real picture shows.
+-- pictures..., GLYPH below; decorations like rays get none), and Output gets one [HuzzUI] line with the one fix
+-- (docs/STUDIO-STEPS.md Part 1); never a box on screen (owner, Oct 19: "please remove the red pop up"). The glyphs
+-- carry the NoPicture attribute: never saved into StarterGui, never drawn by the offline preview, and removed as soon
+-- as the real picture shows.
 local AssetService = game:GetService("AssetService")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
 local Images = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Images")
 
 local ImageLoader = {}
@@ -82,7 +81,6 @@ function ImageLoader.content(kind: string, name: string): any
 		warned = true
 		warn("[HuzzUI] The icons can't be drawn (" .. tostring(result) .. "). Fix: Home > Game Settings > Security > turn on"
 			.. " 'Allow Mesh / Image APIs', then Save; or upload them once (Plugins > Huzz Valley > Upload Pictures).")
-		task.defer(ImageLoader.studioNote)
 	end
 	cache[key] = ok and result or false
 	return ok and result or nil
@@ -190,37 +188,6 @@ end
 function ImageLoader.clearStandIn(label: ImageLabel)
 	local t = label:FindFirstChild("NoPicture")
 	if t then t:Destroy() end
-end
-
--- In Studio only (players never see it): one small red note saying why the pictures are missing and the fix.
-function ImageLoader.studioNote()
-	local ok, studio = pcall(function() return RunService:IsStudio() end)
-	if not (ok and studio) then return end
-	local player = Players.LocalPlayer
-	local gui = player and player:FindFirstChildOfClass("PlayerGui")
-	if not gui or gui:FindFirstChild("HuzzPictureNote") then return end
-	local screen = Instance.new("ScreenGui")
-	screen.Name = "HuzzPictureNote"
-	screen.ResetOnSpawn = false
-	screen.DisplayOrder = 100
-	local note = Instance.new("TextLabel")
-	note.Name = "Note"
-	note.AnchorPoint = Vector2.new(0, 1)
-	note.Position = UDim2.new(0, 8, 1, -28)
-	note.Size = UDim2.fromOffset(430, 54)
-	note.BackgroundColor3 = Color3.fromRGB(150, 20, 30)
-	note.BackgroundTransparency = 0.1
-	note.TextColor3 = Color3.new(1, 1, 1)
-	note.TextSize = 13
-	note.TextWrapped = true
-	note.TextXAlignment = Enum.TextXAlignment.Left
-	note.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
-	note.Text = "  Pictures can't show yet (Studio only note). Fix once: Home > Game Settings > Security > Allow Mesh / Image APIs > Save, or Plugins > Huzz Valley > Upload Pictures."
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)
-	corner.Parent = note
-	note.Parent = screen
-	screen.Parent = gui
 end
 
 return ImageLoader

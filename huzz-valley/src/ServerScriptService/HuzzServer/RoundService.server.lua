@@ -164,6 +164,20 @@ local function tagLook(id)
 	return nil
 end
 
+-- Only the name tag (role title, HERO/CHICKEN badge, rescue bar). The rescue loop calls this every frame instead of
+-- the whole syncPlayer, which walks every body part and refits the worn knife (bug hunt, Oct 20).
+local function syncTag(id)
+	local p = byId[id]
+	if not p then
+		return
+	end
+	local badge = nil
+	if match and match.picked == id and match.choice then
+		badge = string.upper(match.choice)
+	end
+	NameTags.set(p, tagLook(id), badge, rescueTime[id] and rescueTime[id] / Config.Rescue.Time)
+end
+
 local function syncPlayer(id)
 	local p = byId[id]
 	if not p then
@@ -205,11 +219,7 @@ local function syncPlayer(id)
 			KnifeService.giveBack(c, knifeSkin) -- everyone else wears theirs on their back
 		end
 	end
-	local badge = nil
-	if match and match.picked == id and match.choice then
-		badge = string.upper(match.choice)
-	end
-	NameTags.set(p, tagLook(id), badge, rescueTime[id] and rescueTime[id] / Config.Rescue.Time)
+	syncTag(id)
 end
 
 local function syncAll()
@@ -523,13 +533,13 @@ local function step(dt)
 			if helper then
 				rescueTime[downedId] = (before or 0) + dt
 				if rescueTime[downedId] >= Config.Rescue.Time then
-					apply(Rules.rescue(match, helper, downedId))
+					apply(Rules.rescue(match, helper, downedId)) -- (a full sync: handlers.Rescued)
 				else
-					syncPlayer(downedId)
+					syncTag(downedId) -- (only the bar moves: nothing else about them changed)
 				end
 			elseif before then
 				rescueTime[downedId] = if before > dt * 2 then before - dt * 2 else nil
-				syncPlayer(downedId)
+				syncTag(downedId)
 			end
 		end
 	end
@@ -1570,7 +1580,10 @@ local function onCharacter(player, character)
 		return
 	end
 	humanoid.Died:Connect(function()
-		if match and match.status[id] == "Active" then
+		-- Only a death while you can run counts as a catch (Running, or the Hero's own solo run). A reset or a fall
+		-- while waiting on the line (Lineup, Picking, Countdown, the others' Hero run) isn't one: the new body goes
+		-- back to its line spot (place, below) and still runs (bug hunt, Oct 20: it used to make them a catcher).
+		if match and match.status[id] == "Active" and Rules.deathCounts(State:GetAttribute("Stage"), frozen[id] == true) then
 			-- (health is already 0 here, so rootOf says nil: keep where they fell before tagging, so the new body
 			-- lies down there and nobody can rescue it from wherever it respawns)
 			local root = character:FindFirstChild("HumanoidRootPart")

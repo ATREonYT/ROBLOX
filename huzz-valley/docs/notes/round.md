@@ -56,6 +56,12 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   server; the lobby never changes. `State` attribute `SpeedUp` (1.06 = 6% faster) is there for the HUD.
 
 ## Catching
+- **Dying counts only while you can run** (`RoundRules.deathCounts`, bug hunt Oct 20): a reset or a fall off the map
+  is a catch in Running, or for the Hero on their solo run. Before that (Lineup, Picking, Countdown, the others
+  waiting through a Hero run) the new body just goes back to its line spot and still runs; it used to make them a
+  catcher next round. Spec `RoundRules.spec`; the sim's edge cases reset a runner on the line.
+- **The rescue bar** updates only the name tag each frame (`syncTag`); the full `syncPlayer` (body parts, worn knife,
+  speeds) runs when something else changes (the rescue itself, a catch).
 - **Click stab** (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: eases 72 to 40 over
   0.38 s, the way you steer: `Shared/KnifeLeap.direction`, forward or sideways with A/D, never back; the hit box
   points along the leap; a whole-body leap with the slash when the knife reaches someone; Up 24, hits for HitWindow

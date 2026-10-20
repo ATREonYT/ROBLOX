@@ -877,6 +877,33 @@ local function simulate(opts)
 					end
 				end
 				table.clear(stillDown)
+				-- (bug hunt, Oct 20) a runner resets while waiting on the line: not a catch, back on the line
+				if opts.chaos and not stats.resetOnLine then
+					for q in bots do
+						local h = q.Character and q.Character:FindFirstChildOfClass("Humanoid")
+						if q:GetAttribute("HuzzRole") == "Runner" and q:GetAttribute("HuzzStatus") == "Active" and h then
+							stats.resetOnLine = q
+							h.Health = 0
+							h.Died:Fire()
+							local c = new("Model", { Name = q.Name })
+							local root = new("Part", { Name = "HumanoidRootPart", CFrame = CFrame.new(0, 3, 300) })
+							root.Parent = c
+							new("Part", { Name = "Head" }).Parent = c
+							local h2 = new("Humanoid", { Health = 100, WalkSpeed = 16, RootPart = root })
+							h2.Died = Signal()
+							h2.Parent = c
+							q.Character = c
+							q.CharacterAdded:Fire(c)
+							break
+						end
+					end
+				end
+			elseif lastStage == "Lineup" and stats.resetOnLine and not stats.resetOnLineChecked then
+				stats.resetOnLineChecked = true
+				local q = stats.resetOnLine
+				if q.Parent and q:GetAttribute("HuzzStatus") ~= "Active" then
+					problem(`{q.Name} reset on the line and was counted as caught ({q:GetAttribute("HuzzStatus")})`)
+				end
 			elseif lastStage == "GameOver" and gameStart then
 				table.insert(stats.gameLengths, clock - gameStart)
 				table.insert(stats.roundsPerGame, gameRounds)
@@ -1494,6 +1521,7 @@ report("edge cases (bug hunt, Oct 19)", s, p, {
 	{ "a player left during the Secret cutscene", function(x) return x.leftInReveal == true end },
 	{ "a catcher's body was replaced mid-lunge", function(x) return x.respawnedMidLunge == true end },
 	{ "a catcher left mid-lunge", function(x) return x.leftMidLunge == true end },
+	{ "a runner reset on the line (not a catch)", function(x) return x.resetOnLineChecked == true end },
 })
 s, p = simulate({ players = 4, seconds = 600, seed = 8, config = function(c) c.TagMode = "Touch" end })
 report("Touch mode (no stabbing)", s, p, { { "touch tags", function(x) return x.tags >= 3 and x.stabs == 0 end } })

@@ -142,7 +142,7 @@ LobbyLayout.yawTo = yawTo
 --[[
 	Pure: the round stand pads. `hx, hz` = half the floor's size (its own frame), `top` = its top, `rows` = candidates
 	{ ref, x, z (floor frame), wx, wz (world), top, w, d (footprint) }. Keeps pads lying on the floor (top within 2.5)
-	inside it, 4 to 9 studs across; copies on top of each other count once. The edge most of them sit by is the front:
+	inside it, 4 to 11 studs across (the Halloween stands' pads are 1.5x his 6.5 since Oct 20: LobbyPropBuild.grow); copies on top of each other count once. The edge most of them sit by is the front:
 	each stand faces away from it, into the plaza (nx, nz in the floor frame). The side with more pads is VIP (three
 	knives), the other Dance Pack (two); Turn counts each pass's pads in order along the edge.
 ]]
@@ -150,7 +150,7 @@ function LobbyLayout.pickPads(hx: number, hz: number, top: number, rows: { any }
 	local keep = {}
 	for _, r in rows do
 		if math.abs(r.x) <= hx + 2 and math.abs(r.z) <= hz + 2 and math.abs(r.top - top) <= 2.5
-			and r.w >= 4 and r.w <= 9 and r.d >= 4 and r.d <= 9 then
+			and r.w >= 4 and r.w <= 11 and r.d >= 4 and r.d <= 11 then -- (11: his 6.5 pads, and the Halloween stands' 1.5x)
 			local dup = false
 			for _, k in keep do
 				if math.abs(k.x - r.x) < 1 and math.abs(k.z - r.z) < 1 then dup = true break end

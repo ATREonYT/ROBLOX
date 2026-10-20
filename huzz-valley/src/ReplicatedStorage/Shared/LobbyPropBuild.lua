@@ -83,6 +83,7 @@ function LobbyPropBuild.make(api, spot, config, shape, real, texture: string)
 	local Enum = api.Enum
 	local cfg = config.Props[spot.Prop]
 	local scale = cfg.Scale or 2
+	local grow = cfg.Grow or 1 -- (its pad, glow, light and title: Config/LobbyProps Grow)
 	local size = Vector3.new(shape.size[1], shape.size[2], shape.size[3]) * scale
 	local glow = cfg.Glow or hexColour(api, shape.glow)
 	local lp = make(api, "Model", { Name = "LobbyProp" })
@@ -94,16 +95,17 @@ function LobbyPropBuild.make(api, spot, config, shape, real, texture: string)
 		lp:SetAttribute("Action", cfg.Action or "Open")
 	end
 	lp:SetAttribute("Scale", scale)
+	if grow ~= 1 then lp:SetAttribute("Grow", grow) end
 	lp:SetAttribute("Color", cfg.Color)
 	lp:SetAttribute("Glow", glow)
 
 	-- the pad: light, glow pool, title, prompt
 	local pad = make(api, "Part", {
-		Name = "Pad", Size = Vector3.new(6, 0.2, 6), CFrame = spot.at * CFrame.new(0, 0.1, 0), Anchored = true,
+		Name = "Pad", Size = Vector3.new(6 * grow, 0.2, 6 * grow), CFrame = spot.at * CFrame.new(0, 0.1, 0), Anchored = true,
 		CanCollide = false, CanTouch = false, CanQuery = false, Transparency = 1, CastShadow = false,
 	}, lp)
 	local lightAt = make(api, "Attachment", { Name = "LightAt", Position = Vector3.new(0, 0.9, 0) }, pad)
-	make(api, "PointLight", { Name = "PropLight", Color = glow, Brightness = config.Light.Brightness, Range = config.Light.Range, Shadows = false }, lightAt)
+	make(api, "PointLight", { Name = "PropLight", Color = glow, Brightness = config.Light.Brightness, Range = config.Light.Range * grow, Shadows = false }, lightAt)
 	local pool = make(api, "SurfaceGui", {
 		Name = "GlowPool", Face = Enum.NormalId.Top, CanvasSize = api.Vector2.new(240, 240), LightInfluence = 0,
 		AlwaysOnTop = false, ResetOnSpawn = false,
@@ -120,11 +122,11 @@ function LobbyPropBuild.make(api, spot, config, shape, real, texture: string)
 	-- REWARD, the small line under it; its bottom TitleAbove over the prop's highest bob
 	local lines = 1
 	for _ in string.gmatch(cfg.Title, "\n") do lines += 1 end
-	local titleH = lines * config.TitleHeight * 1.15
-	local lineH = if cfg.Line then config.LineHeight * 1.2 else 0
+	local titleH = lines * config.TitleHeight * grow * 1.15
+	local lineH = if cfg.Line then config.LineHeight * grow * 1.2 else 0
 	local bbH = titleH + lineH
 	local bb = make(api, "BillboardGui", {
-		Name = "PropTitle", Size = api.UDim2.fromScale(config.TitleWidth, bbH), LightInfluence = 0, MaxDistance = config.TitleMaxDistance,
+		Name = "PropTitle", Size = api.UDim2.fromScale(config.TitleWidth * grow, bbH), LightInfluence = 0, MaxDistance = config.TitleMaxDistance,
 		StudsOffsetWorldSpace = Vector3.new(0, config.Hover + size.Y + config.Bob + config.TitleAbove + bbH / 2, 0), ResetOnSpawn = false,
 		AlwaysOnTop = false,
 	}, pad)
@@ -208,6 +210,86 @@ function LobbyPropBuild.make(api, spot, config, shape, real, texture: string)
 	end
 	prop.Parent = lp
 	return lp
+end
+
+-- How far a part reaches from its centre along the flat direction `dir` (and its half height), however it is turned.
+local function reach(part, dir)
+	local cf, s = part.CFrame, part.Size
+	local r, u, l = cf.RightVector, cf.UpVector, cf.LookVector
+	local along = math.abs(r:Dot(dir)) * s.X / 2 + math.abs(u:Dot(dir)) * s.Y / 2 + math.abs(l:Dot(dir)) * s.Z / 2
+	local up = math.abs(r.Y) * s.X / 2 + math.abs(u.Y) * s.Y / 2 + math.abs(l.Y) * s.Z / 2
+	return along, up
+end
+
+-- His pad Model's reach from the spot along `dir` (its far edge), and its lowest point.
+local function padReach(spot, dir)
+	local far, bottom = 0, math.huge
+	for _, d in spot.pad:GetDescendants() do
+		if d:IsA("BasePart") then
+			local along, up = reach(d, dir)
+			far = math.max(far, math.abs((d.CFrame.Position - spot.at.Position):Dot(dir)) + along)
+			bottom = math.min(bottom, d.CFrame.Position.Y - up)
+		end
+	end
+	return far, bottom
+end
+
+--[[
+	The stands with a Grow in Config/LobbyProps made bigger before they are built (owner, Oct 20: "in general go make
+	the halloween shop objects bigger so they stand out more"): run on LobbyLayout.propSpots' rows, before
+	LobbyPropBuild.make. Each side's spots go from the middle of the plaza outwards (their Rank); a spot whose prop has
+	Grow gets his round pad Model (spot.pad) scaled Grow times round its foot (his model as it is, never redrawn) and,
+	when the bigger pad would reach the pad before it, moved outward along the row until it is config.GrowGap clear
+	of it. A spot without Grow never moves: should one be in the way, it stays and tests/LobbyLayout.spec says so.
+	Changes the spots (at: on the bigger pad's top) and his pad Models in place; returns { Prop, Shift, Grow }.
+]]
+function LobbyPropBuild.grow(api, spots, config)
+	local Vector3, CFrame = api.Vector3, api.CFrame
+	local sides = {}
+	for _, s in spots do
+		local side = table.find(config.ThreePads, s.Prop) and "three" or "two"
+		sides[side] = sides[side] or {}
+		table.insert(sides[side], s)
+	end
+	local out = {}
+	for _, list in sides do
+		table.sort(list, function(a, b) return (a.Rank or 0) < (b.Rank or 0) end)
+		local dir = nil
+		if #list >= 2 then
+			local d = list[#list].at.Position - list[1].at.Position
+			d = Vector3.new(d.X, 0, d.Z)
+			if d.Magnitude > 0.01 then dir = d.Unit end
+		end
+		local edge = nil -- (how far along the row the pad before this one reaches)
+		for _, s in list do
+			local cfg = config.Props[s.Prop]
+			local grow = cfg and cfg.Grow or 1
+			local here = dir and s.at.Position:Dot(dir) or 0
+			local far, bottom = 0, s.at.Position.Y
+			if dir and s.pad then far, bottom = padReach(s, dir) end
+			if grow ~= 1 and s.pad then
+				local shift = 0
+				if dir and edge then shift = math.max(0, edge + config.GrowGap + far * grow - here) end
+				local foot = Vector3.new(s.at.Position.X, bottom, s.at.Position.Z)
+				local move = (dir or Vector3.new(0, 0, 0)) * shift
+				for _, d in s.pad:GetDescendants() do
+					if d:IsA("BasePart") then
+						local rel = d.CFrame.Position - foot
+						d.Size = d.Size * grow
+						d.CFrame = CFrame.new(foot + move + rel * grow) * (d.CFrame - d.CFrame.Position)
+					end
+				end
+				local top = bottom + (s.at.Position.Y - bottom) * grow
+				s.at = CFrame.new(s.at.Position.X + move.X, top, s.at.Position.Z + move.Z) * (s.at - s.at.Position)
+				s.Grow = grow
+				here += shift
+				far *= grow
+				table.insert(out, { Prop = s.Prop, Shift = shift, Grow = grow })
+			end
+			edge = here + far
+		end
+	end
+	return out
 end
 
 return LobbyPropBuild

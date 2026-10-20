@@ -129,6 +129,22 @@ inspection with Lune: core `CLAUDE.md` section 4.
   Halloween shop (owner, Oct 19 17:41: "make a halloween shop when you press on one of the two crates";
   [economy.md](economy.md)). A stand saved in his place before that gets its prompt and click from
   `LobbyPropService` (backfill, checked in `tools/preview/check_halloween.luau`). A ProximityPrompt and a click open the menu (never in a round, never during `HuzzCinematic`).
+- **The two Halloween stands are 1.5x** (owner, Oct 20: "in general go make the halloween shop objects bigger so they
+  stand out more"): WITCH'S BREW Scale 3.75 (was 2.5), SWEETS & TREATS 3.45 (was 2.3), and `Grow = 1.5` on both
+  scales his pad under each (his model as it is, never redrawn: 6.5 -> 9.75 across), the glow pool, light range and
+  title. `LobbyPropBuild.grow` runs on the spots before they are built (place build and `LobbyPropService`) and
+  moves each bigger pad outward along the row, away from the middle, just far enough to stay `GrowGap` 0.75 studs
+  clear of the pad before it: SWEETS & TREATS 1.88 studs, WITCH'S BREW 5.38 (towards the big tree: its pad ends about 4 studs short of
+  the trunk). FREE SPIN, SHOP, LIKE THE GAME! and the spawn pad don't move. 1.5, not the 1.6 first asked: at 1.6
+  WITCH'S BREW's title top (27.5) would rise into the tree's lowest branch (bottom 27.0), which hangs just in front
+  of it. Checked in `tests/LobbyLayout.spec` ("bigger:": pads apart, each turning circle on its pad and clear of its
+  neighbours, the tree, the spawn pad, the stands and the plaza's edge, the titles clear of the branches and of each
+  other; the title width is an estimate, 0.62 of the letter height a letter) and `check_new_lobby.luau`. Before /
+  after from about the angle of his `design/owner-oct19/1840-halloween-crates.png`:
+  `docs/previews/halloween-stands-bigger.jpg` (`tools/preview/motion3d/halloween_stands_scene.luau`, plain boxes,
+  no studs). A place saved with the props before this keeps them as they were (saved props are his). `LobbyLayout`
+  takes pads up to 11 studs across (was 9), so the stands, boards and spawn pad still find all five pads, on the
+  same sides, once the bigger ones are saved (spec: "his five pads still found", "the stands where they were").
 - Each bobs 0.35 studs over 3.4 s and turns once in 18 s (client, within 200 studs), has a soft PointLight under it
   (0.5 / 7) that breathes over 4 s, a glow pool on the pad, 5 sparkles a second and a bold FredokaOne title (dark
   outline, white lift) in its colour. FREE SPIN's line looks its part up again until found (streaming).
@@ -143,7 +159,8 @@ inspection with Lune: core `CLAUDE.md` section 4.
   `assets/props/` (not there yet) and `build_yours.luau` puts it in every build. Spec `tests/SetupLobbyProps.spec`
   (Studio-style turn, size and names). To move one: drag its `LobbyProp` in `Workspace > HuzzLobbyProps`; `Scale`
   sets its size.
-- Open: stand-ins until he sends `HuzzLobbyProps.rbxm`; the titles on the three-pad side sit close (pads 7 apart);
+- Open: stand-ins until he sends `HuzzLobbyProps.rbxm`; FREE SPIN's and SWEETS & TREATS' titles sit close (at
+  different heights since the Oct 20 grow; WITCH'S BREW's pad now ends about 4 studs from the tree trunk);
   LIKE THE GAME! opens nothing (Roblox can't tell a game who liked it).
 
 ## Honest gaps
@@ -152,7 +169,7 @@ inspection with Lune: core `CLAUDE.md` section 4.
   scrolling, the calm turn, the pumpkin, candle and glow, the Oct 19 slate colour, the turn stopping before his
   slope); the avatar stands (your copy, its run, the knife in its hand); the new lobby (the boards on the terrace
   ledges turning without touching the slope behind, the stand row, the move back after a game); the lobby props
-  (his meshes after the import, the bob, turn, glow and titles).
+  (his meshes after the import, the bob, turn, glow and titles; the 1.5x Halloween stands and their moved pads).
 - His place: the BasketBall and Halloween copies in `StartingPoint` are pasted twice (they are the two put away, so
   this no longer costs anything in a game); his old islands still float off to the side in `Maps > Spawn` (unused);
   29 thin loose planks near the Halloween map float 5 studs over the ground (left as he built them). The podium

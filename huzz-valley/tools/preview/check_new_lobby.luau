@@ -140,6 +140,7 @@ check("the VIP three (furthest from the front) show Hunter, Moonlit and Sunrise 
 end)())
 
 -- his props: one on each pad, his model's parts (the stand-in until he imports his meshes) floating over it
+local Config = require(game.ReplicatedStorage.Shared.Config.LobbyProps)
 local propFolder = workspace:FindFirstChild("HuzzLobbyProps")
 local props = propFolder and propFolder:GetChildren() or {}
 check("five props (" .. #props .. ")", #props == 5)
@@ -154,8 +155,20 @@ for _, lp in props do
 	check(tostring(key) .. " has its pad, prop and Root", pad ~= nil and root ~= nil and root.Name == "Root" and root.Anchored)
 	if pad and root then
 		local p = pad.CFrame.Position
-		for i, x in { -90, -97, -104, -159, -168 } do
-			if math.abs(p.X - x) < 0.6 and math.abs(p.Z - -6) < 0.6 then padsUsed[i] = true end
+		-- on his pad (where it is now: the two Halloween stands' pads are scaled up and moved outward, Oct 20)
+		for i, m in pads do
+			local c, n = Vector3.new(0, 0, 0), 0
+			for _, d in m:GetChildren() do
+				if d:IsA("BasePart") then c += d.CFrame.Position; n += 1 end
+			end
+			c /= math.max(n, 1)
+			if math.abs(p.X - c.X) < 0.6 and math.abs(p.Z - c.Z) < 0.6 then
+				padsUsed[i] = true
+				local grow = Config.Props[key].Grow or 1
+				local part = m:FindFirstChildWhichIsA("BasePart")
+				check(key .. ": his pad " .. (grow == 1 and "as he made it" or ("scaled " .. grow .. "x")), math.abs(part.Size.Z - 6 * grow) < 0.01)
+				check(key .. ": its glow pool fits its pad", math.abs(pad.Size.X - 6 * grow) < 0.01)
+			end
 		end
 		local parts, neon, lowest, welded = 0, 0, math.huge, 0
 		for _, d in prop:GetDescendants() do
@@ -187,6 +200,15 @@ end
 local usedCount = 0
 for _ in padsUsed do usedCount += 1 end
 check("one prop on each of the five pads", usedCount == 5)
+-- the bigger Halloween stands (owner, Oct 20: "make the halloween shop objects bigger so they stand out more"): moved
+-- outward along the row (+X here), FREE SPIN and the two-pad side where they were
+local function padX(key) return byName[key] and byName[key].Pad.CFrame.Position.X or 0 end
+check("FREE SPIN where it was", math.abs(padX("Pumpkin_Patch_Chest") - -104) < 0.6)
+check("SHOP and LIKE where they were", math.abs(padX("Shop_Stall") - -159) < 0.6 and math.abs(padX("Like_Reward_Gift") - -168) < 0.6)
+check("SWEETS & TREATS moved outward, clear of FREE SPIN (" .. padX("Sweets_Treats_Coffin") .. ")", padX("Sweets_Treats_Coffin") >= -104 + 3 + 0.75 + 4.5 - 0.01)
+check("WITCH'S BREW moved outward, clear of SWEETS & TREATS (" .. padX("Witch_Brew_Cauldron") .. ")", padX("Witch_Brew_Cauldron") >= padX("Sweets_Treats_Coffin") + 9 + 0.75 - 0.01)
+check("the Halloween stands bigger", byName.Witch_Brew_Cauldron and byName.Witch_Brew_Cauldron:GetAttribute("Grow") == 1.5
+	and byName.Sweets_Treats_Coffin:GetAttribute("Grow") == 1.5 and byName.Pumpkin_Patch_Chest:GetAttribute("Grow") == nil)
 check("the shop opens the Shop", byName.Shop_Stall and byName.Shop_Stall:GetAttribute("Opens") == "Shop")
 check("the chest opens Spin the Wheel", byName.Pumpkin_Patch_Chest and byName.Pumpkin_Patch_Chest:GetAttribute("Opens") == "SpinWheel")
 check("the gift doesn't pretend to check likes", byName.Like_Reward_Gift and byName.Like_Reward_Gift:GetAttribute("Opens") == nil)

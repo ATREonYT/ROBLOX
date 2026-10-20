@@ -3,7 +3,9 @@
 Read before touching prices, the shop tabs, Aura stars, Spin the Wheel, quests, cosmetic slots, rewards, crates or
 the admin panel. Round pay and XP: [round.md](round.md). Knife skins and Game Pass knives: [knives.md](knives.md).
 Purchases follow the root `CLAUDE.md` rules (one ProcessReceipt in `ShopService`, never invent IDs, "coming soon"
-while `Id = 0`).
+while `Id = 0`). `OnSale` only stops prompts: a paid receipt is always granted, once per PurchaseId, "granted" only
+after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack's receipt). The client's one-time
+`GetState` ask is limited (one waiting at a time, a second apart) so it can't be spammed.
 
 ## Coins and the shop
 - **Coins** buy looks in the Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins). Items with
@@ -169,7 +171,9 @@ while `Id = 0`).
   `HuzzShopNotice` = "<n>|<line>", the Halloween screen shows it as a toast; no new remote).
 - **A paid receipt is always granted,** even if the item was taken off sale while the purchase was on its way:
   `OnSale` only stops new prompts (`canPrompt`); `HalloweenShop.grant` ignores it (second critic, Oct 19: it used to
-  answer "not processed yet" until Roblox gave up). The rest of the shop's products still check `OnSale` on receipts.
+  answer "not processed yet" until Roblox gave up). Since the Oct 20 bug hunt the rest of the products (coins,
+  Robux cosmetics, spins) are granted the same way: `ShopService.grant` never checks `OnSale` (an unknown product is
+  still never answered "granted"). A product that gives nothing yet has no prompt anywhere, so no receipt for it.
 - Checks: `tests/HalloweenShop.spec` (prices, Id 0, no prompt for an owned knife or without an ID, the receipt rules
   and the refund keys and their line, an off-sale receipt still granted), `tools/preview/check_halloween.luau` (stands open it, the backfill, odds add to 100, pity,
   both prices, not enough Aura, already owned, double tap, a knife not sold here, Id 0 never prompts, an ID prompts,

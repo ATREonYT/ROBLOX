@@ -212,5 +212,198 @@ for _, floor in floors do
 	check(name .. ": five boards: 3 on his podiums, 2 on the terrace steps", #boards == 5 and onPodium == 3 and onStep == 2)
 end
 
+-- The bigger Halloween stands (owner, Oct 20: "in general go make the halloween shop objects bigger so they stand out
+-- more"): LobbyPropBuild.grow on his main lobby, then each stand built the way the game builds it (the stand-in), and
+-- the same open-space rules as the stands above: his pads apart, each prop's turning circle on its pad and clear of
+-- its neighbours, of the things on the plaza (the tree), the spawn pad, the stands and the plaza's edge, and each
+-- title clear of everything over it (the tree's leaves) and of its neighbours' titles.
+do
+	local luau = require("@lune/luau")
+	local Build = require("../src/ReplicatedStorage/Shared/LobbyPropBuild")
+	local Shapes = require("../src/ServerScriptService/HuzzServer/LobbyPropShapes")
+	local env = setmetatable({ Color3 = roblox.Color3 }, { __index = _G })
+	local Props = luau.load(fs.readFile("src/ReplicatedStorage/Shared/Config/LobbyProps.lua"), { debugName = "LobbyProps", environment = env })()
+	local floor = Layout.main(ws)
+	local f = Layout.facts(floor)
+	local top = f.top
+	local stands = Layout.standSpots(api, ws, floor)
+	local spawn = Layout.spawnPad(api, ws, floor)
+	local spots = Layout.propSpots(api, ws, floor, Props.ThreePads, Props.TwoPads)
+	local before = {}
+	for _, s in spots do
+		before[s.Prop] = { at = s.at, size = (s.pad:FindFirstChildWhichIsA("BasePart", true) :: BasePart).Size }
+	end
+	local padsBefore = Layout.pads(api, ws, floor)
+	local standsBefore = stands
+	local moves = Build.grow(Build.api(roblox), spots, Props)
+	-- after the grow (as in the download, where the bigger pads are saved), everything that finds his pads at game
+	-- start still finds all five, on the same sides, so the stands, boards and spawn pad stay where they were
+	local padsAfter = Layout.pads(api, ws, floor)
+	local sameSides = #padsAfter == #padsBefore
+	for i, p in padsAfter do
+		if not padsBefore[i] or padsBefore[i].ref ~= p.ref or padsBefore[i].Pass ~= p.Pass then sameSides = false end
+	end
+	check("bigger: his five pads still found, on the same sides", #padsAfter == 5 and sameSides)
+	local standsAfter = Layout.standSpots(api, ws, floor)
+	local sameStands = #standsAfter == #standsBefore
+	for i, st in standsAfter do
+		if not standsBefore[i] or (st.at.Position - standsBefore[i].at.Position).Magnitude > 0.01 then sameStands = false end
+	end
+	check("bigger: the stands where they were", sameStands)
+	check("bigger: the spawn pad where it was", (Layout.spawnPad(api, ws, floor).centre - spawn.centre).Magnitude < 0.01)
+	local function flat(v) return roblox.Vector3.new(v.X, 0, v.Z) end
+	-- how far his pad Model reaches from `from` along the flat direction `dir`
+	local function padReach(model, from, dir)
+		local far = 0
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				local cf, sz = d.CFrame, d.Size
+				local along = math.abs(cf.RightVector:Dot(dir)) * sz.X / 2 + math.abs(cf.UpVector:Dot(dir)) * sz.Y / 2
+					+ math.abs(cf.LookVector:Dot(dir)) * sz.Z / 2
+				far = math.max(far, (d.CFrame.Position - from):Dot(dir) + along)
+			end
+		end
+		return far
+	end
+	local byName, info = {}, {}
+	for _, s in spots do
+		byName[s.Prop] = s
+		local cfg = Props.Props[s.Prop]
+		local shape = Shapes[s.Prop]
+		local w, d = shape.size[1] * cfg.Scale, shape.size[3] * cfg.Scale
+		local lp = Build.make(Build.api(roblox), s, Props, shape, nil, "")
+		local pad = lp:FindFirstChild("Pad")
+		local bb = pad:FindFirstChild("PropTitle")
+		local mid = pad.CFrame.Position.Y + bb.StudsOffsetWorldSpace.Y
+		local bbH = bb.Size.Y.Scale
+		-- the title's letters: TextScaled fills each line's height; FredokaOne's capitals are about 0.62 of that wide
+		local title = bb:FindFirstChild("Title")
+		local lineH = title.Size.Y.Scale * bbH / #string.split(title.Text, "\n")
+		local longest = 0
+		for _, l in string.split(title.Text, "\n") do longest = math.max(longest, #l) end
+		local halfText = math.min(bb.Size.X.Scale, longest * lineH * 0.62) / 2
+		local padR = 0
+		for _, a in { 0, 90, 180, 270 } do -- (along and across the row: his pads are round, their boxes are not)
+			local dir = roblox.Vector3.new(math.cos(math.rad(a)), 0, math.sin(math.rad(a)))
+			padR = math.max(padR, padReach(s.pad, s.at.Position, dir))
+		end
+		info[s.Prop] = {
+			c = flat(s.at.Position), swept = math.sqrt(w * w + d * d) / 2, padR = padR,
+			tLo = mid - bbH / 2, tHi = mid + bbH / 2, halfText = halfText, lp = lp,
+		}
+		if show then
+			print(string.format("  grown %s at (%.1f, %.1f, %.1f) pad r %.2f swept r %.2f title %.2f-%.2f half %.2f", s.Prop,
+				s.at.Position.X, s.at.Position.Y, s.at.Position.Z, padR, info[s.Prop].swept, info[s.Prop].tLo, info[s.Prop].tHi, halfText))
+		end
+	end
+	local grown = {}
+	for _, m in moves do
+		grown[m.Prop] = m
+		if show then print(string.format("  %s %.2gx, moved %.2f studs outward", m.Prop, m.Grow, m.Shift)) end
+	end
+	check("bigger: WITCH'S BREW and SWEETS & TREATS grown, nothing else", grown.Witch_Brew_Cauldron ~= nil
+		and grown.Sweets_Treats_Coffin ~= nil and #moves == 2)
+	for key, m in grown do
+		local s = byName[key]
+		local part = s.pad:FindFirstChildWhichIsA("BasePart", true) :: BasePart
+		check("bigger: " .. key .. "'s pad is his, scaled " .. m.Grow .. "x", (part.Size - before[key].size * m.Grow).Magnitude < 0.01)
+		check("bigger: " .. key .. "'s prop scaled " .. m.Grow .. "x on its pad", math.abs(info[key].lp:GetAttribute("Scale") / (key == "Witch_Brew_Cauldron" and 2.5 or 2.3) - m.Grow) < 0.01)
+		local moved = s.at.Position - before[key].at.Position
+		check("bigger: " .. key .. " moved only along its row", math.abs(flat(moved):Dot(before[key].at.LookVector)) < 0.01)
+		local padTop = -math.huge
+		for _, d in s.pad:GetDescendants() do
+			if d:IsA("BasePart") then padTop = math.max(padTop, d.CFrame.Position.Y + d.Size.X / 2) end
+		end
+		check("bigger: " .. key .. " stands on its bigger pad's top", math.abs(s.at.Position.Y - padTop) < 0.15)
+	end
+	for key, s in byName do
+		if not grown[key] then
+			check("bigger: " .. key .. " (his other prop) not moved", (s.at.Position - before[key].at.Position).Magnitude < 0.001)
+		end
+	end
+	-- the things on the plaza, as the stand checks above see them (his pads aside)
+	local things = {}
+	for _, d in ws:GetDescendants() do
+		if d:IsA("BasePart") and not d:IsA("Terrain") and d ~= floor then
+			local q = d.CFrame.Position
+			local r = Layout.facts(d)
+			local inPad = false
+			for _, s in spots do
+				if d:IsDescendantOf(s.pad) then inPad = true end
+			end
+			if not inPad and math.abs(q.X - floor.CFrame.Position.X) < f.hx + 5 and math.abs(q.Z - floor.CFrame.Position.Z) < f.hz + 5 then
+				if r.top > top + 1 and r.bottom < top + 6 and r.hx < 30 and r.hz < 30 then table.insert(things, { r = r, part = d }) end
+			end
+		end
+	end
+	local spawnPart
+	for _, d in ws:GetDescendants() do
+		if d:IsA("SpawnLocation") and (flat(d.CFrame.Position) - flat(spawn.centre)).Magnitude < 20 then spawnPart = d end
+	end
+	local names = {}
+	for key in byName do table.insert(names, key) end
+	table.sort(names)
+	for i, a in names do
+		local A = info[a]
+		for j = i + 1, #names do
+			local b = names[j]
+			local B = info[b]
+			local dist = (A.c - B.c).Magnitude
+			local dir = (B.c - A.c).Unit
+			local gap = dist - padReach(byName[a].pad, byName[a].at.Position, dir) - padReach(byName[b].pad, byName[b].at.Position, -dir)
+			check("bigger: pads " .. a .. " and " .. b .. " apart", gap >= 0.5)
+			check("bigger: props " .. a .. " and " .. b .. " turn clear of each other", dist >= A.swept + B.swept + 1)
+		end
+	end
+	for key in grown do
+		local A = info[key]
+		local r = math.max(A.padR, A.swept)
+		check("bigger: " .. key .. " turns on its pad", A.swept <= A.padR + 0.25)
+		local clear = true
+		for _, t in things do
+			if math.abs(t.r.X - A.c.X) < t.r.hx + r + 1 and math.abs(t.r.Z - A.c.Z) < t.r.hz + r + 1 then
+				clear = false
+				print("  in the way of " .. key .. ": " .. t.part:GetFullName())
+			end
+		end
+		check("bigger: nothing on the plaza in the way of " .. key .. " (the tree)", clear)
+		local sp = spawnPart and math.max(spawnPart.Size.X, spawnPart.Size.Z) / 2 or 3
+		check("bigger: " .. key .. " clear of the spawn pad", (A.c - flat(spawn.centre)).Magnitude > r + sp + 4)
+		for _, st in stands do
+			check("bigger: " .. key .. " clear of the stands", (flat(st.at.Position) - A.c).Magnitude > r + 4)
+		end
+		local l = floor.CFrame:PointToObjectSpace(roblox.Vector3.new(A.c.X, top, A.c.Z))
+		check("bigger: " .. key .. " on the plaza", math.abs(l.X) + r <= f.hx and math.abs(l.Z) + r <= f.hz)
+		-- its title: nothing over the plaza (the tree's branches and leaves) where its letters are, nor 3 studs either side
+		local row = (byName.Witch_Brew_Cauldron.at.Position - byName.Pumpkin_Patch_Chest.at.Position)
+		row = flat(row).Unit
+		local acrossRow = roblox.Vector3.new(-row.Z, 0, row.X)
+		local free = true
+		for _, d in ws:GetDescendants() do
+			if d:IsA("BasePart") and not d:IsA("Terrain") and d ~= floor and d.Transparency < 1 then
+				local q = d.CFrame.Position
+				if (flat(q) - A.c).Magnitude < 40 then
+					local r2 = Layout.facts(d)
+					local rel = flat(q) - A.c
+					local hA = math.abs(row.X) * r2.hx + math.abs(row.Z) * r2.hz
+					local hC = math.abs(acrossRow.X) * r2.hx + math.abs(acrossRow.Z) * r2.hz
+					if r2.bottom < A.tHi and r2.top > A.tLo and math.abs(rel:Dot(row)) < hA + A.halfText + 0.3
+						and math.abs(rel:Dot(acrossRow)) < hC + 3 then -- (3: a branch just in front of the letters covers them too)
+						free = false
+						print("  over " .. key .. "'s title: " .. d:GetFullName())
+					end
+				end
+			end
+		end
+		check("bigger: " .. key .. "'s title clear of the tree's leaves", free)
+		for other, B in info do
+			if other ~= key and B.tLo < A.tHi and B.tHi > A.tLo then
+				local d = math.abs((B.c - A.c):Dot(row))
+				check("bigger: titles " .. key .. " and " .. other .. " side by side, not over each other", d >= A.halfText + B.halfText + 0.3)
+			end
+		end
+	end
+end
+
 print(string.format("LobbyLayout: %d ok, %d failed", passed, failed))
 if failed > 0 then process.exit(1) end

@@ -59,10 +59,12 @@ function ShopService.ownsPass(player: Player, key: string): boolean
 	return passes ~= nil and passes[key] == true
 end
 
--- What a developer product gives. Returns false if the product is unknown or not on sale (never grant those), and
--- for the Halloween shop a line to tell the player when a paid knife became keys.
--- The Halloween shop's items are granted even when taken off sale since: OnSale only stops new prompts
--- (HalloweenShop.canPrompt), and a purchase already paid for must always give something.
+-- What a developer product gives. Returns false only for a kind we can't grant (never answered "granted"), and for
+-- the Halloween shop a line to tell the player when a paid knife became keys.
+-- Every product is granted even when taken off sale since: OnSale only stops new prompts (Products.status, the
+-- shop screens, HalloweenShop.canPrompt), and a purchase already paid for must always give something (bug hunt,
+-- Oct 20: a coin pack or spins switched off after a kid paid used to wait unanswered forever). A product that gives
+-- nothing yet never has a prompt, so it can't arrive here.
 local function grant(data, product): (boolean, string?)
 	if product.Kind == "CrateKey" or product.Kind == "Knife" then
 		-- the Halloween shop (Config/HalloweenShop.grant): a crate key; or the knife, worn; or, for a knife already
@@ -70,11 +72,12 @@ local function grant(data, product): (boolean, string?)
 		local ok, _, note = HalloweenShop.grant(data, product)
 		return ok, note
 	end
-	if not product.OnSale then return false end
 	if product.Kind == "Coins" then
 		data.Coins += product.Amount or 0
 		return true
 	elseif product.Kind == "Cosmetic" then
+		data.Cosmetics = data.Cosmetics or {}
+		data.Wear = data.Wear or {}
 		data.Cosmetics[product.Key] = true
 		if product.Slot then data.Wear[product.Slot] = product.Key end -- (a new buy is worn straight away)
 		return true
@@ -139,6 +142,8 @@ local function processReceipt(info)
 	end
 	return if saved() then Enum.ProductPurchaseDecision.PurchaseGranted else Enum.ProductPurchaseDecision.NotProcessedYet
 end
+
+ShopService._processReceipt = processReceipt -- (for the offline check, tools/preview/check_bughunt.luau)
 
 function ShopService.start()
 	MarketplaceService.ProcessReceipt = processReceipt

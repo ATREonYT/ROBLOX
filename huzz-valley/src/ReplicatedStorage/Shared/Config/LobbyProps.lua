@@ -40,6 +40,12 @@ return {
 	TitleMaxDistance = 160,
 	Light = { Brightness = 0.5, Range = 7 }, -- a faint light in its colour, kept on the prop and its pad (Oct 19 "even" lighting: 1.4 / 12 lit a pool on the floor)
 	Sparkles = { Rate = 5, Lifetime = 1.6, Size = 0.32 }, -- calm: a few at a time, rising slowly
+	-- A prop with Grow (the two Halloween stands, Oct 20 "bigger so they stand out more"): his pad under it is scaled
+	-- Grow times (his model as it is, never redrawn), and so are its glow, light and title; its Scale is set bigger by
+	-- hand. The bigger pad moves outward along its row (away from the middle of the plaza) just far enough to stay
+	-- GrowGap studs clear of the pad before it (Shared/LobbyPropBuild.grow); nothing else moves. 1.5, not 1.6: at 1.6
+	-- WITCH'S BREW's title would rise into the big tree's lowest branch, just in front of it (tests/LobbyLayout.spec).
+	GrowGap = 0.75,
 	Props = {
 		Shop_Stall = {
 			Title = "SHOP", Color = Color3.fromRGB(86, 226, 255), -- the reference's cyan
@@ -62,13 +68,15 @@ return {
 		Witch_Brew_Cauldron = {
 			Title = "WITCH'S\nBREW", Color = Color3.fromRGB(196, 120, 255), -- potion purple (two lines: one would run into its neighbours' titles)
 			Opens = "HalloweenShop", Action = "Halloween Shop",
-			Scale = 2.5,
+			Scale = 3.75, -- 1.5 x the 2.5 it had (owner, Oct 20: "make the halloween shop objects bigger so they stand out more")
+			Grow = 1.5, -- its pad (his, scaled), glow, light and title 1.5 x too (see GrowGap above)
 			Glow = Color3.fromRGB(200, 106, 255), -- his potion
 		},
 		Sweets_Treats_Coffin = {
 			Title = "SWEETS &\nTREATS", Color = Color3.fromRGB(255, 128, 196), -- candy pink
 			Opens = "HalloweenShop", Action = "Halloween Shop",
-			Scale = 2.3,
+			Scale = 3.45, -- 1.5 x the 2.3 it had (Oct 20, as WITCH'S BREW)
+			Grow = 1.5,
 			Glow = Color3.fromRGB(255, 160, 220), -- his sugar glow
 		},
 	},

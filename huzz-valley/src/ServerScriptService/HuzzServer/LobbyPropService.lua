@@ -6,7 +6,8 @@
 	every screen) makes them float and turn and opens their menus.
 
 	1. Props the place already has (Workspace > HuzzLobbyProps, saved by the place build, so he can drag them or type
-	   another Title or Scale) are kept. If the place has none (his own place synced by Rojo), they are made here.
+	   another Title or Scale) are kept. If the place has none (his own place synced by Rojo), they are made here,
+	   the ones with a Grow (the two Halloween stands) on his pads scaled up first (LobbyPropBuild.grow).
 	2. His real models: once he has run the SetupLobbyProps helper (ServerStorage > HuzzLobbyProps > <name>), any
 	   stand-in (plain parts, attribute StandIn) on a pad is swapped for his model at the same place and size.
 	The menus open on the client (no remote: the prompt and the click are seen on the screen that used them).
@@ -101,7 +102,10 @@ function LobbyPropService.start()
 		how = "made on the pads"
 		local made = 0
 		for _, floor in { LobbyLayout.main(Workspace) } do -- (the one lobby: MapService puts the other copies away)
-			for _, spot in LobbyLayout.propSpots(api, Workspace, floor, Config.ThreePads, Config.TwoPads) do
+			local spots = LobbyLayout.propSpots(api, Workspace, floor, Config.ThreePads, Config.TwoPads)
+			local okG, errG = pcall(LobbyPropBuild.grow, api, spots, Config) -- (the bigger Halloween stands and their pads)
+			if not okG then warn("[Huzz] lobby props bigger: " .. tostring(errG)) end
+			for _, spot in spots do
 				local shape = Shapes[spot.Prop]
 				if shape and Config.Props[spot.Prop] then
 					if not folder then
