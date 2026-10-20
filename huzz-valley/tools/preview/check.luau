@@ -37,7 +37,12 @@ if reusing then
 	-- (picture stand-ins are made at runtime where a picture can't be drawn, ImageLoader.standIn, and never saved)
 	local live = 0
 	for _, d in g:GetDescendants() do
-		local standIn = d:GetAttribute("NoPicture") ~= nil or (d.Parent and d.Parent:GetAttribute("NoPicture") ~= nil)
+		local standIn = false -- (a stand-in and everything in it: a glyph, or a knife's 3D view)
+		local node = d
+		while node and node ~= g do
+			if node:GetAttribute("NoPicture") ~= nil then standIn = true break end
+			node = node.Parent
+		end
 		if not standIn then live += 1 end
 	end
 	check("the StarterGui UI is reused, not doubled", live == #savedUI:GetDescendants() + 2 + (if g:FindFirstChild("HuzzBuildStamp") then 1 else 0)) -- + the error box and its padding (+ the Studio build stamp)

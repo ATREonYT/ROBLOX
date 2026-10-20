@@ -32,6 +32,23 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   `Kit.setArt` (they clear the stand-in). A new icon needs a `GLYPH` entry (`check_pictures.luau` fails without).
   The preview hides stand-ins unless STUDIO=1 (Studio's look). One real miss found: ArrowNext was never packed
   (`pack_images.py` listed it as unused), so NEXT MAP's arrow was blank everywhere.
+- **Picture memory** (Oct 20 14:07, owner: "please fix all of the placeholders for knifes, coins": in Play Ember Edge,
+  500 Coins and the Halloween knives drew, most ITEMS knife cards showed the kitchen-knife emoji and 2,000 / 5,000
+  Coins an empty box). Cause: Roblox gives each screen a fixed EditableImage memory budget (shared with KnifeDress's
+  EditableMeshes); past it `CreateEditableImage` gives nil. The old loader drew every picture as soon as a screen was
+  built (seen or not, nothing ever freed), then hit `nil:WritePixelsBuffer`, kept that picture as "can't draw"
+  forever, and its one `[HuzzUI]` line blamed the Security setting. The pictures that failed are packed under their
+  exact names, the same size and format as ones that drew (`check_pictures`), so the budget was the only per-picture
+  failure left. Now `ImageLoader` (header) draws a picture only while a label of it is on screen (its gui on, every
+  frame up to it Visible, inside a scrolling list's view or half a list's height of it), one a frame; counts the
+  labels of each picture (all gone: freed; none on screen for 30 s: freed); frees the longest-unseen picture to make
+  room when the budget is full; retries a failure after 5 s, doubling to a minute. A knife card that still can't be
+  drawn shows its own 3D model in a ViewportFrame (remote `KnifeView`: `HuzzServer/KnifeGlbService` puts a plain copy
+  from `KnifeService.view` in that player's `PlayerGui > HuzzKnifeViews`). The empty box was the coin emoji (U+1FA99,
+  too new for Roblox's font): coins now use a money bag, the Bear Trap a bear (its mouse-trap emoji was too new as
+  well). `[HuzzUI]` now says which it was: the setting, or the memory. Test: `tools/preview/smoke_picture_memory.luau`
+  (a fake budget of 100: every ITEMS knife card and coin pack draws after other screens filled it; a failure retries;
+  a picture nobody shows is freed). Studio only: the real budget's size and how many cards fit at once.
 
 ## Text must fit its box
 - Never leave a name or chip on AutomaticSize in a row with no width cap. `Kit.textWidth` (TextService, else a

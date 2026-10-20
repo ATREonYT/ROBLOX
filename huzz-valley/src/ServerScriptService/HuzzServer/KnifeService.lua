@@ -533,6 +533,26 @@ function KnifeService.display(skin)
 	return model
 end
 
+-- A plain copy of a skin's knife for a picture (UI/ImageLoader's last fallback for a knife card it can't draw, via
+-- HuzzServer/KnifeGlbService): his model (or its stand-in) at its real size, no effects, nothing anchored or colliding.
+function KnifeService.view(skin)
+	local model = template(skin)
+	local handle = model:FindFirstChild("Handle", true)
+	if not handle then
+		model:Destroy()
+		return nil
+	end
+	loose(model)
+	for _, d in model:GetDescendants() do
+		if d:IsA("Trail") or d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Script") or d:IsA("LocalScript") then d:Destroy() end
+	end
+	plain(model)
+	pcall(function() model:RemoveTag("GlbKnife") end)
+	model.PrimaryPart = handle
+	model.Name = skin.Key
+	return model
+end
+
 function KnifeService.take(character)
 	local knife = character and character:FindFirstChild(NAME)
 	if knife then

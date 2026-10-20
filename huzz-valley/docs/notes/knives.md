@@ -15,6 +15,12 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `tools/knives/knives.json` + the setup script (53 rows with the pass and Halloween knives).
 - Card pictures from the real meshes: `knife_meshes.py` → `render_cards.mjs` → `compose_cards.py` →
   `assets/art/knife-*.png` (packed 192 px; they show in Play only, EditableImage); `docs/previews/knife-cards.jpg`.
+  Calm since Oct 20 14:07 (owner: "for all of the knifes, can you make the background look a bit less ai. the glow
+  just gives it away like crazy"): a plain dark slate panel, a faint tint of the rarity colour, a soft shadow under
+  the knife; no glow halo, bloom, sparkles or swoosh lines (all 53, his 30, 5 pass and 18 Halloween knives; old vs
+  new and the ITEMS tab: `docs/previews/knife-cards-calm.jpg`). The PASSES tab's five cards are his own mock-up art
+  (`cut_pass_knife_cards.py`, used as drawn), so they keep their glow. A card that can't be drawn shows the knife's 3D
+  model instead of an emoji (ui.md, "Picture memory").
 - `KnifeService` takes `ServerStorage/HuzzKnives/<Key>` when there, else the built-in knife tinted in the skin's colours.
   Hand by the model's `Grip`.
 - **Effects: by tier and theme, from Huss Valley** (Oct 20 07:43, owner: "Can you make the vfx for some swords way
