@@ -1,7 +1,12 @@
 -- Plays a dance on your own avatar (your Animator, so everyone sees it), for the Dances window and the G wheel.
 -- One dance at a time; starting another replaces it. Like Huss Valley's emotes, walking away stops it (after a
 -- short grace, so the key press that started it can't), and so does a new character.
--- The animation comes from Shared/AnimationLibrary: the published ID, or in Studio the raw one.
+-- The animation comes from Shared/AnimationLibrary: the published ID, or in Studio the raw one. In the live game a
+-- dance with no published ID (owner, Oct 20 15:13: "inside the actual roblox game, not studio, make it so that dances
+-- are available, right now they arent": every dance said "Coming soon" there) is drawn by hand instead: no track, the
+-- server shares its moves (HuzzServer/ActionService.shareDance) and Gameplay/DanceSync poses your R15 joints from
+-- them on the dance's beat, on every screen; your girl follows (Gameplay/CompanionDance). Publishing them
+-- (tools/studio/publish-animations.lua) makes them real tracks again.
 -- In step: when someone within SYNC_RANGE is already doing the same dance (their character's HuzzDance /
 -- HuzzDanceAt, set by the server from the Dance remote), yours starts on their beat, so you dance together.
 local Players = game:GetService("Players")
@@ -41,6 +46,7 @@ end
 
 local track: AnimationTrack? = nil
 local playing: string? = nil
+local hand: number? = nil -- the beat (server time) of a dance drawn by hand (no published ID live), else nil
 local startedAt = 0
 local listeners: { (string?) -> () } = {}
 
@@ -58,6 +64,15 @@ end
 
 -- Where your dance is now (seconds into it), or nil: your companion follows it, so she stays in step too.
 function DancePlayer.position(): number?
+	if hand and playing then
+		local into = workspace:GetServerTimeNow() - hand
+		local ok, length = pcall(function()
+			local CompanionDance = require(script.Parent.Parent:WaitForChild("Gameplay"):WaitForChild("CompanionDance"))
+			local anim = CompanionDance.anim(playing :: string)
+			return anim and anim.length or 0
+		end)
+		return if ok and length > 0 then into % length else into
+	end
 	local t = track
 	if not t then return nil end
 	local ok, pos = pcall(function() return t.TimePosition end)
@@ -68,20 +83,33 @@ function DancePlayer.owned(id: string): boolean
 	return State.data.Dances[id] == true
 end
 
+-- The beat of your dance when it's drawn by hand (no published ID in the live game), else nil (Gameplay/DanceSync).
+function DancePlayer.handBeat(): number?
+	return if playing then hand else nil
+end
+
+-- Drawn by hand: the live game with no published ID (Studio plays the raw one as a track).
+local function byHand(id: string, d): boolean
+	return not AnimationLibrary.has("Dance_" .. id, d.AnimationId) and not RunService:IsStudio()
+end
+
 -- Can this dance play here? (false + why, for the UI to say)
 function DancePlayer.ready(id: string): (boolean, string?)
 	local d = Dances.get(id)
 	if not d then return false, "Unknown dance." end
 	if not DancePlayer.owned(id) then return false, "locked" end
+	if byHand(id, d) then
+		return true -- (drawn by hand on your joints: needs an R15 avatar, checked when it starts)
+	end
 	if not AnimationLibrary.has("Dance_" .. id, d.AnimationId) then
-		return false, "This dance isn't published yet (it plays in Studio tests)."
+		return false, "That dance couldn't load here. Try again in a moment."
 	end
 	return true
 end
 
 function DancePlayer.stop()
 	local t = track
-	track, playing = nil, nil
+	track, playing, hand = nil, nil, nil
 	if t then pcall(function() t:Stop(0.25) end) end
 	if okMusic and Music then pcall(Music.danceStop) end
 	pcall(function() (Net.get("Dance") :: RemoteEvent):FireServer(nil) end)
@@ -97,11 +125,25 @@ function DancePlayer.play(id: string): (boolean, string?)
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
 	if not animator then return false, "Your avatar isn't ready yet." end
+	if byHand(id, d) then
+		if (humanoid :: Humanoid).RigType ~= Enum.HumanoidRigType.R15 then
+			return false, "Dances need an R15 avatar (Avatar settings in Roblox)."
+		end
+		if track then pcall(function() (track :: AnimationTrack):Stop(0.2) end) end
+		local now = workspace:GetServerTimeNow()
+		local beat = partnerStart(id) or now
+		track, playing, hand, startedAt = nil, id, beat, os.clock()
+		if okMusic and Music then pcall(Music.dance, id) end
+		pcall(function() (Net.get("Dance") :: RemoteEvent):FireServer(id, beat) end)
+		emit()
+		return true
+	end
 	local animation = Instance.new("Animation")
 	animation.AnimationId = AnimationLibrary.id("Dance_" .. id, d.AnimationId)
 	local loaded, made = pcall(function() return (animator :: Animator):LoadAnimation(animation) end)
 	if not loaded or not made then return false, "That dance couldn't load." end
 	if track then pcall(function() (track :: AnimationTrack):Stop(0.2) end) end
+	hand = nil
 	made.Looped = true
 	made.Priority = Enum.AnimationPriority.Action
 	made:Play(0.25)

@@ -1,25 +1,39 @@
 --[[
 	Where every animation's ID comes from (walk, run, dash, the 25 dances...):
-	  1. the published ID (Config/Animations for moves, Config/Dances for dances), once the owner has published
-	     them (tools/studio/publish-animations.lua);
+	  1. the published ID: Config/AnimationIds (written by the owner's one-time helper,
+	     ServerStorage.HuzzStudioTools.PublishAnimations), else Config/Animations for moves and Config/Dances for
+	     dances (typed in by hand);
 	  2. otherwise, in Studio only, the raw animation itself: ServerStorage.HuzzAnimations holds the owner's
 	     KeyframeSequences (tools/anim/extract_anims.luau; Bootstrap copies them to ReplicatedStorage in Studio
 	     only, so players never download them), and KeyframeSequenceProvider turns one into a
 	     temporary ID that plays in Studio tests. These temporary IDs never work in the live game;
-	  3. otherwise "" (the game falls back to its built-in scripted moves, and a dance says it isn't ready).
+	  3. otherwise "" (the game falls back to its built-in scripted moves, and a dance is drawn by hand on the
+	     dancer's joints: UI/DancePlayer, Gameplay/DanceSync).
 	AnimationLibrary.id("Run"), AnimationLibrary.id("Dance_Floss", Dances.get("Floss").AnimationId).
 ]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Animations = require(script.Parent.Config.Animations)
+local okIds, AnimationIds = pcall(function() return require(script.Parent.Config:FindFirstChild("AnimationIds") :: any) end)
+if not okIds or type(AnimationIds) ~= "table" then AnimationIds = {} end
 
 local AnimationLibrary = {}
 local temp = {} -- name -> temporary Studio ID (or false: tried and failed)
 
+-- The published ID only (never Studio's temporary one), or "".
+function AnimationLibrary.published(name: string, published: string?): string
+	for _, id in { AnimationIds[name], published or "", Animations[name] or "" } do
+		if type(id) == "string" and id ~= "" then
+			return id
+		end
+	end
+	return ""
+end
+
 function AnimationLibrary.id(name: string, published: string?): string
-	local id = published or Animations[name]
-	if type(id) == "string" and id ~= "" then
+	local id = AnimationLibrary.published(name, published)
+	if id ~= "" then
 		return id
 	end
 	if temp[name] ~= nil then

@@ -1,5 +1,6 @@
 -- Handles the player's actions from the UI (the "Action" remote): equip / favourite companions, favourite dances,
--- claim rewards and quests. Every action is checked here against the player's saved data.
+-- claim rewards and quests. Every action is checked here against the player's saved data. Also the Dance remote
+-- (HuzzDance / HuzzDanceAt on your character), and shareDance: an unpublished dance's moves for every screen.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Characters = require(ReplicatedStorage.Shared.Config.Characters)
@@ -234,9 +235,33 @@ function ActionService.start()
 		if type(startAt) ~= "number" or startAt ~= startAt or startAt > now + 1 or startAt < now - 3600 then
 			startAt = now
 		end
+		ActionService.shareDance(id)
 		character:SetAttribute("HuzzDance", id)
 		character:SetAttribute("HuzzDanceAt", startAt)
 	end)
+end
+
+-- A dance with no published ID (Config/Dances AnimationId "") can't play as a track in the live game, so every
+-- screen draws it by hand (Gameplay/DanceSync on the dancer's joints, Gameplay/CompanionDance on the girls) from its
+-- own KeyframeSequence. The first time someone starts it, its moves (one dance, ~70 KB) go from ServerStorage >
+-- HuzzAnimations to ReplicatedStorage > HuzzDanceMoves, which every screen receives; never all 32 at join.
+-- (Owner, Oct 20 15:13: "inside the actual roblox game, not studio, make it so that dances are available".)
+function ActionService.shareDance(id: string): boolean
+	local d = Dances.get(id)
+	if not d or require(ReplicatedStorage.Shared.AnimationLibrary).published("Dance_" .. id, d.AnimationId) ~= "" then return false end
+	local RS = game:GetService("ReplicatedStorage")
+	local folder = RS:FindFirstChild("HuzzDanceMoves")
+	if folder and folder:FindFirstChild("Dance_" .. id) then return true end
+	local raw = game:GetService("ServerStorage"):FindFirstChild("HuzzAnimations")
+	local seq = raw and raw:FindFirstChild("Dance_" .. id)
+	if not (seq and seq:IsA("KeyframeSequence")) then return false end
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "HuzzDanceMoves"
+		folder.Parent = RS
+	end
+	seq:Clone().Parent = folder
+	return true
 end
 
 return ActionService

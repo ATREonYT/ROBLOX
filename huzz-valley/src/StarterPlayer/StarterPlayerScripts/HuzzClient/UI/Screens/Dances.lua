@@ -1,8 +1,8 @@
 -- Dances, after the owner's Oct 17 mockup (design/ui-oct17/shop-items-coins-dances.png, bottom right): ALL / OWNED
 -- / FAVOURITES tabs, a search box and a Name A-Z / Z-A sort over a 3 column card grid, with the selected dance shown
 -- large on the right (big picture, name, one line about it, PLAY and STOP). PLAY performs the dance on the player's
--- own avatar (UI/DancePlayer: other players see it too); STOP ends it. A dance whose animation isn't published yet
--- says so and never pretends to play. Locked dances (Dance Pack pass, reward track) can't be played; tapping PLAY
+-- own avatar (UI/DancePlayer: other players see it too); STOP ends it. In the live game a dance not published yet
+-- still plays (DancePlayer draws it by hand on your joints) and never pretends to. Locked dances (Dance Pack pass, reward track) can't be played; tapping PLAY
 -- says how to get them. The star on a card saves it as a favourite (server-checked, ActionService FavoriteDance).
 -- Each card glows in its dance's colour (Config/Dances Color) with glowing notes (assets/art/dance-fx-*, ours) and
 -- shows your avatar frozen in the dance's most telling moment (UI/DancePose: a still picture, so the grid never

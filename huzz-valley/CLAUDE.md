@@ -161,7 +161,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 - **Generated, never hand-edit:** `Shared/Images/**` and `ServerStorage/HuzzImages/**`
   (`tools/icons/pack_images.py`), `StarterGui/HuzzUI.rbxm` and `places/*.rbxl` (`build_place.sh`),
   `ServerStorage/HuzzAnimations.rbxm` (`tools/anim/extract_anims.luau`), `Config/DancePoses`
-  (`motion3d/dance_poses.luau`), `Config/ImageIds` (written by the owner's upload helper).
+  (`motion3d/dance_poses.luau`), `Config/ImageIds` and `Config/AnimationIds` (written by the owner's helpers).
 - **Guard Studio-only APIs** with `pcall` so the Lune harness and Studio both run (list in [ui.md](docs/notes/ui.md)).
 
 ## 6. Recipes (the usual changes)
@@ -219,7 +219,8 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - The black block by his character: hidden on every screen since Oct 20 (`Gameplay/KnifeGuard`; cause not proven,
     [knives.md](docs/notes/knives.md), "Honest gaps"). If Output shows a `[HuzzKnife] hid ...` line, send it; only if
     a block still shows, run `tools/studio/find-floating-parts.lua` in Play (`docs/STUDIO-STEPS.md` Part 4).
-  - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`, `tools/studio/publish-animations.lua`).
+  - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`; animations are optional since
+    Oct 20 15:13, the live game draws dances by hand: `PublishAnimations`, `docs/STUDIO-STEPS.md` Part 5).
   - An export of their spin wheel model (match its colours); power icons; a stab animation; his crate design
     (contents, price, art: the Starter Crate is our first pick, [economy.md](docs/notes/economy.md)); dance names;
     movement pack licence; sharp PNGs for the Oct 17 screens (today mockup crops, placeholders).

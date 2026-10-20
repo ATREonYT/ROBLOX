@@ -12,8 +12,15 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 - `tools/anim/extract_anims.luau` → `ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, **Run = the pack's Sprint as it
   is** (big arm swings; `docs/previews/run-arms-vs-hv.jpg`), Jump, Fall, Climb, **DashLeft/DashRight** (built: a
   compact sideways lean), and 25 `Dance_<Id>` (our own names; the originals are other games' emotes).
-- `Shared/AnimationLibrary.id`: published ID, else in Studio a temporary ID (KeyframeSequenceProvider), else "".
-  Temporary IDs play only on the client that made them. The live game needs `tools/studio/publish-animations.lua`.
+- `Shared/AnimationLibrary.id`: published ID (`Config/AnimationIds`, written by the owner's helper, else
+  `Config/Animations` / `Config/Dances`), else in Studio a temporary ID (KeyframeSequenceProvider), else "".
+  Temporary IDs play only on the client that made them. `AnimationLibrary.published` = the published one only.
+- **Publishing** (optional since Oct 20 15:13, the live game works without it): the owner runs
+  `require(game.ServerStorage.HuzzStudioTools.PublishAnimations)()` once (`docs/STUDIO-STEPS.md` Part 5;
+  `tools/studio/publish-animations.lua` is that line). It tries `AssetService:CreateAssetAsync` on each
+  KeyframeSequence in `ServerStorage > HuzzAnimations` (untested: Roblox may refuse animations from a script), takes
+  any ID he set himself as an `AnimationId` attribute (Save to Roblox by hand), writes them all into
+  `Config/AnimationIds` and reports on `[HuzzAnim]` lines. No ID is ever typed in by us.
 
 ## Everyone walks with the pack, Studio and live, nothing uploaded
 - `Gameplay/Locomotion` plays Idle/Walk/Run on your own Animator when it can (Studio); `Gameplay/PlayerMoves` (Frame
@@ -162,6 +169,18 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   Your first girl is equipped when you win her (if you had none), so she walks behind you for everyone.
 
 ## Dances
+- **In the live game with nothing published** (owner, Oct 20 15:13: "inside the actual roblox game, not studio,
+  make it so that dances are available, right now they arent"). Cause: all 32 `Config/Dances` AnimationIds are "",
+  Studio's temporary IDs don't exist live and `HuzzAnimations` reaches clients only in Studio, so
+  `DancePlayer.ready` said "isn't published yet" and the wheel said "Coming soon" for every dance. Now an
+  unpublished dance live is drawn by hand: `DancePlayer` starts it with no track (`handBeat`), the `Dance` remote's
+  handler (`ActionService.shareDance`) copies that one dance's KeyframeSequence (~70 KB) from
+  `ServerStorage > HuzzAnimations` into `ReplicatedStorage > HuzzDanceMoves` the first time anyone starts it (never all
+  32 at join), and `Gameplay/DanceSync` poses your own R15 joints from it on its beat, as it already did for other
+  players; their screens draw you the same way, your girl follows (`CompanionDance`, `DancePose` read
+  `HuzzDanceMoves` too). R6 avatars get "Dances need an R15 avatar". Studio still plays the raw ones as tracks;
+  published ones play as tracks everywhere. Test: `tools/preview/smoke_live_dance.luau` (the harness as the live
+  game: ready, starts, moves shared, joints posed, let go on stop, a locked dance refused).
 - `UI/DancePlayer` (one at a time; walking stops it; **in step**: the `Dance` remote puts HuzzDance / HuzzDanceAt
   (server time) on your character, and starting the same dance within 30 studs of a dancer joins their beat).
   `Gameplay/CompanionDance` puts your dance on your R6 girl at your track's time, and other players' girls on their
@@ -188,6 +207,10 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   centre circle; pictures built ahead while closed; opens with one smooth grow (no CanvasGroup, no stagger).
 
 ## Honest gaps
+- Live dances drawn by hand are checked offline only: whether Roblox's own Animate (or a published walk) fights the
+  hand pose on your own body in the real game, and how the first second looks while the moves download, only the
+  live game shows. The publish helper is untested (Roblox may refuse animations from a script: then the manual
+  Save to Roblox path in STUDIO-STEPS Part 5).
 - Which way his Studio goes (the Oct 20 stiff body) only his `[HuzzAnim]` line shows. The likely cause: Studio's
   KeyframeSequenceProvider copies load as tracks but never play, while Animate was off and PlayerMoves skipped your
   own body; now that ends in Roblox's walk with the pack drawn on top within 3 s. Not seen in Studio yet.

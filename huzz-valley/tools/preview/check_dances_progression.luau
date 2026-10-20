@@ -69,7 +69,7 @@ check("Play on a locked dance explains how to get it", toast():find("Dance Pack"
 print("  toast: " .. toast())
 click(grid.Floss)
 click(panel.Play)
-check("Play with no published animation says so", toast():find("published") ~= nil)
+check("Play in a Studio that can't load the dance says so (live, unpublished dances are drawn by hand: smoke_live_dance)", toast():find("couldn't load") ~= nil)
 print("  toast: " .. toast())
 local header = gui.Dances.Group.Panel.Header
 header.Search.Box.Text = "sh"

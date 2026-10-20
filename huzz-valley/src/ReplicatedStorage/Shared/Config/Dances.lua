@@ -2,7 +2,8 @@
 -- Dances: 25 picked from the owner's 200-dance file (tools/anim/extract_anims.luau; the raw animation is
 -- HuzzAnimations.Dance_<Id>). Names are our own (most of the originals are other games' emote names).
 -- AnimationId = the published ID; "" plays the raw one in Studio (Shared/AnimationLibrary), and in the live game
--- the dance says it isn't ready until it's published (tools/studio/publish-animations.lua).
+-- it's drawn by hand on the dancer's joints from its moves (UI/DancePlayer, Gameplay/DanceSync) until it's
+-- published (tools/studio/publish-animations.lua, which writes these IDs); never invent one.
 --   Starter = owned by everyone. Pack = granted by the Dance Pack pass. Robot = from the reward track (level 3) or the
 --   Dance Crate. Crate = only from the Dance Crate (Config/Crates).
 --   Color = the card's glow (Dances.Colors, after the owner's Oct 17 mockup: Aerobics pink, Boogie Down blue, Bounce

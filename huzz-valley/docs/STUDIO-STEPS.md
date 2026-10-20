@@ -149,6 +149,26 @@ these steps. (The first version stopped before printing anything on your avatar;
 5. Take a screenshot of the Output lines starting with `[HuzzFind]` and send it to Claude. It always ends with a
    `[HuzzFind] Done` line; if that line isn't there, screenshot the red text instead.
 
+## Part 5: publish the dances and moves (once, about 5 minutes)
+Dances already work in the real Roblox game without this: each screen draws them on the dancer by hand. Published
+ones play as real Roblox animations (a little smoother and lighter), so do this once when you have time.
+1. Open the newest **HuzzValley-yours.rbxl** in Studio (see "Before you start"). Don't press Play.
+2. Click inside the **Command Bar** (View > Command Bar), paste this line and press **Enter**:
+   ```
+   require(game.ServerStorage.HuzzStudioTools.PublishAnimations)()
+   ```
+3. Wait for the line `[HuzzAnim] Done: ...` in **Output**. Screenshot the `[HuzzAnim]` lines and send them to Claude.
+4. If the lines say **couldn't publish** (Roblox may not let a script publish animations), use the sure way for each
+   one you want, starting with the dances:
+   1. In **Explorer**, open **ServerStorage > HuzzAnimations** and right-click an animation (for example
+      **Dance_Floss**) > **Save to Roblox...**, then publish it.
+   2. Copy the number Roblox shows for it.
+   3. With that animation selected, in **Properties > Attributes** click **+**, name it **AnimationId**, type
+      **String**, and paste the number as its value.
+   4. When you've done a few, run the line from step 2 again: it picks up your numbers.
+5. **File > Save**, then **File > Publish to Roblox**. The IDs are in **ReplicatedStorage > Shared > Config >
+   AnimationIds**; if you use Rojo, send Claude that text so it goes in the repo too.
+
 ---
 
 ## Part 5: listen to the dance songs (about 7 minutes)

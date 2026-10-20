@@ -37,16 +37,19 @@ function DancePose.anim(id: string)
 	end
 	local folder = ReplicatedStorage:FindFirstChild("HuzzAnimations")
 	local seq = folder and folder:FindFirstChild("Dance_" .. id)
+	if not seq then -- (live, not published: the moves the server shares once someone dances it, HuzzDanceMoves)
+		local shared = ReplicatedStorage:FindFirstChild("HuzzDanceMoves")
+		seq = shared and shared:FindFirstChild("Dance_" .. id)
+	end
 	if seq and seq:IsA("KeyframeSequence") then
 		local ok, loaded = pcall(Sampler.load, seq)
 		anims[id] = if ok and loaded and loaded.length > 0 then loaded else false
 		return anims[id] or nil
 	end
 	local d = Dances.get(id)
-	local published = d and d.AnimationId or ""
+	local published = if d then require(Shared.AnimationLibrary).published("Dance_" .. id, d.AnimationId) else ""
 	if published == "" then
-		anims[id] = false
-		return nil
+		return nil -- (not kept: its moves may arrive later; the white stand-in figure shows meanwhile)
 	end
 	anims[id] = "loading"
 	task.spawn(function()

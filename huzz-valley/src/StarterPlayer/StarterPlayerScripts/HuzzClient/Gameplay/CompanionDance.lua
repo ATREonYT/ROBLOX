@@ -2,7 +2,9 @@
 	Your companion girl dances when you dance (owner: "make the anime characters dance when you dance").
 	  - Yours: UI/DancePlayer says which dance you started (or nil when you stop); she dances the same one, in step,
 	    and stops when you do. The dance is read as a KeyframeSequence (in Studio: ReplicatedStorage.HuzzAnimations;
-	    live: KeyframeSequenceProvider with the published ID in Config/Dances) and put on her R6 body by
+	    live: ReplicatedStorage.HuzzDanceMoves, where the server puts a dance's own moves the first time someone
+	    starts it while it has no published ID (HuzzServer/ActionService), else KeyframeSequenceProvider with the
+	    published ID in Config/Dances) and put on her R6 body by
 	    Shared/DanceRetarget. If it can't be read, she does a cute built-in dance instead.
 	  - Other players': their character's HuzzDance / HuzzDanceAt (the dance and its beat, set by the server) say
 	    which dance and where in it, so their girl dances on their beat on every screen (synced dancing, owner
@@ -38,16 +40,19 @@ local function animFor(id: string)
 	end
 	local folder = ReplicatedStorage:FindFirstChild("HuzzAnimations")
 	local seq = folder and folder:FindFirstChild("Dance_" .. id)
+	if not seq then -- (live, not published: the moves the server shares once someone dances it)
+		local shared = ReplicatedStorage:FindFirstChild("HuzzDanceMoves")
+		seq = shared and shared:FindFirstChild("Dance_" .. id)
+	end
 	if seq and seq:IsA("KeyframeSequence") then
 		local ok, loaded = pcall(Sampler.load, seq)
 		anims[id] = if ok and loaded and loaded.length > 0 then loaded else false
 		return anims[id] or nil
 	end
 	local d = Dances.get(id)
-	local published = d and d.AnimationId or ""
+	local published = if d then Library.published("Dance_" .. id, d.AnimationId) else ""
 	if published == "" then
-		anims[id] = false
-		return nil
+		return nil -- (not kept: its moves may still be on their way, HuzzDanceMoves)
 	end
 	anims[id] = "loading"
 	task.spawn(function()

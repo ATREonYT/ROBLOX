@@ -9,8 +9,11 @@
 	    dance can take a moment to load, so without this two in-step dancers could look out of step on a third screen).
 	  - Another player's dance that can't play on this screen (Studio's stand-in animation IDs only play for the
 	    player who made them, and a published one may still be loading): drawn here by hand from the dance's
-	    KeyframeSequence (CompanionDance.anim: ReplicatedStorage.HuzzAnimations in Studio, KeyframeSequenceProvider
-	    live) on their R15 joints, so everyone sees everyone dance in Studio tests too.
+	    KeyframeSequence (CompanionDance.anim: ReplicatedStorage.HuzzAnimations in Studio, HuzzDanceMoves live while
+	    it isn't published, else KeyframeSequenceProvider) on their R15 joints, so everyone sees everyone dance.
+	  - Your own dance in the live game while it has no published ID (UI/DancePlayer.handBeat; owner, Oct 20 15:13:
+	    "inside the actual roblox game, not studio, make it so that dances are available"): drawn the same way on
+	    your own joints, on its beat (no track exists to play).
 	  - Dance together: walk up to someone dancing (not in a round, not in a cutscene) and press F ("DANCE TOGETHER"):
 	    you start their dance on their beat. Only a dance you own: otherwise it says where to get it (nothing sold
 	    from here).
@@ -141,6 +144,12 @@ function M.start()
 		end
 	end
 
+	-- Your own dance is drawn here when it has no track (DancePlayer.handBeat: live, not published).
+	local function mineByHand(id: string?): boolean
+		return id ~= nil and okPlayer and DancePlayer ~= nil and DancePlayer.handBeat ~= nil
+			and DancePlayer.handBeat() ~= nil and DancePlayer.current() == id
+	end
+
 	-- "Dance together": a prompt on another dancer, for you while you're free to dance.
 	local function canJoin(): boolean
 		local me = Players.LocalPlayer
@@ -214,7 +223,7 @@ function M.start()
 				if clock - rec.scanAt >= 0.25 then
 					rec.scanAt = clock
 					rec.track = if id then trackOf(character) else nil
-					if p ~= me and id and not rec.track and not rec.motors then
+					if (p ~= me or mineByHand(id)) and id and not rec.track and not rec.motors then
 						rec.motors, rec.k = motorsOf(character)
 					end
 					if p ~= me then
@@ -235,7 +244,7 @@ function M.start()
 				-- no track on this screen (another player's): draw it by hand
 				local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 				local close = root ~= nil and (not camPos or (root.Position - camPos).Magnitude < DRAW_RANGE)
-				local draw = p ~= me and id ~= nil and track == nil and rec.motors ~= nil and close
+				local draw = (p ~= me or mineByHand(id)) and id ~= nil and track == nil and rec.motors ~= nil and close
 				local anim = draw and CompanionDance.anim(id :: string)
 				rec.weight = math.clamp(rec.weight + (if anim then dt else -dt) / FADE, 0, 1)
 				if anim then

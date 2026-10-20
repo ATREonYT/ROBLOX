@@ -156,6 +156,8 @@ roblox.implementMethod("Players", "GetPlayers", function(self) return self:GetCh
 -- (armory brief6) Debris and RunService.Heartbeat for the client's celebration; the test steps Heartbeat itself.
 roblox.implementMethod("Debris", "AddItem", function(self, inst, t) task.delay(t or 10, function() pcall(function() inst:Destroy() end) end) end)
 roblox.implementProperty("RunService", "Heartbeat", function(self) return instSignal(self, "Heartbeat") end)
+-- (live dance smoke) Gameplay/Frame steps every pose on PreSimulation; a test fires it itself.
+pcall(function() roblox.implementProperty("RunService", "PreSimulation", function(self) return instSignal(self, "PreSimulation") end) end)
 -- (MECHANICS) server and client scripts in one DataModel: remotes deliver both ways (FireServer runs the server's
 -- handlers with the LocalPlayer), GUI/input/descendant events are recordable signals, sounds and tool equips are
 -- harmless stand-ins. Attribute-changed signals still only fire when the driver calls __fireOn(inst, 'Attr_<name>').
