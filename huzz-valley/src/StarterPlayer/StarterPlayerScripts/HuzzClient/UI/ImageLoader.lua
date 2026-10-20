@@ -217,6 +217,7 @@ local knifeView -- (below)
 
 -- Where a picture can't be drawn: a stand-in (a knife card asks for its 3D model too).
 local function fallback(label: ImageLabel, b)
+	if label.Parent == nil then return end -- (the card was thrown away, e.g. the shop list redrawn by a filter)
 	local fine, err = pcall(function()
 		-- (a knife card asks for its model first and shows the glyph only if that fails: no kitchen-knife emoji
 		-- flashing up while the copy arrives, owner Oct 20 14:07 "fix all of the placeholders for knifes")
