@@ -14,7 +14,7 @@
 	                     2.5 two big glowing eyes open between the twins
 	  2.6  CONVERGE      every beam swings its foot into the point between the eyes, pinching thin, winding faster
 	  3.38 they meet, still moving, straight into the burst (no hit-stop: owner, Oct 21 14:33, "a little stop there")
-	  3.42 BURST         a split-second manga frame, a shockwave (a dome, a ring on the ground, a ring facing you),
+	  3.42 BURST         a shockwave (a dome, a ring on the ground, a ring facing you),
 	                     light rays, sparkles; the beams shoot back up into the sky out of her (LIFT); she appears in
                      white, drops and lands (3.8): a ring, dust, a magic
 	                     circle lights up under her
@@ -43,7 +43,7 @@ SecretReveal.EYES = 2.5 -- two glowing eyes open between the beams, until the bu
 SecretReveal.CONVERGE = 2.6 -- every beam swings its foot into the eyes' point (2.6, was 2.85: a longer, flowing sweep)
 SecretReveal.HOLD = 3.38 -- the beams meet (owner, Oct 21 14:33: "it's very rough and has a little stop there": no freeze any more, they run straight into the burst)
 SecretReveal.IMPACT = 3.42 -- the burst: she appears
-SecretReveal.FRAME = 0.09 -- the impact frame: a split second of manga lines
+SecretReveal.FRAME = 0 -- the impact frame (a still manga picture over the screen for 0.09 s): off, it read as the picture stopping as she appears (owner, Oct 21 14:55)
 SecretReveal.LAND = 3.8
 SecretReveal.SWINGS = { 4.0, 4.3, 4.6 } -- crescent slashes swirl round her
 SecretReveal.NAME = 4.5 -- her name on screen
@@ -202,7 +202,10 @@ end
 function SecretReveal.height(t: number, top: number): number?
 	if t < SecretReveal.IMPACT then return nil end
 	if t < SecretReveal.LAND then -- drops from the burst to the ground
-		return SecretReveal.ORB_HEIGHT * (1 - easeIn((t - SecretReveal.IMPACT) / (SecretReveal.LAND - SecretReveal.IMPACT)))
+		-- (already falling as she appears, never hanging still at the top first: owner, Oct 21 14:55, "the stopping
+		-- effect when the character gets shown"; was an ease-in from a standstill)
+		local x = clamp01((t - SecretReveal.IMPACT) / (SecretReveal.LAND - SecretReveal.IMPACT))
+		return SecretReveal.ORB_HEIGHT * (1 - x * (0.45 + 0.55 * x))
 	end
 	if t < SecretReveal.RISE then return 0 end
 	return top * smooth((t - SecretReveal.RISE) / (SecretReveal.RETURN - SecretReveal.RISE))
@@ -367,7 +370,9 @@ end
 -- behind her and settling softly, so the tilt doesn't stop dead on the landing), then her rise (`h`).
 local function followHeight(t: number, h: number): number
 	if t < SecretReveal.RISE then
-		return SecretReveal.ORB_HEIGHT * (1 - smooth((t - SecretReveal.IMPACT) / (SecretReveal.LAND - SecretReveal.IMPACT + 0.2)))
+		-- (the camera's look follows her down without stopping first: moving at the start and the end, never still)
+		local x = clamp01((t - SecretReveal.IMPACT) / (SecretReveal.LAND - SecretReveal.IMPACT + 0.2))
+		return SecretReveal.ORB_HEIGHT * (1 - x * (0.5 + x * (1.5 - x)))
 	end
 	return h
 end

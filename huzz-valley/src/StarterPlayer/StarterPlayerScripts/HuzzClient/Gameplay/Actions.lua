@@ -25,6 +25,7 @@ function M.start()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local RunService = game:GetService("RunService")
 	local UserInputService = game:GetService("UserInputService")
+	local TweenService = game:GetService("TweenService")
 	local Workspace = game:GetService("Workspace")
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -75,6 +76,52 @@ function M.start()
 			return t
 		end)
 		return if ok then made else nil
+	end
+
+	-- The dive seen by everyone (KnifeLook.CATCH.Dive; owner, Oct 21 14:53: "make the leaping visible, not just
+	-- disappearing"): a puff of dust at the feet as it springs and again as the belly lands, and a soft outline in
+	-- the knife's colour that fades out over the dive. Made here, destroyed after (never saved).
+	local function diveFx(character, colour: Color3)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not (root and root:IsA("BasePart")) then return end
+		local D = KnifeLook.CATCH.Dive
+		pcall(function()
+			local feet = Instance.new("Attachment")
+			feet.Name = "HuzzDiveDust"
+			feet.Position = Vector3.new(0, -2.6, 0)
+			feet.Parent = root
+			local dust = Instance.new("ParticleEmitter")
+			dust.Name = "HuzzDiveDust"
+			dust.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			dust.Color = ColorSequence.new(Color3.fromRGB(235, 230, 220), colour)
+			dust.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+			dust.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 2.6) })
+			dust.Lifetime = NumberRange.new(0.35, 0.6)
+			dust.Speed = NumberRange.new(6, 12)
+			dust.SpreadAngle = Vector2.new(80, 15)
+			dust.EmissionDirection = Enum.NormalId.Top
+			dust.Drag = 6
+			dust.LightEmission = 0.3
+			dust.Rate = 0
+			dust.Parent = feet
+			dust:Emit(D.Dust)
+			task.delay(D.LandAt, function() if dust.Parent then dust:Emit(D.LandDust) end end)
+			task.delay(1.4, function() feet:Destroy() end)
+		end)
+		pcall(function()
+			local old = character:FindFirstChild("HuzzDiveGlow")
+			if old then old:Destroy() end
+			local glow = Instance.new("Highlight")
+			glow.Name = "HuzzDiveGlow"
+			glow.FillTransparency = 1
+			glow.OutlineColor = colour
+			glow.OutlineTransparency = D.GlowTransparency
+			glow.DepthMode = Enum.HighlightDepthMode.Occluded
+			glow.Adornee = character
+			glow.Parent = character
+			TweenService:Create(glow, TweenInfo.new(D.Glow, Enum.EasingStyle.Sine, Enum.EasingDirection.In), { OutlineTransparency = 1 }):Play()
+			task.delay(D.Glow + 0.05, function() glow:Destroy() end)
+		end)
 	end
 
 	-- The slash arc and the element's burst for one stab (Shared/KnifeLook.ARC): a Beam on two attachments on the root.
@@ -153,6 +200,7 @@ function M.start()
 				streak.Enabled = true
 				s.streak, s.streakUntil = streak, os.clock() + Config.Lunge.Time
 			end
+			diveFx(character, colour)
 		end
 		if Animations.Stab ~= "" then
 			local humanoid = character:FindFirstChildOfClass("Humanoid")

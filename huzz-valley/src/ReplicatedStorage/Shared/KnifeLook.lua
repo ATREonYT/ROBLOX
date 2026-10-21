@@ -457,7 +457,12 @@ KnifeLook.CATCH = {
 	Fill = { Solid = 0.07, SolidTransparency = 0.12, Tint = 0.6, TintBy = 0.25, Gone = 0.42 },
 	Cut = { Life = 0.26, Length = 3.4, Width = 0.34 },
 	Burst = { Count = 10, Speed = { 6, 12 }, Life = { 0.25, 0.45 }, Size = 0.3 },
-	Streak = { Life = 0.14, Top = 0.45, Bottom = -0.5, Transparency = { 0.45, 1 }, LightEmission = 0.6 },
+	-- (owner, Oct 21 14:53: "make the leaping visible, not just disappearing so people can see when you are jumping":
+	-- was 0.14 s, half see-through and chest-high only; now the whole body's height, brighter, about 3x as long)
+	Streak = { Life = 0.4, Top = 0.9, Bottom = -1.6, Transparency = { 0.15, 1 }, LightEmission = 0.8 },
+	-- dust thrown up at take-off and at the belly landing, and a soft glowing outline on the diver while the dive
+	-- lasts (one soft fade, never a flash), so a body flat on the floor still stands out on everyone's screen
+	Dive = { Dust = 16, LandDust = 12, LandAt = 0.245, Glow = 0.8, GlowTransparency = 0.35 },
 }
 -- The red fill's FillTransparency `age` seconds after the catch (1 = none). solid = false: no solid frames (another
 -- flash showed in the last second), it starts at the tint.
