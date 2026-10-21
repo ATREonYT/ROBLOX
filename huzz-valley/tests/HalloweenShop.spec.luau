@@ -65,7 +65,7 @@ end
 for _, c in Shop.Crates do
 	local p = Products.get(c.Robux)
 	check(`{c.Crate}: a Robux crate key`, p ~= nil and p.Kind == "CrateKey" and p.Crate == c.Crate)
-	check(`{c.Crate}: key Id 0`, p ~= nil and p.Id == 0 and Products.status(p) == "NoId")
+	check(`{c.Crate}: key with the owner's ID (Oct 21)`, p ~= nil and p.Id > 0 and Products.status(p) == "Ready" and Products.byProductId(p.Id) == p)
 	print(string.format("  %-18s crate      120 Aura an open, a key %d R$", c.Crate, p and p.Price or 0))
 end
 local legend, mythic = Shop.knife("CovenKatana"), Shop.knife("GrandWitchScythe")
@@ -86,13 +86,13 @@ check(`prompt: never without an ID ({whyP})`, okP == false and tostring(whyP):fi
 check("prompt: never for another page's product", (Shop.canPrompt(fresh, Products.get("Spins10"))) == false and (Shop.canPrompt(fresh, nil)) == false)
 check("prompt: a crate key, even with keys already", (Shop.canPrompt(owner, key)) == true)
 local reaperEntry = Shop.knife("CandyReaper")
-check(`refund keys: Mythic {reaperEntry.Keys} (249 / 25 R$), Legendary {Shop.knife("CovenKatana").Keys} (149 / 25 R$)`, reaperEntry.Keys == 10 and Shop.knife("CovenKatana").Keys == 6)
+check(`refund keys: Mythic {reaperEntry.Keys} (249 / 49 R$), Legendary {Shop.knife("CovenKatana").Keys} (149 / 49 R$)`, reaperEntry.Keys == 5 and Shop.knife("CovenKatana").Keys == 3)
 local okG, what = Shop.grant(fresh, reaper)
 check("receipt: the knife, worn", okG == true and what == "knife" and fresh.Cosmetics.CandyReaper == true and fresh.Wear.Knife == "CandyReaper")
 local note
 okG, what, note = Shop.grant(owner, reaper)
 check(`receipt for a knife you own: {reaperEntry.Keys} Sweets keys instead, knife and worn knife untouched`, okG == true and what == "keys" and owner.CrateKeys.Sweets == 1 + reaperEntry.Keys and owner.Wear.Knife == "VineDagger")
-check(`... and the player is told which knife, how many keys, which crate ({note})`, note == "You already had Candy Reaper, so you got 10 Candy Crate keys instead.")
+check(`... and the player is told which knife, how many keys, which crate ({note})`, note == "You already had Candy Reaper, so you got 5 Candy Crate keys instead.")
 check("a normal knife receipt needs no extra line", select(3, Shop.grant({ Cosmetics = {}, Wear = {} }, reaper)) == nil)
 -- taken off sale after it was bought: no new prompts, but a paid receipt is still granted (never "not processed")
 local offKnife = table.clone(reaper); offKnife.OnSale = false

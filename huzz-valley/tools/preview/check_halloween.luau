@@ -20,6 +20,10 @@ local MarketplaceService = game:GetService("MarketplaceService")
 
 -- pretend the owner made two of the products (the shipped config has every Id = 0)
 local P = RS.Shared.Config.Products
+-- (since Oct 21 the shipped config has the owner's real IDs: this check puts them back to 0 first, so it still tests
+-- the "no ID yet: coming soon, never a purchase" path; tests/*.spec check the real IDs, and the Halloween knives as
+-- the developer products they were)
+P.Source = P.Source:gsub("Id = %d%d%d%d%d+", "Id = 0"):gsub("GamePass = true, ", "")
 P.Source = P.Source:gsub('(Key = "WitchCrateKey".-Id = )0', '%1444'):gsub('(Key = "HalloweenCandyReaper".-Id = )0', '%1555')
 
 local me = Instance.new("Player"); me.Name = "Tester"; me.UserId = 1; me.Parent = Players
@@ -179,7 +183,7 @@ check("a receipt for a knife you own gives its crate's keys", receipt(555, "h3")
 check("... the server sets the line for the player", tostring(me:GetAttribute("HuzzShopNotice")):find("You already had Candy Reaper") ~= nil)
 __fireOn(me, "Attr_HuzzShopNotice") -- (the harness fires attribute signals only when asked)
 task.wait(0.2)
-check(`... and says so on screen ({gui.Toast.Text})`, gui.Toast.Text == "You already had Candy Reaper, so you got 10 Candy Crate keys instead.")
+check(`... and says so on screen ({gui.Toast.Text})`, gui.Toast.Text == "You already had Candy Reaper, so you got 5 Candy Crate keys instead.")
 -- taken off sale while a purchase was on its way: the paid receipt is still granted (OnSale only stops new prompts)
 local reaperProduct = Products.get("HalloweenCandyReaper")
 reaperProduct.OnSale = false

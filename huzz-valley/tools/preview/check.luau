@@ -9,6 +9,10 @@ end
 
 -- Pretend the owner created two products (the shipped config has every Id = 0).
 local P = game.ReplicatedStorage.Shared.Config.Products
+-- (since Oct 21 the shipped config has the owner's real IDs: this check puts them back to 0 first, so it still tests
+-- the "no ID yet: coming soon, never a purchase" path; tests/*.spec check the real IDs, and the Halloween knives as
+-- the developer products they were)
+P.Source = P.Source:gsub("Id = %d%d%d%d%d+", "Id = 0"):gsub("GamePass = true, ", "")
 P.Source = P.Source:gsub('(Key = "SunsetTrail".-Id = )0', '%1111'):gsub('(Key = "VIP".-Id = )0', '%1222'):gsub('(Key = "Spins10".-Id = )0', '%1333')
 
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
@@ -113,7 +117,7 @@ products = gui.Shop.Group.Panel.Products
 local cardNames = {}
 for _, key in { "HunterKnifePass", "MoonlitKnifePass", "SunriseKnifePass", "InfernoKnifePass", "FrostKnifePass" } do
 	local card = products:FindFirstChild(key)
-	check(key .. " card: picture, knife line, BUY", card ~= nil and card:FindFirstChild("Picture") ~= nil and card.Line.Text:find("knife") ~= nil and card.Buy.Content.Label.Text == "BUY")
+	check(key .. " card: picture, knife line, price", card ~= nil and card:FindFirstChild("Picture") ~= nil and card.Line.Text:find("knife") ~= nil and card.Buy.Content.Label.Text:match("^%d[%d,]*$") ~= nil) -- (his price since Oct 21)
 	if card then
 		table.insert(cardNames, card.Title.Text)
 		__fireOn(card.Buy, "Activated")

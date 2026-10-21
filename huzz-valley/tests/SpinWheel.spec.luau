@@ -85,8 +85,8 @@ check("bad counts refused", (SpinRules.spin(d, Wheel, 0, T, roll)) == false and 
 -- what each slice gives
 local function only(key) return function(p) local it = Wheel.Items[Wheel.slotOf(key)]; return it, (if it.Rarity == "Legendary" then 0 else p + 1) end end
 local g = { Coins = 0, Aura = 0, Spins = 10, FreeSpinAt = T + 999, SpinPity = 0, Boosts = {}, Cosmetics = {}, Wear = {} }
-SpinRules.spin(g, Wheel, 1, T, only("Coins500")); check("500 coins", g.Coins == 500)
-SpinRules.spin(g, Wheel, 1, T, only("Aura60")); check("60 Aura", g.Aura == 60)
+SpinRules.spin(g, Wheel, 1, T, only("Coins500")); check("the Coins500 slice: 250 coins (lowered Oct 21)", g.Coins == 250)
+SpinRules.spin(g, Wheel, 1, T, only("Aura60")); check("the Aura60 slice: 40 Aura (lowered Oct 21)", g.Aura == 40)
 SpinRules.spin(g, Wheel, 1, T, only("CoinBoost")); check("x2 coins for 15 minutes", g.Boosts.Coins == T + 900 and SpinRules.boost(g, "Coins", T + 899) == 2 and SpinRules.boost(g, "Coins", T + 900) == 1)
 SpinRules.spin(g, Wheel, 1, T + 100, only("CoinBoost")); check("a second boost adds its minutes", g.Boosts.Coins == T + 1800)
 check("no boost = x1", SpinRules.boost({}, "Coins", T) == 1)

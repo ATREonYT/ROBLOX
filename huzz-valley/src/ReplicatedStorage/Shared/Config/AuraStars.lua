@@ -10,8 +10,10 @@
 ]]
 local rgb = Color3.fromRGB
 return {
-	Count = 7, -- stars out at once on the field
-	Respawn = { 25, 45 }, -- seconds before a collected star's spot fills again (random in this range)
+	-- (owner, Oct 21 17:34: "you get very quick aura and coins, so please pop it down a bit", so the Aura packs are worth
+	-- buying: 7 stars every 25-45 s was ~1,900 Aura an hour at most, 19 crate opens; now ~550 at most)
+	Count = 4, -- stars out at once on the field
+	Respawn = { 60, 90 }, -- seconds before a collected star's spot fills again (random in this range)
 	Inset = 8, -- studs kept clear of the Middle's edges (so none sit on a safe line or a wall)
 	Height = 3.2, -- studs above the floor they float
 	Range = 4.5, -- studs: run this close to a star and it's yours

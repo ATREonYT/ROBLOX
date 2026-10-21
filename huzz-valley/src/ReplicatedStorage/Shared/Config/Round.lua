@@ -28,7 +28,8 @@ return {
 	-- End-of-game pay (owner: coins must be worth earning; the coin shop is Config/CoinShop). Aura is the rarer one:
 	-- crates cost it (Config/Crates), so it only comes from wins and the reward track.
 	-- (loop audit, Oct 18: a real game paid ~340 coins an hour, less than the free wheel: 15/35 -> 25/50)
-	Pay = { Played = 25, Won = 50, WonAura = 3 },
+	-- (owner, Oct 21 17:34: "pop it down a bit" so coin packs are worth buying: 25/50 was ~1,800 coins an hour, 15/30 is ~1,100)
+	Pay = { Played = 15, Won = 30, WonAura = 3 },
 	-- Winning a girl you already own pays coins by her rarity instead (Results says so)
 	DupeCoins = { Common = 25, Uncommon = 50, Rare = 75, Epic = 150, Legendary = 400, Mythic = 700, Secret = 1500 },
 	CountdownTime = 3, -- 3, 2, 1, GO (everyone on the line)

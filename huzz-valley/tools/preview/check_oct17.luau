@@ -6,6 +6,11 @@ local function check(name, cond)
 	if cond then ok += 1 else failed += 1; print("FAIL " .. name) end
 end
 
+local P = game.ReplicatedStorage.Shared.Config.Products
+-- (since Oct 21 the shipped config has the owner's real IDs: this check puts them back to 0 first, so it still tests
+-- the "no ID yet: coming soon, never a purchase" path; tests/*.spec check the real IDs, and the Halloween knives as
+-- the developer products they were)
+P.Source = P.Source:gsub("Id = %d%d%d%d%d+", "Id = 0"):gsub("GamePass = true, ", "")
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
 Players.LocalPlayer = player
 Instance.new("PlayerGui").Parent = player

@@ -76,9 +76,9 @@ Products.Cosmetics = {
 } :: { Product }
 
 Products.Coins = {
-	{ Key = "Coins500", Kind = "Coins", Name = "500 Coins", Blurb = "Get 500 coins\nto spend in game.", Id = 0, Price = 49, Amount = 500, OnSale = false, Icon = "CurrencyCoin", Art = "CoinPack500", Why = "needs its Developer Product ID" },
-	{ Key = "Coins2000", Kind = "Coins", Name = "2,000 Coins", Blurb = "Get 2,000 coins\nto spend in game.", Id = 0, Price = 149, Amount = 2000, OnSale = false, Icon = "CurrencyCoin", Art = "CoinPack2000", Why = "needs its Developer Product ID" },
-	{ Key = "Coins5000", Kind = "Coins", Name = "5,000 Coins", Blurb = "Get 5,000 coins\nto spend in game.", Id = 0, Price = 299, Amount = 5000, OnSale = false, Icon = "CurrencyCoin", Art = "CoinPack5000", Why = "needs its Developer Product ID" },
+	{ Key = "Coins500", Kind = "Coins", Name = "500 Coins", Blurb = "Get 500 coins\nto spend in game.", Id = 3720757750, Price = 49, Amount = 500, OnSale = true, Icon = "CurrencyCoin", Art = "CoinPack500" },
+	{ Key = "Coins2000", Kind = "Coins", Name = "2,000 Coins", Blurb = "Get 2,000 coins\nto spend in game.", Id = 3720757955, Price = 149, Amount = 2000, OnSale = true, Icon = "CurrencyCoin", Art = "CoinPack2000" },
+	{ Key = "Coins5000", Kind = "Coins", Name = "5,000 Coins", Blurb = "Get 5,000 coins\nto spend in game.", Id = 3720758047, Price = 299, Amount = 5000, OnSale = true, Icon = "CurrencyCoin", Art = "CoinPack5000" },
 } :: { Product }
 
 -- Aura packs (Shop > AURA; owner, Oct 20 14:07: "make a buy section for aura"). Developer Products: create each on the
@@ -87,9 +87,9 @@ Products.Coins = {
 -- the crate keys (25 Robux = one 100 Aura open): 200 Aura for 49 is two opens at the key's price, the bigger packs a
 -- little cheaper per open (700 for 149, 1,500 for 299). The owner's to change.
 Products.Aura = {
-	{ Key = "Aura200", Kind = "Aura", Name = "200 Aura", Blurb = "Get 200 Aura\nfor crates.", Id = 0, Price = 49, Amount = 200, OnSale = true, Icon = "AuraStar", Art = "", Why = "needs its Developer Product ID" },
-	{ Key = "Aura700", Kind = "Aura", Name = "700 Aura", Blurb = "Get 700 Aura\nfor crates.", Id = 0, Price = 149, Amount = 700, OnSale = true, Icon = "AuraStar", Art = "", Why = "needs its Developer Product ID" },
-	{ Key = "Aura1500", Kind = "Aura", Name = "1,500 Aura", Blurb = "Get 1,500 Aura\nfor crates.", Id = 0, Price = 299, Amount = 1500, OnSale = true, Icon = "AuraStar", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "Aura200", Kind = "Aura", Name = "200 Aura", Blurb = "Get 200 Aura\nfor crates.", Id = 3720758244, Price = 49, Amount = 200, OnSale = true, Icon = "AuraStar", Art = "" },
+	{ Key = "Aura700", Kind = "Aura", Name = "700 Aura", Blurb = "Get 700 Aura\nfor crates.", Id = 3720758355, Price = 149, Amount = 700, OnSale = true, Icon = "AuraStar", Art = "" },
+	{ Key = "Aura1500", Kind = "Aura", Name = "1,500 Aura", Blurb = "Get 1,500 Aura\nfor crates.", Id = 3720758520, Price = 299, Amount = 1500, OnSale = true, Icon = "AuraStar", Art = "" },
 } :: { Product }
 
 -- Spin the Wheel spins (Screens/SpinWheel's purple buttons; the owner's prices, halved Oct 19: "spin prices lower"). Developer Products: create them on
@@ -108,8 +108,8 @@ Products.Spins = {
 --             17:25, GamePass = true): Roblox's pass prompt, given when Roblox says you own the pass (ShopService
 --             refreshPasses), never through ProcessReceipt.
 Products.Halloween = {
-	{ Key = "WitchCrateKey", Kind = "CrateKey", Crate = "Witch", Name = "Witch Crate", Blurb = "One open of the\nWitch Crate.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
-	{ Key = "SweetsCrateKey", Kind = "CrateKey", Crate = "Sweets", Name = "Candy Crate", Blurb = "One open of the\nCandy Crate.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "WitchCrateKey", Kind = "CrateKey", Crate = "Witch", Name = "Witch Crate", Blurb = "One open of the\nWitch Crate.", Id = 3720757298, Price = 49, OnSale = true, Icon = "", Art = "" },
+	{ Key = "SweetsCrateKey", Kind = "CrateKey", Crate = "Sweets", Name = "Candy Crate", Blurb = "One open of the\nCandy Crate.", Id = 3720757477, Price = 49, OnSale = true, Icon = "", Art = "" },
 	{ Key = "HalloweenCovenKatana", Kind = "Knife", Knife = "CovenKatana", Name = "Coven Katana", Blurb = "Legendary knife.", GamePass = true, Id = 2046266840, Price = 149, OnSale = true, Icon = "", Art = "KnifeCovenKatana" },
 	{ Key = "HalloweenGrandWitchScythe", Kind = "Knife", Knife = "GrandWitchScythe", Name = "Grand Witch Scythe", Blurb = "Mythic knife.", GamePass = true, Id = 2047484263, Price = 249, OnSale = true, Icon = "", Art = "KnifeGrandWitchScythe" },
 	{ Key = "HalloweenSugarRushKatana", Kind = "Knife", Knife = "SugarRushKatana", Name = "Sugar Rush Katana", Blurb = "Legendary knife.", GamePass = true, Id = 2044724818, Price = 149, OnSale = true, Icon = "", Art = "KnifeSugarRushKatana" },

@@ -29,7 +29,9 @@ for side, list in Powers.Shop do
 			check(name .. ": a starter costs nothing", d.Price == 0)
 		else
 			-- between 8 and 40 games' pay: reachable, never a grind
-			check(string.format("%s: %d coins is 8 to 40 games' pay", name, d.Price), d.Price >= 8 * game and d.Price <= 40 * game)
+			-- (a game's pay on average: played, and a win half the time; since Oct 21 the pay is lower, owner)
+			local avg = game + win / 2
+			check(string.format("%s: %d coins is 8 to 40 games' pay", name, d.Price), d.Price >= 8 * avg and d.Price <= 40 * avg)
 			check(name .. ": a round number", d.Price % 50 == 0)
 		end
 		if side == "Runner" then runners += 1 else catchers += 1 end
