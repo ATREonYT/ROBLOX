@@ -36,6 +36,13 @@ local function refreshPasses(player: Player, boughtId: number?)
 			if (ok and has) or p.Id == boughtId or (not ok and before[p.Key]) then owned[p.Key] = true end
 		end
 	end
+	-- the Halloween knives the owner made as Game Passes (Config/Products.Halloween GamePass): owned the same way
+	for _, p in Products.Halloween do
+		if p.GamePass and p.Id ~= 0 then
+			local ok, has = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, p.Id)
+			if (ok and has) or p.Id == boughtId or (not ok and before[p.Key]) then owned[p.Key] = true end
+		end
+	end
 	if not player.Parent then return end -- (left while Roblox answered: don't bring their entry back)
 	player:SetAttribute("VIP", owned.VIP == true) -- read by the chat tag (client) and the name tag
 	DataService.setExtra(player, "Passes", owned)
@@ -43,6 +50,23 @@ local function refreshPasses(player: Player, boughtId: number?)
 	-- slot is empty (never over one you picked, nor a slot you emptied on purpose)
 	local profile = DataService.get(player)
 	local new = profile and profile.Data and CoinShop.passGrants(profile.Data.Cosmetics or {}, owned) or {}
+	local cosmetics = profile and profile.Data and profile.Data.Cosmetics or {}
+	local knifePasses = {}
+	for _, p in Products.Halloween do
+		if p.GamePass and owned[p.Key] and p.Knife and CoinShop.get(p.Knife) and not cosmetics[p.Knife] then table.insert(knifePasses, { key = p.Knife, bought = p.Id == boughtId }) end
+	end
+	if #knifePasses > 0 then
+		DataService.update(player, function(d)
+			d.Cosmetics = d.Cosmetics or {}
+			d.Wear = d.Wear or {}
+			for _, k in knifePasses do
+				local item = CoinShop.get(k.key)
+				d.Cosmetics[k.key] = true
+				-- (the knife just bought is worn straight away, as the Robux knives always were; else only an empty slot)
+				if item and (k.bought or (CoinShop.worn(d, item.Slot) == nil and d.Wear[item.Slot] ~= "")) then d.Wear[item.Slot] = k.key end
+			end
+		end)
+	end
 	if #new > 0 then
 		DataService.update(player, function(d)
 			d.Cosmetics = d.Cosmetics or {}
@@ -114,7 +138,13 @@ function ShopService.promptHalloween(player: Player, key: any): (boolean, string
 	if not product or not profile or not profile.Data then return false, "That isn't sold here." end
 	local ok, why = HalloweenShop.canPrompt(profile.Data, product)
 	if not ok then return false, why end
-	if not pcall(function() MarketplaceService:PromptProductPurchase(player, product.Id) end) then
+	if not pcall(function()
+		if product.GamePass then
+			MarketplaceService:PromptGamePassPurchase(player, product.Id) -- (given in refreshPasses once Roblox says it's yours)
+		else
+			MarketplaceService:PromptProductPurchase(player, product.Id)
+		end
+	end) then
 		return false, "The purchase couldn't open. Try again."
 	end
 	return true

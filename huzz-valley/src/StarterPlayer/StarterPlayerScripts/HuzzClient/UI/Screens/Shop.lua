@@ -190,7 +190,7 @@ local function buy(p)
 	for _, f in refreshButtons do f() end
 	local player = Players.LocalPlayer
 	local ok = pcall(function()
-		if p.Kind == "Pass" then
+		if p.Kind == "Pass" or p.GamePass then
 			MarketplaceService:PromptGamePassPurchase(player, p.Id)
 		else
 			MarketplaceService:PromptProductPurchase(player, p.Id)
@@ -210,7 +210,7 @@ end
 local function onPromptClosed(id: number, isPass: boolean)
 	for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura, Products.Halloween, Products.Crates } do
 		for _, p in list do
-			if p.Id == id and (p.Kind == "Pass") == isPass then pending[p.Key] = nil end
+			if p.Id == id and (p.Kind == "Pass" or p.GamePass == true) == isPass then pending[p.Key] = nil end
 		end
 	end
 	for _, f in refreshButtons do f() end
@@ -1419,7 +1419,7 @@ function Shop.build(parent: Instance)
 		for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura, Products.Halloween, Products.Crates } do
 			for _, p in list do
 				if Products.status(p) == "Ready" then
-					local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, p.Id, p.Kind == "Pass" and Enum.InfoType.GamePass or Enum.InfoType.Product)
+					local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, p.Id, (p.Kind == "Pass" or p.GamePass) and Enum.InfoType.GamePass or Enum.InfoType.Product)
 					if ok and info and type(info.PriceInRobux) == "number" then
 						livePrice[p.Key] = info.PriceInRobux
 						if priceLabels[p.Key] then priceLabels[p.Key].Text = Format.commas(info.PriceInRobux) end

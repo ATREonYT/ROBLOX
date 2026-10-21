@@ -246,14 +246,17 @@ do
 end
 
 -- avatar stands: "Coming soon unless a real Id of a pass the game grants"
-local s = Stand.resolve({ Pass = "VIP" }, Products)
-eq("VIP has Id 0 today: soon", s.Status, "Soon")
+-- (VIP has the owner's real ID since Oct 21 17:25: a copy with Id 0 stands for one without)
+local NoId = loadProducts(function(src) return (src:gsub("Id = 2044922817,", "Id = 0,")) end)
+local s = Stand.resolve({ Pass = "VIP" }, NoId)
+eq("VIP with Id 0: soon", s.Status, "Soon")
 check("soon never prompts", not Stand.canPrompt(s, false))
 eq("soon button shows price", (Stand.button(s, false)), "199 · SOON")
+eq("the real VIP is for sale", Stand.resolve({ Pass = "VIP" }, Products).Status, "Ready")
 eq("title from the pass", s.Title, "VIP")
 eq("default tag", s.Tag, "GAME PASS")
 s = Stand.resolve({ Pass = "DancePack" }, Products)
-eq("Dance Pack gives nothing yet", s.Status, "Soon")
+eq("Dance Pack on sale (its 4 dances exist since Oct 21)", s.Status, "Ready")
 s = Stand.resolve({ Pass = "123456789" }, Products)
 eq("an ID that isn't one of our passes: soon", s.Status, "Soon")
 check("unknown ID never prompts", not Stand.canPrompt(s, false))
@@ -264,7 +267,7 @@ s = Stand.resolve({ Pass = "Coins500" }, Products)
 eq("a developer product isn't a pass", s.Status, "Soon")
 -- with a real ID pasted for VIP (and VIP on sale), it's for sale, by key or by number
 local Live = loadProducts(function(src)
-	return (src:gsub('Key = "VIP", Kind = "Pass", Name = "VIP", Blurb = "VIP chat tag\\nand name tag.",\n%s*Id = 0', function(m) return (m:gsub("Id = 0$", "Id = 98765")) end))
+	return (src:gsub("Id = 2044922817,", "Id = 98765,")) -- (the owner's real VIP ID, Oct 21, swapped for a test number)
 end)
 check("patched VIP id", Live.get("VIP").Id == 98765)
 s = Stand.resolve({ Pass = "VIP", Title = "vip pass", Subtitle = "Chat tag" }, Live)
@@ -318,9 +321,10 @@ do
 	local withKnife = Stand.resolve({ Pass = "HunterKnifePass" }, Products, CoinShop.get(k1))
 	eq("the sign is the card's name", withKnife.Title, "HUNTER KNIFE")
 	eq("the sign names the knife", withKnife.Subtitle, "EXCLUSIVE KNIFE: CRIMSON REQUIEM")
-	eq("no price on it until he sets one (Price 0)", withKnife.Price, nil)
-	eq("still SOON (no Game Pass ID yet)", withKnife.Status, "Soon")
-	check("a knife on the sign never opens a purchase by itself", not Stand.canPrompt(withKnife, false))
+	-- (the owner's Game Pass IDs and prices, Oct 21 17:25)
+	eq("his price on it", withKnife.Price, 349)
+	eq("for sale (his Game Pass ID)", withKnife.Status, "Ready")
+	check("a knife on the sign opens its pass when not owned", Stand.canPrompt(withKnife, false) and not Stand.canPrompt(withKnife, true))
 end
 
 -- his own place (synced by Rojo, nothing renamed): the stands must still be found (the old code only knew blocks

@@ -58,7 +58,8 @@ for _, k in Shop.Knives do
 	check(`{k.Key}: 3x its average cost`, math.abs(k.Aura - 3 * avg) <= 50)
 	local p = Products.get(k.Robux)
 	check(`{k.Key}: a Robux product`, p ~= nil and p.Kind == "Knife" and p.Knife == k.Key)
-	check(`{k.Key}: Id 0 (the owner makes it)`, p ~= nil and p.Id == 0 and Products.status(p) == "NoId")
+	-- (the owner made the four knives as Game Passes, Oct 21 17:25: his IDs)
+	check(`{k.Key}: a Game Pass with the owner's ID`, p ~= nil and p.GamePass == true and p.Id > 0 and Products.status(p) == "Ready" and Products.byPassId(p.Id) == p)
 	print(string.format("  %-18s %-9s %5.1f opens = %5d Aura on average -> %6d Aura, %d R$", k.Key, item and item.Rarity or "?", k.Opens, math.round(avg), k.Aura, p and p.Price or 0))
 end
 for _, c in Shop.Crates do
@@ -79,7 +80,8 @@ local owner = { Cosmetics = { CandyReaper = true }, Wear = { Knife = "VineDagger
 check("prompt: a knife you don't own, with its ID", (Shop.canPrompt(fresh, reaper)) == true)
 local okP, whyP = Shop.canPrompt(owner, reaper)
 check(`prompt: never for a knife you own ({whyP})`, okP == false and tostring(whyP):find("own") ~= nil)
-okP, whyP = Shop.canPrompt(fresh, Products.get("HalloweenCandyReaper"))
+local noId = table.clone(Products.get("HalloweenCandyReaper")); noId.Id = 0
+okP, whyP = Shop.canPrompt(fresh, noId)
 check(`prompt: never without an ID ({whyP})`, okP == false and tostring(whyP):find("coming soon") ~= nil)
 check("prompt: never for another page's product", (Shop.canPrompt(fresh, Products.get("Spins10"))) == false and (Shop.canPrompt(fresh, nil)) == false)
 check("prompt: a crate key, even with keys already", (Shop.canPrompt(owner, key)) == true)
