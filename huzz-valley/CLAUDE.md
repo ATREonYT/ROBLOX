@@ -227,6 +227,8 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 - **Known gaps (ours):**
   - Not done yet (needs a screen): a dot on Menu when a quest can be claimed.
   - Combine and Prestige both spend girl copies: ask him whether Combine replaces Prestige ([combine.md](docs/notes/combine.md)).
+  - Before the Dance Pack gets an ID: its 4 dances are also sold for coins in Shop > DANCES and its "Dance Themed Items"
+    grant nothing, so a kid could pay Robux for nothing. Asked him (Oct 21) whether pack dances become Robux only (our pick: yes).
   - The friend knife is a placeholder (his Sakura Blade) until he names one ([economy.md](docs/notes/economy.md)).
   - A refunded pass doesn't take its knives back yet.
   - LIKE THE GAME! opens nothing; titles on the three-pad side sit close. WITCH'S BREW and SWEETS & TREATS open the
