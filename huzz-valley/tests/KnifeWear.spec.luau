@@ -414,6 +414,53 @@ do
 			#list == 0 and #all == 54)
 	end
 end
+-- 1b) Oct 21: each screen's Gameplay/FollowGuard (c) removes a visible part inside a character whose box is more
+-- than FollowGuard.LOOSE studs off every body part. No piece of any knife worn where it should be may count: all 53
+-- and the default knife, every piece, on the same bodies.
+do
+	local FG = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/FollowGuard.lua"), { debugName = "FollowGuard" })()
+	local all = {}
+	for key, m in good do table.insert(all, { key, m, CoinShop.get(key) }) end
+	for _, item in CoinShop.Items do
+		if item.Slot == "Knife" and item.Model and string.find(item.Model, "/", 1, true) and not good[item.Key] then table.insert(all, { item.Key, KnifeService.template(item), item }) end
+	end
+	table.insert(all, { "the default knife", KnifeService.template(nil), nil })
+	local function outside(cf, size, at)
+		local p = cf:PointToObjectSpace(at)
+		local h = size / 2
+		local dx, dy, dz = math.max(math.abs(p.X) - h.X, 0), math.max(math.abs(p.Y) - h.Y, 0), math.max(math.abs(p.Z) - h.Z, 0)
+		return math.sqrt(dx * dx + dy * dy + dz * dz)
+	end
+	for _, b in guardBodies do
+		local rig, r6 = b[2], b[3]
+		local worst, worstKey, bad = -math.huge, "", {}
+		for _, k in all do
+			local m = k[2]
+			local h = m:FindFirstChild("Handle", true)
+			local grip = h and h:FindFirstChild("Grip")
+			local c1 = if grip and grip:IsA("Attachment") then grip.CFrame else CFrame.identity
+			local s = KnifeLook.shape(partsOf(m))
+			local wear = KnifeLook.wearOf(k[3] and k[3].Wear, s, m:GetAttribute("Wear"))
+			local torso = rig.parts[KnifeLook.mountPart(wear, r6)]
+			local handleAt = torso.CFrame * KnifeLook.wornC0(wear, torso.Name, torso.Size, s) * c1:Inverse()
+			for _, d in m:GetDescendants() do
+				if d:IsA("BasePart") and d.Transparency < FG.SEE then
+					local at = (handleAt * h.CFrame:ToObjectSpace(d.CFrame)).Position
+					local gap = math.huge
+					for name, l in rig.parts do
+						if FG.LIMBS[name] then gap = math.min(gap, outside(l.CFrame, l.Size, at) - d.Size.Magnitude / 2) end
+					end
+					if gap > worst then worst, worstKey = gap, k[1] .. " " .. d.Name end
+					if gap > FG.LOOSE then bad[k[1]] = true end
+				end
+			end
+		end
+		local list = {}
+		for key in bad do table.insert(list, key) end
+		print(string.format("  loose check, %s: farthest worn piece %.2f studs off the body (%s)", b[1], worst, worstKey))
+		check(string.format("loose check, %s: no worn knife piece is removed", b[1]) .. (if #list > 0 then ": " .. table.concat(list, ", ") else ""), #list == 0)
+	end
+end
 -- 2) The guard itself (HuzzClient/Gameplay/KnifeGuard.scan) on the real KnifeService's default knife, worn on a
 -- blocky R15: where it should be nothing is hidden; its grip moved where his picture shows the block (3 studs to his
 -- left, in front, at his shins, tilted 20 degrees): the knife is hidden; back in place, it shows again; one piece

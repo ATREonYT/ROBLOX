@@ -211,5 +211,50 @@ local before = #lines
 tick(40, bodies)
 check("nothing is told twice", #lines == before)
 
+-- (c) loose inside a character (Oct 21: his close-up has the block outlined with his legs: it's in his character).
+-- A body with real limbs (dana): a dark grip-sized box inside her worn knife, 3 studs to her side at her shins, is
+-- removed (gone, not hidden) with one "[HuzzBlock] removed" line; a loose box straight in her model too; what stays:
+-- her worn knife's grip at the hip, a small accessory on her, big wings reaching out, the knife in her hand at arm's
+-- length, an invisible part far off.
+do
+	local dana, danaRoot, danaLower = body("dana", Vector3.new(-80, 3, 0))
+	local function limb(name, at, size) return part(name, dana, at, size) end
+	limb("Head", Vector3.new(-80, 4.9, 0), Vector3.new(1.2, 1.2, 1.2))
+	limb("LeftUpperLeg", Vector3.new(-80.5, 1.4, 0), Vector3.new(1, 1.2, 1))
+	limb("LeftLowerLeg", Vector3.new(-80.5, 0.5, 0), Vector3.new(1, 0.9, 1))
+	limb("RightUpperLeg", Vector3.new(-79.5, 1.4, 0), Vector3.new(1, 1.2, 1))
+	limb("RightLowerLeg", Vector3.new(-79.5, 0.5, 0), Vector3.new(1, 0.9, 1))
+	local dKnife = folder("!HuzzBackKnife", dana)
+	local dGrip = part("Handle", dKnife, Vector3.new(-78.8, 2, 0.8), Vector3.new(0.22, 0.75, 0.26))
+	local dBlock = part("Handle", folder("!HuzzBackKnife2", dana), Vector3.new(-83.2, 0.6, -1.2), Vector3.new(0.22, 0.75, 0.26))
+	dBlock.CFrame = dBlock.CFrame * CFrame.Angles(0, 0, math.rad(20))
+	local dLoose = part("Part", dana, Vector3.new(-80, 0.6, -3.6), Vector3.new(0.4, 1.2, 0.4), { Color = Color3.fromRGB(163, 162, 165) })
+	local bag = Instance.new("Accessory"); bag.Parent = dana
+	local bagHandle = part("Handle", bag, Vector3.new(-80.9, 2, -0.7), Vector3.new(0.7, 0.8, 0.4))
+	local wings = Instance.new("Accessory"); wings.Parent = dana
+	local wingHandle = part("Handle", wings, Vector3.new(-80, 4, 3.6), Vector3.new(6, 4, 0.5))
+	local held = folder("!HuzzKnife", dana)
+	local heldTip = part("Tip", held, Vector3.new(-80, 1, -5), Vector3.new(0.1, 0.4, 0.2))
+	local dGhost = part("Hitbox", dana, Vector3.new(-80, 1, 8), Vector3.new(2, 2, 2), { Transparency = 1 })
+	local found = {}
+	for _, l in G.loose(dana) do found[l.part] = l.gap end
+	check("(c) the grip-sized block 3 studs off her shins is found", found[dBlock] ~= nil)
+	check("(c) a loose box in her model is found", found[dLoose] ~= nil)
+	check("(c) her worn knife's grip at the hip stays", found[dGrip] == nil)
+	check("(c) a small accessory on her stays", found[bagHandle] == nil)
+	check("(c) big wings stay", found[wingHandle] == nil)
+	check("(c) the knife in her hand stays", found[heldTip] == nil)
+	check("(c) an invisible part stays", found[dGhost] == nil)
+	local n0 = #lines
+	tick(50, { { name = "dana", character = dana, root = danaRoot } })
+	check("(c) the block is removed, not hidden", dBlock.Parent == nil and dLoose.Parent == nil)
+	check("(c) her body and knife are still there", danaLower.Parent == dana and dGrip.Parent ~= nil and bagHandle.Parent ~= nil)
+	local said
+	for i = n0 + 1, #lines do if string.find(lines[i], "[HuzzBlock] removed", 1, true) then said = lines[i] end end
+	check("(c) it says so on one [HuzzBlock] removed line", said ~= nil and string.find(said, "loose inside dana's character", 1, true) ~= nil)
+	local none = #G.loose(Instance.new("Model")) == 0
+	check("(c) a body still loading (no body parts) is left alone", none)
+end
+
 print(string.format("FollowGuard: %d passed, %d failed", passed, failed))
 if failed > 0 then error("FollowGuard spec failed") end

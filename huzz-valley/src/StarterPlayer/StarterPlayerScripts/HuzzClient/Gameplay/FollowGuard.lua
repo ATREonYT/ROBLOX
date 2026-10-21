@@ -7,9 +7,15 @@
 	      outside that character's model.
 	  (b) Following: a small visible part (no side over BIGGEST studs) outside every character that has stayed within
 	      NEAR studs of a body while that body moved FOLLOW studs or more (and FOLLOW_TIME seconds or more).
-	Each one is hidden on this screen (LocalTransparencyModifier 1; Transparency 1 where that doesn't hold) and gets
-	ONE Output line: "[HuzzBlock] hid <path> ..." with its class, size, colour, anchored, shadow, what holds it and
-	its ancestry, so the real cause can still be named and fixed at its source.
+	  (c) Loose inside (Oct 21, owner: "find what it is, and don't try to hide it, remove it"): a visible part INSIDE a
+	      player's own character (his Studio picture design/owner-oct20/2034-black-block-close.png has the block
+	      outlined together with his legs, so it is part of his character, which (a) and (b) never looked at) that is
+	      not a body part and whose box sits more than LOOSE studs off every body part: removed (Destroy) on this
+	      screen. Worn knives are checked too (a piece off the body is the bug, wherever it comes from); the knife in
+	      a hand, the carried girl and a big accessory (wings, a long sword on the back) are not.
+	(a) and (b) are hidden on this screen (LocalTransparencyModifier 1; Transparency 1 where that doesn't hold). Each
+	gets ONE Output line: "[HuzzBlock] hid|removed <path> ..." with its class, size, colour, anchored, shadow, what
+	holds it and its ancestry, so the real cause can still be named and fixed at its source.
 	Never touched (tests/FollowGuard.spec puts each beside a body): anything inside a character or another Humanoid
 	model (bots, girls, stand copies), the worn and held knives, the carried girl and a catcher's follower, the
 	companion, the Shield bubble, the knife motes, the crown, the power effects and bursts, the aura, seats (a SeatWeld
@@ -24,6 +30,17 @@ M.FOLLOW_TIME = 2 -- seconds (a burst's sparks live less than that)
 M.BIGGEST = 3 -- studs: a bigger part isn't the little block
 M.SEE = 0.95 -- more see-through than this: already invisible
 M.MAX_LINES = 12
+M.LOOSE = 1.75 -- studs: (c) a part inside a character whose box is this far off every body part (his block: about 2.3)
+M.SMALL_ACCESSORY = 1.5 -- studs: (c) only accessory pieces this small count (wings and long hair rightly reach out)
+-- (c) the body parts of R15 and R6 bodies (everything else inside a character is something worn or added)
+M.LIMBS = {
+	Head = true, UpperTorso = true, LowerTorso = true, Torso = true,
+	LeftUpperArm = true, LeftLowerArm = true, LeftHand = true, RightUpperArm = true, RightLowerArm = true, RightHand = true,
+	LeftUpperLeg = true, LeftLowerLeg = true, LeftFoot = true, RightUpperLeg = true, RightLowerLeg = true, RightFoot = true,
+	["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true,
+}
+-- (c) never removed: things meant to reach out from a body (the knife swung in a hand, the carried girl)
+M.LOOSE_OK = { HuzzKnife = true, HuzzCarried = true, HuzzFollowers = true, HuzzCompanions = true, HuzzShields = true, HuzzShield = true }
 -- The game's own things that are meant to be on or beside a body (a part inside one of these is never hidden).
 M.ALLOW = {
 	HuzzBackKnife = true, HuzzKnife = true, -- the worn and held knives (HuzzServer/KnifeService)
@@ -206,6 +223,48 @@ function M.collect(root: Instance): { [BasePart]: boolean }
 	return pool
 end
 
+-- How far a world point lies outside a box (0 inside).
+local function outside(cf: CFrame, size: Vector3, at: Vector3): number
+	local p = cf:PointToObjectSpace(at)
+	local h = size / 2
+	local dx, dy, dz = math.max(math.abs(p.X) - h.X, 0), math.max(math.abs(p.Y) - h.Y, 0), math.max(math.abs(p.Z) - h.Z, 0)
+	return math.sqrt(dx * dx + dy * dy + dz * dz)
+end
+
+--[[
+	(c) The visible parts inside this character that sit loose off its body: { { part, gap } }, gap = studs between the
+	part's box and the nearest body part's box (measured from the part's centre less half its diagonal, so a long part
+	touching the body never counts). Nothing when the character has no body parts yet (still loading).
+]]
+function M.loose(character: Instance): { { part: BasePart, gap: number } }
+	local limbs = {}
+	for _, c in character:GetChildren() do
+		if isA(c, "BasePart") and M.LIMBS[c.Name] then table.insert(limbs, c) end
+	end
+	local out = {}
+	if #limbs == 0 then return out end
+	for _, d in character:GetDescendants() do
+		if isA(d, "BasePart") and not (d.Parent == character and (M.LIMBS[d.Name] or d.Name == "HumanoidRootPart")) and visible(d) then
+			local skip = false
+			local x = d.Parent
+			while x and x ~= character do
+				if M.LOOSE_OK[x.Name] or (read(x, "GetAttribute") and x:GetAttribute("HuzzOnBody") == true) then skip = true break end
+				if isA(x, "Accessory") and biggest(d) > M.SMALL_ACCESSORY then skip = true break end
+				x = x.Parent
+			end
+			if not skip then
+				local at, half = d.CFrame.Position, d.Size.Magnitude / 2
+				local gap = math.huge
+				for _, l in limbs do
+					gap = math.min(gap, outside(l.CFrame, l.Size, at) - half)
+				end
+				if gap > M.LOOSE then table.insert(out, { part = d, gap = gap }) end
+			end
+		end
+	end
+	return out
+end
+
 -- Hidden on this screen only.
 function M.hide(p: BasePart)
 	local ok = pcall(function() p.LocalTransparencyModifier = 1 end)
@@ -216,7 +275,7 @@ end
 
 --[[
 	One check of every body. bodies: { { name, character, root } }; state: kept between checks ({ recs, hidden, told });
-	io: { joints, connected?, pool, say }. Returns the parts hidden this time.
+	io: { joints, connected?, pool, say }. Returns the parts hidden or removed this time.
 ]]
 function M.check(bodies, state, io, now: number): { BasePart }
 	state.recs = state.recs or {}
@@ -236,10 +295,21 @@ function M.check(bodies, state, io, now: number): { BasePart }
 		M.hide(p)
 		table.insert(hid, p)
 	end
+	local function remove(p: BasePart, why: string)
+		if state.told < M.MAX_LINES then
+			state.told += 1
+			io.say((string.gsub(M.line(p, why, io.joints), "^%[HuzzBlock%] hid ", "[HuzzBlock] removed ")))
+		end
+		table.insert(hid, p)
+		pcall(function() p:Destroy() end)
+	end
 	for _, b in bodies do
 		local ok, err = pcall(function()
 			for _, p in M.joined(b.character, io.joints, io.connected and io.connected(b.root)) do
 				take(p, `joined to {b.name}'s body`)
+			end
+			for _, l in M.loose(b.character) do
+				remove(l.part, string.format("loose inside %s's character, %.1f studs off the body", b.name, l.gap))
 			end
 			local rec = state.recs[b.character] or {}
 			state.recs[b.character] = rec
