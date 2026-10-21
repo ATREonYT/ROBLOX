@@ -302,4 +302,45 @@ for i = 2, #emits do closest = math.min(closest, emits[i] - emits[i - 1]) end
 check(("glints on a calm timer (%d in 20 s, closest %.2f s)"):format(#emits, closest), #emits >= 5 and #emits <= 11 and closest >= 1.5)
 doll:Destroy()
 
+-- Owner, Oct 21: "make the text not overlap with anything ... more pinpoint and precise". Every box on the stage
+-- (the rule, her copies and their captions, the result and her name, the grade path) and the reason, COMBINE and
+-- the girls' tray sit on one grid: none touches another, each at least 4 px apart, all inside the window.
+do
+	local function box(g)
+		local p = g.Parent
+		local pw, ph = p.Size.X.Offset, p.Size.Y.Offset
+		local w, h = g.Size.X.Offset + g.Size.X.Scale * pw, g.Size.Y.Offset + g.Size.Y.Scale * ph
+		local x = g.Position.X.Offset + g.Position.X.Scale * pw - g.AnchorPoint.X * w
+		local y = g.Position.Y.Offset + g.Position.Y.Scale * ph - g.AnchorPoint.Y * h
+		if p.Name == "Merge" then x += p.Position.X.Offset; y += p.Position.Y.Offset end
+		return { x = x, y = y, w = w, h = h, name = g.Name }
+	end
+	local names = { "Banner", "InputA", "InputB", "Result", "Caption1", "Caption2", "ResultName", "GradeNormal", "GradeSilver", "GradeGold", "GradeDiamond", "Reason", "CombineButton" }
+	local boxes = {}
+	for _, n in names do
+		local g = merge and merge:FindFirstChild(n)
+		check("the stage has " .. n, g ~= nil)
+		if g then table.insert(boxes, box(g)) end
+	end
+	local tray = panel:FindFirstChild("Tray")
+	check("the girls' tray is there", tray ~= nil)
+	if tray then table.insert(boxes, box(tray)) end
+	local worst = math.huge
+	local bad = {}
+	for i = 1, #boxes do
+		for j = i + 1, #boxes do
+			local a, b = boxes[i], boxes[j]
+			local gap = math.max(b.x - (a.x + a.w), a.x - (b.x + b.w), b.y - (a.y + a.h), a.y - (b.y + b.h))
+			worst = math.min(worst, gap)
+			if gap < 4 then table.insert(bad, ("%s/%s %d"):format(a.name, b.name, gap)) end
+		end
+	end
+	check(("no two boxes closer than 4 px (closest %d px) %s"):format(worst, table.concat(bad, ", ")), #bad == 0)
+	local outside = {}
+	for _, b in boxes do
+		if b.x < 0 or b.y < 0 or b.x + b.w > 720 or b.y + b.h > 584 then table.insert(outside, b.name) end
+	end
+	check(("all inside the 720 x 584 window %s"):format(table.concat(outside, ", ")), #outside == 0)
+end
+
 print(("checks: %d ok, %d failed"):format(ok, failed))

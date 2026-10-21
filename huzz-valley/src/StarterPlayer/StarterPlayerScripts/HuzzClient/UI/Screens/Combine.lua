@@ -42,10 +42,10 @@ local CombineScreen = {}
 
 local W, H = 720, 584
 local STAGE = { X = 14, Y = 56, W = 692, H = 304 } -- the merge (its name "Merge" is what the checks look for)
-local SLOT = { W = 116, H = 150, Y = 46, Edge = 34 } -- her two copies, left and right
-local MID = { W = 156, H = 188, Y = 44 } -- the girl you get, in the middle
+local SLOT = { W = 116, H = 150, Y = 50, Edge = 34 } -- her two copies, left and right
+local MID = { W = 156, H = 176, Y = 50 } -- the girl you get, in the middle
 local PATH = { Y = 266, H = 30, W = 128, Arrow = 26 } -- NORMAL > SILVER > GOLD > DIAMOND
-local STRIP = { X = 14, Y = 470, W = 692, H = 104, CardW = 108, CardH = 100, Gap = 8, Pic = 60 }
+local STRIP = { X = 14, Y = 470, W = 692, H = 104, CardW = 128, CardH = 100, Gap = 8, Pic = 60 }
 local STEPS = { "Normal", "Silver", "Gold" } -- the grades that can be combined (Diamond is the top)
 local FONT = ShopStyle.FONT
 local INK2 = Color3.fromHex("0F1A38") -- the dark of every inset box (pills, slots' floors, the girls' tray)
@@ -126,7 +126,8 @@ function CombineScreen.build(parent: Instance)
 	local arrowR = disc("ArrowIn2", "<", midX + MID.W + math.floor(aGap / 2))
 	Effects.breathe(arrowL, { scale = 1.12, seconds = 0.6 })
 	Effects.breathe(arrowR, { scale = 1.12, seconds = 0.6 })
-	local resultName = chunky({ Name = "ResultName", Text = "", FontFace = FONT, TextSize = 26, Position = UDim2.fromOffset(0, MID.Y + MID.H + 2), Size = UDim2.fromOffset(STAGE.W, 30), ZIndex = 4, Parent = side }, 2)
+	local NAME_W = STAGE.W - 2 * (SLOT.Edge + SLOT.W) - 16 -- (between her two copies, so it never runs over them)
+	local resultName = chunky({ Name = "ResultName", Text = "", FontFace = FONT, TextSize = 24, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, MID.Y + MID.H + 4), Size = UDim2.fromOffset(NAME_W, 28), ZIndex = 4, Parent = side }, 2)
 	-- the grade path: NORMAL x3 > SILVER x1 > GOLD x0 > DIAMOND (the three you can combine are buttons)
 	local pathW = 3 * PATH.W + 3 * PATH.Arrow + 110
 	local px = math.floor((STAGE.W - pathW) / 2)
@@ -146,7 +147,7 @@ function CombineScreen.build(parent: Instance)
 	-- what happens, and COMBINE
 	local reason = line({ Name = "Reason", Text = "", FontFace = F.Body, TextSize = 16, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0.1, BackgroundColor3 = INK2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, STAGE.H + 4), Size = UDim2.fromOffset(STAGE.W - 120, 24), ZIndex = 3, Parent = side }, 1.2) -- (just under the stage)
 	Kit.attach(Kit.corner(12), reason)
-	local combine = ShopStyle.chunkyButton(Kit.button({ Name = "CombineButton", Text = "COMBINE", Style = "Disabled", FontFace = FONT, TextSize = 26, Corner = 6, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, STAGE.H + 34), Size = UDim2.fromOffset(260, 46), ZIndex = 5, Parent = side }))
+	local combine = ShopStyle.chunkyButton(Kit.button({ Name = "CombineButton", Text = "COMBINE", Style = "Disabled", FontFace = FONT, TextSize = 26, Corner = 6, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, STAGE.H + 36), Size = UDim2.fromOffset(260, 44), ZIndex = 5, Parent = side }))
 	local combineBreathe = Effects.breathe(combine.Instance, { scale = 1.04, seconds = 0.9 })
 	combineBreathe.Name = "ReadyBreathe"
 
@@ -285,7 +286,7 @@ function CombineScreen.build(parent: Instance)
 		picture(out, "r", c.model, up)
 		resultName.Text = if up then title(c.name, up) else title(c.name, grade)
 		resultName.TextColor3 = if up then gradeColor(up) else C.Text
-		Kit.fitLine(resultName, STAGE.W - 20, 26, 16, true)
+		Kit.fitLine(resultName, NAME_W, 24, 14, true)
 		local ok, why = CombineRules.can(State.data, c.id, grade)
 		if busy then
 			reason.Text = "Combining..."
