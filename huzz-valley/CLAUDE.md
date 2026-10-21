@@ -10,9 +10,14 @@ section 9); read only the one you need.
 > **Work in progress.** The owner's newest message always beats anything written here. Most of it was only checked
 > offline; every tuning number, look and feel is a first pass waiting for his verdict in Studio.
 
+> **Where we are (Oct 21).** A first release candidate: he plans to publish soon, and says "we have more to do, way
+> more". Built and checked offline: the full round loop, 53 of his knives, crates (coins or Aura), the one-page Shop,
+> abilities, the Combine machine, dances with licensed songs, lobby, girls. Not yet seen by him in Studio: almost all
+> of Oct 20 (section 7). Open questions for him: section 8. His latest asks and how we split them: `docs/plan-*.md`.
+
 **Keep notes, in the same commit as the change:** update the topic file it belongs to (a new system gets a new file
 and an index row). When a change makes a note false, rewrite the note; don't append "was X" (one short reason is
-fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and code header comments true.
+fine). Owner quotes go in the topic's "Why" part. Keep this core under about 30 KB (move detail to a topic file) and code header comments true.
 
 ## 0. Start here (every session)
 - Branch `HUZZ-VALLEY`, run everything from `huzz-valley/`. A fresh cloud container has no Lune: install it once with
@@ -47,6 +52,17 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   (or Random, a new one you own each round), E = Speed Boost only while carrying the girl; catcher Q and E = the two
   you bring (Bear Trap and Slow Wave to start; no Menu row: [economy.md](docs/notes/economy.md), [effects.md](docs/notes/effects.md)); click = stab (1 s knife charge); shift lock in rounds
   (Alt frees the mouse).
+- **Stand out from Huss Valley where it's ours** (Oct 20 20:34: "Right now this is a bare copy of huss valley. We
+  want to stand out"): the loop and feel stay Huss Valley's, but powers use HIS pictures (round bar and Shop, cut from
+  `design/owner-oct20/2034-ablt1-powers-and-crates.png`), and the girls, Combine and Halloween look are our identity.
+- **Shop** (Oct 20, [ui.md](docs/notes/ui.md), [economy.md](docs/notes/economy.md)): ONE compact page ("all close to
+  eachother", "logical"), jump buttons on the side, sections in order HALLOWEEN, CRATES, DANCES, KNIVES, ABILITIES,
+  PASSES, AURA, COINS, COSMETICS. Our colours (kit purple/navy, studs) with Halloween touches; cards pop in, buttons
+  bob, crates rock (his "animate the ui more", motion base: `design/owner-oct20/1425-shop-reference.mp4`). **Knives are
+  never sold, only opened from crates** (the server refuses coin buys); a crate's odds and pity show in a side panel
+  when you tap it, never on the main page; every crate picture on one shared backdrop. Dances are bought one by one in
+  DANCES. Abilities are bought and picked in ABILITIES. Keep this layout; he said "keep the layout ... just make it better".
+- **Lobby stands:** 3 avatar stands (Hunter, Moonlit, Sunrise), not 5 (Oct 20 20:34).
 - **No girl toss** (removed). **Safe means safe:** once across you stay across. During a Hero run only the Hero and
   catchers move.
 - **Companions are only girls you win** (the kit's Aiko/Ren/Sora/Hina mock-ups were removed). The equipped girl
@@ -95,6 +111,21 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     `tests/Spawns.spec.luau` checks them on his real place.
   - Worktree agents can't run `bash tools/check.sh` (blocked): run each `lune run tests/X.spec.luau` and the sim on
     their own, and pass harness snippets as `@file` instead of `"$(cat file)"`.
+- **Lessons from Oct 20** (his longest day; he said "i think you may be losing track midway"):
+  - A big message: save it verbatim with a job table in `docs/plan-<date>.md` first, keep one status checklist, and
+    tick every item he named before reporting. Answer every item, even the ones that need him ("is it something i
+    didnt input?" deserves a plain yes or no and the steps).
+  - Commit his uploads into `design/owner-<date>/` BEFORE starting agents, and give agents that commit as their base.
+  - "I asked so many times" (the black block): a safety net isn't a fix. Prove the cause with evidence; when it can't be
+    proven offline, ship a guard that removes it AND names it in Output (`Gameplay/FollowGuard`, `[HuzzBlock]`).
+  - Check what he already did before telling him to do it: his knife imports were in his place all along, only
+    never set up (now done offline by the build).
+  - The sim is not deterministic: loop it (8+ passes in a row) before calling a fix done.
+  - Test budgets creep: the picture-memory smoke limit went 100 to 136 in one day. Raise it only with a reason in its
+    comment, and say so in the report.
+  - The container can restart and kill background loops: commit and push after every merge.
+  - He doesn't answer decision cards quickly: proceed on the recommended option and say so; ask real questions in the
+    reply, one line each, with our pick.
 
 ## 3. Where things are (`src/`, Rojo `default.project.json`)
 - `ReplicatedStorage/Shared`: pure, tested logic (`RoundRules`, `CrateRoll`, `SpinRules`, `GirlRoll`, `CarryMath`,
