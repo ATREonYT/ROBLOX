@@ -117,9 +117,12 @@ end
 check("six jump buttons right of the window, in the page's order", okJ)
 local function atTop(key: string): boolean
 	local h = products:FindFirstChild("Head" .. key)
-	return h ~= nil and math.abs(products.CanvasPosition.Y - (h.Position.Y.Offset + 4)) <= 1
+	-- (since Oct 21 17:17 a jump lands on the cards, the header just above: owner, "show the crates straight away")
+	local want = h and h.Position.Y.Offset + h.Size.Y.Offset + 4
+	local maxY = math.max(0, products.CanvasSize.Y.Offset - products.Size.Y.Offset)
+	return h ~= nil and math.abs(products.CanvasPosition.Y - math.min(want, maxY)) <= 1
 end
-check("opened at COINS: its header at the top of the page", atTop("Coins"))
+check("opened at COINS: its cards at the top of the page", atTop("Coins"))
 local inOrder, prevY = true, -1
 for _, k in order do
 	local h = products:FindFirstChild("Head" .. k)

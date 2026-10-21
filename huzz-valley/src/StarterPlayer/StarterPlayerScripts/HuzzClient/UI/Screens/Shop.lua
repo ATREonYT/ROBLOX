@@ -1005,6 +1005,7 @@ function Shop.build(parent: Instance)
 	-- CRATES ------------------------------------------------------------------------------------------------------------
 	mark("Crates")
 	block(head(bySection.Crates), HEAD.H)
+	mark("Crates@") -- (a jump lands here: its cards, the header just above)
 	local crateCards = {}
 	for _, crate in Crates.List do
 		if not isHalloween(crate) then table.insert(crateCards, crateCard(crate, NAVY)) end
@@ -1043,6 +1044,7 @@ function Shop.build(parent: Instance)
 	-- every dance with a coin price (Config/Dances Coins). Tap one for its preview; BUY (ActionService "BuyDance").
 	mark("Dances")
 	block(head(bySection.Dances), HEAD.H)
+	mark("Dances@") -- (a jump lands here: its cards, the header just above)
 	local pack = Products.get("DancePack")
 	if pack then passBanner(pack) end
 	local danceList = {}
@@ -1083,6 +1085,7 @@ function Shop.build(parent: Instance)
 	-- the buying menu"): they come from the crates above, the Halloween knives, the Game Passes and quests.
 	mark("Knives")
 	block(head(bySection.Knives), HEAD.H)
+	mark("Knives@") -- (a jump lands here: its cards, the header just above)
 	local items: { [string]: { card: Frame, item: any } } = {}
 	local function itemCard(item, lk, sec: string): Frame
 		local c = card(item.Key, SMALL.W, SMALL.H, lk)
@@ -1198,11 +1201,13 @@ function Shop.build(parent: Instance)
 	abHead.Visible, abSlot.Visible = hasAbilities, hasAbilities
 	abSlot.Size = UDim2.fromOffset(CW, math.max(0, math.round(abH)))
 	block(abHead, HEAD.H)
+	mark("Abilities@")
 	block(abSlot, abSlot.Size.Y.Offset, 0, 0)
 
 	-- PASSES ------------------------------------------------------------------------------------------------------------
 	mark("Passes")
 	block(head(bySection.Passes), HEAD.H)
+	mark("Passes@") -- (a jump lands here: its cards, the header just above)
 	local passCards = {}
 	for i, p in Products.knifePasses() do
 		local c = bigCard(p.Key, NAVY, p.Name)
@@ -1231,6 +1236,7 @@ function Shop.build(parent: Instance)
 	-- AURA --------------------------------------------------------------------------------------------------------------
 	mark("Aura")
 	block(head(bySection.Aura), HEAD.H)
+	mark("Aura@") -- (a jump lands here: its cards, the header just above)
 	local auraCards = {}
 	for i, p in Products.Aura do
 		local c = bigCard(p.Key, NAVY, p.Name)
@@ -1246,6 +1252,7 @@ function Shop.build(parent: Instance)
 	-- COINS -------------------------------------------------------------------------------------------------------------
 	mark("Coins")
 	block(head(bySection.Coins), HEAD.H)
+	mark("Coins@") -- (a jump lands here: its cards, the header just above)
 	local coinCards = {}
 	for i, p in Products.Coins do
 		local c = bigCard(p.Key, NAVY, p.Name)
@@ -1267,6 +1274,7 @@ function Shop.build(parent: Instance)
 	-- COSMETICS ---------------------------------------------------------------------------------------------------------
 	mark("Cosmetics")
 	block(head(bySection.Cosmetics), HEAD.H)
+	mark("Cosmetics@") -- (a jump lands here: its cards, the header just above)
 	-- the filter row: type chips; rarity chips with OWNED / NOT OWNED beside them
 	do
 		local lookItems = {}
@@ -1327,7 +1335,9 @@ function Shop.build(parent: Instance)
 	end
 	function scrollTo(key: string, animate: boolean?)
 		key = ALIAS[key] or key
-		local y = sectionY[key]
+		-- (owner, Oct 21 17:17: "when you press crates, make it show the crates straight away, not the text, so the
+		-- user doesnt have to scroll down": a jump lands on the section's cards, its big header scrolled just above)
+		local y = sectionY[key .. "@"] or sectionY[key]
 		if y == nil and cardsOf[key] then y = (cardsOf[key] :: GuiObject).Position.Y.Offset - 8 end -- (a crate: its card)
 		if y == nil then return end
 		local okW, win = pcall(function() return body.AbsoluteWindowSize end) -- (scaled px; unknown offline)
