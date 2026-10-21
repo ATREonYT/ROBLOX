@@ -64,6 +64,11 @@ The huss pose and walk animations: [animations.md](animations.md).
   body the head look, the lean, the strafe and the pack's walk never ran (Roblox's plain walk instead), on his screen
   and everyone else's. Now every joint is found with `CarryMath.holding` (either kind, doubled ones written together);
   CrownPose too. Specs: `tests/AvatarAnims.spec` "newer joints", `tests/PlayerMoves.spec` (head turns on that body).
+- **Small angles (Oct 21, owner: "make it perfect so it doesnt seem weird in little angles"):** the head aims no
+  nearer than `Look.Near` 40 studs past itself along the cursor's ray (`HeadAim`: a cursor on the floor or a wall
+  just past you swung it a long way and jumped at edges), and holds still in the world while the body turns under it
+  (`LocomotionMix.look`'s yaw, up to `HoldMax` 60° a frame, never past the neck's reach or when aiming behind you):
+  a 30° tap of D used to drag the head 20° off the aim before it sprang back, now 0 (`tests/Locomotion.spec`).
 - **Everyone sees everyone's head** (`HeadAim.start`, remote `HeadLook`, `HuzzServer/HeadLookService`): your screen
   sends the head's turn and tilt as drawn, whole degrees, 5 times a second at most and only when it moved 2°; the
   server drops anything past 8 a second, NaN or text, clamps it to the neck's reach and puts it on your character
@@ -166,6 +171,11 @@ The huss pose and walk animations: [animations.md](animations.md).
 - **Secret cutscene hand-back:** a 0.2 s dip to black; once fully black the camera goes back to Roblox (Custom) behind
   where you stand now (your old angle and distance), black holds 2 frames, then lifts (no fly-back, no cut on a clear
   screen).
+- **The HERO / CHICKEN shot holds still** (owner, Oct 21: "make the camera not be locked onto you moving with your
+  characters movements, just keep it focused in one place, then zoom in and out"): the face shot is set up once from
+  the picked runner's head and body facing when it lands (their pose and head look used to drag it up to 9 studs and
+  52°), then Chosen eases in over `Shot.PushTime` 0.6 s and the hand-back pulls out. Check:
+  `tools/preview/check_hero_camera.luau` (harness, with setup_ui.luau).
 - The Countdown waits for the camera's swing back: [round.md](round.md).
 
 ## Checks and films

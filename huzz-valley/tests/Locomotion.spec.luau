@@ -432,6 +432,22 @@ do
 			last = look
 		end
 		check(biggest < 12, string.format("sweeping the cursor past you: the head follows smoothly (at most %.1f degrees a frame)", biggest))
+
+		-- Oct 21 (owner: "make it perfect so it doesnt seem weird in little angles"): a tap of D turns the body 30
+		-- degrees right in 0.2 s while you keep aiming at the same spot; the head stays on it instead of turning with
+		-- the body and springing back
+		local function drift(hold)
+			local s3, worst = Mix.new(), 0
+			for i = 0, 45 do
+				local yaw = -math.rad(30) * math.min(i / 6, 1) -- (Roblox's Y angle: right is negative)
+				local look = Mix.look(s3, 1 / 30, yaw, true, 0, nil, nil, if hold then yaw else nil)
+				if i > 0 then worst = math.max(worst, math.abs(math.deg(look - yaw))) end
+			end
+			return worst
+		end
+		local before, after = drift(false), drift(true)
+		check(after < 1 and before > 8, string.format("a small turn: the head stays on the spot (off by %.1f degrees, was %.1f)", after, before))
+		print(string.format("  a 30 degree tap of D: the head strays %.1f degrees off where you aim (was %.1f)", after, before))
 	end
 
 	-- Oct 19 19:48 (owner: "make the users head move but make it follow mouse movements"): up and down too, a neck's

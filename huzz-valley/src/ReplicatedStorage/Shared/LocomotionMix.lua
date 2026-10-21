@@ -347,9 +347,24 @@ end
 	of flipping. up (Oct 19 19:48, the head follows the mouse): how far above the body's level the aim is (radians,
 	+ = up), Look.Up / Down degrees at most, shift lock or not. remote: another player's head from the turn their
 	screen sent (Gameplay/HeadAim), springing with the softer RemoteResponse. Returns the head's (turn, tilt). ]]
-function LocomotionMix.look(s, dt, aim: number, on: boolean, quiet: number?, up: number?, remote: boolean?): (number, number)
+function LocomotionMix.look(s, dt, aim: number, on: boolean, quiet: number?, up: number?, remote: boolean?, yaw: number?): (number, number)
 	local C = s.C.Look or LOOK
 	local live = 1 - clamp(quiet or 0, 0, 1)
+	-- yaw: the body's turn in the world this frame (radians, Roblox's Y angle). Owner, Oct 21 ("make it perfect so it
+	-- doesnt seem weird in little angles"): the head used to turn WITH the body for a moment every time it turned
+	-- (a tap of A or D) and then spring back. Now the head's turn takes back the body's own turn at once, so the
+	-- head stays where it looked in the world and only springs as the aim itself moves.
+	if yaw then
+		if s.lookYaw and on then
+			local d = (yaw - s.lookYaw + pi) % (2 * pi) - pi
+			-- (not a respawn or a teleport; not when you now aim behind you, where the head comes round to the front
+			-- anyway; never past the neck's reach)
+			if math.abs(d) < rad(C.HoldMax or 60) and math.abs(aim) <= rad(C.BackFrom) then
+				s.look = clamp(s.look + d, -rad(C.Max), rad(C.Max))
+			end
+		end
+		s.lookYaw = yaw
+	end
 	local target, tilt = 0, 0
 	if live > 0 then
 		local fade = 1 - smooth((math.deg(math.abs(aim)) - C.BackFrom) / C.Fade)

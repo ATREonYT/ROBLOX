@@ -28,6 +28,7 @@ local Mix = require(Shared.LocomotionMix)
 local LOOK = Run.Loco.Look
 local FAR = 300 -- studs along the cursor's ray when it points at the sky
 local HEAD = 1.5 -- studs from the root part's middle to the eyes (standard R15)
+local NEAR = LOOK.Near or 40 -- studs: the head never aims at a point nearer than this past it (see target)
 
 local params = nil -- (made on first use: the offline test harness has no RaycastParams)
 
@@ -79,10 +80,15 @@ local function target(root: BasePart, cam: Camera): Vector3
 		table.insert(skip, hit.Instance)
 		from = hit.Position
 	end
-	-- (a point between the camera and your head, or right at it, says nothing about a direction: along the ray)
+	-- Never closer than NEAR studs past your head along the ray (owner, Oct 21: "make it perfect so it doesnt seem
+	-- weird in little angles"): with the cursor on the floor or a wall just past you, a tiny mouse move swung the head
+	-- a long way and it jumped as the cursor crossed an edge. Past NEAR the head looks along the ray, as it does at
+	-- the sky; nearer things just pull the point in to NEAR, so it moves smoothly.
 	local eyes = root.Position + root.CFrame.UpVector * HEAD
-	if (point - origin):Dot(dir) < (eyes - origin):Dot(dir) + 3 then
-		point = eyes + dir * FAR
+	local depth = (point - origin):Dot(dir)
+	local least = (eyes - origin):Dot(dir) + NEAR
+	if depth < least then
+		point = origin + dir * least
 	end
 	return point
 end

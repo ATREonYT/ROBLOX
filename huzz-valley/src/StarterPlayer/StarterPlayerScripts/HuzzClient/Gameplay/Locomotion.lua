@@ -341,7 +341,7 @@ local function attach(character: Model)
 			-- (toward the point under the mouse: 0 = straight ahead of you, + = to your right / up; Gameplay/HeadAim)
 			local cam = Workspace.CurrentCamera
 			local aim, up = HeadAim.aim(root)
-			local look, tilt = Mix.look(mix, dt, aim, not locked and cam ~= nil, quiet, up)
+			local look, tilt = Mix.look(mix, dt, aim, not locked and cam ~= nil, quiet, up, nil, select(2, root.CFrame:ToEulerAnglesYXZ()))
 			HeadAim.report(look, tilt)
 			if waistJoint and neckJoint and waistJoint.Parent and neckJoint.Parent then
 				local waistPose, neckPose = current(waistJoint), current(neckJoint)

@@ -58,6 +58,7 @@ end
 
 -- Picking, second part, and Chosen: a medium shot of the picked runner from the front (their upper body, a
 -- neighbour either side, as in the reference). head: their Head CFrame. chosen: once they've picked, closer.
+Shot.PushTime = 0.6 -- seconds the camera takes to zoom in once they've chosen (Gameplay/Cinematic eases it)
 function Shot.face(line, head, chosen)
 	local face = head.LookVector
 	face = Vector3.new(face.X, 0, face.Z)

@@ -116,7 +116,11 @@ return {
 		-- spring to it with RemoteResponse (softer: the values come 5 times a second).
 		-- (Max 90, was 70, Oct 21: running side-on, the head can stay on the middle of the screen, as in HV's recording)
 		Look = { Max = 90, BackFrom = 110, Fade = 30, Response = 10, Up = 30, Down = 35, SendRate = 5, SendStep = 2,
-			RemoteResponse = 8 },
+			RemoteResponse = 8,
+			-- Oct 21 (owner: "make it perfect so it doesnt seem weird in little angles"): the head aims no nearer than
+			-- Near studs past itself (Gameplay/HeadAim), and holds still in the world while the body turns under it
+			-- (a turn of up to HoldMax degrees in one frame; LocomotionMix.look's yaw)
+			Near = 40, HoldMax = 60 },
 		-- Shift lock (owner, Oct 19: "when you shift lock the only thing that moves when you press w a s d (etc) is
 		-- their body not their head"; 18:16 "when he presses D, the body turns right": MaxTurn 90, was 70, so D is a
 		-- full side-on run like HV's): the hips and legs turn toward the way you move, up to MaxTurn degrees; the

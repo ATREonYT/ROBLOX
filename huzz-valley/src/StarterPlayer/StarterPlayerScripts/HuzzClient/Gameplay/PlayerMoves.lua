@@ -291,13 +291,14 @@ function M.start()
 			local look, tilt = 0, 0
 			if isMe and camCF then
 				local aim, up = HeadAim.aim(root)
-				look, tilt = Mix.look(rec.mix, sdt, aim, not on, still, up)
+				look, tilt = Mix.look(rec.mix, sdt, aim, not on, still, up, nil, select(2, root.CFrame:ToEulerAnglesYXZ()))
 				HeadAim.report(look, tilt)
 			elseif not isMe then
 				local sent = character:GetAttribute("HuzzLook")
 				if typeof(sent) == "Vector2" or rec.mix.look ~= 0 or (rec.mix.lookUp or 0) ~= 0 then
 					local v = if typeof(sent) == "Vector2" then sent else Vector2.zero
-					look, tilt = Mix.look(rec.mix, sdt, math.rad(v.X), true, still, math.rad(v.Y), true)
+					look, tilt = Mix.look(rec.mix, sdt, math.rad(v.X), true, still, math.rad(v.Y), true,
+						select(2, rec.root.CFrame:ToEulerAnglesYXZ()))
 				end
 			end
 			rec.turned = nil

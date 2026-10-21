@@ -144,6 +144,7 @@ function M.start()
 	-- Where the camera is (eye and the point it looks at), and the move from the last shot to this one.
 	local eye, look = Vector3.zero, Vector3.zero
 	local shotKey, fromEye, fromLook, moveStart = nil, nil, nil, 0
+	local frozen, chosenAt = nil, nil -- (the face shot's fixed spot for this pick; when Chosen started on this screen)
 	local function current()
 		local cf = camera.CFrame
 		return cf.Position, cf.Position + cf.LookVector * 12
@@ -154,6 +155,7 @@ function M.start()
 			return
 		end
 		playing = false
+		chosenAt = nil
 		highlight.Enabled = false
 		highlight.Adornee = nil
 		-- Swing back behind our own character, then hand the camera back to Roblox.
@@ -283,8 +285,30 @@ function M.start()
 					lastHop = -1
 					Sfx.play("pick_land")
 				end
-				key = if stage == "Chosen" then "Chosen" else "Face"
-				toEye, toLook = Shot.face(line, head.CFrame, stage == "Chosen")
+				-- Owner, Oct 21 ("when the hero or chicken animation is there, make the camera not be locked onto you
+				-- moving with your characters movements, just keep it focused in one place, then zoom in and out"):
+				-- the shot is set up once from where they stand when it lands on them (their head, their body's
+				-- facing), so their pose, their head following the mouse or a step doesn't drag the camera. Then
+				-- it only zooms: in on Chosen (eased over Shot.PushTime), back out on the hand-back.
+				local pickAt = round:GetAttribute("PickAt")
+				if not frozen or frozen.at ~= pickAt or frozen.id ~= picked.UserId then
+					local body = picked.Character and picked.Character:FindFirstChild("HumanoidRootPart")
+					local f = if body then body.CFrame.LookVector else head.CFrame.LookVector
+					f = Vector3.new(f.X, 0, f.Z)
+					f = if f.Magnitude > 0.01 then f.Unit else -line.LookVector
+					frozen = { at = pickAt, id = picked.UserId, cf = CFrame.lookAt(head.Position, head.Position + f) }
+				end
+				key = "Face"
+				toEye, toLook = Shot.face(line, frozen.cf, false)
+				if stage == "Chosen" then
+					chosenAt = chosenAt or os.clock()
+					local inEye, inLook = Shot.face(line, frozen.cf, true)
+					local x = math.clamp((os.clock() - chosenAt) / Shot.PushTime, 0, 1)
+					x = x * x * (3 - 2 * x)
+					toEye, toLook = toEye:Lerp(inEye, x), toLook:Lerp(inLook, x)
+				else
+					chosenAt = nil
+				end
 				highlight.Adornee = picked.Character
 				highlight.Enabled = true
 				highlight.FillTransparency = 0.7 -- landed: a soft gold glow
