@@ -173,7 +173,7 @@ function Results.fill(data: { [string]: any })
 	-- the girl: yours, a spare copy, or who took her
 	local girl = tostring(data.girl or "")
 	if data.gotGirl and tonumber(data.dupeCoins) then
-		girlLine.Text = `Spare {girl}: +{math.floor(data.dupeCoins)} coins, prestige her!`
+		girlLine.Text = `Spare {girl}: +{math.floor(data.dupeCoins)} coins, combine her!`
 		girlLine.TextColor3 = rarityColor[data.rarity] or C.Text
 	elseif data.gotGirl then
 		girlLine.Text = `{girl} is yours!`

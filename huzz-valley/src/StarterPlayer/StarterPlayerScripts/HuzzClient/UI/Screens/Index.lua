@@ -6,9 +6,9 @@
 -- Those crops still carry the kit's printed tier badge (and Aiko's star), so the live badge/star are drawn exactly
 -- over them (ART below says where), and a locked card always shows the kit's dark silhouette, never coloured art.
 -- Anime girls you win in rounds are listed too (Config/Characters.addGirls), drawn live from their real models.
--- PRESTIGE (owner, Oct 19: "if you get more than one of the same girl, make a button which makes them prestige that
--- gives them cooler vfx"): a girl won again saves a spare copy; the green PRESTIGE button on her picture spends one
--- and raises her to PRESTIGE 1/3, 2/3, 3/3 (shown top left of her picture). Rules: Shared/PrestigeRules.
+-- Combine replaced Prestige (owner, Oct 21: "replace prestige with combine"): a girl won again saves a copy; her
+-- copies show top left of her picture ("Normal 3   Silver 1") and, when two match, the green COMBINE button at its
+-- foot opens the Combine window on her (UI/Screens/Combine; the merge itself happens at the machine in the lobby).
 -- The Combine machine (Oct 20): a girl shows her best grade, in her picture (Shared/GirlGrade) and as a SILVER / GOLD /
 -- DIAMOND badge at the picture's bottom left (Shared/CombineRules.best; Config/Combine badge colours).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,7 +23,6 @@ local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
 local GirlPicture = require(UI.GirlPicture)
-local PrestigeRules = require(Shared.PrestigeRules)
 local CombineRules = require(Shared.CombineRules)
 local CombineConfig = require(Shared.Config.Combine)
 
@@ -332,30 +331,37 @@ function Index.build(parent: Instance)
 	local action = Kit.button({ Name = "EquipAction", Style = "IndexEquip", Text = "UNEQUIP", TextSize = 20, Gap = 10, Corner = 5, Position = UDim2.fromOffset(566, 275), Size = UDim2.fromOffset(126, 38), ZIndex = 3, Parent = panel })
 	local actionIcon: ImageLabel? = nil
 	local actionKey = ""
-	-- prestige: her level top left of her picture, and the PRESTIGE button at its foot while a spare copy waits
+	-- her copies top left of her picture, and COMBINE at its foot when two match
 	-- (150 wide: her rarity badge sits at the picture's top right, from x 515)
-	local prestigeLine = Kit.text({ Name = "PrestigeLevel", Text = "", FontFace = F.Heading, TextSize = 15, TextColor3 = C.Accent, TextWrapped = false, Position = UDim2.fromOffset(355, 84), Size = UDim2.fromOffset(150, 20), ZIndex = 4, Visible = false, Parent = panel })
-	new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = prestigeLine })
-	local spareLine = Kit.text({ Name = "PrestigeSpare", Text = "", FontFace = F.Name, TextSize = 12, TextColor3 = C.SubText, TextWrapped = false, Position = UDim2.fromOffset(355, 104), Size = UDim2.fromOffset(150, 16), ZIndex = 4, Visible = false, Parent = panel })
-	new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.2, LineJoinMode = Enum.LineJoinMode.Round, Parent = spareLine })
-	local prestigeBtn = Kit.button({ Name = "Prestige", Style = "Selected", Text = "PRESTIGE", FontFace = F.Button, TextSize = 16, Corner = 5, RimThickness = 2, Position = UDim2.fromOffset(355, 276), Size = UDim2.fromOffset(132, 34), ZIndex = 4, Parent = panel })
-	prestigeBtn.Instance.Visible = false
+	local copiesLine = Kit.text({ Name = "CombineCopies", Text = "", FontFace = F.Heading, TextSize = 15, TextColor3 = C.Accent, TextWrapped = false, Position = UDim2.fromOffset(355, 84), Size = UDim2.fromOffset(150, 20), ZIndex = 4, Visible = false, Parent = panel })
+	new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = copiesLine })
+	local hintLine = Kit.text({ Name = "CombineHint", Text = "", FontFace = F.Name, TextSize = 12, TextColor3 = C.SubText, TextWrapped = false, Position = UDim2.fromOffset(355, 104), Size = UDim2.fromOffset(150, 16), ZIndex = 4, Visible = false, Parent = panel })
+	new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.2, LineJoinMode = Enum.LineJoinMode.Round, Parent = hintLine })
+	local combineBtn = Kit.button({ Name = "Combine", Style = "Selected", Text = "COMBINE", FontFace = F.Button, TextSize = 16, Corner = 5, RimThickness = 2, Position = UDim2.fromOffset(355, 276), Size = UDim2.fromOffset(132, 34), ZIndex = 4, Parent = panel })
+	combineBtn.Instance.Visible = false
 
 	local shownPreview = ""
 	local function refreshPreview()
 		local c = selected and Characters.get(selected)
 		local visible = c ~= nil
 		for _, g in { previewArt, info, favBig.Instance, nameRow, statusRow, action.Instance } do g.Visible = visible end
-		prestigeLine.Visible, spareLine.Visible, prestigeBtn.Instance.Visible = false, false, false
+		copiesLine.Visible, hintLine.Visible, combineBtn.Instance.Visible = false, false, false
 		if not c then return end
 		local isOwned, isEq, isFav = owned(c.Id), equipped(c.Id), favourite(c.Id)
 		if isOwned then
-			local level, copies = PrestigeRules.level(State.data, c.Id), PrestigeRules.copies(State.data, c.Id)
-			prestigeLine.Visible = level > 0 or copies > 0
-			prestigeLine.Text = PrestigeRules.label(level)
-			spareLine.Visible = copies > 0 and level < PrestigeRules.Max
-			spareLine.Text = if copies == 1 then "1 spare copy" else `{copies} spare copies`
-			prestigeBtn.Instance.Visible = (PrestigeRules.can(State.data, c.Id))
+			local counts = CombineRules.counts(State.data, c.Id)
+			local parts, ready = {}, false
+			for _, g in CombineRules.Grades do
+				local n = counts[g] or 0
+				if n > 0 then table.insert(parts, `{g} {n}`) end
+				if CombineRules.next(g) and n >= CombineRules.Need then ready = true end
+			end
+			copiesLine.Text = table.concat(parts, "   ")
+			copiesLine.Visible = #parts > 0
+			Kit.fitLine(copiesLine, 150, 15, 10, true)
+			hintLine.Text = if ready then "2 match: combine her!" else "Win her again to combine"
+			hintLine.Visible = c.Model ~= nil
+			combineBtn.Instance.Visible = ready
 		end
 		-- picture: the whole character (or the locked silhouette); a character with no big picture shows its card
 		local key = c.Id .. (isOwned and "+" or "-") .. (gradeOf(c) or "")
@@ -578,21 +584,9 @@ function Index.build(parent: Instance)
 		local ok, why = State.action("FavoriteCharacter", selected, not favourite(selected))
 		if not ok then Toast.show(why or "Couldn't change that favourite.") end
 	end)
-	prestigeBtn.onClick(function()
+	combineBtn.onClick(function()
 		if busy or not selected then return end
-		local id = selected
-		busy = true
-		prestigeBtn.setEnabled(false)
-		local ok, result = State.action("Prestige", id)
-		busy = false
-		prestigeBtn.setEnabled(true)
-		local c = Characters.get(id)
-		if ok then
-			Toast.show(`{c and c.Name or "She"} is {PrestigeRules.label(tonumber(result) or 1)}! Cooler effects.`)
-			Motion.pop(previewArt)
-		else
-			Toast.show(result or "That didn't work. Try again.")
-		end
+		ModalManager.open("Combine", selected)
 	end)
 
 	action.onClick(function()

@@ -11,7 +11,6 @@ local CrownPose = require(ReplicatedStorage.Shared.CrownPose)
 local Crates = require(ReplicatedStorage.Shared.Config.Crates)
 local CrateRoll = require(ReplicatedStorage.Shared.CrateRoll)
 local HalloweenShop = require(ReplicatedStorage.Shared.Config.HalloweenShop)
-local PrestigeRules = require(ReplicatedStorage.Shared.PrestigeRules)
 local AbilityRules = require(ReplicatedStorage.Shared.AbilityRules)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
@@ -36,14 +35,7 @@ function VERBS.Equip(player, id)
 	return ok, why
 end
 
--- PRESTIGE in the Index (Shared/PrestigeRules): spends a spare copy of her, up to level 3
-function VERBS.Prestige(player, id)
-	local level, why = nil, nil
-	DataService.update(player, function(data)
-		level, why = PrestigeRules.apply(data, id)
-	end)
-	return level ~= nil, if level then level else why
-end
+-- (No "Prestige" any more: owner, Oct 21, "replace prestige with combine". A spare copy goes in the Combine machine.)
 
 -- The Combine machine (Shared/CombineRules): two of the same girl at the same grade make one a grade up. Every check
 -- (near the machine, not in a round, one at a time) and the save are in HuzzServer/CombineService.

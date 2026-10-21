@@ -3,7 +3,7 @@
 --     reset clock; a finished quest claims once, gives what it says, and the HUD QUESTS button wears "!" until then.
 --   Winner page (his picture a): RUNNERS / CATCHERS WIN, the tab's line, MVP / Survival / Catches top 3 with ties
 --     ("Joint #3"), XP parts adding up, the level bar from the save.
---   Prestige: a spare copy lets PRESTIGE raise her level (server-checked), up to 3; the companion carries the level.
+--   Combine replaced Prestige (Oct 21): her copies in the Index, COMBINE opens the Combine window on her.
 --   Friend rewards: the HUD has INVITE and shows "+10% COINS" with a friend in; the reward is once per account.
 -- From tools/preview: lune run harness.luau ../../src - "$(cat check_oct19.luau)" setup_ui.luau
 local ok, fails = 0, 0
@@ -118,27 +118,24 @@ check("RUNNERS WIN with nobody crossing: a plain line, no cards", rp.Outcome.Tex
 MM.close()
 task.wait(0.2)
 
--- 3. prestige
+-- 3. Combine replaced Prestige (owner, Oct 21): no Prestige verb; the Index shows her copies and COMBINE opens the
+-- Combine window on her when two match
 task.wait(1.1)
 local okNo, whyNo = Action:InvokeServer("Prestige", "user_mika")
-check("no spare copy: refused", okNo == false and whyNo == "Win her again to prestige her.")
-task.wait(1.1)
-local okRin, whyRin = Action:InvokeServer("Prestige", "user_rin")
-check("not owned: refused", okRin == false and whyRin == "You don't own her yet.")
-DataService.update(me, function(d) d.Copies.user_mika = { Normal = 2 }; d.Equipped = "user_mika" end) -- (her and a spare copy)
+check("Prestige is gone", okNo == false and whyNo == "Unknown action.")
+DataService.update(me, function(d) d.Copies.user_mika = { Normal = 2 }; d.Equipped = "user_mika" end) -- (two of her)
 task.wait(0.2)
 MM.open("Index")
 task.wait(0.3)
 local ip = gui.Index:FindFirstChild("Panel", true)
 __fireOn(ip.Grid:FindFirstChild("user_mika"), "Activated")
 task.wait(0.2)
-check("PRESTIGE shows with a spare copy", ip.Prestige.Visible and ip.PrestigeSpare.Text == "1 spare copy")
-__fireOn(ip.Prestige, "Activated")
-task.wait(0.4)
-check("PRESTIGE 1/3 saved", data.Prestige.user_mika == 1 and data.Copies.user_mika.Normal == 1)
-check("the Index says PRESTIGE 1/3", ip.PrestigeLevel.Text == "PRESTIGE 1/3" and not ip.Prestige.Visible)
-check("her companion carries the level", me:GetAttribute("HuzzCompanionPrestige") == 1)
+check("the Index shows her copies and COMBINE", ip.Combine.Visible and ip.CombineCopies.Text == "Normal 2")
+__fireOn(ip.Combine, "Activated")
+task.wait(0.3)
+check("COMBINE opens the Combine window on her", MM.current() == "Combine")
 MM.close()
+task.wait(0.2)
 
 -- 4. friend rewards
 local FriendRules = require(RS.Shared.FriendRules)
