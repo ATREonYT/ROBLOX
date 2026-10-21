@@ -22,6 +22,7 @@ local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
 local Effects = require(UI.Effects)
+local ShopStyle = require(UI.ShopStyle)
 local CoinFx = require(UI.CoinFx)
 local MainMenu = require(script.Parent.MainMenu)
 
@@ -46,20 +47,32 @@ local function topbarY(): number
 	return if h >= TOPBAR_BUTTON then -h + math.floor((h - TOPBAR_BUTTON) / 2) else TOPBAR_MARGIN
 end
 
--- A square HUD button with its label underneath (reference: 69 x 59).
--- A square HUD button (reference 13: 66 x 60, navy gradient #2B3575 -> #152242, light top line, dark ring).
+-- A square HUD button, bright (owner, Oct 21: "more vibrant and colorful so kids play it and like it", his side-menu
+-- reference design/owner-oct21/1200-side-menu-ref.png): each button its own bright colour, lit at the top and a
+-- little deeper at the foot, a thick dark outline, a thin light ring inside it, the studs showing through, a big icon
+-- and the chunky white word with a dark outline along the bottom. 66 x 57 as before (the layout is unchanged).
+local VIBRANT = {
+	Index = Color3.fromHex("A64DFF"), Shop = Color3.fromHex("FFC21A"), Dances = Color3.fromHex("2FA8FF"), Menu = Color3.fromHex("FF5468"),
+	Invite = Color3.fromHex("3FD24A"), Spin = Color3.fromHex("FF4FB8"), Quests = Color3.fromHex("FF8A1F"),
+}
 local function squareButton(parent: Instance, name: string, icon: string, y: number, onClick: () -> ())
-	local b = Kit.button({ Name = name, Style = "Hud", Text = "", Position = UDim2.fromOffset(25, y), Size = UDim2.fromOffset(66, 57), Corner = 5, RimThickness = 1.5, Parent = parent })
+	local colour = VIBRANT[name] or C.HudMid
+	local b = Kit.button({ Name = name, Style = "Hud", Text = "", Position = UDim2.fromOffset(25, y), Size = UDim2.fromOffset(66, 57), Corner = 8, RimThickness = 3, Parent = parent })
 	b.Instance:FindFirstChild("Content"):Destroy()
 	b.Instance.BackgroundColor3 = Kit.Styles.Hud.Idle
-	b.Instance.BackgroundTransparency = 0.1
-	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = b.Instance })
-	-- icon centred in the space above the label
-	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(36, 36), Parent = b.Instance })
-	-- the label: Gotham Bold with the thin dark outline every Kit.button label has (it was Medium with none, the
-	-- only button label without it; owner's feedback: "a readable label")
-	local label = Kit.text({ Name = "Label", Text = name, FontFace = Theme.Fonts.Name, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, 0, 0, 14), Parent = b.Instance })
-	new("UIStroke", { Name = "Outline", Color = Kit.Styles.Hud.Rim, Thickness = 1, Transparency = 0.35, Parent = label })
+	b.Instance.BackgroundTransparency = 0
+	local rim = b.Instance:FindFirstChild("Rim")
+	if rim and rim:IsA("UIStroke") then rim.Color, rim.Thickness = ShopStyle.INK, 3 end
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, colour:Lerp(Color3.new(1, 1, 1), 0.3)), ColorSequenceKeypoint.new(0.55, colour), ColorSequenceKeypoint.new(1, colour:Lerp(Color3.new(0, 0, 0), 0.2)) }), Parent = b.Instance })
+	local studs = b.Instance:FindFirstChild("StudPattern")
+	if studs and studs:IsA("ImageLabel") then studs.ImageTransparency = 0.6 end
+	-- the pale ring just inside the outline (the reference's light bevel)
+	new("Frame", { Name = "Ring", Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 1, -4), BackgroundTransparency = 1, ZIndex = b.Instance.ZIndex, Parent = b.Instance },
+		{ Kit.corner(6), Kit.stroke(colour:Lerp(Color3.new(1, 1, 1), 0.6), 2.5, 0) })
+	-- a big icon, centred above the word
+	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(40, 40), ZIndex = b.Instance.ZIndex + 1, Parent = b.Instance })
+	-- the word: chunky white with a thick dark outline, sitting on the bottom edge
+	ShopStyle.chunky({ Name = "Label", Text = name, TextSize = 16, TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2), Size = UDim2.new(1, 0, 0, 18), ZIndex = b.Instance.ZIndex + 2, Parent = b.Instance }, 2.5)
 	b.onClick(onClick)
 	return b
 end
@@ -74,7 +87,7 @@ function LobbyHud.build(parent: Instance)
 	Effects.shine(shop.Instance, { every = 4, corner = 5, z = 4 }) -- (a glint like the reference's shop button) -- (Tiers stays in the Menu; the Index filters by tier)
 	squareButton(left, "Dances", "DancesNote", 164, function() MainMenu.go("Dances") end)
 	local menu = squareButton(left, "Menu", "MainMenuLines", 233, function() ModalManager.toggle("Menu") end)
-	menu.Instance.Icon.Size = UDim2.fromOffset(30, 30) -- the lines icon reads bigger than the others
+	menu.Instance.Icon.Size = UDim2.fromOffset(34, 34) -- the lines icon reads bigger than the others
 	-- Right edge: SPIN opens the Spin the Wheel (Screens/SpinWheel); a green FREE tag while a free spin waits.
 	local right = group(root, "Right", Vector2.new(1, 0.5), UDim2.fromScale(1, 0.5), Vector2.new(100, 322))
 	local spin = squareButton(right, "Spin", "SpinWheel", 132, function() ModalManager.open("SpinWheel") end)
