@@ -484,7 +484,7 @@ do
 		end)())
 		local during = L.ClockTime
 		step(5, Vector3.new(0, 0, 1))
-		local nightOn = L.ClockTime == Timing.NIGHT and atmo.Haze > 1 and bloom.Intensity > 1
+		local nightOn = L.ClockTime == Timing.NIGHT and atmo.Haze > 1 and bloom.Intensity >= 0.8 -- (Bloom 0.8 since Oct 21: less glow on her)
 		local skyNight = sky.StarCount > 4000 and sky.SunAngularSize < 1 and clouds.Cover < 0.35 and clouds.Color.R < 0.5
 		cleanup()
 		check("secret reveal cleans up", workspace:FindFirstChild("HuzzSecretReveal") == nil and game.Lighting:FindFirstChild("HuzzSecretGrade") == nil and #workspace.Terrain:GetChildren() == 1 and clouds.Parent == workspace.Terrain)

@@ -68,7 +68,7 @@ local NIGHT_LOOK = {
 	-- (EnvironmentDiffuseScale too: the day look's sky light at 1 would lift the night's shade to blue-grey)
 	Lighting = { Ambient = rgb(34, 28, 62), OutdoorAmbient = rgb(48, 40, 92), Brightness = 1.2, EnvironmentDiffuseScale = 0.25 },
 	Atmosphere = { Density = 0.42, Offset = 0.2, Color = rgb(70, 48, 140), Decay = rgb(24, 18, 70), Glare = 0, Haze = 2.4 },
-	BloomEffect = { Intensity = 1.3, Size = 40, Threshold = 0.9 },
+	BloomEffect = { Intensity = 0.8, Size = 32, Threshold = 0.95 }, -- (owner, Oct 21 15:39: less glow on her; was 1.3 / 40 / 0.9)
 	SunRaysEffect = { Intensity = 0 },
 	Sky = { StarCount = 5000, SunAngularSize = 0 }, -- (the sun shrinks away: a night sky with the day's sun in it looks wrong)
 	-- Config/Look's Terrain clouds: thinner and dusky violet, then back to white puffs
@@ -173,7 +173,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 	keyPart.Transparency, keyPart.Size = 1, Vector3.one
 	keyPart.Parent = folder
 	local keyLight = Instance.new("PointLight")
-	keyLight.Color, keyLight.Brightness, keyLight.Range, keyLight.Shadows, keyLight.Enabled = Color3.fromRGB(235, 220, 255), 2.5, 22 * k, false, false
+	keyLight.Color, keyLight.Brightness, keyLight.Range, keyLight.Shadows, keyLight.Enabled = Color3.fromRGB(235, 220, 255), 1.5, 22 * k, false, false
 	keyLight.Parent = keyPart
 	-- a violet rim from behind and above (she reads against the night sky) and the beams' own light on the ground
 	local function lamp(name, color, brightness, range)
@@ -183,7 +183,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		l.Parent = holder
 		return holder, l
 	end
-	local rimPart, rimLight = lamp("RimLight", rgb(190, 140, 255), 2.5, 18 * k)
+	local rimPart, rimLight = lamp("RimLight", rgb(190, 140, 255), 1.4, 18 * k)
 	local beamPart, beamLight = lamp("BeamLight", rgb(170, 90, 255), 0, 45 * k)
 
 	-- the night: remember every Lighting value we touch, make what's missing (and remove it after)
@@ -651,6 +651,9 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 	hiStroke.Adornee = model
 	hiStroke.Parent = folder
 	local RIM = rgb(215, 185, 255) -- (her outline after the white flash: a soft violet rim, so she reads against the night)
+	-- (owner, Oct 21 15:39: "reduce the amount of glow on the secret girls": the flash only half covers her, the rim
+	-- is fainter, her two lights and the bloom are lower)
+	local FLASH_FILL = 0.55 -- the white flash's see-through at its strongest (was 0: solid white)
 
 	-- her name on screen (owner's look: Gotham Heavy Italic, white with a dark outline, the rarity in its colour):
 	-- SECRET and 7 stars, her name big, a line drawing out under it, on a soft dark band so it reads over the effects
@@ -1135,15 +1138,15 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 				if FxTexture.ready("ShockSheet") then shock:Emit(1) end
 				if FxTexture.ready("RingHard") then groundRing:Emit(1) end
 				if FxTexture.ready("Streak") then hit.streaks:Emit(30) end
-				hiStroke.FillTransparency, hiStroke.OutlineTransparency = 0, 0
+				hiStroke.FillTransparency, hiStroke.OutlineTransparency = FLASH_FILL, 0.3
 				Sfx.beat("Burst") -- (the hit + sparkle tail; cuts the riser)
 			end)
 			-- the white flash on her fades to a soft violet rim that stays while she's on the ground, gone as she rises
 			local x = math.clamp((t - Reveal.IMPACT - 0.1) / 0.35, 0, 1)
 			local rimOut = Reveal.smooth((t - Reveal.RISE) / 0.8)
-			hiStroke.FillTransparency = x
+			hiStroke.FillTransparency = FLASH_FILL + (1 - FLASH_FILL) * x
 			hiStroke.OutlineColor = WHITE:Lerp(RIM, x)
-			hiStroke.OutlineTransparency = 0.3 * (1 - x) + 0.5 * x + 0.5 * rimOut
+			hiStroke.OutlineTransparency = math.min(1, 0.45 * (1 - x) + 0.75 * x + 0.25 * rimOut)
 		end
 		if t >= Reveal.LAND then
 			once("land", function()
