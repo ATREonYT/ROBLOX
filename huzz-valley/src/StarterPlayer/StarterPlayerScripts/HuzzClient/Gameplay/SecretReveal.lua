@@ -347,6 +347,13 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		table.insert(rungs, { i = i, a0 = a0, a1 = a1, glow = beam(a0, a1, rgb(230, 90, 255), 1, nil, { Segments = 2, Transparency = ENDS }),
 			core = beam(a0, a1, rgb(255, 225, 255), 1, nil, { Segments = 2, Transparency = ENDS }) })
 	end
+	-- an attachment at pos whose X axis (the way a Beam leaves it) is x, kept square to `side`
+	local function frameAlong(pos: Vector3, x: Vector3, side: Vector3): CFrame
+		local z = x:Cross(side)
+		if z.Magnitude < 1e-4 then return CFrame.fromMatrix(pos, x, side) end
+		z = z.Unit
+		return CFrame.fromMatrix(pos, x, z:Cross(x).Unit, z)
+	end
 	-- a point on a beam's curve (Roblox's Beam: a cubic Bezier from Attachment0 along its X axis by CurveSize0 to
 	-- Attachment1, arriving along its X axis by CurveSize1)
 	local function bez(P0: Vector3, P1: Vector3, P2: Vector3, P3: Vector3, s: number): Vector3
@@ -834,9 +841,21 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			local lean = math.rad(d.lean)
 			local r0 = up * math.cos(lean) + outv * math.sin(lean)
 			local r1 = up * math.cos(lean) - outv * math.sin(lean)
-			pl.a0.WorldCFrame = CFrame.fromMatrix(low, r0, dir)
+			-- converging, each beam doesn't swing in stiff like a stick (owner, Oct 21: "not just sticks ... smooth,
+			-- flowy"): its foot comes into the point sideways, all the same way round, so the beams arc in as one
+			-- whirlpool, and the arc grows as they close in
+			local swirl = conv * (1 - conv * 0.35)
+			if swirl > 1e-3 then
+				local radial = foot - orbAt
+				radial = Vector3.new(radial.X, 0, radial.Z)
+				if radial.Magnitude > 1e-3 then
+					local tangent = up:Cross(radial.Unit)
+					r0 = (r0 * (1 - swirl) + tangent * swirl).Unit
+				end
+			end
+			pl.a0.WorldCFrame = frameAlong(low, r0, dir)
 			pl.a1.WorldCFrame = CFrame.fromMatrix(top, r1, dir)
-			local cv = (top - low).Magnitude * d.bow * (1 - conv)
+			local cv = (top - low).Magnitude * (d.bow * (1 - conv) + 0.32 * swirl)
 			local W = d.w * k * math.sqrt(power) * (1 + 0.05 * math.sin(t * 6 + pl.seed * 10)) -- (a slow breath, not a flicker)
 			local pinch = 1 - 0.75 * conv
 			local bands = Reveal.pulses(t, pl.seed)

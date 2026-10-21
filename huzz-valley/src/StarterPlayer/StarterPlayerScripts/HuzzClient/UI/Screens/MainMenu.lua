@@ -2,6 +2,7 @@
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
+local ShopStyle = require(UI.ShopStyle)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 
@@ -38,11 +39,12 @@ function MainMenu.build(parent: Instance)
 	end
 	local rows = {}
 	for i, e in MainMenu.Entries do
-		local b = Kit.button({ Name = e.Key, Style = "MenuRow", Text = "", Position = UDim2.fromOffset(9, 45 + (i - 1) * 38), Size = UDim2.fromOffset(W - 17, 34), Corner = 3, Parent = window.Panel })
+		-- each row its own bright colour, as the lobby's side buttons (owner, Oct 21: "more vibrant and colorful")
+		local b = Kit.button({ Name = e.Key, Style = ShopStyle.vivid(e.Key), Text = "", Position = UDim2.fromOffset(9, 45 + (i - 1) * 38), Size = UDim2.fromOffset(W - 17, 34), Corner = 6, RimThickness = 2.5, Parent = window.Panel })
 		b.Instance:FindFirstChild("Content"):Destroy()
 		Kit.icon(e.Icon, { Name = "Icon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(30, 30), Parent = b.Instance })
-		Kit.text({ Name = "Label", Text = e.Text, FontFace = Theme.Fonts.Name, TextSize = 15, Position = UDim2.fromOffset(48, 0), Size = UDim2.new(1, -72, 1, 0), TextWrapped = false, Parent = b.Instance })
-		Kit.text({ Name = "Chevron", Text = ">", FontFace = Theme.Fonts.Tab, TextSize = 28, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -24, 0, 0), Size = UDim2.fromOffset(14, 34), Parent = b.Instance })
+		ShopStyle.chunky({ Name = "Label", Text = e.Text, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(48, 0), Size = UDim2.new(1, -72, 1, 0), Parent = b.Instance }, 2)
+		ShopStyle.chunky({ Name = "Chevron", Text = ">", TextSize = 28, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -28, 0, 0), Size = UDim2.fromOffset(20, 34), Parent = b.Instance }, 2)
 		b.onClick(function() MainMenu.go(e.Key) end)
 		if i == 1 then window.FirstRow = b.Instance end
 		table.insert(rows, b.Instance)

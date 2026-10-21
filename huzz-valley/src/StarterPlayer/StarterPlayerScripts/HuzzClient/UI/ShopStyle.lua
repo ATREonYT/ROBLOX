@@ -54,6 +54,22 @@ Kit.Styles.ShopPurple = ShopStyle.look(C.Action, C.ActionTop, C.ActionRim)
 Kit.Styles.ShopAura = ShopStyle.look(Color3.fromHex("2A9FD8"), Color3.fromHex("8AD8FA"), Color3.fromHex("08304A"))
 Kit.Styles.ShopOrange = ShopStyle.look(Color3.fromHex("E8661A"), Color3.fromHex("FFB36B"), Color3.fromHex("3E1405"))
 
+-- One bright colour per place in the game (owner, Oct 21, his side-menu reference), the same on the lobby's side
+-- buttons and the Menu's rows: ShopStyle.vivid(name) is the Kit style name ("Vivid" .. name), made once.
+ShopStyle.VIVID = {
+	Index = Color3.fromHex("A64DFF"), Shop = Color3.fromHex("FFC21A"), Dances = Color3.fromHex("2FA8FF"), Menu = Color3.fromHex("FF5468"),
+	Invite = Color3.fromHex("3FD24A"), Spin = Color3.fromHex("FF4FB8"), Quests = Color3.fromHex("FF8A1F"),
+	Tiers = Color3.fromHex("FF8A1F"), Progression = Color3.fromHex("3FD24A"), Settings = Color3.fromHex("5C7BD9"), HowToPlay = Color3.fromHex("FF4FB8"),
+}
+function ShopStyle.vivid(name: string): string
+	local key = "Vivid" .. name
+	if not Kit.Styles[key] then
+		local c = ShopStyle.VIVID[name] or Color3.fromHex("2FA8FF")
+		Kit.Styles[key] = ShopStyle.look(c, c:Lerp(WHITE, 0.45), ShopStyle.INK)
+	end
+	return key
+end
+
 -- Gotham Bold and Heavy (titles, names, tabs, buttons, numbers) become the chunky letters; Medium (lines you read)
 -- stays. An outline that is there gets the Shop's dark ink. Nothing marked ShopStyleKeep (a measured picture-for-
 -- picture layout) changes.
@@ -99,6 +115,55 @@ local function studBox(t: Instance)
 	end
 	local studs = Kit.studPattern(g, 0.16)
 	if low ~= math.huge then studs.ZIndex = math.min(studs.ZIndex, low - 1) end -- (under every other child: the GUI sorts siblings)
+end
+
+-- The bright look (owner, Oct 21: "more vibrant and colorful so kids play it and like it", his four references in
+-- design/owner-oct21, the lobby side buttons the sample he said yes to): every button gets the thick dark outline and
+-- a pale ring just inside it; every framed card's rim is drawn thick (3 px) so its colour reads. Small chips and the
+-- close button keep theirs.
+local SKIP_BRIGHT = { Close = true, Plus = true }
+local CARD_RIM = Color3.fromHex("3FA0FF")
+local function brighten(t: Instance)
+	if not (t:IsA("TextButton") or t:IsA("ImageButton") or t:IsA("Frame")) then return end
+	if t:IsA("ScrollingFrame") or SKIP_BRIGHT[t.Name] then return end
+	local g = t :: GuiObject
+	local w, h = g.Size.X.Offset, g.Size.Y.Offset
+	if g.Size.X.Scale > 0 or g.Size.Y.Scale > 0 then
+		local ok, size = pcall(function() return g.AbsoluteSize end)
+		if ok and size then w, h = size.X, size.Y end
+	end
+	local x = t
+	while x do
+		if x:GetAttribute("ShopStyleKeep") then return end
+		x = x.Parent
+	end
+	local rim = t:FindFirstChild("Rim")
+	if t:IsA("TextButton") or t:IsA("ImageButton") then
+		if w < 44 or h < 26 or not (rim and rim:IsA("UIStroke")) then return end
+		rim.Color, rim.Thickness, rim.Transparency = ShopStyle.INK, math.max(rim.Thickness, 2.5), 0
+		if not t:FindFirstChild("Ring") then
+			local corner = t:FindFirstChildOfClass("UICorner")
+			local ok, r = pcall(function() return corner and corner.CornerRadius end)
+			local radius = if ok and r then math.max(0, r.Offset - 2) else 4
+			Kit.new("Frame", { Name = "Ring", Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 1, -4), BackgroundTransparency = 1, ZIndex = g.ZIndex, Parent = t },
+				{ Kit.corner(radius), Kit.stroke(Color3.new(1, 1, 1), 1.5, 0.55) })
+		end
+	elseif w >= 80 and h >= 60 and t:FindFirstChildOfClass("UICorner") then
+		local stroke = t:FindFirstChildOfClass("UIStroke")
+		if stroke and stroke.Transparency < 0.5 then
+			stroke.Thickness = math.max(stroke.Thickness, 3)
+			-- a dark navy rim turns the reference's bright blue (his Daily Rewards: dark cards, bright rims); a rim
+			-- that already has a colour (a rarity, a pick) keeps it
+			local c = stroke.Color
+			if c.R + c.G + c.B < 1.2 and c.B >= c.R and c.B >= c.G then stroke.Color = CARD_RIM end
+		end
+	end
+end
+ShopStyle.brighten = function(root: Instance)
+	for _, d in root:GetDescendants() do brighten(d) end
+	pcall(function()
+		root.DescendantAdded:Connect(function(d) task.defer(brighten, d) end)
+	end)
 end
 
 -- Puts a whole window in the Shop's look, and whatever is added to it later.

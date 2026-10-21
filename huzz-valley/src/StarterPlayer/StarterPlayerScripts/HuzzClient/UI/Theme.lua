@@ -16,7 +16,7 @@ Theme.Colors = {
 	HeaderGradient = { { 0, hex("A38DFF") }, { 0.45, hex("7F60F8") }, { 1, hex("6440E6") } },
 	Stud = hex("9576F9"), StudBottom = hex("7D61EB"), StudShadow = hex("6951D0"),
 	TitleStroke = hex("0B0F24"), TitleShadow = hex("0B0F24"), TitleBand = hex("DADDF2"),
-	InactiveTab = hex("2A4580"), InactiveTabTop = hex("3E5EA0"), TabRim = hex("0D1640"),
+	InactiveTab = hex("2E6BE6"), InactiveTabTop = hex("6EA4FF"), TabRim = hex("101418"), -- (brighter, Oct 21: "more vibrant"; was 2A4580 / 3E5EA0 / 0D1640)
 	HeaderTab = hex("243F74"), HeaderTabRim = hex("10133F"),
 	SelectedTab = hex("38C95A"), SelectedTabTop = hex("8DF29A"), SelectedRim = hex("0E3F1A"), -- Huss Valley green (owner: no gold)
 	Accent = hex("5BE07A"), -- the one bright colour: selected things, progress, good news,

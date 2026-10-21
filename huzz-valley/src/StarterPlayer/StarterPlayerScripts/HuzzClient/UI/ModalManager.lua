@@ -101,6 +101,8 @@ function ModalManager.register(name: string, screen: Screen)
 	-- every menu in the Shop's look (owner, Oct 21: "restyle the shops so they have animations for the ui"); the Shop
 	-- is that look already, and a side panel (the Menu) keeps its own
 	if name ~= "Shop" and not screen.side then ShopStyle.restyle(w.Holder) end
+	-- and the bright look on every window, the Shop's too (owner, Oct 21: "yes, everywhere"; ShopStyle.brighten)
+	if not screen.side then ShopStyle.brighten(w.Holder) end
 end
 
 local function hide(name: string, instant: boolean?)

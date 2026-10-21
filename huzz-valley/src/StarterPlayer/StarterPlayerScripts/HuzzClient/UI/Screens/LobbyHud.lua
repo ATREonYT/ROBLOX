@@ -51,10 +51,7 @@ end
 -- reference design/owner-oct21/1200-side-menu-ref.png): each button its own bright colour, lit at the top and a
 -- little deeper at the foot, a thick dark outline, a thin light ring inside it, the studs showing through, a big icon
 -- and the chunky white word with a dark outline along the bottom. 66 x 57 as before (the layout is unchanged).
-local VIBRANT = {
-	Index = Color3.fromHex("A64DFF"), Shop = Color3.fromHex("FFC21A"), Dances = Color3.fromHex("2FA8FF"), Menu = Color3.fromHex("FF5468"),
-	Invite = Color3.fromHex("3FD24A"), Spin = Color3.fromHex("FF4FB8"), Quests = Color3.fromHex("FF8A1F"),
-}
+local VIBRANT = ShopStyle.VIVID
 local function squareButton(parent: Instance, name: string, icon: string, y: number, onClick: () -> ())
 	local colour = VIBRANT[name] or C.HudMid
 	local b = Kit.button({ Name = name, Style = "Hud", Text = "", Position = UDim2.fromOffset(25, y), Size = UDim2.fromOffset(66, 57), Corner = 8, RimThickness = 3, Parent = parent })
