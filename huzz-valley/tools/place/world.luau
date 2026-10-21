@@ -16,4 +16,6 @@ spawn.CFrame = CFrame.new(0, 0.5, 0)
 spawn.Transparency = 1
 spawn.CanCollide = true
 spawn.Parent = workspace
+-- Roblox's newer replication (owner, Oct 21: the desync at the best possible performance; scripts can't set it)
+pcall(function() workspace.NextGenerationReplication = Enum.RolloutState.Enabled end)
 return nil

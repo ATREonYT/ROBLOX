@@ -327,6 +327,16 @@ end
 -- around them" look). Scripts can't set Technology, so it's set here; the rest is Config/Look (HuzzServer/LookService).
 local okTech, errTech = pcall(function() theirs:GetService("Lighting").Technology = roblox.Enum.Technology.ShadowMap end)
 print(if okTech then "lighting: ShadowMap" else "lighting: couldn't set Technology (" .. tostring(errTech) .. ")")
+-- Roblox's newer replication (owner, Oct 21 17:36: the desync "done at the best possible performance"): how the
+-- server sends bodies and changes to every screen. Scripts can't set it, so it's set here (and by hand in Studio:
+-- Workspace > NextGenerationReplication > Enabled, STUDIO-STEPS).
+local okRep, wasRep = pcall(function()
+	local ws = theirs:GetService("Workspace")
+	local was = ws.NextGenerationReplication
+	ws.NextGenerationReplication = roblox.Enum.RolloutState.Enabled
+	return was
+end)
+print(if okRep then "replication: NextGenerationReplication Enabled (was " .. tostring(wasRep) .. ")" else "replication: couldn't set it (" .. tostring(wasRep) .. ")")
 -- the same Config/Look the game applies when it starts (HuzzServer/LookService), saved into the place too, so Studio
 -- shows the game's light while he builds, not only once he presses Play
 do
