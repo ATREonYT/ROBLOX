@@ -42,6 +42,10 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core under about 30 
   more transparent", asked twice: `Theme.Transparency` Body 0.32 / Row 0.18) with a **studded texture over whole
   panels** (not stud strips). A second reference for polish: their video 9233ecef of another game (bright,
   saturated, crisp, glowing): aim for "a mix of this and Huss Valley".
+  **The one exception so far is the Shop** (Oct 20 14:25 "make our ui shop and in general make it like that", his video
+  `design/owner-oct20/1425-shop-reference.mp4`): it uses **FredokaOne** like his video, chunky studded buttons and
+  pop-in motion, in our purple with Halloween touches. It is the golden slice for that new style: restyle the other
+  menus the same way only after he says yes ([ui.md](docs/notes/ui.md), "The Shop").
 - **Text:** short and game-like, no dashes, no "AI" phrasing ("Messi is safe", "Got one!", "YOU'RE OUT").
 - **Controls:** **no jumping anywhere**. Space = the sideways huss (left/right only, lobby too; you turn to face the
   camera first so A/D go left/right on screen: "it only goes one way" without shift lock); a **catcher's Space
