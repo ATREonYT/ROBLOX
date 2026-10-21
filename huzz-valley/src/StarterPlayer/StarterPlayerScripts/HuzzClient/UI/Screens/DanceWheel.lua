@@ -14,6 +14,7 @@ local Dances = require(Shared.Config.Dances)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
+local Device = require(UI.Device)
 local Scale = require(UI.Scale)
 local State = require(UI.State)
 local Toast = require(UI.Toast)
@@ -159,7 +160,8 @@ function DanceWheel.build(parent: Instance)
 		if fd then
 			title.Text = fd.Name
 			local ready = DancePlayer.ready(fd.Id)
-			line.Text = if fd.Id == playing then "Playing · click to stop" elseif not ready then "Coming soon" else "Click to dance"
+			local verb = if Device.kind() == "touch" then "tap" elseif Device.kind() == "pad" then "press" else "click"
+			line.Text = if fd.Id == playing then `Playing · {verb} to stop` elseif not ready then "Coming soon" else (string.upper(string.sub(verb, 1, 1)) .. string.sub(verb, 2) .. " to dance")
 		elseif focus then
 			title.Text = "Empty slot"
 			line.Text = "Star dances to add them"
@@ -171,7 +173,7 @@ function DanceWheel.build(parent: Instance)
 			line.Text = "Pick a dance"
 		end
 		line.TextColor3 = if fd and not DancePlayer.ready(fd.Id) then Color3.fromRGB(190, 196, 214) else GREEN
-		hint.Text = if UserInputService.TouchEnabled then "Tap a dance" else "Click a dance (1-8)"
+		hint.Text = if Device.kind() == "touch" then "Tap a dance" elseif Device.kind() == "pad" then "Pick a dance" else "Click a dance (1-8)"
 	end
 
 	local function setOpen(on: boolean)

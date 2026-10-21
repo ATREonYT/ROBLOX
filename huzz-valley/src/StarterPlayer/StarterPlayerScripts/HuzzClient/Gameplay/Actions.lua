@@ -409,7 +409,16 @@ function M.start()
 		return b, paint
 	end
 	local y0 = if touch then -150 else -110
-	local stabButton, paintStab = button("Stab", "STAB", "CLICK", y0, stab)
+	local Device = require(script.Parent.Parent.UI.Device)
+	local stabButton, paintStab = button("Stab", "STAB", string.upper(Device.word("Stab") or "CLICK"), y0, stab)
+	-- (the hint under STAB says the button you press on what you play with: CLICK, R2 or RT; owner, Oct 21)
+	Device.changed(function(kind)
+		local small
+		for _, l in stabButton:GetChildren() do
+			if l:IsA("TextLabel") and l.Text ~= "STAB" then small = l end
+		end
+		if small then small.Text = if touch then "" else string.upper(Device.word("Stab", kind) or "") end
+	end)
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	RunService.RenderStepped:Connect(function()

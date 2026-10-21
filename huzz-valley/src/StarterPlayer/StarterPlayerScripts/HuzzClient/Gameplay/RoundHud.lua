@@ -336,9 +336,11 @@ function M.start()
 	end
 
 	-- Help lines for what you can do right now (short, one thing each).
-	local keyboard = not game:GetService("UserInputService").TouchEnabled -- (touch: show the pad/button names)
-	local function key(k, pad)
-		return `<font color="#FFFFFF"><b>{if keyboard then k else pad}</b></font>`
+	-- each control by its name on what you play with (UI/Device: a key, the controller's own button, or the button
+	-- on a touch screen; owner, Oct 21: no PC words on a phone, iPad or PlayStation)
+	local Device = require(UI.Device)
+	local function key(action)
+		return `<font color="#FFFFFF"><b>{Device.word(action) or ""}</b></font>`
 	end
 	local TIMED = { HeroRun = true, Running = true, Picking = true }
 	local LOBBY_MESSAGE_TIME = 5
@@ -370,7 +372,7 @@ function M.start()
 			local word, line
 			if myRole == "Catcher" then
 				word = "Catcher"
-				line = if (stage == "Running" or stage == "HeroRun") then `{key("Click", "R2")} to stab · {key("Q", "L1")} {key("E", "R1")} powers` else nil
+				line = if (stage == "Running" or stage == "HeroRun") then if Device.kind() == "touch" then `Tap {key("Stab")} to stab · tap {key("Abilities")}` else `{key("Stab")} to stab · {key("Abilities")} powers` else nil
 			elseif myRole == "Runner" then
 				if myStatus == "Downed" and player:GetAttribute("HuzzOut") then
 					word, line = "Out", "You join the catchers next round"
@@ -385,7 +387,7 @@ function M.start()
 				else
 					word = "Runner"
 					line = if stage == "HeroRun" then "Hero's run. Wait on the line."
-						elseif stage == "Running" then `Reach the <font color="#60E88C"><b>SAFE ZONE</b></font> · {key("Space", "A")} to dash`
+						elseif stage == "Running" then `Reach the <font color="#60E88C"><b>SAFE ZONE</b></font> · {if Device.kind() == "touch" then "tap " else ""}{key("Dash")} to dash`
 						else nil
 				end
 			else

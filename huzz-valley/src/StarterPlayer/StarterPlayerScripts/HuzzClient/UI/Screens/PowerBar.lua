@@ -37,6 +37,7 @@ local Powers = require(Shared.Config.Powers)
 local RoundConfig = require(Shared.Config.Round)
 local UI = script.Parent.Parent
 local Kit = require(UI.Kit)
+local Device = require(UI.Device) -- (each control by its name on a controller: owner, Oct 21)
 local Scale = require(UI.Scale)
 local ImageLoader = require(UI.ImageLoader)
 local Assets = require(Shared.Config.Assets)
@@ -288,7 +289,7 @@ function PowerBar.build(parent: Instance)
 			c.status.TextColor3 = def.Accent
 		end
 		local ready = player:GetAttribute("PowerReady" .. slot) or 0
-		local key = if touchOnly then "TAP" else Powers.Keys[slot]
+		local key = if touchOnly then "TAP" elseif Device.kind() == "pad" then Device.word("Ability" .. slot) else Powers.Keys[slot]
 		local onUntil = if name == "Shield" then player:GetAttribute("ShieldUntil")
 			elseif name == "Invisible" then (player.Character and player.Character:GetAttribute("InvisibleUntil"))
 			else nil
@@ -340,7 +341,7 @@ function PowerBar.build(parent: Instance)
 		keyLine.TextColor3 = if catcher then WHITE else SOFT -- (his catcher picture is white, his runner one DEDEDE)
 		-- the bar
 		if catcher then
-			keyLine.Text = if touchOnly then "TAP HERE TO CATCH" else "PRESS SPACE TO CATCH"
+			keyLine.Text = if touchOnly then "TAP HERE TO CATCH" else `PRESS {string.upper(Device.word("Dash") or "SPACE")} TO CATCH`
 			help.Text = "Tag in front  ·  Space to dive"
 			local stunFrom, stunUntil = player:GetAttribute("StunnedFrom") or math.huge, player:GetAttribute("StunnedUntil") or 0
 			local dizzy = player:GetAttribute("DizzyUntil") or 0
@@ -369,7 +370,7 @@ function PowerBar.build(parent: Instance)
 				paintFill("Ready", 1)
 			end
 		else
-			keyLine.Text = if touchOnly then "TAP HERE  ·  DASH" else "SPACE  ·  DASH"
+			keyLine.Text = if touchOnly then "TAP HERE  ·  DASH" else `{string.upper(Device.word("Dash") or "SPACE")}  ·  DASH`
 			local stuck = (player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 				and (player.Character:FindFirstChildOfClass("Humanoid") :: Humanoid).WalkSpeed <= 0) == true
 			if waiting then

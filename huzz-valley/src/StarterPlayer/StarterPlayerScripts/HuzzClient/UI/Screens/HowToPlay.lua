@@ -16,6 +16,7 @@ local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
 local State = require(UI.State)
 local ModalManager = require(UI.ModalManager)
+local Device = require(UI.Device)
 
 local C = Theme.Colors
 local F = Theme.Fonts
@@ -47,7 +48,11 @@ local KEYBOARD = {
 }
 -- On a touch screen the same parts are relabelled (the saved UI holds the keyboard row) and the keyboard-only
 -- keys hide.
-local TOUCH = { { Cap = "DASH", Label = "Button" }, { Cap = "Q E", Label = "Ability cards" } }
+local TOUCH = { { Cap = "TAP", Label = "The dash bar", Sub = "Catchers dive" }, { Cap = "TAP", Label = "Ability cards" } }
+-- With a controller: its own buttons (PlayStation or Xbox); the mouse picture's slot hides (no cursor), Alt's says
+-- the stab button.
+local PAD_PS = { { Cap = "Cross", Label = "Dash", Sub = "Catchers dive" }, { Cap = "L1", Label = "Ability (R1: 2nd)" }, nil, { Cap = "R2", Label = "Stab (Catchers)" } }
+local PAD_XBOX = { { Cap = "A", Label = "Dash", Sub = "Catchers dive" }, { Cap = "LB", Label = "Ability (RB: 2nd)" }, nil, { Cap = "RT", Label = "Stab (Catchers)" } }
 local COL = { Keys = hex("0E1A3F"), KeysRim = hex("233565"), Divider = hex("1E2E5E"), Cap = hex("13204A"), CapRim = hex("8FB0FF"), Sub = hex("A9B7E0"), Card = hex("0D1638") }
 
 local function richText(def, i: number): string
@@ -102,28 +107,41 @@ function HowToPlay.build(parent: Instance)
 
 	-- the key row
 	local keys = new("Frame", { Name = "Keys", Position = UDim2.fromOffset(KEYS.X, KEYS.Y), Size = UDim2.fromOffset(KEYS.W, KEYS.H), BackgroundColor3 = COL.Keys, BackgroundTransparency = 0.1, BorderSizePixel = 0, Parent = panel }, { Kit.corner(6), Kit.stroke(COL.KeysRim, 1) })
-	local touch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	-- the row says what you really press (UI/Device, owner Oct 21: no keyboard words on a phone, iPad or PlayStation):
+	-- built as the keyboard row (what the saved UI holds), relabelled for touch or a controller, and again the moment
+	-- you switch
+	local row = {}
 	for i, k in KEYBOARD do
 		local slot = new("Frame", { Name = "Key" .. i, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = keys })
 		local c = cap(slot, k.Cap, k.X, k.CapW)
-		local t = TOUCH[i]
-		if touch then
-			slot.Visible = t ~= nil
-			local keyText = c:FindFirstChild("Key") :: TextLabel?
-			if t and keyText then keyText.Text = t.Cap end
-		end
 		local tx = k.X + k.CapW + 12
-		local label = if touch and t then t.Label else k.Label
+		local label, sub
 		if k.Sub then
-			Kit.text({ Name = "Label", Text = label, FontFace = F.Label, TextSize = 15, TextWrapped = false, Position = UDim2.fromOffset(tx, 5), Size = UDim2.fromOffset(150, 18), Parent = slot })
-			Kit.text({ Name = "Sub", Text = k.Sub, FontFace = F.Label, TextSize = 11, TextColor3 = COL.Sub, TextWrapped = false, Position = UDim2.fromOffset(tx, 23), Size = UDim2.fromOffset(150, 14), Parent = slot })
+			label = Kit.text({ Name = "Label", Text = k.Label, FontFace = F.Label, TextSize = 15, TextWrapped = false, Position = UDim2.fromOffset(tx, 5), Size = UDim2.fromOffset(150, 18), Parent = slot })
+			sub = Kit.text({ Name = "Sub", Text = k.Sub, FontFace = F.Label, TextSize = 11, TextColor3 = COL.Sub, TextWrapped = false, Position = UDim2.fromOffset(tx, 23), Size = UDim2.fromOffset(150, 14), Parent = slot })
 		else
-			Kit.text({ Name = "Label", Text = label, FontFace = F.Label, TextSize = 15, TextWrapped = false, Position = UDim2.fromOffset(tx, 0), Size = UDim2.fromOffset(150, KEYS.H), Parent = slot })
+			label = Kit.text({ Name = "Label", Text = k.Label, FontFace = F.Label, TextSize = 15, TextWrapped = false, Position = UDim2.fromOffset(tx, 0), Size = UDim2.fromOffset(150, KEYS.H), Parent = slot })
 		end
+		local divider
 		if k.Divider then
-			new("Frame", { Name = "Divider", Position = UDim2.fromOffset(k.Divider, 6), Size = UDim2.fromOffset(2, KEYS.H - 12), BackgroundColor3 = COL.Divider, BorderSizePixel = 0, Visible = not (touch and i == #TOUCH), Parent = slot })
+			divider = new("Frame", { Name = "Divider", Position = UDim2.fromOffset(k.Divider, 6), Size = UDim2.fromOffset(2, KEYS.H - 12), BackgroundColor3 = COL.Divider, BorderSizePixel = 0, Parent = slot })
+		end
+		row[i] = { slot = slot, key = c:FindFirstChild("Key") :: TextLabel?, label = label, sub = sub, divider = divider }
+	end
+	local function relabel(kind: string)
+		local ps = Device.playStation()
+		local look = if kind == "touch" then TOUCH elseif kind == "pad" then (if ps then PAD_PS else PAD_XBOX) else nil
+		for i, k in KEYBOARD do
+			local r, t = row[i], look and look[i]
+			r.slot.Visible = look == nil or t ~= nil
+			if r.key then r.key.Text = if t then t.Cap else (k.Cap or "") end
+			r.label.Text = if t then t.Label else k.Label
+			if r.sub then r.sub.Text = if t then (t.Sub or "") else k.Sub end
+			if r.divider then r.divider.Visible = look == nil or (look[i + 1] ~= nil) end
 		end
 	end
+	relabel(Device.kind())
+	Device.changed(relabel)
 
 	ModalManager.register("HowToPlay", {
 		window = window,
