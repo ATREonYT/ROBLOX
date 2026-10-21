@@ -73,9 +73,10 @@ local function chunkyFont(t: Instance)
 end
 
 -- Puts a whole window in the Shop's look, and whatever is added to it later.
+local styled: { [Instance]: boolean } = {}
 function ShopStyle.restyle(root: Instance)
-	if root:GetAttribute("ShopStyled") then return end
-	root:SetAttribute("ShopStyled", true)
+	if styled[root] then return end
+	styled[root] = true
 	for _, d in root:GetDescendants() do chunkyFont(d) end
 	pcall(function()
 		root.DescendantAdded:Connect(function(d)
@@ -87,12 +88,14 @@ end
 
 -- What pops in when a menu opens: its rows and cards (a framed box, a rounded corner, at least 40 x 24), in reading
 -- order, inside its body, on screen; at most POP.Max.
-function ShopStyle.cards(window: GuiObject): { GuiObject }
+function ShopStyle.cards(window: GuiObject?): { GuiObject }
 	local found = {}
+	if not window then return found end
 	local function walk(x: Instance, depth: number)
 		for _, c in x:GetChildren() do
 			if c:IsA("GuiObject") and c.Visible then
-				local box = c.AbsoluteSize
+				local okBox, box = pcall(function() return c.AbsoluteSize end)
+				if not okBox then box = Vector2.new(c.Size.X.Offset, c.Size.Y.Offset) end
 				local framed = c:FindFirstChildOfClass("UICorner") ~= nil and (c:IsA("Frame") or c:IsA("TextButton") or c:IsA("ImageButton"))
 				if framed and box.X >= 40 and box.Y >= 24 and c.Name ~= "Fill" and c.Name ~= "Header" and c.Name ~= "Panel" then
 					table.insert(found, c)
@@ -103,8 +106,12 @@ function ShopStyle.cards(window: GuiObject): { GuiObject }
 		end
 	end
 	walk(window, 0)
+	local function at(g: GuiObject): Vector2
+		local ok, p = pcall(function() return g.AbsolutePosition end)
+		return if ok then p else Vector2.new(g.Position.X.Offset, g.Position.Y.Offset)
+	end
 	table.sort(found, function(a, b)
-		local pa, pb = a.AbsolutePosition, b.AbsolutePosition
+		local pa, pb = at(a), at(b)
 		if math.abs(pa.Y - pb.Y) > 8 then return pa.Y < pb.Y end
 		return pa.X < pb.X
 	end)
@@ -113,7 +120,8 @@ function ShopStyle.cards(window: GuiObject): { GuiObject }
 	return out
 end
 
--- The cards pop in one after another (Theme.Motion.Stagger apart). Reduced Motion: they just show.
+-- The cards pop in one after another (Theme.Motion.Stagger apart). Reduced Motion: they just show. (A card's
+-- PopScale is made at run time, like a picture's stand-in: never saved into StarterGui.)
 function ShopStyle.popIn(items: { GuiObject })
 	if Motion.reduced then return end
 	for i, item in items do

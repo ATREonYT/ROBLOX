@@ -7,7 +7,8 @@
 --   Starter = owned by everyone. Pack = granted by the Dance Pack pass. Robot = also on the reward track (level 3).
 --   Coins = its price in the Shop's DANCES (owner, Oct 20 20:34: "make a seperate section for dances, so that the
 --   dances you get by buying them individually ... make them be able to be bought there"; ActionService "BuyDance").
---   Claude's prices: 400 to 2000 by how fancy (the old Dance Crate's rarities), 800 for a Dance Pack one, 600 Robot.
+--   Claude's prices: 400 to 2000 by how fancy (the old Dance Crate's rarities), 600 Robot. The 4 Pack dances have
+--   no Coins: Robux only, through the Dance Pack (owner, Oct 21: "make the dances be some for Robux, some for coins").
 --   Color = the card's glow (Dances.Colors, after the owner's Oct 17 mockup: Aerobics pink, Boogie Down blue, Bounce
 --   Bounce green, Breakdown gold, Floss red, Hype violet). Blurb = the one line under the big picture (short, no dashes).
 --   Music = the key of its song in Dances.Tracks (owner, Oct 19: "find the sounds we can use for all of the dances ...
@@ -104,16 +105,16 @@ Dances.List = {
 	{ Id = "RunningMan", Name = "Running Man", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Run in place right on the beat.", Order = 12, Music = "StayUpbeat", Backup = "CrabRave" },
 	{ Id = "CrazyFeet", Name = "Crazy Feet", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Your feet go wild in every direction!", Order = 13, Music = "CrabRave", Backup = "Jumpstyle" },
 	{ Id = "Breakdown", Name = "Breakdown", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Drop it low and break it down!", Order = 14, Music = "Akim", Backup = "ShakeSomethin" },
-	{ Id = "SwingTime", Name = "Swing Time", AnimationId = "", Coins = 800, Pack = true, Color = "Pink", Blurb = "Swing back in time with this classic.", Order = 15, Music = "SwingWithMe", Backup = "CharlestonDolly" },
+	{ Id = "SwingTime", Name = "Swing Time", AnimationId = "", Pack = true, Color = "Pink", Blurb = "Swing back in time with this classic.", Order = 15, Music = "SwingWithMe", Backup = "CharlestonDolly" },
 	{ Id = "FreeFlow", Name = "Free Flow", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Let the music move you.", Order = 16, Music = "Ascension", Backup = "ShakeSomethin" },
 	{ Id = "Freestyle", Name = "Freestyle", AnimationId = "", Starter = true, Color = "Red", Blurb = "No rules, just your own moves!", Order = 17, Music = "Akim", Backup = "ShakeSomethin" },
 	{ Id = "CleanGroove", Name = "Clean Groove", AnimationId = "", Starter = true, Color = "Green", Blurb = "Neat, sharp steps that look super clean.", Order = 18, Music = "ShakeSomethin", Backup = "Downtown" },
-	{ Id = "BounceBounce", Name = "Bounce Bounce", AnimationId = "", Coins = 800, Pack = true, Color = "Green", Blurb = "Bounce, bounce, bounce to the beat!", Order = 19, Music = "Shiawase", Backup = "CrabRave" },
+	{ Id = "BounceBounce", Name = "Bounce Bounce", AnimationId = "", Pack = true, Color = "Green", Blurb = "Bounce, bounce, bounce to the beat!", Order = 19, Music = "Shiawase", Backup = "CrabRave" },
 	{ Id = "Flapper", Name = "Flapper", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Flap your arms in this fun old dance.", Order = 20, Music = "SwingWithMe", Backup = "Speakeasy" },
-	{ Id = "SquatKick", Name = "Squat Kick", AnimationId = "", Coins = 800, Pack = true, Color = "Red", Blurb = "Squat down low and kick it high!", Order = 21, Music = "Kalinka", Backup = "Jumpstyle" },
+	{ Id = "SquatKick", Name = "Squat Kick", AnimationId = "", Pack = true, Color = "Red", Blurb = "Squat down low and kick it high!", Order = 21, Music = "Kalinka", Backup = "Jumpstyle" },
 	{ Id = "Sprinkler", Name = "Sprinkler", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Spray your moves all over the place.", Order = 22, Music = "CrabRave", Backup = "Moshi" },
 	{ Id = "CrabDance", Name = "Crab Dance", AnimationId = "", Starter = true, Color = "Red", Blurb = "Scuttle side to side like a crab!", Order = 23, Music = "CrabRave", Backup = "Shiawase" },
-	{ Id = "Toprock", Name = "Toprock", AnimationId = "", Coins = 800, Pack = true, Color = "Gold", Blurb = "Rock your feet before the big moves.", Order = 24, Music = "Akim", Backup = "ShakeSomethin" },
+	{ Id = "Toprock", Name = "Toprock", AnimationId = "", Pack = true, Color = "Gold", Blurb = "Rock your feet before the big moves.", Order = 24, Music = "Akim", Backup = "ShakeSomethin" },
 	{ Id = "Aerobics", Name = "Aerobics", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Get active with this energetic dance!", Order = 25, Music = "StayUpbeat", Backup = "HypeHorns" },
 	-- Dances only the Shop sells (owner, Oct 19: "dances, from crates"; the Dance Crate made way for DANCES on Oct 20).
 	{ Id = "BoogieBlast", Name = "Boogie Blast", AnimationId = "", Coins = 400, Color = "Pink", Blurb = "Throw a party right where you stand!", Order = 26, Music = "BigDeal", Backup = "HypeHorns" },

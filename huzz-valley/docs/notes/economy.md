@@ -22,7 +22,8 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   `ActionService "BuyDance"` (price, "already yours" (also through the Dance Pack) and "not enough coins" checked in
   the one save write). Claude's prices: the seven dances only the Shop sells by how fancy (the old Dance Crate's
   rarities): Boogie Blast, Head Banger 400; The Twist, Zany Zig 600; Power Moves 800; Showstopper 1,200; Zombie Groove
-  2,000; the Robot 600 (also the reward track's level 3); the four Dance Pack dances 800 each (or the pass). The 20
+  2,000; the Robot 600 (also the reward track's level 3); the four Dance Pack dances are Robux only, through the pass (owner, Oct 21: "make the dances be some for Robux, some
+  for coins"; they have no `Coins`, so Shop > DANCES doesn't list them and BuyDance refuses them). The 20
   starter dances stay free.
 - The COINS section sells coin packs for Robux (cards after the Oct 17 mockup, `docs/previews/coins-vs-mockup.jpg`; art
   cut by `tools/icons/make_screen_art.py`, placeholders until sharp PNGs); its buttons keep the Robux mark, never a
@@ -109,14 +110,11 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - INVITE on the HUD (over SPIN) opens Roblox's own invite window (`SocialService`, guarded; Studio can't open it).
   Spec `tests/FriendRules.spec`.
 
-## Prestige (`Shared/PrestigeRules`, ActionService `Prestige`, Screens/Index)
-- Winning a girl you already own still pays her duplicate coins (nothing taken away) and also saves a copy: since the
-  Combine machine (Oct 20) every girl is copies by grade, `Copies[id]` ([combine.md](combine.md); old saves' `Dupes`
-  moved in). PRESTIGE on her picture in the Index spends a spare Normal copy (never her last) and raises
-  `Prestige[id]` to 1/3, 2/3, 3/3.
-- Cooler effects: her effects on her and on you use one rarer tier per level (Common 1 = Uncommon's look ... capped at
-  Mythic; Secret keeps its own). `CompanionService` puts `HuzzCompanionPrestige` on the player; `Gameplay/Auras`
-  rebuilds her look when it changes. Spec `tests/PrestigeRules.spec`.
+## Prestige: replaced by Combine (owner, Oct 21: "replace prestige with combine")
+- Winning a girl you already own still pays her duplicate coins and saves a copy (`Copies[id]`, [combine.md](combine.md)).
+  There is no PRESTIGE any more: the ActionService verb is gone and the Index's button is COMBINE (opens the Combine
+  window on her when two match). A save that was already prestiged keeps its level and her rarer-tier effects
+  (`Shared/PrestigeRules.effectRarity`, `HuzzCompanionPrestige`, `Gameplay/Auras`); nothing raises it now.
 
 ## Cosmetics and rewards
 - **Cosmetic slots** (`CoinShop.Slots`: Trail, Tag, Knife, Aura, Title, Pose, Outfit; read with `CoinShop.worn(data,

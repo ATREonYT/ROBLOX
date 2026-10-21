@@ -139,7 +139,7 @@ function ModalManager.open(name: string, arg: any?)
 		Motion.stagger(s.items())
 	elseif name ~= "Shop" then -- (the Shop pops its own cards)
 		task.defer(function()
-			if current == name then ShopStyle.popIn(ShopStyle.cards(w.Panel)) end
+			if current == name then ShopStyle.popIn(ShopStyle.cards(w.Panel or w.Group)) end
 		end)
 	end
 	changed()

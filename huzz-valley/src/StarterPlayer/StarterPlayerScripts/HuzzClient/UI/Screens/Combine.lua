@@ -94,8 +94,8 @@ function CombineScreen.build(parent: Instance)
 	local function slot(name: string, x: number, y: number, w: number, h: number, rim: number): Frame
 		local f = new("Frame", { Name = name, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), BackgroundColor3 = C.Frame, BackgroundTransparency = 0.25, BorderSizePixel = 0, ClipsDescendants = false, ZIndex = 4, Parent = side }, { Kit.corner(12) })
 		local stroke = Kit.stroke(Color3.fromHex("6C7FB8"), rim)
-		stroke.Name = "Rim"
-		stroke.Parent = f
+		stroke.Name = "Rim" -- (named before attach, so the saved copy is reused)
+		Kit.attach(stroke, f)
 		chunky({ Name = "Unknown", Text = "?", FontFace = FONT, TextSize = math.floor(h * 0.42), TextColor3 = Color3.fromHex("8A9AD0"), Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = f }, 2)
 		return f
 	end

@@ -40,7 +40,7 @@ if reusing then
 		local standIn = false -- (a stand-in and everything in it: a glyph, or a knife's 3D view)
 		local node = d
 		while node and node ~= g do
-			if node:GetAttribute("NoPicture") ~= nil then standIn = true break end
+			if node:GetAttribute("NoPicture") ~= nil or node.Name == "PopScale" then standIn = true break end -- (and a card's pop-in scale, UI/ShopStyle)
 			node = node.Parent
 		end
 		if not standIn then live += 1 end

@@ -39,9 +39,9 @@ Products.Passes = {
 		Benefits = { { Icon = "ChatBenefit", Text = "VIP Chat Tag" }, { Icon = "VipCrown", Text = "VIP Name Tag" } },
 	},
 	{
-		Key = "DancePack", Kind = "Pass", Name = "Dance Pack", Blurb = "4 dances +\nthemed items.",
+		Key = "DancePack", Kind = "Pass", Name = "Dance Pack", Blurb = "4 Robux-only\ndances.",
 		Id = 0, Price = 149, OnSale = false, Icon = "DancesNote", Art = "DancePack", Giftable = true, Accent = Color3.fromHex("E85BC4"), ButtonStyle = "PassPink",
-		Benefits = { { Icon = "MusicBenefit", Text = "4 Dances" }, { Icon = "GiftBenefit", Text = "Dance Themed Items" } },
+		Benefits = { { Icon = "MusicBenefit", Text = "4 Dances" }, { Icon = "GiftBenefit", Text = "Robux Only" } },
 		Why = "needs the 4 dance animations",
 	},
 	-- The 5 knife Game Passes (owner, Oct 18: "please add the knifes into the ui for the gamepass menu, these are going

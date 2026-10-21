@@ -462,6 +462,16 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   his imported knives' parts with the .glb part each came from (his uploaded meshes themselves only Studio shows). A
   refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a player's own
   avatar animations or a short R6 arm can still bring a long tip nearer the floor.
+- **Oct 21:** his close-up `design/owner-oct20/2034-black-block-close.png` has the block outlined together with his
+  legs (Studio outlines the whole model you click), so the block is a part INSIDE his character, which neither guard
+  below ever looked at. Owner: "find what it is, and don't try to hide it, remove it". `Gameplay/FollowGuard` (c) now
+  deletes (Destroy, on that screen) any visible part inside a player's character that is not a body part and whose box
+  sits more than `LOOSE` 1.75 studs off every body part, with a `[HuzzBlock] removed ...` line naming it. Not: the
+  knife in a hand, the carried girl, an accessory piece over 1.5 studs (wings, long hair). `tests/KnifeWear.spec`
+  (1b) puts every piece of all 53 knives and the default knife on five bodies: the farthest is 1.42 studs (Thorn
+  Karambit's thorn), so no real knife piece is ever removed. Also found: his own `places/HUSSANIME.rbxl` (Oct 20
+  14:57) has no FollowGuard at all, so if he tests his own place none of the guards ran. Asked him which file he
+  tests, to click the block in Play (Explorer names it) and to send `[HuzzBlock]` / `[HuzzKnife]` lines.
 - **The owner's "floating black block"** (Oct 19 evening `design/owner-oct19/2010-floating-block.png`; Oct 20 14:07
   "please remove that black thing that is attacthed to my character": `design/owner-oct20/1407-black-block-character.png`
   is the same file byte for byte, `1407-black-block-ground.png` is new): the cause is still not proven, so **the game now

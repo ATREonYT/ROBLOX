@@ -42,10 +42,11 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core under about 30 
   more transparent", asked twice: `Theme.Transparency` Body 0.32 / Row 0.18) with a **studded texture over whole
   panels** (not stud strips). A second reference for polish: their video 9233ecef of another game (bright,
   saturated, crisp, glowing): aim for "a mix of this and Huss Valley".
-  **The one exception so far is the Shop** (Oct 20 14:25 "make our ui shop and in general make it like that", his video
-  `design/owner-oct20/1425-shop-reference.mp4`): it uses **FredokaOne** like his video, chunky studded buttons and
-  pop-in motion, in our purple with Halloween touches. It is the golden slice for that new style: restyle the other
-  menus the same way only after he says yes ([ui.md](docs/notes/ui.md), "The Shop").
+  **Menus use the Shop's style** (Oct 20 14:25 "make our ui shop and in general make it like that", his video
+  `design/owner-oct20/1425-shop-reference.mp4`; Oct 21 yes to every menu, "restyle the shops so they have animations
+  for the ui"): **FredokaOne** for titles, names, buttons and numbers (lines you read stay Gotham), chunky studded
+  buttons, cards popping in on open, in our purple with Halloween touches on the Shop. `UI/ShopStyle` does it for
+  every ModalManager window; the round HUD keeps Huss Valley's Gotham ([ui.md](docs/notes/ui.md), "The Shop").
 - **Text:** short and game-like, no dashes, no "AI" phrasing ("Messi is safe", "Got one!", "YOU'RE OUT").
 - **Controls:** **no jumping anywhere**. Space = the sideways huss (left/right only, lobby too; you turn to face the
   camera first so A/D go left/right on screen: "it only goes one way" without shift lock); a **catcher's Space
@@ -250,9 +251,11 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core under about 30 
   - Crate meshes: his Output said some uploads were still "being generated" and asset 120038515596009 "not approved"
     (only `dojo_set > Plain_Tanto > handle_3`'s texture uses it): check them in Studio; a `.glb` of the crates would let
     the offline pictures show the real look.
-  - The black block by his character: the game removes it by itself since Oct 20 (`Gameplay/FollowGuard` hides any
-    part held to or following a body from outside it, `Gameplay/KnifeGuard` a stray knife piece; cause not proven,
-    [knives.md](docs/notes/knives.md), "Honest gaps"). He sends any `[HuzzBlock]` or `[HuzzKnife]` line from Output.
+  - The black block by his character: his Oct 20 close-up shows it outlined with his legs, so it is INSIDE his
+    character. Since Oct 21 `Gameplay/FollowGuard` (c) deletes any visible part inside a character more than 1.75 studs
+    off every body part (worn knives' farthest piece: 1.42). Cause still not named: asked him (Oct 21) to click it in
+    Play and send the Explorer, and which file he tests (his own place has Oct 20 afternoon code, no guards at all)
+    ([knives.md](docs/notes/knives.md), "Honest gaps").
   - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`; animations are optional since
     Oct 20 15:13, the live game draws dances by hand: `PublishAnimations`, `docs/STUDIO-STEPS.md` Part 5).
   - An export of their spin wheel model (match its colours); a Speed Boost picture and 256 px copies of his power
@@ -261,9 +264,6 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core under about 30 
     movement pack licence; sharp PNGs for the Oct 17 screens (today mockup crops, placeholders).
 - **Known gaps (ours):**
   - Not done yet (needs a screen): a dot on Menu when a quest can be claimed.
-  - Combine and Prestige both spend girl copies: ask him whether Combine replaces Prestige ([combine.md](docs/notes/combine.md)).
-  - Before the Dance Pack gets an ID: its 4 dances are also sold for coins in Shop > DANCES and its "Dance Themed Items"
-    grant nothing, so a kid could pay Robux for nothing. Asked him (Oct 21) whether pack dances become Robux only (our pick: yes).
   - The friend knife is a placeholder (his Sakura Blade) until he names one ([economy.md](docs/notes/economy.md)).
   - A refunded pass doesn't take its knives back yet.
   - LIKE THE GAME! opens nothing; titles on the three-pad side sit close. WITCH'S BREW and SWEETS & TREATS open the

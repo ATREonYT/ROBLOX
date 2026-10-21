@@ -239,7 +239,7 @@ for _, d in Dances.List do
 		cardsOk = false
 	end
 end
-check(`DANCES: every dance that isn't free has its card there ({sold})`, cardsOk and sold >= 12)
+check(`DANCES: every dance that isn't free has its card there ({sold})`, cardsOk and sold >= 8) -- (the 4 Dance Pack ones are Robux only since Oct 21)
 check("... the Dance Pack on top of it", body:FindFirstChild("DancePack") ~= nil and body.DancePack.Position.Y.Offset == body.HeadDances.Position.Y.Offset + body.HeadDances.Size.Y.Offset)
 local zombie = Dances.get("ZombieGroove")
 local zc = body.DanceZombieGroove

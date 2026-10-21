@@ -171,7 +171,18 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   the green x2 tag when both show.
 - Admin: [economy.md](economy.md).
 
-## The Shop (`Screens/Shop`: one page since Oct 20 14:31; the golden slice, other menus wait for his yes)
+## Every menu in the Shop's look (`UI/ShopStyle`, Oct 21)
+- Owner, Oct 21: yes to restyling all menus like the Shop, "restyle the shops so they have animations for the ui".
+  `ModalManager.register` runs `ShopStyle.restyle` on every window but the Shop and side panels: Gotham Bold / Heavy /
+  ExtraBold text (titles, names, tabs, buttons, numbers) becomes FredokaOne with the Shop's dark ink outline, also on
+  text added later; Gotham Medium (lines you read) stays; anything under an object with the `ShopStyleKeep`
+  attribute stays. `ModalManager.open` pops the window's cards in (`ShopStyle.cards`: framed, rounded, 40 x 24 or
+  bigger, reading order, up to 24; `ShopStyle.popIn`: 80 % to 100 % with Back, `Theme.Motion.Stagger` apart; skipped
+  when the screen has its own `items`, or under Reduced Motion). `ShopStyle` also holds the Shop's font, ink,
+  `chunky`, `chunkyButton` and the ShopGreen / ShopPurple / ShopAura / ShopOrange button looks (Screens/Shop uses them).
+- Not restyled: the round HUD (PowerBar, RoundHud: measured to his Huss Valley pictures in Gotham), the lobby HUD.
+
+## The Shop (`Screens/Shop`: one page since Oct 20 14:31; the golden slice for every menu)
 - **Oct 20 20:34 rework (owner):** "remove the two crates that dont have pictures, the starter one, and then make a
   seperate section for dances ... make them be able to be bought there. Then can you please remove all of the chances
   of the knifes, only show it when you click on a crate, then on the side it pops up. And also, make the knifes not be

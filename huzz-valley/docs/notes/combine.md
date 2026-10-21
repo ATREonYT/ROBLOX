@@ -1,7 +1,7 @@
 # The Combine machine
 
 Read before touching the Combine machine, girl grades (Silver, Gold, Diamond), girl copies in the save, or the
-Combine window. Prestige (which also spends copies): [economy.md](economy.md). The one lobby the machine stands
+Combine window. Combine replaced Prestige on Oct 21 ([economy.md](economy.md)). The one lobby the machine stands
 beside: [lobby.md](lobby.md).
 
 ## Why (owner's words)
@@ -27,7 +27,8 @@ beside: [lobby.md](lobby.md).
 - She shows at her best grade (`CombineRules.best`): the Index card's badge and picture, the Index preview, your
   companion (`CompanionService` sets `HuzzCompanionGrade`; `Gameplay/Auras` dresses her), the Tiers page's picture.
   Not in a round: the girl carried there is the round's prize, not your copy.
-- Prestige still spends a spare Normal copy (`PrestigeRules` uses `CombineRules.take`, never her last copy).
+- Combine replaced Prestige (owner, Oct 21: "replace prestige with combine"): no Prestige action; the Index shows her
+  copies and its COMBINE button (when two match) opens this window on her.
 
 ## Server (`HuzzServer/CombineService`, ActionService verb `Combine`)
 - Finds his machine (tag `HuzzCombine`, else `Workspace > Combine > Combine_Machine`), adds the prompt on his
@@ -69,14 +70,25 @@ beside: [lobby.md](lobby.md).
   licensed "Magic Burst 2", the reveal a soft low ping, the charge is silent: `Gameplay/Sfx` FALLBACK).
 
 ## The window (`UI/Screens/Combine`, Flat: the pictures are ViewportFrames)
-- Left: your girls (ready to combine first, then by name), each with her copies ("Normal 3   Silver 1") and READY.
-- Right: copy + copy = result (pictures in their grade, `UI/GirlPicture`), the result's name ("SILVER KURUMI"), the
-  grade chips (NORMAL x3, SILVER x1, GOLD x0: the picked one purple), the line under them (what it makes, or why not:
-  "You need 2 Normal. You have 1.") and COMBINE (green, or grey). Pressing it closes the window, plays the merge,
-  shows "GOLD YUNO!" big at the burst, then opens the window again on her.
-- Preview: `shots.sh combine`; check `tools/preview/check_combine.luau` (his real machine and a real girl: server
-  rules, the window, the machine's idle and a whole merge, the one-flash rule, the 3 s wait and the round letting go,
-  the calm glint timer).
+- **Oct 21 rework** (owner: "right now it looks very ai made, the little joy seen text on the side and the not even
+  slots for the characters ... having two girls on both sides of the ui, and then you get the one in the middle,
+  check out other combine references"): laid out like the fuse machines in pet games, in the Shop's look
+  (`UI/ShopStyle`, FredokaOne), 720 x 584:
+  - the stage (`Merge`): her two copies in the side slots (`InputA` left, `InputB` right, grade badge on each), arrows
+    pointing in, the girl you get big in the middle (`Result`) on a breathing glow in the new grade's colour, her name
+    under her (`ResultName`, "SILVER KURUMI"); nothing picked: a big "?" in every slot, "WIN GIRLS IN ROUNDS";
+  - the grade path: NORMAL x3 > SILVER x1 > GOLD x0 > DIAMOND (the three you can combine are buttons, the picked one
+    green);
+  - the line (`Reason`: "2 Normal Kurumi make 1 Silver Kurumi!", or why not: "You need 2 Normal. You have 1.") and the
+    big COMBINE (green and breathing when ready, grey otherwise);
+  - YOUR GIRLS (`Girls`): a strip of cards along the bottom (her picture at her best grade, name, copies, READY),
+    ready ones first; tap one to put her in the slots. None: "No girls yet. Win a round to get one!".
+  - Picking a girl pops the slots; the cards pop in on open (ModalManager + `ShopStyle.popIn`).
+- Pressing COMBINE closes the window, plays the merge, shows "GOLD YUNO!" big at the burst, then opens the window
+  again on her.
+- Preview: `shots.sh combine` (`docs/previews/combine-oct21.jpg`; offline the girls' 3D pictures don't draw); check
+  `tools/preview/check_combine.luau` (his real machine and a real girl: server rules, the window, the machine's idle
+  and a whole merge, the one-flash rule, the 3 s wait and the round letting go, the calm glint timer).
 
 ## Grades on a girl (`Shared/GirlGrade`, `Config/Combine.Grades`)
 - Her hair and accessories (not her face) take the grade's colour and material, their picture taken off so the
@@ -106,5 +118,4 @@ beside: [lobby.md](lobby.md).
   (the lobby is at night: reflections may darken Silver; raise its colour or lower Reflectance if so); whether a script can
   set SurfaceAppearance EmissiveStrength (if not, the trim keeps its own glow and only our light breathes).
 - The round's carried girl (the prize) is not one of your copies, so she shows no grade.
-- Prestige and Combine both spend copies. Question for the owner: let Combine replace Prestige? (our pick: yes).
 - Sounds are made here and wait for his upload (README checklist).
