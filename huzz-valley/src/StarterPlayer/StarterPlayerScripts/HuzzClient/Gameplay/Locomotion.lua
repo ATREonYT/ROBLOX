@@ -50,6 +50,7 @@ local DASH_LENGTH = RunConfig.Dash.Length
 local LEAP_LENGTH = 0.85 -- seconds a catcher's leap owns the body (Shared/StabMotion LEAP.Up, plus a little)
 local Mix = require(Shared.LocomotionMix)
 local RunMotion = require(Shared.RunMotion)
+local CarryMath = require(Shared.CarryMath)
 local Frame = require(script.Parent.Frame)
 local HeadAim = require(script.Parent.HeadAim)
 
@@ -171,10 +172,9 @@ local function attach(character: Model)
 	local quietUntil = 0
 	local lastScan = 0
 	local written, base = {}, {} -- motor -> what we last wrote / the animation's pose under it (never stack)
+	-- (Motor6D or the newer AnimationConstraint: CarryMath.holding; his own avatar has only the newer ones)
 	local function jointOf(partName, jointName): Motor6D?
-		local part = character:FindFirstChild(partName)
-		local j = part and part:FindFirstChild(jointName)
-		return if j and j:IsA("Motor6D") then j else nil
+		return CarryMath.holding(character, partName, jointName)
 	end
 	local rootJoint = jointOf("LowerTorso", "Root")
 	local waistJoint, neckJoint = jointOf("UpperTorso", "Waist"), jointOf("Head", "Neck")
@@ -239,9 +239,8 @@ local function attach(character: Model)
 				-- Motor6Ds, after the body appears; the old ones never move again, so a list kept from the start
 				-- would fail a body that's playing fine)
 				for _, pair in LIVE_JOINTS do
-					local part = character:FindFirstChild(pair[1])
-					local j = part and part:FindFirstChild(pair[2])
-					if j and j:IsA("Motor6D") then
+					local j = CarryMath.holding(character, pair[1], pair[2])
+					if j then
 						local _, angle = j.Transform:ToAxisAngle()
 						if math.abs(angle) > math.rad(0.5) then
 							moved = true

@@ -30,6 +30,39 @@ function CarryMath.joint(item)
 	})
 end
 
+-- The joint that holds `partName` on a character, read and written like a Motor6D (CarryMath.joint), or nil.
+-- Its own child named `jointName` first (a Motor6D or an AnimationConstraint), else any joint whose child side is that
+-- part. Owner, Oct 21 ("the body and the head move seperatley, the head from the mouse, and the body from the
+-- controls"): his avatar is on the newer joints, so code that only took Motor6Ds never turned his head or body.
+-- Some avatars hold a part with both kinds ("doubled"): then a write goes to every one of them.
+local function isJoint(d)
+	return d.ClassName == "Motor6D" or d.ClassName == "AnimationConstraint"
+end
+local function childOf(j)
+	if j.ClassName == "Motor6D" then return j.Part1 end
+	local a1 = j.Attachment1
+	return a1 and a1.Parent
+end
+function CarryMath.holding(character, partName, jointName)
+	local part = character and character:FindFirstChild(partName)
+	if not part then return nil end
+	local list = {}
+	local named = jointName and part:FindFirstChild(jointName)
+	if named and isJoint(named) and childOf(named) == part then table.insert(list, named) end
+	for _, d in character:GetDescendants() do
+		if d ~= named and isJoint(d) and childOf(d) == part then table.insert(list, d) end
+	end
+	if #list == 0 then return nil end
+	if #list == 1 then return CarryMath.joint(list[1]) end
+	local first = CarryMath.joint(list[1])
+	return setmetatable({}, {
+		__index = function(_, key) return first[key] end,
+		__newindex = function(_, key, value)
+			for _, j in list do j[key] = value end
+		end,
+	})
+end
+
 -- Arm, waist and right hip joints of an R15 or R6 character. sign is -1 for the right
 -- arm, +1 for the left, so mirrored angles share one formula.
 function CarryMath.rig(character)

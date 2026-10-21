@@ -70,8 +70,13 @@ local function scenario(name, opts)
 		part(s .. "Foot", Vector3.new(1, 0.3, 1))
 	end
 	local function joint(n, p0, p1, c0, c1)
-		local j = { Name = n, Part0 = parts[p0], Part1 = parts[p1], C0 = c0, C1 = c1, Transform = CFrame.identity, Parent = parts[p1] }
+		local j = { Name = n, ClassName = "Motor6D", Part0 = parts[p0], Part1 = parts[p1], C0 = c0, C1 = c1, Transform = CFrame.identity, Parent = parts[p1] }
 		function j.IsA(_, cls) return cls == "Motor6D" end
+		if opts.newer then -- Roblox's newer joints (his own avatar): AnimationConstraints between attachments
+			j = { Name = n, ClassName = "AnimationConstraint", Attachment0 = { CFrame = c0, Parent = parts[p0] },
+				Attachment1 = { CFrame = c1, Parent = parts[p1] }, Transform = CFrame.identity, Parent = parts[p1] }
+			function j.IsA(_, cls) return cls == "AnimationConstraint" or cls == "Constraint" end
+		end
 		table.insert(parts[p1].kids, j)
 		motors[n] = j
 	end
@@ -143,6 +148,14 @@ local function scenario(name, opts)
 		humanoid.RootPart = root
 	end
 	function character.FindFirstChild(_, n) if n == "Animate" then return animate end return parts[n] end
+	function character.GetDescendants()
+		local all = {}
+		for _, p in parts do
+			table.insert(all, p)
+			for _, k in p.kids do table.insert(all, k) end
+		end
+		return all
+	end
 	function character.WaitForChild(self, n) if n == "Humanoid" then return humanoid end return self:FindFirstChild(n) end
 	function character.FindFirstChildOfClass(_, c) return if c == "Humanoid" then humanoid else nil end
 	function character.GetAttribute(_, k) return attrs[k] end
@@ -263,6 +276,9 @@ local cases = {
 	{ "no Animate", { loads = false, noAnimate = true } },
 	{ "R6", { loads = true, r6 = true } },
 	{ "limbs swapped", { loads = true, swapAt = 1 } },
+	-- owner, Oct 21: his avatar is on Roblox's newer joints (no Motor6D); the pack's check, the head look and the lean
+	-- only took Motor6Ds, so on his body they never ran
+	{ "newer joints", { loads = true, newer = true } },
 }
 print("What Output shows for your own moves, case by case:")
 for _, c in cases do
@@ -275,7 +291,7 @@ for _, c in cases do
 	if name == "step fails" then
 		check(string.find(r.logs[2] or "", "failed 30 frames", 1, true) ~= nil, "step fails: Output says the blend kept failing")
 	end
-	if name == "works" or name == "limbs swapped" then
+	if name == "works" or name == "limbs swapped" or name == "newer joints" then
 		check(r.drives and not r.animateOn and not r.handDrawn, name .. ": the pack plays on your Animator, Roblox's Animate off")
 		check(r.logs[1] and string.find(r.logs[1], "your moves", 1, true) ~= nil, name .. ": Output says the pack plays")
 	elseif name == "R6" then

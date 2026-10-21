@@ -16,6 +16,7 @@ function M.start()
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local CrownPose = require(Shared.CrownPose)
+	local CarryMath = require(Shared.CarryMath)
 	local FxTexture = require(Shared.FxTexture)
 	local Frame = require(script.Parent.Frame)
 
@@ -26,7 +27,9 @@ function M.start()
 	local function jointsOf(character: Model)
 		local joints = {}
 		for _, d in character:GetDescendants() do
-			if d:IsA("Motor6D") and CrownPose.TARGET[d.Name] then joints[d.Name] = d end
+			if (d:IsA("Motor6D") or d.ClassName == "AnimationConstraint") and CrownPose.TARGET[d.Name] then
+				joints[d.Name] = CarryMath.joint(d) -- (the newer joints too, his own avatar's)
+			end
 		end
 		return joints
 	end

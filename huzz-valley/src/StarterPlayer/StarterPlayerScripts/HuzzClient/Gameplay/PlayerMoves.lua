@@ -72,6 +72,7 @@ function M.start()
 	local Sampler = require(Shared.KeyframeSampler)
 	local GirlMoves = require(Shared.GirlMoves)
 	local RunMotion = require(Shared.RunMotion)
+	local CarryMath = require(Shared.CarryMath)
 	local Locomotion = require(script.Parent.Locomotion)
 	local Frame = require(script.Parent.Frame)
 	local HeadAim = require(script.Parent.HeadAim)
@@ -96,15 +97,11 @@ function M.start()
 		end
 		local motors, count = {}, 0
 		for _, name in PARTS do
-			local part = character:FindFirstChild(name)
-			if part then
-				for _, j in part:GetChildren() do
-					if j:IsA("Motor6D") and j.Part1 == part then
-						motors[name] = j
-						count += 1
-						break
-					end
-				end
+			-- (Motor6D or the newer AnimationConstraint: CarryMath.holding)
+			local j = CarryMath.holding(character, name)
+			if j then
+				motors[name] = j
+				count += 1
 			end
 		end
 		if count < #PARTS or not motors.LowerTorso then

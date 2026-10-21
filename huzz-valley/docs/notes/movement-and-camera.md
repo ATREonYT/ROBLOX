@@ -58,6 +58,12 @@ The huss pose and walk animations: [animations.md](animations.md).
   mouse; in shift lock the strafe keeps the turn and the head still tilts up and down. Same exact neck solve as the
   strafe (tilt about the body's level, then the turn: no tip), the chest takes 40% of the turn. Spring 10 (~0.35 s
   to settle, at most 12° a frame at 30 fps). The camera doesn't move with the body (Roblox's Classic camera).
+- **On Roblox's newer joints too** (owner, Oct 21: "the body and the head move seperatley, the head from the mouse,
+  and the body from the controls ... ive asked you before but i dont think you understood"): his avatar has
+  AnimationConstraints, no Motor6D. `Gameplay/Locomotion` and `Gameplay/PlayerMoves` only took Motor6Ds, so on his
+  body the head look, the lean, the strafe and the pack's walk never ran (Roblox's plain walk instead), on his screen
+  and everyone else's. Now every joint is found with `CarryMath.holding` (either kind, doubled ones written together);
+  CrownPose too. Specs: `tests/AvatarAnims.spec` "newer joints", `tests/PlayerMoves.spec` (head turns on that body).
 - **Everyone sees everyone's head** (`HeadAim.start`, remote `HeadLook`, `HuzzServer/HeadLookService`): your screen
   sends the head's turn and tilt as drawn, whole degrees, 5 times a second at most and only when it moved 2°; the
   server drops anything past 8 a second, NaN or text, clamps it to the neck's reach and puts it on your character

@@ -68,7 +68,7 @@ local function loadGameplay(name)
 end
 
 -- A fake R15 body (the preview rig's joints), plain tables: parts, Motor6Ds with Transform, a Humanoid.
-local function body(name, at, rigType)
+local function body(name, at, rigType, newer)
 	local attrs = {}
 	local character = { Name = name, Parent = "Workspace" }
 	local parts = {}
@@ -89,8 +89,13 @@ local function body(name, at, rigType)
 	end
 	local motors = {}
 	local function joint(n, p0, p1, c0, c1)
-		local j = { Name = n, Part0 = parts[p0], Part1 = parts[p1], C0 = c0, C1 = c1, Transform = CFrame.identity, Parent = parts[p1] }
+		local j = { Name = n, ClassName = "Motor6D", Part0 = parts[p0], Part1 = parts[p1], C0 = c0, C1 = c1, Transform = CFrame.identity, Parent = parts[p1] }
 		function j.IsA(_, cls) return cls == "Motor6D" end
+		if newer then -- Roblox's newer joints (his own avatar): an AnimationConstraint between two attachments
+			j = { Name = n, ClassName = "AnimationConstraint", Attachment0 = { CFrame = c0, Parent = parts[p0] },
+				Attachment1 = { CFrame = c1, Parent = parts[p1] }, Transform = CFrame.identity, Parent = parts[p1] }
+			function j.IsA(_, cls) return cls == "AnimationConstraint" or cls == "Constraint" end
+		end
 		table.insert(parts[p1].kids, j)
 		motors[n] = j
 	end
@@ -114,6 +119,14 @@ local function body(name, at, rigType)
 		FindFirstChildOfClass = function(_, c) return if c == "Animator" then animator else nil end,
 	}
 	function character.FindFirstChild(_, n) return parts[n] end
+	function character.GetDescendants()
+		local all = {}
+		for _, p in parts do
+			table.insert(all, p)
+			for _, k in p.kids do table.insert(all, k) end
+		end
+		return all
+	end
 	function character.FindFirstChildOfClass(_, c) return if c == "Humanoid" then humanoid else nil end
 	function character.GetAttribute(_, k) return attrs[k] end
 	function character.SetAttribute(_, k, val) attrs[k] = val end
@@ -124,10 +137,13 @@ local function noAttr() return nil end
 local me = { Name = "Me", UserId = 1, GetAttribute = noAttr }
 local other = { Name = "Other", UserId = 2, GetAttribute = noAttr }
 local r6 = { Name = "Blocky", UserId = 3, GetAttribute = noAttr }
+local newer = { Name = "Newer", UserId = 4, GetAttribute = noAttr }
 Players.LocalPlayer = me
-players = { me, other, r6 }
+players = { me, other, r6, newer }
 local mine, theirs, blocky = body("Me", Vector3.new(0, 3, 0)), body("Other", Vector3.new(10, 3, 0)), body("Blocky", Vector3.new(20, 3, 0), roblox.Enum.HumanoidRigType.R6)
 me.Character, other.Character, r6.Character = mine.character, theirs.character, blocky.character
+local fresh = body("Newer", Vector3.new(-10, 3, 0), nil, true)
+newer.Character = fresh.character
 
 local PlayerMoves = loadGameplay("PlayerMoves")
 local okStart, err = pcall(PlayerMoves.start)
@@ -220,6 +236,17 @@ do
 	theirs.character:SetAttribute("HuzzLook", nil)
 	frames(60)
 	check(angle(neck0, neckM.Transform) < 6, "and back when it goes")
+	-- the same on an avatar with Roblox's newer joints (owner, Oct 21: "the body and the head move seperatley, the
+	-- head from the mouse"): his avatar has no Motor6D, so this body was skipped and its head never turned
+	local fNeck, fWaist = fresh.motors.Neck, fresh.motors.Waist
+	local fNeck0, fWaist0 = fNeck.Transform, fWaist.Transform
+	fresh.character:SetAttribute("HuzzLook", roblox.Vector2.new(-50, 15))
+	frames(45)
+	check(angle(fNeck0, fNeck.Transform) > 12 and angle(fWaist0, fWaist.Transform) > 15,
+		string.format("newer joints: the head and chest turn to the mouse too (neck %.0f, chest %.0f degrees)",
+			angle(fNeck0, fNeck.Transform), angle(fWaist0, fWaist.Transform)))
+	fresh.character:SetAttribute("HuzzLook", nil)
+	frames(60)
 end
 -- their halt (owner, Oct 20 07:55: "they move a little forward as a sort of \"hault\""): their key goes (MoveDirection
 -- reaches every screen) while their body still slides from 28 to a stand (Shared/Halt): the feet plant and skid
