@@ -510,9 +510,11 @@ end
 -- in the UI"): assets/icons/stud-pattern.png (tools/icons/make_stud_pattern.py), one raised square stud per 24 px
 -- tile, white/black with alpha so it suits any colour. strength 0-1 (default 0.5). It copies the parent's rounded
 -- corners (ClipsDescendants would clip square). Under everything else in the parent (ZIndex as the parent's).
+-- Owner, Oct 21: "the studs are too big, make them actual size studs": 12 px a stud (was 24), like the bricks in the game.
+Kit.STUD = 12
 function Kit.studPattern(parent: GuiObject, strength: number?)
 	local img = Kit.icon("StudPattern", {
-		Name = "StudPattern", ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(24, 24),
+		Name = "StudPattern", ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(Kit.STUD, Kit.STUD),
 		Size = UDim2.fromScale(1, 1), ImageTransparency = 1 - (strength or 0.5), ZIndex = parent.ZIndex,
 		Parent = parent,
 	})

@@ -72,16 +72,47 @@ local function chunkyFont(t: Instance)
 	if o and o:IsA("UIStroke") and o.Color ~= ShopStyle.INK then o.Color = ShopStyle.INK end
 end
 
+-- Owner, Oct 21: studs "everywhere in the ui". Every solid rounded box (a card, a slot, a tray, a pill) gets the
+-- small stud texture under its contents, faint so text and pictures on it stay clear. Buttons, headers and panels
+-- have theirs from Kit already; see-through boxes, glows and scroll areas get none.
+local NO_STUDS = { Glow = true, Fill = true, Header = true, Panel = true, StudPattern = true }
+local function studBox(t: Instance)
+	-- (a box's own words draw under its children, so a box with words of its own gets none)
+	if not ((t:IsA("Frame") and not t:IsA("ScrollingFrame")) or (t:IsA("TextButton") and t.Text == "")) then return end
+	if NO_STUDS[t.Name] or t:FindFirstChild("StudPattern") or not t:FindFirstChildOfClass("UICorner") then return end
+	local g = t :: GuiObject
+	if g.BackgroundTransparency > 0.3 then return end
+	local w, h = g.Size.X.Offset, g.Size.Y.Offset
+	if g.Size.X.Scale > 0 or g.Size.Y.Scale > 0 then
+		local ok, size = pcall(function() return g.AbsoluteSize end)
+		if ok and size then w, h = size.X, size.Y end
+	end
+	if w < 48 or h < 20 then return end
+	local x = t
+	while x do
+		if x:GetAttribute("ShopStyleKeep") then return end
+		x = x.Parent
+	end
+	local low = math.huge
+	for _, c in t:GetChildren() do
+		if c:IsA("GuiObject") then low = math.min(low, c.ZIndex) end
+	end
+	local studs = Kit.studPattern(g, 0.16)
+	if low ~= math.huge then studs.ZIndex = math.min(studs.ZIndex, low - 1) end -- (under every other child: the GUI sorts siblings)
+end
+
 -- Puts a whole window in the Shop's look, and whatever is added to it later.
 local styled: { [Instance]: boolean } = {}
 function ShopStyle.restyle(root: Instance)
 	if styled[root] then return end
 	styled[root] = true
 	for _, d in root:GetDescendants() do chunkyFont(d) end
+	for _, d in root:GetDescendants() do studBox(d) end
 	pcall(function()
 		root.DescendantAdded:Connect(function(d)
 			chunkyFont(d)
 			task.defer(chunkyFont, d) -- (its font is often set right after it's parented)
+			task.defer(studBox, d)
 		end)
 	end)
 end
