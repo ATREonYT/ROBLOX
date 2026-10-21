@@ -168,10 +168,14 @@ for k = 0, 20 do
 end
 
 -- How far below her root her feet are, and how far above it her head's top is (body parts only).
+local NOT_BODY = { Aura = true, StandTop = true, StandBand = true, StandGlow = true, KeyLight = true, RimLight = true }
 local function measure(model, root, scale)
 	local low, high = math.huge, -math.huge
 	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") and d ~= root and d.Name ~= "HumanoidRootPart" and not d:FindFirstAncestorOfClass("Accessory") then
+		-- (her body only: never the showcase's see-through Aura box or light holders, which reach under her feet and
+		-- started her flames below them, "going through the bottom thing", owner Oct 21 16:17)
+		if d:IsA("BasePart") and d ~= root and d.Name ~= "HumanoidRootPart" and d.Transparency < 1 and not NOT_BODY[d.Name]
+			and not d:FindFirstAncestorOfClass("Accessory") then
 			local y, h = getPos(d).Y, d.Size.Y / 2
 			low, high = math.min(low, y - h), math.max(high, y + h)
 		end

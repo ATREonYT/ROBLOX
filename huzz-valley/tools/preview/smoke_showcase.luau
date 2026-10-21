@@ -49,20 +49,15 @@ local girl = { id = "G1", name = "Mikasa", rarity = "Legendary", template = m }
 local okS, show = pcall(GirlService.showcase, girl, Vector3.new(0, 40, 0), workspace)
 check("showcase builds: " .. tostring(show), okS)
 if okS then
-	for _, n in { "Aura", "StandTop", "StandBand", "StandGlow", "KeyLight", "RimLight" } do
+	for _, n in { "Aura", "StandGlow", "KeyLight", "RimLight" } do
 		check("has " .. n, show:FindFirstChild(n) ~= nil)
 	end
-	local aura = show:FindFirstChild("Aura")
-	local top = show:FindFirstChild("StandTop")
-	-- the stand stays inside the Aura box (so the cutscene's bounding box doesn't change)
-	local rel = aura.CFrame:PointToObjectSpace(top.CFrame.Position)
-	check("stand inside the aura box (y)", math.abs(rel.Y) + 0.25 <= aura.Size.Y / 2 + 1e-3)
-	check("stand no wider than her (x)", top.Size.Y <= aura.Size.X)
+	check("no plate under her (owner, Oct 21 16:17)", show:FindFirstChild("StandTop") == nil and show:FindFirstChild("StandBand") == nil)
 	local hrp = show.PrimaryPart
 	check("root anchored", hrp.Anchored == true)
 	check("body unanchored", show:FindFirstChild("Torso").Anchored == false)
-	check("stand anchored", top.Anchored == true)
-	local gui = aura:FindFirstChild("Rating")
+	local aura = show:FindFirstChild("Aura")
+	local gui = aura and aura:FindFirstChild("Rating")
 	check("title board", gui ~= nil and gui.SizeOffset.Y == 0.5)
 	local name = gui and gui:FindFirstChildOfClass("TextLabel")
 	check("title text is her name", name ~= nil and name.Text == "MIKASA")

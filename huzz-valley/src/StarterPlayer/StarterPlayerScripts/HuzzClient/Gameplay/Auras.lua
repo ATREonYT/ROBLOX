@@ -384,7 +384,8 @@ function M.start()
 			spec.scale = 1 -- (full size: the round's girl)
 		end
 		-- (the girl being carried is off the floor: no light pool under her)
-		worldAuras[model] = AuraFX.attach(model, spec, { lite = kind ~= "Showcase", ground = not carried })
+		-- (and the big girl over the map floats: no floor pool under her either, it read as a plate; Oct 21 16:17)
+		worldAuras[model] = AuraFX.attach(model, spec, { lite = kind ~= "Showcase", ground = not carried and kind ~= "Showcase" })
 		if kind == "Companion" then
 			ghostModel(model) -- (the round's girl, carried or following, never blocks anyone either)
 		end

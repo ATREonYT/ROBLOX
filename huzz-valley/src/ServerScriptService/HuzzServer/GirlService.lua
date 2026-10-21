@@ -353,8 +353,8 @@ end
 	the middle): `at` is where her feet float. Scaled up (Config/Round.Showcase), shown like a prize on a stand
 	(the other game's demo stand, docs/feel-study.md gap 12: at 18 s of the owner's recording she read as a dark
 	blob 3.5% of the screen tall):
-	  - a small round stand under her feet with a glowing band in her rarity colour, never wider than her stance
-	    (owner: the old rings under her feet hid her from below);
+	  - nothing under her feet (owner, Oct 21 16:17: "remove the bottom plate, and just keep her with some good vfx";
+	    the stand before that, and the rings before it, hid her from below);
 	  - soft light on her (the sun is above her and you look up at her from the field, so she was in her own
 	    shade against the bright sky): a key light in front, a rim light in her colour behind, a soft glow up
 	    from the stand. Short ranges, so nothing reaches the field ("too much light shining down");
@@ -402,20 +402,10 @@ function GirlService.showcase(girl, at, parent)
 	-- (Gameplay/Auras + Shared/AuraLook, kind "Showcase"); this part only carries her rating board.
 	local aura = part("Aura", { Size = size + Vector3.new(2, 2, 2), Transparency = 1, CFrame = centre })
 
-	-- Her stand: a dark round top with a glowing band in her colour round its edge, under her feet. Smaller than
-	-- her stance and inside the Aura box (1 stud under her feet, size + 2 across).
+	-- No stand under her any more (owner, Oct 21 16:17, his picture of C.C. over the map: "remove the bottom plate,
+	-- and just keep her with some good vfx"): she floats in her effects (Gameplay/Auras), with the soft light below.
 	local feet = centre * CFrame.new(0, -size.Y / 2, 0)
-	local radius = math.clamp(size.Z * 0.6, 1.2, math.min(size.X * 0.42, size.Z / 2 + 0.9))
-	local flat = CFrame.Angles(0, 0, math.rad(90)) -- (a Cylinder's round faces turned to face up and down)
-	part("StandTop", {
-		Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.5, radius * 2, radius * 2), Color = Color3.fromRGB(34, 26, 66),
-		Material = Enum.Material.SmoothPlastic, CFrame = feet * CFrame.new(0, -0.27, 0) * flat,
-	})
-	part("StandBand", {
-		Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.18, radius * 2 + 0.24, radius * 2 + 0.24), Color = color,
-		Material = Enum.Material.Neon, Transparency = 0.15, CFrame = feet * CFrame.new(0, -0.3, 0) * flat,
-	})
-	-- a soft glow up from the stand onto her (you look up at her from the field)
+	-- a soft glow up from under her feet onto her (you look up at her from the field)
 	local up = part("StandGlow", { Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, CFrame = feet * CFrame.new(0, -0.05, 0) })
 	local spot = Instance.new("SpotLight")
 	spot.Face, spot.Angle, spot.Brightness, spot.Range = Enum.NormalId.Top, 70, 1.0, size.Y * 0.9
