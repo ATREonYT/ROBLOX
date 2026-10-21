@@ -418,7 +418,11 @@ end
 -- than FollowGuard.LOOSE studs off every body part. No piece of any knife worn where it should be may count: all 53
 -- and the default knife, every piece, on the same bodies.
 do
-	local FG = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/FollowGuard.lua"), { debugName = "FollowGuard" })()
+	-- (FollowGuard asks ReplicatedStorage for Shared/LooseParts: handed the real one here)
+	local LP = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/LooseParts.lua"), { debugName = "LooseParts" })()
+	local fakeShared = { WaitForChild = function(self) return self end }
+	local FG = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/FollowGuard.lua"), { debugName = "FollowGuard",
+		environment = { game = { GetService = function() return fakeShared end }, require = function() return LP end } })()
 	local all = {}
 	for key, m in good do table.insert(all, { key, m, CoinShop.get(key) }) end
 	for _, item in CoinShop.Items do

@@ -30,17 +30,10 @@ M.FOLLOW_TIME = 2 -- seconds (a burst's sparks live less than that)
 M.BIGGEST = 3 -- studs: a bigger part isn't the little block
 M.SEE = 0.95 -- more see-through than this: already invisible
 M.MAX_LINES = 12
-M.LOOSE = 1.75 -- studs: (c) a part inside a character whose box is this far off every body part (his block: about 2.3)
-M.SMALL_ACCESSORY = 1.5 -- studs: (c) only accessory pieces this small count (wings and long hair rightly reach out)
--- (c) the body parts of R15 and R6 bodies (everything else inside a character is something worn or added)
-M.LIMBS = {
-	Head = true, UpperTorso = true, LowerTorso = true, Torso = true,
-	LeftUpperArm = true, LeftLowerArm = true, LeftHand = true, RightUpperArm = true, RightLowerArm = true, RightHand = true,
-	LeftUpperLeg = true, LeftLowerLeg = true, LeftFoot = true, RightUpperLeg = true, RightLowerLeg = true, RightFoot = true,
-	["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true,
-}
--- (c) never removed: things meant to reach out from a body (the knife swung in a hand, the carried girl)
-M.LOOSE_OK = { HuzzKnife = true, HuzzCarried = true, HuzzFollowers = true, HuzzCompanions = true, HuzzShields = true, HuzzShield = true }
+-- (c) the loose-part rules are Shared/LooseParts (the server's HuzzServer/BlockSweep uses the same)
+local LooseParts = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("LooseParts"))
+M.LOOSE = LooseParts.KNIFE
+M.LIMBS = LooseParts.LIMBS
 -- The game's own things that are meant to be on or beside a body (a part inside one of these is never hidden).
 M.ALLOW = {
 	HuzzBackKnife = true, HuzzKnife = true, -- the worn and held knives (HuzzServer/KnifeService)
@@ -223,46 +216,9 @@ function M.collect(root: Instance): { [BasePart]: boolean }
 	return pool
 end
 
--- How far a world point lies outside a box (0 inside).
-local function outside(cf: CFrame, size: Vector3, at: Vector3): number
-	local p = cf:PointToObjectSpace(at)
-	local h = size / 2
-	local dx, dy, dz = math.max(math.abs(p.X) - h.X, 0), math.max(math.abs(p.Y) - h.Y, 0), math.max(math.abs(p.Z) - h.Z, 0)
-	return math.sqrt(dx * dx + dy * dy + dz * dz)
-end
-
---[[
-	(c) The visible parts inside this character that sit loose off its body: { { part, gap } }, gap = studs between the
-	part's box and the nearest body part's box (measured from the part's centre less half its diagonal, so a long part
-	touching the body never counts). Nothing when the character has no body parts yet (still loading).
-]]
+-- (c) The visible parts inside this character that sit loose off its body: { { part, gap } } (Shared/LooseParts).
 function M.loose(character: Instance): { { part: BasePart, gap: number } }
-	local limbs = {}
-	for _, c in character:GetChildren() do
-		if isA(c, "BasePart") and M.LIMBS[c.Name] then table.insert(limbs, c) end
-	end
-	local out = {}
-	if #limbs == 0 then return out end
-	for _, d in character:GetDescendants() do
-		if isA(d, "BasePart") and not (d.Parent == character and (M.LIMBS[d.Name] or d.Name == "HumanoidRootPart")) and visible(d) then
-			local skip = false
-			local x = d.Parent
-			while x and x ~= character do
-				if M.LOOSE_OK[x.Name] or (read(x, "GetAttribute") and x:GetAttribute("HuzzOnBody") == true) then skip = true break end
-				if isA(x, "Accessory") and biggest(d) > M.SMALL_ACCESSORY then skip = true break end
-				x = x.Parent
-			end
-			if not skip then
-				local at, half = d.CFrame.Position, d.Size.Magnitude / 2
-				local gap = math.huge
-				for _, l in limbs do
-					gap = math.min(gap, outside(l.CFrame, l.Size, at) - half)
-				end
-				if gap > M.LOOSE then table.insert(out, { part = d, gap = gap }) end
-			end
-		end
-	end
-	return out
+	return LooseParts.find(character)
 end
 
 -- Hidden on this screen only.
@@ -294,6 +250,7 @@ function M.check(bodies, state, io, now: number): { BasePart }
 		end
 		M.hide(p)
 		table.insert(hid, p)
+		pcall(function() p:Destroy() end) -- (owner, Oct 21: "don't try to hide it, remove it")
 	end
 	local function remove(p: BasePart, why: string)
 		if state.told < M.MAX_LINES then

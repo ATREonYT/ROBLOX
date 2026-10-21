@@ -13,7 +13,11 @@ local roblox = require("@lune/roblox")
 local Instance, Vector3, CFrame, Color3 = roblox.Instance, roblox.Vector3, roblox.CFrame, roblox.Color3
 
 local ROOT = if fs.isDir("huzz-valley") then "huzz-valley/" else ""
-local G = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/FollowGuard.lua"), { debugName = "FollowGuard" })()
+-- (FollowGuard asks ReplicatedStorage for Shared/LooseParts: handed the real one here)
+local LP = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/LooseParts.lua"), { debugName = "LooseParts" })()
+local fakeShared = { WaitForChild = function(self) return self end }
+local G = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/FollowGuard.lua"), { debugName = "FollowGuard",
+	environment = { game = { GetService = function() return fakeShared end }, require = function() return LP end } })()
 
 local passed, failed = 0, 0
 local function check(name, cond)
@@ -72,7 +76,10 @@ local function joints(p)
 	end
 	return out
 end
+-- gone from view: removed (Oct 21: "don't try to hide it, remove it"), or at least hidden
 local function hidden(p)
+	local ok, parent = pcall(function() return p.Parent end)
+	if not ok or parent == nil then return true end
 	local ltm = 0
 	pcall(function() ltm = p.LocalTransparencyModifier end)
 	return p.Transparency >= 1 or ltm >= 1
@@ -148,9 +155,9 @@ end
 -- t = 0: both bodies stand; (a) is found at once
 local bodies = { { name = "alex", character = alex, root = root }, { name = "bob", character = bob, root = bobRoot } }
 tick(0, bodies)
-check("a dark block welded to his hip from outside is hidden", hidden(block))
-check("a part hanging off that block is hidden", hidden(hanger))
-check("a part held by a constraint from outside is hidden", hidden(roped))
+check("a dark block welded to his hip from outside is removed", hidden(block))
+check("a part hanging off that block is removed", hidden(hanger))
+check("a part held by a constraint from outside is removed", hidden(roped))
 local blockLine
 for _, l in lines do if string.find(l, "Junk.Block:", 1, true) then blockLine = l end end
 check("the block gets one [HuzzBlock] line", blockLine ~= nil and string.sub(blockLine, 1, 18) == "[HuzzBlock] hid Wo")
@@ -173,15 +180,15 @@ for t = 1, 4 do
 	local step = Vector3.new(5, 0, 0)
 	move(alex, step)
 	move(bob, step)
-	for _, p in followers do p.CFrame = p.CFrame + step end
-	bobFollower.CFrame = bobFollower.CFrame + step
+	for _, p in followers do pcall(function() p.CFrame = p.CFrame + step end) end -- (a removed one is gone)
+	pcall(function() bobFollower.CFrame = bobFollower.CFrame + step end)
 	fPart.CFrame = fPart.CFrame + step
 	tick(t, bodies)
 	if t == 2 then
 		check("not yet: 10 studs isn't following", not hidden(follower))
 	end
 end
-check("a small block that followed alex 20 studs is hidden", hidden(follower))
+check("a small block that followed alex 20 studs is removed", hidden(follower))
 check("one that followed bob is hidden too (every body, on every screen)", hidden(bobFollower))
 local bobLine
 for _, l in lines do if string.find(l, "BobBlock", 1, true) then bobLine = l end end
