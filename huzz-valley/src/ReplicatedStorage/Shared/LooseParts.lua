@@ -7,11 +7,12 @@
 	A loose part: visible, inside the character, not one of its body parts, and its box more than a gap off every body
 	part (its centre's distance to the nearest body part's box, less half its own diagonal, so a long part touching the
 	body never counts):
-	  * a worn knife's piece (HuzzBackKnife): KNIFE studs (tests/KnifeWear.spec 1b: the farthest piece of all 53 knives
-	    and the default knife worn on five bodies is 1.42 studs, the Thorn Karambit's thorn);
-	  * anything else: OTHER studs (his block sits about 1.6 to 2.3 off his legs);
-	  * never: the knife in a hand, the carried girl or a follower, the companion, the Shield, anything marked
-	    HuzzOnBody, an accessory piece bigger than SMALL_ACCESSORY (wings, long hair, a big back item reach out).
+	  * anything: OTHER studs (his block sits about 1.6 to 2.3 off his legs);
+	  * never: the worn knife or the knife in a hand (owner, Oct 21 14:18: "the knfies dont load": removing a worn
+	    knife's grip while it was still being put on took the whole knife with it, for good. A worn knife's stray piece
+	    is only hidden, on each screen, by Gameplay/KnifeGuard), the carried girl or a follower, the companion, the
+	    Shield, anything marked HuzzOnBody, an accessory piece bigger than SMALL_ACCESSORY (wings, long hair, a big
+	    back item reach out).
 ]]
 local LooseParts = {}
 
@@ -25,7 +26,7 @@ LooseParts.LIMBS = {
 	LeftUpperLeg = true, LeftLowerLeg = true, LeftFoot = true, RightUpperLeg = true, RightLowerLeg = true, RightFoot = true,
 	["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true,
 }
-LooseParts.OK = { HuzzKnife = true, HuzzCarried = true, HuzzFollowers = true, HuzzCompanions = true, HuzzShields = true, HuzzShield = true }
+LooseParts.OK = { HuzzKnife = true, HuzzBackKnife = true, HuzzCarried = true, HuzzFollowers = true, HuzzCompanions = true, HuzzShields = true, HuzzShield = true }
 LooseParts.KNIFE_MODEL = "HuzzBackKnife"
 
 local function isA(x: any, class: string): boolean
