@@ -63,8 +63,15 @@ return {
 		JumpHold = 0.32, -- seconds the jump pose plays before the fall takes over
 		ClimbAt = 5, -- climbing speed (studs/s) the climb plays at 1x
 		-- The procedural touch on top (critically damped): leaning into turns and into speeding up.
-		TurnLean = 3.2, -- degrees of roll per radian a second of turning (at a run)...
-		MaxRoll = 7, -- ...up to this
+		-- Owner, Oct 21 (his Huss Valley recording 1200-huss-valley.mov: "make the body move when you go right or left
+		-- and keep the head in the middle"): HV's runner banks hard into a turn, about 15 degrees, so 7 per radian a
+		-- second up to 16 (was 3.2 up to 7); the neck takes most of it back (HeadLevel), so the head stays level.
+		TurnLean = 7, -- degrees of roll per radian a second of turning (at a run)...
+		MaxRoll = 16, -- ...up to this
+		-- The owner's run and walk swing their arms and legs further (his HV recording, Oct 21: the R6 runner's arms
+		-- reach far out front and back): each shoulder's turn x Arms, each hip's x Legs at a run (half at a walk).
+		Swing = { Arms = 1.35, Legs = 1.15 },
+		HeadLevel = 0.8, -- of that roll the neck undoes (1 = the head stays perfectly level)
 		AccelLean = 0.2, -- degrees of forward pitch per stud/s² of speeding up (0.12 before the 1 s build: its gentler
 		-- push, 24 studs/s² at the start, would only lean ~3 degrees; now ~5 at the start, upright as the build tops out)...
 		MaxPitch = 5, MaxPitchBack = 3, -- ...up to these (leaning back a little when you stop)
@@ -107,7 +114,8 @@ return {
 		-- (a neck's reach). Everyone sees it: your screen sends your head's turn SendRate times a second when it moved
 		-- SendStep degrees or more (HuzzServer/HeadLookService checks and puts it on your character), and other screens
 		-- spring to it with RemoteResponse (softer: the values come 5 times a second).
-		Look = { Max = 70, BackFrom = 110, Fade = 30, Response = 10, Up = 30, Down = 35, SendRate = 5, SendStep = 2,
+		-- (Max 90, was 70, Oct 21: running side-on, the head can stay on the middle of the screen, as in HV's recording)
+		Look = { Max = 90, BackFrom = 110, Fade = 30, Response = 10, Up = 30, Down = 35, SendRate = 5, SendStep = 2,
 			RemoteResponse = 8 },
 		-- Shift lock (owner, Oct 19: "when you shift lock the only thing that moves when you press w a s d (etc) is
 		-- their body not their head"; 18:16 "when he presses D, the body turns right": MaxTurn 90, was 70, so D is a

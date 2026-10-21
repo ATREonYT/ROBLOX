@@ -353,6 +353,10 @@ local function attach(character: Model)
 						neck = { C0 = neckJoint.C0, C1 = neckJoint.C1, T = neckPose },
 					}, look, tilt)
 				end
+				-- the head stays level while the body banks into a turn (Config/Run.Loco.HeadLevel)
+				if math.abs(roll) > 1e-4 then
+					neckPose = neckPose * CFrame.Angles(0, 0, -roll * (mix.C.HeadLevel or 0))
+				end
 				put(waistJoint, waistPose)
 				put(neckJoint, neckPose)
 			end
@@ -361,13 +365,14 @@ local function attach(character: Model)
 			local plant = if quiet > 0 then 0 else Mix.stopAmount(mix)
 			for side, arm in { [1] = rightArm, [-1] = leftArm } do
 				if arm and arm.Parent then
-					local pose = current(arm)
+					local pose = Mix.swing(current(arm), if quiet > 0 then 1 else Mix.swingK(mix, "Arms"))
 					put(arm, if plant > 1e-4 then Mix.stopArm(mix, plant, side) * pose else pose)
 				end
 			end
 			for name, leg in braceLegs do
 				if leg.Parent then
 					local pose = current(leg)
+					if string.sub(name, -3) == "Hip" and quiet == 0 then pose = Mix.swing(pose, Mix.swingK(mix, "Legs")) end
 					put(leg, if brace > 1e-4 then Mix.braceJoint(mix, brace, name, leg.C0) * pose else pose)
 				end
 			end

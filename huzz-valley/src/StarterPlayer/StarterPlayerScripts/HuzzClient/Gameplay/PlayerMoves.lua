@@ -264,8 +264,10 @@ function M.start()
 				local pitch = math.rad(rec.mix.C.Stop.Lean) * plant
 				rec.lean = c0:Inverse() * Mix.leanCFrame(0, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0
 			end
-			if isMe and pose.LowerTorso then
-				-- the lean into turns and into speeding up (as Locomotion adds on top in Studio)
+			rec.roll = 0
+			if pose.LowerTorso and (isMe or plant <= 1e-4) then
+				-- the lean into turns and into speeding up (as Locomotion adds on top in Studio); everyone's, so another
+				-- runner banks into a turn too (owner, Oct 21), the stop's plant inside it (Mix.lean)
 				local dashAt = RunMotion.dashAt(character)
 				local hussing = type(dashAt) == "number" and Workspace:GetServerTimeNow() - dashAt < DASH_LENGTH + 0.1
 				local look = root.CFrame.LookVector
@@ -276,6 +278,7 @@ function M.start()
 					local c0 = rec.motors.LowerTorso.C0
 					rec.lean = c0:Inverse() * Mix.leanCFrame(roll, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0
 				end
+				rec.roll = roll
 			end
 			-- shift lock's strafe: yours from your shift lock, anyone else's in a round from the way their body goes
 			local dashAt = RunMotion.dashAt(character)
@@ -314,6 +317,15 @@ function M.start()
 					neck = { C0 = neckM.C0, C1 = neckM.C1, T = hd },
 				}, look, tilt)
 				rec.turned = { LowerTorso = r, UpperTorso = w, Head = n }
+			end
+			-- the head stays level while the body banks (Config/Run.Loco.HeadLevel)
+			local level = -(rec.roll or 0) * (rec.mix.C.HeadLevel or 0)
+			if math.abs(level) > 1e-4 then
+				if rec.turned then
+					rec.turned.Head = rec.turned.Head * CFrame.Angles(0, 0, level)
+				elseif pose.Head then
+					pose.Head = pose.Head * CFrame.Angles(0, 0, level)
+				end
 			end
 			rec.pose = pose
 		end

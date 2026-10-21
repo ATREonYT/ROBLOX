@@ -395,6 +395,24 @@ end
 
 -- A copy of a Loco config for an avatar `k` times the standard size (legs k times as long: every speed scales).
 local SPEEDS = { "MoveFrom", "MoveFull", "RunFrom", "RunFull", "WalkAt", "RunAt" }
+-- A bigger swing (owner, Oct 21: "make the running animations and walking animations better ... something similar
+-- and good looking in r15" to Huss Valley's R6 run, whose arms swing far out front and back): a joint's turn from its
+-- rest made k times as big (its axis kept), the way the loop already moves it, only more. k = 1 changes nothing.
+function LocomotionMix.swing(pose: CFrame, k: number): CFrame
+	if math.abs(k - 1) < 1e-3 then return pose end
+	local axis, angle = pose:ToAxisAngle()
+	if angle < 1e-4 then return pose end
+	return CFrame.new(pose.Position) * CFrame.fromAxisAngle(axis, angle * k)
+end
+
+-- How much of the swing boost plays now: Config Run.Loco.Swing (Arms, Legs) at a run, half of it at a walk.
+function LocomotionMix.swingK(s, part: string): number
+	local boost = s.C.Swing and s.C.Swing[part]
+	if not boost then return 1 end
+	local w = s.weights
+	return 1 + (boost - 1) * ((w.Run or 0) + 0.5 * (w.Walk or 0))
+end
+
 function LocomotionMix.sized(config, k: number)
 	local c = table.clone(config)
 	for _, key in SPEEDS do
