@@ -217,10 +217,20 @@ function KnifeLook.backClear(boxes: { { cf: CFrame, size: Vector3 } }?, torsoSiz
 	end
 	return most
 end
--- Where the knife really goes: its own place, unless big wings fill the back (then the hip).
+-- Where the knife really goes: its own place, unless big wings fill the back (then the hip). With HIP off (owner,
+-- Oct 21 16:06, his picture: the knife still by his leg, his avatar has a big back piece: "make it be on the users
+-- back like in the other games") it always stays on the back, and a big back piece only lifts it CLEAR.MostOut off
+-- the back (it may go through wings or a backpack, as in other games, never floats off the body).
+KnifeLook.CLEAR.MostOut = 0.35
 function KnifeLook.wornAt(wear: string, clear: number?): string
+	if not KnifeLook.HIP then return "Back" end
 	if wear == "Back" and (clear or 0) > KnifeLook.CLEAR.Max then return "Side" end
 	return wear
+end
+-- How far the knife sits out for a cape, hair or wings (capped when HIP is off).
+function KnifeLook.clearOut(clear: number?): number
+	if not KnifeLook.HIP then return math.min(clear or 0, KnifeLook.CLEAR.MostOut) end
+	return clear or 0
 end
 
 -- On the back (long blades), in the torso's space (+X right, +Y up, +Z the back), like a sword in a back sheath:
@@ -247,7 +257,7 @@ function KnifeLook.backC0(torsoName: string, torsoSize: Vector3, shape: any?, cl
 	local wideNeg = shape ~= nil and shape.zMin ~= nil and -shape.zMin > shape.zMax + 0.05
 	local sx = (if wideNeg then -1 else 1) * (if pole then -1 else 1)
 	local out = if sx < 0 then off(shape, shape and shape.xMax or 0, 0.22) else off(shape, shape and -shape.xMin or 0, 0.22) -- (the side facing the back)
-	local at = Vector3.new(0.28 * torsoSize.X, torsoSize.Y / 2 - 0.25, torsoSize.Z / 2 + out + (clear or 0))
+	local at = Vector3.new(0.28 * torsoSize.X, torsoSize.Y / 2 - 0.25, torsoSize.Z / 2 + out + KnifeLook.clearOut(clear))
 	if pole then -- (the pole's middle on the back, a little right: the head over the right shoulder, the pole clear of the head)
 		at = Vector3.new(0.2, 0, at.Z) - tip * ((shape.yMin + shape.yMax) / 2)
 	elseif shape and shape.yMin and shape.zMin then

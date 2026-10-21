@@ -549,8 +549,15 @@ do
 	check("backClear: nothing = 0", KnifeLook.backClear({}, T) == 0)
 	check(string.format("backClear: a cape = how far it hangs off the back (%.2f)", KnifeLook.backClear({ cape }, T)), math.abs(KnifeLook.backClear({ cape }, T) - 0.2) < 1e-4)
 	check("backClear: long hair counts, a hat doesn't", KnifeLook.backClear({ hair }, T) > 0.1 and KnifeLook.backClear({ hat }, T) == 0)
-	check("wornAt: a cape keeps it on the back, wings send it to the hip", KnifeLook.wornAt("Back", 0.2) == "Back" and KnifeLook.wornAt("Back", KnifeLook.backClear({ wings }, T)) == "Side"
+	KnifeLook.HIP = true
+	check("wornAt (hip on): a cape keeps it on the back, wings send it to the hip", KnifeLook.wornAt("Back", 0.2) == "Back" and KnifeLook.wornAt("Back", KnifeLook.backClear({ wings }, T)) == "Side"
 		and KnifeLook.wornAt("Side", 2) == "Side")
+	KnifeLook.HIP = false
+	check("wornAt: wings or a backpack keep it on the back now (owner, Oct 21 16:06)", KnifeLook.wornAt("Back", KnifeLook.backClear({ wings }, T)) == "Back"
+		and KnifeLook.wornAt("Side", 2) == "Back")
+	local plain, winged = KnifeLook.backC0("UpperTorso", T, nil, 0), KnifeLook.backC0("UpperTorso", T, nil, KnifeLook.backClear({ wings }, T))
+	check(string.format("big wings lift it at most %.2f studs off the back (%.2f)", KnifeLook.CLEAR.MostOut, winged.Position.Z - plain.Position.Z),
+		winged.Position.Z - plain.Position.Z <= KnifeLook.CLEAR.MostOut + 1e-4)
 	local plain, over = KnifeLook.backC0("UpperTorso", T, nil), KnifeLook.backC0("UpperTorso", T, nil, 0.2)
 	check("over a cape: the same place, 0.2 further out", math.abs(over.Position.Z - plain.Position.Z - 0.2) < 1e-4 and math.abs(over.Position.Y - plain.Position.Y) < 1e-4)
 	-- the real KnifeService: a cape on the body pushes the worn sword out; added later, refit does it
@@ -574,7 +581,8 @@ do
 	a:Destroy()
 	accessory(wings)
 	KnifeService.refit(c)
-	check("KnifeService: with big wings the sword goes to the hip", k:GetAttribute("WornAt") == "Side" and mountOf(k).Part0.Name == "LowerTorso")
+	check(string.format("KnifeService: with big wings (or a backpack) it stays on the back, at most %.2f out (%.2f)", KnifeLook.CLEAR.MostOut, mountOf(k).C0.Position.Z - z0),
+		k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "UpperTorso" and mountOf(k).C0.Position.Z - z0 <= KnifeLook.CLEAR.MostOut + 1e-3)
 	-- and at the hip, a long blade is still clear of the body (the wings case)
 	local m = KnifeService.template(CoinShop.get("AbyssEclipse"))
 	local s = KnifeService.shapeOf(m)
