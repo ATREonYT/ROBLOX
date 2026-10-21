@@ -226,7 +226,10 @@ function PowerBar.build(parent: Instance)
 		if not n or not root.Visible or player:GetAttribute("MenuOpen") then return end
 		if Powers[n].CarrierOnly and not carrying() then return end
 		squash(cards[slot])
-		remote:FireServer(slot)
+		-- (the way the body faces on this screen now: the server's copy is a ping old, HuzzServer/PowerService.aim)
+		local body = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local look = if body and body:IsA("BasePart") then body.CFrame.LookVector else nil
+		remote:FireServer(slot, look)
 	end
 	for slot, c in cards do
 		c.button.Activated:Connect(function() use(slot) end)

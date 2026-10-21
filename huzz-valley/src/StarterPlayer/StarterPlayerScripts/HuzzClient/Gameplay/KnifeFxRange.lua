@@ -14,11 +14,12 @@
 	   fixed timer (Shared/KnifeMotes.glint), never twice within 1.5 s.
 	2. Four times a second: knives more than RANGE studs from the camera lose their balls, a worn knife's particles
 	   (KnifeService "HuzzBackKnife") switch off past RANGE, and every knife's particles and balls switch off while
-	   its player is Invisible (character InvisibleUntil, as Gameplay/PowerEffects fades the body: they'd give them
-	   away; the gem's glow is a part on the knife, so it fades with the body).
+	   its player is Invisible (character InvisibleUntil) or hidden in smoke on this screen (Gameplay/Hidden), as
+	   Gameplay/PowerEffects fades the body: they'd give them away; the gem's glow is a part on the knife, so it fades with the body).
 	Errors go to Output on "[Huzz] KnifeFxRange:" lines; one knife's error never stops the others.
 ]]
 local KnifeMotes = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("KnifeMotes"))
+local Hidden = require(script.Parent.Hidden)
 
 local M = {}
 
@@ -28,7 +29,7 @@ M.TAG = "HuzzKnifeMotes" -- (Shared/KnifeFx.TAG)
 
 local function invisible(character: Instance?, now: number): boolean
 	local untilT = character and character:GetAttribute("InvisibleUntil")
-	return type(untilT) == "number" and now < untilT
+	return (type(untilT) == "number" and now < untilT) or Hidden.gone(character) -- (or hidden in smoke on this screen)
 end
 
 function M.start()

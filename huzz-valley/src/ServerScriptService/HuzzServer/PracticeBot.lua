@@ -136,12 +136,16 @@ function PracticeBot.slow(k: number, seconds: number)
 	slowK, slowUntil = math.clamp(k, 0.1, 1), os.clock() + seconds
 end
 
--- A runner it can't see: faded by Invisible (character InvisibleFrom / InvisibleUntil, server time). It loses them
+-- Set by HuzzServer/PowerService: whether a spot is inside a Smoke Bomb cloud (it can't see a runner there).
+PracticeBot.cover = nil :: ((Vector3) -> boolean)?
+
+-- A runner it can't see: inside a smoke cloud, or faded by Invisible (character InvisibleFrom / InvisibleUntil, server time). It loses them
 -- for that long, as a player would lose a faint shimmer; they can still bump into it.
 local function hidden(target: BasePart): boolean
 	local c = target.Parent
 	if not c then return false end
 	local from, untilT = c:GetAttribute("InvisibleFrom"), c:GetAttribute("InvisibleUntil")
+	if PracticeBot.cover and PracticeBot.cover(target.Position) then return true end -- (in a smoke cloud)
 	if type(untilT) ~= "number" then return false end
 	local t = Workspace:GetServerTimeNow()
 	return t < untilT and (type(from) ~= "number" or t >= from)

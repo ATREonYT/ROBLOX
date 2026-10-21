@@ -27,24 +27,27 @@
 	               with hearts (its slow lands on runners as it goes out: PowerService waits the wind-up).
 	  Invisible:   the pink glow, then on your own screen a shimmering pink bubble shrinks into the body with a ring and
 	               sparkles (other screens: only a faint ring and a few sparks, so it doesn't point at you), and the
-	               body fades from the end of the wind-up (character InvisibleFrom; others see a faint shimmer, Seen;
-	               you see yourself at Self); the name tag and team outline hide on other screens. Still catchable.
-	               When it ends the body shimmers back in with a soft ring.
+	               body fades from the end of the wind-up (character InvisibleFrom): gone on other screens (Seen = 1,
+	               owner Oct 21), with its name tag, outline, trail, aura, knife motes, carried girl, followers and
+	               shield bubble; you see yourself at Self. Radar shows it again. Still catchable. When it ends the
+	               body shimmers back in with a soft ring.
 	  Glitchy:     a pink ring where you were; your screen pushes you forward (Distance in Time, the walls still stop
 	               you); everyone sees two see-through ghosts of the body, cyan and magenta, left behind and fading (no
 	               flicker), and a ring and sparks where you land.
 	  Body Double: a pink ring and sparkles, then every screen makes its own copy of the runner that runs straight on
-	               (Shared/RunMotion legs) for Lasts seconds with a pink shimmer over it (a Highlight, white outline,
-	               one slow swell a second at most) and a fading afterimage every Powers.BodyDouble.AfterimageEvery
-	               (1.2) seconds, never more than one a second (kid-safe), then vanishes in a puff. Only a look.
+	               (Shared/RunMotion legs) for Lasts seconds, then vanishes in a puff. Only a look. On other screens
+	               it is the runner exactly (name tag, outline, trail, the girl they carry: owner Oct 21, the decoy has
+	               to fool the catchers); on your own screen it wears a pink shimmer (a Highlight, white outline, one
+	               slow swell a second at most) and leaves a fading afterimage every Powers.BodyDouble.AfterimageEvery
+	               (1.2) seconds, never more than one a second (kid-safe), so you know which one is you.
 	  Banana Peel: (new Oct 20) the runner tosses it back over the shoulder (the throw pose): the peel
 	               (Shared/BananaPeel) tumbles end over end in a little arc to where the server says, lands with a
 	               yellow ring and 🍌; its ring brightens when it can trip someone. A catcher on it slips: a yellow ring, 🍌
 	               popping, and three stars circling over the head while they're stuck (character SlipUntil; the
 	               Practice Bot too).
 	  Smoke Bomb:  (new Oct 20) a little ball dropped at the feet bursts into a big soft lilac cloud (plain balls, a
-	               ring on the ground) that breathes slowly, hides the name tags of runners inside it on other screens,
-	               and thins out over its last second.
+	               ring on the ground) that breathes slowly, hides runners inside it on other screens (they fade out in
+	               0.25 s, the same way Invisible hides them), and thins out over its last second.
 	  Radar:       (new Oct 20) a ring gathers, then a wide ring sweeps out across the floor to its reach; every runner
 	               it reaches glows through walls on every screen (a Highlight in its colour, a soft slow swell, never
 	               a blink; character SpottedUntil) with a ring closing in at their feet, and fades when it ends.
@@ -70,9 +73,11 @@ function M.start()
 	local Workspace = game:GetService("Workspace")
 	local Players = game:GetService("Players")
 	local RunService = game:GetService("RunService")
+	local CollectionService = game:GetService("CollectionService")
 	local Sfx = require(script.Parent.Sfx)
 	local Burst = require(script.Parent.Burst)
 	local Ghosts = require(script.Parent.Ghosts)
+	local Hidden = require(script.Parent.Hidden)
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local Net = require(Shared.Net)
@@ -411,7 +416,8 @@ function M.start()
 		windUp(function() return root.Position + UP * 0.4 end, wind, flash, 0.6, color)
 		task.delay(wind, function()
 			if not (character and root.Parent) then return end
-			local dir = if typeof(data.dir) == "Vector3" then data.dir else flatLook(root)
+			-- (your own blink goes the way you face now, not as you faced when the server heard the press)
+			local dir = if mine or typeof(data.dir) ~= "Vector3" then flatLook(root) else data.dir
 			local right = dir:Cross(UP).Unit
 			Burst.ring(CFrame.new(root.Position - UP * 2.6), {
 				r0 = 0.6, r1 = 3, time = 0.45, ease = "quart", width = 0.14, glow = 0.6, color = color, fade = 0.5, segs = 16,
@@ -446,7 +452,9 @@ function M.start()
 					bar.Transparency = 0.2 + 0.8 * k
 				end, function() bar:Destroy() end)
 			end
-			if mine and not root.Anchored then
+			local hum = character:FindFirstChildOfClass("Humanoid")
+			local free = hum ~= nil and hum.WalkSpeed > 0 and character:GetAttribute("DownedAt") == nil -- (trapped or down since)
+			if mine and not root.Anchored and free then
 				-- the blink: a hard push along the ground for Time seconds (a LinearVelocity, so walls stop it)
 				local attachment = Instance.new("Attachment")
 				attachment.Name = "HuzzGlitch"
@@ -473,7 +481,7 @@ function M.start()
 	-- A copy of the runner that runs straight on, then vanishes in a puff (this screen only: a look).
 	local DOUBLE_SWELL = 1.4 -- seconds a shimmer swell takes (kid-safe: slower than once a second)
 	local DOUBLE_GHOST = math.max(1, Powers.BodyDouble.AfterimageEvery or 1.2) -- seconds between afterimages (one a second at most)
-	function CAST.BodyDouble(root: BasePart, data, wind, flash, _burst, _fade, color)
+	function CAST.BodyDouble(root: BasePart, data, wind, flash, _burst, _fade, color, mine)
 		local def = Powers.BodyDouble
 		local character = root.Parent :: Model
 		windUp(function() return root.Position + UP * 0.6 end, wind, flash, 0.8, color, feetOf(root))
@@ -502,17 +510,53 @@ function M.start()
 			local copyRoot = copy:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if not copyRoot then copy:Destroy() return end
 			copy.Name = "HuzzBodyDouble"
-			for _, d in copy:GetDescendants() do -- (the runner's own name tag and outline stay off the copy)
-				if (d:IsA("BillboardGui") and d.Name == "HuzzTag") or d:IsA("Highlight") then d:Destroy() end
+			-- (no Radar glow on the copy; on your own screen no name tag or outline either: there it's marked as the copy)
+			for _, d in copy:GetDescendants() do
+				if d:IsA("Highlight") and (mine or d.Name == "HuzzSpotted") or (mine and d:IsA("BillboardGui") and d.Name == "HuzzTag") then
+					d:Destroy()
+				elseif not mine and (d:IsA("BasePart") or d:IsA("Decal")) then
+					d.LocalTransparencyModifier = 0 -- (a clone of a faded body would start faded)
+				end
 			end
-			-- the shimmer: a pink Highlight with a white outline, swelling softly (one swell in Swell seconds, never a blink)
-			local glow = Instance.new("Highlight")
-			glow.Name = "HuzzDoubleGlow"
-			glow.FillColor, glow.OutlineColor = color, WHITE
-			glow.FillTransparency, glow.OutlineTransparency = 0.7, 0.15
-			glow.DepthMode = Enum.HighlightDepthMode.Occluded
-			glow.Adornee = copy
-			glow.Parent = copy
+			-- the girl they carry goes along on the copy (HuzzCarried, Carrier: else the copy of a carrier is plain to see)
+			local girl, girlAt
+			local carried = Workspace:FindFirstChild("HuzzCarried")
+			for _, m in if carried and not mine then carried:GetChildren() else {} do
+				if m:IsA("Model") and m:GetAttribute("Carrier") == data.id then
+					local wasA = m.Archivable
+					m.Archivable = true
+					local okG, g = pcall(function() return m:Clone() end)
+					m.Archivable = wasA
+					if okG and g then
+						for _, d in g:GetDescendants() do
+							if d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("Constraint") or d:IsA("JointInstance") then
+								d:Destroy()
+							elseif d:IsA("BasePart") then
+								d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch = true, false, false, false
+								d.LocalTransparencyModifier = 0
+							end
+							for _, tag in CollectionService:GetTags(d) do CollectionService:RemoveTag(d, tag) end
+						end
+						for _, tag in CollectionService:GetTags(g) do CollectionService:RemoveTag(g, tag) end
+						g:SetAttribute("Carrier", nil)
+						girl, girlAt = g, root.CFrame:ToObjectSpace(m:GetPivot())
+						g.Parent = copy
+					end
+					break
+				end
+			end
+			-- your own screen: a pink Highlight with a white outline, swelling softly (one swell in Swell seconds, never a
+			-- blink), so you can tell it from you
+			local glow
+			if mine then
+				glow = Instance.new("Highlight")
+				glow.Name = "HuzzDoubleGlow"
+				glow.FillColor, glow.OutlineColor = color, WHITE
+				glow.FillTransparency, glow.OutlineTransparency = 0.7, 0.15
+				glow.DepthMode = Enum.HighlightDepthMode.Occluded
+				glow.Adornee = copy
+				glow.Parent = copy
+			end
 			copy.Parent = Burst.home()
 			local dir = if typeof(data.dir) == "Vector3" then data.dir else flatLook(root)
 			local speed = if type(data.speed) == "number" then data.speed else 24
@@ -541,12 +585,18 @@ function M.start()
 				end
 				glyphs(copyRoot.Position + UP * 0.5, 4, "✨", 2)
 				if near(copyRoot.Position) then Sfx.play("power_end", { at = copyRoot }) end
+				local from = if mine then 0.15 else 0
+				for _, d in copy:GetDescendants() do -- (its tag, trail and outline go with the puff)
+					if d:IsA("BillboardGui") or d:IsA("Trail") or d:IsA("ParticleEmitter") or d:IsA("Highlight") and d ~= glow then
+						(d :: any).Enabled = false
+					end
+				end
 				Burst.run(0.35, function(_, k)
-					for _, p in parts do p.LocalTransparencyModifier = 0.15 + 0.85 * k end
-					glow.FillTransparency, glow.OutlineTransparency = 0.7 + 0.3 * k, 0.15 + 0.85 * k
+					for _, p in parts do p.LocalTransparencyModifier = from + (1 - from) * k end
+					if glow then glow.FillTransparency, glow.OutlineTransparency = 0.7 + 0.3 * k, 0.15 + 0.85 * k end
 				end, function() copy:Destroy() end)
 			end
-			for _, d in copy:GetDescendants() do -- (a touch see-through: a projection, not a person)
+			for _, d in if mine then copy:GetDescendants() else {} do -- (on your screen a touch see-through: a projection)
 				if d:IsA("BasePart") or d:IsA("Decal") then d.LocalTransparencyModifier = 0.15 end
 			end
 			local t0 = os.clock()
@@ -555,8 +605,8 @@ function M.start()
 			conn = RunService.Heartbeat:Connect(function(dt)
 				if puffed or not copy.Parent then conn:Disconnect() return end
 				local age = os.clock() - t0
-				glow.FillTransparency = 0.7 - 0.12 * math.sin(age * 2 * math.pi / DOUBLE_SWELL) -- (a soft swell, slower than once a second)
-				if age >= nextGhost then -- an afterimage left behind now and then, fading
+				if glow then glow.FillTransparency = 0.7 - 0.12 * math.sin(age * 2 * math.pi / DOUBLE_SWELL) end -- (a soft swell, slower than once a second)
+				if mine and age >= nextGhost then -- an afterimage left behind now and then, fading (your screen)
 					nextGhost += DOUBLE_GHOST
 					local ghosts = ghostOf(copy, color)
 					Burst.run(0.35, function(_, k)
@@ -581,6 +631,7 @@ function M.start()
 				local floor = Workspace:Raycast(pos + UP * 2, Vector3.new(0, -8, 0), params)
 				if floor then pos = Vector3.new(pos.X, floor.Position.Y + height, pos.Z) end
 				copyRoot.CFrame = CFrame.new(pos) * CFrame.Angles(0, yaw, 0)
+				if girl and girl.Parent then girl:PivotTo(copyRoot.CFrame * girlAt) end
 				if motion then RunMotion.step(motion, dt, speed, true, false) end
 			end)
 			Burst.sparks(root.Position, { WHITE, color, PURPLE }, 10)
@@ -800,15 +851,48 @@ function M.start()
 		end)
 	end
 
-	-- Invisible bodies, every frame: others fade to Seen with a slow shimmer (once a second at most, a soft swell,
-	-- never a blink); you see yourself at Self. Name tags and team outlines hide on other screens meanwhile.
+	-- Hidden bodies, every frame (owner, Oct 21: "the invisible should be completely invisible"). An Invisible runner
+	-- is gone on other screens (Seen = 1: body, clothes, hair, knife) and you see yourself at Self; a runner standing in
+	-- a smoke cloud is gone on other screens too. While a body is gone, everything that would give it away switches
+	-- off on this screen (name tag, team outline, trail, aura, particles, lights: `off`), and what it carries or brings
+	-- fades with it (the carried girl, its followers, the shield bubble: belongings). A runner Radar spots shows again
+	-- at Powers.Radar.Reveal. Gameplay/Hidden tells the aura and knife motes.
 	local faded = {} -- Model -> { mine } while it's invisible
-	local function setFade(character: Model, value: number)
-		for _, d in character:GetDescendants() do
-			if d:IsA("BasePart") or d:IsA("Decal") then
+	local touched = {} -- [Instance] = true: models faded last frame (put back to 0 once nothing fades them)
+	local SWITCH = { "ParticleEmitter", "Trail", "Beam", "Light", "BillboardGui", "SurfaceGui", "Highlight", "Fire", "Smoke", "Sparkles" }
+	local function switchable(d: Instance): boolean
+		if d.Name == "HuzzSpotted" then return false end -- (Radar's own glow)
+		for _, class in SWITCH do
+			if d:IsA(class) then return true end
+		end
+		return false
+	end
+	local function setFade(model: Instance, value: number, off: { [Instance]: boolean }?)
+		if model:IsA("BasePart") then model.LocalTransparencyModifier = value end -- (the shield bubble is one part)
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") or d:IsA("Decal") then -- (Decal covers Texture)
 				d.LocalTransparencyModifier = value
+			elseif off and switchable(d) then
+				off[d] = true
 			end
 		end
+	end
+	-- What a player carries or brings along that lives outside the character: the carried girl (HuzzCarried,
+	-- Carrier), followers (HuzzFollowers, Follow) and the shield bubble (HuzzShields, welded to the root).
+	local function belongings(p: Player, root: Instance?): { Instance }
+		local list = {}
+		for _, name in { "HuzzCarried", "HuzzFollowers" } do
+			local f = Workspace:FindFirstChild(name)
+			for _, m in if f then f:GetChildren() else {} do
+				if m:GetAttribute("Carrier") == p.UserId or m:GetAttribute("Follow") == p.UserId then table.insert(list, m) end
+			end
+		end
+		local shields = root and Workspace:FindFirstChild("HuzzShields")
+		for _, b in if shields then shields:GetChildren() else {} do
+			local w = b:FindFirstChildOfClass("WeldConstraint")
+			if w and (w.Part0 == root or w.Part1 == root) then table.insert(list, b) end
+		end
+		return list
 	end
 	-- A stun of 1 s or more or a slip on a peel, on every screen: three little cartoon stars circling over the head (a
 	-- dive's 0.4 s shows none; character StunnedFrom / StunnedUntil from HuzzServer/PowerService.stun, or SlipUntil).
@@ -846,15 +930,8 @@ function M.start()
 	-- Radar's glow on spotted runners: Model -> { glow = Highlight, untilT }
 	local spotted = {}
 	local extra = {} -- bodies that aren't players' characters but can slip (the Practice Bot), Model -> true
-	local tagsHidden = {} -- [Instance] = its own Enabled: name tags and outlines hidden on this screen (invisible, smoke)
-	-- A character's name tag (NameTagService puts it on the head) and team outline, into `into`.
-	local function hideTags(c: Model, into: { [Instance]: boolean })
-		local head = c:FindFirstChild("Head")
-		local tag = head and head:FindFirstChild("HuzzTag")
-		if tag and tag:IsA("BillboardGui") then into[tag] = true end
-		local outline = c:FindFirstChild("HuzzOutline", true)
-		if outline and outline:IsA("Highlight") then into[outline] = true end
-	end
+	local switchedOff = {} -- [Instance] = its own Enabled: tags, outlines, trails, effects off on this screen (hidden bodies)
+	local smoked = {} -- Model -> how far it has faded into a smoke cloud (0..1, 0.25 s each way)
 	local function inCloud(pos: Vector3, t: number): boolean
 		for _, c in clouds do
 			if t >= c.from and t < c.untilT then
@@ -882,10 +959,12 @@ function M.start()
 			starsOff(c)
 		end
 	end
-	RunService.Heartbeat:Connect(function()
+	RunService.Heartbeat:Connect(function(dt)
 		local t = Workspace:GetServerTimeNow()
 		local me = Players.LocalPlayer
 		local def = Powers.Invisible
+		local touchedNow = {}
+		Hidden.clear()
 		for i = #clouds, 1, -1 do
 			if t >= clouds[i].untilT then table.remove(clouds, i) end
 		end
@@ -925,42 +1004,70 @@ function M.start()
 			end
 			local untilT = c and c:GetAttribute("InvisibleUntil")
 			local fromT = c and c:GetAttribute("InvisibleFrom")
+			local root = c and c:FindFirstChild("HumanoidRootPart")
+			local fade = 0 -- how hidden this body is on this screen
 			if c and type(untilT) == "number" and t < untilT then
 				if not faded[c] then faded[c] = { mine = p == me } end
-				if p ~= me then hideTags(c, hideNow) end
 				local start = if type(fromT) == "number" then fromT else untilT - def.Lasts
 				local fadeIn = math.clamp((t - start) / 0.25, 0, 1)
 				local fadeOut = math.clamp((untilT - t) / 0.4, 0, 1)
-				local target = if p == me then def.Self else def.Seen + 0.05 * math.sin(t * def.Shimmer * 2 * math.pi)
-				setFade(c, target * math.min(fadeIn, fadeOut))
+				fade = (if p == me then def.Self else def.Seen) * math.min(fadeIn, fadeOut)
 			elseif c and faded[c] then
-				setFade(c, 0)
 				-- the clean end: it shimmers back in with a soft ring and motes
-				local root = c:FindFirstChild("HumanoidRootPart")
 				if root and root:IsA("BasePart") and near(root.Position) then
 					fizzle(root.Position - UP * 2.6, PINK, 3)
 					if faded[c].mine then Sfx.play("power_end") end
 				end
 				faded[c] = nil
 			end
-			-- smoke: another player's name tag hides while they stand in a cloud
-			if c and p ~= me and #clouds > 0 then
-				local root = c:FindFirstChild("HumanoidRootPart")
-				if root and root:IsA("BasePart") and inCloud(root.Position, t) then hideTags(c, hideNow) end
+			-- smoke: another runner standing in a cloud fades out of sight on this screen, and back as they step out
+			if c and p ~= me then
+				local inside = #clouds > 0 and p:GetAttribute("HuzzRole") == "Runner" and root ~= nil and root:IsA("BasePart")
+					and inCloud(root.Position, t)
+				local s = math.clamp((smoked[c] or 0) + (if inside then dt else -dt) / 0.25, 0, 1)
+				smoked[c] = if s > 0 then s else nil
+				fade = math.max(fade, s)
+				-- Radar shows them again while they're spotted
+				if fade > 0 and type(spotUntil) == "number" and t < spotUntil then
+					fade = math.min(fade, Powers.Radar.Reveal or 0.5)
+				end
+				Hidden.set(c, fade)
+			end
+			-- a downed runner shows again, so their team can find them to rescue (agent review, Oct 21)
+			if c and p ~= me and c:GetAttribute("DownedAt") ~= nil then
+				fade = 0
+				Hidden.set(c, 0)
+			end
+			if c and fade > 0 then
+				local off = if p ~= me and fade >= 0.5 then hideNow else nil
+				setFade(c, fade, off)
+				touchedNow[c] = true
+				for _, m in belongings(p, root) do
+					setFade(m, fade, off)
+					touchedNow[m] = true
+				end
 			end
 		end
-		-- (one table keeps each hidden tag's own setting, whichever reason hid it, and puts it back once none does)
+		-- (one table keeps each switched-off thing's own setting and puts it back once nothing hides it)
 		for d in hideNow do
-			if tagsHidden[d] == nil then
-				tagsHidden[d] = d.Enabled
-				d.Enabled = false
+			if switchedOff[d] == nil then
+				switchedOff[d] = d.Enabled
+				if d:IsA("ParticleEmitter") or d:IsA("Trail") then pcall(function() (d :: any):Clear() end) end
 			end
+			if d.Enabled then d.Enabled = false end
 		end
-		for d, was in tagsHidden do
+		for d, was in switchedOff do
 			if not hideNow[d] then
 				if d.Parent then d.Enabled = was end
-				tagsHidden[d] = nil
+				switchedOff[d] = nil
 			end
+		end
+		for m in touched do
+			if not touchedNow[m] and m.Parent then setFade(m, 0) end
+		end
+		touched = touchedNow
+		for c in smoked do
+			if not c.Parent then smoked[c] = nil end
 		end
 		for body in extra do
 			if body.Parent then daze(body, t) else extra[body] = nil; starsOff(body) end

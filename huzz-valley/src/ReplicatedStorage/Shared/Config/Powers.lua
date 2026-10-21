@@ -69,13 +69,15 @@ return {
 		Counter = "Wait it out: it lasts 6 s",
 		OncePerRound = true, Lasts = 6, Dizzy = 1.5, DizzySlow = 0.5, Boost = 6, BoostTime = 1.5,
 	},
-	-- Nearly see-through for a few seconds (still catchable). Others see a faint shimmer, so it stays fair; the name
-	-- tag hides. Seen = how see-through others see you (0..1), Self = how you see yourself.
+	-- Gone for a few seconds (owner, Oct 21: "the invisible should be completely invisible"; still catchable, and
+	-- your footsteps still sound). Other screens lose all of you: body, knife, name tag, trail, aura and the girl you
+	-- carry (Gameplay/PowerEffects). Radar shows you again. Seen = how see-through others see you (0..1, 1 = gone),
+	-- Self = how you see yourself.
 	Invisible = {
 		Name = "Invisible", Card = "INVISIBLE", Icon = "AbilityInvisible", Tile = Color3.fromRGB(81, 74, 147), Emoji = "👻", Text = "Fade out of sight",
 		Accent = Color3.fromRGB(200, 184, 255), Side = "Runner", Price = 500,
-		Counter = "Look for the shimmer, or use Radar",
-		Cooldown = 16, Lasts = 4, Seen = 0.88, Self = 0.55, Shimmer = 0.8, -- (Shimmer: pulses a second, at most 1)
+		Counter = "Listen for footsteps, or use Radar",
+		Cooldown = 16, Lasts = 4, Seen = 1, Self = 0.55,
 	},
 	-- A short glitch-blink forward (Distance studs in Time seconds, the walls still stop you) with a glitch effect.
 	Glitchy = {
@@ -85,11 +87,12 @@ return {
 		Cooldown = 8, Distance = 9, Time = 0.14,
 	},
 	-- A copy of you that runs straight on the way you face for Lasts seconds, then vanishes in a puff. It's only a
-	-- look (it can't be caught, and it can't carry the girl): a decoy.
+	-- look (it can't be caught): a decoy. Other screens see you exactly, name tag and the girl you carry included
+	-- (owner, Oct 21); your own screen shows it with a pink shimmer so you know which one is you.
 	BodyDouble = {
 		Name = "Body Double", Card = "BODY DOUBLE", Icon = "AbilityBodyDouble", Tile = Color3.fromRGB(156, 95, 44), Emoji = "👯", Text = "Send out a decoy",
 		Accent = Color3.fromRGB(255, 176, 96), Side = "Runner", Price = 750,
-		Counter = "The copy glows pink and has no name",
+		Counter = "It only runs straight ahead",
 		Cooldown = 14, Lasts = 3.5,
 		-- seconds between its fading afterimages (each a pink glowing copy: kid-safe, never more than one a second;
 		-- 0.45 made one pop about twice a second, critic Oct 20). tests/PowerGhosts.spec checks it.
@@ -103,8 +106,8 @@ return {
 		Counter = "It's bright yellow: walk round it",
 		Cooldown = 12, Lasts = 15, Radius = 2.2, Slip = 1.4, Back = 2.5, Arm = 0.4, MaxOut = 1,
 	},
-	-- New Oct 20. A big puff of smoke where you stand for Lasts seconds: you can't be seen inside it (name tags hide
-	-- on other screens), and catchers in it are slowed to Slow. It stays where it was dropped.
+	-- New Oct 20. A big puff of smoke where you stand for Lasts seconds: a runner inside it can't be seen on other
+	-- screens (body, name tag, trail all fade out, Oct 21), and catchers in it are slowed to Slow. It stays where it was dropped.
 	SmokeBomb = {
 		Name = "Smoke Bomb", Card = "SMOKE BOMB", Icon = "AbilitySmokeBomb", Tile = Color3.fromRGB(54, 93, 137), Emoji = "💨", Text = "Hide in a smoke cloud",
 		Accent = Color3.fromRGB(196, 170, 255), Side = "Runner", Price = 900,
@@ -136,12 +139,13 @@ return {
 		Cooldown = 14, Radius = 16, Slow = 0.6, Time = 2.5,
 	},
 	-- New Oct 20. A ping that sweeps out Range studs: every runner it reaches glows through walls for Lasts seconds
-	-- on every screen (shows Invisible runners and runners in smoke too). It only shows them.
+	-- on every screen (shows Invisible runners and runners in smoke too: they come back to Reveal see-through). It only
+	-- shows them.
 	Radar = {
 		Name = "Radar", Card = "RADAR", Icon = "AbilityRadar", Tile = Color3.fromRGB(125, 46, 80), Emoji = "📡", Text = "Spot every runner near you",
 		Accent = Color3.fromRGB(255, 120, 150), Side = "Catcher", Price = 750,
 		Counter = "It only shows you: keep running",
-		Cooldown = 18, Range = 70, Sweep = 0.9, Lasts = 4,
+		Cooldown = 18, Range = 70, Sweep = 0.9, Lasts = 4, Reveal = 0.45,
 	},
 	-- New Oct 20. Throw a lasso straight ahead: the rope flies at Speed up to Range; the first runner it touches (Width
 	-- across) is pulled Pull studs towards you over PullTime (never closer than MinGap), then slowed to Slow for Hold.

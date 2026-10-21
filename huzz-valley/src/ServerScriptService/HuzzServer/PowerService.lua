@@ -175,7 +175,9 @@ end
 
 local function boost(id, amount, seconds, color)
 	local s = stateOf(id)
-	s.boost, s.boostUntil = amount, now() + seconds
+	-- (a smaller boost never cuts a bigger one short: a Shield pop's +6 during a Speed Boost's +12)
+	local running = s.boostUntil and now() < s.boostUntil and s.boost or 0
+	s.boost, s.boostUntil = math.max(amount, running), math.max(s.boostUntil or 0, now() + seconds)
 	s.trailUntil = math.max(s.trailUntil or 0, s.boostUntil)
 	-- A trail behind them while it lasts (the power's colour).
 	local p = ctx.playerOf(id)
@@ -219,6 +221,54 @@ local function facing(root)
 	local look = root.CFrame.LookVector
 	local flat = Vector3.new(look.X, 0, look.Z)
 	return if flat.Magnitude > 0.05 then flat.Unit else Vector3.new(0, 0, -1)
+end
+
+-- The way a power goes: the look their screen sent with the press (the server's copy of their facing is a ping old,
+-- so a quick turn then a press went the old way: agent review, Oct 21), if it's within 60 degrees of it.
+local pressLook = {} -- [userId] = the flat look sent with this press
+local function aim(id, root)
+	local look = pressLook[id]
+	local f = facing(root)
+	if typeof(look) == "Vector3" and look == look then
+		local flat = Vector3.new(look.X, 0, look.Z)
+		if flat.Magnitude > 0.5 and flat.Unit:Dot(f) >= 0.5 then
+			return flat.Unit
+		end
+	end
+	return f
+end
+
+-- Nothing solid between two spots (walls, trees, fences; not bodies, zones or power props). A failed ray counts
+-- as clear (the offline sim has no RaycastParams).
+local function clearBetween(a: Vector3, b: Vector3): boolean
+	local clear = true
+	pcall(function()
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.RespectCanCollide = true
+		local ignore = {}
+		for _, p in Players:GetPlayers() do
+			table.insert(ignore, p.Character)
+		end
+		for _, name in { "HuzzTraps", "HuzzShields", "HuzzCarried", "HuzzFollowers", "HuzzPeels" } do
+			table.insert(ignore, Workspace:FindFirstChild(name))
+		end
+		local bot = ctx.bot and ctx.bot()
+		table.insert(ignore, bot and bot.body and bot.body())
+		params.FilterDescendantsInstances = ignore
+		local d = b - a
+		if d.Magnitude > 0.1 and Workspace:Raycast(a, d, params) then
+			clear = false
+		end
+	end)
+	return clear
+end
+
+-- A slow on a runner: the stronger one wins and the longer one lasts (a lasso never cuts a Slow Wave short).
+local function slowDown(s, k: number, untilT: number)
+	local on = s.slowUntil and now() < s.slowUntil
+	s.slow = if on then math.min(s.slow or 1, k) else k
+	s.slowUntil = if on then math.max(s.slowUntil, untilT) else untilT
 end
 
 local USE = {}
@@ -278,7 +328,7 @@ function USE.Glitchy(id, def)
 		return false
 	end
 	-- the runner's own screen moves them (like the huss): every screen draws the glitch from here
-	return true, nil, { at = root.Position, dir = facing(root) }
+	return true, nil, { at = root.Position, dir = aim(id, root) }
 end
 
 function USE.BodyDouble(id, def)
@@ -289,7 +339,7 @@ function USE.BodyDouble(id, def)
 		return false
 	end
 	-- every screen makes its own copy running on from here (only a look)
-	return true, nil, { at = root.Position, dir = facing(root), speed = math.max(h.WalkSpeed, 16), lasts = def.Lasts }
+	return true, nil, { at = root.Position, dir = aim(id, root), speed = math.max(h.WalkSpeed, 16), lasts = def.Lasts }
 end
 
 -- New Oct 20. A peel dropped Back studs behind the runner (on the floor); it lands after the wind-up (every screen
@@ -299,8 +349,13 @@ function USE.BananaPeel(id, def)
 	if not root then
 		return false
 	end
-	local dir = facing(root)
-	local spot = root.Position - dir * def.Back
+	local dir = aim(id, root)
+	-- (dropped closer when a wall or fence is right behind: never on its far side)
+	local back = def.Back
+	if not clearBetween(root.Position, root.Position - dir * (back + 0.8)) then
+		back = 0.6
+	end
+	local spot = root.Position - dir * back
 	local floor = ctx.ground(spot) or ctx.ground(root.Position)
 	if not floor then
 		return false
@@ -396,15 +451,15 @@ function USE.Lasso(id, def)
 	if not root then
 		return false
 	end
-	local dir = facing(root)
+	local dir = aim(id, root)
 	table.insert(ropes, { owner = id, dir = dir, t0 = now() + wind("Lasso") + Powers.Fx.Flash, match = ctx.match() })
 	return true, nil, { dir = dir, range = def.Range, speed = def.Speed }
 end
 
 -- Where a thrown trap lands: Throw studs ahead on the floor, shorter before a wall or the field's walls, never in the
 -- runners' start zone. nil when there's nowhere to put it.
-local function landing(root, def)
-	local dir = facing(root)
+local function landing(root, def, dir)
+	dir = dir or facing(root)
 	local throw = def.Throw
 	-- (pcall: one failed ray must never stop the power; the offline sim has no RaycastParams)
 	pcall(function()
@@ -449,7 +504,7 @@ function USE.BearTrap(id, def)
 	if not root then
 		return false
 	end
-	local at, dir = landing(root, def)
+	local at, dir = landing(root, def, aim(id, root))
 	if not at then
 		return false, "Not in the runners' start zone"
 	end
@@ -513,9 +568,10 @@ function USE.SlowWave(id, def)
 		local start = ctx.startZone()
 		for runnerId, status in match.status do
 			local r = status == "Active" and ctx.rootOf(runnerId)
-			if r and (r.Position - from.Position).Magnitude <= def.Radius and not (start and ctx.inZone(start, r.Position)) then
+			if r and (r.Position - from.Position).Magnitude <= def.Radius and not (start and ctx.inZone(start, r.Position))
+				and clearBetween(from.Position, r.Position) then -- (not through a wall)
 				local s = stateOf(runnerId)
-				s.slow, s.slowUntil = def.Slow, now() + def.Time
+				slowDown(s, def.Slow, now() + def.Time)
 				badge(runnerId, "HuzzSlowed", "😍", Color3.new(1, 1, 1), def.Time)
 				ctx.sync(runnerId)
 			end
@@ -534,7 +590,7 @@ local function powerIn(id, slot)
 	return AbilityRules.slot(role, slot, s.loadout, s.pick)
 end
 
-local function use(player, slot)
+local function use(player, slot, look)
 	local id = player.UserId
 	local match = ctx.match()
 	if type(slot) ~= "number" or not match or match.over or not ctx.running() or (ctx.frozen and ctx.frozen(id)) then
@@ -546,11 +602,18 @@ local function use(player, slot)
 	end
 	local s = stateOf(id)
 	local t = now()
-	if not AbilityRules.canUse(s.ready[slot], t) or PowerService.stuck(id) then
+	-- (not while dizzy from a Shield pop either: a lasso or wave then would undo the runner's escape)
+	if not AbilityRules.canUse(s.ready[slot], t) or PowerService.stuck(id) or (s.dizzyUntil and t < s.dizzyUntil) then
 		return
 	end
 	local def = Powers[name]
-	local ok, _, extra = USE[name](id, def)
+	pressLook[id] = look
+	local okU, ok, _, extra = pcall(USE[name], id, def)
+	pressLook[id] = nil
+	if not okU then
+		warn("[Huzz] PowerService: " .. name .. " failed: " .. tostring(ok))
+		return
+	end
 	if ok then
 		setSlot(id, slot, AbilityRules.nextReady(name, t))
 		-- (every client draws the cast: Gameplay/PowerEffects; at = the trap's spot, radius = the wave's reach, ...)
@@ -739,6 +802,11 @@ function PowerService.blocks(catcherId, runnerId)
 		end
 		badge(catcherId, "HuzzDizzy", "💫 DIZZY", Color3.fromRGB(255, 230, 120), def.Dizzy)
 		ctx.sync(catcherId)
+	else -- (the Practice Bot's stab: it gets dizzy too, stars over its head)
+		local bot = ctx.bot and ctx.bot()
+		if bot and bot.trip then
+			bot.trip(def.Dizzy)
+		end
 	end
 	boost(runnerId, def.Boost, def.BoostTime, PINK)
 	return true
@@ -861,7 +929,8 @@ stepRopes = function(t, match)
 					local flat = Vector3.new(d.X, 0, d.Z)
 					local along = flat:Dot(rope.dir)
 					local side = (flat - rope.dir * along).Magnitude
-					if along > 0.5 and along <= tip + 0.5 and side <= def.Width / 2 + 1 and math.abs(d.Y) < 6 and along < bestAlong then
+					if along > 0.5 and along <= tip + 0.5 and side <= def.Width / 2 + 1 and math.abs(d.Y) < 6 and along < bestAlong
+						and clearBetween(from.Position, r.Position) then -- (never through a wall)
 						best, bestAlong, bestRoot = runnerId, along, r
 					end
 				end
@@ -877,7 +946,7 @@ stepRopes = function(t, match)
 					dist = dist, time = def.PullTime, blocked = blocked,
 				})
 				if not blocked then
-					s.slow, s.slowUntil = def.Slow, t + def.PullTime + def.Hold
+					slowDown(s, def.Slow, t + def.PullTime + def.Hold)
 					badge(best, "HuzzLassoed", "YOINK!", def.Accent, def.PullTime + def.Hold)
 					ctx.sync(best)
 					-- their own screen pulls them (PowerEffects pullMe); the server checks it did (stepPulls)
@@ -936,7 +1005,7 @@ local function stepPulls(t, match)
 				local x, z = AbilityRules.pullSpot(r.Position.X, r.Position.Z, pull.towardX, pull.towardZ, pull.dist) -- (from where they are)
 				local start = ctx.startZone()
 				local spot = Vector3.new(x, r.Position.Y, z)
-				if PlaceService and not (start and ctx.inZone(start, spot)) then
+				if PlaceService and not (start and ctx.inZone(start, spot)) and clearBetween(r.Position, spot) then
 					PowerService.lassoFallbacks += 1
 					PlaceService.place(p, CFrame.new(spot) * r.CFrame.Rotation, "lasso", holds) -- (still in play when it moves)
 				end
@@ -946,9 +1015,24 @@ local function stepPulls(t, match)
 end
 
 -- Every frame of a round: armed traps catch runners, effects run out.
+-- Whether a spot is inside a smoke cloud now (the Practice Bot can't see a runner there either).
+function PowerService.inSmoke(pos: Vector3): boolean
+	local t = now()
+	for _, c in clouds do
+		if t >= c.from and t < c.untilT and near(pos, c.at, c.radius, 9) then
+			return true
+		end
+	end
+	return false
+end
+
 function PowerService.step()
 	local t = now()
 	local match = ctx.match()
+	local bot = ctx.bot and ctx.bot()
+	if bot then
+		bot.cover = PowerService.inSmoke
+	end
 	local def = Powers.BearTrap
 	for i = #traps, 1, -1 do
 		local trap = traps[i]
@@ -956,9 +1040,11 @@ function PowerService.step()
 		if t >= trap.untilT then
 			sprung = false
 		elseif t >= trap.armAt then
+			local start = ctx.startZone()
 			for runnerId, status in match.status do
-				local r = status == "Active" and not PowerService.stuck(runnerId) and ctx.rootOf(runnerId)
-				if r then
+				local r = status == "Active" and not PowerService.stuck(runnerId) and not (ctx.frozen and ctx.frozen(runnerId))
+					and ctx.rootOf(runnerId)
+				if r and not (start and ctx.inZone(start, r.Position)) then -- (never in their start zone)
 					local d = r.Position - trap.at
 					if Vector3.new(d.X, 0, d.Z).Magnitude <= def.Radius and math.abs(d.Y) < 6 then
 						local s = stateOf(runnerId)

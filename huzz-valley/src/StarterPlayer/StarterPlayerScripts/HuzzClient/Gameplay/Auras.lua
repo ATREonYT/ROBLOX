@@ -43,6 +43,7 @@ function M.start()
 	local GirlRig = require(Shared.GirlRig)
 	local Companion = require(Shared.Config.GirlMotion).Companion
 	local AuraFX = require(script.Parent.AuraFX)
+	local Hidden = require(script.Parent.Hidden)
 	local Burst = require(script.Parent.Burst)
 	local CompanionDance = require(script.Parent.CompanionDance)
 	CompanionDance.start()
@@ -293,7 +294,8 @@ function M.start()
 			end
 		end
 		if s.aura then
-			s.aura.setEnabled(near(root.Position) and character:GetAttribute("DownedAt") == nil)
+			-- (off while the body is hidden on this screen: Invisible, smoke; Gameplay/Hidden)
+			s.aura.setEnabled(near(root.Position) and character:GetAttribute("DownedAt") == nil and not Hidden.gone(character))
 			s.aura.step(dt)
 		end
 
