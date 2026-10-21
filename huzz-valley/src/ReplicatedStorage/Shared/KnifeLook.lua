@@ -220,8 +220,10 @@ end
 -- Where the knife really goes: its own place, unless big wings fill the back (then the hip). With HIP off (owner,
 -- Oct 21 16:06, his picture: the knife still by his leg, his avatar has a big back piece: "make it be on the users
 -- back like in the other games") it always stays on the back, and a big back piece only lifts it CLEAR.MostOut off
--- the back (it may go through wings or a backpack, as in other games, never floats off the body).
-KnifeLook.CLEAR.MostOut = 0.35
+-- the back (it may go through wings or a backpack, as in other games, never floats off the body). Oct 21 16:16 (his
+-- picture: the handle sticking out of his big bag, "make it be on the body not floating in the air"): 0, so it is
+-- always pressed against the body, whatever the avatar wears.
+KnifeLook.CLEAR.MostOut = 0
 function KnifeLook.wornAt(wear: string, clear: number?): string
 	if not KnifeLook.HIP then return "Back" end
 	if wear == "Back" and (clear or 0) > KnifeLook.CLEAR.Max then return "Side" end

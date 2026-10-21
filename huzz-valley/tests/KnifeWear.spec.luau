@@ -559,7 +559,11 @@ do
 	check(string.format("big wings lift it at most %.2f studs off the back (%.2f)", KnifeLook.CLEAR.MostOut, winged.Position.Z - plain.Position.Z),
 		winged.Position.Z - plain.Position.Z <= KnifeLook.CLEAR.MostOut + 1e-4)
 	local plain, over = KnifeLook.backC0("UpperTorso", T, nil), KnifeLook.backC0("UpperTorso", T, nil, 0.2)
-	check("over a cape: the same place, 0.2 further out", math.abs(over.Position.Z - plain.Position.Z - 0.2) < 1e-4 and math.abs(over.Position.Y - plain.Position.Y) < 1e-4)
+	check("a cape: the same place, against the body", math.abs(over.Position.Z - plain.Position.Z) < 1e-4 and math.abs(over.Position.Y - plain.Position.Y) < 1e-4)
+	KnifeLook.HIP = true
+	local plainH, overH = KnifeLook.backC0("UpperTorso", T, nil), KnifeLook.backC0("UpperTorso", T, nil, 0.2)
+	check("(hip on) over a cape: the same place, 0.2 further out", math.abs(overH.Position.Z - plainH.Position.Z - 0.2) < 1e-4)
+	KnifeLook.HIP = false
 	-- the real KnifeService: a cape on the body pushes the worn sword out; added later, refit does it
 	local c = body(false)
 	local function accessory(box)
@@ -576,8 +580,8 @@ do
 	local z0 = mountOf(k).C0.Position.Z
 	local a = accessory(cape)
 	KnifeService.refit(c)
-	check(string.format("KnifeService: a cape put on later pushes the sword out over it (%.2f -> %.2f)", z0, mountOf(k).C0.Position.Z),
-		math.abs(mountOf(k).C0.Position.Z - z0 - 0.2) < 1e-3 and k:GetAttribute("WornAt") == "Back")
+	check(string.format("KnifeService: a cape put on later keeps the sword against the body (%.2f -> %.2f; owner, Oct 21 16:16)", z0, mountOf(k).C0.Position.Z),
+		math.abs(mountOf(k).C0.Position.Z - z0 - KnifeLook.clearOut(0.2)) < 1e-3 and k:GetAttribute("WornAt") == "Back")
 	a:Destroy()
 	accessory(wings)
 	KnifeService.refit(c)
