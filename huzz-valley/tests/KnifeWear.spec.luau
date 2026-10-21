@@ -74,12 +74,16 @@ end
 table.sort(broken)
 print("  models the wrong size (shown as the plain knife until fixed): " .. (if #broken > 0 then table.concat(broken, ", ") else "none"))
 check("all 53 models are the right size (tools/knives/repair_knives.luau fixed 8 on Oct 18)", #folder:GetChildren() == 53 and #broken == 0)
+-- (the rules with the hip on: KnifeLook.HIP; since Oct 21 15:23 every knife goes on the back, checked after)
+KnifeLook.HIP = true
 check("the shop table wins", KnifeLook.wearOf("Side", { length = 3.4, bladeLength = 2.4, bladeWidth = 0.3 }, "Back") == "Side"
 	and KnifeLook.wearOf("Back", { length = 2, bladeLength = 1, bladeWidth = 1 }) == "Back")
 check("then the model's Wear attribute", KnifeLook.wearOf(nil, { length = 2, bladeLength = 1, bladeWidth = 1 }, "Back") == "Back")
 check("measured: a 3.4 stud katana goes on the back", KnifeLook.wearOf(nil, { length = 3.4, bladeLength = 2.4, bladeWidth = 0.27 }) == "Back")
 check("measured: a 2.6 stud dagger goes at the side", KnifeLook.wearOf(nil, { length = 2.6, bladeLength = 1.7, bladeWidth = 0.3 }) == "Side")
 check("no measure = back", KnifeLook.wearOf(nil, nil) == "Back")
+KnifeLook.HIP = false
+check("owner, Oct 21 15:23: every knife on the back, whatever the table says", KnifeLook.wearOf("Side", { length = 2.6, bladeLength = 1.7, bladeWidth = 0.3 }, "Side") == "Back")
 check("two-handed: a long pole gripped mid-pole, not a sword or a dagger",
 	KnifeLook.twoHanded({ length = 3.3, yMin = -1.65, yMax = 1.65 }) and not KnifeLook.twoHanded({ length = 3.3, yMin = -0.5, yMax = 2.8 })
 	and not KnifeLook.twoHanded({ length = 2.7, yMin = -1.3, yMax = 1.4 }))
@@ -237,7 +241,7 @@ do
 	KnifeService.giveBack(c, rusty) -- the lobby
 	local n, k = knives(c)
 	check("lobby: one knife, worn", n == 1 and k.Name == "HuzzBackKnife")
-	check("lobby: Rusty Shiv (a short knife) at the hip, on the LowerTorso", k:GetAttribute("WornAt") == "Side" and mountOf(k).Part0.Name == "LowerTorso")
+	check("lobby: Rusty Shiv (a short knife) on the back, on the UpperTorso", k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "UpperTorso")
 	check("lobby: the owner's model (not ours)", k:FindFirstChild("blade_0", true) ~= nil)
 	check("lobby: Common has no effects on the back", k:FindFirstChildWhichIsA("ParticleEmitter", true) == nil and k:FindFirstChildWhichIsA("PointLight", true) == nil)
 	local first = k
@@ -280,10 +284,10 @@ do
 	n, k = knives(c)
 	local m = k and mountOf(k)
 	local at = m and (m.C0 * m.C1:Inverse()).Position
-	check(string.format("R15, no knife owned: the default knife at the right hip (grip at %.2f, %.2f, %.2f in the LowerTorso)",
+	check(string.format("R15, no knife owned: the default knife on the back (grip at %.2f, %.2f, %.2f in the UpperTorso)",
 		at and at.X or 0, at and at.Y or 0, at and at.Z or 0),
-		n == 1 and k:GetAttribute("WornAt") == "Side" and m.Part0.Name == "LowerTorso" and at.X > 1 and at.X < 1.3
-			and math.abs(at.Y) < 0.2 and at.Z > 0.5 and at.Z < 1)
+		n == 1 and k:GetAttribute("WornAt") == "Back" and m.Part0.Name == "UpperTorso" and math.abs(at.X) < 1
+			and math.abs(at.Y) < 0.8 and at.Z > 0.5 and at.Z < 0.9)
 	-- (Welds carrying their own offsets, never WeldConstraints: owner, Oct 21 14:47, a WeldConstraint is worked out
 	-- again on each screen from where its parts are when they arrive, and locked his knife's pieces 131 studs away)
 	local steel, constraints, placed = 0, 0, true
@@ -303,7 +307,7 @@ do
 	check("R6: one knife on the Torso's back", n == 1 and k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "Torso")
 	KnifeService.giveBack(c, CoinShop.get("RustyShiv"))
 	n, k = knives(c)
-	check("R6: Rusty Shiv at the hip of the Torso", n == 1 and k:GetAttribute("WornAt") == "Side" and mountOf(k).Part0.Name == "Torso")
+	check("R6: Rusty Shiv on the Torso's back", n == 1 and k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "Torso")
 	KnifeService.give(c, nil)
 	n, k = knives(c)
 	check("R6: the default knife in the right arm", n == 1 and k.Name == "HuzzKnife" and mountOf(k).Part0.Name == "Right Arm")
@@ -358,7 +362,10 @@ do
 			local m = KnifeService.template(item)
 			local s = KnifeService.shapeOf(m)
 			if item.Wear == "Back" then backs += 1 elseif item.Wear == "Side" then sides += 1 end
-			if item.Wear ~= KnifeLook.wearOf(nil, s) then table.insert(wrong, string.format("%s %s %.2f", item.Key, tostring(item.Wear), s.length)) end
+			KnifeLook.HIP = true -- (the table still says where each would go with the hip on)
+			local measured = KnifeLook.wearOf(nil, s)
+			KnifeLook.HIP = false
+			if item.Wear ~= measured then table.insert(wrong, string.format("%s %s %.2f", item.Key, tostring(item.Wear), s.length)) end
 		end
 	end
 	check(`every knife's Wear matches its measured length ({backs} back, {sides} side)` .. (if #wrong > 0 then ": " .. table.concat(wrong, ", ") else ""),

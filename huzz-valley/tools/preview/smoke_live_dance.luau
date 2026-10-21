@@ -100,4 +100,47 @@ for _, d in require(RS.Shared.Config.Dances).List do
 	if not DancePlayer.owned(d.Id) then locked = d.Id break end
 end
 check("a dance you don't own can't start (" .. tostring(locked) .. ")", locked ~= nil and DancePlayer.play(locked) == false)
+
+-- Roblox's newer joints (his avatar, Oct 20; owner, Oct 21 15:24: "make the dances work on the actual user, not only
+-- on the girl"): AnimationConstraints between attachments, no Motor6D. These were skipped, so only the girl danced.
+local char2 = Instance.new("Model"); char2.Name = "Tester"
+local root2 = Instance.new("Part"); root2.Name = "HumanoidRootPart"; root2.Size = Vector3.new(2, 2, 1); root2.CFrame = CFrame.new(0, 3, 0); root2.Position = Vector3.new(0, 3, 0); root2.Parent = char2
+local hum2 = Instance.new("Humanoid"); hum2.RigType = Enum.HumanoidRigType.R15; hum2.HipHeight = 2; hum2.Parent = char2
+Instance.new("Animator").Parent = hum2
+local joints = {}
+for _, name in order do
+	local p = Instance.new("Part"); p.Name = name; p.Size = Vector3.new(1, 1, 1); p.Parent = char2
+end
+for _, name in order do
+	local p = char2:FindFirstChild(name)
+	local a0 = Instance.new("Attachment"); a0.Name = name .. "RigAttachment"; a0.Parent = char2:FindFirstChild(PARENT[name])
+	local a1 = Instance.new("Attachment"); a1.Name = name .. "RigAttachment"; a1.Parent = p
+	local j = Instance.new("AnimationConstraint")
+	j.Name = if name == "LowerTorso" then "Root" else name
+	j.Attachment0, j.Attachment1 = a0, a1
+	j.Transform = CFrame.identity
+	j.Parent = p
+	joints[name] = j
+end
+char.Parent = nil
+char2.Parent = workspace
+me.Character = char2
+__fireOn(me, "CharacterAdded", char2)
+task.wait(0.2)
+local again = DancePlayer.play("Floss")
+task.wait(0.3)
+frames(20)
+local moved2 = 0
+for _, j in joints do
+	if j.Transform ~= CFrame.identity then moved2 += 1 end
+end
+check(string.format("on Roblox's newer joints too (%d of 15 posed)", moved2), again == true and moved2 >= 8)
+DancePlayer.stop()
+task.wait(0.3)
+frames(20)
+local still2 = 0
+for _, j in joints do
+	if j.Transform == CFrame.identity then still2 += 1 end
+end
+check(string.format("and let go after (%d of 15 back)", still2), still2 == 15)
 print(string.format("live dance smoke: %d ok, %d failed", ok, fails))

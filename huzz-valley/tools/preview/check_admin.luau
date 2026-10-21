@@ -10,6 +10,7 @@ local function check(name, cond)
 end
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
+local CoinShop = require(game:GetService("ReplicatedStorage").Shared.Config.CoinShop)
 
 __roblox.implementMethod("HttpService", "JSONEncode", function(_, v) return __serde.encode("json", v) end)
 __roblox.implementMethod("HttpService", "JSONDecode", function(_, s) return __serde.decode("json", s) end)
@@ -83,8 +84,36 @@ check("admin NextGirl works: " .. tostring(r and r.message), r ~= nil and r.ok =
 check("the next roll is her", GirlService.roll().id == "Girl_TEST1")
 r = ask("GiveKnife", "MintTrail")
 check("admin: a trail isn't a knife (refused)", r ~= nil and r.ok == false)
-r = ask("GiveCoins", "1000000")
+r = ask("GiveGems", "1000")
 check("admin: an unknown command is refused", r ~= nil and r.ok == false)
+-- Oct 21 15:22: coins, aura, a game pass, every knife; for you, and for a player by name
+local coins0, aura0 = data.Coins or 0, data.Aura or 0
+r = ask("GiveCoins", "5000")
+check("admin GiveCoins works: " .. tostring(r and r.message), r ~= nil and r.ok == true and data.Coins == coins0 + 5000)
+r = ask("GiveAura", "700")
+check("admin GiveAura works: " .. tostring(r and r.message), r ~= nil and r.ok == true and data.Aura == aura0 + 700)
+r = ask("GiveCoins", "lots")
+check("admin GiveCoins with no number is refused, nothing given", r ~= nil and r.ok == false and data.Coins == coins0 + 5000)
+r = ask("GivePass", "HunterKnifePass")
+check("admin GivePass works: " .. tostring(r and r.message), r ~= nil and r.ok == true and data.AdminPasses and data.AdminPasses.HunterKnifePass == true)
+check("the given pass counts as owned (with no Roblox ID yet)", require(game.ServerScriptService.HuzzServer.ShopService).ownsPass(me, "HunterKnifePass"))
+r = ask("AllKnives", "all")
+check("admin AllKnives works: " .. tostring(r and r.message), r ~= nil and r.ok == true and (function()
+	for _, item in CoinShop.Items do if item.Slot == "Knife" and not data.Cosmetics[item.Key] then return false end end
+	return true
+end)())
+task.wait(0.2)
+local n0 = #replies
+remote:FireServer("GiveCoins", "10", "nobodyhere")
+task.wait(0.1)
+r = replies[n0 + 1]
+check("a gift for a name that isn't in the server is refused: " .. tostring(r and r.message), r ~= nil and r.ok == false)
+task.wait(0.2)
+n0 = #replies
+remote:FireServer("GiveCoins", "10", string.lower(string.sub(me.Name, 1, 3)))
+task.wait(0.1)
+r = replies[n0 + 1]
+check("a gift by the start of a name finds them: " .. tostring(r and r.message), r ~= nil and r.ok == true and data.Coins == coins0 + 5010)
 -- two requests at once: the second is too fast
 task.wait(0.2)
 local n = #replies
@@ -100,11 +129,12 @@ task.wait(0.1)
 local window = gui and gui:FindFirstChild("Admin")
 local knifeList = window and window:FindFirstChild("KNIVESList", true)
 local girlList = window and window:FindFirstChild("GIRLSList", true)
-local CoinShop = require(RS.Shared.Config.CoinShop)
+-- (CoinShop: at the top)
 local knives = 0
 for _, item in CoinShop.Items do if item.Slot == "Knife" then knives += 1 end end
 local function rows(list) local c = 0; for _, ch in (list and list:GetChildren() or {}) do if ch:IsA("Frame") then c += 1 end end; return c end
-check("every knife has a row (" .. rows(knifeList) .. " of " .. knives .. ")", rows(knifeList) == knives)
+local passes = #require(RS.Shared.Config.Products).Passes
+check("every knife and game pass has a row (" .. rows(knifeList) .. " of " .. knives + passes .. ")", rows(knifeList) == knives + passes)
 check("every girl has a row", girlList ~= nil and girlList:FindFirstChild("Girl_TEST1") ~= nil and girlList:FindFirstChild("Girl_TEST2") ~= nil)
 check("a girl row has SPAWN and NEXT GAME", girlList ~= nil and girlList.Girl_TEST1:FindFirstChild("SpawnGirl") ~= nil and girlList.Girl_TEST1:FindFirstChild("NextGirl") ~= nil)
 _G.__isStudio = false

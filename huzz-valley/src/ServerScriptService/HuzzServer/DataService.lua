@@ -24,6 +24,7 @@ DataService.Template = {
 	CrateKeys = {}, -- [crateId] = crate keys bought with Robux (the Halloween shop); an open uses one before Aura
 	Settings = table.clone(Settings.Defaults),
 	Receipts = {}, -- recent developer-product PurchaseIds, so a receipt is never granted twice
+	AdminPasses = {}, -- [pass key] = true: a game pass's perks given by an admin (HuzzServer/AdminService GivePass)
 	Characters = {}, -- [id] = os.time() when acquired
 	Equipped = "", -- equipped companion id ("" = none)
 	Copies = {}, -- [id] = { Normal = n, Silver = n, Gold = n, Diamond = n }: her copies by grade (Shared/CombineRules;

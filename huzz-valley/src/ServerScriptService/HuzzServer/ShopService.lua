@@ -26,7 +26,11 @@ local noticeCount = 0 -- (HuzzShopNotice: a fresh number each time)
 local function refreshPasses(player: Player, boughtId: number?)
 	local before = DataService.getExtra(player, "Passes") or {}
 	local owned = {}
+	-- (a pass given by an admin, HuzzServer/AdminService GivePass: saved, counts as owned with or without a Roblox ID)
+	local saved = DataService.get(player)
+	local given = saved and saved.Data and saved.Data.AdminPasses or {}
 	for _, p in Products.Passes do
+		if given[p.Key] then owned[p.Key] = true end
 		if p.Id ~= 0 then
 			local ok, has = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, p.Id)
 			if (ok and has) or p.Id == boughtId or (not ok and before[p.Key]) then owned[p.Key] = true end
@@ -54,6 +58,8 @@ local function refreshPasses(player: Player, boughtId: number?)
 	end
 	pcall(function() require(script.Parent.NameTagService).restyle(player) end)
 end
+
+ShopService.refreshPasses = refreshPasses
 
 function ShopService.ownsPass(player: Player, key: string): boolean
 	local passes = DataService.getExtra(player, "Passes")

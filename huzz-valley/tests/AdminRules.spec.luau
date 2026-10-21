@@ -31,7 +31,28 @@ for verb, arg in { GiveKnife = "CrimsonRequiem", SpawnGirl = "Girl_E2B52D", Next
 	check("non-admin " .. verb .. " is refused (says why)", ok == false and type(why) == "string")
 	check("admin " .. verb .. " " .. arg .. " is allowed", Admin.check(true, verb, arg, CoinShop.get, girl) == true)
 end
-check("an unknown verb is refused", not Admin.check(true, "GiveCoins", "1000000", CoinShop.get, girl))
+check("an unknown verb is refused", not Admin.check(true, "GiveGems", "1000", CoinShop.get, girl))
+
+-- Oct 21 15:22: him and thebiglion12 in the live game (Config/Admins), and the gifts
+local Admins = Env.load(SHARED .. "Config/Admins.lua")
+local Products = Env.load(SHARED .. "Config/Products.lua")
+check("thebiglion12 in the live game is an admin (by username, any capitals)", Admin.isAdmin({ studio = false, userId = 5, creatorId = 999, creatorType = "User", name = "TheBigLion12", admins = Admins }))
+check("the owner by username is an admin even if the game is a group's", Admin.isAdmin({ studio = false, userId = 6, creatorId = 77, creatorType = "Group", groupRank = 0, name = "ATRE_playzYT", admins = Admins }))
+check("someone else with the list there is still refused", not Admin.isAdmin({ studio = false, userId = 7, creatorId = 999, creatorType = "User", name = "thebiglion13", admins = Admins }))
+check("a user ID on the list is an admin", Admin.isAdmin({ studio = false, userId = 42, creatorId = 999, creatorType = "User", name = "x", admins = { UserIds = { 42 }, Names = {} } }))
+check("a 0 user ID on the list lets nobody in", not Admin.isAdmin({ studio = false, userId = 0, creatorId = 999, creatorType = "User", admins = { UserIds = { 0 }, Names = {} } }))
+check("coins: a whole number 1..1,000,000", Admin.check(true, "GiveCoins", "5000", CoinShop.get, girl) and not Admin.check(true, "GiveCoins", "0", CoinShop.get, girl)
+	and not Admin.check(true, "GiveCoins", "2.5", CoinShop.get, girl) and not Admin.check(true, "GiveCoins", "99999999", CoinShop.get, girl) and not Admin.check(true, "GiveCoins", "lots", CoinShop.get, girl))
+check("aura: the same", Admin.check(true, "GiveAura", "700", CoinShop.get, girl) and not Admin.check(true, "GiveAura", "-5", CoinShop.get, girl))
+check("every game pass can be given", (function()
+	for _, p in Products.Passes do
+		if not Admin.check(true, "GivePass", p.Key, CoinShop.get, girl, Products.get) then return false end
+	end
+	return #Products.Passes > 0
+end)())
+check("a developer product isn't a pass", not Admin.check(true, "GivePass", "Coins500", CoinShop.get, girl, Products.get))
+check("all knives: only 'all'", Admin.check(true, "AllKnives", "all", CoinShop.get, girl) and not Admin.check(true, "AllKnives", "x", CoinShop.get, girl))
+check("a non-admin can't give coins", not Admin.check(false, "GiveCoins", "5", CoinShop.get, girl))
 check("a knife that doesn't exist is refused", not Admin.check(true, "GiveKnife", "Nope", CoinShop.get, girl))
 check("a trail isn't a knife", not Admin.check(true, "GiveKnife", "MintTrail", CoinShop.get, girl))
 check("a girl that isn't in the place is refused", not Admin.check(true, "SpawnGirl", "Nobody", CoinShop.get, girl))

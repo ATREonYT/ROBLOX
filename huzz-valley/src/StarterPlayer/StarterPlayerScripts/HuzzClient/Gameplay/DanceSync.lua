@@ -93,35 +93,45 @@ function M.start()
 		return found
 	end
 
+	-- Each part's joints: Motor6Ds, or on Roblox's newer joints (his avatar, Oct 20) AnimationConstraints, which hold the
+	-- part by an attachment instead of Part1 and are sometimes doubled up (all of them get the pose). A list of
+	-- { part name, joint }; nil while a part has none (still streaming in: tried again next scan).
 	local function motorsOf(character: Model)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if not (humanoid and root) or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
 			return nil
 		end
-		local motors, count = {}, 0
+		local want = {}
 		for _, name in PARTS do
-			local part = character:FindFirstChild(name)
-			if part then
-				for _, j in part:GetChildren() do
-					if j:IsA("Motor6D") and j.Part1 == part then
-						motors[name] = j
-						count += 1
-						break
-					end
-				end
+			want[name] = false
+		end
+		local list = {}
+		for _, j in character:GetDescendants() do
+			local part = nil
+			if j:IsA("Motor6D") then
+				part = j.Part1
+			elseif j.ClassName == "AnimationConstraint" then
+				local a1 = (j :: any).Attachment1
+				part = a1 and a1.Parent
+			end
+			if part and part.Parent == character and want[part.Name] ~= nil then
+				want[part.Name] = true
+				table.insert(list, { name = part.Name, joint = j })
 			end
 		end
-		if count < #PARTS then
-			return nil -- (still streaming in: tried again next scan)
+		for _, found in want do
+			if not found then
+				return nil
+			end
 		end
-		return motors, math.clamp((humanoid.HipHeight + root.Size.Y / 2) / 3, 0.5, 2)
+		return list, math.clamp((humanoid.HipHeight + root.Size.Y / 2) / 3, 0.5, 2)
 	end
 
+	-- (written / base are keyed by the joint, in a plain table emptied on release)
 	local function release(rec)
-		for name, base in rec.base do
-			local m = rec.motors and rec.motors[name]
-			if m and m.Parent and rec.written[name] == m.Transform then
+		for m, base in rec.base do
+			if m.Parent and rec.written[m] == m.Transform then
 				m.Transform = base
 			end
 		end
@@ -129,19 +139,30 @@ function M.start()
 	end
 
 	local function write(rec, pose, w)
-		for name, m in rec.motors do
+		for _, entry in rec.motors do
+			local name, m = entry.name, entry.joint
 			local cf = pose[name]
 			if cf and m.Parent then
 				if name == "LowerTorso" then
 					cf = CFrame.new(cf.Position * rec.k) * cf.Rotation -- (the hips' bounce, to their size)
 				end
 				local current = m.Transform
-				local base = if rec.written[name] == current then rec.base[name] else current
-				rec.base[name] = base
+				local base = if rec.written[m] == current then rec.base[m] else current
+				rec.base[m] = base
 				m.Transform = if w >= 0.999 or not base then cf else base:Lerp(cf, w)
-				rec.written[name] = m.Transform -- read back: Roblox stores CFrames as float32
+				rec.written[m] = m.Transform -- read back: Roblox stores CFrames as float32
 			end
 		end
+	end
+
+	-- Roblox swaps the avatar's own limbs in after the body appears: joints that left it mean a new look.
+	local function stale(rec): boolean
+		for _, entry in rec.motors do
+			if not entry.joint:IsDescendantOf(game) then
+				return true
+			end
+		end
+		return false
 	end
 
 	-- Your own dance is drawn here when it has no track (DancePlayer.handBeat: live, not published).
@@ -223,6 +244,10 @@ function M.start()
 				if clock - rec.scanAt >= 0.25 then
 					rec.scanAt = clock
 					rec.track = if id then trackOf(character) else nil
+					if rec.motors and stale(rec) then
+						release(rec)
+						rec.motors = nil
+					end
 					if (p ~= me or mineByHand(id)) and id and not rec.track and not rec.motors then
 						rec.motors, rec.k = motorsOf(character)
 					end

@@ -178,7 +178,7 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   `ServerStorage > HuzzAnimations` into `ReplicatedStorage > HuzzDanceMoves` the first time anyone starts it (never all
   32 at join), and `Gameplay/DanceSync` poses your own R15 joints from it on its beat, as it already did for other
   players; their screens draw you the same way, your girl follows (`CompanionDance`, `DancePose` read
-  `HuzzDanceMoves` too). R6 avatars get "Dances need an R15 avatar". Studio still plays the raw ones as tracks;
+  `HuzzDanceMoves` too). R6 avatars get "Dances need an R15 avatar". Oct 21 15:24 (owner: "make the dances work on the actual user, not only on the girl"): his avatar is on Roblox's newer joints (AnimationConstraints, no Motor6D), which DanceSync skipped, so only the girl danced; now it poses every joint that holds each part (Motor6D or AnimationConstraint, doubled ones too) and finds them again when Roblox swaps the limbs in. Studio still plays the raw ones as tracks;
   published ones play as tracks everywhere. Test: `tools/preview/smoke_live_dance.luau` (the harness as the live
   game: ready, starts, moves shared, joints posed, let go on stop, a locked dance refused).
 - `UI/DancePlayer` (one at a time; walking stops it; **in step**: the `Dance` remote puts HuzzDance / HuzzDanceAt

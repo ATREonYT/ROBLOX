@@ -179,7 +179,12 @@ end
 
 -- "Back" or "Side". set: the shop table's Wear (Config/CoinShop, one per knife: the owner's to change), else the
 -- model's Wear attribute; with neither, measured: long (BACK.MinStuds) = Back, else Side.
+-- HIP = false: every knife goes on the back (owner, Oct 21 15:23, his picture of a knife hanging beside his leg:
+-- "make the location of the knife on the character itself, not in the air"; his standing call: "everyone even the
+-- runners have a knife mounted on their backs"). true brings the short ones back to the hip (the table's Wear).
+KnifeLook.HIP = false
 function KnifeLook.wearOf(set: string?, shape, attr: string?): string
+	if not KnifeLook.HIP then return "Back" end
 	if set == "Back" or set == "Side" then return set end
 	if attr == "Back" or attr == "Side" then return attr end
 	if not shape or shape.length <= 0 then return "Back" end
@@ -245,6 +250,12 @@ function KnifeLook.backC0(torsoName: string, torsoSize: Vector3, shape: any?, cl
 	local at = Vector3.new(0.28 * torsoSize.X, torsoSize.Y / 2 - 0.25, torsoSize.Z / 2 + out + (clear or 0))
 	if pole then -- (the pole's middle on the back, a little right: the head over the right shoulder, the pole clear of the head)
 		at = Vector3.new(0.2, 0, at.Z) - tip * ((shape.yMin + shape.yMax) / 2)
+	elseif shape and shape.yMin and shape.zMin then
+		-- (a short round knife, a shuriken or a karambit, reaches up past its grip: lowered so its top stays under
+		-- the shoulders, never into the head; every knife on the back since Oct 21 15:23)
+		local upY, upZ = -math.cos(a), -sx * math.sin(a) -- (how far up the knife's +Y and +Z go, per stud)
+		local top = math.max(shape.yMin * upY, shape.yMax * upY) + math.max(shape.zMin * upZ, shape.zMax * upZ)
+		at = Vector3.new(at.X, math.min(at.Y, torsoSize.Y / 2 - 0.15 - top), at.Z)
 	end
 	return CFrame.fromMatrix(at, Vector3.new(0, 0, sx), tip)
 end
