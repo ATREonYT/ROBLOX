@@ -32,12 +32,12 @@ return {
 	["CAC_R6_c509zz_EA042E"] = { Who = "Ram", Element = "Sakura", Colors = { rgb(255, 180, 210), rgb(150, 60, 120) } },
 	["CAC_R6_kaguma_Kun17_A1F4E8"] = { Who = "Miku", Element = "Water", Colors = { rgb(120, 240, 230), rgb(20, 150, 160) } },
 	-- Epic
-	["CAC_R6_Master_Cheif4444_BB5C2C"] = { Who = "Miku Nakano", Element = "Water", Colors = { rgb(150, 190, 255), rgb(50, 80, 170) } },
+	["CAC_R6_Master_Cheif4444_BB5C2C"] = { Who = "Anko", Element = "Water", Colors = { rgb(150, 190, 255), rgb(50, 80, 170) } },
 	["CAC_R6_witchoofgreed_C14D27"] = { Who = "Shaula", Element = "Night", Colors = { rgb(240, 240, 255), rgb(30, 20, 50) } },
 	["CAC_R6_enchanities_3066FF"] = { Who = "Konata", Element = "Storm", Colors = { rgb(140, 220, 255), rgb(60, 40, 160) } },
 	["CAC_R6_futuremelancholy_CB2AD3"] = { Who = "Orihime", Element = "Holy", Colors = { rgb(255, 210, 150), rgb(240, 120, 60) } },
 	["CAC_R6_YiagoQino_E7FCFD"] = { Who = "Eto", Element = "Nature", Colors = { rgb(190, 255, 170), rgb(40, 140, 90) } },
-	["CAC_R6_Xzgamer70_DB7CB4"] = { Who = "Itsuki", Element = "Flame", Colors = { rgb(255, 140, 120), rgb(200, 50, 60) } },
+	["CAC_R6_Xzgamer70_DB7CB4"] = { Who = "Nino", Element = "Flame", Colors = { rgb(255, 140, 120), rgb(200, 50, 60) } },
 	["CAC_R6_XxamberXx12328_DBAFA4"] = { Who = "Nami", Element = "Storm", Colors = { rgb(255, 220, 110), rgb(255, 130, 40) } },
 	["CAC_R6_GoodwinDakota422_AA2072"] = { Who = "Rukia", Element = "Frost", Colors = { rgb(230, 250, 255), rgb(90, 160, 255) } },
 	-- Legendary

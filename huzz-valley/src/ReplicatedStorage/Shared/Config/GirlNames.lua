@@ -29,12 +29,12 @@ return {
 	["CAC_R6_c509zz_EA042E"] = "Ram",
 	["CAC_R6_kaguma_Kun17_A1F4E8"] = "Miku",
 	-- Epic
-	["CAC_R6_Master_Cheif4444_BB5C2C"] = "Miku Nakano",
+	["CAC_R6_Master_Cheif4444_BB5C2C"] = "Anko", -- (was Miku Nakano: owner, Oct 21 16:39)
 	["CAC_R6_witchoofgreed_C14D27"] = "Shaula",
 	["CAC_R6_enchanities_3066FF"] = "Konata",
 	["CAC_R6_futuremelancholy_CB2AD3"] = "Orihime",
 	["CAC_R6_YiagoQino_E7FCFD"] = "Eto",
-	["CAC_R6_Xzgamer70_DB7CB4"] = "Itsuki",
+	["CAC_R6_Xzgamer70_DB7CB4"] = "Nino", -- (was Itsuki: owner, Oct 21 16:39; the _DC0EB6 girl is also Nino)
 	["CAC_R6_XxamberXx12328_DBAFA4"] = "Nami",
 	["CAC_R6_GoodwinDakota422_AA2072"] = "Rukia",
 	-- Legendary
