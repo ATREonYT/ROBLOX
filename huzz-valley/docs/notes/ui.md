@@ -262,8 +262,7 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   words 19 (smaller only if a row must fit 795). A tap shows only what matches at once: the grid closes up (rows of
   5, a short row centred), a rarity header with nothing under it hides, "No knives match..." shows only when nothing
   does. What you picked stays for the session (closing the Shop keeps it). The KNIVES filters cover the Halloween
-  knives too. There is no separate inventory screen: the Shop's WEAR / WEARING is where you put on what you own (the
-  girls' Index has its own search and tier filter).
+  knives too. (Oct 21: KNIVES and COSMETICS left the Shop; what you own is worn from the Inventory, below.)
 - **Rules kept:** every chance shown (EVERY CHANCE, and the "i" on a card scrolls to it), pity on every crate card,
   Id 0 = "coming soon" and never a prompt, grants only on the server, UI saved into StarterGui (cards made once).
 - Checks: `check_oct17` (jump buttons, order, banner, COINS/AURA cards), `check_filters` (chips, search, OWNED,
@@ -298,3 +297,25 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
 - **HeroChoice** at 60%: "make the boxes smaller". The text-only HUD and the message line came from the feel study
   (Oct 17); "less ui" (Oct 17 round 2) moved the HUD aside while running.
 - **Map pictures** (owner Oct 18).
+
+## Shop sorted, Inventory (Oct 21)
+Owner, Oct 21: "fix this not nice looking shop ... make this logical, and not everything mixed together ... make the
+dances button the inventory button, which then will show you everything you currently own ... And will allow you to
+equip it"; "make it your character dancing the dance"; "we can remove the outfit and stuff like that".
+- **Shop = buying only.** Sections: HALLOWEEN, CRATES, DANCES, STYLE, ABILITIES, PASSES, AURA, COINS. KNIVES and
+  COSMETICS are gone: knives come from crates (old `open("Shop", "Knives")` lands on CRATES), STYLE holds only the
+  looks sold for coins (trails, name colours; chips ALL / type and OWNED / NOT OWNED); an owned card says OWNED and
+  opens the Inventory there. The Robux looks (Sunset Trail, Blossom Aura, Crown Pose, Midnight Outfit) are no longer
+  sold: `Products.Cosmetics = {}` (they never had IDs; CosmeticsService still knows them, dormant).
+- **Dance cards dance as you:** `UI/DancePose.live` puts a copy of your avatar in a ViewportFrame on the cards in view
+  (made lazily, RuntimeOnly, 15 FPS, stops when the Shop closes); the server shares a dance's moves on request
+  (ActionService `SeeDance`, batched, at most 12 per call). The still white pose shows until it's ready, and offline.
+- **Inventory** (`UI/Screens/Inventory.lua`, opened by the lobby's INVENTORY button where DANCES was, and the Menu):
+  shop-sized window, tabs GIRLS, KNIVES, TRAILS, NAMES, TITLES, AURAS, DANCES, ABILITIES. Each tab: what you own first
+  (best rarity first, WEAR / WEARING, girls EQUIP), then STILL TO GET (earnable ones locked with how to earn them,
+  coin ones "IN SHOP"). Knives have rarity chips and GET KNIVES (Shop CRATES); dances PLAY / STOP; abilities are
+  `UI/AbilityCards`. Cards are made each time a tab shows (RuntimeOnly); window and tabs are saved in StarterGui.
+  The icon is a placeholder (🎒 glyph): no inventory PNG from the owner yet.
+- Checks: `check_filters` (Shop STYLE, Inventory tabs), `smoke_shop_dancers`, `check_hidden` (abilities), `check.luau`,
+  `check_oct17`. Shots `shop-style`, `shop-filter-style`, `inventory-knives`, `-titles`, `-trails`, `-girls`,
+  `-dances`, `-abilities`.

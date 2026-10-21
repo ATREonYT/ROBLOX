@@ -21,10 +21,13 @@
 --   HALLOWEEN  his three Halloween crates (Candy, Witch, Halloween: coins or Aura, his 20:34 picture) and the best
 --              Halloween knives straight away for Aura or Robux;
 --   CRATES     his Dojo / Storm / Beast crates (Aura, or a Robux key);
---   DANCES     the Dance Pack, then every dance you can buy, one by one, for coins (ActionService "BuyDance");
---   KNIVES     the knives you own, to wear (owner: "make the knifes not be bought but opened from crates. So remove the
---              buying menu"), with rarity chips and a search box;
---   ABILITIES, PASSES, AURA, COINS, COSMETICS.
+--   DANCES     the Dance Pack, then every dance you can buy, one by one, for coins (ActionService "BuyDance"); each
+--              card shows your own avatar dancing it (owner, Oct 21; UI/DancePose.live, the cards in view only);
+--   STYLE      the trails and name colours sold for coins, each kind under its own header, with type chips;
+--   ABILITIES, PASSES, AURA, COINS.
+-- The Shop only sells (owner, Oct 21: "make this logical, and not everything mixed together"): what you own you wear
+-- from the Inventory (Screens/Inventory: your girls, knives, trails, name colours, titles, auras, dances and
+-- abilities), which also shows the looks you earn and how. The Robux looks (outfits, poses) are gone.
 -- Every crate shows on the same backdrop (owner: "make all of the crate pictures have the same background so they all
 -- look the same, but just the crate is different": his crates cut out by tools/crates/cut_crates.py). The page shows
 -- no odds (owner: "remove all of the chances of the knifes, only show it when you click on a crate, then on the side it
@@ -35,10 +38,9 @@
 -- or crate (ModalManager.open("Shop", <section or crate id>); a crate also opens its panel). No gift buttons (we have
 -- no gifting), no codes (we have no codes system).
 -- FILTERS (owner, Oct 20 15:13: "add filters within the ui so people can find trails, titles, knifes easier"): under
--- the KNIVES header rarity chips (ALL, COMMON ... MYTHIC, in their rarity colours) and a search box; under the
--- COSMETICS header type chips (ALL, TRAILS, TITLES, NAME COLOURS, AURAS), rarity chips and OWNED / NOT OWNED. A tap
--- changes what shows at once; the grid closes up (no gaps); the choice stays for the session.
--- (The Shop is also where you WEAR what you own: there is no separate inventory screen.)
+-- the STYLE header type chips (ALL, TRAILS, NAME COLOURS; what you own and the knives' rarity chips are in the
+-- Inventory now). A tap changes what shows at once; the grid closes up (no gaps); the choice stays for the
+-- session.
 -- ABILITIES: a slot for the bought abilities, built by UI/AbilityCards (build(parent)) when that module exists; until
 -- then the section and its jump button stay hidden.
 -- Rules kept: Robux buttons only open Roblox's prompt, and only for a product with its ID (Id 0 = "coming soon",
@@ -68,6 +70,7 @@ local Motion = require(UI.Motion)
 local Effects = require(UI.Effects)
 local CoinFx = require(UI.CoinFx)
 local ShopStyle = require(UI.ShopStyle)
+local DancePose = require(UI.DancePose)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -109,15 +112,15 @@ local SECTIONS = {
 	{ Key = "Halloween", Text = "HALLOWEEN", Fill = hex("E8661A"), Top = hex("FFB36B"), Look = SPOOKY },
 	{ Key = "Crates", Text = "CRATES", Fill = hex("7C5CF6"), Top = hex("C4B4FF"), Look = NAVY },
 	{ Key = "Dances", Text = "DANCES", Fill = hex("D9449F"), Top = hex("F69AD4"), Look = NAVY },
-	{ Key = "Knives", Text = "KNIVES", Fill = hex("8225D5"), Top = hex("BD79F2"), Look = NAVY },
+	{ Key = "Style", Text = "STYLE", Fill = hex("277ADD"), Top = hex("74B0F2"), Look = NAVY },
 	{ Key = "Abilities", Text = "ABILITIES", Fill = hex("D7336F"), Top = hex("F682AE"), Look = NAVY }, -- (shown once UI/AbilityCards exists)
 	{ Key = "Passes", Text = "PASSES", Fill = hex("257AD9"), Top = hex("6FB2F5"), Look = NAVY },
 	{ Key = "Aura", Text = "AURA", Fill = hex("1EBABF"), Top = hex("7FE6E9"), Look = NAVY },
 	{ Key = "Coins", Text = "COINS", Fill = hex("43D416"), Top = hex("8CEB63"), Look = NAVY },
-	{ Key = "Cosmetics", Text = "COSMETICS", Fill = hex("277ADD"), Top = hex("74B0F2"), Look = NAVY },
 }
 -- what older callers ask for ("Items" was the coin shop tab)
-local ALIAS = { Items = "Knives" }
+-- (owner, Oct 21: the knives you own and the looks you earn moved to the Inventory; knives come from the crates)
+local ALIAS = { Items = "Style", Cosmetics = "Style", Knives = "Crates" }
 
 -- Our kit's buttons: green to buy (Theme's SelectedTab green), purple for Robux (Theme's Action), teal-blue for Aura;
 -- one colour per jump button. White chunky text, dark rim.
@@ -139,12 +142,10 @@ local chunkyButton = ShopStyle.chunkyButton
 
 -- FILTERS: what each filter row last picked, kept for the session (the Shop is built once per session)
 local FILTER = {
-	Knives = { Rarity = "All", Own = "All", Search = "" }, -- (KNIVES shows only knives you own: no OWNED chips)
-	Cosmetics = { Type = "All", Rarity = "All", Own = "All", Search = "" },
+	Style = { Type = "All", Rarity = "All", Own = "All", Search = "" },
 }
 local TYPES = { { Key = "Trail", Text = "TRAILS" }, { Key = "Title", Text = "TITLES" }, { Key = "Tag", Text = "NAME COLOURS" }, { Key = "Aura", Text = "AURAS" } }
 local TYPE_COLOUR = { All = hex("D6DEE6"), Trail = hex("1EBABF"), Title = hex("E25FA8"), Tag = hex("A45CF0"), Aura = hex("5AA8F5") }
-local OWN_COLOUR = { Owned = hex("43D416"), NotOwned = hex("F08A3C") }
 local CHIP = { H = 40, Gap = 8, Pad = 26, MinW = 64, TextSize = 19, RowGap = 8 } -- touch-sized chips
 -- a chip's two looks in its colour: dark with coloured words, or filled (and a white rim, set where it's picked)
 local function chipStyle(key: string, col: Color3): (string, string)
@@ -540,12 +541,6 @@ function Shop.build(parent: Instance)
 			local v = not any[sec]
 			if line.Visible ~= v then line.Visible = v; changed = true end
 		end
-		local kl = empties.Knives
-		if kl and kl:IsA("TextLabel") then
-			local ownsAny = false
-			for _, e in filterable do if e.sec == "Knives" and e.owned() then ownsAny = true; break end end
-			kl.Text = if ownsAny then "No knives match. Tap ALL or clear the search." else "No knives yet. Open a crate to get one!"
-		end
 		return changed
 	end
 	local layoutRef: { fn: (() -> ())? } = {}
@@ -611,7 +606,6 @@ function Shop.build(parent: Instance)
 		end
 		return defs
 	end
-	local OWN_DEFS = { { Key = "Owned", Text = "OWNED", Color = OWN_COLOUR.Owned }, { Key = "NotOwned", Text = "NOT OWNED", Color = OWN_COLOUR.NotOwned } }
 	-- the search box (a long list: knives)
 	local function searchBox(parent: GuiObject, sec: string, x: number, y: number, w: number, hint: string)
 		local f = new("Frame", { Name = "Search", Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, CHIP.H), BackgroundColor3 = C.MenuPanel, BorderSizePixel = 0, ZIndex = 3, Parent = parent }, { Kit.corner(3), Kit.stroke(C.Divider, 2) })
@@ -1051,6 +1045,7 @@ function Shop.build(parent: Instance)
 	for _, d in Dances.List do if d.Coins then table.insert(danceList, d) end end
 	table.sort(danceList, function(a, b) return if a.Coins ~= b.Coins then a.Coins < b.Coins else a.Order < b.Order end)
 	local danceCards = {}
+	local dancers: { { card: GuiObject, live: any } } = {}
 	for i, d in danceList do
 		local c = card("Dance" .. d.Id, SMALL.W, SMALL.H, NAVY)
 		local colour = Dances.Colors[d.Color] or WHITE
@@ -1060,8 +1055,14 @@ function Shop.build(parent: Instance)
 		Kit.fitLine(t, SMALL.W - 10, SMALL.TitleSize, 10, true)
 		local glowF = new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(SMALL.W // 2, SMALL.PicY + SMALL.PicH // 2), Size = UDim2.fromOffset(112, 112), BackgroundColor3 = colour, BorderSizePixel = 0, ZIndex = 2, Parent = c }, { Kit.corner(56) })
 		new("UIGradient", { Name = "Soft", Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.5), NumberSequenceKeypoint.new(1, 1) }), Parent = glowF })
+		-- your own avatar dancing it (owner, Oct 21: "make it your character dancing the dance": UI/DancePose.live);
+		-- the white stand-in figure shows until it can (no character yet, or its moves are still on the way)
 		local pic = Kit.art("DanceStill" .. d.Id, { Name = "Picture", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(SMALL.W // 2, SMALL.PicY + SMALL.PicH), Size = UDim2.fromOffset(SMALL.PicH, SMALL.PicH), ScaleType = Enum.ScaleType.Fit, ZIndex = 3, Parent = c })
 		Effects.rock(pic, { degrees = 4, seconds = 0.45 + (i % 3) * 0.08 })
+		local okL, live = pcall(DancePose.live, c, d.Id, { Position = UDim2.fromOffset(4, SMALL.PicY - 4), Size = UDim2.fromOffset(SMALL.W - 8, SMALL.PicH + 4), ZIndex = 3 }, function()
+			pic.Visible = false
+		end)
+		if okL then table.insert(dancers, { card = c, live = live }) else warn("[HuzzUI] Shop: a dance card can't dance:", live) end
 		local line = chunky({ Name = "Kind", Text = if d.Pack then "DANCE PACK DANCE" else "DANCE", TextSize = SMALL.LineSize, TextColor3 = colour:Lerp(WHITE, 0.3), Position = UDim2.fromOffset(5, SMALL.LineY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.LineH), ZIndex = 3, Parent = c }, 1.2)
 		Kit.fitLine(line, SMALL.W - 10, SMALL.LineSize, 8, true)
 		local tap = new("TextButton", { Name = "Tap", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = c })
@@ -1080,13 +1081,14 @@ function Shop.build(parent: Instance)
 	end
 	grid(danceCards, 5, SMALL.W, SMALL.H, SMALL.Gap, 6)
 
-	-- KNIVES ------------------------------------------------------------------------------------------------------------
-	-- The knives you own, to wear (owner, Oct 20 20:34: "make the knifes not be bought but opened from crates. So remove
-	-- the buying menu"): they come from the crates above, the Halloween knives, the Game Passes and quests.
-	mark("Knives")
-	block(head(bySection.Knives), HEAD.H)
-	mark("Knives@") -- (a jump lands here: its cards, the header just above)
-	local items: { [string]: { card: Frame, item: any } } = {}
+	-- STYLE -------------------------------------------------------------------------------------------------------------
+	-- Looks you buy with coins: trails and name colours (owner, Oct 21: "make this logical, and not everything mixed
+	-- together"). The Shop only sells: what you own you wear from the Inventory (an owned card says OWNED and opens it
+	-- there), and the looks you earn (titles, the girls' auras and trails) and your knives live there too. The Robux
+	-- looks (outfits, poses) are gone (owner: "i think we can remove the outfit and stuff like that").
+	mark("Style")
+	block(head(bySection.Style), HEAD.H)
+	mark("Style@") -- (a jump lands here: its cards, the header just above)
 	local function itemCard(item, lk, sec: string): Frame
 		local c = card(item.Key, SMALL.W, SMALL.H, lk)
 		local tint = item.Rarity and rarityColor[item.Rarity]
@@ -1107,73 +1109,64 @@ function Shop.build(parent: Instance)
 		Kit.fitLine(line, SMALL.W - 10, SMALL.LineSize, 8, true)
 		local b = chunkyButton(Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 24, Gap = 6, TextSize = 20, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 3, Position = UDim2.fromOffset(SMALL.ButtonX, SMALL.ButtonY), Size = UDim2.fromOffset(SMALL.W - 2 * SMALL.ButtonX, SMALL.ButtonH), ZIndex = 4, Parent = c }))
 		local icon = b.Instance:FindFirstChild("Icon", true) :: GuiObject?
-		local isKnife = item.Slot == "Knife"
+		local function owns() return State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true end
 		local function refresh()
-			local owned = State.data.Cosmetics[item.Key] == true
-			local worn = CoinShop.worn(State.data, item.Slot) == item.Key
-			if icon then icon.Visible = not owned and not item.Unlock and not isKnife end
-			if not owned and (item.Unlock or isKnife) then
-				b.setText(if isKnife then "IN CRATES" else "EARN IT") -- (quest knives: never sold; the tap says where)
-				b.setStyle("Disabled")
-			elseif not owned then
+			local owned = owns()
+			if icon then icon.Visible = not owned end
+			if owned then
+				b.setText("OWNED")
+				b.setStyle("Slate") -- (grey, never the buy green: it opens your Inventory)
+			else
 				b.setText(Format.commas(item.Price))
 				b.setStyle(if (State.data.Coins or 0) >= item.Price then "ShopGreen" else "Disabled")
-			else
-				b.setText(if worn then "WEARING" else "WEAR")
-				b.setStyle(if worn then "Selected" else "Tab")
 			end
 			chunkyButton(b)
 		end
 		b.onClick(function()
-			local owned = State.data.Cosmetics[item.Key] == true
-			if not owned and item.Unlock then
-				Toast.show(`{item.Name}: {item.Unlock}`)
+			if owns() then
+				ModalManager.open("Inventory", item.Slot) -- (wear it there)
 				return
-			elseif not owned and isKnife then
-				Toast.show(`{item.Name} comes from a crate.`)
-				return
-			elseif not owned then
-				local ok, why = State.action("BuyWithCoins", item.Key)
-				Toast.show(if ok then `{item.Name} is yours!` else (why or "Couldn't buy that."))
-			else
-				local isWorn = CoinShop.worn(State.data, item.Slot) == item.Key
-				local ok, why = State.action("Wear", item.Slot, if isWorn then nil else item.Key)
-				if not ok then Toast.show(why or "Couldn't change that.") end
 			end
+			local ok, why = State.action("BuyWithCoins", item.Key)
+			Toast.show(if ok then `{item.Name} is yours! Equip it from your Inventory.` else (why or "Couldn't buy that."))
 		end)
 		table.insert(refreshButtons, refresh)
 		refresh()
-		items[item.Key] = { card = c, item = item }
-		local function owns() return State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true end
 		table.insert(filterable, { card = c, sec = sec, rarity = item.Rarity, slot = item.Slot, name = item.Name, owned = owns,
-			-- (a knife shows once it's yours; a prize such as a Spin Wheel look shows once you own it)
-			base = function() return owns() or (not isKnife and not item.NotForSale) end })
+			base = function() return true end })
 		return c
 	end
 	local sorted = {}
 	for _, item in CoinShop.Items do table.insert(sorted, item) end
 	table.sort(sorted, function(a, b) return a.Order < b.Order end)
-	-- the filter row: rarity chips; the search box under them
+	-- only what's sold for coins (never a knife, a prize or a look you earn)
+	local styleItems = {}
+	for _, item in sorted do
+		if item.Slot ~= "Knife" and not item.Unlock and not item.Earn and not item.NotForSale and (item.Price or 0) > 0 then table.insert(styleItems, item) end
+	end
+	-- the filter row: type chips (only the kinds sold here; what you own lives in the Inventory, so no OWNED chips)
 	do
-		local knives = {}
-		for _, item in sorted do if item.Slot == "Knife" then table.insert(knives, item) end end
-		local row = new("Frame", { Name = "KnivesFilters", Size = UDim2.fromOffset(CW, 2 * CHIP.H + CHIP.RowGap), BackgroundTransparency = 1, Parent = body })
-		chipsOf.KnivesRarity = chipRow(row, "KnivesRarity", rarityDefs(knives, "ALL"), 0, 0, CW, function(k) pick("Knives", "Rarity", k) end)
-		searchBox(row, "Knives", 0, CHIP.H + CHIP.RowGap, CW, "Search your knives")
-		refreshChips("Knives")
-		block(row, row.Size.Y.Offset, 0, 6)
-	end
-	for _, rarity in RARITY_ORDER do
-		local group = {}
-		for _, item in sorted do
-			if item.Slot == "Knife" and (item.Rarity or "Common") == rarity then table.insert(group, itemCard(item, NAVY, "Knives")) end
+		local row = new("Frame", { Name = "StyleFilters", Size = UDim2.fromOffset(CW, CHIP.H), BackgroundTransparency = 1, Parent = body })
+		local typeDefs = { { Key = "All", Text = "ALL", Color = TYPE_COLOUR.All } }
+		for _, t in TYPES do
+			local sold = false
+			for _, item in styleItems do if item.Slot == t.Key then sold = true; break end end
+			if sold then table.insert(typeDefs, { Key = t.Key, Text = t.Text, Color = TYPE_COLOUR[t.Key] }) end
 		end
-		if #group > 0 then
-			block(subHead("Head" .. rarity, string.upper(rarity), rarityColor[rarity] or WHITE), SUB.H, 0, 0, group)
-			grid(group, 5, SMALL.W, SMALL.H, SMALL.Gap, 10)
+		chipsOf.StyleType = chipRow(row, "StyleType", typeDefs, 0, 0, CW, function(k) pick("Style", "Type", k) end)
+		refreshChips("Style")
+		block(row, row.Size.Y.Offset, 0, 10)
+	end
+	-- one row group per kind, under its own small header (critic, Oct 21: a name colour sat in the trails' row)
+	for _, t in TYPES do
+		local looks = {}
+		for _, item in styleItems do if item.Slot == t.Key then table.insert(looks, itemCard(item, NAVY, "Style")) end end
+		if #looks > 0 then
+			block(subHead("HeadStyle" .. t.Key, t.Text, TYPE_COLOUR[t.Key]), SUB.H, 0, 0, looks)
+			grid(looks, 5, SMALL.W, SMALL.H, SMALL.Gap, 12)
 		end
 	end
-	block(emptyLine("Knives", "No knives match. Tap ALL or clear the search."), 60, 0, 6)
+	block(emptyLine("Style", "Nothing matches. Tap ALL to see every look."), 60, 0, 0)
 
 	-- ABILITIES ---------------------------------------------------------------------------------------------------------
 	-- Bought abilities (owner, Oct 20 15:13: "make the abilities be bought"), built by UI/AbilityCards: build(slot)
@@ -1271,48 +1264,6 @@ function Shop.build(parent: Instance)
 	end
 	grid(coinCards, 3, BIG.W, BIG.H, BIG.Gap, 0)
 
-	-- COSMETICS ---------------------------------------------------------------------------------------------------------
-	mark("Cosmetics")
-	block(head(bySection.Cosmetics), HEAD.H)
-	mark("Cosmetics@") -- (a jump lands here: its cards, the header just above)
-	-- the filter row: type chips; rarity chips with OWNED / NOT OWNED beside them
-	do
-		local lookItems = {}
-		for _, item in sorted do if item.Slot ~= "Knife" then table.insert(lookItems, item) end end
-		local row = new("Frame", { Name = "CosmeticsFilters", Size = UDim2.fromOffset(CW, 2 * CHIP.H + CHIP.RowGap), BackgroundTransparency = 1, Parent = body })
-		local typeDefs = { { Key = "All", Text = "ALL", Color = TYPE_COLOUR.All } }
-		for _, t in TYPES do table.insert(typeDefs, { Key = t.Key, Text = t.Text, Color = TYPE_COLOUR[t.Key] }) end
-		chipsOf.CosmeticsType = chipRow(row, "CosmeticsType", typeDefs, 0, 0, CW, function(k) pick("Cosmetics", "Type", k) end)
-		local y2 = CHIP.H + CHIP.RowGap
-		local ownChips, ownW = chipRow(row, "CosmeticsOwn", OWN_DEFS, 0, y2, 330, function(k) pick("Cosmetics", "Own", k) end)
-		chipsOf.CosmeticsOwn = ownChips
-		chipsOf.CosmeticsRarity = chipRow(row, "CosmeticsRarity", rarityDefs(lookItems, "ANY RARITY"), ownW + 16, y2, CW - ownW - 16, function(k) pick("Cosmetics", "Rarity", k) end)
-		refreshChips("Cosmetics")
-		block(row, row.Size.Y.Offset, 0, 10)
-	end
-	local cosCards = {}
-	for _, p in Products.Cosmetics do
-		local c = bigCard(p.Key, NAVY, p.Name)
-		picture(c, p.Art)
-		local a, b2 = blurbLines(p)
-		lines(c, a, b2)
-		priceRow(c, p)
-		table.insert(cosCards, c)
-		table.insert(filterable, { card = c, sec = "Cosmetics", rarity = nil, slot = p.Slot, name = p.Name,
-			owned = function() return State.owns(p.Key) end, base = function() return true end })
-	end
-	grid(cosCards, 3, BIG.W, BIG.H, BIG.Gap, 10)
-	-- the looks you buy with coins (trails, name colours, titles, auras: the girls' rewards show their rarity)
-	local looks = {}
-	for _, item in sorted do
-		if item.Slot ~= "Knife" then table.insert(looks, itemCard(item, NAVY, "Cosmetics")) end
-	end
-	if #looks > 0 then
-		block(subHead("HeadLooks", "FOR COINS", bySection.Coins.Fill), SUB.H, 0, 0, looks)
-		grid(looks, 5, SMALL.W, SMALL.H, SMALL.Gap, 0)
-	end
-	block(emptyLine("Cosmetics", "Nothing matches. Tap ALL to see every look."), 60, 0, 0)
-
 	layoutRef.fn = layout
 	applyFilters()
 	layout()
@@ -1390,7 +1341,7 @@ function Shop.build(parent: Instance)
 			end
 			if not first and #names > 0 then
 				local list = if #names == 1 then names[1] else table.concat(names, ", ", 1, #names - 1) .. " and " .. names[#names]
-				Toast.show(`You unlocked {list}! Wear {if #names == 1 then "it" else "them"} from the Shop.`)
+				Toast.show(`You unlocked {list}! Wear {if #names == 1 then "it" else "them"} from your Inventory.`)
 			end
 		end
 		setCoins(State.shown("Coins"))
@@ -1416,7 +1367,7 @@ function Shop.build(parent: Instance)
 
 	-- Live Robux prices for items that are set up (the configured price shows until then).
 	task.spawn(function()
-		for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura, Products.Halloween, Products.Crates } do
+		for _, list in { Products.Passes, Products.Coins, Products.Aura, Products.Halloween, Products.Crates } do
 			for _, p in list do
 				if Products.status(p) == "Ready" then
 					local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, p.Id, (p.Kind == "Pass" or p.GamePass) and Enum.InfoType.GamePass or Enum.InfoType.Product)
@@ -1446,18 +1397,35 @@ function Shop.build(parent: Instance)
 			end
 		end
 	end
+	-- the dance cards in view dance while the Shop is open (UI/DancePose.live: only a few cards at a time)
+	local shopOpen = false
+	local function dancersInView()
+		local top = body.CanvasPosition.Y
+		for _, e in dancers do
+			local c = e.card
+			local y = c.Position.Y.Offset
+			e.live.setOn(shopOpen and c.Visible and y + c.Size.Y.Offset > top and y < top + BODY.H)
+		end
+	end
+	body:GetPropertyChangedSignal("CanvasPosition"):Connect(dancersInView)
 	ModalManager.register("Shop", {
 		window = window,
-		-- open at a section ("Halloween", "Crates", "Dances", "Knives", "Passes", "Aura", "Coins", "Cosmetics") or a
+		-- open at a section ("Halloween", "Crates", "Dances", "Style", "Abilities", "Passes", "Aura", "Coins") or a
 		-- crate ("Witch", "Beast": its card, and its panel slides in)
 		onOpen = function(where)
 			closeSide(true)
 			if type(where) == "string" then scrollTo(where, false) end
 			popIn()
+			shopOpen = true
+			dancersInView()
 			local crate = type(where) == "string" and Crates.get(where)
 			if crate then task.delay(if Motion.reduced then 0 else 0.15, function() openCrateSide(crate) end) end
 		end,
-		onClose = function() closeSide(true) end,
+		onClose = function()
+			closeSide(true)
+			shopOpen = false
+			dancersInView()
+		end,
 		firstSelect = function() return jumps.Halloween and jumps.Halloween.Instance end,
 	})
 	return window

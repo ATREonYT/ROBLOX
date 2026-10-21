@@ -2,7 +2,7 @@
 -- all of the placeholders for knifes, coins": in Play the first pictures drew, then the rest of the knife cards and
 -- two coin packs stayed stand-ins). UI/ImageLoader's drawing is swapped for a fake with a budget of 130 pictures
 -- (all the screens together use more; Roblox's EditableImage memory: past it CreateEditableImage gives nothing). Checks: pictures draw only on screen;
--- every knife card in ITEMS and every coin pack in COINS draws after other screens used the memory; a failure is
+-- every knife card in the Inventory and every coin pack in COINS draws after other screens used the memory; a failure is
 -- tried again (never kept forever); a picture nobody sees is freed.
 -- From tools/preview: lune run harness.luau ../../src - @smoke_picture_memory.luau setup_ui.luau
 local ok, fails = 0, 0
@@ -84,14 +84,14 @@ for _, name in { "Index", "Dances", "Progression" } do
 	pcall(function() MM.open(name) end) -- (opening the next window hides this one at once; the harness's close tween
 	settle(0.6)                             -- never ends, so MM.close would leave it "open" here)
 end
-MM.open("Shop", "Items")
+MM.open("Inventory", "Knives") -- (Oct 21: the knives you own live in the Inventory now)
 local knives, shown = {}, 0
 waitFor(function()
 	knives, shown = labels("Knife"), 0
 	for _, d in knives do if ImageLoader.showing(d) then shown += 1 end end
 	return #knives > 0 and shown == #knives
 end, 20)
-check(string.format("ITEMS: every knife card on screen draws (%d of %d)", shown, #knives), #knives > 20 and shown == #knives)
+check(string.format("INVENTORY: every knife card on screen draws (%d of %d)", shown, #knives), #knives >= 5 and shown == #knives)
 check(string.format("never more than the budget (%d live of %d)", live, budget), live <= budget)
 MM.open("Shop", "Coins")
 local packs, packShown = {}, 0

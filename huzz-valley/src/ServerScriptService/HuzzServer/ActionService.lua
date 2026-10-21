@@ -207,6 +207,30 @@ function VERBS.OpenCrate(player, crateId, currency)
 	return ok, result
 end
 
+-- Shop > DANCES shows your avatar dancing each dance (owner, Oct 21: "make it your character dancing the dance"):
+-- the cards in view ask for their dances' moves when they have no published ID (shareDance; each dance once per
+-- server, ~70 KB), up to 12 in one call, 24 every 2 seconds at most per player.
+local seeAsked: { [Player]: { at: number, n: number } } = {}
+Players.PlayerRemoving:Connect(function(p) seeAsked[p] = nil end)
+function VERBS.SeeDance(player, ids)
+	if type(ids) == "string" then ids = { ids } end
+	if type(ids) ~= "table" then return false, "Unknown dance." end
+	local now = os.clock()
+	local r = seeAsked[player]
+	if not r or now - r.at > 2 then
+		r = { at = now, n = 0 }
+		seeAsked[player] = r
+	end
+	local any = false
+	for i, id in ids do
+		if i > 12 then break end
+		r.n += 1
+		if r.n > 24 then return any, "Slow down." end
+		if type(id) == "string" and Dances.get(id) and ActionService.shareDance(id) then any = true end
+	end
+	return any
+end
+
 -- Shop > DANCES (owner, Oct 20 20:34: "make a seperate section for dances ... make them be able to be bought there"):
 -- one dance for its coin price (Config/Dances Coins). Price, "already yours" (also through the Dance Pack) and "not
 -- enough coins" are checked in the same save write that takes the coins (a double tap buys it once).

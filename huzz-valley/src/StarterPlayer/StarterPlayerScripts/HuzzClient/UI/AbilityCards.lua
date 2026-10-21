@@ -15,7 +15,7 @@
 	A runner grid starts with RANDOM (a new one you own each round), unless opts.random == false. Starters (Shield,
 	Bear Trap, Slow Wave) say STARTER. Equips play from the next round. Prices and rules: Shared/AbilityRules.
 	opts: side ("Runner" | "Catcher"), width (default 600), y (top, default 0), columns (default 2), random (runner
-	RANDOM card, default true), name (the grid frame's name, default "<Side>Abilities").
+	RANDOM card, default true), name (the grid frame's name, default "<Side>Abilities"), mine (only the ones you own).
 ]]
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Powers = require(Shared.Config.Powers)
@@ -148,6 +148,12 @@ local function buildSide(parent: Instance, o: { [string]: any })
 	local cols = o.columns or 2
 	local gap = AbilityCards.GAP
 	local names = table.clone(Powers.Shop[side] or {})
+	if o.mine then -- (the Inventory: only the ones you own, no BUY buttons)
+		local data = State.data or {}
+		for i = #names, 1, -1 do
+			if not AbilityRules.owns(data, names[i]) then table.remove(names, i) end
+		end
+	end
 	if side == "Runner" and o.random ~= false then table.insert(names, 1, "Random") end
 	local rows = math.ceil(#names / cols)
 	local cardW = math.floor((width - (cols - 1) * gap) / cols)
@@ -176,23 +182,27 @@ local function nameOf(key: string): string
 	local d = Powers[key]
 	return if d then string.upper(d.Name) else key
 end
-local function buildBoth(parent: Instance): number
+local function buildBoth(parent: Instance, mine: boolean?): number
 	local width = if parent:IsA("GuiObject") and parent.Size.X.Offset > 0 then parent.Size.X.Offset else 600
+	-- what you bring, in two plain lines (critic, Oct 21: the one "YOU BRING RUNNER Q: ..." line was hard for a kid)
 	local now = line({ Name = "YourLoadout", Text = "", FontFace = F.Name, TextSize = 16, TextColor3 = C.Accent, Position = UDim2.fromOffset(2, 0),
+		Size = UDim2.fromOffset(width - 4, 20), ZIndex = 2, Parent = parent }, 1.5)
+	local now2 = line({ Name = "YourLoadoutCatcher", Text = "", FontFace = F.Name, TextSize = 16, TextColor3 = C.Accent, Position = UDim2.fromOffset(2, 22),
 		Size = UDim2.fromOffset(width - 4, 20), ZIndex = 2, Parent = parent }, 1.5)
 	local function paintNow()
 		local l = AbilityRules.loadout(State.data or {})
-		now.Text = string.format("YOU BRING   RUNNER Q: %s   ·   CATCHER Q: %s  E: %s", nameOf(l.Runner), nameOf(l.CatcherQ), nameOf(l.CatcherE))
+		now.Text = string.format("WHEN YOU RUN:  %s (Q)", nameOf(l.Runner))
+		now2.Text = string.format("WHEN YOU CATCH:  %s (Q)  ·  %s (E)", nameOf(l.CatcherQ), nameOf(l.CatcherE))
 	end
 	paintNow()
 	State.changed(function() if now.Parent then paintNow() end end)
-	local y = 30
+	local y = 52
 	for i, side in { "Runner", "Catcher" } do
 		if i > 1 then y += 14 end
 		line({ Name = side .. "Title", Text = string.upper(side) .. "S", FontFace = F.Name, TextSize = 18, Position = UDim2.fromOffset(2, y),
 			Size = UDim2.fromOffset(width - 4, 22), ZIndex = 2, Parent = parent }, 1.5)
 		y += 28
-		local g = buildSide(parent, { side = side, width = width, y = y })
+		local g = buildSide(parent, { side = side, width = width, y = y, mine = mine })
 		y += g.height
 	end
 	if parent:IsA("GuiObject") then parent.Size = UDim2.new(parent.Size.X, UDim.new(0, y)) end
@@ -201,9 +211,10 @@ end
 
 -- build(parent, { side = ... }): one side's grid, returns { frame, cards, height, refresh }.
 -- build(parent) with no opts: both sides for the Shop's ABILITIES slot; returns the height (and sizes parent).
+-- build(parent, { both = true, mine = true }): the same with only the ones you own (the Inventory's ABILITIES).
 function AbilityCards.build(parent: Instance, opts: { [string]: any }?): any
-	if opts == nil then
-		return buildBoth(parent)
+	if opts == nil or opts.both then
+		return buildBoth(parent, opts ~= nil and opts.mine == true)
 	end
 	return buildSide(parent, opts)
 end

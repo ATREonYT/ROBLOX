@@ -9,6 +9,13 @@
 	  DancePose.picture(parent, id, props, dark?, onFail?) -> ViewportFrame
 	                            props = ViewportFrame properties (Position, Size, ...); dark = a locked silhouette;
 	                            fills in when the dance has loaded, or calls onFail (show the note instead).
+	  DancePose.live(parent, id, props, onReady?) -> { setOn(on) }
+	                            your avatar actually dancing it, looping (owner, Oct 21: "make it your character
+	                            dancing the dance", the Shop's dance cards). The parts are placed by hand from the
+	                            dance's KeyframeSequence, FPS times a second, and only while setOn(true) (the Shop
+	                            turns on the cards in view while it's open). onReady() once it shows. In the live
+	                            game a dance with no published ID asks the server for its moves (ActionService
+	                            "SeeDance", which shares them in HuzzDanceMoves) and starts when they arrive.
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -96,17 +103,21 @@ local function stillCopy(character: Model): Model?
 	return copy
 end
 
--- Places every part from the root through its joints, with the pose on the Motor6Ds (Transform = the pose).
-local function pose(model: Model, posed: { [string]: CFrame })
+-- A body's joints, once: rig(model) -> apply(posed), which places every part from the root through its joints with
+-- the pose on the Motor6Ds (Transform = the pose). Every part ends up anchored; a part no joint reaches (held some
+-- other way) keeps its place relative to the body.
+local function rig(model: Model): ((posed: { [string]: CFrame }) -> ())?
 	local root = model:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not root then return end
-	local edges: { [BasePart]: { { other: BasePart, place: (BasePart) -> CFrame } } } = {}
-	local function link(a: BasePart, b: BasePart, fromA: (BasePart) -> CFrame, fromB: (BasePart) -> CFrame)
+	if not root then return nil end
+	type Edge = { other: BasePart, place: (BasePart, { [string]: CFrame }) -> CFrame }
+	local edges: { [BasePart]: { Edge } } = {}
+	local function link(a: BasePart, b: BasePart, fromA, fromB)
 		edges[a] = edges[a] or {}
 		edges[b] = edges[b] or {}
 		table.insert(edges[a], { other = b, place = fromA })
 		table.insert(edges[b], { other = a, place = fromB })
 	end
+	local NONE = CFrame.new()
 	for _, j in model:GetDescendants() do
 		if j.ClassName == "AnimationConstraint" then
 			-- avatars on Roblox's newer joints: like a Motor6D with its attachments as C0 / C1
@@ -114,23 +125,25 @@ local function pose(model: Model, posed: { [string]: CFrame })
 			local p0 = a0 and a0.Parent
 			local p1 = a1 and a1.Parent
 			if p0 and p1 and p0:IsA("BasePart") and p1:IsA("BasePart") then
-				local t = posed[p1.Name] or CFrame.new()
-				local c0, c1 = a0.CFrame, a1.CFrame
-				link(p0, p1, function(a) return a.CFrame * c0 * t * c1:Inverse() end, function(b) return b.CFrame * c1 * t:Inverse() * c0:Inverse() end)
+				local c0, c1, key = a0.CFrame, a1.CFrame, p1.Name
+				link(p0, p1, function(a, posed) return a.CFrame * c0 * (posed[key] or NONE) * c1:Inverse() end,
+					function(b, posed) return b.CFrame * c1 * (posed[key] or NONE):Inverse() * c0:Inverse() end)
 			end
 		elseif j:IsA("JointInstance") and j.Part0 and j.Part1 then
 			local p0, p1 = j.Part0 :: BasePart, j.Part1 :: BasePart
-			local t = if j:IsA("Motor6D") then (posed[p1.Name] or CFrame.new()) else CFrame.new()
+			local motor, key = j:IsA("Motor6D"), p1.Name
 			local c0, c1 = j.C0, j.C1
-			link(p0, p1, function(a) return a.CFrame * c0 * t * c1:Inverse() end, function(b) return b.CFrame * c1 * t:Inverse() * c0:Inverse() end)
+			link(p0, p1, function(a, posed) return a.CFrame * c0 * (if motor then posed[key] or NONE else NONE) * c1:Inverse() end,
+				function(b, posed) return b.CFrame * c1 * (if motor then posed[key] or NONE else NONE):Inverse() * c0:Inverse() end)
 		elseif j:IsA("WeldConstraint") and j.Part0 and j.Part1 then
 			local p0, p1 = j.Part0 :: BasePart, j.Part1 :: BasePart
 			local rel = p0.CFrame:ToObjectSpace(p1.CFrame) -- (as built, before anything moves)
 			link(p0, p1, function(a) return a.CFrame * rel end, function(b) return b.CFrame * rel:Inverse() end)
 		end
 	end
+	-- the order parts are placed in (from the root out), worked out once
 	local rootWas = root.CFrame
-	root.CFrame = CFrame.new()
+	local steps: { { part: BasePart, from: BasePart, place: any } } = {}
 	local done = { [root] = true }
 	local queue, i = { root }, 1
 	while queue[i] do
@@ -139,18 +152,31 @@ local function pose(model: Model, posed: { [string]: CFrame })
 		for _, e in edges[part] or {} do
 			if not done[e.other] then
 				done[e.other] = true
-				e.other.CFrame = e.place(part)
+				table.insert(steps, { part = e.other, from = part, place = e.place })
 				table.insert(queue, e.other)
 			end
 		end
 	end
+	local loose: { { part: BasePart, at: CFrame } } = {}
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") then
-			-- a part no joint reaches (held some other way) keeps its place relative to the body
-			if not done[p] then p.CFrame = rootWas:ToObjectSpace(p.CFrame) end
+			if not done[p] then table.insert(loose, { part = p, at = rootWas:ToObjectSpace(p.CFrame) }) end
 			p.Anchored = true
 		end
 	end
+	return function(posed: { [string]: CFrame })
+		root.CFrame = NONE
+		for _, st in steps do
+			st.part.CFrame = st.place(st.from, posed)
+		end
+		for _, l in loose do
+			l.part.CFrame = l.at
+		end
+	end
+end
+local function pose(model: Model, posed: { [string]: CFrame })
+	local apply = rig(model)
+	if apply then apply(posed) end
 end
 
 local templates: { [string]: { char: Model, model: Model } } = {}
@@ -178,6 +204,19 @@ local function posedModel(id: string): Model?
 	return copy
 end
 
+-- Frames a body in a ViewportFrame: the whole body, a little from the side so the pose reads (room = extra space).
+local function frame(vp: ViewportFrame, model: Model, room: number)
+	local cam = Instance.new("Camera")
+	cam.FieldOfView = 30
+	local cf, size = model:GetBoundingBox()
+	local centre = cf.Position
+	local fit = math.max(size.Y, size.X * 0.75)
+	local dist = fit / (2 * math.tan(math.rad(cam.FieldOfView) / 2)) * room
+	cam.CFrame = CFrame.lookAt(centre + Vector3.new(-0.22, 0.08, -1).Unit * dist, centre)
+	cam.Parent = vp
+	vp.CurrentCamera = cam
+end
+
 function DancePose.picture(parent: Instance, id: string, props: { [string]: any }, dark: boolean?, onFail: (() -> ())?): ViewportFrame
 	local vp = Instance.new("ViewportFrame")
 	vp.Name = "Dancer"
@@ -199,18 +238,123 @@ function DancePose.picture(parent: Instance, id: string, props: { [string]: any 
 		end
 		local model = template:Clone()
 		model.Parent = vp
-		local cam = Instance.new("Camera")
-		cam.FieldOfView = 30
-		-- frame the whole body, a little from the side so the pose reads
-		local cf, size = model:GetBoundingBox()
-		local centre = cf.Position
-		local fit = math.max(size.Y, size.X * 0.75)
-		local dist = fit / (2 * math.tan(math.rad(cam.FieldOfView) / 2)) * 1.15
-		cam.CFrame = CFrame.lookAt(centre + Vector3.new(-0.22, 0.08, -1).Unit * dist, centre)
-		cam.Parent = vp
-		vp.CurrentCamera = cam
+		frame(vp, model, 1.15)
 	end)
 	return vp
+end
+
+-- The live dancers: each placed FPS times a second while it's on (a card in view in an open window).
+local FPS = 15
+type Live = { vp: ViewportFrame, on: boolean, apply: ((any) -> ())?, anim: any, t0: number }
+local lives: { Live } = {}
+local stepping = false
+local function startStepping()
+	if stepping then return end
+	stepping = true
+	local last = 0
+	game:GetService("RunService").Heartbeat:Connect(function()
+		local now = os.clock()
+		if now - last < 1 / FPS then return end
+		last = now
+		for i = #lives, 1, -1 do
+			local l = lives[i]
+			if not l.vp.Parent then
+				table.remove(lives, i)
+			elseif l.on and l.apply and l.anim then
+				local ok, err = pcall(function()
+					local len = math.max(l.anim.length, 0.05)
+					l.apply(Sampler.sample(l.anim, (now - l.t0) % len))
+				end)
+				if not ok then
+					warn("[HuzzUI] DancePose: a dancer stopped:", err)
+					l.apply = nil
+				end
+			end
+		end
+	end)
+end
+
+-- Live game: a dance with no published ID has no moves on this screen until the server shares them. The asks of one
+-- moment go together in one call (the server takes one action at a time from each player).
+local asked: { [string]: boolean } = {}
+local queue: { string } = {}
+local sending = false
+local function askFor(id: string, fn: (boolean) -> ())
+	if asked[id] then fn(false) return end
+	asked[id] = true
+	table.insert(queue, id)
+	if not sending then
+		sending = true
+		task.spawn(function()
+			while #queue > 0 do
+				task.wait(0.1) -- (the rest of this moment's cards join in)
+				local batch = {}
+				while #queue > 0 and #batch < 12 do table.insert(batch, table.remove(queue, 1)) end
+				pcall(function()
+					local Net = require(Shared.Net)
+					;(Net.get("Action") :: RemoteFunction):InvokeServer("SeeDance", batch)
+				end)
+				task.wait(0.4)
+			end
+			sending = false
+		end)
+	end
+	task.spawn(function()
+		local seq = nil
+		for _ = 1, 40 do -- (up to 8 s)
+			local shared = ReplicatedStorage:FindFirstChild("HuzzDanceMoves")
+			seq = shared and shared:FindFirstChild("Dance_" .. id)
+			if seq then break end
+			task.wait(0.2)
+		end
+		if seq then anims[id] = nil end -- (read it again now)
+		fn(seq ~= nil and DancePose.anim(id) ~= nil)
+	end)
+end
+
+function DancePose.live(parent: Instance, id: string, props: { [string]: any }, onReady: (() -> ())?)
+	-- (nothing is made until it's first seen: a page of dances costs nothing until you scroll to it, and the saved UI
+	-- never holds a dancer)
+	local l: Live? = nil
+	local function start()
+		local vp = Instance.new("ViewportFrame")
+		vp.Name = "Dancer"
+		vp.BackgroundTransparency = 1
+		vp:SetAttribute("RuntimeOnly", true)
+		vp.Ambient, vp.LightColor, vp.LightDirection = Color3.fromRGB(180, 180, 200), Color3.fromRGB(255, 250, 240), Vector3.new(-0.5, -1, -0.8)
+		for k, v in props do (vp :: any)[k] = v end
+		vp.Parent = parent
+		local live: Live = { vp = vp, on = true, apply = nil, anim = nil, t0 = os.clock() }
+		l = live
+		local function build(ok: boolean)
+			local character = Players.LocalPlayer and Players.LocalPlayer.Character
+			local anim = ok and DancePose.anim(id)
+			if not (anim and character and vp.Parent) then return end
+			local copy = stillCopy(character)
+			local apply = copy and rig(copy)
+			if not (copy and apply) then return end
+			local okP = pcall(apply, Sampler.sample(anim, math.min(DancePoses[id] or 0, math.max(anim.length - 0.01, 0))))
+			if not okP then copy:Destroy() return end
+			copy.Parent = vp
+			frame(vp, copy, 1.3) -- (a little more room: arms and legs swing out)
+			live.apply, live.anim = apply, anim
+			if onReady then onReady() end
+		end
+		whenLoaded(id, function(ok)
+			if ok then build(true) else askFor(id, build) end
+		end)
+		table.insert(lives, live)
+		startStepping()
+	end
+	return {
+		setOn = function(on: boolean)
+			if l then
+				l.on = on
+			elseif on and Players.LocalPlayer and Players.LocalPlayer.Character then
+				start()
+			end
+		end,
+	}
 end
 
 return DancePose

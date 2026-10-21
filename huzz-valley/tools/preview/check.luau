@@ -13,7 +13,7 @@ local P = game.ReplicatedStorage.Shared.Config.Products
 -- the "no ID yet: coming soon, never a purchase" path; tests/*.spec check the real IDs, and the Halloween knives as
 -- the developer products they were)
 P.Source = P.Source:gsub("Id = %d%d%d%d%d+", "Id = 0"):gsub("GamePass = true, ", "")
-P.Source = P.Source:gsub('(Key = "SunsetTrail".-Id = )0', '%1111'):gsub('(Key = "VIP".-Id = )0', '%1222'):gsub('(Key = "Spins10".-Id = )0', '%1333')
+P.Source = P.Source:gsub('(Key = "Coins500".-Id = )0', '%1111'):gsub('(Key = "VIP".-Id = )0', '%1222'):gsub('(Key = "Spins10".-Id = )0', '%1333')
 
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
 Players.LocalPlayer = player
@@ -54,13 +54,13 @@ if reusing then
 end
 
 -- Receipts: granted once, only for products on sale, and only answered after saving.
+-- (a coin pack: the Robux looks are gone, owner Oct 21)
 local receipt = { PlayerId = 1, ProductId = 111, PurchaseId = "p1" }
+local coinsBefore = profile.Data.Coins or 0
 check("receipt granted", MarketplaceService.ProcessReceipt(receipt) == Enum.ProductPurchaseDecision.PurchaseGranted)
-check("cosmetic owned", profile.Data.Cosmetics.SunsetTrail == true)
-check("client sees ownership", State.owns("SunsetTrail"))
-profile.Data.Cosmetics.SunsetTrail = nil
-check("same receipt not granted twice", MarketplaceService.ProcessReceipt(receipt) == Enum.ProductPurchaseDecision.PurchaseGranted and profile.Data.Cosmetics.SunsetTrail == nil)
-profile.Data.Cosmetics.SunsetTrail = true
+check("coin pack granted", profile.Data.Coins == coinsBefore + 500)
+check("same receipt not granted twice", MarketplaceService.ProcessReceipt(receipt) == Enum.ProductPurchaseDecision.PurchaseGranted and profile.Data.Coins == coinsBefore + 500)
+profile.Data.Cosmetics.TagLime = true
 check("unknown product not granted", MarketplaceService.ProcessReceipt({ PlayerId = 1, ProductId = 999, PurchaseId = "p2" }) == Enum.ProductPurchaseDecision.NotProcessedYet)
 
 -- Game pass ownership comes from Roblox, and drives the VIP chat tag attribute.
@@ -96,17 +96,20 @@ for _ = 1, 10 do __stepTweens(0.05) end
 check("close returns to play", MM.current() == nil and gui.LobbyHud.Left.Position.X.Offset == 0 and player:GetAttribute("MenuOpen") == false)
 check("unbuilt screens refuse to open", MM.open("Recruitment") == false)
 
--- Shop buttons: owned shows OWNED, unconfigured shows a price but never prompts, not-on-sale shows SOON.
+-- Shop buttons: an owned look says OWNED (worn from the Inventory), a product with no ID shows its price but never
+-- prompts; no Robux looks are sold any more (owner, Oct 21).
 _G.__prompts = {}
-MM.open("Shop", "Cosmetics")
+State.apply({ Cosmetics = profile.Data.Cosmetics })
+MM.open("Shop", "Style")
 local products = gui.Shop.Group.Panel.Products
 local function label(key) return products[key].Buy.Content.Label.Text end
-check("owned cosmetic you wear says WEARING", label("SunsetTrail") == "WEARING")
-check("not-on-sale shows its price", label("CrownPose") == "99")
-__fireOn(products.BlossomAura.Buy, "Activated")
-__fireOn(products.CrownPose.Buy, "Activated")
+check("an owned coin look says OWNED", label("TagLime") == "OWNED")
+check("no Robux outfits or poses in the Shop", products:FindFirstChild("MidnightOutfit") == nil and products:FindFirstChild("CrownPose") == nil and products:FindFirstChild("SunsetTrail") == nil)
+check("no knives or earned looks in the Shop", products:FindFirstChild("TitleMythic") == nil and products:FindFirstChild("KnivesFilters") == nil)
+check("a pack without an ID shows its price", label("Coins2000") == "149")
+__fireOn(products.Coins2000.Buy, "Activated")
 task.wait(0.05)
-check("items without an ID or not on sale never prompt", #_G.__prompts == 0)
+check("items without an ID never prompt", #_G.__prompts == 0)
 MM.close()
 
 -- The knife Game Pass cards (owner Oct 18: "add the knifes into the ui for the gamepass menu"): five in PASSES, named

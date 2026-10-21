@@ -139,7 +139,7 @@ function ModalManager.open(name: string, arg: any?)
 	Motion.open(w.Group, w.OpenScale, UDim2.fromScale(0.5, 0.5))
 	if s.items then
 		Motion.stagger(s.items())
-	elseif name ~= "Shop" then -- (the Shop pops its own cards)
+	elseif name ~= "Shop" and name ~= "Inventory" then -- (the Shop and the Inventory pop their own cards; the tabs stay put)
 		task.defer(function()
 			if current == name then ShopStyle.popIn(ShopStyle.cards(w.Panel or w.Group)) end
 		end)

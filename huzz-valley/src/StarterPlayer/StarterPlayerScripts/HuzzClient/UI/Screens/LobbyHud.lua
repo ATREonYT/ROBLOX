@@ -82,7 +82,9 @@ function LobbyHud.build(parent: Instance)
 	squareButton(left, "Index", "CollectionBook", 32, function() MainMenu.go("Index") end)
 	local shop = squareButton(left, "Shop", "ShopCart", 98, function() MainMenu.go("Shop") end)
 	Effects.shine(shop.Instance, { every = 4, corner = 5, z = 4 }) -- (a glint like the reference's shop button) -- (Tiers stays in the Menu; the Index filters by tier)
-	squareButton(left, "Dances", "DancesNote", 164, function() MainMenu.go("Dances") end)
+	-- INVENTORY where DANCES was (owner, Oct 21: "make the dances button the inventory button"): everything you own,
+	-- to equip (Screens/Inventory; its DANCES tab plays yours and opens the Dances window)
+	squareButton(left, "Inventory", "ShirtEquip", 164, function() MainMenu.go("Inventory") end)
 	local menu = squareButton(left, "Menu", "MainMenuLines", 233, function() ModalManager.toggle("Menu") end)
 	menu.Instance.Icon.Size = UDim2.fromOffset(34, 34) -- the lines icon reads bigger than the others
 	-- Right edge: SPIN opens the Spin the Wheel (Screens/SpinWheel); a green FREE tag while a free spin waits.

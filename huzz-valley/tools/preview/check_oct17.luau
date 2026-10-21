@@ -110,7 +110,7 @@ local shop = gui.Shop.Group.Panel
 local products = shop.Products
 local Products = require(game.ReplicatedStorage.Shared.Config.Products)
 local prompts = #(_G.__prompts or {})
-local order = { "Crates", "Knives", "Passes", "Aura", "Coins", "Cosmetics" }
+local order = { "Crates", "Dances", "Style", "Passes", "Aura", "Coins" } -- (Oct 21: knives and earned looks moved to the Inventory)
 local okJ, lastY = true, -1
 for _, k in order do
 	local b = shop:FindFirstChild(k .. "Tab")
@@ -119,7 +119,7 @@ for _, k in order do
 	if x < 869 or x + w > 1005 or y <= lastY then okJ = false end
 	lastY = y
 end
-check("six jump buttons right of the window, in the page's order", okJ)
+check("the jump buttons right of the window, in the page's order", okJ)
 local function atTop(key: string): boolean
 	local h = products:FindFirstChild("Head" .. key)
 	-- (since Oct 21 17:17 a jump lands on the cards, the header just above: owner, "show the crates straight away")
@@ -134,7 +134,7 @@ for _, k in order do
 	if not h or h.Position.Y.Offset <= prevY then inOrder = false end
 	prevY = h and h.Position.Y.Offset or prevY
 end
-check("sections in order: crates, knives, passes, aura, coins, cosmetics", inOrder)
+check("sections in order: crates, dances, style, passes, aura, coins", inOrder)
 check("the featured banner on top: a real crate, no timer", products:FindFirstChild("Featured") ~= nil and products.Featured.Position.Y.Offset == 0 and products.Featured.Title.Text == "HALLOWEEN CRATE" and products.Featured:FindFirstChild("Timer", true) == nil)
 for i, p in Products.Coins do
 	local c = products:FindFirstChild(p.Key)

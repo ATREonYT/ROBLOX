@@ -68,12 +68,11 @@ Products.Passes = {
 		Card = { Rim = Color3.fromHex("4C54A8"), Glow = Color3.fromHex("4FB8FF"), Name = Color3.fromHex("C4F4FF"), Sub = Color3.fromHex("7BA9F3"), Top = Color3.fromHex("181D50"), Bottom = Color3.fromHex("0E1840") } },
 } :: { Product }
 
-Products.Cosmetics = {
-	{ Key = "SunsetTrail", Kind = "Cosmetic", Slot = "Trail", Name = "Sunset Trail", Blurb = "Warm trail effect\nfor your avatar.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "SunsetTrail" },
-	{ Key = "BlossomAura", Kind = "Cosmetic", Slot = "Aura", Name = "Blossom Aura", Blurb = "Gentle petals\nthat follow you.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "BlossomAura" },
-	{ Key = "CrownPose", Kind = "Cosmetic", Slot = "Pose", Name = "Crown Pose", Blurb = "Victory pose\nfor your avatar.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "CrownPose" },
-	{ Key = "MidnightOutfit", Kind = "Cosmetic", Slot = "Outfit", Name = "Midnight Outfit", Blurb = "Sleek dark look\nfor any occasion.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "MidnightOutfit" },
-} :: { Product }
+-- Robux looks: none (owner, Oct 21: "do we need to make the gamepasses for the trails, outift, etc.? i think we can
+-- remove the outfit and stuff like that"). The Sunset Trail, Blossom Aura, Crown Pose and Midnight Outfit never had
+-- an ID, so nobody bought them. Trails, name colours, titles and auras are bought with coins or earned
+-- (Config/CoinShop); the list stays so older code that loops over it still works.
+Products.Cosmetics = {} :: { Product }
 
 Products.Coins = {
 	{ Key = "Coins500", Kind = "Coins", Name = "500 Coins", Blurb = "Get 500 coins\nto spend in game.", Id = 3720757750, Price = 49, Amount = 500, OnSale = true, Icon = "CurrencyCoin", Art = "CoinPack500" },

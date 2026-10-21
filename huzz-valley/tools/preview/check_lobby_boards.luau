@@ -273,14 +273,22 @@ check("the sign names the knife", sign ~= nil and sign.Plate.Subtitle.Text == "E
 check("tag", sign and sign.Tag.Text == "GAME PASS")
 local button = me.PlayerGui:FindFirstChild("StandButton")
 local text = button and button.View.Text or ""
-check("button says soon (the pass has no ID yet): " .. text, string.find(text, "SOON", 1, true) ~= nil)
+-- (the Hunter Knife pass got its real ID, Oct 21: the button shows its price; with Id 0 it says soon and never prompts)
+local Products = require(game:GetService("ReplicatedStorage").Shared.Config.Products)
+local hunter = Products.get("HunterKnifePass")
+local ready = hunter ~= nil and Products.status(hunter) == "Ready"
+if ready then
+	check("button shows the pass's price: " .. text, string.find(text, tostring(hunter.Price), 1, true) ~= nil)
+else
+	check("button says soon (the pass has no ID yet): " .. text, string.find(text, "SOON", 1, true) ~= nil)
+end
 for _, w in { "LIMITED", "ENDS" } do
 	check("no " .. w, not string.find(text .. (sign and sign.Tag.Text or ""), w, 1, true))
 end
 _G.__prompts = {}
 if button then __fireOn(button.View, "Activated") end
 task.wait(0.05)
-check("tapping never opens a purchase", #_G.__prompts == 0)
+check("tapping opens Roblox's prompt only for a pass with its ID", #_G.__prompts == (if ready then 1 else 0))
 
 print(string.format("lobby boards: %d ok, %d failed", ok, fails))
 return nil

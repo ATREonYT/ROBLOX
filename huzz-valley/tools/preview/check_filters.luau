@@ -1,14 +1,14 @@
--- Checks the Shop's filters (owner, Oct 20 15:13: "add filters within the ui so people can find trails, titles, knifes
--- easier") through the real server + client code:
---   * KNIVES (only the knives you own since Oct 20 20:34: "make the knifes not be bought but opened from crates"):
---     rarity chips (ALL first, in rarity colours) and a search box, right under its header; a tap shows only what
---     matches at once, the grid closes up (rows of 5, no gaps), empty rarity headers hide,
---     "nothing matches" shows only when nothing does; the choice stays when the Shop is closed and opened again;
---   * COSMETICS: type chips (ALL, TRAILS, TITLES, NAME COLOURS, AURAS), rarity chips, OWNED / NOT OWNED, over both the
---     Robux looks and the coin looks;
---   * touch-sized chips (40 px high), whole pixels, inside the page;
---   * ABILITIES (UI/AbilityCards, Oct 20): its section shows both sides' cards (RUNNERS, CATCHERS) with its jump between
---     KNIVES and PASSES; without that module the section and its jump hide and PASSES moves up.
+-- Checks the Shop's sections and filters and the Inventory (owner, Oct 21: "make this logical, and not everything mixed
+-- together ... make the dances button the inventory button, which then will show you everything you currently own
+-- ... And will allow you to equip it") through the real server + client code:
+--   * the Shop only sells: no knives and no earned looks in it; STYLE has type chips (only the kinds sold) and OWNED /
+--     NOT OWNED, inside the page; an owned look's OWNED opens the Inventory at its tab;
+--   * the Inventory: the lobby's INVENTORY button where DANCES was; KNIVES shows the knives you own (best first) with
+--     rarity chips; EQUIP wears it on the server, EQUIPPED takes it off; TITLES shows yours then the ones still to get,
+--     locked with how; every title fits its card; GIRLS equips your companion; DANCES plays yours; ABILITIES holds both
+--     sides' cards; whole pixels;
+--   * DANCES in the Shop (cards, panel, BUY on the server) and ABILITIES (UI/AbilityCards) with its jump between STYLE
+--     and PASSES; without that module the section and its jump hide and PASSES moves up.
 -- From tools/preview: lune run harness.luau ../../src - @check_filters.luau setup_ui.luau
 local Players = game:GetService("Players")
 local ok, failed = 0, 0
@@ -56,172 +56,196 @@ local function wholePixels(root: Instance): boolean
 	return true
 end
 
-MM.open("Shop", "Knives")
+-- THE SHOP SELLS ONLY ----------------------------------------------------------------------------------------------
+MM.open("Shop", "Style")
 settle()
 local panel = gui.Shop.Group.Panel
 local body = panel.Products
-local row = body:FindFirstChild("KnivesFilters")
-check("KNIVES has its filter row", row ~= nil)
-check("... right under its header", row ~= nil and row.Position.Y.Offset == body.HeadKnives.Position.Y.Offset + body.HeadKnives.Size.Y.Offset)
-check("... and the page opens at KNIVES with the chips in view", row ~= nil and row.Position.Y.Offset - body.CanvasPosition.Y < 200)
-local all = row and row:FindFirstChild("KnivesRarityAll")
-check("rarity chips: ALL first, picked", all ~= nil and all.Position.X.Offset - all.Size.X.Offset / 2 == 0 and all:GetAttribute("Picked") == true)
-local epicChip = row and row:FindFirstChild("KnivesRarityEpic")
-check("an EPIC chip in Epic's colour", epicChip ~= nil and epicChip:FindFirstChild("Content").Label.Text == "EPIC")
-check("a search box, no OWNED chips (they're all yours)", row ~= nil and row:FindFirstChild("KnivesOwnOwned") == nil and row:FindFirstChild("Search") ~= nil)
-local inside, tall = true, true
-for _, ch in (row and row:GetChildren() or {}) do
-	if ch:IsA("GuiObject") then
-		local left = ch.Position.X.Offset - ch.AnchorPoint.X * ch.Size.X.Offset
-		if left < 0 or left + ch.Size.X.Offset > 795 then inside = false; print("  outside: " .. ch.Name) end
-		if ch.Size.Y.Offset < 40 then tall = false end
-	end
-end
-check("every chip and the box inside the page", inside)
-check("touch-sized: 40 px high", tall)
-check("whole pixels", row ~= nil and wholePixels(row))
-
--- the knife cards in KNIVES
-local function knifeCards(): { GuiObject }
-	local out = {}
-	for _, it in CoinShop.Items do
-		if it.Slot == "Knife" then
-			local c = body:FindFirstChild(it.Key)
-			if c then table.insert(out, c) end
-		end
-	end
-	return out
-end
-local function shown(list) local n = 0 for _, c in list do if c.Visible then n += 1 end end return n end
-local total = shown(knifeCards())
-local onlyMine = true
+local any = false
 for _, it in CoinShop.Items do
-	if it.Slot == "Knife" and body:FindFirstChild(it.Key) and body[it.Key].Visible and not mine[it.Key] then onlyMine = false end
+	if (it.Slot == "Knife" or it.Unlock) and body:FindFirstChild(it.Key) then any = true; print("  in the Shop: " .. it.Key) end
 end
-check(`ALL shows the knives you own, and only those ({total})`, total == 10 and onlyMine)
-check("they wear, never buy", body[common.Key].Buy:FindFirstChild("Label", true).Text == "WEAR" or body[common.Key].Buy:FindFirstChild("Label", true).Text == "WEARING")
-
--- EPIC: only Epic knives, under the EPIC header; the other headers hide; the grid closes up
-click(epicChip)
-local onlyEpic, nEpic = true, 0
-for _, it in CoinShop.Items do
-	if it.Slot == "Knife" then
-		local c = body:FindFirstChild(it.Key)
-		if c and c.Visible then
-			nEpic += 1
-			if it.Rarity ~= "Epic" then onlyEpic = false end
-		end
-	end
-end
-check(`EPIC shows only Epic knives ({nEpic})`, onlyEpic and nEpic > 0)
-check("EPIC is picked, ALL isn't", epicChip:GetAttribute("Picked") == true and all:GetAttribute("Picked") == false)
-check("the EPIC header shows, COMMON's hides", body.HeadEpic.Visible and not body.HeadCommon.Visible)
--- tidy: the shown Epic cards sit in rows of 5 right under the EPIC header, 161 px apart
-local cards = {}
-for _, c in knifeCards() do if c.Visible then table.insert(cards, c) end end
-table.sort(cards, function(a, b) return a.Position.Y.Offset < b.Position.Y.Offset or (a.Position.Y.Offset == b.Position.Y.Offset and a.Position.X.Offset < b.Position.X.Offset) end)
-local tidy = #cards > 0 and cards[1].Position.Y.Offset == body.HeadEpic.Position.Y.Offset + body.HeadEpic.Size.Y.Offset
-for i = 2, #cards do
-	local a, b = cards[i - 1], cards[i]
-	if (i - 1) % 5 ~= 0 then
-		if b.Position.Y.Offset ~= a.Position.Y.Offset or b.Position.X.Offset - a.Position.X.Offset ~= 161 then tidy = false end
-	elseif b.Position.Y.Offset ~= a.Position.Y.Offset + 236 then tidy = false end
-end
-check("the grid closes up: rows of 5, no gaps", tidy)
-check("ABILITIES follows right after (no empty space)", body.HeadAbilities.Position.Y.Offset < cards[#cards].Position.Y.Offset + 224 + 200)
-
-check("your Epic knife is there", body[epic.Key].Visible)
-
--- the search box: ALL + a word
-click(all)
-local word = string.lower(string.sub(common.Name, 1, 4))
-row.Search.Box.Text = string.upper(word) -- (any case)
-__fireOn(row.Search.Box, "Prop_Text") -- (the offline engine copy fires property signals only when asked)
-task.wait(0.2)
-local allMatch, nMatch = true, 0
-for _, it in CoinShop.Items do
-	if it.Slot == "Knife" then
-		local c = body:FindFirstChild(it.Key)
-		if c and c.Visible then
-			nMatch += 1
-			if not string.find(string.lower(it.Name), word, 1, true) then allMatch = false end
-		end
-	end
-end
-check(`search "{word}" shows only names with it ({nMatch})`, allMatch and nMatch >= 1 and body[common.Key].Visible)
-check("the search hint hides while you type, the clear X shows", not row.Search.Hint.Visible and row.Search.Clear.Visible)
-row.Search.Box.Text = "zzzz"
-__fireOn(row.Search.Box, "Prop_Text")
-task.wait(0.2)
-check("nothing matches: no cards, one plain line", shown(knifeCards()) == 0 and body.NothingKnives.Visible)
-click(row.Search.Clear)
-__fireOn(row.Search.Box, "Prop_Text")
-task.wait(0.1)
-check("the X clears the search", row.Search.Box.Text == "" and shown(knifeCards()) == total and not body.NothingKnives.Visible)
-
--- remembered for the session: pick RARE, close, open again
-click(row.KnivesRarityRare)
-local nRare = shown(knifeCards())
-MM.close()
-task.wait(0.3)
-MM.open("Shop", "Knives")
-settle()
-check(`RARE is still picked after closing the Shop ({nRare})`, row.KnivesRarityRare:GetAttribute("Picked") == true and shown(knifeCards()) == nRare)
-click(all)
-
--- COSMETICS: type chips over the Robux looks and the coin looks
-MM.open("Shop", "Cosmetics")
-settle()
-local crow = body:FindFirstChild("CosmeticsFilters")
-check("COSMETICS has its filter row under its header", crow ~= nil and crow.Position.Y.Offset == body.HeadCosmetics.Position.Y.Offset + body.HeadCosmetics.Size.Y.Offset)
+check("no knives and no earned looks in the Shop", not any and body:FindFirstChild("KnivesFilters") == nil and panel:FindFirstChild("KnivesTab") == nil)
+local srow = body:FindFirstChild("StyleFilters")
+check("STYLE has its filter row under its header", srow ~= nil and srow.Position.Y.Offset == body.HeadStyle.Position.Y.Offset + body.HeadStyle.Size.Y.Offset)
 local names = {}
 for _, k in { "All", "Trail", "Title", "Tag", "Aura" } do
-	local b = crow and crow:FindFirstChild("CosmeticsType" .. k)
+	local b = srow and srow:FindFirstChild("StyleType" .. k)
 	if b then table.insert(names, b.Content.Label.Text) end
 end
-check(`type chips: {table.concat(names, ", ")}`, table.concat(names, ",") == "ALL,TRAILS,TITLES,NAME COLOURS,AURAS")
-check("rarity chips and OWNED / NOT OWNED there too", crow ~= nil and crow:FindFirstChild("CosmeticsRarityAll") ~= nil and crow:FindFirstChild("CosmeticsOwnOwned") ~= nil)
-local cinside = true
-for _, ch in (crow and crow:GetChildren() or {}) do
+check(`type chips, only the kinds sold: {table.concat(names, ", ")}`, table.concat(names, ",") == "ALL,TRAILS,NAME COLOURS")
+local sinside = true
+for _, ch in (srow and srow:GetChildren() or {}) do
 	if ch:IsA("GuiObject") then
 		local left = ch.Position.X.Offset - ch.AnchorPoint.X * ch.Size.X.Offset
-		if left < 0 or left + ch.Size.X.Offset > 795 then cinside = false; print("  outside: " .. ch.Name) end
+		if left < 0 or left + ch.Size.X.Offset > 795 then sinside = false; print("  outside: " .. ch.Name) end
 	end
 end
-check("the cosmetics chips fit the page", cinside and crow ~= nil and wholePixels(crow))
-click(crow.CosmeticsTypeTrail)
-local Products = require(game.ReplicatedStorage.Shared.Config.Products)
-local onlyTrails, nT = true, 0
+check("the chips fit the page, no OWNED / NOT OWNED (owning is the Inventory's)", sinside and srow ~= nil and srow:FindFirstChild("StyleOwnOwned") == nil and wholePixels(srow))
+check("each kind under its own header (TRAILS, NAME COLOURS)", body:FindFirstChild("HeadStyleTrail") ~= nil and body:FindFirstChild("HeadStyleTag") ~= nil
+	and body.HeadStyleTrail.Position.Y.Offset < body.HeadStyleTag.Position.Y.Offset)
+click(srow.StyleTypeTag)
+local onlyTags, nTags = true, 0
 for _, it in CoinShop.Items do
-	if it.Slot ~= "Knife" then
-		local c = body:FindFirstChild(it.Key)
-		if c and c.Visible then nT += 1; if it.Slot ~= "Trail" then onlyTrails = false end end
-	end
+	local c = body:FindFirstChild(it.Key)
+	if c and c.Visible then if it.Slot == "Tag" then nTags += 1 else onlyTags = false end end
 end
-for _, p in Products.Cosmetics do
-	local c = body:FindFirstChild(p.Key)
-	if c and c.Visible then nT += 1; if p.Slot ~= "Trail" then onlyTrails = false end end
-end
-check(`TRAILS shows only trails ({nT})`, onlyTrails and nT > 1 and body.SunsetTrail.Visible)
-check("the knives aren't touched by the COSMETICS filters", shown(knifeCards()) == total)
-click(crow.CosmeticsTypeTitle)
-local onlyTitles = true
-for _, it in CoinShop.Items do
-	local c = it.Slot ~= "Knife" and body:FindFirstChild(it.Key)
-	if c and c.Visible and it.Slot ~= "Title" then onlyTitles = false end
-end
-check("TITLES shows only titles", onlyTitles and not body.SunsetTrail.Visible)
-click(crow.CosmeticsTypeAll)
+check(`NAME COLOURS shows only name colours ({nTags})`, onlyTags and nTags >= 2)
+click(srow.StyleTypeAll)
 
--- the jump buttons (Oct 20 20:34): HALLOWEEN first, then CRATES, DANCES, KNIVES ... all inside the window's height
-local order = { "Halloween", "Crates", "Dances", "Knives", "Abilities", "Passes", "Aura", "Coins", "Cosmetics" }
+-- THE INVENTORY ----------------------------------------------------------------------------------------------------
+local left = gui.LobbyHud.Left
+check("the lobby's INVENTORY button stands where DANCES was (between SHOP and MENU)", left:FindFirstChild("Inventory") ~= nil and left:FindFirstChild("Dances") == nil
+	and left.Inventory.Position.Y.Offset > left.Shop.Position.Y.Offset and left.Inventory.Position.Y.Offset < left.Menu.Position.Y.Offset)
+MM.close()
+task.wait(0.3)
+click(gui.LobbyHud.Left.Inventory)
+settle()
+local inv = gui:FindFirstChild("Inventory")
+check("tapping it opens the Inventory", inv ~= nil and MM.current() == "Inventory" and inv.Visible)
+local ip = inv.Group.Panel
+local page = ip.Page
+local tabNames = {}
+for _, t in { "Girls", "Knives", "Trails", "Names", "Titles", "Auras", "Dances", "Abilities" } do
+	local b = ip:FindFirstChild(t .. "Tab")
+	if b and b.Position.Y.Offset + b.Size.Y.Offset <= 550 then table.insert(tabNames, b.Content.Label.Text) end
+end
+check(`its tabs, inside the window: {table.concat(tabNames, ", ")}`, #tabNames == 8)
+click(ip.KnivesTab)
+settle()
+local content = page:FindFirstChild("Content")
+local knives = {}
+for _, c in (content and content:GetChildren() or {}) do
+	local it = CoinShop.get(c.Name)
+	if it and it.Slot == "Knife" and not c:FindFirstChild("Lock") then table.insert(knives, { card = c, item = it }) end
+end
+local nMine = 0
+for key, v in DataService.get(player).Data.Cosmetics do
+	local it = v == true and CoinShop.get(key)
+	if it and it.Slot == "Knife" then nMine += 1 end
+end
+check(`KNIVES shows the knives you own, and only those ({#knives} of {nMine})`, #knives == nMine)
+local inUse = 0
+for _, k in knives do if k.card.Use:FindFirstChild("Label", true).Text == "EQUIPPED" then inUse += 1 end end
+check(`... the knife the round gives you says EQUIPPED (never picked: {inUse})`, inUse == 1)
+table.sort(knives, function(a, b)
+	if math.abs(a.card.Position.Y.Offset - b.card.Position.Y.Offset) > 2 then return a.card.Position.Y.Offset < b.card.Position.Y.Offset end
+	return a.card.Position.X.Offset < b.card.Position.X.Offset
+end)
+local RANK = { Exclusive = 1, Secret = 2, Mythic = 3, Legendary = 4, Epic = 5, Rare = 6, Uncommon = 7, Common = 8 }
+local bestFirst = true
+for i = 2, #knives do
+	if (RANK[knives[i].item.Rarity] or 9) < (RANK[knives[i - 1].item.Rarity] or 9) then bestFirst = false end
+end
+check("... best first", bestFirst)
+local chips = content and content:FindFirstChild("Chips")
+check("... with rarity chips, ALL first", chips ~= nil and chips:FindFirstChild("ChipAll") ~= nil and chips:FindFirstChild("ChipEpic") ~= nil)
+click(chips.ChipEpic)
+settle()
+content = page:FindFirstChild("Content")
+local onlyEpic, nEpic = true, 0
+for _, c in content:GetChildren() do
+	local it = CoinShop.get(c.Name)
+	if it and it.Slot == "Knife" and not c:FindFirstChild("Lock") then if it.Rarity == "Epic" then nEpic += 1 else onlyEpic = false end end
+end
+check(`EPIC shows only Epic knives ({nEpic})`, onlyEpic and nEpic >= 1)
+local ec = content:FindFirstChild(epic.Key)
+click(ec.Use)
+task.wait(0.3)
+local data = DataService.get(player).Data
+check(`EQUIP wears it, on the server ({tostring(data.Wear.Knife)})`, data.Wear.Knife == epic.Key)
+settle()
+ec = page.Content:FindFirstChild(epic.Key)
+check("... its button says EQUIPPED", ec ~= nil and ec.Use:FindFirstChild("Label", true).Text == "EQUIPPED")
+click(ec.Use)
+task.wait(0.3)
+check("EQUIPPED again takes it off", data.Wear.Knife == "")
+click(page.Content.Chips.ChipAll)
+check("whole pixels in the Inventory", wholePixels(inv))
+
+-- TITLES: yours, then the ones still to get (locked, how); every title inside its card
+DataService.update(player, function(d) d.Cosmetics.TitleHero = true end)
+task.wait(0.3)
+click(ip.TitlesTab)
+settle()
+content = page.Content
+local yours, lockedOk, fit = content:FindFirstChild("TitleHero"), true, true
+for _, it in CoinShop.Items do
+	if it.Slot == "Title" and it.Key ~= "TitleHero" then
+		local c = content:FindFirstChild(it.Key)
+		if not c or not c:FindFirstChild("Lock") or c.Use:FindFirstChild("Label", true).Text ~= "EARN IT" then lockedOk = false end
+		if c and c.Line.Text ~= string.upper(it.Unlock) then lockedOk = false end
+	end
+	local c = content:FindFirstChild(it.Key)
+	local w = c and c:FindFirstChild("Drawn") and c.Drawn:FindFirstChild("Word")
+	if it.Slot == "Title" and w then
+		local font = w.FontFace
+		for _, word in string.split(w.Text, " ") do
+			if require(UI.Kit).textWidth(word, font, w.TextSize) > c.Size.X.Offset - 16 then fit = false; print("  too wide: " .. w.Text) end
+		end
+		if w.Size.Y.Offset > 96 then fit = false; print("  too tall: " .. w.Text) end
+	end
+end
+check("TITLES: the one you own says WEAR", yours ~= nil and not yours:FindFirstChild("Lock") and yours.Use:FindFirstChild("Label", true).Text ~= "EARN IT")
+check("... the rest locked, with how to get them", lockedOk)
+check("... every title fits its card (GIRL COLLECTOR, MYTHIC CHARMER, ...)", fit)
+
+-- GIRLS: equip your companion; DANCES: play yours; ABILITIES: both sides
+local Characters = require(game.ReplicatedStorage.Shared.Config.Characters)
+-- (one of the girls you win in rounds, as HuzzServer/GirlService publishes her: a model with Id, Name and Rarity)
+local girls = game.ReplicatedStorage:FindFirstChild("HuzzGirls") or Instance.new("Folder")
+girls.Name = "HuzzGirls"; girls.Parent = game.ReplicatedStorage
+local gm = Instance.new("Model"); gm.Name = "TestGirl"; gm:SetAttribute("Id", "TestGirl"); gm:SetAttribute("Name", "Test Girl"); gm:SetAttribute("Rarity", "Epic"); gm.Parent = girls
+Characters.addGirls(girls)
+local girl = Characters.get("TestGirl")
+DataService.update(player, function(d) d.Characters[girl.Id] = d.Characters[girl.Id] or { At = 1 } end)
+task.wait(0.3)
+click(ip.GirlsTab)
+settle()
+local gc = page.Content:FindFirstChild("Girl" .. girl.Id)
+check("GIRLS shows the girls you own", gc ~= nil)
+if gc then
+	click(gc.Use)
+	task.wait(0.3)
+	check(`EQUIP makes her your companion ({tostring(data.Equipped)})`, data.Equipped == girl.Id)
+end
+click(ip.DancesTab)
+settle()
+local anyDance = nil
+for _, c in page.Content:GetChildren() do if string.sub(c.Name, 1, 5) == "Dance" then anyDance = c; break end end
+check("DANCES shows the dances you own, with PLAY", anyDance ~= nil and anyDance.Use:FindFirstChild("Label", true).Text == "PLAY")
+click(ip.AbilitiesTab)
+settle()
+local abs = page.Content:FindFirstChild("AbilitiesSlot")
+check("ABILITIES holds both sides' cards", abs ~= nil and abs:FindFirstChild("RunnerAbilities") ~= nil and abs:FindFirstChild("CatcherAbilities") ~= nil)
+local sells = false
+for _, d in (abs and abs:GetDescendants() or {}) do if d.Name == "Buy" and d:IsA("GuiObject") and d.Visible then sells = true end end
+check("... only the ones you own: no BUY buttons in the Inventory", abs ~= nil and not sells and abs.RunnerAbilities:FindFirstChild("Shield") ~= nil)
+MM.close()
+task.wait(0.3)
+check("the Inventory's cards are never saved (RuntimeOnly)", page:FindFirstChild("Content") == nil)
+-- an owned look in the Shop opens the Inventory at its tab
+DataService.update(player, function(d) d.Cosmetics.TagPink = true end)
+task.wait(0.3)
+MM.open("Shop", "Style")
+settle()
+click(body.TagPink.Buy)
+settle()
+check("an owned look's OWNED opens the Inventory at NAMES", MM.current() == "Inventory" and ip.NamesTab:FindFirstChild("Rim") ~= nil and ip.NamesTab.Rim.Color == Color3.new(1, 1, 1))
+MM.close()
+task.wait(0.3)
+MM.open("Shop", "Dances")
+settle()
+
+-- the jump buttons: HALLOWEEN first, then CRATES, DANCES, STYLE ... all inside the window's height
+local order = { "Halloween", "Crates", "Dances", "Style", "Abilities", "Passes", "Aura", "Coins" }
 local inOrder, fits = true, true
 for i, k in order do
 	local b = panel:FindFirstChild(k .. "Tab")
 	if not b or b.Position.Y.Offset ~= panel.HalloweenTab.Position.Y.Offset + (i - 1) * 49 then inOrder = false end
 	if b and b.Position.Y.Offset + b.Size.Y.Offset / 2 > 550 then fits = false end
 end
-check("jump buttons: HALLOWEEN, CRATES, DANCES, KNIVES, ABILITIES, PASSES, AURA, COINS, COSMETICS", inOrder)
+check("jump buttons: HALLOWEEN, CRATES, DANCES, STYLE, ABILITIES, PASSES, AURA, COINS", inOrder)
 check("... all inside the window's height", fits)
 
 -- DANCES (owner, Oct 20 20:34: "make a seperate section for dances ... make them be able to be bought there"): the
@@ -233,7 +257,7 @@ for _, d in Dances.List do
 	if d.Coins then
 		sold += 1
 		local c = body:FindFirstChild("Dance" .. d.Id)
-		if not c or c.Position.Y.Offset < body.HeadDances.Position.Y.Offset or c.Position.Y.Offset > body.HeadKnives.Position.Y.Offset then cardsOk = false end
+		if not c or c.Position.Y.Offset < body.HeadDances.Position.Y.Offset or c.Position.Y.Offset > body.HeadStyle.Position.Y.Offset then cardsOk = false end
 	elseif not d.Starter and not d.Pack then
 		print("  not sold anywhere: " .. d.Id)
 		cardsOk = false
@@ -268,9 +292,9 @@ check(`the server refuses a dance you own, a free one, and one you can't afford 
 click(side.Shade)
 settle()
 
--- ABILITIES: UI/AbilityCards builds both sides in its slot, its jump between KNIVES and PASSES
-check("the ABILITIES jump shows, between KNIVES and PASSES", panel.AbilitiesTab.Visible and body.HeadAbilities.Visible
-	and panel.AbilitiesTab.Position.Y.Offset == panel.KnivesTab.Position.Y.Offset + 49 and panel.PassesTab.Position.Y.Offset == panel.KnivesTab.Position.Y.Offset + 98)
+-- ABILITIES: UI/AbilityCards builds both sides in its slot, its jump between STYLE and PASSES
+check("the ABILITIES jump shows, between STYLE and PASSES", panel.AbilitiesTab.Visible and body.HeadAbilities.Visible
+	and panel.AbilitiesTab.Position.Y.Offset == panel.StyleTab.Position.Y.Offset + 49 and panel.PassesTab.Position.Y.Offset == panel.StyleTab.Position.Y.Offset + 98)
 local abSlot = body:FindFirstChild("AbilitiesSlot")
 check("... its section holds the runner and the catcher cards", abSlot ~= nil and abSlot.Visible and abSlot:FindFirstChild("RunnerAbilities") ~= nil
 	and abSlot:FindFirstChild("CatcherAbilities") ~= nil and abSlot.RunnerAbilities:FindFirstChild("Lasso") == nil and abSlot.CatcherAbilities:FindFirstChild("Lasso") ~= nil)
@@ -285,7 +309,7 @@ check("a Shop builds without AbilityCards: " .. tostring(err), okB)
 local fresh = sg:FindFirstChild("Shop")
 local fp = fresh and fresh.Group.Panel
 check("... no ABILITIES jump or section", fp ~= nil and not fp.AbilitiesTab.Visible and not fp.Products.HeadAbilities.Visible)
-check("... PASSES' jump moves up into its place", fp ~= nil and fp.PassesTab.Position.Y.Offset == fp.KnivesTab.Position.Y.Offset + 49)
+check("... PASSES' jump moves up into its place", fp ~= nil and fp.PassesTab.Position.Y.Offset == fp.StyleTab.Position.Y.Offset + 49)
 if real then real.Parent = UI end
 
 print(string.format("filters: %d ok, %d failed", ok, failed))
