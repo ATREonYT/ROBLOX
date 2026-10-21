@@ -501,6 +501,7 @@ local function simulate(opts)
 	end
 	function MapService.setSafe() end
 	function MapService.setCatcher() end
+	function MapService.playerParts() end
 	function MapService.holdCatchers(on)
 		catcherWallsOn = on
 	end

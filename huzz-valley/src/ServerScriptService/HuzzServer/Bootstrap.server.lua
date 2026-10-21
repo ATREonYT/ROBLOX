@@ -126,6 +126,10 @@ do -- the owner's "black block": any loose part inside a character is removed fo
 	local ok, err = pcall(function() require(HuzzServer.BlockSweep).start() end)
 	if not ok then warn("[Huzz] block sweep: " .. tostring(err)) end
 end
+do -- the server checks every body's speed and sends one that went too far back (HuzzServer/MoveGuard)
+	local ok, err = pcall(function() require(HuzzServer.MoveGuard).start() end)
+	if not ok then warn("[Huzz] move guard: " .. tostring(err)) end
+end
 do -- his five lobby props on the round pads (Config/LobbyProps; each screen floats them and opens their menus)
 	local ok, err = pcall(function() require(HuzzServer.LobbyPropService).start() end)
 	if not ok then warn("[Huzz] lobby props: " .. tostring(err)) end

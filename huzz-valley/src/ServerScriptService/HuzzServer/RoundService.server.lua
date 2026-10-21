@@ -1639,6 +1639,7 @@ local function onPlayer(player)
 		syncPlayer(player.UserId) -- the name tag's level and wins once the save has loaded
 	end)
 	player.CharacterAdded:Connect(function(c)
+		MapService.playerParts(c) -- (players pass through each other: MapService PLAYER)
 		onCharacter(player, c)
 	end)
 	-- the avatar's look can swap body parts after spawning: put the worn knife back on the new ones
@@ -1648,6 +1649,7 @@ local function onPlayer(player)
 		end)
 	end)
 	if player.Character then
+		MapService.playerParts(player.Character)
 		task.spawn(onCharacter, player, player.Character)
 	end
 end

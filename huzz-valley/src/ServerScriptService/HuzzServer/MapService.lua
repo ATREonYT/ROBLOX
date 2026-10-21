@@ -1315,7 +1315,16 @@ local SAFE, SAFE_WALL = "HuzzSafe", "HuzzSafeWall"
 -- invisible wall on each zone's edge in "HuzzCatcherWall", which only collides with "HuzzCatcher" (catchers' parts:
 -- MapService.setCatcher), so runners pass through it.
 local CATCHER, CATCHER_WALL = "HuzzCatcher", "HuzzCatcherWall"
+-- Players pass through each other (owner, Oct 21 14:53: "fix the player to player contact", from his desync notes):
+-- two bodies each moved by its own player's screen shoved each other a little differently on every screen (a
+-- runner bumped back on one screen and not on the other, a catcher stuck on a runner). Touch is judged by the
+-- server from the real body parts (Shared/TouchHit), never by bodies colliding, so nothing else changes. Every
+-- player's parts are in "HuzzPlayer" (MapService.playerParts), which collides with the world like Default does but
+-- not with another player, a safe runner or a catcher; safe runners and catchers don't collide with each other.
+local PLAYER = "HuzzPlayer"
+MapService.PLAYER = PLAYER
 pcall(function()
+	PhysicsService:RegisterCollisionGroup(PLAYER)
 	PhysicsService:RegisterCollisionGroup(SAFE)
 	PhysicsService:RegisterCollisionGroup(SAFE_WALL)
 	PhysicsService:RegisterCollisionGroup(CATCHER)
@@ -1325,18 +1334,25 @@ local function setUpGroups()
 	pcall(function()
 		for _, g in PhysicsService:GetRegisteredCollisionGroups() do
 			local name = g.name
-			if name ~= SAFE and name ~= SAFE_WALL and name ~= CATCHER and name ~= CATCHER_WALL then
-				-- safe runners and catchers collide with everything a normal part does; each wall only with its group
+			if name ~= SAFE and name ~= SAFE_WALL and name ~= CATCHER and name ~= CATCHER_WALL and name ~= PLAYER then
+				-- players, safe runners and catchers collide with everything a normal part does; each wall only with its group
 				local normal = PhysicsService:CollisionGroupsAreCollidable("Default", name)
+				PhysicsService:CollisionGroupSetCollidable(PLAYER, name, normal)
 				PhysicsService:CollisionGroupSetCollidable(SAFE, name, normal)
 				PhysicsService:CollisionGroupSetCollidable(CATCHER, name, normal)
 				PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, name, false)
 				PhysicsService:CollisionGroupSetCollidable(CATCHER_WALL, name, false)
 			end
 		end
-		PhysicsService:CollisionGroupSetCollidable(SAFE, SAFE, true)
-		PhysicsService:CollisionGroupSetCollidable(CATCHER, CATCHER, true)
-		PhysicsService:CollisionGroupSetCollidable(SAFE, CATCHER, true)
+		-- (bodies never collide with each other: see PLAYER above)
+		PhysicsService:CollisionGroupSetCollidable(PLAYER, PLAYER, false)
+		PhysicsService:CollisionGroupSetCollidable(PLAYER, SAFE, false)
+		PhysicsService:CollisionGroupSetCollidable(PLAYER, CATCHER, false)
+		PhysicsService:CollisionGroupSetCollidable(PLAYER, SAFE_WALL, false)
+		PhysicsService:CollisionGroupSetCollidable(PLAYER, CATCHER_WALL, false)
+		PhysicsService:CollisionGroupSetCollidable(SAFE, SAFE, false)
+		PhysicsService:CollisionGroupSetCollidable(CATCHER, CATCHER, false)
+		PhysicsService:CollisionGroupSetCollidable(SAFE, CATCHER, false)
 		PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, SAFE_WALL, false)
 		PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, SAFE, true)
 		PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, CATCHER, false)
@@ -1414,23 +1430,38 @@ function MapService.pushOut(zone, position)
 	return position + out * (4 - d) -- (clear of the catcher wall, 0 to 2 studs out, plus a body: critic)
 end
 
--- Puts a catcher's parts in the catcher group (true) or back to Default (false); other groups are left alone.
+-- Puts a player's body in the player group (PLAYER above), now and for every part added later (a hat, a knife).
+-- Parts already in another group are left alone. setUpGroups runs first so the group's rules are in place.
+local grouped = false
+function MapService.playerParts(character)
+	if not character then return end
+	if not grouped then grouped = true setUpGroups() end
+	local function put(d)
+		if d:IsA("BasePart") and d.CollisionGroup == "Default" then d.CollisionGroup = PLAYER end
+	end
+	for _, d in character:GetDescendants() do put(d) end
+	pcall(function() -- (the offline harness has no events)
+		character.DescendantAdded:Connect(put)
+	end)
+end
+
+-- Puts a catcher's parts in the catcher group (true) or back to the player group (false); other groups are left alone.
 function MapService.setCatcher(character, on)
 	if not character then
 		return
 	end
 	for _, d in character:GetDescendants() do
 		if d:IsA("BasePart") then
-			if on and d.CollisionGroup == "Default" then
+			if on and (d.CollisionGroup == "Default" or d.CollisionGroup == PLAYER) then
 				d.CollisionGroup = CATCHER
 			elseif not on and d.CollisionGroup == CATCHER then
-				d.CollisionGroup = "Default"
+				d.CollisionGroup = PLAYER
 			end
 		end
 	end
 end
 
--- Puts a character's parts in the safe group (true) or back to Default (false). Parts in another group
+-- Puts a character's parts in the safe group (true) or back to the player group (false). Parts in another group
 -- (a knocked-down body's) are left alone.
 function MapService.setSafe(character, on)
 	if not character then
@@ -1438,10 +1469,10 @@ function MapService.setSafe(character, on)
 	end
 	for _, d in character:GetDescendants() do
 		if d:IsA("BasePart") then
-			if on and d.CollisionGroup == "Default" then
+			if on and (d.CollisionGroup == "Default" or d.CollisionGroup == PLAYER) then
 				d.CollisionGroup = SAFE
 			elseif not on and d.CollisionGroup == SAFE then
-				d.CollisionGroup = "Default"
+				d.CollisionGroup = PLAYER
 			end
 		end
 	end
