@@ -117,11 +117,26 @@ The huss pose and walk animations: [animations.md](animations.md).
   catcher pushed out of a safe zone, a runner across, a catch and a fall off the map on both windows side by side.
   Bodies should land once, with no jump back. Send any `[Huzz] Place:` line.
 - **Gaps:**
-  - The catch still lies the runner down where the server last saw them (KnockdownService anchors there). On the
-    runner's own screen that is up to about one ping of running behind, so they snap back a little when caught.
+  - The catch used to lie the runner down where the server last saw them, so on their own screen they snapped back
+    about half a ping of running. Oct 21: the server adds that run (speed along their facing x half their ping, at
+    most `Knockdown.Lead` 0.15 s) to the slide, and every screen eases its own view of the body into the fall over
+    `Knockdown.Blend` 0.3 s (`DownMotion.leadSlide` / `blendAt`, `Gameplay/Knockdown`; tests/DownMotion.spec).
   - Every screen is behind by the network delay; nothing removes that.
   - WalkSpeed is set by the server (the round speeds) and every frame by `Gameplay/Sprint`. This changes speed, not
     where you are, and it was left as it is.
+
+## Server Authority test place (Oct 21)
+- Owner, Oct 21: "check the desync again ... run it on a server client so it works best"; picked "Tune now, Server
+  Authority test". Roblox's Server Authority (Workspace.AuthorityMode = Server) makes the server the only truth and
+  runs the same code one step ahead on your screen, rewinding it when the server disagrees. It needs every move
+  rewritten as a shared simulation (`BindToSimulation`, InputActions, attributes), so it is tried in its own place
+  first: `sa-test/` (README there), `places/ServerAuthorityTest.rbxl`, checks `lune run huzz-valley/sa-test/check.luau`.
+- Golden slice: the 1 s build-up, the huss, the dive and the catch, with the game's own numbers (Config/Round, Run).
+- Not checked anywhere but Studio: whether Roblox lets the simulation set Humanoid.WalkSpeed (a `[SATest]` line says
+  if not), how the corrections look at real ping. No animations, girls, rounds or UI there.
+- Own notes from Roblox's docs and the Cakeman example (github.com/MrChickenRocket/Server-Authority-Tutorial-Cakeman):
+  60 Hz not the default 30; buttons only through InputActions under the Player; state only in attributes on the
+  root; no clocks but dt; no effects in the step; other players are drawn slightly in the past (not guessed).
 
 ## Map size: nothing scales the map (Oct 20)
 - Measured: the maps in the place file are his size (Base 752x329, BasketBall 317x167, Halloween 319x164), and no

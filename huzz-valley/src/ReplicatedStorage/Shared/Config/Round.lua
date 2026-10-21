@@ -140,6 +140,13 @@ return {
 		-- studs the body carries on forward as it falls (knife pass 2: it stopped dead from a sprint); shorter before
 		-- a wall (KnockdownService: DownedSlide)
 		Slide = 2.2,
+		-- The catch without the snap back (owner, Oct 21: "check the desync again ... best possible performance").
+		-- The runner's own screen is ahead of the server's copy by about half their ping, so lying down where the
+		-- server saw them pulled them back a few studs. The server adds their forward run over half their ping (at
+		-- most Lead seconds) to the slide (KnockdownService), and every screen eases its own last view of the body
+		-- into the fall over Blend seconds (Gameplay/Knockdown, DownMotion.blendAt), unless it is more than
+		-- BlendMax studs off (a teleport: no glide across the map).
+		Lead = 0.15, Blend = 0.3, BlendMax = 12,
 	},
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 

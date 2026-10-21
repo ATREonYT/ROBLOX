@@ -27,6 +27,11 @@ function KnockdownService.isDown(player)
 	return downed[player] ~= nil
 end
 
+function KnockdownService.pingOf(player)
+	local ok, ping = pcall(function() return player:GetNetworkPing() end)
+	return if ok and type(ping) == "number" then ping else 0
+end
+
 function KnockdownService.down(player)
 	if downed[player] then
 		return
@@ -54,6 +59,8 @@ function KnockdownService.down(player)
 	-- the body carries on forward as it falls (Config/Round.Knockdown.Slide; knife pass 2), shorter before a wall:
 	-- the lying body reaches about its height past the feet, so the slide stops that far short of anything ahead
 	local slide = Config.Knockdown.Slide or 0
+	-- plus their run over half their ping: their own screen is that far ahead of this copy (Config Knockdown.Lead)
+	slide += DownMotion.leadSlide(root.AssemblyLinearVelocity, root.CFrame.LookVector, KnockdownService.pingOf(player))
 	if slide > 0 then
 		local ahead = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
 		if ahead.Magnitude > 0.1 then

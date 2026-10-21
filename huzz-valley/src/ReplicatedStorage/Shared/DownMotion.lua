@@ -36,6 +36,24 @@ function DownMotion.slideAt(t, slide)
 	return (slide or 0) * (1 - (1 - p) * (1 - p))
 end
 
+-- How much of a screen's own last view of the body still shows t seconds after the catch (Config/Round.Knockdown
+-- Blend): 1 at the catch, easing out to 0, so the fall starts where that screen had the body instead of snapping.
+function DownMotion.blendAt(t)
+	local b = Config.Knockdown.Blend or 0
+	if b <= 0 or t >= b then return 0 end
+	local x = 1 - clamp(t / b, 0, 1)
+	return x * x * (3 - 2 * x)
+end
+
+-- Extra slide (studs) for the runner's own screen being ahead of the server's copy: their speed along the way they
+-- face, over half their ping (the round trip), at most Config/Round.Knockdown.Lead seconds. Never backwards.
+function DownMotion.leadSlide(velocity, look, ping)
+	local flat = Vector3.new(look.X, 0, look.Z)
+	if flat.Magnitude < 0.1 then return 0 end
+	local along = Vector3.new(velocity.X, 0, velocity.Z):Dot(flat.Unit)
+	return math.max(0, along) * clamp((ping or 0) / 2, 0, Config.Knockdown.Lead or 0)
+end
+
 -- The longest slide (at most `want`) that keeps a body reaching `reach` past its feet inside the field's walls.
 -- The walls are invisible and can't be hit by a ray (CanQuery off), so KnockdownService asks this too (bug hunt,
 -- Oct 19: a runner caught beside a side wall slid through it and lay over the floor's edge, then stood up outside).

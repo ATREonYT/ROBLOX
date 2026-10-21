@@ -148,5 +148,26 @@ DownMotion.release(rec)
 Rig.fk(rig)
 check(rig.parts.UpperTorso.CFrame.UpVector.Y > 0.99, "standing at the end")
 
+-- The catch without the snap back (owner, Oct 21, desync): the server adds the runner's forward run over half their
+-- ping to the slide, at most Knockdown.Lead seconds of it; each screen eases its own view into the fall.
+local K = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Round.lua").Knockdown
+local look = Vector3.new(0, 0, -1)
+local function near(a, b) return math.abs(a - b) < 1e-6 end
+check(near(DownMotion.leadSlide(Vector3.new(0, 0, -28), look, 0.1), 28 * 0.05), "lead: 28 studs/s at 100 ms ping = 1.4 studs")
+check(near(DownMotion.leadSlide(Vector3.new(0, 0, -28), look, 2), 28 * K.Lead), "lead: capped at Lead seconds on a bad ping")
+check(DownMotion.leadSlide(Vector3.new(0, 0, 28), look, 0.1) == 0, "lead: never backwards")
+check(DownMotion.leadSlide(Vector3.new(28, 0, 0), look, 0.1) < 1e-6, "lead: a sideways huss adds nothing forward")
+check(DownMotion.leadSlide(Vector3.new(0, 0, -28), look, nil) == 0, "lead: no ping, no lead")
+check(DownMotion.blendAt(0) == 1, "blend: the fall starts where the screen had the body")
+check(DownMotion.blendAt(K.Blend) == 0 and DownMotion.blendAt(K.Blend + 1) == 0, "blend: gone after Blend")
+local prev, smooth = 1, true
+for i = 1, 30 do
+	local w = DownMotion.blendAt(K.Blend * i / 30)
+	if w > prev or prev - w > 0.12 then smooth = false end
+	prev = w
+end
+check(smooth, "blend: eases out with no jump bigger than 12% a step")
+check(K.Lead <= 0.2 and K.BlendMax >= 4, "lead and blend settings sane")
+
 print(`DownMotion: {passed} ok, {failed} failed`)
 if failed > 0 then error("DownMotion spec failed") end

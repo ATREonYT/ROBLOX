@@ -16,6 +16,7 @@ function M.start()
 	local Workspace = game:GetService("Workspace")
 
 	local DownMotion = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("DownMotion"))
+	local Config = require(ReplicatedStorage.Shared:WaitForChild("Config"):WaitForChild("Round"))
 	local active = {} -- character -> DownMotion record
 
 	local function jointsOf(character)
@@ -38,6 +39,7 @@ function M.start()
 			if at and root then
 				seen[character] = true
 				local rec = active[character]
+				local fresh = not rec
 				if not rec then
 					rec = DownMotion.new(jointsOf(character))
 					active[character] = rec
@@ -46,7 +48,18 @@ function M.start()
 				local feet, height = character:GetAttribute("DownedFeet"), character:GetAttribute("DownedHeight")
 				rec.height = height or rec.height
 				if feet and height then
-					root.CFrame = DownMotion.rootCFrame(feet, height, now - at, character:GetAttribute("DownedSlide"))
+					local path = DownMotion.rootCFrame(feet, height, now - at, character:GetAttribute("DownedSlide"))
+					-- the fall starts where this screen had the body (no snap back to the server's spot), easing
+					-- onto the server's path (Config/Round.Knockdown.Blend)
+					if fresh then
+						local off = root.Position - path.Position
+						rec.offset = if off.Magnitude <= (Config.Knockdown.BlendMax or 0) then off else nil
+					end
+					if rec.offset then
+						local w = DownMotion.blendAt(now - at)
+						if w <= 0 then rec.offset = nil else path += rec.offset * w end
+					end
+					root.CFrame = path
 				end
 				DownMotion.step(rec, now - at)
 			end
