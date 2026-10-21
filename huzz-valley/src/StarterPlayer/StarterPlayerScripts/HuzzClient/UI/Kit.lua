@@ -81,6 +81,14 @@ function Kit.attach(child: Instance, parent: Instance): Instance
 end
 
 -- Instance helper: Kit.new("Frame", { Size = ..., Parent = ... }, { children }). Parent is set last.
+-- Whole pixels only (owner, Oct 21: "perfectly aligned ... the rest of the ui"): a half-pixel offset (a centre worked
+-- out as w / 2) draws blurry or a pixel off in Roblox, so every Position and Size made here is rounded.
+local function whole(u: UDim2): UDim2
+	local xo, yo = u.X.Offset, u.Y.Offset
+	if xo == math.floor(xo) and yo == math.floor(yo) then return u end
+	return UDim2.new(u.X.Scale, math.floor(xo + 0.5), u.Y.Scale, math.floor(yo + 0.5))
+end
+
 function Kit.new(class: string, props: { [string]: any }?, children: { Instance }?): any
 	local parent = props and props.Parent
 	local inst = parent and twin(parent, class, props.Name or class)
@@ -88,7 +96,7 @@ function Kit.new(class: string, props: { [string]: any }?, children: { Instance 
 	if not inst then inst = Instance.new(class) end
 	mark(inst, reused)
 	for k, v in props or {} do
-		if k ~= "Parent" and not (reused and Kit.LOOK[k]) then (inst :: any)[k] = v end
+		if k ~= "Parent" and not (reused and Kit.LOOK[k]) then (inst :: any)[k] = if typeof(v) == "UDim2" then whole(v) else v end
 	end
 	for _, child in children or {} do Kit.attach(child, inst) end
 	if parent and not reused then inst.Parent = parent end
@@ -510,8 +518,8 @@ end
 -- in the UI"): assets/icons/stud-pattern.png (tools/icons/make_stud_pattern.py), one raised square stud per 24 px
 -- tile, white/black with alpha so it suits any colour. strength 0-1 (default 0.5). It copies the parent's rounded
 -- corners (ClipsDescendants would clip square). Under everything else in the parent (ZIndex as the parent's).
--- Owner, Oct 21: "the studs are too big, make them actual size studs": 12 px a stud (was 24), like the bricks in the game.
-Kit.STUD = 12
+-- Owner, Oct 21: "the studs are too big, make them actual size studs": 10 px a stud (was 24), like the bricks in his reference shop (1425-shop-reference: about 25 px a stud on a 1900 px window).
+Kit.STUD = 10
 function Kit.studPattern(parent: GuiObject, strength: number?)
 	local img = Kit.icon("StudPattern", {
 		Name = "StudPattern", ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(Kit.STUD, Kit.STUD),
@@ -520,7 +528,8 @@ function Kit.studPattern(parent: GuiObject, strength: number?)
 	})
 	local corner = parent:FindFirstChildOfClass("UICorner")
 	if corner and not img:FindFirstChildOfClass("UICorner") then
-		Kit.attach(new("UICorner", { CornerRadius = corner.CornerRadius }), img)
+		local ok, r = pcall(function() return corner.CornerRadius end) -- (a saved corner may read without one)
+		Kit.attach(new("UICorner", { CornerRadius = if ok and r then r else UDim.new(0, Theme.Corner) }), img)
 	end
 	return img
 end

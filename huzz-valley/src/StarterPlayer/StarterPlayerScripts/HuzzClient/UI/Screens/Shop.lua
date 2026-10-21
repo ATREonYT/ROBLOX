@@ -66,6 +66,7 @@ local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
 local Effects = require(UI.Effects)
+local CoinFx = require(UI.CoinFx)
 local ShopStyle = require(UI.ShopStyle)
 
 local C = Theme.Colors
@@ -1241,13 +1242,21 @@ function Shop.build(parent: Instance)
 	end
 	grid(auraCards, 3, BIG.W, BIG.H, BIG.Gap, 0)
 
+	local GOLD = hex("FFC93C")
 	-- COINS -------------------------------------------------------------------------------------------------------------
 	mark("Coins")
 	block(head(bySection.Coins), HEAD.H)
 	local coinCards = {}
-	for _, p in Products.Coins do
+	for i, p in Products.Coins do
 		local c = bigCard(p.Key, NAVY, p.Name)
-		picture(c, p.Art)
+		local pic = picture(c, p.Art)
+		-- gold (owner, Oct 21: "for the coins add some gold animations"): a warm gold glow breathing over the coins,
+		-- gold sparkles rising, the coins rocking, and a slow shine across the card (one sweep every 5 s, staggered)
+		local px, py, pw, ph = pic.Position.X.Offset, pic.Position.Y.Offset, pic.Size.X.Offset, pic.Size.Y.Offset
+		Effects.pulse(c, { colour = GOLD, position = UDim2.fromOffset(px, py), size = UDim2.fromOffset(pw, ph), corner = 4, z = 2 })
+		Effects.motes(c, { colour = hex("FFE27A"), shape = "diamond", count = 6 + i, area = Rect.new(px + 20, py + 10, px + pw - 20, py + ph - 4), z = 3, seed = 40 + i })
+		Effects.rock(pic, { degrees = 3, seconds = 1.4 + i * 0.15 })
+		Effects.shine(c, { every = 5, delay = i * 0.7, corner = 8, strength = 0.2, z = 8 })
 		local a, b2 = blurbLines(p)
 		lines(c, a, b2, hex("FFE27A"))
 		priceRow(c, p)
@@ -1353,6 +1362,7 @@ function Shop.build(parent: Instance)
 	body:GetPropertyChangedSignal("CanvasPosition"):Connect(highlight)
 	highlight()
 	coins.plus.onClick(function() scrollTo("Coins", true) end)
+	local setCoins = CoinFx.attach(coins)
 	gems.plus.onClick(function() scrollTo("Aura", true) end)
 
 	-- A reward you've just earned (Config/CoinShop Earn): say so once, and where to find it.
@@ -1373,13 +1383,13 @@ function Shop.build(parent: Instance)
 				Toast.show(`You unlocked {list}! Wear {if #names == 1 then "it" else "them"} from the Shop.`)
 			end
 		end
-		coins.setAmount(Format.commas(State.shown("Coins")))
+		setCoins(State.shown("Coins"))
 		gems.setAmount(Format.commas(data.Aura or 0))
 		for _, f in refreshButtons do f() end
 		-- (a prize you now own adds its card, a buy moves one past OWNED / NOT OWNED: place the page again)
 		if applyFilters() then layout() end
 	end)
-	coins.setAmount(Format.commas(State.shown("Coins")))
+	setCoins(State.shown("Coins"))
 	gems.setAmount(Format.commas(State.data.Aura or 0))
 	for _, f in refreshButtons do f() end
 

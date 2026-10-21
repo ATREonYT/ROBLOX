@@ -22,6 +22,7 @@ local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
 local Effects = require(UI.Effects)
+local CoinFx = require(UI.CoinFx)
 local MainMenu = require(script.Parent.MainMenu)
 
 local C = Theme.Colors
@@ -157,6 +158,7 @@ function LobbyHud.build(parent: Instance)
 	local gemIcon = gems.Instance:FindFirstChild("Icon")
 	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.new(1, 1, 1) end
 	coins.plus.onClick(function() ModalManager.open("Shop", "Coins") end)
+	local setCoins = CoinFx.attach(coins)
 	gems.plus.onClick(function() ModalManager.open("Shop", "Aura") end) -- (Shop > AURA: owner, Oct 20 14:07 "make a buy section for aura")
 
 	local topRight = group(root, "TopRight", Vector2.new(1, 0), UDim2.new(1, -TOPBAR_MARGIN, 0, barY), Vector2.new(52, TOPBAR_BUTTON), 1)
@@ -204,7 +206,7 @@ function LobbyHud.build(parent: Instance)
 	end)
 
 	local function sync(data)
-		coins.setAmount(Format.commas(State.shown("Coins"))) -- (held during a crate opening until the prize shows)
+		setCoins(State.shown("Coins")) -- (held during a crate opening until the prize shows; gold when it goes up: CoinFx)
 		gems.setAmount(Format.commas(data.Aura or 0))
 		local showHints = State.setting("ShowKeyHints") == true
 		hint.Visible = showHints

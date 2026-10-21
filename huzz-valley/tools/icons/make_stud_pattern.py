@@ -17,11 +17,13 @@ def rr(x0, y0, x1, y1, fill, r=3.2):
     d.rounded_rectangle((x0 * u, y0 * u, x1 * u, y1 * u), radius=r * u, fill=fill)
 
 
-rr(4.6, 5.2, 21.4, 22.0, (0, 0, 0, 70))          # shadow, down-right
-rr(3.0, 3.0, 20.0, 20.0, (255, 255, 255, 120))     # light rim (top-left edge shows)
-rr(3.8, 3.8, 20.6, 20.6, (0, 0, 0, 90))            # dark rim (bottom-right edge shows)
-rr(3.8, 3.8, 19.8, 19.8, (255, 255, 255, 38))      # the face
-rr(6.0, 5.4, 15.0, 7.0, (255, 255, 255, 60), r=0.8)  # a little glint along the top
+# Oct 21 (owner: "work more on the stud texture, check the other references"): his reference shop's studs are soft
+# rounded squares that nearly fill the tile (a thin seam between them), lit on top, a soft shade along the bottom.
+rr(2.0, 3.2, 22.6, 23.4, (0, 0, 0, 60), r=4.5)          # shade, a little down
+rr(1.6, 1.6, 22.0, 22.0, (255, 255, 255, 70), r=4.5)    # light rim along the top-left
+rr(2.2, 2.2, 22.2, 22.2, (0, 0, 0, 55), r=4.5)          # dark rim along the bottom-right
+rr(2.2, 2.2, 21.6, 21.6, (255, 255, 255, 34), r=4.2)    # the face
+rr(4.5, 3.4, 19.0, 6.4, (255, 255, 255, 40), r=1.5)     # soft light across the top
 img = big.resize((T, T), Image.LANCZOS)
 img.save('assets/icons/stud-pattern.png')
 print('stud pattern', img.size)

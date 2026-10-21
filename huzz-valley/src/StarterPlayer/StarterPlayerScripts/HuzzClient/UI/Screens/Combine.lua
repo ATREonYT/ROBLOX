@@ -132,9 +132,15 @@ function CombineScreen.build(parent: Instance)
 	local pathW = 3 * PATH.W + 3 * PATH.Arrow + 110
 	local px = math.floor((STAGE.W - pathW) / 2)
 	local chips = {}
+	local chipCounts = {}
 	for i, g in STEPS do
-		local b = ShopStyle.chunkyButton(Kit.button({ Name = "Grade" .. g, Text = string.upper(g), Style = "Tab", FontFace = FONT, TextSize = 15, Corner = 6, RimThickness = 1.5, Position = UDim2.fromOffset(px, PATH.Y), Size = UDim2.fromOffset(PATH.W, PATH.H), ZIndex = 5, Parent = side }))
+		local b = ShopStyle.chunkyButton(Kit.button({ Name = "Grade" .. g, Text = string.upper(g), Style = "Tab", FontFace = FONT, TextSize = 15, Gap = 6, Corner = 6, RimThickness = 1.5, Position = UDim2.fromOffset(px, PATH.Y), Size = UDim2.fromOffset(PATH.W, PATH.H), ZIndex = 5, Parent = side }))
 		chips[g] = b
+		-- how many she has of this grade: a round dark bubble right after the word, centred with it in the chip's row
+		-- (owner, Oct 21: "fix the x3 x1 ... make it be perfectly aligned")
+		local row = b.Instance:FindFirstChild("Content")
+		local bubble = new("Frame", { Name = "Count", Size = UDim2.fromOffset(22, 22), BackgroundColor3 = INK2, BackgroundTransparency = 0.15, BorderSizePixel = 0, LayoutOrder = 3, ZIndex = 6, Parent = row }, { Kit.corner(11) })
+		chipCounts[g] = chunky({ Name = "N", Text = "0", FontFace = FONT, TextSize = 14, Size = UDim2.fromScale(1, 1), ZIndex = 7, Parent = bubble }, 1.5)
 		px += PATH.W
 		chunky({ Name = "Step" .. i, Text = ">", FontFace = FONT, TextSize = 20, TextColor3 = C.SubText, Position = UDim2.fromOffset(px, PATH.Y), Size = UDim2.fromOffset(PATH.Arrow, PATH.H), ZIndex = 5, Parent = side }, 1.5)
 		px += PATH.Arrow
@@ -276,7 +282,8 @@ function CombineScreen.build(parent: Instance)
 		end
 		grade = grade or "Normal"
 		for g, b in chips do
-			b.setText(`{string.upper(g)} x{c.counts[g] or 0}`)
+			b.setText(string.upper(g))
+			chipCounts[g].Text = tostring(c.counts[g] or 0)
 			b.setStyle(if g == grade then "ShopGreen" else "Tab")
 			b.setEnabled(not busy)
 		end
