@@ -284,11 +284,17 @@ do
 		at and at.X or 0, at and at.Y or 0, at and at.Z or 0),
 		n == 1 and k:GetAttribute("WornAt") == "Side" and m.Part0.Name == "LowerTorso" and at.X > 1 and at.X < 1.3
 			and math.abs(at.Y) < 0.2 and at.Z > 0.5 and at.Z < 1)
-	local steel = 0
+	-- (Welds carrying their own offsets, never WeldConstraints: owner, Oct 21 14:47, a WeldConstraint is worked out
+	-- again on each screen from where its parts are when they arrive, and locked his knife's pieces 131 studs away)
+	local steel, constraints, placed = 0, 0, true
 	for _, d in k:GetDescendants() do
-		if d:IsA("WeldConstraint") and d.Part0 and d.Part0.Name == "Handle" then steel += 1 end
+		if d:IsA("WeldConstraint") then constraints += 1 end
+		if d:IsA("Weld") and d.Name ~= "BackMount" and d.Part0 and d.Part0.Name == "Handle" then
+			steel += 1
+			if ((d.Part0.CFrame * d.C0).Position - d.Part1.CFrame.Position).Magnitude > 1e-3 then placed = false end
+		end
 	end
-	check("R15, no knife owned: its pommel, guard, blade and tip all welded to its grip", steel == 4)
+	check("R15, no knife owned: its pommel, guard, blade and tip all welded to its grip (Welds with their own places)", steel == 4 and constraints == 0 and placed)
 end
 do
 	local c = body(true)

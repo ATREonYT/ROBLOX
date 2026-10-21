@@ -198,7 +198,7 @@ function M.start()
 				em = e
 			end)
 			if not ok then fail(err) end
-			made[g] = em
+			made[g] = if em then em else nil -- (a failure isn't kept: the picture memory frees up, tried again later)
 		end
 		if not em then return nil end
 		-- a MeshPart of its own for each knife, sharing the one mesh (a box for touches: these never collide)
@@ -213,7 +213,18 @@ function M.start()
 	end
 
 	local busy = {}
-	local function dress(model: Instance)
+	-- a knife that couldn't be dressed (owner, Oct 21 14:47, his Output: "Failed to create empty EditableMesh ...
+	-- reaching memory budget limits": the shop's pictures had the memory) is tried again: 10 s, then 20, 40, up to 60
+	local waits: { [Instance]: number } = {} -- (a plain table: weak keys on Instances drop entries at random)
+	local dress
+	local function later(model: Instance)
+		local w = math.min((waits[model] or 5) * 2, 60)
+		waits[model] = w
+		task.delay(w, function()
+			if model.Parent then dress(model) else waits[model] = nil end
+		end)
+	end
+	function dress(model: Instance)
 		if busy[model] or not model:IsDescendantOf(Workspace) or model:FindFirstChild("GlbDress") then return end
 		local key = model:GetAttribute("Glb")
 		if type(key) ~= "string" then return end
@@ -244,6 +255,7 @@ function M.start()
 				report("failed (" .. tostring(why) .. "): the plain stand-ins show", true)
 			end
 			busy[model] = nil
+			if ok and result then waits[model] = nil elseif model.Parent then later(model) end
 		end)
 	end
 	CollectionService:GetInstanceAddedSignal(TAG):Connect(dress)

@@ -332,7 +332,30 @@ local function reachOf(model, handle)
 end
 KnifeService.reachOf = reachOf
 
+-- Every piece held on by a Weld that carries its own offset (owner, Oct 21 14:47, his Output: "hid a worn knife
+-- part 131.5 studs out of place ... Tip" and the knife "just arent there"). A WeldConstraint is worked out again on
+-- each screen from wherever its two parts are when it arrives there: a knife reaches a screen with its Handle
+-- already on the body (its BackMount / KnifeGrip is a Weld) but its other pieces still where it was built, so they
+-- got locked that far away, out of sight, and only the dark grip showed on the body (his "black block").
+local function rigid(model)
+	for _, d in model:GetDescendants() do
+		if d:IsA("WeldConstraint") then
+			local p0, p1 = d.Part0, d.Part1
+			if p0 and p1 then
+				local w = Instance.new("Weld")
+				w.Name = d.Name
+				w.Part0, w.Part1 = p0, p1
+				w.C0 = p0.CFrame:ToObjectSpace(p1.CFrame)
+				w.Parent = d.Parent
+			end
+			d:Destroy()
+		end
+	end
+end
+KnifeService.rigid = rigid
+
 local function loose(model)
+	rigid(model)
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
 			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.Massless = false, false, false, false, true
