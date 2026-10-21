@@ -503,6 +503,9 @@ do
 	local shown, n = 0, 0
 	for _, v in state do n += 1; if not v then shown += 1 end end
 	check(string.format("guard: the default knife worn at the hip, all %d parts shown", n), n == 5 and shown == 5)
+	local okLine, line = pcall(KnifeGuard.describe, k, c)
+	check(`guard: the knife report line counts its pieces ({if okLine then line else "error: " .. tostring(line)})`,
+		okLine and string.find(line, "5 pieces, 5 showing", 1, true) ~= nil)
 	local home = h and h.CFrame
 	if h then h.CFrame = c.HumanoidRootPart.CFrame * CFrame.new(-3, -2.2, -1.5) * CFrame.Angles(0, 0, math.rad(20)) end
 	KnifeGuard.scan(c, hide)

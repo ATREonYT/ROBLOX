@@ -754,9 +754,8 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		local camR = if cam then cam.RightVector else -side
 		local camU = if cam then cam.UpVector else up
 		local camPos = if cam then cam.Position else ground + dir * 40 * k
-		-- hit-stop: every emitter nearly frozen for a split second
-		local stop = t >= Reveal.HOLD and t < Reveal.IMPACT
-		for _, e in all do e.TimeScale = if stop then 0.05 else 1 end
+		-- (no hit-stop any more: the freeze before the burst read as "a little stop there", owner Oct 21 14:33)
+		local stop = false
 		local h = Reveal.height(t, Config.Showcase.Height)
 		local herMid = spot + Vector3.new(0, (h or Reveal.ORB_HEIGHT) * k, 0) + Vector3.new(0, (lo + hi) / 2 - base.Position.Y, 0)
 		heart.CFrame = CFrame.new(herMid)
@@ -837,6 +836,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			local top = foot + up * d.tall * k + rightV * 0.06 * d.tall * k
 			local low = top + (foot - top) * math.max(reach, 0.02)
 			low = low:Lerp(orbAt, conv)
+			low = low:Lerp(top, Reveal.lift(t)) -- (after the burst: shooting back up out of her)
 			local outv = if d.x >= 0 then rightV else -rightV
 			local lean = math.rad(d.lean)
 			local r0 = up * math.cos(lean) + outv * math.sin(lean)

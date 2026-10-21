@@ -44,8 +44,34 @@ function M.scan(character: Instance, hide: (BasePart, boolean, number) -> ())
 	end
 end
 
+-- One line about a knife on your body (owner, Oct 21 14:35: "they just arent there"): where it is, how many of its
+-- pieces there are and how many show, and what hides the rest, so his Output says what happened to it.
+local function localHidden(p: BasePart): boolean
+	local ok, v = pcall(function() return p.LocalTransparencyModifier end)
+	return ok and type(v) == "number" and v >= 0.99
+end
+function M.describe(knife: Instance, character: Instance): string
+	local n, showing, clear, local1, tiny = 0, 0, 0, 0, 0
+	for _, d in knife:GetDescendants() do
+		if d:IsA("BasePart") then
+			n += 1
+			if d.Transparency >= 0.99 then clear += 1
+			elseif localHidden(d) then local1 += 1
+			elseif d.Size.Magnitude < 0.05 then tiny += 1
+			else showing += 1 end
+		end
+	end
+	local handle = knife:FindFirstChild("Handle", true)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local away = if handle and handle:IsA("BasePart") and root and root:IsA("BasePart") then string.format("%.1f", (handle.CFrame.Position - root.CFrame.Position).Magnitude) else "?"
+	local dressed = if knife:FindFirstChild("GlbDress") then "his model" elseif knife:GetAttribute("Glb") then "waiting for his model" else "plain parts"
+	return string.format("[HuzzKnife] your %s (%s, %s): %d pieces, %d showing, %d see-through, %d hidden on this screen, %d too small; grip %s studs from you",
+		knife.Name, tostring(knife:GetAttribute("Skin") or "default"), dressed, n, showing, clear, local1, tiny, away)
+end
+
 function M.start()
 	local Players = game:GetService("Players")
+	local reported: { [Instance]: number } = {} -- (your knives, when first seen: one line each, 3 s after)
 	local hidden: { [BasePart]: boolean } = {} -- (a plain table: weak keys on Instances drop entries at random)
 	local told = false
 	local function hide(part: BasePart, stray: boolean, by: number)
@@ -68,6 +94,22 @@ function M.start()
 		task.wait(M.EVERY)
 		for part in hidden do
 			if not part.Parent then hidden[part] = nil end
+		end
+		local me = Players.LocalPlayer and Players.LocalPlayer.Character
+		if me then
+			for _, name in { "HuzzBackKnife", "HuzzKnife" } do
+				local k = me:FindFirstChild(name)
+				if k and not reported[k] then reported[k] = os.clock() end
+			end
+		end
+		for k, at in reported do
+			if not k.Parent then
+				reported[k] = nil
+			elseif at > 0 and os.clock() - at >= 3 then
+				reported[k] = -1
+				local ok, line = pcall(M.describe, k, k.Parent)
+				print(if ok then line else "[Huzz] KnifeGuard: " .. tostring(line))
+			end
 		end
 		for _, player in Players:GetPlayers() do
 			local character = player.Character

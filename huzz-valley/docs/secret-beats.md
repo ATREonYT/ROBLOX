@@ -37,8 +37,8 @@ Sound column: what plays today (`Sfx.beat` with the cues in `Config/SecretSounds
 | 1.70 | build | **Beam B strikes**: twin beams | |
 | 2.10 to 2.50 | build | Six more beams strike in a ring, one every 0.08 s (many) | |
 | 2.50 | build | Two big glowing eyes open between the twins | |
-| 2.85 to 3.30 | converge | Every beam swings its foot into the eyes' point, pinching thin, the strands winding faster | |
-| 3.30 | hit-stop | Everything nearly freezes (0.12 s) | (silence) |
+| 2.60 to 3.38 | converge | Every beam swings its foot into the eyes' point, pinching thin, the strands winding faster | |
+| 3.38 | beams meet | Still moving, straight into the burst (the hit-stop freeze is gone: owner, Oct 21 14:33, "a little stop there"); after the burst the beams shoot back up out of her | |
 | 3.42 | **BURST** | Manga frame (0.09 s), shockwave dome + ring on the floor + ring facing you, rays, sparkles; she appears in white | **Burst**: `secret_impact`, `secret_sparkle` 0.15 s later; riser cut |
 | 3.80 | land | She lands: ring, dust, smoke; the magic circle lights up under her | |
 | 4.00 / 4.30 / 4.60 | reveal | Crescent slashes swirl round her | |

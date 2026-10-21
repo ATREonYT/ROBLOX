@@ -13,9 +13,10 @@
 	                     climb beam A; 1.7 beam B (twin beams); 2.1-2.5 six more beams strike in a ring (many);
 	                     2.5 two big glowing eyes open between the twins
 	  2.6  CONVERGE      every beam swings its foot into the point between the eyes, pinching thin, winding faster
-	  3.3  hit-stop
+	  3.38 they meet, still moving, straight into the burst (no hit-stop: owner, Oct 21 14:33, "a little stop there")
 	  3.42 BURST         a split-second manga frame, a shockwave (a dome, a ring on the ground, a ring facing you),
-	                     light rays, sparkles; she appears in white, drops and lands (3.8): a ring, dust, a magic
+	                     light rays, sparkles; the beams shoot back up into the sky out of her (LIFT); she appears in
+                     white, drops and lands (3.8): a ring, dust, a magic
 	                     circle lights up under her
 	  3.9  REVEAL HOLD   low and wide on her, crescents swirl round her; 4.5 her NAME (SECRET and 7 stars over it)
 	                     with a star flare behind her, held to 6.3; 5.1 speed streaks while the camera pushes into her
@@ -40,7 +41,7 @@ SecretReveal.BEAM_B = 1.7 -- the second big beam: twin beams
 SecretReveal.CHOIR = 2.1 -- six more beams strike in a ring, one after another until 2.5
 SecretReveal.EYES = 2.5 -- two glowing eyes open between the beams, until the burst
 SecretReveal.CONVERGE = 2.6 -- every beam swings its foot into the eyes' point (2.6, was 2.85: a longer, flowing sweep)
-SecretReveal.HOLD = 3.3 -- the hit-stop
+SecretReveal.HOLD = 3.38 -- the beams meet (owner, Oct 21 14:33: "it's very rough and has a little stop there": no freeze any more, they run straight into the burst)
 SecretReveal.IMPACT = 3.42 -- the burst: she appears
 SecretReveal.FRAME = 0.09 -- the impact frame: a split second of manga lines
 SecretReveal.LAND = 3.8
@@ -68,7 +69,7 @@ SecretReveal.BEATS = {
 	{ 0.0, "night falls (riser starts)" }, { 0.25, "orb appears" }, { 0.45, "starburst on the orb" },
 	{ 0.55, "first light thread" }, { 0.95, "beam A strikes" }, { 1.3, "slashes (4, every 0.15 s)" },
 	{ 1.35, "ladder rungs climb" }, { 1.7, "beam B strikes" }, { 2.1, "ring of 6 beams (every 0.08 s to 2.5)" },
-	{ 2.5, "eyes open" }, { 2.6, "beams converge" }, { 3.3, "hit-stop (silence)" }, { 3.42, "BURST: she appears" },
+	{ 2.5, "eyes open" }, { 2.6, "beams converge" }, { 3.38, "beams meet (no stop)" }, { 3.42, "BURST: she appears" },
 	{ 3.8, "she lands" }, { 4.0, "crescent swings (4.0, 4.3, 4.6)" }, { 4.5, "her NAME + star flare" },
 	{ 5.1, "speed streaks, push to her face" }, { 6.15, "eye glint" }, { 6.4, "cut + swell, red lines" },
 	{ 6.55, "butterfly swarm" }, { 6.85, "flare grows, crackling" }, { 7.6, "LAST BURST" }, { 7.75, "she rises" },
@@ -147,12 +148,19 @@ function SecretReveal.beam(t: number, at: number): (number, number)
 	return reach, smooth((t - at) / 0.18) * fade
 end
 
--- How far the beams have swung into the eyes' point (0..1): from CONVERGE to the hit-stop. Owner, Oct 21 ("when the
--- effects join together it's rough, they don't have flow"): a smoother-step over 0.7 s (was a 0.45 s ease-in that
--- did almost nothing, then snapped in the last tenth), so the sweep starts gently, flows and settles into the point.
+-- How far the beams have swung into the eyes' point (0..1): from CONVERGE to HOLD. Owner, Oct 21 ("when the
+-- effects join together it's rough, they don't have flow"; 14:33 "it has a little stop there"): it starts gently and
+-- arrives still moving at full speed (2x^2 - x^3: no slowing down to a halt before the burst), straight into the burst.
 function SecretReveal.converge(t: number): number
 	local x = clamp01((t - SecretReveal.CONVERGE) / (SecretReveal.HOLD - SecretReveal.CONVERGE))
-	return x * x * x * (x * (6 * x - 15) + 10)
+	return x * x * (2 - x)
+end
+
+-- After the burst the beams shoot back up out of her into the sky (0 = their feet on her, 1 = up at their tops), fast
+-- at first, carrying on the converge's speed, so the beams rising up show her in one flowing move.
+SecretReveal.LIFT = 0.4
+function SecretReveal.lift(t: number): number
+	return easeOut((t - SecretReveal.IMPACT) / SecretReveal.LIFT)
 end
 
 -- How many beams are lit at time t (few, then many: checked in check_girl_fx).
@@ -259,7 +267,7 @@ SecretReveal.KEYS = {
 		{ 0.95, -7, 41, 7, 0, 1, 0, 68 }, -- beam A strikes: lower, looking up
 		{ 1.7, -4, 38, 6, 0, 2.5, 0, 68 }, -- beam B: twin beams (they fill the picture top to bottom, like the reference)
 		{ 2.45, -2, 40, 5.5, 0, 3, 0, 70 }, -- the ring of beams: a touch wider so all of them show
-		{ 3.25, 0, 34, 6, 0, 1.5, 0, 61 }, -- pushing in as they converge
+		{ 3.1, -0.5, 35, 6, 0, 1.6, 0, 62 }, -- pushing in as they converge (no slow key at the burst: one flowing push)
 		{ 3.42, 1, 33.5, 6.2, 0, 1.2, 0, 60 }, -- the burst: she drops (the look follows her down)
 		{ 4.0, 4, 33, 3.5, 0, 1, 0, 63 }, -- settled low and wide after the landing
 		{ 4.6, 8, 25, 3, 0, 0.5, 0, 56 }, -- in to her whole body as her name comes up
