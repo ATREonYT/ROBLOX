@@ -13,6 +13,7 @@ local GuiService = game:GetService("GuiService")
 
 local Motion = require(script.Parent.Motion)
 local Scale = require(script.Parent.Scale)
+local ShopStyle = require(script.Parent.ShopStyle)
 local Sfx = require(script.Parent.Parent.Gameplay.Sfx)
 
 local ModalManager = {}
@@ -97,6 +98,9 @@ function ModalManager.register(name: string, screen: Screen)
 	screens[name] = screen
 	local w = screen.window
 	Scale.bind(w.Holder:FindFirstChild("FitScale"), function() return Scale.window(w.Width, w.Height) end)
+	-- every menu in the Shop's look (owner, Oct 21: "restyle the shops so they have animations for the ui"); the Shop
+	-- is that look already, and a side panel (the Menu) keeps its own
+	if name ~= "Shop" and not screen.side then ShopStyle.restyle(w.Holder) end
 end
 
 local function hide(name: string, instant: boolean?)
@@ -131,7 +135,13 @@ function ModalManager.open(name: string, arg: any?)
 	if s.onOpen then s.onOpen(arg) end
 	Sfx.play("ui_open")
 	Motion.open(w.Group, w.OpenScale, UDim2.fromScale(0.5, 0.5))
-	if s.items then Motion.stagger(s.items()) end
+	if s.items then
+		Motion.stagger(s.items())
+	elseif name ~= "Shop" then -- (the Shop pops its own cards)
+		task.defer(function()
+			if current == name then ShopStyle.popIn(ShopStyle.cards(w.Panel)) end
+		end)
+	end
 	changed()
 	if UserInputService.GamepadEnabled and s.firstSelect then GuiService.SelectedObject = s.firstSelect() end
 	return true

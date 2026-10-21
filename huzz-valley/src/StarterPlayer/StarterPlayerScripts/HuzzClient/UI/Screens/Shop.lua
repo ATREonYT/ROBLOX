@@ -66,6 +66,7 @@ local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
 local Effects = require(UI.Effects)
+local ShopStyle = require(UI.ShopStyle)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -74,9 +75,10 @@ local WHITE = Color3.new(1, 1, 1)
 
 local Shop = {}
 
--- the video's chunky rounded letters (titles, headers, jump buttons, prices)
-local SHOP_FONT = Font.new("rbxasset://fonts/families/FredokaOne.json")
-local INK = hex("101418") -- the video's dark outline round every word
+-- the video's chunky rounded letters (titles, headers, jump buttons, prices) and its dark outline (UI/ShopStyle:
+-- every menu uses them now)
+local SHOP_FONT = ShopStyle.FONT
+local INK = ShopStyle.INK
 
 -- Window (px), measured on the video at 0.8 (see the header)
 local WIN = { W = 869, H = 550, Header = 77, Close = 73, TitleSize = 50 }
@@ -93,7 +95,6 @@ local HEAD = { H = 95, TextSize = 58 } -- a section header: the gap between two 
 local SUB = { H = 50, TextSize = 28 } -- a smaller header inside a section (a rarity, EVERY CHANCE)
 local BANNER = { H = 224 }
 local CARD_T = 0.08 -- (our cards: nearly solid over the see-through body)
-local STUDS = 0.42 -- the video's price buttons: clearly studded (Kit's buttons are 0.22)
 local SIDE = { W = 520, Pad = 14, ButtonH = 54 } -- a crate's or a dance's panel, sliding in over the page's right side
 
 -- our kit's colours (UI/Theme): navy cards with a dark rim; the Halloween cards in deep purple with an orange rim
@@ -119,13 +120,8 @@ local ALIAS = { Items = "Knives" }
 
 -- Our kit's buttons: green to buy (Theme's SelectedTab green), purple for Robux (Theme's Action), teal-blue for Aura;
 -- one colour per jump button. White chunky text, dark rim.
-local function look(fill: Color3, top: Color3, rim: Color3)
-	return { Idle = fill, Hover = fill:Lerp(WHITE, 0.1), Pressed = fill:Lerp(Color3.new(0, 0, 0), 0.1), Text = WHITE, Top = top, Rim = rim }
-end
-Kit.Styles.ShopGreen = look(C.SelectedTab, C.SelectedTabTop, C.SelectedRim)
-Kit.Styles.ShopPurple = look(C.Action, C.ActionTop, C.ActionRim)
-Kit.Styles.ShopAura = look(hex("2A9FD8"), hex("8AD8FA"), hex("08304A"))
-Kit.Styles.ShopOrange = look(hex("E8661A"), hex("FFB36B"), hex("3E1405"))
+local look = ShopStyle.look
+-- (ShopGreen, ShopPurple, ShopAura, ShopOrange: UI/ShopStyle)
 for _, sec in SECTIONS do Kit.Styles["Jump" .. sec.Key] = look(sec.Fill, sec.Top, INK) end
 
 local pending: { [string]: boolean } = {}
@@ -135,28 +131,10 @@ local refreshButtons: { () -> () } = {}
 
 local function priceOf(p) return livePrice[p.Key] or p.Price end
 
--- White chunky words with the video's dark outline.
-local function chunky(props: { [string]: any }, stroke: number?): TextLabel
-	props.FontFace = props.FontFace or SHOP_FONT
-	props.TextWrapped = false
-	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Center
-	local l = Kit.text(props)
-	new("UIStroke", { Name = "Outline", Color = INK, Thickness = stroke or 2, LineJoinMode = Enum.LineJoinMode.Round, Parent = l })
-	return l
-end
-
--- A button's label in the video's look: chunky, white, a solid dark outline.
-local function chunkyButton(b)
-	local label = b.Instance:FindFirstChild("Label", true)
-	if label and label:IsA("TextLabel") then
-		label.FontFace = SHOP_FONT
-		local o = label:FindFirstChild("Outline")
-		if o and o:IsA("UIStroke") then o.Color, o.Thickness, o.Transparency, o.Enabled = INK, 2, 0, true end
-	end
-	local studs = b.Instance:FindFirstChild("StudPattern")
-	if studs and studs:IsA("ImageLabel") then studs.ImageTransparency = 1 - STUDS end
-	return b
-end
+-- White chunky words with the video's dark outline; a button's label in that look (chunky, a solid dark outline,
+-- clearly studded).
+local chunky = ShopStyle.chunky
+local chunkyButton = ShopStyle.chunkyButton
 
 -- FILTERS: what each filter row last picked, kept for the session (the Shop is built once per session)
 local FILTER = {
