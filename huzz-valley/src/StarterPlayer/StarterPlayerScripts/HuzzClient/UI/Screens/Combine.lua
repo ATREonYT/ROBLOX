@@ -43,11 +43,12 @@ local CombineScreen = {}
 local W, H = 720, 584
 local STAGE = { X = 14, Y = 56, W = 692, H = 304 } -- the merge (its name "Merge" is what the checks look for)
 local SLOT = { W = 116, H = 150, Y = 46, Edge = 34 } -- her two copies, left and right
-local MID = { W = 156, H = 196, Y = 34 } -- the girl you get, in the middle
+local MID = { W = 156, H = 188, Y = 44 } -- the girl you get, in the middle
 local PATH = { Y = 266, H = 30, W = 128, Arrow = 26 } -- NORMAL > SILVER > GOLD > DIAMOND
-local STRIP = { X = 14, Y = 466, W = 692, H = 108, CardW = 108, CardH = 100, Gap = 8, Pic = 60 }
+local STRIP = { X = 14, Y = 470, W = 692, H = 104, CardW = 108, CardH = 100, Gap = 8, Pic = 60 }
 local STEPS = { "Normal", "Silver", "Gold" } -- the grades that can be combined (Diamond is the top)
 local FONT = ShopStyle.FONT
+local INK2 = Color3.fromHex("0F1A38") -- the dark of every inset box (pills, slots' floors, the girls' tray)
 
 local function line(props: { [string]: any }, stroke: number?): TextLabel
 	props.TextWrapped = props.TextWrapped or false
@@ -90,9 +91,12 @@ function CombineScreen.build(parent: Instance)
 	-- the stage: copy | > result < | copy
 	local side = new("Frame", { Name = "Merge", Position = UDim2.fromOffset(STAGE.X, STAGE.Y), Size = UDim2.fromOffset(STAGE.W, STAGE.H), BackgroundColor3 = Color3.fromHex("1A2A52"), BackgroundTransparency = 0.08, BorderSizePixel = 0, ZIndex = 2, Parent = panel }, { Kit.corner(10), Kit.stroke(C.Frame, 3) })
 	new("UIGradient", { Name = "Depth", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("2A4276"), Color3.fromHex("1A2A52")), Parent = side })
-	chunky({ Name = "Heading", Text = "2 SAME GIRLS = 1 BETTER GIRL", FontFace = FONT, TextSize = 22, TextColor3 = C.Accent, Position = UDim2.fromOffset(0, 6), Size = UDim2.fromOffset(STAGE.W, 28), ZIndex = 3, Parent = side }, 2)
+	-- the rule, on a dark pill with a green rim
+	local banner = new("Frame", { Name = "Banner", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 8), Size = UDim2.fromOffset(364, 30), BackgroundColor3 = INK2, BorderSizePixel = 0, ZIndex = 3, Parent = side }, { Kit.corner(15), Kit.stroke(C.Accent, 2) })
+	chunky({ Name = "Heading", Text = "2 SAME GIRLS = 1 BETTER GIRL", FontFace = FONT, TextSize = 19, TextColor3 = C.Accent, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = banner }, 2)
 	local function slot(name: string, x: number, y: number, w: number, h: number, rim: number): Frame
-		local f = new("Frame", { Name = name, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), BackgroundColor3 = C.Frame, BackgroundTransparency = 0.25, BorderSizePixel = 0, ClipsDescendants = false, ZIndex = 4, Parent = side }, { Kit.corner(12) })
+		local f = new("Frame", { Name = name, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0, BorderSizePixel = 0, ClipsDescendants = false, ZIndex = 4, Parent = side }, { Kit.corner(12) })
+		new("UIGradient", { Name = "Floor", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("34508E"), INK2), Parent = f })
 		local stroke = Kit.stroke(Color3.fromHex("6C7FB8"), rim)
 		stroke.Name = "Rim" -- (named before attach, so the saved copy is reused)
 		Kit.attach(stroke, f)
@@ -101,15 +105,25 @@ function CombineScreen.build(parent: Instance)
 	end
 	local midX = math.floor((STAGE.W - MID.W) / 2)
 	-- the middle's glow in the new grade's colour (behind her), breathing
-	local glow = new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(midX + MID.W / 2, MID.Y + MID.H / 2), Size = UDim2.fromOffset(MID.W + 22, MID.H + 16), BackgroundColor3 = C.Accent, BackgroundTransparency = 0.72, BorderSizePixel = 0, ZIndex = 3, Parent = side }, { Kit.corner(22) })
+	local glow = new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(midX + MID.W / 2, MID.Y + MID.H / 2), Size = UDim2.fromOffset(MID.W + 70, MID.H + 22), BackgroundColor3 = C.Accent, BackgroundTransparency = 0, BorderSizePixel = 0, ZIndex = 3, Parent = side }, { Kit.corner(30) })
+	new("UIGradient", { Name = "Fade", Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.45), NumberSequenceKeypoint.new(1, 1) }), Parent = glow })
 	Effects.breathe(glow, { scale = 1.05, seconds = 1.1 })
 	local inA = slot("InputA", SLOT.Edge, SLOT.Y, SLOT.W, SLOT.H, 3)
 	local inB = slot("InputB", STAGE.W - SLOT.Edge - SLOT.W, SLOT.Y, SLOT.W, SLOT.H, 3)
 	local out = slot("Result", midX, MID.Y, MID.W, MID.H, 4)
+	for i, x in { SLOT.Edge, STAGE.W - SLOT.Edge - SLOT.W } do
+		chunky({ Name = "Caption" .. i, Text = "COPY " .. i, FontFace = FONT, TextSize = 16, TextColor3 = Color3.fromHex("A9B8E8"), Position = UDim2.fromOffset(x, SLOT.Y + SLOT.H + 6), Size = UDim2.fromOffset(SLOT.W, 20), ZIndex = 4, Parent = side }, 1.5)
+	end
 	local arrowY = SLOT.Y + SLOT.H / 2 - 22
 	local aGap = midX - (SLOT.Edge + SLOT.W)
-	local arrowL = chunky({ Name = "ArrowIn", Text = ">", FontFace = FONT, TextSize = 48, TextColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(SLOT.Edge + SLOT.W, arrowY), Size = UDim2.fromOffset(aGap, 44), ZIndex = 4, Parent = side }, 3)
-	local arrowR = chunky({ Name = "ArrowIn2", Text = "<", FontFace = FONT, TextSize = 48, TextColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(midX + MID.W, arrowY), Size = UDim2.fromOffset(aGap, 44), ZIndex = 4, Parent = side }, 3)
+	local function disc(name: string, mark: string, x: number): Frame
+		local d = new("Frame", { Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, arrowY + 22), Size = UDim2.fromOffset(46, 46), BackgroundColor3 = C.SelectedTab, BorderSizePixel = 0, ZIndex = 4, Parent = side }, { Kit.corner(23), Kit.stroke(ShopStyle.INK, 3) })
+		new("UIGradient", { Name = "Lit", Rotation = 90, Color = ColorSequence.new(C.SelectedTabTop, C.SelectedTab), Parent = d })
+		chunky({ Name = "Mark", Text = mark, FontFace = FONT, TextSize = 30, Position = UDim2.fromOffset(0, -2), Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = d }, 2.5)
+		return d
+	end
+	local arrowL = disc("ArrowIn", ">", SLOT.Edge + SLOT.W + math.floor(aGap / 2))
+	local arrowR = disc("ArrowIn2", "<", midX + MID.W + math.floor(aGap / 2))
 	Effects.breathe(arrowL, { scale = 1.12, seconds = 0.6 })
 	Effects.breathe(arrowR, { scale = 1.12, seconds = 0.6 })
 	local resultName = chunky({ Name = "ResultName", Text = "", FontFace = FONT, TextSize = 26, Position = UDim2.fromOffset(0, MID.Y + MID.H + 2), Size = UDim2.fromOffset(STAGE.W, 30), ZIndex = 4, Parent = side }, 2)
@@ -124,17 +138,23 @@ function CombineScreen.build(parent: Instance)
 		chunky({ Name = "Step" .. i, Text = ">", FontFace = FONT, TextSize = 20, TextColor3 = C.SubText, Position = UDim2.fromOffset(px, PATH.Y), Size = UDim2.fromOffset(PATH.Arrow, PATH.H), ZIndex = 5, Parent = side }, 1.5)
 		px += PATH.Arrow
 	end
-	chunky({ Name = "GradeDiamond", Text = "DIAMOND", FontFace = FONT, TextSize = 15, TextColor3 = gradeColor("Diamond"), Position = UDim2.fromOffset(px, PATH.Y), Size = UDim2.fromOffset(110, PATH.H), ZIndex = 5, Parent = side }, 1.5)
+	local top = chunky({ Name = "GradeDiamond", Text = "DIAMOND", FontFace = FONT, TextSize = 15, TextColor3 = gradeColor("Diamond"), BackgroundTransparency = 0, BackgroundColor3 = INK2, Position = UDim2.fromOffset(px, PATH.Y), Size = UDim2.fromOffset(110, PATH.H), ZIndex = 5, Parent = side }, 1.5)
+	local topRim = Kit.stroke(gradeColor("Diamond"), 2)
+	topRim.Name = "Rim"
+	Kit.attach(topRim, top)
+	Kit.attach(Kit.corner(6), top)
 	-- what happens, and COMBINE
-	local reason = line({ Name = "Reason", Text = "", FontFace = F.Body, TextSize = 16, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, STAGE.H + 6), Size = UDim2.fromOffset(STAGE.W, 20), ZIndex = 3, Parent = side }, 1.2) -- (just under the stage)
-	local combine = ShopStyle.chunkyButton(Kit.button({ Name = "CombineButton", Text = "COMBINE", Style = "Disabled", FontFace = FONT, TextSize = 26, Corner = 6, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, STAGE.H + 30), Size = UDim2.fromOffset(240, 46), ZIndex = 5, Parent = side }))
+	local reason = line({ Name = "Reason", Text = "", FontFace = F.Body, TextSize = 16, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0.1, BackgroundColor3 = INK2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, STAGE.H + 4), Size = UDim2.fromOffset(STAGE.W - 120, 24), ZIndex = 3, Parent = side }, 1.2) -- (just under the stage)
+	Kit.attach(Kit.corner(12), reason)
+	local combine = ShopStyle.chunkyButton(Kit.button({ Name = "CombineButton", Text = "COMBINE", Style = "Disabled", FontFace = FONT, TextSize = 26, Corner = 6, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, STAGE.H + 34), Size = UDim2.fromOffset(260, 46), ZIndex = 5, Parent = side }))
 	local combineBreathe = Effects.breathe(combine.Instance, { scale = 1.04, seconds = 0.9 })
 	combineBreathe.Name = "ReadyBreathe"
 
 	-- YOUR GIRLS: the strip of cards
+	new("Frame", { Name = "Tray", Position = UDim2.fromOffset(STRIP.X, STRIP.Y - 26), Size = UDim2.fromOffset(STRIP.W, STRIP.H + 30), BackgroundColor3 = INK2, BackgroundTransparency = 0.1, BorderSizePixel = 0, ZIndex = 1, Parent = panel }, { Kit.corner(10), Kit.stroke(C.Frame, 3) })
 	chunky({ Name = "GirlsHeading", Text = "YOUR GIRLS", FontFace = FONT, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(STRIP.X + 4, STRIP.Y - 22), Size = UDim2.fromOffset(200, 20), ZIndex = 3, Parent = panel }, 1.5)
-	local list = new("ScrollingFrame", { Name = "Girls", Position = UDim2.fromOffset(STRIP.X, STRIP.Y), Size = UDim2.fromOffset(STRIP.W, STRIP.H), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 5, ScrollBarImageColor3 = C.RowBorder, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollingDirection = Enum.ScrollingDirection.X, Selectable = false, ZIndex = 2, Parent = panel })
-	new("UIPadding", { Name = "Pad", PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 3), Parent = list })
+	local list = new("ScrollingFrame", { Name = "Girls", Position = UDim2.fromOffset(STRIP.X, STRIP.Y), Size = UDim2.fromOffset(STRIP.W, STRIP.H), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.RowBorder, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.X, ScrollingDirection = Enum.ScrollingDirection.X, Selectable = false, ZIndex = 2, Parent = panel })
+	new("UIPadding", { Name = "Pad", PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2), Parent = list })
 	new("UIListLayout", { Name = "Layout", FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, STRIP.Gap), SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
 	local empty = chunky({ Name = "Empty", Text = "No girls yet. Win a round to get one!", FontFace = FONT, TextSize = 20, TextColor3 = C.NoteText, Position = UDim2.fromOffset(STRIP.X, STRIP.Y + 30), Size = UDim2.fromOffset(STRIP.W, 40), Visible = false, ZIndex = 3, Parent = panel }, 1.5)
 
@@ -199,7 +219,8 @@ function CombineScreen.build(parent: Instance)
 			seen[c.id] = true
 			local r = rows[c.id]
 			if not r then
-				local row = new("TextButton", { Name = "Girl_" .. c.id, Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(STRIP.CardW, STRIP.CardH), BackgroundColor3 = Color3.fromHex("2A4276"), BackgroundTransparency = 0.08, BorderSizePixel = 0, ZIndex = 3, Parent = list }, { Kit.corner(8) })
+				local row = new("TextButton", { Name = "Girl_" .. c.id, Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(STRIP.CardW, STRIP.CardH), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0, BorderSizePixel = 0, ZIndex = 3, Parent = list }, { Kit.corner(8) })
+				new("UIGradient", { Name = "Floor", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("34508E"), Color3.fromHex("1C2C5A")), Parent = row })
 				local rim = Kit.stroke(C.Frame, 2)
 				rim.Parent = row
 				local pic = new("Frame", { Name = "Picture", Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(STRIP.CardW - 8, STRIP.Pic), BackgroundColor3 = C.Frame, BackgroundTransparency = 0.4, BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 4, Parent = row }, { Kit.corner(6) })
@@ -276,7 +297,7 @@ function CombineScreen.build(parent: Instance)
 			reason.Text = why or ""
 			combine.setText("COMBINE"); combine.setStyle("Disabled"); combine.setEnabled(false)
 		end
-		Kit.fitLine(reason, STAGE.W - 20, 16, 11, true)
+		Kit.fitLine(reason, STAGE.W - 140, 16, 11, true)
 		combineBreathe.Parent = if ok and not busy then combine.Instance else nil
 		glow.BackgroundColor3 = gradeColor(up or grade)
 		pickedGrade = grade
