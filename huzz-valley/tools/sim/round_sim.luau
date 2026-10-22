@@ -250,6 +250,7 @@ end
 ------------------------------------------------------------------ one simulated server
 -- every power that went off in the whole run, by name (Oct 20: each ability, old and new, must show up somewhere)
 local allPowers = {}
+local allBlocks = 0 -- (shield blocks over the whole run: one 6-player run misses one about 1 time in 10, Oct 22)
 
 local function simulate(opts)
 	clock, queue, errors = 0, {}, {}
@@ -741,6 +742,7 @@ local function simulate(opts)
 	-- where every body was over the last moment (catches are judged where the catcher's screen showed the runner)
 	modules.HitHistory = loadScript("ServerScriptService/HuzzServer/HitHistory.lua")()
 	modules.PlaceService = loadScript("ServerScriptService/HuzzServer/PlaceService.lua")()
+	modules.MoveGuard = loadScript("ServerScriptService/HuzzServer/MoveGuard.lua")() -- (not started here: fine() says yes, flagged() no)
 	PowerService = loadScript("ServerScriptService/HuzzServer/PowerService.lua")()
 	modules.PowerService = PowerService
 	-- The Practice Bot: the real module with a stand-in body that botFrame walks where it's told.
@@ -815,7 +817,7 @@ local function simulate(opts)
 				stats.stabs += 1
 			elseif e.kind == "Power" then
 				stats.powers[e.data.name] = (stats.powers[e.data.name] or 0) + 1
-				if e.data.name == "ShieldPop" then stats.blocks += 1 end
+				if e.data.name == "ShieldPop" then stats.blocks += 1; allBlocks += 1 end
 				if e.data.name == "TrapSprung" then stats.sprung += 1 end
 				-- (owner Oct 19: "give the rush to a person only having the girl")
 				if e.data.name == "SpeedBoost" and e.holder ~= e.data.id then
@@ -1616,7 +1618,6 @@ s, p = simulate({ players = 6, seconds = 1500, seed = 7, config = function(c) c.
 report("6 players, 25 minutes", s, p, {
 	{ "games finish", function(x) return x.wins >= 3 end },
 	{ "the last runner is called out and runs faster", function(x) return x.lastAlone >= 1 and (x.lastBoosted or 0) > 0 end },
-	{ "a shield blocks a stab", function(x) return x.blocks >= 1 end },
 	{ "runners rescue each other", function(x) return x.rescues >= 3 end },
 })
 s, p = simulate({ players = 2, seconds = 400, seed = 3 })
@@ -1668,6 +1669,10 @@ for _, name in { "Shield", "Invisible", "Glitchy", "BodyDouble", "BananaPeel", "
 		print("   PROBLEM nobody used " .. name .. " in the whole run")
 		failed += 1
 	end
+end
+if allBlocks == 0 then
+	print("   PROBLEM expected: a shield blocks a stab (nowhere in the whole run)")
+	failed += 1
 end
 print(string.format("Oct 20 abilities over the run: BananaPeel %d (slips %d), SmokeBomb %d, Radar %d, Lasso %d (hits %d, misses %d; screens that skipped the pull %d, the server pulled %d)",
 	allPowers.BananaPeel or 0, allPowers.PeelSlip or 0, allPowers.SmokeBomb or 0, allPowers.Radar or 0, allPowers.Lasso or 0, allPowers.LassoHit or 0, allPowers.LassoMiss or 0,

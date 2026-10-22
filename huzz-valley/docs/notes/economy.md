@@ -412,3 +412,15 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - "you get very quick aura and coins, so please pop it down a bit": Aura stars 4 out (was 7), back in 60-90 s (was
   25-45): ~550 Aura an hour at most (was ~1,900). Game pay 15 / 30 for a win (was 25 / 50). The wheel's coin and Aura
   slices about halved (keys unchanged: 50 / 100 / 250 / 500 coins, 15 / 40 Aura).
+
+## Release check (Oct 22)
+- **A Halloween knife pass for a knife you already own** gives that knife's crate keys once (`PassRefunds[pass]`, a
+  shop notice). Knives given by a pass set `PassKnives[pass]`, so it never pays twice.
+- **Pass refresh** keeps a pass that was true and re-merges other passes after its waits (two buys could overwrite).
+  The join refresh waits 130 s.
+- **Quest knife you own already:** its duplicate coins (`Crates.KnifeDuplicate`), and your worn knife stays. **Track
+  dance you bought already:** its coin price back.
+- Shutdown (`ProfileStore.IsClosing`) no longer kicks with a "session ended" message; Combine doesn't keep entries for
+  players who left.
+Not fixed: the leaderboard saves after the profile on leave (order), and big full-save updates may spike with many
+players. Only Studio / the live game can confirm real pass timing and prompts.

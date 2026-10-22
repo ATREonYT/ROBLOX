@@ -59,7 +59,7 @@ end
 
 -- A Robux knife bought by someone who owns it already (a stale page, or bought on another server first) gives crate
 -- keys for its own crate worth what it costs instead: its Robux price / the key's, rounded (149 R$ = 6 keys, 249 R$
--- = 10). Keys, not Aura: Aura is only ever earned, never sold for Robux. So a purchase always gives something.
+-- = 10). Keys, not Aura (Aura has its own packs, Products.Aura). So a purchase always gives something.
 for _, k in HalloweenShop.Knives do
 	local knifeProduct = Products.get(k.Robux)
 	local keyProduct = nil

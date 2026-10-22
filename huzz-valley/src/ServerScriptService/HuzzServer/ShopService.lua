@@ -22,7 +22,9 @@ local noticeCount = 0 -- (HuzzShopNotice: a fresh number each time)
 
 -- `boughtId`: a pass Roblox just told us this player bought (PromptGamePassPurchaseFinished comes from Roblox, not
 -- the client). Roblox's ownership check can still say "not owned" right after an in-game purchase, so it counts as
--- owned straight away. A check that errors keeps what we knew before, instead of taking the pass away.
+-- owned straight away. A check that errors keeps what we knew before, instead of taking the pass away, and so does
+-- one that says "not owned" for a pass we already knew was yours this session (release check, Oct 22: buying the
+-- Dance Pack took VIP away until a rejoin; a pass isn't lost mid-session).
 local function refreshPasses(player: Player, boughtId: number?)
 	local before = DataService.getExtra(player, "Passes") or {}
 	local owned = {}
@@ -33,17 +35,21 @@ local function refreshPasses(player: Player, boughtId: number?)
 		if given[p.Key] then owned[p.Key] = true end
 		if p.Id ~= 0 then
 			local ok, has = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, p.Id)
-			if (ok and has) or p.Id == boughtId or (not ok and before[p.Key]) then owned[p.Key] = true end
+			if (ok and has) or p.Id == boughtId or before[p.Key] then owned[p.Key] = true end
 		end
 	end
 	-- the Halloween knives the owner made as Game Passes (Config/Products.Halloween GamePass): owned the same way
 	for _, p in Products.Halloween do
 		if p.GamePass and p.Id ~= 0 then
 			local ok, has = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, p.Id)
-			if (ok and has) or p.Id == boughtId or (not ok and before[p.Key]) then owned[p.Key] = true end
+			if (ok and has) or p.Id == boughtId or before[p.Key] then owned[p.Key] = true end
 		end
 	end
-	if not player.Parent then return end -- (left while Roblox answered: don't bring their entry back)
+	if not player.Parent then return end
+	-- (a check finishing late, e.g. the join's, never drops a pass bought while it ran)
+	for key, v in DataService.getExtra(player, "Passes") or {} do
+		if v then owned[key] = true end
+	end -- (left while Roblox answered: don't bring their entry back)
 	player:SetAttribute("VIP", owned.VIP == true) -- read by the chat tag (client) and the name tag
 	DataService.setExtra(player, "Passes", owned)
 	-- the pass's exclusive knives (Config/CoinShop Pass): given once Roblox says you own the pass, worn if your knife
@@ -51,21 +57,46 @@ local function refreshPasses(player: Player, boughtId: number?)
 	local profile = DataService.get(player)
 	local new = profile and profile.Data and CoinShop.passGrants(profile.Data.Cosmetics or {}, owned) or {}
 	local cosmetics = profile and profile.Data and profile.Data.Cosmetics or {}
-	local knifePasses = {}
+	local knifePasses, refunds = {}, {}
+	local passKnives = profile and profile.Data and profile.Data.PassKnives or {}
+	local passRefunds = profile and profile.Data and profile.Data.PassRefunds or {}
 	for _, p in Products.Halloween do
-		if p.GamePass and owned[p.Key] and p.Knife and CoinShop.get(p.Knife) and not cosmetics[p.Knife] then table.insert(knifePasses, { key = p.Knife, bought = p.Id == boughtId }) end
+		if p.GamePass and owned[p.Key] and p.Knife and CoinShop.get(p.Knife) then
+			if not cosmetics[p.Knife] then
+				table.insert(knifePasses, { key = p.Knife, pass = p.Key, bought = p.Id == boughtId })
+			elseif not passKnives[p.Key] and not passRefunds[p.Key] then
+				-- the knife was yours already (a crate, Aura): its crate keys instead, once (release check, Oct 22: the
+				-- pass gave nothing; Config/HalloweenShop's Keys, as a Robux knife bought twice)
+				local k = HalloweenShop.knife(p.Knife)
+				if k then table.insert(refunds, { pass = p.Key, crate = k.Crate, keys = k.Keys, name = p.Name }) end
+			end
+		end
 	end
-	if #knifePasses > 0 then
+	if #knifePasses > 0 or #refunds > 0 then
 		DataService.update(player, function(d)
 			d.Cosmetics = d.Cosmetics or {}
 			d.Wear = d.Wear or {}
+			d.PassKnives = d.PassKnives or {}
+			d.PassRefunds = d.PassRefunds or {}
+			d.CrateKeys = d.CrateKeys or {}
 			for _, k in knifePasses do
 				local item = CoinShop.get(k.key)
 				d.Cosmetics[k.key] = true
+				d.PassKnives[k.pass] = true -- (given by its pass: never refunded later)
 				-- (the knife just bought is worn straight away, as the Robux knives always were; else only an empty slot)
 				if item and (k.bought or (CoinShop.worn(d, item.Slot) == nil and d.Wear[item.Slot] ~= "")) then d.Wear[item.Slot] = k.key end
 			end
+			for _, r in refunds do
+				if not d.PassRefunds[r.pass] then
+					d.PassRefunds[r.pass] = true
+					d.CrateKeys[r.crate] = (d.CrateKeys[r.crate] or 0) + (r.keys or 1)
+				end
+			end
 		end)
+		for _, r in refunds do
+			noticeCount += 1
+			player:SetAttribute("HuzzShopNotice", `{noticeCount}|You already had {r.name}, so you got {r.keys} crate keys instead.`)
+		end
 	end
 	if #new > 0 then
 		DataService.update(player, function(d)
@@ -211,7 +242,8 @@ function ShopService.start()
 		if purchased then refreshPasses(player, passId) end
 	end)
 	local function onJoin(player: Player)
-		if DataService.waitFor(player, 60) then refreshPasses(player) end
+		-- (130 s: ProfileStore may take up to 120 s to hand a save over from another server)
+		if DataService.waitFor(player, 130) then refreshPasses(player) end
 	end
 	Players.PlayerAdded:Connect(onJoin)
 	for _, p in Players:GetPlayers() do task.spawn(onJoin, p) end

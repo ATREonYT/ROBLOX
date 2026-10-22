@@ -267,7 +267,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core under about 30 
   - The friend knife is a placeholder (his Sakura Blade) until he names one ([economy.md](docs/notes/economy.md)).
   - A refunded pass doesn't take its knives back yet.
   - LIKE THE GAME! opens nothing; titles on the three-pad side sit close. WITCH'S BREW and SWEETS & TREATS open the
-    Shop at their crate with its panel in (HALLOWEEN on top since Oct 20 20:34, [ui.md](docs/notes/ui.md)); the 6 Halloween Robux items are Id 0 and their prices are our pick ([economy.md](docs/notes/economy.md)).
+    Shop at their crate with its panel in (HALLOWEEN on top since Oct 20 20:34, [ui.md](docs/notes/ui.md)); the Halloween knives are his Game Passes (IDs Oct 21) and the rest of the Id 0 list is in [economy.md](docs/notes/economy.md).
   - The podium boards are hard to read from the spawn (his build, his call: [lobby.md](docs/notes/lobby.md)).
 - **His place:** no Uncommon girls yet; loose plank path and hoop; lobby copies pasted twice; old islands unused
   ([round.md](docs/notes/round.md), [lobby.md](docs/notes/lobby.md)).

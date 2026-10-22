@@ -427,6 +427,7 @@ function USE.Radar(id, def)
 			return
 		end
 		local origin = from.Position
+		local round = match.round
 		for runnerId, status in match.status do
 			local r = status == "Active" and ctx.rootOf(runnerId)
 			local d = r and (r.Position - origin).Magnitude
@@ -434,7 +435,8 @@ function USE.Radar(id, def)
 				task.delay(def.Sweep * d / def.Range, function()
 					local p = ctx.playerOf(runnerId)
 					local c = p and p.Character
-					if c and ctx.match() == match and not match.over then
+					-- (still this round's run and still out there: a late sweep glowed into the next round, Oct 22)
+					if c and ctx.match() == match and not match.over and ctx.running() and match.round == round and match.status[runnerId] == "Active" then
 						c:SetAttribute("SpottedUntil", now() + def.Lasts)
 					end
 				end)

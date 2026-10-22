@@ -201,6 +201,17 @@ function Dash.side(root: BasePart, move: Vector3): number
 	return lastSide
 end
 
+-- Held by the server in a round (release check, Oct 22: these went on screen while the server refused them, so the
+-- body leapt on every screen with nothing behind it): dizzy from a Shield, stunned (a slip, a hit), or stuck (a Bear
+-- Trap: WalkSpeed 0).
+local function held(c: Model?): boolean
+	local now = Workspace:GetServerTimeNow()
+	if (player:GetAttribute("DizzyUntil") or 0) > now then return true end
+	if now >= (player:GetAttribute("StunnedFrom") or math.huge) and now < (player:GetAttribute("StunnedUntil") or 0) then return true end
+	local h = c and c:FindFirstChildOfClass("Humanoid")
+	return h ~= nil and h.WalkSpeed <= 0
+end
+
 -- Can I dash right now? (the server checks the same and has the last word)
 function Dash.ready(): boolean
 	local round = Net.get("Round") :: RemoteEvent
@@ -214,6 +225,7 @@ function Dash.ready(): boolean
 		and c ~= nil and c:GetAttribute("DownedAt") == nil and player:GetAttribute("MenuOpen") ~= true
 		and Workspace:GetServerTimeNow() >= (player:GetAttribute("DashReady") or 0)
 		and os.clock() - lastLocal >= (if role == "Catcher" and playing then Config.Lunge.Cooldown else Config.Dash.Cooldown) - 0.1
+		and not (playing and held(c))
 end
 
 -- The catcher's lunge: a hop and a hard push the way you steer (forward, or sideways with A / D; never back).

@@ -262,3 +262,22 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   only with another runner (solo farming paid ~10x), Pay 25/50, `DupeCoins`, the one-quest chapter rule and runners-only
   stars all came from it. Results got the CATCHES card and the XP pill then.
 - **News vs big moments** came from the feel study (Oct 17). The Results screen is from Oct 17.
+
+## Release check (Oct 22)
+Owner, Oct 22 05:42: "prepping the game for release ... find any bugs". Three audits (desync, round rules, saves); fixed:
+- **Caught runners don't win.** `wonGame`: a runner wins only if not Downed at the end; a Forfeit pays nobody.
+- **Every runner left = Forfeit.** `RoundRules.endRound`: nobody safe, nobody downed, no catches -> `finish(s, "Catchers",
+  "Forfeit")` with no girl (it gave the catcher the girl for nobody).
+- **The picked runner left:** "First" goes to the next one across (`reachSafe` allows it when `s.picked == nil`).
+- **The only catcher left mid-round:** the Practice Bot steps in at the middle ("<Bot> is catching now"), if an Active
+  runner remains and the bot hadn't played this game.
+- **Saves not loaded yet** don't start in a game (fallback: everyone, if nobody's save is in).
+- **MoveGuard** (`HuzzServer/MoveGuard`): blinks are put back and a flagged player can't be made Safe, stab or lunge
+  for 2 s; the big burst is only allowed for 2.5 s after a real dash or lunge; a held (trapped, WalkSpeed 0) player
+  may not walk. Safe needs `MoveGuard.fine`.
+- **Dizzy / stunned / trapped catchers** can't lunge on their own screen (`Gameplay/Dash.held`).
+- **Radar** can't light runners after the round ended.
+Not fixed (suspected, look in Studio): stabs through thin walls (no wall ray), the `RunnersLeft` attribute can be stale
+for a moment, late joiners miss one-off effects, lobby players can pick Aura stars during a round; a runner who falls
+off the map or a safe runner who resets may be placed oddly.
+The sim's "a shield blocks a stab" now counts over the whole run (one 6-player run missed it about 1 in 10).

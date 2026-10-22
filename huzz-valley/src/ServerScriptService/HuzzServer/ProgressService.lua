@@ -5,6 +5,8 @@ local Progression = require(ReplicatedStorage.Shared.Config.Progression)
 local Dances = require(ReplicatedStorage.Shared.Config.Dances)
 local DailyRules = require(ReplicatedStorage.Shared.DailyRules)
 local DataService = require(script.Parent.DataService)
+local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
+local Crates = require(ReplicatedStorage.Shared.Config.Crates)
 
 local ProgressService = {}
 
@@ -66,7 +68,10 @@ function ProgressService.claimReward(player: Player, level: any): (boolean, stri
 		if Progression.level(data.XP) < reward.Level then why = "Reach level " .. reward.Level .. " first."; return end
 		if reward.Kind == "Coins" then data.Coins += reward.Amount
 		elseif reward.Kind == "Aura" then data.Aura += reward.Amount
-		elseif reward.Kind == "Dance" and Dances.get(reward.Id) then data.Dances[reward.Id] = true
+		elseif reward.Kind == "Dance" and Dances.get(reward.Id) then
+			-- (a dance you bought already: its coin price back, never nothing; release check, Oct 22)
+			if data.Dances[reward.Id] then data.Coins = (data.Coins or 0) + (Dances.get(reward.Id).Coins or 0) end
+			data.Dances[reward.Id] = true
 		else why = "That reward can't be given yet."; return end
 		data.Claimed[key] = true
 		ok = true
@@ -86,8 +91,15 @@ function ProgressService.claimQuest(player: Player, id: any): (boolean, string?)
 		if r and r.Kind == "Coins" then data.Coins = (data.Coins or 0) + r.Amount
 		elseif r and r.Kind == "Aura" then data.Aura = (data.Aura or 0) + r.Amount
 		elseif r and r.Kind == "Knife" then
-			data.Cosmetics[r.Id] = true
-			data.Wear.Knife = r.Id -- (wear it straight away; change it in the shop's ITEMS tab)
+			if data.Cosmetics[r.Id] then
+				-- (yours already, from a crate: its duplicate coins instead, and the knife you wear stays; release
+				-- check, Oct 22: it gave nothing and swapped your knife)
+				local item = CoinShop.get(r.Id)
+				data.Coins = (data.Coins or 0) + ((Crates.KnifeDuplicate :: any)[item and item.Rarity or "Common"] or 60)
+			else
+				data.Cosmetics[r.Id] = true
+				data.Wear.Knife = r.Id -- (wear it straight away; change it in the Inventory)
+			end
 		end
 		data.QuestsClaimed[quest.Id] = true
 		data.XP += quest.XP

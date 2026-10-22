@@ -22,6 +22,8 @@ DataService.Template = {
 	Wear = {}, -- [slot] = the worn coin-shop item (Trail, Tag, Knife); nil = none
 	Pity = {}, -- [crateId] = opens since that crate's top prize (Config/Crates; shown to the player)
 	CrateKeys = {}, -- [crateId] = crate keys bought with Robux (the Halloween shop); an open uses one before Aura
+	PassKnives = {}, -- [pass key] = true: a Halloween knife pass gave its knife (ShopService)
+	PassRefunds = {}, -- [pass key] = true: its knife was yours already, so its crate keys were given instead (once)
 	Settings = table.clone(Settings.Defaults),
 	Receipts = {}, -- recent developer-product PurchaseIds, so a receipt is never granted twice
 	AdminPasses = {}, -- [pass key] = true: a game pass's perks given by an admin (HuzzServer/AdminService GivePass)
@@ -224,7 +226,11 @@ local function onPlayerAdded(player: Player)
 	end
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
-		if player.Parent == Players then player:Kick("Your save was opened somewhere else. Please rejoin.") end
+		-- (not when this server is shutting down: ProfileStore ends every session then, and kids would read the wrong
+		-- reason; release check, Oct 22)
+		local closing = false
+		pcall(function() closing = ProfileStore.IsClosing == true end)
+		if player.Parent == Players and not closing then player:Kick("Your save was opened somewhere else. Please rejoin.") end
 	end)
 	if player.Parent ~= Players then
 		profile:EndSession()

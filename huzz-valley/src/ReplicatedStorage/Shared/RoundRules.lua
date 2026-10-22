@@ -120,7 +120,7 @@ local function finish(s, team, reason, events)
 	s.over = true
 	s.team = team
 	s.reason = reason
-	s.winner = girlWinner(s, team)
+	s.winner = if reason == "Forfeit" then nil else girlWinner(s, team) -- (Forfeit: nobody wins her)
 	table.insert(events, { type = "Win", team = team, winner = s.winner, reason = reason })
 end
 
@@ -266,7 +266,7 @@ function RoundRules.reachSafe(s, id)
 		moveGirl(s, id, "Hero", events) -- the reward: she comes down to the Hero
 	elseif s.holder ~= nil and s.roles[s.holder] == "Catcher" then
 		moveGirl(s, id, "Reclaimed", events) -- the next runner across takes her back from the catcher
-	elseif s.holder == nil and s.hero == nil and s.choice ~= nil then
+	elseif s.holder == nil and s.hero == nil and (s.choice ~= nil or s.picked == nil) then -- (picked == nil: the picked runner left before choosing, release check Oct 22)
 		-- No Hero run won her (Chicken, or the Hero was caught or ran out of time): the first runner across takes
 		-- her (owner, Oct 18: "if you go chicken, still the first person to reach the safe zone gets the girl"),
 		-- the one who chose Chicken too (owner, Oct 19: "make them get her").
@@ -421,7 +421,15 @@ function RoundRules.endRound(s, timedOut)
 		table.insert(events, { type = "StreakLost", count = lost })
 		table.insert(events, { type = "JoinCatchers", ids = downed })
 	end
-	if safe == 0 then
+	local caughtAny = false
+	for _, n in s.catches do
+		if n > 0 then caughtAny = true end
+	end
+	if safe == 0 and #downed == 0 and not caughtAny then
+		-- every runner left and nobody was ever caught (release check, Oct 22: the catcher took the girl and a full
+		-- win for nothing; a second account could farm it): the game ends, nobody wins her or the pay
+		finish(s, "Catchers", "Forfeit", events)
+	elseif safe == 0 then
 		finish(s, "Catchers", "AllCaught", events)
 	elseif (s.startRunners or 0) >= 2 and safe == 1 then
 		local last = nil

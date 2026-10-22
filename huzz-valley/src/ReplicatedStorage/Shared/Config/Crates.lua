@@ -3,7 +3,8 @@
 	Crates / cases (owner: "I will add them later"; then "create a good case opening animation"): opened with Aura,
 	decided on the server (ActionService "OpenCrate" -> Shared/CrateRoll). Kid-safe rules (root CLAUDE.md): every crate
 	shows its odds (CrateRoll.odds, Shop > CRATES) and a pity counter (the top prize is guaranteed after Pity.After
-	opens without it); no timers, no fake stock. Aura is only earned in the game (never sold for Robux).
+	opens without it); no timers, no fake stock. Aura is earned in the game, and since Oct 20 also sold in Aura packs
+	(Config/Products.Aura, Shop > AURA).
 
 	To add one, add a block like Dojo's below to Crates.List:
 	  Id      a short unique name ("Dojo")
@@ -52,6 +53,8 @@ local BEAST_WEIGHT = { Common = 40, Uncommon = 30, Rare = 30, Epic = 7, Legendar
 local HALLOWEEN_WEIGHT = { Common = 40, Uncommon = 24, Rare = 14, Epic = 6, Legendary = 2, Mythic = 1 }
 -- Coins back for a knife you own already (about a third of its coin shop price or less).
 local KNIFE_DUPLICATE = { Common = 60, Uncommon = 150, Rare = 300, Epic = 600, Legendary = 1200, Mythic = 2500 }
+-- (also what a quest knife you own already gives instead, HuzzServer/ProgressService)
+Crates.KnifeDuplicate = KNIFE_DUPLICATE
 
 -- The coin shop knives that `pick` accepts, in the shop's order, as crate items weighted by rarity. Never the Game
 -- Pass knives, the quest knives, the Spin Wheel's or any reward (they stay where they are earned).

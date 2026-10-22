@@ -193,7 +193,7 @@ function CombineService.combine(player: Player, id: any, grade: any): (boolean, 
 	local saved = DataService.saveAndWait(player, function(d) return (tonumber(d.Combines) or 0) >= made end, Config.SaveWait)
 	if not saved then warn(`[Huzz] Combine: {player.Name}'s merge isn't stored yet (it saves with the next save)`) end
 	busy[player] = nil
-	lastAt[player] = os.clock()
+	if player.Parent then lastAt[player] = os.clock() end -- (left during the save wait: don't keep their entry)
 	local c = Characters.get(id)
 	return true, { id = id, name = c and c.Name or id, model = key, from = grade, to = up, saved = saved }
 end

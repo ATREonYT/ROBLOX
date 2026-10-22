@@ -35,6 +35,12 @@ check("a screen that froze 1.5 s then caught up passes", not (select(2, M.look({
 check("a speed hack (60 studs a second at top speed 28) is caught", run(60, 4, 28))
 check("a run at a Speed Boost's top (36) with a huss and a dive passes", not run(36, 10, 36, function(t) return (if t >= 3 then 15 else 0) + (if t >= 3.5 then 19 else 0) end))
 check("a jump across the map (300 studs) is caught", (select(2, M.look({ at = Vector3.new(0, 0, 0), t = 0 }, Vector3.new(300, 0, 0), 0.25, 28))))
+-- release check (Oct 22): held still by the server (top 0) and no huss or dive just accepted (SMALL_BURST)
+local S = M.SMALL_BURST
+check("held still (a trap): a small drift passes", not (select(2, M.look({ at = Vector3.new(0, 0, 0), t = 0 }, Vector3.new(5, 0, 0), 2, 0, S))))
+check("held still (a trap): walking 30 studs out is caught", (select(2, M.look({ at = Vector3.new(0, 0, 0), t = 0 }, Vector3.new(30, 0, 0), 2, 0, S))))
+check("a 45-stud blink with no huss or dive is caught", (select(2, M.look({ at = Vector3.new(0, 0, 0), t = 0 }, Vector3.new(45, 0, 0), 0.25, 28, S))))
+check("a huss the server refused (15 studs) still passes", not (select(2, M.look({ at = Vector3.new(0, 0, 0), t = 0 }, Vector3.new(22, 0, 0), 0.25, 28, S))))
 local kept = M.look({ at = Vector3.new(1, 0, 2), t = 0 }, Vector3.new(300, 0, 0), 0.25, 28)
 check("caught: the spot to go back to is the last good one", kept.at == Vector3.new(1, 0, 2))
 

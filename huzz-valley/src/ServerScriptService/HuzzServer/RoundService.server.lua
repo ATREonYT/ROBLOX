@@ -36,6 +36,7 @@ local SecretReveal = require(ReplicatedStorage.Shared.SecretReveal)
 local PracticeBot = require(script.Parent.PracticeBot)
 local HitHistory = require(script.Parent.HitHistory)
 local PlaceService = require(script.Parent.PlaceService) -- (a player's own screen moves their body: the owner moves it)
+local MoveGuard = require(script.Parent.MoveGuard) -- (release check, Oct 22: no safe by a jump, no hits after one)
 local TouchHit = require(Shared.TouchHit)
 local ProgressService = require(script.Parent.ProgressService)
 
@@ -485,7 +486,8 @@ local function step(dt)
 	for id, status in match.status do
 		if status == "Active" and not frozen[id] then
 			local root = rootOf(id)
-			if root and MapService.inZone(goal, root.Position) then
+			-- (a body that jumped into the goal is sent back, not made safe: MoveGuard looks right now)
+			if root and MapService.inZone(goal, root.Position) and MoveGuard.fine(byId[id]) then
 				apply(Rules.reachSafe(match, id))
 				if match.over then
 					return
@@ -981,7 +983,10 @@ local function finishGame()
 	-- "every catcher wins" paid the wrong players (loop audit, Oct 18).
 	local function wonGame(id, role)
 		local caught = id == match.lead or id == winnerId or (match.catches[id] or 0) > 0
-		return not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher" and caught))
+		-- (a runner caught in the last round lost, release check Oct 22: they were paid as winners; a Forfeit, every
+		-- runner gone before a single catch, pays nobody)
+		return not botWon and match.reason ~= "Forfeit" and ((match.team == "Runners" and role == "Runner" and match.status[id] ~= "Downed")
+			or (match.team == "Catchers" and role == "Catcher" and caught))
 	end
 	-- the winner page (Screens/Results, Shared/Standings): everyone's numbers for its MVP / Survival / Catches tabs
 	local board = {}
@@ -1137,10 +1142,14 @@ local function runGame()
 		task.delay(SecretReveal.NAME, announce, `SECRET: {girl.name}!`, Color3.fromRGB(150, 110, 255)) -- (with her name card)
 		task.wait(SecretReveal.LENGTH)
 	end
-	local ids = {}
-	for id in byId do
-		table.insert(ids, id)
+	local ids, all = {}, {}
+	for id, p in byId do
+		table.insert(all, id)
+		-- (only players whose save has loaded: pay, XP and a won girl go into the save; release check, Oct 22. A
+		-- slow load, e.g. a save handed over from another server, joins the next game)
+		if DataService.get(p) then table.insert(ids, id) end
 	end
+	if #ids == 0 then ids = all end -- (never a game with nobody: then everyone plays)
 	local catcher = if #ids >= 2 then ids[math.random(#ids)] else nil
 	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, crossings = Config.Crossings })
 	State:SetAttribute("GirlName", girl.name)
@@ -1378,6 +1387,9 @@ Net.get("Stab").OnServerEvent:Connect(function(player, claim, shown)
 	if not (match and not match.over and match.roles[id] == "Catcher" and (stage == "Running" or stage == "HeroRun") and not frozen[id]) then
 		return
 	end
+	if MoveGuard.flagged(player) then
+		return -- (just sent back for moving too far: no hit from a jump)
+	end
 	if Config.TagMode ~= "Stab" or KnockdownService.isDown(player) or not PowerService.canStab(id) or PowerService.stunned(id) then
 		return -- (dizzy from a Shield, or stunned after a dive: no stabbing for a moment)
 	end
@@ -1424,7 +1436,8 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 			-- landing they lie stunned, so a hit then isn't fair: StunAfter + 0.1 s for the network's jitter)
 			and lungeClaims[id] and lastLunge[id] and os.clock() - lastLunge[id] <= math.min(Config.Lunge.HitWindow,
 				Config.Lunge.StunAfter or Config.Lunge.Time) + 0.1 and not lungeHit[id]
-			and not frozen[id] and not KnockdownService.isDown(player) and PowerService.canStab(id) and Config.TagMode == "Stab" then
+			and not frozen[id] and not KnockdownService.isDown(player) and PowerService.canStab(id) and Config.TagMode == "Stab"
+			and not MoveGuard.flagged(player) then
 			lungeClaims[id] = nil -- (one claim per lunge)
 			-- (pinpoint, Oct 19: the second value is what the screen showed, not a direction; if it fails, or an old
 			-- client sent none, our own test for a moment, never past the stun)
@@ -1666,6 +1679,29 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 	if match then
 		apply(Rules.removePlayer(match, player.UserId))
+		-- The only catcher left mid-run (release check, Oct 22: the rest of the round was a free walk across): the
+		-- Practice Bot steps in from the middle, as it does when a round starts with nobody catching.
+		local stage = State:GetAttribute("Stage")
+		if Config.Bot.Enabled and not match.over and not botPlayed and (stage == "Running" or stage == "HeroRun") and zones.Middle then
+			local anyCatcher, anyRunner = false, false
+			for id, role in match.roles do
+				if id ~= player.UserId and role == "Catcher" then anyCatcher = true end
+				if id ~= player.UserId and role == "Runner" and match.status[id] == "Active" then anyRunner = true end
+			end
+			if not anyCatcher and anyRunner then
+				local startName = MapService.startFor(match.round)
+				botPlayed = PracticeBot.spawn(MapService.middleSpot(1, startName) or MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
+				if botPlayed then
+					local ok, bots = pcall(CollectionService.GetTagged, CollectionService, "HuzzBot")
+					for _, m in if ok then bots else {} do
+						MapService.setCatcher(m, true)
+					end
+					PracticeBot.setScale(roundScale())
+					PracticeBot.setFrozen(false)
+					announce(`{Config.Bot.Name} is catching now`, RED)
+				end
+			end
+		end
 	end
 	frozen[player.UserId] = nil
 	rescueTime[player.UserId] = nil
