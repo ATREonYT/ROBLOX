@@ -2,16 +2,16 @@
 The hardtekk dances (owner, Oct 22 16:00: "for the shorter ones ... make them into dances that fit the beats, more
 hardtekk dances to match with the sounds"), made beat by beat for his three tracks. Each is 16 beats (two bars of
 eight) at its track's measured tempo, so it loops in time with the song: every punch, stomp and jump lands on a kick.
-  python3 author_dances.py   -> dances/<name>.json (as make_dance.py), for tools/anim/extract_anims.luau
+  python3 author_dances.py [name...]   -> dances/<name>.json (as make_dance.py), for tools/anim/extract_anims.luau
 Tempos measured off his files (kick onsets, autocorrelation; tools/sfx/song_loops.py): 150.9, 199.75 and 179.75 BPM.
 A limb is set by where it points: (forward, out) = swing it forward by `forward` (pi = straight up), after tilting
 it away from the body by `out` (both arms and legs; pi/2 = straight out to the side), in the torso's own frame, and
 turned into its joint's Transform. Root and neck (r6fit's numbers, checked): up, lean forward, roll left, turn left;
 nod down, tilt left, look left.
 """
-import json, math
+import json, math, sys
 import numpy as np
-from r6fit import transforms, JOINTS, rx, rz
+from r6fit import transforms, JOINTS, rx, rz, cf, inv
 
 PI = math.pi
 
@@ -138,18 +138,75 @@ def jumpstyle(b):
         x[KEYS.index("turn")] = spin
     return x
 
-DANCES = [("tekkpump", tekk_pump, 150.9), ("hakken", hakken, 199.75), ("jumpstyle", jumpstyle, 179.75)]
+# --- Balenci, set by hand off his catalog clip (owner, Oct 22 17:19: "make it be exactly replicated so it looks one to
+# one"). The auto-fit (fit_video.py) kept sinking into crouches the clip never makes, so the clip was measured instead
+# (vd/v1, 30 fps: the head's top and the shoes, frame by frame): a bow every 12 frames, 8 bows to one whole turn to his
+# own left in 96 frames. In each bow (frames 5-8 of 12) the body folds forward about 55 degrees at the hips and the
+# right leg kicks forward and up; then he pops up off the floor (frames 9-11, about 0.3 studs) with the right leg
+# swung back, and settles. The right fist stays up at the chin, the left arm hangs out to the side. Numbers per frame
+# of the 12, read off the clip (lean and the kick are degrees from straight up / down, in the world, not the torso).
+B_LEAN = [12, 10, 8, 8, 18, 40, 55, 50, 30, 8, 4, 8]
+B_HOP = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.28, 0.32, 0.12]
+B_KICK = [-10, -5, 0, 10, 30, 55, 60, 50, 20, -15, -25, -18]
+B_BOWS, B_BEATS = 8, 6  # (8 bows a turn, looped over 6 beats of his song: 3.03 s, the clip's 3.2 s within 6%)
+
+def cyc(keys, ph):
+    """Periodic Catmull-Rom through `keys` (evenly spaced over one cycle), at phase ph (0..1)."""
+    n = len(keys); u = (ph % 1.0) * n; i = int(u) % n; t = u - int(u)
+    p0, p1, p2, p3 = keys[(i - 1) % n], keys[i], keys[(i + 1) % n], keys[(i + 2) % n]
+    return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3)
+
+def balenci(b):
+    ph = b * B_BOWS / B_BEATS
+    lean = math.radians(cyc(B_LEAN, ph)); kick = math.radians(cyc(B_KICK, ph))
+    bow = max(0.0, (cyc(B_LEAN, ph) - 8) / 47)  # (0 upright .. 1 deepest)
+    return X(lean=lean, turn=2 * PI * b / B_BEATS, nod=0.3 * bow - 0.05, tilt=0.06,
+             ra=(1.95 + 0.2 * bow, -0.5), la=(0.3 + 0.85 * lean, 0.8),  # (the left arm keeps hanging out as he bows)
+             rl=(lean + kick, 0.08 + 0.45 * bow), ll=(lean - 0.03 * bow, 0.04))  # (the kick goes forward and out)
+
+def world(T):
+    w = {"HumanoidRootPart": cf(0, 3, 0)}
+    for j in ["RootJoint", "Neck", "Right Shoulder", "Left Shoulder", "Right Hip", "Left Hip"]:
+        p0, p1, c0, c1 = JOINTS[j]
+        w[p1] = w[p0] @ c0 @ T[j] @ inv(c1)
+    return w
+
+def foot(w, leg):
+    """(lowest corner's height, bottom middle) of a leg block."""
+    m = w[leg]
+    ys = [(m @ np.array([sx * 0.5, -1, sz * 0.5, 1]))[1] for sx in (-1, 1) for sz in (-1, 1)]
+    return min(ys), (m @ np.array([0, -1, 0, 1]))[:3]
+
+def planted(fn, b, hop):
+    """The pose with the left (standing) foot kept on its spot and the lowest foot on the floor, `hop` above it."""
+    p = fn(b)
+    home = X(turn=p[KEYS.index("turn")])
+    _, at = foot(world(joints_of(home)), "Left Leg")
+    w = world(joints_of(p))
+    low = min(foot(w, "Left Leg")[0], foot(w, "Right Leg")[0])
+    _, now = foot(w, "Left Leg")
+    d = np.array([at[0] - now[0], hop - low, at[2] - now[2]])
+    T = joints_of(p)
+    T["RootJoint"][:3, 3] = (-d[0], d[2], d[1])  # (the root's move in its joint's space: x = -world X, y = world Z, z = up)
+    return T
+
+DANCES = [("tekkpump", tekk_pump, 150.9, 16), ("hakken", hakken, 199.75, 16), ("jumpstyle", jumpstyle, 179.75, 16),
+          ("balenci", balenci, 119.0, B_BEATS)]
 
 def main():
-    for name, fn, bpm in DANCES:
-        length = 16 * 60 / bpm
+    only = sys.argv[1:]
+    for name, fn, bpm, beats in DANCES:
+        if only and name not in only:
+            continue
+        length = beats * 60 / bpm
         n = int(round(length * 30))
         frames = []
         for i in range(n):
-            T = joints_of(fn(16 * i / n))
+            b = beats * i / n
+            T = planted(fn, b, cyc(B_HOP, b * B_BOWS / B_BEATS)) if fn is balenci else joints_of(fn(b))
             frames.append({JOINTS[j][1]: [float(v) for v in (m[0, 3], m[1, 3], m[2, 3], *m[:3, :3].reshape(-1))] for j, m in T.items()})
         json.dump({"fps": n / length, "length": length,  # (exactly 16 beats: stays on the song)
-                   "bpm": bpm, "beats": 16, "frames": frames}, open(f"dances/{name}.json", "w"))
+                   "bpm": bpm, "beats": beats, "frames": frames}, open(f"dances/{name}.json", "w"))
         print(f"dances/{name}.json: {n} frames, {length:.3f} s, {bpm} BPM")
 
 if __name__ == "__main__":

@@ -162,9 +162,12 @@ def score(lab, seen):
 
 GROUPS = [(0, 3, 0.15), (3, 6, 0.12)] + [(6 + 3 * i, 9 + 3 * i, 0.2) for i in range(5)]
 
-def fit(seen, body, cam, x0, iters, rng, prior=None, lam=0.0, twist=0.0, sig=None):
+def fit(seen, body, cam, x0, iters, rng, prior=None, lam=0.0, twist=0.0, sig=None, yaw=None, yaw_lam=400.0):
     def total(x):
         c = score(render(body, solve(x), cam), seen)
+        if yaw is not None:  # (a turn known from the clip: which side shows, frame by frame)
+            d = (x[3] - yaw + math.pi) % (2 * math.pi) - math.pi
+            c += yaw_lam * d * d
         if prior is not None:
             c += lam * float(np.sum((x - prior) ** 2))
         if twist:  # (a limb's turn about its own length hardly shows on a square block: keep it small)

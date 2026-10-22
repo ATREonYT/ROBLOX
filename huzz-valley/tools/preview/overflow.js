@@ -70,7 +70,9 @@ const ALLOW = [
         if (el.dataset.wrap && g.height - box.height > 0.6 * fs) fails.push(`wraps ${Math.round(g.height - box.height)}px below its box`);
         // the window: the screen's top-level frame the text belongs to (a window, a HUD cluster)
         let top = el; while (top.parentElement && top.parentElement !== stage) top = top.parentElement;
-        const chip = el.dataset.bg ? box : seen; // a coloured chip (badge) must stay inside too, not just its word
+        // a coloured chip (badge) must stay inside too, not just its word (but a list clips its chips like its words)
+        let chip = el.dataset.bg ? { left: box.left, top: box.top, right: box.right, bottom: box.bottom } : seen;
+        for (let e = el.parentElement; e && e !== stage && el.dataset.bg; e = e.parentElement) if (e.dataset.clip) chip = inter(chip, rectOf(e));
         if (top !== el) {
           const t = rectOf(top);
           const past = Math.max(t.left - chip.left, chip.right - t.right, t.top - chip.top, chip.bottom - t.bottom);

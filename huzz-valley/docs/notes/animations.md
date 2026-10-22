@@ -74,8 +74,14 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   it goes to him through the project files only. If the repo goes private, extract and commit normally.
 - Everyone's walk and run on R6 (yours too in the live game, where nothing is published): `Gameplay/PlayerMoves`
   draws R6Idle / R6Walk / R6Run by hand from `ReplicatedStorage.HuzzR6Moves` (Bootstrap fills it, Studio and live),
-  tuned by `Config/Run.LocoR6`; only the lean on top. The huss on R6: `Gameplay/R6Huss` (Frame 13) draws his Dash
-  Left / Right from DashAt / DashDir. Spec: tests/PlayerMoves.spec (R6 case, only when his pack is on disk).
+  tuned by `Config/Run.LocoR6`; only the lean on top. The huss on R6: `Gameplay/R6Huss` (Frame 13) draws the
+  game's own huss pose rebuilt for six blocks (`Shared/R6HussPose`; owner Oct 22 17:21: "make the huss animation not
+  like that, but actually like the huss movement, just adjusted to the new animations"; his Dash Left / Right from
+  14:37 is no longer used): RunMotion's timing (In, Settle, Out), leaning forward 12 and tipped 18 into the move,
+  the outside leg planted 48 out (that sets the crouch: R6 legs can't bend), the inside leg lifted forward and out
+  with its foot just off the floor, fists in front, the head nearly upright. Works without his pack.
+  Specs: tests/R6Huss.spec (feet, crouch, lean, mirror), tests/PlayerMoves.spec (R6 case). Film:
+  `motion3d/huss_fx_scene.luau` (PACK=1 his dash, as before).
 - Dances (Oct 22, "input these dances i found and remove the old ones"): his 33 R6 dances (extract_anims R6_DANCES,
   our own names in `Config/Dances`), 21 for everyone, 4 Dance Pack, 8 coins; Untouchable is the Level 3 reward
   (was Robot). Old dances in saves: `DataService.migrateDances` gives their coins back (Robot from the reward becomes
@@ -255,6 +261,14 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
     Side-by-side with his clips, filmed by each fit's own camera (`anim_scene ANIM_VIEW=front ANIM_FOV ANIM_DOWN`):
     project files `previews/oct22-video-dances-side.mp4`. Sweet Dancin is close; Balenci has the hops and the full turn
     but its legs kick higher and it leans more than his clip (the fit's cost stayed high on that clip).
+  - **Balenci by hand (17:19, "make it be exactly replicated so it looks one to one"):** the fit kept sinking into
+    crouches the clip never makes, so Balenci is now set by hand in `author_dances.py balenci` from numbers measured
+    off his clip (the head's top and the shoes, frame by frame): a bow every 12 frames, 8 bows to one whole turn to
+    his own left; each bow folds about 55 degrees forward with the right leg kicking forward and out, then a hop of
+    about 0.3 studs with that leg swung back; right fist up at the chin, left arm hanging out. `planted()` keeps the
+    standing foot on its spot and the lowest foot on the floor. Looped over 6 beats of his song (3.03 s, the clip's
+    3.2 s within 6%). Still short of his clip: R6 has no knees or elbows, so his bent-leg crunch and the fist tucked
+    under the chin are straight blocks here. Side-by-side: project files `previews/oct22-balenci-by-hand.mp4`.
 - **His songs on the dances (16:17):** each of his dances is paired with the song whose beat fits its loop and
   stretched (at most 4.5%) to whole beats of it: `extract_anims.luau` ON_BEAT, songs measured and cut to clean
   loops by `tools/sfx/song_loops.py`; pairs and reasons in `docs/dance-music.md` "His own songs".

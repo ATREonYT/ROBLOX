@@ -17,8 +17,10 @@ local SHARED = "huzz-valley/src/ReplicatedStorage/Shared/"
 local Run = Env.load(SHARED .. "Config/Run.lua")
 local Round = Env.load(SHARED .. "Config/Round.lua")
 local RunMotion = Env.load(SHARED .. "RunMotion.lua")
+local HussPose = Env.load(SHARED .. "R6HussPose.lua")
 local Shot = Env.load(SHARED .. "CinematicShot.lua")
 local OLD = process.env.OLD ~= nil
+local PACK = process.env.PACK ~= nil -- (his pack's Dash Left / Right, as the huss was 14:37 to 17:21)
 
 local lib = roblox.Instance.new("Folder")
 for _, inst in roblox.deserializeModel(fs.readFile("huzz-valley/src/ServerStorage/HuzzAnimations.rbxm")) do inst.Parent = lib end
@@ -58,12 +60,20 @@ for f = 0, 3.2 * FPS - 1 do
 	pos += vel * DT
 	rig.root.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
 	KFS.apply(run, rig, t % run.length)
-	-- the huss: his dash blended over the run (Gameplay/R6Huss)
+	-- the huss: the game's huss pose for R6 blended over the run (Gameplay/R6Huss, Shared/R6HussPose)
 	local age = if dash then t - dash.at else nil
 	if age and age < D.Length then
 		local w = math.min(math.clamp(age / D.In, 0, 1), math.clamp((D.Length - age) / D.Out, 0, 1))
 		w = w * w * (3 - 2 * w)
-		KFS.apply(dashes[dash.side], rig, math.min(age, dashes[dash.side].length), w)
+		if PACK then
+			KFS.apply(dashes[dash.side], rig, math.min(age, dashes[dash.side].length), w)
+		else
+			local hold = math.max(D.Length - D.Out - D.In, 1e-3)
+			local u = math.clamp((age - D.In) / hold, 0, 1)
+			local motors = {}
+			for _, m in rig.motors do motors[m.Part1.Name] = m end
+			HussPose.pose(motors, dash.side, 1 - D.Settle * (1 - u * u * (3 - 2 * u)), w)
+		end
 	end
 	Rig.fk(rig)
 	-- the afterimages: a copy every Every seconds of the push, fading out where it was left (Gameplay/Feel)

@@ -20,6 +20,9 @@ def arms(rc, ra, lc, la):  # shoulders: c swings forward / back (right +c forwar
 CONFIGS = {
     "balenci": dict(
         W=150, H=140, seg=seg.balenci_catalog,
+        # the dancer turns all the way round to its own left, steadily, once a loop: front at frames 1 and 97, its
+        # right side at 25, its back at 49, its left side at 73 (seen by the backpack and the face)
+        yaw=lambda i: 2 * PI * i / 96,
         cam=dict(f=205, cx=72, cy=50, pitch=0.15, dist=12),
         grid=dict(f=[205, 220, 235], cx=[76], cy=[46, 50]),
         init=np.zeros(21),
@@ -61,9 +64,10 @@ def first(args):
     i, p, iters, seed = args
     rng = np.random.default_rng(seed)
     cam = cam_of(p); best = None
-    for yaw in np.linspace(-PI, PI, 8, endpoint=False):
+    Y = G["C"].get("yaw")
+    for yaw in ([Y(i)] if Y else np.linspace(-PI, PI, 8, endpoint=False)):
         x0 = G["C"]["init"].copy(); x0[3] = yaw
-        x, c, _ = fit(G["seen"][i], G["body"], cam, x0, iters, rng, twist=20)
+        x, c, _ = fit(G["seen"][i], G["body"], cam, x0, iters, rng, twist=20, yaw=Y(i) if Y else None)
         if best is None or c < best[1]:
             best = (x, c)
     return best
@@ -81,22 +85,26 @@ def track(args):
     order, p, seed, prior_xs = args
     rng = np.random.default_rng(seed)
     cam = cam_of(p)
+    Y = G["C"].get("yaw")
     xs, costs = {}, {}
     x = prev = None
     for n, i in enumerate(order):
         if x is None:
             prev = None
             x = prior_xs[i] if prior_xs and i in prior_xs else first((i, p, 600, seed))[0]
-            x, c, _ = fit(G["seen"][i], G["body"], cam, x, 2000, rng, twist=20)
+            x, c, _ = fit(G["seen"][i], G["body"], cam, x, 2000, rng, twist=20, yaw=Y(i) if Y else None)
         else:
             cands = [x + 0.6 * (x - prev), x] if prev is not None else [x]
+            if Y:  # (each also turned to where the clip says the body faces now)
+                for c0 in list(cands):
+                    c0 = c0.copy(); c0[3] = Y(i); cands.append(c0)
             if prior_xs and i in prior_xs:
                 cands.append(prior_xs[i])
             best = None
             for c0 in cands:
                 c0 = c0.copy()
                 c0, cc = stock(c0, i, cam, score(render(G["body"], solve(c0), cam), G["seen"][i]))
-                y, cc, _ = fit(G["seen"][i], G["body"], cam, c0, 500, rng, prior=x, lam=2.0, twist=20)
+                y, cc, _ = fit(G["seen"][i], G["body"], cam, c0, 500, rng, prior=x, lam=2.0, twist=20, yaw=Y(i) if Y else None)
                 if best is None or cc < best[1]:
                     best = (y, cc)
             prev = x

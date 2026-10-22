@@ -307,7 +307,7 @@ do
 	check(not hussHalt, "a huss with no key held is no halt on other screens")
 	check(not fallHalt, "nor is a fall (moving fast through the air with no key)")
 end
--- An R6 body (the game is R6 since Oct 22) gets his R6 pack drawn by hand, and his Dash Left / Right on a huss
+-- An R6 body (the game is R6 since Oct 22) gets his R6 pack drawn by hand, and the game's huss pose on a huss
 -- (Gameplay/R6Huss). His pack is paid and stays out of the public repo: without it, the R6 body is left alone.
 do
 	local raw = lib:FindFirstChild("HuzzAnimations")
@@ -385,14 +385,14 @@ do
 			prev = a
 		end)
 		check(math.deg(travel) > 60, string.format("running, the R6 leg swings through his run (%.0f degrees of travel)", math.deg(travel)))
-		-- a huss to the right: his Dash Right goes over the run, then the run is back
+		-- a huss to the right: the huss pose goes over the run, then the run is back
 		local runPose = rhip.Transform
 		attrs.DashAt, attrs.DashDir = clock, Vector3.new(1, 0, 0)
 		frames(12, function() pos = pos * CFrame.new(0, 0, -22 / 60); root.CFrame = pos end)
 		local shown = rhip.Transform
 		attrs.DashAt = nil
 		local _, a1 = shown:ToAxisAngle()
-		check(shown ~= runPose, string.format("a huss poses the R6 body with his dash (hip at %.0f degrees)", math.deg(a1)))
+		check(shown ~= runPose, string.format("a huss poses the R6 body (Shared/R6HussPose; hip at %.0f degrees)", math.deg(a1)))
 	else
 		frames(10)
 		check(not PlayerMoves.drives(character), "R6 (his pack not here): left to Roblox's own R6 walk")
