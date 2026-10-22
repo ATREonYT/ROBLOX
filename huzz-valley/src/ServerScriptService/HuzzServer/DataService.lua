@@ -35,6 +35,7 @@ DataService.Template = {
 	Combines = 0, -- merges made (the Combine machine waits for the save holding this before showing the result)
 	Prestige = {}, -- [id] = her prestige level 0..3 (cooler effects)
 	FriendReward = false, -- the friend knife (or its coins) was given (Shared/FriendRules)
+	GroupReward = false, -- the "join our group" spins were given (Config/Group, ProgressService.claimGroup)
 	FavChars = {}, -- [id] = true
 	Dances = {}, -- [id] = true (owned outright; the Dance Pack pass adds its dances on top)
 	FavDances = {}, -- [id] = true (saved favourites; ActionService FavoriteDance checks the id and caps the count)
@@ -90,6 +91,7 @@ function DataService.snapshot(player: Player)
 			return q
 		end)() },
 		Spins = d.Spins or 0,
+		GroupReward = d.GroupReward == true,
 		FreeSpinAt = d.FreeSpinAt or 0,
 		SpinPity = d.SpinPity or 0,
 		Boosts = table.clone(d.Boosts or {}),

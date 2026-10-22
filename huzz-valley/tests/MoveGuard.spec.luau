@@ -41,6 +41,19 @@ check("held still (a trap): a small drift passes", not (select(2, M.look({ at = 
 check("held still (a trap): walking 30 studs out is caught", (select(2, M.look({ at = Vector3.new(0, 0, 0), t = 0 }, Vector3.new(30, 0, 0), 2, 0, S))))
 check("a 45-stud blink with no huss or dive is caught", (select(2, M.look({ at = Vector3.new(0, 0, 0), t = 0 }, Vector3.new(45, 0, 0), 0.25, 28, S))))
 check("a huss the server refused (15 studs) still passes", not (select(2, M.look({ at = Vector3.new(0, 0, 0), t = 0 }, Vector3.new(22, 0, 0), 0.25, 28, S))))
+-- owner, Oct 22 18:53 (the dive "teleports you back to the middle"): a catcher running at 30, then a dive (21 studs
+-- in 0.38 s) whose stun holds them at speed 0 (top 0) while the run before it is still inside the window
+do
+	local rec, caught = nil, false
+	for i = 0, 12 do
+		local t = i * 0.25
+		local x = 30 * math.min(t, 1.75) + (if t >= 2 then 21 else if t > 1.75 then 21 * (t - 1.75) / 0.38 else 0)
+		local far
+		rec, far = M.look(rec, Vector3.new(x, 0, 0), t, if t > 1.75 and t < 2.6 then 0 else 30, M.BURST)
+		caught = caught or far
+	end
+	check("a catcher's run and then a dive (stunned at speed 0 after) passes", not caught)
+end
 local kept = M.look({ at = Vector3.new(1, 0, 2), t = 0 }, Vector3.new(300, 0, 0), 0.25, 28)
 check("caught: the spot to go back to is the last good one", kept.at == Vector3.new(1, 0, 2))
 

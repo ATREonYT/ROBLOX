@@ -256,3 +256,14 @@ The huss pose and walk animations: [animations.md](animations.md).
   0.25 s, the legs planting at once. Ease 3 was tried first (65% of the slide in the first 30 fps frame: a jolt).
 - Oct 17 round 2 (owner: "more cinematic", "less ui", "cutscenes dont cut out"): the huss's white trail went (`Feel`
   draws HV's thin speed lines), no letterbox bars, our own footsteps.
+
+## Oct 22 evening: dive snap-back, lobby fall, R6 stop
+- MoveGuard sent a catcher who ran and then dived back up to 2 s (often to the middle spawn): the dive's stun is
+  WalkSpeed 0, and that 0 counted for the whole run before it. `MoveGuard.look` now allows the highest top speed seen
+  since the accepted spot (`rec.top`). Test: MoveGuard.spec "a catcher's run and then a dive".
+- `Gameplay/PlaceSelf.holdUntilFloor`: after a move to the lobby, if no floor is found under you yet (it is still
+  streaming in), the root is held (anchored, attribute HuzzFloorWait) until it is, at most 4 s.
+- `Gameplay/PlayerMoves.r6Stop`: the stop's plant (arms out) and the halt's brace (side-on, lean back, front leg
+  forward, back leg braced, arms out) on R6 bodies; the R15 ones were never applied to R6.
+- Not done: a full server-authority movement rewrite (the owner's "make the game server sided"); `sa-test/` (Oct 21)
+  is the experiment. MoveGuard still checks speed on the server.

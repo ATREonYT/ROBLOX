@@ -6,9 +6,15 @@
 	live animation, which lagged). Every part is placed once by hand from its joints, so accessories follow.
 	  DancePose.anim(id)        the dance, sampled (nil while loading or if it can't be read). In Studio straight
 	                            from ReplicatedStorage.HuzzAnimations; live, from its published ID.
-	  DancePose.picture(parent, id, props, dark?, onFail?) -> ViewportFrame
+	  DancePose.picture(parent, id, props, dark?, onFail?, onReady?) -> ViewportFrame? (nil until your character is there)
 	                            props = ViewportFrame properties (Position, Size, ...); dark = a locked silhouette;
-	                            fills in when the dance has loaded, or calls onFail (show the note instead).
+	                            fills in when the dance has loaded and your character is there (onReady: hide the
+	                            stand-in), or calls onFail (show the note instead). Owner, Oct 22 19:09: "make all of
+	                            the character placeholders your character not the ai made one": the windows are built
+	                            as you join, before your character exists, and live an unpublished dance has no moves
+	                            here, so the AI-drawn stand-in stayed. Now it waits for your character, and live it
+	                            asks the server for the moves once the picture is on screen (like the Shop's cards).
+	  DancePose.ask(id, fn?)    live: ask the server to share this dance's moves (batched); fn(ok) once they're here.
 	  DancePose.live(parent, id, props, onReady?) -> { setOn(on) }
 	                            your avatar actually dancing it, looping (owner, Oct 21: "make it your character
 	                            dancing the dance", the Shop's dance cards). The parts are placed by hand from the
@@ -258,32 +264,6 @@ local function frame(vp: ViewportFrame, model: Model, room: number)
 	vp.CurrentCamera = cam
 end
 
-function DancePose.picture(parent: Instance, id: string, props: { [string]: any }, dark: boolean?, onFail: (() -> ())?): ViewportFrame
-	local vp = Instance.new("ViewportFrame")
-	vp.Name = "Dancer"
-	vp.BackgroundTransparency = 1
-	vp:SetAttribute("RuntimeOnly", true)
-	if dark then
-		vp.Ambient, vp.LightColor, vp.ImageColor3 = Color3.new(0, 0, 0), Color3.new(0, 0, 0), Color3.fromHex("0B1426")
-	else
-		vp.Ambient, vp.LightColor, vp.LightDirection = Color3.fromRGB(180, 180, 200), Color3.fromRGB(255, 250, 240), Vector3.new(-0.5, -1, -0.8)
-	end
-	for k, v in props do (vp :: any)[k] = v end
-	vp.Parent = parent
-	whenLoaded(id, function(ok)
-		local template = ok and posedModel(id)
-		if not template or not vp.Parent then
-			if onFail and vp.Parent then onFail() end
-			vp:Destroy()
-			return
-		end
-		local model = template:Clone()
-		model.Parent = vp
-		frame(vp, model, 1.15)
-	end)
-	return vp
-end
-
 -- The live dancers: each placed FPS times a second while it's on (a card in view in an open window).
 local FPS = 30 -- (owner, Oct 22: "they don't dance well": 15 looked choppy next to the real dance)
 type Live = { vp: ViewportFrame, on: boolean, apply: ((any) -> ())?, anim: any, t0: number }
@@ -321,7 +301,18 @@ local asked: { [string]: boolean } = {}
 local queue: { string } = {}
 local sending = false
 local function askFor(id: string, fn: (boolean) -> ())
-	if asked[id] then fn(false) return end
+	if asked[id] then -- (asked already: wait for the same moves)
+		task.spawn(function()
+			for _ = 1, 40 do
+				local shared = ReplicatedStorage:FindFirstChild("HuzzDanceMoves")
+				if shared and shared:FindFirstChild("Dance_" .. id) then break end
+				task.wait(0.2)
+			end
+			if anims[id] == false then anims[id] = nil end
+			fn(DancePose.anim(id) ~= nil)
+		end)
+		return
+	end
 	asked[id] = true
 	table.insert(queue, id)
 	if not sending then
@@ -351,6 +342,93 @@ local function askFor(id: string, fn: (boolean) -> ())
 		if seq then anims[id] = nil end -- (read it again now)
 		fn(seq ~= nil and DancePose.anim(id) ~= nil)
 	end)
+end
+
+-- On screen: every frame above it shown and its ScreenGui on (a closed window asks the server for nothing).
+local function onScreen(g: Instance?): boolean
+	while g and not g:IsA("LayerCollector") do
+		if g:IsA("GuiObject") and not (g :: GuiObject).Visible then return false end
+		g = g.Parent
+	end
+	return g ~= nil and (g :: LayerCollector).Enabled
+end
+-- Pictures waiting to be seen before they ask for their moves: one look for all of them twice a second.
+local unseen: { { vp: ViewportFrame, go: () -> () } } = {}
+local watching = false
+local function whenSeen(vp: ViewportFrame, go: () -> ())
+	table.insert(unseen, { vp = vp, go = go })
+	if watching then return end
+	watching = true
+	task.spawn(function()
+		while #unseen > 0 do
+			for i = #unseen, 1, -1 do
+				local u = unseen[i]
+				if not u.vp.Parent then
+					table.remove(unseen, i)
+				elseif onScreen(u.vp) then
+					table.remove(unseen, i)
+					task.spawn(u.go)
+				end
+			end
+			task.wait(0.5)
+		end
+		watching = false
+	end)
+end
+
+function DancePose.ask(id: string, fn: ((boolean) -> ())?)
+	askFor(id, fn or function() end)
+end
+
+function DancePose.picture(parent: Instance, id: string, props: { [string]: any }, dark: boolean?, onFail: (() -> ())?, onReady: (() -> ())?): ViewportFrame?
+	local vp: ViewportFrame? = nil
+	local function make(): ViewportFrame
+		local v = Instance.new("ViewportFrame")
+		v.Name = "Dancer"
+		v.BackgroundTransparency = 1
+		v:SetAttribute("RuntimeOnly", true)
+		if dark then
+			v.Ambient, v.LightColor, v.ImageColor3 = Color3.new(0, 0, 0), Color3.new(0, 0, 0), Color3.fromHex("0B1426")
+		else
+			v.Ambient, v.LightColor, v.LightDirection = Color3.fromRGB(180, 180, 200), Color3.fromRGB(255, 250, 240), Vector3.new(-0.5, -1, -0.8)
+		end
+		for k, x in props do (v :: any)[k] = x end
+		v.Parent = parent
+		return v
+	end
+	local function fill(ok: boolean)
+		local v = vp
+		if not (v and v.Parent) then return end
+		local template = ok and posedModel(id)
+		if not template then
+			if onFail then onFail() end
+			v:Destroy()
+			return
+		end
+		local model = template:Clone()
+		model.Parent = v
+		frame(v, model, 1.15)
+		if onReady then onReady() end
+	end
+	local function go()
+		vp = make()
+		whenLoaded(id, function(ok)
+			if ok then fill(true) return end
+			whenSeen(vp :: ViewportFrame, function() askFor(id, fill) end) -- (live, unpublished: its moves from the server)
+		end)
+	end
+	local me = Players.LocalPlayer
+	if not me or me.Character then
+		go()
+		return vp
+	end
+	-- (your character first: the windows are built as you join, often before it's there; nothing is made till then)
+	task.spawn(function()
+		local t0 = os.clock()
+		while not me.Character and parent.Parent and os.clock() - t0 < 60 do task.wait(0.25) end
+		if me.Character and parent.Parent then go() end
+	end)
+	return nil
 end
 
 function DancePose.live(parent: Instance, id: string, props: { [string]: any }, onReady: (() -> ())?)

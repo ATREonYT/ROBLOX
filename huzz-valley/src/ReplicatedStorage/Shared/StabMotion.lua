@@ -415,6 +415,148 @@ local function leap(rec, t)
 	return lw, CFrame.Angles(-d.Z * a * L.Neck, 0, d.X * a * L.Neck)
 end
 
+--[[ R6 bodies (owner, Oct 22 18:53-18:55: "make the animations for swinging the knives, this is also very imporant";
+	"make the jumping animation way better"). The game is R6 since Oct 22 and the moves above are for R15 joints
+	(elbows, knees, a waist), so on R6 the slash only half-played and the dive didn't move the body at all. The same
+	moves, keys and timing, on R6's six blocks: each arm points where the R15 upper arm points (KEYS / REACH / LIE /
+	PUSH turned onto a hanging arm), the R15 waist's turn goes on the root joint (the whole body turns into the
+	sweep), each leg points along its R15 thigh and shin together (hip + half the knee), and the body is lowered so its
+	lowest block touches the floor while crouching, landing and getting up. ]]
+local DOWN = Vector3.new(0, -1, 0)
+
+local function fromTo(a: Vector3, b: Vector3): CFrame
+	local d = math.clamp(a:Dot(b), -1, 1)
+	if d > 0.99999 then
+		return CFrame.identity
+	end
+	local axis = a:Cross(b)
+	if axis.Magnitude < 1e-5 then
+		axis = if math.abs(a.X) < 0.9 then Vector3.xAxis else Vector3.zAxis
+	end
+	return CFrame.fromAxisAngle(axis.Unit, math.acos(d))
+end
+
+-- A joint's Transform <-> its part's turn in the parent part's space (any C0).
+local function partTurn(motor, transform: CFrame): CFrame
+	local r = motor.C0.Rotation
+	return r * transform.Rotation * r:Inverse()
+end
+local function toT(motor, cf: CFrame): CFrame
+	local r = motor.C0.Rotation
+	return r:Inverse() * cf * r
+end
+
+-- The R6 joints (root joint, neck, arms, legs) of a move's body, found once.
+local function r6Joints(rec)
+	if rec.r6 then
+		return rec.r6
+	end
+	local torso = rec.rig.torso
+	local character = torso.Parent or torso.rig -- (.rig: the offline preview's stand-in body)
+	local function get(partName, jointName, holder)
+		local ok, found = pcall(CarryMath.holding, character, partName, jointName)
+		if ok and found then return found end
+		local part = character:FindFirstChild(partName)
+		return CarryMath.joint((holder and holder:FindFirstChild(jointName)) or (part and part:FindFirstChild(jointName)))
+	end
+	local j = {
+		root = get("Torso", "RootJoint", rec.root),
+		neck = get("Head", "Neck", torso),
+		arms = { get("Right Arm", "Right Shoulder", torso), get("Left Arm", "Left Shoulder", torso) },
+		legs = { get("Right Leg", "Right Hip", torso), get("Left Leg", "Left Hip", torso) },
+	}
+	rec.r6 = j
+	return j
+end
+StabMotion.r6Joints = r6Joints
+
+-- An arm (or leg) turned so it points along `dir` (its parent's space), from where the animation has it by w:
+-- the animated limb turned the shortest way round onto the blended direction, so it never flips over the top and
+-- keeps the animation's own twist.
+local function r6Point(rec, motor, dir: Vector3, w: number)
+	if not motor or w <= 0 then
+		return
+	end
+	local anim = animated(rec, motor)
+	local turn = partTurn(motor, anim)
+	local from = turn:VectorToWorldSpace(DOWN)
+	local d = from:Lerp(dir.Unit, math.clamp(w, 0, 1))
+	if d.Magnitude < 1e-3 then
+		d = dir.Unit
+	end
+	write(rec, motor, CFrame.new(anim.Position * (1 - w)) * toT(motor, fromTo(from, d.Unit) * turn))
+end
+
+-- The lowest point of an R6 body below the root part's centre with these part turns (torso = the root joint's
+-- whole pose, limbs = { joint -> turn in the torso's space }), from the joints' C0 / C1 and the parts' sizes.
+local function r6Lowest(j, torsoT: CFrame, limbs)
+	local low = math.huge
+	local function box(cf, size)
+		local h = size / 2
+		for _, x in { -1, 1 } do
+			for _, y in { -1, 1 } do
+				for _, z in { -1, 1 } do
+					low = math.min(low, (cf * Vector3.new(h.X * x, h.Y * y, h.Z * z)).Y)
+				end
+			end
+		end
+	end
+	local torsoPart = j.root.Part1
+	local torso = j.root.C0 * torsoT * j.root.C1:Inverse()
+	if torsoPart then box(torso, torsoPart.Size) end
+	for _, m in { j.arms[1], j.arms[2], j.legs[1], j.legs[2] } do
+		local part = m and m.Part1
+		if part then
+			box(torso * m.C0 * toT(m, limbs[m] or CFrame.identity) * m.C1:Inverse(), part.Size)
+		end
+	end
+	return low
+end
+StabMotion.r6Lowest = r6Lowest
+
+-- The R6 dive's body: the root joint (tipped into the dive, lowered onto the floor), both legs. Returns the head's
+-- lift (as leap()).
+local function r6Leap(rec, j, t, arms)
+	local lw = StabMotion.leapWeight(t)
+	if lw <= 0 or not j.root then
+		return nil
+	end
+	local d = rec.diveDir or Vector3.new(0, 0, -1)
+	if not rec.lead and t >= 0.02 then
+		rec.lead = if d.X > 0.5 then 1 else 2
+	end
+	local leadI = rec.lead or 2
+	local p = StabMotion.leapAt(t)
+	local a = rad(p.lean)
+	local tip = CFrame.Angles(d.Z * a, 0, -d.X * a)
+	local limbs = {}
+	-- (each limb as r6Point will put it: turned the shortest way from hanging, so the floor test matches the pose)
+	for m, turn in arms or {} do
+		limbs[m] = fromTo(DOWN, turn:VectorToWorldSpace(DOWN)) -- (the arms count for the floor too: hands under the shoulders lift the body in the pop up)
+	end
+	for i, m in j.legs do
+		if m then
+			local v = if i == leadI then p.lead else p.trail
+			local swing = rad(v[1] + v[2] / 2) -- (one rigid leg along the thigh and shin together)
+			local out = (if i == 1 then 1 else -1) * rad(4) -- (a little apart)
+			limbs[m] = fromTo(DOWN, (CFrame.Angles(-d.Z * swing, 0, d.X * swing) * CFrame.Angles(0, 0, out)):VectorToWorldSpace(DOWN))
+		end
+	end
+	local air = StabMotion.air()
+	local ground = math.max(1 - smooth(math.clamp((t - 0.07) / 0.09, 0, 1)), smooth(math.clamp((t - air * 0.4) / (air * 0.6 + 0.04), 0, 1)))
+	local drop = 0
+	if ground > 0 then
+		local rest = r6Lowest(j, CFrame.identity, {})
+		local posed = r6Lowest(j, toT(j.root, tip), limbs)
+		drop = math.max(0, posed - rest) * ground
+	end
+	write(rec, j.root, animated(rec, j.root):Lerp(toT(j.root, CFrame.new(0, -drop, 0) * tip), lw))
+	for _, m in j.legs do
+		if m and limbs[m] then r6Point(rec, m, limbs[m]:VectorToWorldSpace(DOWN), lw) end
+	end
+	return CFrame.Angles(-d.Z * a * StabMotion.LEAP.Neck, 0, d.X * a * StabMotion.LEAP.Neck)
+end
+
 -- Returns true while the move is playing. animatedArm = false skips the knife arm (an uploaded Stab
 -- animation plays it instead); the body, the free arm and the head always play.
 function StabMotion.step(rec, now, animatedArm)
@@ -470,6 +612,37 @@ function StabMotion.step(rec, now, animatedArm)
 		if w <= 0 then return CFrame.identity end
 		if rec.lunge then return angles(diveDeg(key)) end
 		return at(u, key, first, last)
+	end
+	if rec.rig.kind == "R6" then
+		local j = r6Joints(rec)
+		-- the arms' turns: the slash's (a dive's: the knife arm sweeps, the free arm stays reaching ahead, then
+		-- lies ahead and pushes up; R15's free arm swings to the slash's "pointing ahead", into the floor on a flat body)
+		local turns = {}
+		if w > 0 then
+			if j.arms[1] and animatedArm ~= false then
+				turns[j.arms[1]] = if rec.lunge then angles(diveDeg("shoulder")) else pose("shoulder")
+			end
+			if j.arms[2] then
+				turns[j.arms[2]] = if not rec.lunge then pose("off") elseif reaching then angles(StabMotion.LEAP.REACH.off) else angles(ground.off)
+			end
+		end
+		local lift
+		if rec.lunge then
+			lift = r6Leap(rec, j, t, turns)
+		elseif j.root and w > 0 then
+			-- (the slash's waist turn on the root joint: the whole body turns into the sweep)
+			local anim = animated(rec, j.root)
+			write(rec, j.root, toT(j.root, CFrame.identity:Lerp(pose("waist"), w)) * anim)
+		end
+		if j.neck then
+			local head = CFrame.identity:Lerp(pose("neck"), w)
+			if lift then head = CFrame.identity:Lerp(lift, StabMotion.leapWeight(t)) * head end
+			write(rec, j.neck, animated(rec, j.neck) * toT(j.neck, head))
+		end
+		for m, turn in turns do
+			r6Point(rec, m, turn:VectorToWorldSpace(DOWN), w)
+		end
+		return true
 	end
 	-- the leap's body (root joint and legs) first, then the waist and head on top
 	local neckLift

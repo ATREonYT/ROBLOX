@@ -34,6 +34,40 @@ function ProgressService.claimDaily(player: Player, key: any): (boolean, string?
 	return ok, why
 end
 
+-- The "join our group" reward (Config/Group, Screens/GroupReward): Config/Group.Spins spins on the wheel, once per
+-- save, only when Roblox says you're in the group. Asked fresh (GroupService:GetGroupsAsync: Player:IsInGroup keeps
+-- the answer from when you joined the server, so someone who joins the group while playing would be told no);
+-- IsInGroup only if that call fails. Given only once the save has it (DataService.update).
+function ProgressService.claimGroup(player: Player): (boolean, string?)
+	local Group = require(game:GetService("ReplicatedStorage").Shared.Config.Group)
+	local id = tonumber(Group.Id) or 0
+	if id <= 0 then return false, "The group is coming soon." end
+	local data = DataService.get(player)
+	if not data then return false, "Your save is still loading." end
+	if data.GroupReward then return false, "You already got your group spins." end
+	local member = false
+	local ok, groups = pcall(function() return game:GetService("GroupService"):GetGroupsAsync(player.UserId) end)
+	if ok and type(groups) == "table" then
+		for _, g in groups do
+			if type(g) == "table" and g.Id == id then member = true break end
+		end
+	else
+		local ok2, inGroup = pcall(function() return player:IsInGroup(id) end)
+		if not ok2 then return false, "Roblox didn't answer. Try again in a moment." end
+		member = inGroup == true
+	end
+	if not member then return false, "Join the group first, then press CLAIM." end
+	local given = false
+	DataService.update(player, function(d)
+		if d.GroupReward then return end
+		d.GroupReward = true
+		d.Spins = (d.Spins or 0) + Group.Spins
+		given = true
+	end)
+	if not given then return false, "You already got your group spins." end
+	return true
+end
+
 -- A finished game's XP (Progression.gameXP). Returns the XP and the new level if one was reached; each new level
 -- past the reward track pays Progression.Beyond at once.
 function ProgressService.gameXP(player: Player, won: boolean, tally: { [string]: number }): (number, number?)

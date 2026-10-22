@@ -58,7 +58,6 @@ local HalloweenShop = require(Shared.Config.HalloweenShop)
 local CrateRoll = require(Shared.CrateRoll)
 local KnifeLook = require(Shared.KnifeLook)
 local Dances = require(Shared.Config.Dances)
-local AnimationLibrary = require(Shared.AnimationLibrary)
 local UI = script.Parent.Parent
 local CrateArt = require(UI.CrateArt)
 local Theme = require(UI.Theme)
@@ -800,44 +799,25 @@ function Shop.build(parent: Instance)
 		Toast.show(if ok then `You got {d.Name}! Dance it from the Dances menu.` else (why or "Couldn't buy that. Try again."))
 	end
 	dBuy.onClick(function() if showing and showing.Coins then buyDance(showing) end end)
-	-- your avatar doing the dance (as in the Dances window: a copy of your character in the ViewportFrame)
-	local function showDancer(d): boolean
-		for _, ch in stage:GetChildren() do
-			if not ch:IsA("UICorner") then ch:Destroy() end
-		end
+	-- your avatar doing the dance (owner, Oct 22 19:09: "make all of the character placeholders your character not the
+	-- ai made one"): UI/DancePose.live, as on the dance cards, so it works for every dance (it used to need a published
+	-- animation, which none has yet, so the drawn stand-in showed). The stand-in shows until your avatar is ready.
+	-- (Stage, the old track's ViewportFrame, stays in the saved UI, unused and hidden.)
+	local function dropDancer()
+		local old = dBack:FindFirstChild("Dancer")
+		if old then old:Destroy() end
+	end
+	local function showDancer(d)
+		stage.Visible = false
+		dropDancer()
+		dStill.Visible = true
 		local player = Players.LocalPlayer
-		local character = player and player.Character
-		local id = AnimationLibrary.id("Dance_" .. d.Id, d.AnimationId)
-		if not character or id == "" then return false end
-		local ok = pcall(function()
-			local world = Instance.new("WorldModel")
-			world.Parent = stage
-			local was = character.Archivable
-			character.Archivable = true
-			local copy = character:Clone()
-			character.Archivable = was
-			for _, x in copy:GetDescendants() do
-				if x:IsA("LuaSourceContainer") or x:IsA("BillboardGui") or x:IsA("ParticleEmitter") or x:IsA("Highlight") or x:IsA("Trail") or x:IsA("Beam") or x:IsA("Light") then x:Destroy() end
-			end
-			local root = copy:FindFirstChild("HumanoidRootPart") :: BasePart
-			root.Anchored = true
-			copy:PivotTo(CFrame.new(0, 0, 0))
-			copy.Parent = world
-			local cam = Instance.new("Camera")
-			cam.FieldOfView = 34
-			cam.CFrame = CFrame.lookAt(Vector3.new(0, 0.6, -11.5), Vector3.new(0, -0.2, 0))
-			cam.Parent = stage
-			stage.CurrentCamera = cam
-			local humanoid = copy:FindFirstChildOfClass("Humanoid") :: Humanoid
-			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-			local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
-			local animation = Instance.new("Animation")
-			animation.AnimationId = id
-			local t = (animator :: Animator):LoadAnimation(animation)
-			t.Looped = true
-			t:Play(0)
+		if not (player and player.Character) then return end
+		local w = dBack.Size.X.Offset
+		local ok, live = pcall(DancePose.live, dBack, d.Id, { Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(w - 8, DV.ArtH - 8), ZIndex = 33 }, function()
+			if showing == d then dStill.Visible = false end
 		end)
-		return ok
+		if ok then live.setOn(true) else warn("[HuzzUI] Shop: the dance panel can't dance:", live) end
 	end
 	table.insert(sideRefresh, function()
 		if not dv.Visible or not showing then return end
@@ -856,6 +836,7 @@ function Shop.build(parent: Instance)
 		Kit.fitLine(sideTitle, SIDE.W - 2 * SIDE.Pad - 56, 30, 18, true)
 		for id, v in crateViews do v.Visible = id == crate.Id end
 		dv.Visible = false
+		dropDancer()
 		slideIn()
 	end
 	local function openDanceSide(d)
@@ -865,9 +846,7 @@ function Shop.build(parent: Instance)
 		for _, v in crateViews do v.Visible = false end
 		dv.Visible = true
 		Kit.setArt(dStill, "DanceStill" .. d.Id)
-		local dancing = showDancer(d) -- (a preview before you buy: your avatar dances it, here only)
-		stage.Visible = dancing
-		dStill.Visible = not dancing
+		showDancer(d) -- (a preview before you buy: your avatar dances it)
 		dBlurb.Text = d.Blurb
 		Kit.fitLine(dBlurb, SIDE.W - 2 * SIDE.Pad, 20, 12, true)
 		dNote.Text = if d.Pack then "Also comes with the Dance Pack." elseif d.Id == "Untouchable" then "Also on the reward track at Level 3." else "Only sold here."

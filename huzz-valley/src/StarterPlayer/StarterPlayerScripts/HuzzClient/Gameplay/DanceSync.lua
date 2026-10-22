@@ -15,9 +15,9 @@
 	  - Your own dance in the live game while it has no published ID (UI/DancePlayer.handBeat; owner, Oct 20 15:13:
 	    "inside the actual roblox game, not studio, make it so that dances are available"): drawn the same way on
 	    your own joints, on its beat (no track exists to play).
-	  - Dance together: walk up to someone dancing (not in a round, not in a cutscene) and press F ("DANCE TOGETHER"):
-	    you start their dance on their beat. Only a dance you own: otherwise it says where to get it (nothing sold
-	    from here).
+	  - Sync dance: walk up to someone dancing (not in a round, not in a cutscene) and press F or tap "SYNC DANCE"
+	    (also while you dance something else or the same dance off their beat; Oct 22 18:54): you start their dance on
+	    their beat. Only a dance you own: otherwise it says where to get it (nothing sold from here).
 	Gameplay/Frame order 9: after the walk pack (PlayerMoves 8, which steps aside while someone dances), before the
 	huss pose (RunAnimator 10) and the carry (20).
 ]]
@@ -174,24 +174,32 @@ function M.start()
 			and DancePlayer.handBeat() ~= nil and DancePlayer.current() == id
 	end
 
-	-- "Dance together": a prompt on another dancer, for you while you're free to dance.
+	-- "Sync dance": a button on another dancer, for you while you're free to dance. Also while you're dancing
+	-- something else, or the same dance off their beat (owner, Oct 22 18:54: "make a button to sync dancing with
+	-- another person if he is dancing and you are close to him"); gone once you're in step with them.
 	local function canJoin(): boolean
 		local me = Players.LocalPlayer
 		local role = me:GetAttribute("HuzzRole")
 		if role == "Runner" or role == "Catcher" or me:GetAttribute("HuzzCinematic") == true or me:GetAttribute("HuzzChoosing") == true then
 			return false
 		end
-		return not (okPlayer and DancePlayer and DancePlayer.current() ~= nil)
+		return okPlayer and DancePlayer ~= nil
+	end
+	local function inStep(character: Model, id: string?): boolean
+		local mine = Players.LocalPlayer.Character
+		local at = character:GetAttribute("HuzzDanceAt")
+		return id ~= nil and mine ~= nil and DancePlayer.current() == id and type(at) == "number"
+			and math.abs((mine:GetAttribute("HuzzDanceAt") or -1) - at) < 0.05
 	end
 	local function setPrompt(rec, character: Model, id: string?)
-		local want = id ~= nil and canJoin()
+		local want = id ~= nil and canJoin() and not inStep(character, id)
 		local root = character:FindFirstChild("HumanoidRootPart")
 		if want and root then
 			local prompt = rec.prompt
 			if not (prompt and prompt.Parent == root) then
 				prompt = Instance.new("ProximityPrompt")
 				prompt.Name = PROMPT_NAME
-				prompt.ActionText = "DANCE TOGETHER"
+				prompt.ActionText = "SYNC DANCE"
 				prompt.KeyboardKeyCode = Enum.KeyCode.F
 				prompt.GamepadKeyCode = Enum.KeyCode.ButtonY
 				prompt.MaxActivationDistance = 12
@@ -209,7 +217,8 @@ function M.start()
 						end
 						return
 					end
-					local ok, why = DancePlayer.play(dance) -- (on their beat: DancePlayer takes the nearest dancer's)
+					local beat = character:GetAttribute("HuzzDanceAt")
+					local ok, why = DancePlayer.play(dance, if type(beat) == "number" then beat else nil) -- (on their beat)
 					if not ok and okToast and Toast then
 						Toast.show(why or "That dance couldn't start.")
 					end

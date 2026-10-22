@@ -285,6 +285,15 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
 - The Shop's tabs are gone since Oct 20 14:31 (one page, above). His crate pictures never show ImageLoader's glyph:
   `UI/CrateArt.hisPicture` puts his 3D crate in their place (economy.md).
 
+## Your avatar instead of the drawn stand-ins (Oct 22 19:09)
+- "make all of the character placeholders your character not the ai made one": `UI/DancePose.picture` now waits for
+  your character (windows are built before it exists) and, live, asks for an unpublished dance's moves once the
+  picture is on screen (`DancePose.ask`, batched SeeDance). The Dances grid, Inventory and the dance wheel use it.
+- Shop's dance panel: `DancePose.live` (your avatar dancing) instead of a published track (none exists yet).
+- Dances window preview: your avatar dancing the picked dance (`showDancer`), asked for only while the window is open.
+- SYNC DANCE prompt (`Gameplay/DanceSync`): next to someone dancing a dance you own, joins it on their beat.
+- The drawn DanceStill pictures stay as the stand-in until your avatar is ready, and for How to Play's art.
+
 ## Honest gaps
 - Not seen in Studio yet: the Oct 17 UI shine/rays/spin, the Oct 17 screens, the winner page (real avatars), daily
   quests, the HUD's INVITE / QUESTS / "+10% COINS", the Index PRESTIGE button, the picture stand-ins, the ability cards and dash bar

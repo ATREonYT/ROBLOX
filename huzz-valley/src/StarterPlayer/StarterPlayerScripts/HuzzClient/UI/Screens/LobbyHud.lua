@@ -130,6 +130,19 @@ function LobbyHud.build(parent: Instance)
 	if not Kit.reused(quests.Instance) then quests.Instance.Position = UDim2.fromOffset(100 - 25 - 33, quests.Instance.Position.Y.Offset) end
 	local questTag = Kit.text({ Name = "ReadyTag", Text = "!", FontFace = Theme.Fonts.Button, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(20, 20), ZIndex = 3, Visible = false, Parent = quests.Instance })
 	Kit.attach(Kit.corner(10), questTag)
+	-- GROUP under QUESTS (owner, Oct 22 19:09: "make a 'join the group' ui pop up for a reward"): opens the group
+	-- window (Screens/GroupReward), until its spins are claimed; with no group set (Config/Group.Id 0) only in Studio
+	local groupBtn = squareButton(right, "Group", "GiftAction", 264, function() ModalManager.open("GroupReward") end)
+	if not Kit.reused(groupBtn.Instance) then groupBtn.Instance.Position = UDim2.fromOffset(100 - 25 - 33, groupBtn.Instance.Position.Y.Offset) end
+	do
+		local Group = require(game:GetService("ReplicatedStorage").Shared.Config.Group)
+		local studio = game:GetService("RunService"):IsStudio()
+		local function showGroup()
+			groupBtn.Instance.Visible = State.data.GroupReward ~= true and ((tonumber(Group.Id) or 0) > 0 or studio)
+		end
+		State.changed(showGroup)
+		showGroup()
+	end
 	-- INVITE over SPIN (owner, Oct 19: "make friend rewards, add a friend knife (for inviting them)"): Roblox's own
 	-- invite prompt (SocialService, guarded: it isn't there offline or on every device)
 	local invite = squareButton(right, "Invite", "Players", 66, function()

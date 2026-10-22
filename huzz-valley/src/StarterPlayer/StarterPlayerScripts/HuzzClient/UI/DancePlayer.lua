@@ -116,8 +116,9 @@ function DancePlayer.stop()
 	emit()
 end
 
--- Returns true when it started, or false and a message.
-function DancePlayer.play(id: string): (boolean, string?)
+-- Returns true when it started, or false and a message. joinBeat: start on this dancer's beat (Gameplay/DanceSync's
+-- SYNC DANCE button), else on the nearest dancer's doing it, else from now.
+function DancePlayer.play(id: string, joinBeat: number?): (boolean, string?)
 	local ok, why = DancePlayer.ready(id)
 	if not ok then return false, why end
 	local d = Dances.get(id) :: any
@@ -132,7 +133,7 @@ function DancePlayer.play(id: string): (boolean, string?)
 		end
 		if track then pcall(function() (track :: AnimationTrack):Stop(0.2) end) end
 		local now = workspace:GetServerTimeNow()
-		local beat = partnerStart(id) or now
+		local beat = joinBeat or partnerStart(id) or now
 		track, playing, hand, startedAt = nil, id, beat, os.clock()
 		if okMusic and Music then pcall(Music.dance, id) end
 		pcall(function() (Net.get("Dance") :: RemoteEvent):FireServer(id, beat) end)
@@ -152,7 +153,7 @@ function DancePlayer.play(id: string): (boolean, string?)
 	if okMusic and Music then pcall(Music.dance, id) end
 	-- on the beat of anyone near already doing it, else from now
 	local now = workspace:GetServerTimeNow()
-	local beat = partnerStart(id) or now
+	local beat = joinBeat or partnerStart(id) or now
 	if beat < now then
 		task.spawn(function()
 			for _ = 1, 200 do -- (wait up to 5 s for the animation to load: a published one can take a moment)

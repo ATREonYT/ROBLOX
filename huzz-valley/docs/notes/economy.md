@@ -115,6 +115,15 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - INVITE on the HUD (over SPIN) opens Roblox's own invite window (`SocialService`, guarded; Studio can't open it).
   Spec `tests/FriendRules.spec`.
 
+## Join our group (`Config/Group`, ActionService `ClaimGroup` -> `ProgressService.claimGroup`, `Screens/GroupReward`; Oct 22)
+- Owner, Oct 22 19:09: a "join the group" popup in our style, reward 5 free spins. FREE SPINS window: the wheel in
+  green rays, +5 SPINS, JOIN GROUP (GroupService:PromptJoinAsync, guarded) and CLAIM. Lobby HUD GROUP button under
+  QUESTS until claimed. Pops up once per visit after `PopupAfter` s in the lobby (never over a round or a window).
+- Server only: asks Roblox fresh (GroupService:GetGroupsAsync; IsInGroup only as a fallback, it caches the answer
+  from join), adds `Spins` to the save once (`GroupReward` in the save and the snapshot).
+- **`Config/Group.Id` is 0 (owner's checklist):** COMING SOON on both buttons, CLAIM gives nothing, no popup or HUD
+  button live (both show in Studio so he can see it). Check: `tools/preview/check_group.luau`; shot `group-reward`.
+
 ## Prestige: replaced by Combine (owner, Oct 21: "replace prestige with combine")
 - Winning a girl you already own still pays her duplicate coins and saves a copy (`Copies[id]`, [combine.md](combine.md)).
   There is no PRESTIGE any more: the ActionService verb is gone and the Index's button is COMBINE (opens the Combine

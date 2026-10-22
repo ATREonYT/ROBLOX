@@ -40,17 +40,24 @@ function MoveGuard.allowed(top: number, dt: number, burst: number?): number
 	return walk * MoveGuard.SLACK * math.clamp(dt, 0, MoveGuard.MAX_GAP) + (burst or MoveGuard.BURST)
 end
 
--- One look at one body. rec: { at = Vector3, t = number } (the last accepted spot, nil at first); returns the new
--- rec and true when the body went too far (then rec is unchanged: the spot to send it back to).
+-- One look at one body. rec: { at = Vector3, t = number, top = number? } (the last accepted spot, nil at first);
+-- returns the new rec and true when the body went too far (then rec is unchanged: the spot to send it back to).
+-- The walking allowance is the highest top speed seen since that spot (rec.top), not only the one now (owner,
+-- Oct 22 18:53: the catcher's dive "teleports you back to the middle": the dive's 0.4 s stun is speed 0, and that
+-- 0 counted for the whole run before it, so a catcher who ran and then dived was sent back up to 2 s).
 function MoveGuard.look(rec, pos: Vector3, now: number, top: number, burst: number?)
-	if not rec then return { at = pos, t = now }, false end
+	if not rec then return { at = pos, t = now, top = top }, false end
+	local seen = math.max(top, rec.top or 0)
 	local flat = Vector3.new(pos.X - rec.at.X, 0, pos.Z - rec.at.Z).Magnitude
-	if flat > MoveGuard.allowed(top, now - rec.t, burst) then
+	if flat > MoveGuard.allowed(seen, now - rec.t, burst) then
 		return rec, true
 	end
 	-- (the spot moves on once a window has passed, and only if the body moved: a frozen copy keeps its time)
 	if now - rec.t >= MoveGuard.WINDOW and (pos - rec.at).Magnitude > 0.01 then
-		return { at = pos, t = now }, false
+		return { at = pos, t = now, top = top }, false
+	end
+	if seen ~= rec.top then
+		return { at = rec.at, t = rec.t, top = seen, character = rec.character }, false
 	end
 	return rec, false
 end

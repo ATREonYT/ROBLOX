@@ -99,8 +99,19 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   each, ~5 at 100 ms, ~7.5 at 200 ms (p95 up to 10: the runner turning or hussing). On the runner's own screen the knife can
   therefore look short. Roblox gives no way to show every player in the same spot at the same time; the fair choice
   is one screen's view, and we take the catcher's. Not
-  done: moving the caught body to where the knife touched (the runner would see a snap back) and drawing others
-  ahead of where they were (wrong places on every turn).
+  done: moving the caught body to where the knife touched (the runner would see a snap back).
+- **Others drawn ahead (Oct 22 19:45, `Gameplay/OthersAhead`)**: the owner's two recordings of one round (runner's
+  and catcher's screens, both ~55 ms ping) showed the catcher's knife on the runner while the runner's screen had the
+  catcher several studs behind. Now every screen draws everyone else ahead along their movement by its half ping +
+  `Round.Ahead.Interp` 0.1 s (at most 0.3 s and 8 studs; eased; still, anchored or teleporting bodies not moved),
+  by shifting their root joint's C0 on that screen only. HitCheck sends the offset as `ahead` with the unshifted root;
+  `TouchHit.verify` follows the runner's real server path that far (never past it, `Touch.AheadMax` 8.5), tests the
+  touch where the screen drew them (or where they really were if that guess left their path on a turn), and caps it
+  against that moment. Lag model (`AHEAD=1 lune run huzz-valley/tools/sim/touch_lag.luau`), runner's-screen gap
+  without -> with: both 50 ms 3.3 -> 1.1 studs, 100 ms 4.8 -> 2.1, 200 ms 7.5 -> 4.4, dives 3.3/4.6/7.5 -> 1.3/1.3/3.5;
+  fair hits that count 98-100% (catcher 400 ms: 38 -> 87%). Cheat reach unchanged (+1 stud). Limits: on a sharp turn
+  the body shows a little past the corner for a moment; Interp 0.1 is a guess (Roblox doesn't publish its smoothing),
+  only real servers can tune it.
 - **Releasing a pose** (StabMotion, DownMotion, CarryMotion): put back the pose underneath only on joints nobody else
   wrote since, or the old pose shows for one frame ([animations.md](animations.md) "Layering").
 - **Red fill** on the caught runner (`Gameplay/RoundHud`, on their team Highlight, everyone's screen,
@@ -166,3 +177,10 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   angle-by-angle arm blend (above).
 - **Catch**: the knife-colour cut line and 10 sparks replaced 30 red-and-white sparks (generic, and HV has none).
   Downed runners used to lose their outline. The runner used to stop dead from a sprint.
+
+## R6 knife swing and dive (Oct 22, `Shared/StabMotion` R6 part)
+- Owner, 18:53: "make the animations for swinging the knives"; "make the jumping animation way better". On R6 the
+  swing turns the body into the sweep, knife arm out level, free arm ahead; the dive tips the body flat along the
+  dive direction, arms ahead, legs trailing, never under the floor (arms counted), then hands the joints back.
+- Every limb is aimed with the shortest turn (`fromTo(DOWN, dir)`), so the twist about the C1 offset stays right.
+- Test: `tests/R6Knife.spec.luau`. Video: `tools/preview/motion3d/r6_knife_scene.luau` (needs his R6Run: private).

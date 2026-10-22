@@ -399,8 +399,9 @@ function Inventory.build(parent: Instance)
 			local colour = Dances.Colors[d.Color] or WHITE
 			local c, b = card("Dance" .. d.Id, d.Name, if d.Pack then "DANCE PACK" else "DANCE", colour:Lerp(WHITE, 0.3), colour:Lerp(Color3.new(0, 0, 0), 0.35))
 			local still = Kit.art("DanceStill" .. d.Id, { Name = "Picture", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(CARD.W // 2, CARD.PicY + CARD.PicH), Size = UDim2.fromOffset(CARD.PicH, CARD.PicH), ScaleType = Enum.ScaleType.Fit, ZIndex = 2, Parent = c })
-			pcall(DancePose.picture, c, d.Id, { Position = UDim2.fromOffset(4, CARD.PicY), Size = UDim2.fromOffset(CARD.W - 8, CARD.PicH), ZIndex = 3 }, false, nil)
-			task.defer(function() if c:FindFirstChild("Dancer") then still.Visible = false end end)
+			pcall(DancePose.picture, c, d.Id, { Position = UDim2.fromOffset(4, CARD.PicY), Size = UDim2.fromOffset(CARD.W - 8, CARD.PicH), ZIndex = 3 }, false, nil, function()
+				still.Visible = false -- (your avatar in the pose: the drawn stand-in steps aside)
+			end)
 			local function paint()
 				local on = DancePlayer.current() == d.Id
 				b.setText(if on then "STOP" else "PLAY")

@@ -21,6 +21,8 @@ DataService.update(player, function(d)
 	d.Aura = tonumber(cfg.GEMS) or 320
 	for key in string.gmatch(cfg.OWN or "", "[^,]+") do d.Cosmetics[key] = true end
 	d.XP = tonumber(cfg.XP) or d.XP -- (the winner page's level bar)
+	-- GROUPID=n: the group window as it looks once the owner sets his group (a stand-in number, the preview only)
+	if cfg.GROUPID then require(game.ReplicatedStorage.Shared.Config.Group).Id = tonumber(cfg.GROUPID) end
 	-- the daily quests window: the spin quest done (CLAIM), the first daily one half way
 	if cfg.SCREEN == "DailyQuests" then
 		local DailyRules = require(game.ReplicatedStorage.Shared.DailyRules)

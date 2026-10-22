@@ -8,7 +8,7 @@
 -- shows your avatar frozen in the dance's most telling moment (UI/DancePose: a still picture, so the grid never
 -- lags). Until that picture can be made (no character yet, or the dance not published in the live game) a white
 -- blocky figure in the same pose stands in (assets/art/dance-still-*, ours), tinted like the mockup's figures. The
--- big picture shows your avatar actually dancing (a copy in a ViewportFrame) once the dance can play.
+-- big picture shows your avatar actually dancing (a copy in a ViewportFrame, posed by hand: showDancer).
 -- Layout numbers are the mockup's, measured and scaled to the 701 x 320 window (x 0.77).
 local Players = game:GetService("Players")
 
@@ -137,13 +137,9 @@ local function figure(parent: Instance, d, size: Vector2, pos: Vector2, area: Ve
 	if not mine then
 		Kit.icon("Lock", { Name = "Lock", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, pos.Y + math.floor(size.Y / 2)), Size = UDim2.fromOffset(lockSize, math.round(lockSize * 1.18)), ZIndex = 3, Parent = parent })
 	end
-	local player = Players.LocalPlayer
-	if player and player.Character then
-		local vp = DancePose.picture(parent, d.Id, { Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(area.X, area.Y), ZIndex = 2 }, not mine)
-		local function ready() if vp.Parent and vp:FindFirstChildOfClass("Model") then still.Visible = false end end
-		pcall(function() vp.ChildAdded:Connect(ready) end) -- (the offline harness has no ChildAdded)
-		ready()
-	end
+	DancePose.picture(parent, d.Id, { Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(area.X, area.Y), ZIndex = 2 }, not mine, nil, function()
+		still.Visible = false
+	end)
 	return still
 end
 
@@ -234,21 +230,66 @@ function DancesScreen.build(parent: Instance)
 		if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
 		return copy
 	end
+	-- Your avatar doing it (owner, Oct 22 18:53: "show the avatar dancing when you are in the dancing menu, not the
+	-- note icon"): his dances have no published IDs, so no track can play them here; the copy is posed by hand
+	-- every frame from the dance's moves (Gameplay/CompanionDance.anim: Studio's HuzzAnimations, or the moves the
+	-- server shares, asked for with UI/DancePose.ask), like Gameplay/DanceSync draws dancers. The copy's
+	-- joints are taken out and its parts anchored, so each part is simply put where its joint chain says.
+	local okC, CompanionDance = pcall(function() return require(UI.Parent:WaitForChild("Gameplay", 5):WaitForChild("CompanionDance", 5)) end)
+	local Sampler = require(Shared.KeyframeSampler)
+	local danceConn: RBXScriptConnection? = nil
+	local asked = {} -- dance id -> true once its moves were asked for
+	local function chainOf(copy: Model, root: BasePart)
+		local links = {}
+		for _, j in copy:GetDescendants() do
+			if j:IsA("JointInstance") and (j :: any).Part0 and (j :: any).Part1 then
+				local jj = j :: any
+				table.insert(links, { p0 = jj.Part0, p1 = jj.Part1, c0 = jj.C0, c1 = jj.C1, posed = j:IsA("Motor6D"), joint = j })
+			elseif j.ClassName == "AnimationConstraint" then
+				local a0, a1 = (j :: any).Attachment0, (j :: any).Attachment1
+				if a0 and a1 and a0.Parent and a1.Parent then
+					table.insert(links, { p0 = a0.Parent, p1 = a1.Parent, c0 = a0.CFrame, c1 = a1.CFrame, posed = true, joint = j })
+				end
+			elseif j:IsA("WeldConstraint") and j.Part0 and j.Part1 then
+				table.insert(links, { p0 = j.Part0, p1 = j.Part1, c0 = j.Part0.CFrame:ToObjectSpace(j.Part1.CFrame), c1 = CFrame.identity, posed = false, joint = j })
+			end
+		end
+		-- from the root outward (a weld may hold either way round)
+		local placed, order = { [root] = true }, {}
+		local grew = true
+		while grew do
+			grew = false
+			for _, l in links do
+				if not l.done and placed[l.p0] and not placed[l.p1] then
+					l.done, placed[l.p1], grew = true, true, true
+					table.insert(order, l)
+				elseif not l.done and placed[l.p1] and not placed[l.p0] and not l.posed then
+					l.done, l.reversed, placed[l.p0], grew = true, true, true, true
+					table.insert(order, l)
+				end
+			end
+		end
+		for _, l in links do l.joint:Destroy() end
+		for _, x in copy:GetDescendants() do
+			if x:IsA("BasePart") then x.Anchored = true end
+		end
+		return order
+	end
 	local function showDancer(d): boolean
 		local player = Players.LocalPlayer
 		local character = player and player.Character
-		local id = AnimationLibrary.id("Dance_" .. d.Id, d.AnimationId)
-		if not character or id == "" then
+		if not character or not character:FindFirstChild("HumanoidRootPart") then
 			stage.Visible = false
 			return false
 		end
 		stage.Visible = true
 		if shownDance == d.Id and shownChar == character then return true end
 		shownDance, shownChar = d.Id, character
+		if danceConn then danceConn:Disconnect(); danceConn = nil end
 		for _, ch in stage:GetChildren() do
 			if not ch:IsA("UICorner") then ch:Destroy() end
 		end
-		local ok = pcall(function()
+		local ok, why = pcall(function()
 			local world = Instance.new("WorldModel")
 			world.Parent = stage
 			local copy = avatarCopy(character)
@@ -258,16 +299,56 @@ function DancesScreen.build(parent: Instance)
 			cam.CFrame = CFrame.lookAt(Vector3.new(0, 0.6, -11.5), Vector3.new(0, -0.2, 0))
 			cam.Parent = stage
 			stage.CurrentCamera = cam
-			local humanoid = copy:FindFirstChildOfClass("Humanoid") :: Humanoid
-			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-			local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
-			local animation = Instance.new("Animation")
-			animation.AnimationId = id
-			local t = (animator :: Animator):LoadAnimation(animation)
-			t.Looped = true
-			t:Play(0)
+			local root = copy:FindFirstChild("HumanoidRootPart") :: BasePart
+			local home = root.CFrame
+			local order = chainOf(copy, root)
+			local id = d.Id
+			-- (on screen: every frame above it shown and its ScreenGui on. The window is built and refreshed while
+			-- closed too, so nothing is asked for or drawn until it's open: no dance shared just for joining)
+			local function onScreen(): boolean
+				local g: Instance? = stage
+				while g and not g:IsA("LayerCollector") do
+					if g:IsA("GuiObject") and not (g :: GuiObject).Visible then return false end
+					g = g.Parent
+				end
+				return g ~= nil and (g :: LayerCollector).Enabled
+			end
+			local started = os.clock()
+			local parts, cfs = {}, {}
+			danceConn = game:GetService("RunService").RenderStepped:Connect(function()
+				if shownDance ~= id or not onScreen() then return end
+				if not asked[id] then
+					asked[id] = true
+					DancePose.ask(id) -- (live: the server shares its moves, once)
+				end
+				local anim = okC and CompanionDance and CompanionDance.anim(id)
+				if not anim then return end -- (its moves are still on their way: standing still meanwhile)
+				local pose = Sampler.sample(anim, (os.clock() - started) % anim.length)
+				local at = { [root] = home }
+				table.clear(parts); table.clear(cfs)
+				for _, l in order do
+					if l.reversed then
+						local c1 = at[l.p1]
+						if c1 then at[l.p0] = c1 * l.c1 * l.c0:Inverse() end
+					else
+						local c0 = at[l.p0]
+						if c0 then
+							local t = if l.posed then pose[l.p1.Name] or CFrame.identity else CFrame.identity
+							at[l.p1] = c0 * l.c0 * t * l.c1:Inverse()
+						end
+					end
+				end
+				for part, cf in at do
+					table.insert(parts, part)
+					table.insert(cfs, cf)
+				end
+				world:BulkMoveTo(parts, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+			end)
 		end)
-		if not ok then stage.Visible = false end
+		if not ok then
+			warn("[Huzz] Dances preview: " .. tostring(why))
+			stage.Visible = false
+		end
 		return ok
 	end
 

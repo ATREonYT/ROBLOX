@@ -15,6 +15,7 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TouchHit = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").TouchHit)
+local OthersAhead = require(script.Parent.OthersAhead)
 
 local HitCheck = {}
 
@@ -63,7 +64,9 @@ function HitCheck.find(root: BasePart, reach: number, width: number, dir: Vector
 		end
 	end
 	if best and bestRoot then
-		return best, { seen = bestRoot.CFrame, mine = root.CFrame } -- (exactly what this screen shows now)
+		-- (exactly what this screen shows now: their root as Roblox has it here, and how far ahead of it their body is
+		-- drawn, Gameplay/OthersAhead; the server follows their real path that far, Shared/TouchHit.verify)
+		return best, { seen = bestRoot.CFrame, mine = root.CFrame, ahead = OthersAhead.offset(bestRoot.Parent :: Model) }
 	end
 	return best
 end

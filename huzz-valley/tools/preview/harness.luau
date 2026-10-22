@@ -220,6 +220,9 @@ roblox.implementMethod("MarketplaceService", "PromptGamePassPurchase", function(
 roblox.implementMethod("MarketplaceService", "PromptProductPurchase", function(self, p, id) table.insert(_G.__prompts, { "Product", id }) end)
 roblox.implementProperty("MarketplaceService", "ProcessReceipt", function() return _G.__processReceipt end, function(self, v) _G.__processReceipt = v end)
 roblox.implementMethod("MarketplaceService", "UserOwnsGamePassAsync", function(self, userId, id) return _G.__owned ~= nil and _G.__owned[id] == true end)
+-- Groups (Screens/GroupReward, HuzzServer/ProgressService.claimGroup): a check sets _G.__groups = { [groupId] = true }
+pcall(function() roblox.implementMethod("GroupService", "GetGroupsAsync", function(self, userId) local out = {} for id in (_G.__groups or {}) do table.insert(out, { Id = id, Name = "Group", Rank = 1 }) end return out end) end)
+pcall(function() roblox.implementMethod("GroupService", "PromptJoinAsync", function(self, id) table.insert(_G.__prompts, { "Group", id }) end) end)
 roblox.implementMethod("Players", "GetPlayerByUserId", function(self, id) for _, p in self:GetChildren() do if p.UserId == id then return p end end return nil end)
 for _, ev in { "Focused", "FocusLost", "ReturnPressedFromOnScreenKeyboard" } do roblox.implementProperty("TextBox", ev, function(self) return instSignal(self, ev) end) end
 _G.__touchParts = {}

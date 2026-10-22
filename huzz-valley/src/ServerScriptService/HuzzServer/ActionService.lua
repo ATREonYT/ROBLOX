@@ -276,6 +276,7 @@ function VERBS.PromptCrateKey(player, key) return require(script.Parent.ShopServ
 function VERBS.ClaimReward(player, level) return ProgressService.claimReward(player, level) end
 function VERBS.ClaimQuest(player, id) return ProgressService.claimQuest(player, id) end
 function VERBS.ClaimDaily(player, key) return ProgressService.claimDaily(player, key) end
+function VERBS.ClaimGroup(player) return ProgressService.claimGroup(player) end
 
 function ActionService.start()
 	(Net.get("Action") :: RemoteFunction).OnServerInvoke = function(player, verb, ...)

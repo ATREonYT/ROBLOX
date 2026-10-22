@@ -121,6 +121,30 @@ function TouchHit.pathDistance(p: Vector3, path: { CFrame }): number
 	return best
 end
 
+-- The point of a body's server path (samples { t, cf }, oldest first) closest to `p`, no earlier than time `from`:
+-- (distance, the body's CFrame there, its time); nil when the path has nothing that late.
+function TouchHit.closest(path, p: Vector3, from: number): (number, CFrame?, number?)
+	local best, at, atT = math.huge, nil, nil
+	for i = 1, #path do
+		local a = path[i]
+		local b = path[i + 1] or a
+		if b.t >= from then
+			local ab = b.cf.Position - a.cf.Position
+			local len2 = ab:Dot(ab)
+			local k = if len2 > 1e-9 then math.clamp((p - a.cf.Position):Dot(ab) / len2, 0, 1) else 0
+			if a.t + (b.t - a.t) * k < from then
+				k = math.clamp((from - a.t) / math.max(b.t - a.t, 1e-6), 0, 1)
+			end
+			local cf = a.cf:Lerp(b.cf, k)
+			local d = (cf.Position - p).Magnitude
+			if d < best then
+				best, at, atT = d, cf, a.t + (b.t - a.t) * k
+			end
+		end
+	end
+	return best, at, atT
+end
+
 -- How far back a catcher's screen shows the runners: the server's copy reaches them half a round trip late, is drawn
 -- a little later still (Roblox's smoothing), and their claim takes the other half back. `ping` is
 -- Player:GetNetworkPing() (taken as the round trip; + 0.05 s in case it is one way), capped at T.MaxRewind.
@@ -146,6 +170,8 @@ end
 	  - the cap: the same box from the server's own catcher (now, or T.Lead on) touches the runner's body where the
 	    server had it at that moment, give or take T.Tolerance + T.CapSlack. So no claim reaches further than an
 	    honest one by more than CapSlack studs.
+	  - claim.ahead (optional, Oct 22): the screen drew the runner that far ahead of seen (Gameplay/OthersAhead): see
+	    below; the moment moves on along the runner's real path, never past it.
 	ctx = { runner, catcher, now, back, shape, knife, along?, face?, vel? }. Returns (ok, why). ]]
 function TouchHit.verify(claim, ctx, T): (boolean, string)
 	if type(claim) ~= "table" or typeof(claim.seen) ~= "CFrame" or typeof(claim.mine) ~= "CFrame" then
@@ -161,26 +187,30 @@ function TouchHit.verify(claim, ctx, T): (boolean, string)
 	end
 	-- the runner's one moment: the closest point to seen on their path over the last `back` seconds
 	local from = now - math.min(ctx.back, T.MaxRewind)
-	local best, at = math.huge, nil
-	for i = 1, #runner do
-		local a = runner[i]
-		local b = runner[i + 1] or a
-		if b.t >= from then
-			local ab = b.cf.Position - a.cf.Position
-			local len2 = ab:Dot(ab)
-			local k = if len2 > 1e-9 then math.clamp((seen - a.cf.Position):Dot(ab) / len2, 0, 1) else 0
-			if a.t + (b.t - a.t) * k < from then
-				k = math.clamp((from - a.t) / math.max(b.t - a.t, 1e-6), 0, 1)
-			end
-			local cf = a.cf:Lerp(b.cf, k)
-			local d = (cf.Position - seen).Magnitude
-			if d < best then
-				best, at = d, cf
-			end
-		end
-	end
+	local best, at, atT = TouchHit.closest(runner, seen, from)
 	if not at or best > T.SeenSlack then
 		return false, "runner never there"
+	end
+	-- Drawn ahead (Gameplay/OthersAhead, Oct 22: the screen draws others ahead along their movement, about where we
+	-- have them now; claim.ahead = how far, seen = their root as Roblox had it there). The runner's moment moves on to
+	-- the point of their real path after `at` closest to where the screen drew them, and the touch is tested where it
+	-- drew them; if that guess went off their path (a sharp turn), where they really were. Never further than
+	-- T.AheadMax studs, and always a point of our own history, so it can't reach anywhere the runner never went.
+	local drawn = seen
+	local ahead = claim.ahead
+	if typeof(ahead) == "Vector3" and ahead == ahead then
+		local flat = Vector3.new(ahead.X, 0, ahead.Z)
+		if flat.Magnitude > (T.AheadMax or 0) then
+			flat = if flat.Magnitude > 1e-6 then flat.Unit * (T.AheadMax or 0) else Vector3.zero
+		end
+		if flat.Magnitude > 0.05 then
+			local want = seen + flat
+			local d2, at2 = TouchHit.closest(runner, want, atT)
+			if at2 then
+				at = at2
+				drawn = if d2 <= T.SeenSlack then want else at2.Position
+			end
+		end
 	end
 	-- the catcher now (the server's newest), and a packet on at their speed
 	local latest = catcher[#catcher].cf
@@ -215,7 +245,7 @@ function TouchHit.verify(claim, ctx, T): (boolean, string)
 		end
 	end
 	-- the screen's touch, with the runner turned as the server had them
-	local seenCF = CFrame.new(seen) * at.Rotation
+	local seenCF = CFrame.new(drawn) * at.Rotation
 	local boxCF, boxSize = TouchHit.reachBox(CFrame.new(mine), dir, ctx.knife.Reach, ctx.knife.Width)
 	if not TouchHit.touches(boxCF, boxSize, seenCF, ctx.shape, T.Tolerance) then
 		return false, "no touch"

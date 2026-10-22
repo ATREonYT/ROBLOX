@@ -115,6 +115,22 @@ local function drawnAt(pk, t, down)
 	return prev.cf
 end
 
+-- AHEAD=1 (Gameplay/OthersAhead, Oct 22): the screen draws others ahead along their movement by its half ping +
+-- Round.Ahead.Interp (capped); the movement is what the drawn body did over the last ~1/Smooth s (the eased offset).
+local AHEAD = require("@lune/process").env.AHEAD == "1"
+local A = Round.Ahead
+local function drawnSeen(pk, t, myPing)
+	local cf = drawnAt(pk, t, myPing / 2)
+	if not AHEAD then return cf, Vector3.zero end
+	local w = 1 / A.Smooth
+	local v = (cf.Position - drawnAt(pk, t - w, myPing / 2).Position) / w
+	local flat = Vector3.new(v.X, 0, v.Z)
+	if flat.Magnitude < 0.5 or flat.Magnitude > A.MaxSpeed then return cf, Vector3.zero end
+	local off = flat * math.clamp(myPing / 2 + A.Interp, 0, A.MaxLead)
+	if off.Magnitude > A.MaxStuds then off = off.Unit * A.MaxStuds end
+	return cf + off, off
+end
+
 -- The server's history (HuzzServer/HitHistory): samples every 1/60 s of where it has the body, as { t, cf }.
 local function history(pk, seconds)
 	local out = {}
@@ -170,7 +186,7 @@ local function scenario(name, runnerPing, catcherPing, n, speed, knife)
 		local cPath, cpos = {}, trueAt(rPath, 0).Position + Vector3.new(8, 0, 8)
 		local t = 0
 		while t <= seconds do
-			local target = drawnAt(rPk, t, catcherPing / 2).Position
+			local target = drawnSeen(rPk, t, catcherPing).Position
 			local d = Vector3.new(target.X - cpos.X, 0, target.Z - cpos.Z)
 			if d.Magnitude > 0.5 then cpos += d.Unit * math.min(speed * SIM, d.Magnitude - 0.5) end
 			table.insert(cPath, { t = t, cf = lookAt(cpos, target) })
@@ -184,7 +200,7 @@ local function scenario(name, runnerPing, catcherPing, n, speed, knife)
 		while t < seconds - 1 and hits < n do
 			if t >= nextSwing then
 				local mine = trueAt(cPath, t)
-				local seen = drawnAt(rPk, t, catcherPing / 2)
+				local seen, ahead = drawnSeen(rPk, t, catcherPing)
 				local along = if knife == Round.Lunge then mine.LookVector else nil
 				local box, size = TouchHit.reachBox(mine, along, knife.Reach, knife.Width)
 				if TouchHit.touches(box, size, seen, shape, 0) then
@@ -199,7 +215,7 @@ local function scenario(name, runnerPing, catcherPing, n, speed, knife)
 					-- NOW (RoundService.screenHit): the screen's claim; if it fails, the server's own test
 					local back = TouchHit.lookBack(catcherPing, T)
 					local newest = serverPk(cPk, arrive)
-					local ok, why = TouchHit.verify({ seen = seen, mine = mine }, {
+					local ok, why = TouchHit.verify({ seen = seen - ahead, mine = mine, ahead = ahead }, {
 						runner = samples(rHist, rPk, arrive - T.Keep, arrive),
 						catcher = samples(cHist, cPk, arrive - T.Keep, arrive),
 						now = arrive, back = back, shape = shape, knife = knife, along = along,
@@ -277,6 +293,7 @@ local function newJudge(knife)
 	end
 end
 
+print(if AHEAD then "AHEAD: others drawn ahead (Gameplay/OthersAhead)" else "others drawn where Roblox has them (no lead)")
 print(string.format("touch lag model: packets %d/s, drawn %.2f s behind, server history 60/s; Touch: MaxRewind %.2f, SeenSlack %.1f, MineSlack %.1f, Lead %.2f, FaceSlack %d, CapSlack %.1f, Tolerance %.1f",
 	math.floor(1 / SEND + 0.5), INTERP, T.MaxRewind, T.SeenSlack, T.MineSlack, T.Lead, T.FaceSlack, T.CapSlack, T.Tolerance))
 local results = {}

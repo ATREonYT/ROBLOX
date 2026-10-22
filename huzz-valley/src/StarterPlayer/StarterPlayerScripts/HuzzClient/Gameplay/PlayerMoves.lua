@@ -38,8 +38,8 @@
 	R6 bodies (the game is R6 since Oct 22: "make the game r6, and use these animations that i sent from the
 	movement"; 14:37 "add it by any means possible"): the same, with his BZ1 R6 pack (R6Idle / R6Walk / R6Run from
 	ReplicatedStorage.HuzzR6Moves, which Bootstrap fills, Studio and live) and Config/Run.LocoR6 over Config/Run.Loco,
-	R6 to R6. Only the lean goes on top (on the Torso); the plant, the brace, the strafe twist and the head turn are
-	shaped for R15 joints and stay off. The huss on R6: Gameplay/R6Huss.
+	R6 to R6. The lean goes on top (on the Torso), and the stop's plant and the halt's brace in their R6 form (r6Stop,
+	Oct 22); the strafe twist and the head turn are shaped for R15 joints and stay off. The huss on R6: Gameplay/R6Huss.
 ]]
 local M = {}
 
@@ -88,6 +88,39 @@ function M.start()
 	local BRACE_JOINTS = { LowerTorso = "Root", RightUpperLeg = "RightHip", RightLowerLeg = "RightKnee",
 		LeftUpperLeg = "LeftHip", LeftLowerLeg = "LeftKnee" } -- (part -> its joint, for LocomotionMix.braceJoint)
 	local PLAYING = { HeroRun = true, Countdown = true, Running = true, RoundOver = true } -- (shift lock's stages)
+	-- The stop and the halt on R6 (owner, Oct 22 19:09: "make a stopping animation like in huss valley and the other
+	-- games"; the plant and the brace above are R15 joints): the same moves on six blocks. The plant: arms out and a
+	-- little forward (Loco.Stop's numbers). The halt's brace: the body turned side-on and leaning back, the front
+	-- leg planted forward, the back one braced behind, arms out for balance (degrees, at full brace).
+	local R6_BRACE = { Turn = -30, Lean = 10, Front = 34, Back = -28, Arms = 38, ArmsForward = 14 }
+	local function r6Joint(rec, name, turn)
+		local m = rec.motors[name]
+		if not m then return CFrame.identity end
+		local r = m.C0.Rotation
+		return r:Inverse() * turn * r
+	end
+	local function r6Stop(rec, pose, plant, brace)
+		local B = R6_BRACE
+		for _, side in { 1, -1 } do
+			local name = if side > 0 then "Right Arm" else "Left Arm"
+			if pose[name] then
+				local turn = Mix.stopArm(rec.mix, plant, side)
+					* CFrame.Angles(math.rad(B.ArmsForward) * brace, 0, side * math.rad(B.Arms) * brace)
+				pose[name] = r6Joint(rec, name, turn) * pose[name]
+			end
+		end
+		if brace > 1e-4 then
+			if pose.Torso then
+				pose.Torso = r6Joint(rec, "Torso", CFrame.Angles(math.rad(B.Lean) * brace, math.rad(B.Turn) * brace, 0)) * pose.Torso
+			end
+			-- (the legs in the torso's space: it turned side-on, so "forward" for the left leg is the way you slid)
+			for name, deg in { ["Left Leg"] = B.Front, ["Right Leg"] = B.Back } do
+				if pose[name] then
+					pose[name] = r6Joint(rec, name, CFrame.Angles(math.rad(deg) * brace, 0, 0)) * pose[name]
+				end
+			end
+		end
+	end
 
 	local tried = {} -- character -> when we last failed to build it (its body still loading)
 
@@ -292,6 +325,9 @@ function M.start()
 						pose[part] = Mix.braceJoint(rec.mix, brace, joint, m.C0) * pose[part]
 					end
 				end
+			end
+			if rec.r6 and not (downed or quiet or airborne) and (plant > 1e-4 or brace > 1e-4) then
+				r6Stop(rec, pose, plant, brace)
 			end
 			rec.lean = nil
 			local hipsPose = pose[rec.hips]

@@ -140,4 +140,20 @@ for _, j in joints do
 	if j.Transform == CFrame.identity then still2 += 1 end
 end
 check(string.format("and let go after (%d of 6 back)", still2), still2 == 6)
+-- The Dances window's cards (owner, Oct 22 19:09: "make all of the character placeholders your character not the ai
+-- made one"): live, with no published IDs, the cards in view ask for their moves and show your avatar in the pose;
+-- the drawn stand-in steps aside. A closed window asks for nothing.
+local MM = require(UI.ModalManager)
+local movesBefore = RS:FindFirstChild("HuzzDanceMoves") and #RS.HuzzDanceMoves:GetChildren() or 0
+check("the closed Dances window asked for no moves", movesBefore <= 1)
+MM.open("Dances")
+task.wait(3)
+local win = me.PlayerGui.HuzzUI:FindFirstChild("Dances")
+local posed, standIns = 0, 0
+for _, x in win:GetDescendants() do
+	if x.Name == "Dancer" and x:IsA("ViewportFrame") and x:FindFirstChildOfClass("Model") then posed += 1 end
+	if x.Name == "Figure" and x:IsA("ImageLabel") and x.Visible then standIns += 1 end
+end
+check(string.format("open: your avatar on the dance cards (%d posed, %d drawn stand-ins left)", posed, standIns), posed >= 4)
+MM.close()
 print(string.format("live dance smoke: %d ok, %d failed", ok, fails))
