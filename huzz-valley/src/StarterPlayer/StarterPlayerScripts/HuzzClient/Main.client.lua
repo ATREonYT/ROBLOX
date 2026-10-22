@@ -94,6 +94,8 @@ local function applyAudio()
 	if music then music.Volume = State.setting("MusicVolume") / 100 end
 	if effects then effects.Volume = State.setting("EffectsVolume") / 100 end
 	if interface then interface.Volume = State.setting("InterfaceVolume") / 100 end
+	local phonk = master:FindFirstChild("Phonk") :: SoundGroup?
+	if phonk then phonk.Volume = (State.setting("PhonkVolume") or 50) / 100 end
 end
 UserInputService.WindowFocusReleased:Connect(function() focused = false; applyAudio() end)
 UserInputService.WindowFocused:Connect(function() focused = true; applyAudio() end)

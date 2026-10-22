@@ -1,13 +1,15 @@
--- Your companion girl dances when you dance (Gameplay/CompanionDance): the player (R15) plays the owner's dance, the
--- small R6 girl beside them gets the same dance through Shared/KeyframeSampler + Shared/DanceRetarget (the game's
--- own code), faded in and out over 0.3 s, on top of her stand pose from Shared/FollowMotion.
+-- Your companion girl dances when you dance (Gameplay/CompanionDance; owner, Oct 22 16:22: "make the girls dance
+-- with you"): the player (R6, like the game since Oct 22) plays a dance, the small R6 girl beside them gets the same
+-- dance through Shared/KeyframeSampler + Shared/DanceRetarget (the game's own code), faded in and out over 0.3 s, on
+-- top of her stand pose from Shared/FollowMotion. Needs the private HuzzAnimations (his pack) for the idle.
 --   0-1 s    both standing
---   1-5 s    "Floss"
---   5-9 s    "Hype Up" (switching dances)
+--   1-5 s    "Balenci"
+--   5-9 s    "Sweet Dancin" (switching dances)
 --   9-10.5 s stop: she fades back to standing
 --   10.5-14 s a dance this screen can't read: the built-in dance (sway, bounce, arm waves)
 -- sh video.sh dance_scene.luau out.mp4
 local fs = require("@lune/fs")
+local process = require("@lune/process")
 local roblox = require("@lune/roblox")
 local CFrame, Vector3 = roblox.CFrame, roblox.Vector3
 local Rig = require("./rig")
@@ -22,18 +24,18 @@ local Companion = Env.load(SHARED .. "Config/GirlMotion.lua").Companion
 
 local lib = roblox.Instance.new("Folder")
 for _, inst in roblox.deserializeModel(fs.readFile("huzz-valley/src/ServerStorage/HuzzAnimations.rbxm")) do inst.Parent = lib end
-local idle = KFS.load(lib:FindFirstChild("Idle", true))
-local floss = KFS.load(lib:FindFirstChild("Dance_Floss", true))
-local hype = KFS.load(lib:FindFirstChild("Dance_HypeUp", true))
+local idle = KFS.load(lib:FindFirstChild("R6Idle", true) or lib:FindFirstChild("Idle", true))
+local floss = KFS.load(lib:FindFirstChild("Dance_" .. (process.env.DANCE1 or "Balenci"), true))
+local hype = KFS.load(lib:FindFirstChild("Dance_" .. (process.env.DANCE2 or "SweetDancin"), true))
 
 local scene = Scene.new()
-local player = scene:addRig(Rig.r15("Player", { shirt = "#3a5bd0", pants = "#22232c" }))
+local player = scene:addRig(Rig.r6("Player", { shirt = "#3a5bd0", pants = "#22232c" }))
 local girl = scene:addRig(Rig.r6("Girl"))
 local HEIGHT = Companion.Height -- (Gameplay/Auras scales her to this)
 Rig.scale(girl, HEIGHT / 5.25)
 local rootHeight = 3 * HEIGHT / 5.25
 
-player.root.CFrame = Rig.lookAt(Vector3.new(0, Rig.REST_HEIGHT, 0), Vector3.new(0, Rig.REST_HEIGHT, 1)) -- facing the camera
+player.root.CFrame = Rig.lookAt(Vector3.new(0, 3, 0), Vector3.new(0, 3, 1)) -- facing the camera
 local walk = FollowMotion.new({ root = girl.root, motors = girl.motors, rootHeight = rootHeight, seed = 7, config = Companion })
 walk.beside = true -- (Gameplay/Auras: she steps beside you while you dance)
 
@@ -82,6 +84,6 @@ for f = 0, SECONDS * FPS - 1 do
 		end
 	end
 	Rig.fk(girl)
-	scene:frame(Vector3.new(-3.4, 2.7, 5.2), Vector3.new(-1.2, 1.9, 0))
+	scene:frame(Vector3.new(-4.6, 3.6, 8), Vector3.new(-1, 2.4, 0))
 end
 scene:save(nil, FPS, 1280, 720)

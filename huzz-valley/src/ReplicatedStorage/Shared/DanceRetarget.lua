@@ -1,6 +1,9 @@
 --[[
-	Puts a dance on your companion girl (owner: "make the anime characters dance when you dance"). The dances are
-	R15 (the owner's 200-dance file); most girls are R6 (one torso, rigid arms and legs), so each frame's R15 pose
+	Puts a dance on your companion girl (owner: "make the anime characters dance when you dance"; Oct 22 16:22 "make
+	the girls dance with you"). Since Oct 22 the dances are R6 (his packs and ours, tools/anim): each R6 joint's turn
+	is read in its parent part's space (through the R6 rig's own C0 turns) and put on her joints the same way, so an
+	R6 girl gets the dance exactly and an R15 girl gets it on her matching joints (waist, elbows and knees straight).
+	The older dances were R15 (the owner's 200-dance file); most girls are R6 (one torso, rigid arms and legs), so each frame's R15 pose
 	(Shared/KeyframeSampler) is retargeted:
 	  Torso (RootJoint)    <- LowerTorso then UpperTorso (their turns combined; the hips' bounce scaled to her size)
 	  Head (Neck)          <- the Head
@@ -46,6 +49,18 @@ local function rot(pose, name)
 	return if cf then cf.Rotation else CFrame.identity
 end
 
+-- An R6 rig's joint turns (Roblox's standard R6 C0s, rotation only): each part's pose -> its parent's space.
+local R6_C0 = {
+	Torso = CFrame.fromMatrix(Vector3.zero, Vector3.new(-1, 0, 0), Vector3.new(0, 0, 1), Vector3.new(0, 1, 0)),
+	Head = CFrame.fromMatrix(Vector3.zero, Vector3.new(-1, 0, 0), Vector3.new(0, 0, 1), Vector3.new(0, 1, 0)),
+	["Right Arm"] = CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, -1), Vector3.new(0, 1, 0), Vector3.new(1, 0, 0)),
+	["Left Arm"] = CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, 1), Vector3.new(0, 1, 0), Vector3.new(-1, 0, 0)),
+	["Right Leg"] = CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, -1), Vector3.new(0, 1, 0), Vector3.new(1, 0, 0)),
+	["Left Leg"] = CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, 1), Vector3.new(0, 1, 0), Vector3.new(-1, 0, 0)),
+}
+local R6_PARTS = { Root = "Torso", Neck = "Head", RShoulder = "Right Arm", LShoulder = "Left Arm", RHip = "Right Leg", LHip = "Left Leg" }
+DanceRetarget.R6_C0 = R6_C0
+
 -- Where a two-bone limb points, in its parent's space: upper turn, then the lower bone's turn after it.
 local function limbDir(pose, upper, lower)
 	local u, l = rot(pose, upper), rot(pose, lower)
@@ -60,6 +75,26 @@ function DanceRetarget.apply(J, pose, weight: number, scale: number)
 		return
 	end
 	scale = scale or 1
+	if pose.Torso then
+		-- an R6 dance: Pose.CFrame is the R6 joint's Transform, turned by that joint's C0 into the parent part's space
+		for joint, part in R6_PARTS do
+			local t = pose[part]
+			if t then
+				local r = R6_C0[part]
+				local cf = r * t * r:Inverse()
+				if joint == "Root" then
+					cf = CFrame.new(cf.Position * scale) * cf.Rotation
+				else
+					cf = cf.Rotation
+				end
+				put(J[joint], cf, weight)
+			end
+		end
+		for _, joint in { "Waist", "LElbow", "RElbow", "LWrist", "RWrist", "LKnee", "RKnee", "LAnkle", "RAnkle" } do
+			put(J[joint], CFrame.identity, weight)
+		end
+		return
+	end
 	if J.Waist then
 		-- R15 girl: the dance as it is (the hips' movement scaled to her size)
 		for _, m in J do

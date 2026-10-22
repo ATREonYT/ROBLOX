@@ -5,8 +5,10 @@
 	    make you feel like you are running quick"), easing in and out. Huss Valley's camera stays calm (no visible
 	    FOV change, no kick on the huss: docs/feel-study.md gap 6), so it was cut from 11 degrees and the 9 degree
 	    huss kick and the screen-edge wind streaks and line ring are gone;
-	  - a huss draws 5-6 thin white speed lines in the world behind whoever does it, for ~0.3 s (Config/Run.Dash.Lines;
-	    everyone near sees them, like Huss Valley's), and nothing on the screen itself;
+	  - a huss draws 6 speed lines in the world behind whoever does it, for ~0.3 s (Config/Run.Dash.Lines;
+	    everyone near sees them, like Huss Valley's), and nothing on the screen itself; since Oct 22 ("make the huss
+	    look better and more premium") they glow white to a cool blue, and 4 see-through glowing copies of the body
+	    are left along the move, fading out (Config/Run.Dash.Ghosts, Gameplay/Ghosts);
 	  - every runner near you kicks up a little dust each step and a puff when they dash;
 	  - footsteps are our own sound (Sfx "step"), lobby too, for you and anyone near; Roblox's own running sound
 	    is muted (owner: "add a running sound, not the base sound running that roblox has").
@@ -61,17 +63,52 @@ function M.start()
 			b.Name = "HuzzHussLine" .. i
 			b.Attachment0, b.Attachment1 = a0, a1
 			b.FaceCamera = true
-			b.Width0, b.Width1 = LINES.Width, LINES.Width * 0.7
+			b.Width0, b.Width1 = LINES.Width, LINES.Width * 0.5
 			b.Segments = 1
-			b.LightEmission = 0.3
+			b.LightEmission = LINES.Glow or 0.3
 			b.LightInfluence = 0
-			b.Color = ColorSequence.new(Color3.new(1, 1, 1))
+			b.Color = ColorSequence.new(Color3.new(1, 1, 1), Run.Dash.Ghosts.Color)
 			b.Transparency = NumberSequence.new(1)
 			b.Parent = a0
 			set.beams[i] = { a0, a1, b }
 		end
 		table.insert(hussing, set)
 	end
+	-- The huss's afterimages: Count see-through glowing copies of the body, one every Every seconds of the push (the
+	-- first one Every in, so none sits on the body itself), each fading out over Life where it was left (never on a
+	-- hidden body: Gameplay/Hidden).
+	local GH = Run.Dash.Ghosts
+	local TweenService = game:GetService("TweenService")
+	local Ghosts = require(script.Parent.Ghosts)
+	local Hidden = require(script.Parent.Hidden)
+	local Burst = require(script.Parent.Burst)
+	local function hussGhosts(character: Model, at: number)
+		for i = 1, GH.Count do
+			local wait = at + i * GH.Every - Workspace:GetServerTimeNow()
+			if wait < -0.02 then
+				continue -- (someone else's huss reached us late: only the copies still to come)
+			end
+			task.delay(math.max(wait, 0), function()
+				if character.Parent == nil or Hidden.gone(character) or character:GetAttribute("DownedAt") then
+					return
+				end
+				local ok, list = pcall(Ghosts.copy, character, GH.Color, Burst.home())
+				if not ok then
+					return
+				end
+				-- (each later copy a little fainter: the move fades out behind you)
+				local from = GH.From + (1 - GH.From) * 0.12 * (i - 1)
+				local info = TweenInfo.new(GH.Life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				for _, g in list do
+					g.part.Transparency = from
+					g.part.CFrame = g.at
+					TweenService:Create(g.part, info, { Transparency = 1 }):Play()
+					task.delay(GH.Life + 0.05, function() g.part:Destroy() end)
+				end
+			end)
+		end
+	end
+
 	local function moveLines(now: number)
 		for i = #hussing, 1, -1 do
 			local set = hussing[i]
@@ -201,6 +238,7 @@ function M.start()
 				if (last == nil or hussAt - last > 0.5) and now - hussAt < LINES.Time - 0.08
 					and (camera.CFrame.Position - root.Position).Magnitude < NEAR then
 					hussLines(root, hussDir, hussAt)
+					hussGhosts(character, hussAt)
 				end
 				if last == nil or hussAt - last > 0.5 then
 					lastLines[p] = hussAt

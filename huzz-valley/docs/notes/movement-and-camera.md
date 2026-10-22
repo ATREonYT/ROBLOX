@@ -102,8 +102,11 @@ The huss pose and walk animations: [animations.md](animations.md).
   and top screen edges (none at the bottom, as in the clip), eased, never flashing, off with Reduced Motion and the
   intro camera. Tuned in `Config/Run.SpeedFX`. Film: `motion3d/r6_speed_scene.luau`, side by side with his clip in
   `docs/previews/oct22-r6-run-side.mp4`. Smoke: `tools/preview/smoke_speed_fx.luau`.
-  A huss draws 6 thin white Beams riding with whoever husses (`RunMotion.hussLines`, `Run.Dash.Lines`), seen by
-  everyone near (HV's thin speed lines; no white trail). Dust, steps, a `speed_wind` loop. Reduced Motion turns off
+  A huss draws 6 thin Beams riding with whoever husses (`RunMotion.hussLines`, `Run.Dash.Lines`), seen by
+  everyone near (HV's thin speed lines; no white trail). Oct 22 ("make the huss look better and more premium"): the
+  lines glow white to a cool blue and are a little wider, and 4 see-through glowing copies of the body are left
+  along the move, fading out (`Run.Dash.Ghosts`, `Gameplay/Ghosts`; never on hidden bodies). Before / after:
+  `motion3d/huss_fx_scene.luau` (OLD=1), `docs/previews/oct22-huss-premium.mp4` (project files). Dust, steps, a `speed_wind` loop. Reduced Motion turns off
   the FOV.
 - **Footsteps are ours** (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted; stand-in thud until the owner
   uploads `step`). They step by distance (`Run.Stride` 12), so below ~28 they're slower than the feet.

@@ -12,6 +12,7 @@
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 local roblox = require("@lune/roblox")
+local serde = require("@lune/serde")
 local Instance, CFrame, Enum = roblox.Instance, roblox.CFrame, roblox.Enum
 
 local DIR = "huzz-valley/design/anims/"
@@ -213,6 +214,31 @@ local R6_DANCES = { -- { Id, his name, which file }
 	{ "LoseControl", "Lose it", 20 }, { "BoneGroove", "Skeleton Grooves", 20 }, { "SkeletonShake", "Skeleton", 20 },
 	{ "ZombieWalk", "Zombie Dance", 32 }, { "Moongazer", "Moongazer", 20 }, { "FlexTime", "Flexer", 20 },
 }
+-- On the beat of their songs (owner, Oct 22 16:17: "use these and match up the songs to the dances"): each dance
+-- is paired with the song whose beat fits its loop best (Config/Dances Music; the beats: tools/sfx/song_loops.py),
+-- and its loop is stretched by at most 4.5% to last a whole number of that song's beats, so the steps stay on the
+-- music however long you dance. { beats a loop, the song's BPM }
+local ON_BEAT = {
+	CandyHop = { 2, 179.75 }, ParrotWiggle = { 12, 179.75 }, ElectroShuffle = { 24, 179.75 }, FlexTime = { 48, 179.75 },
+	WavyGrooves = { 12, 98.45 }, Breakdance = { 8, 98.45 }, Superstar = { 12, 98.45 }, StepItUp = { 6, 98.45 },
+	LoseControl = { 32, 107.15 }, HighRoller = { 16, 107.15 }, WibblyWobbly = { 32, 107.15 }, ChillGroove = { 2, 107.15 },
+	LetsGo = { 16, 125.65 }, CatDance = { 12, 125.65 }, PopStar = { 16, 125.65 }, Moongazer = { 24, 125.65 },
+	SupremeGroove = { 16, 138.05 }, JumpStyle = { 12, 138.05 }, SurfsUp = { 12, 138.05 },
+}
+local function onBeat(seq, id)
+	local fit = ON_BEAT[id]
+	if not fit then return "" end
+	local length = 0
+	for _, k in seq:GetChildren() do
+		if k.ClassName == "Keyframe" then length = math.max(length, k.Time) end
+	end
+	local want = fit[1] * 60 / fit[2]
+	assert(math.abs(want / length - 1) < 0.046, id .. " would change speed too much")
+	for _, k in seq:GetChildren() do
+		if k.ClassName == "Keyframe" then k.Time *= want / length end
+	end
+	return string.format(", %.2f s -> %.2f s (%d beats at %g)", length, want, fit[1], fit[2])
+end
 if fs.isFile(E20) and fs.isFile(E32) then
 	local packs = {}
 	for key, file in { [20] = E20, [32] = E32 } do
@@ -223,10 +249,60 @@ if fs.isFile(E20) and fs.isFile(E32) then
 	for _, d in R6_DANCES do
 		local seq = if d[3] == 32 then find(packs[32], d[2] .. " R6 Idle_KeyframeSequence") else find(packs[20], d[2], "AnimSaves")
 		seq = add(seq, "Dance_" .. d[1], "Action", true)
-		print(string.format("%-22s <- %-20s %d keyframes (R6)", "Dance_" .. d[1], d[2], keyCount(seq)))
+		print(string.format("%-22s <- %-20s %d keyframes (R6)%s", "Dance_" .. d[1], d[2], keyCount(seq), onBeat(seq, d[1])))
 	end
 else
 	print("(no " .. E20 .. " / " .. E32 .. ": the dances are left out)")
+end
+
+-- The dances from his videos (owner, Oct 22 15:28: "can you make these dances please for the game using r6"; 15:30
+-- "make it one to one, use the references, and perfectly recreate them"): measured frame by frame off his clips
+-- (tools/anim/fit: an R6 body fitted to every frame, one loop folded from all its repeats), 30 keyframes a second
+-- like his packs. Our own data, so these are in the public build too.
+-- The hardtekk three (owner, Oct 22 16:00: "make them into dances that fit the beats, more hardtekk dances to match
+-- with the sounds") are made beat by beat for his songs: tools/anim/fit/author_dances.py.
+local VIDEO_DANCES = { -- { Id, file in tools/anim/fit/dances }
+	{ "Balenci", "balenci.json" }, { "SweetDancin", "sweet.json" },
+	{ "TekkPump", "tekkpump.json" }, { "HakkenStomp", "hakken.json" }, { "JumpstyleRave", "jumpstyle.json" },
+}
+local PARENT = { Torso = "HumanoidRootPart", Head = "Torso", ["Right Arm"] = "Torso", ["Left Arm"] = "Torso",
+	["Right Leg"] = "Torso", ["Left Leg"] = "Torso" }
+for _, d in VIDEO_DANCES do
+	local path = "huzz-valley/tools/anim/fit/dances/" .. d[2]
+	if not fs.isFile(path) then
+		print("(no " .. path .. ": Dance_" .. d[1] .. " is left out)")
+		continue
+	end
+	local data = serde.decode("json", fs.readFile(path))
+	local seq = Instance.new("KeyframeSequence")
+	seq.Name = "Dance_" .. d[1]
+	seq.Priority = Enum.AnimationPriority.Action
+	seq.Loop = true
+	local n = #data.frames
+	for i = 1, n + 1 do -- (the first pose again at the end, so the loop closes)
+		local f = data.frames[if i > n then 1 else i]
+		local key = Instance.new("Keyframe")
+		key.Time = (i - 1) / data.fps
+		local poses = {}
+		local root = Instance.new("Pose")
+		root.Name = "HumanoidRootPart"
+		root.Weight = 0
+		root.Parent = key
+		poses.HumanoidRootPart = root
+		for _, part in { "Torso", "Head", "Right Arm", "Left Arm", "Right Leg", "Left Leg" } do
+			local v = f[part]
+			local pose = Instance.new("Pose")
+			pose.Name = part
+			pose.Weight = 1
+			pose.EasingStyle = Enum.PoseEasingStyle.Linear
+			pose.CFrame = CFrame.new(table.unpack(v))
+			pose.Parent = poses[PARENT[part]]
+			poses[part] = pose
+		end
+		key.Parent = seq
+	end
+	seq.Parent = folder
+	print(string.format("%-22s <- %s, %d keyframes, %.2f s loop", seq.Name, d[2], n + 1, n / data.fps))
 end
 
 fs.writeFile(OUT, roblox.serializeModel({ folder }))

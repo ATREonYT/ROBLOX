@@ -2,7 +2,8 @@
 -- 3/4 front. ANIM_FILE=<place.rbxl> ANIM_NAMES="Walk,Run,Run V2" [SECONDS=4] sh video.sh anim_scene.luau out.mp4
 -- ANIM_UNDER=<text> only takes animations whose full name contains it (the pack has cut-down duplicates);
 -- ANIM_VIEW=side films them side on, in a row, to compare runs; ANIM_VIEW=back from behind and above, like the
--- game's camera.
+-- game's camera. ANIM_VIEW=front films one rig straight on from ANIM_PITCH radians above (default 0.15) and
+-- ANIM_DIST studs away, ANIM_W x ANIM_H pixels: the dances from his videos next to their clips (tools/anim/fit).
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 local roblox = require("@lune/roblox")
@@ -60,6 +61,14 @@ for f = 0, SECONDS * 30 - 1 do
 	if process.env.ANIM_VIEW == "side" then
 		local mid = (#names - 1) * 2.25
 		scene:frame(Vector3.new(mid, 2.8, -(#names * 2.4 + 4)), Vector3.new(mid, 2.4, 0))
+	elseif process.env.ANIM_VIEW == "front" then
+		local p, d = tonumber(process.env.ANIM_PITCH or "0.15"), tonumber(process.env.ANIM_DIST or "12")
+		-- ANIM_FOV (degrees, top to bottom) and ANIM_DOWN (radians the middle of the picture sits below the body's
+		-- middle): the fitted clip camera's own lens and aim (tools/anim/fit), so ours is filmed the same way
+		local down = tonumber(process.env.ANIM_DOWN or "0")
+		local cam = Vector3.new(0, 3 + d * math.sin(p), -d * math.cos(p))
+		local aim = Vector3.new(0, -math.sin(p + down), math.cos(p + down))
+		scene:frame(cam, cam + aim * d, { fov = tonumber(process.env.ANIM_FOV or "70") })
 	elseif process.env.ANIM_VIEW == "back" then
 		scene:frame(Vector3.new(0, 7, width * 0.5 + 6), Vector3.new(0, 2.2, 0))
 	elseif rows > 1 then
@@ -68,4 +77,4 @@ for f = 0, SECONDS * 30 - 1 do
 		scene:frame(Vector3.new(width * 0.55, 3.2, -width * 0.42), Vector3.new(0, 2.4, 0))
 	end
 end
-scene:save(nil, 30, 1280, 640)
+scene:save(nil, 30, tonumber(process.env.ANIM_W or "1280"), tonumber(process.env.ANIM_H or "640"))

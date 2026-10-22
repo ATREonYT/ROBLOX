@@ -231,6 +231,38 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 - **Dance wheel** (`Screens/DanceWheel`, the owner's taunt-wheel reference): 8 see-through dark circles round a big
   centre circle; pictures built ahead while closed; opens with one smooth grow (no CanvasGroup, no stagger).
 
+- **Dances made by us (Oct 22), `tools/anim/fit/`** (numpy only; the results are our own data, so they ship in the
+  public build too; `extract_anims.luau` VIDEO_DANCES turns each `fit/dances/<name>.json` into a looping
+  `Dance_<Id>` at 30 keyframes a second):
+  - **From his videos** (Balenci, Sweet Dancin; owner 15:30: "make it one to one, use the references"): `fit_video.py`
+    fits an R6 body to every frame of a clip (analysis by synthesis: `r6fit.py` draws the six blocks plus what tells
+    front from back, a shirt, backpack, shoes, hat, from a fitted camera into a label picture; `seg.py` labels the
+    clip's colours; each frame's 21 numbers searched from the frame before, with stock limb poses offered, forwards
+    and backwards, the better kept). `make_dance.py` folds every repeat of the loop onto one (Balenci 3.2 s with a
+    full turn; Sweet Dancin 0.73 s), unwraps the turn, smooths over a frame. `overlay.py` draws a fit over its clip.
+    Clips: his uploads (not in the repo); crops in the project files. Measured fit, not motion capture: limbs
+    turning about their own length don't show on square blocks.
+  - **Hardtekk three** (TekkPump 150 BPM, HakkenStomp 200, JumpstyleRave 180; owner 16:00: "dances that fit the
+    beats, more hardtekk dances"): `author_dances.py`, 16 beats each at the tempo measured off his songs, so every
+    punch, stomp and jump lands on a kick; a limb is set by where it points (forward, out), turned into its joint's
+    Transform. Their songs are `Config/Dances.Tracks` Hardtekk1-3 (Id "" until he uploads; `Start` = first kick).
+    Film with the songs: `docs/previews/oct22-hardtekk-dances.mp4` (project files).
+  - **Fixes after the first look (16:17-16:40):** `make_dance.py front` turns round the frames the fit stood back to
+    front (a dark body's outline is the same both ways; 154 of Sweet Dancin's 204 were), averages joint angles round
+    the circle (a raised arm sits near +-180 degrees: a plain average dropped it), and keeps the cube head facing the
+    body's way. `[seconds]` stretches a loop to whole beats of its song (Balenci 6 beats at 119 = 3.025 s; Sweet
+    Dancin 2 at 159.9 = 0.750 s; the hardtekk three at their re-measured 150.9 / 199.75 / 179.75).
+    Side-by-side with his clips, filmed by each fit's own camera (`anim_scene ANIM_VIEW=front ANIM_FOV ANIM_DOWN`):
+    project files `previews/oct22-video-dances-side.mp4`. Sweet Dancin is close; Balenci has the hops and the full turn
+    but its legs kick higher and it leans more than his clip (the fit's cost stayed high on that clip).
+- **His songs on the dances (16:17):** each of his dances is paired with the song whose beat fits its loop and
+  stretched (at most 4.5%) to whole beats of it: `extract_anims.luau` ON_BEAT, songs measured and cut to clean
+  loops by `tools/sfx/song_loops.py`; pairs and reasons in `docs/dance-music.md` "His own songs".
+- **Girls dance your R6 dances (16:22: "make the girls dance with you"):** `Shared/DanceRetarget` only read R15 poses,
+  so since the dances went R6 the girls stood still. An R6 pose is now read through the R6 joints' own C0 turns into
+  each parent's space and put on her joints the same way (R6 girl: exactly the dance; R15 girl: waist, elbows, knees
+  straight). `tests/DanceRetarget.spec.luau`; film `tools/preview/motion3d/dance_scene.luau`.
+
 ## Honest gaps
 - Live dances drawn by hand are checked offline only: whether Roblox's own Animate (or a published walk) fights the
   hand pose on your own body in the real game, and how the first second looks while the moves download, only the
@@ -242,7 +274,8 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 - The girls' rigs and everyone's girls (Oct 19 fixes) are checked offline only. Why other players' girls were missing
   on HIS screen is not proven: the loop that one error stopped is a real way for it to happen, but Studio's Output
   (`[Huzz] <name>'s girl on this screen: ...`) will say if a girl actually fails there. The R6 girls' moves are the
-  same as before (retargeted from the R15 pack); only the accessories changed.
+  same as before (retargeted from the R15 pack); only the accessories changed. Since Oct 22 the dances are R6 and
+  reach the girls joint for joint (offline checked only).
 - Not seen in Studio yet: the pack walk for everyone, carried girls, the pickup and its effects, dance pictures on
   real avatars, synced dancing across two clients (the hand-drawn dances for others in Studio, the nudges on
   published tracks, the DANCE TOGETHER prompt; whether a replicated track takes the nudge smoothly is Studio-only).

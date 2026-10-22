@@ -215,7 +215,7 @@ local grid = dp.Grid
 local list = {}
 for _, c in grid:GetChildren() do if c:IsA("TextButton") then table.insert(list, c) end end
 table.sort(list, function(a, b) return a.LayoutOrder < b.LayoutOrder end)
-check("all 33 dances have cards (the owner's R6 ones, Oct 22)", #list == #Dances.List and #list == 33)
+check("all 38 dances have cards (the owner's 33 R6 ones and our 5, Oct 22)", #list == #Dances.List and #list == 38)
 if #list >= 4 then
 	local p1, p2, p3, p4 = list[1].Position, list[2].Position, list[3].Position, list[4].Position
 	check("three cards to a row", p1.Y.Offset == p2.Y.Offset and p2.Y.Offset == p3.Y.Offset and p4.Y.Offset > p1.Y.Offset and p4.X.Offset == p1.X.Offset and p3.X.Offset > p2.X.Offset)

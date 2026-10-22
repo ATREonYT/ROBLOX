@@ -35,7 +35,7 @@ local function names(grid)
 	return table.concat(out, ",")
 end
 
--- DANCES (the owner's 33 R6 dances: 21 for everyone, Untouchable from the reward track and the Shop, 4 in the Dance Pack)
+-- DANCES (the owner's 33 R6 dances and our 5 for coins: 21 for everyone, Untouchable from the reward track and the Shop, 4 in the Dance Pack)
 local Dances = require(game.ReplicatedStorage.Shared.Config.Dances)
 local function expected(filter, desc)
 	local list = {}
@@ -46,7 +46,7 @@ local function expected(filter, desc)
 	return table.concat(out, ",")
 end
 local all = expected(function() return true end)
-check("there are 33 dances (the owner's R6 ones, Oct 22)", #Dances.List == 33)
+check("there are 38 dances (the owner's 33 R6 ones and our 5 made ones, Oct 22)", #Dances.List == 38)
 check("Dances opens", MM.open("Dances") == true and gui.Dances.Visible)
 local panel = gui.Dances.Group.Panel
 local grid = panel.Grid

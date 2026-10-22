@@ -180,9 +180,20 @@ return {
 		-- The white speed lines behind anyone who husses (Gameplay/Feel, seen by everyone near): HV shows 5-6 thin
 		-- horizontal lines trailing behind along the move, ~20-25% of the screen wide, for ~0.3 s. They ride with
 		-- the body (not left on the ground), draw out in 0.06 s and hold their length.
+		-- A more premium huss (owner, Oct 22 16:00: "can you please make the huss look better and more premium"):
+		-- see-through glowing copies of the body left along the move (Gameplay/Feel, Gameplay/Ghosts), a cool
+		-- white-blue, each fading out; and the speed lines brighter, wider, white at the body fading to that blue.
+		Ghosts = {
+			Count = 4, -- copies, one every Every seconds from the start of the push
+			Every = 0.055,
+			Life = 0.26, -- seconds each takes to fade out completely
+			From = 0.55, -- how see-through each starts (0 solid, 1 gone)
+			Color = Color3.fromRGB(150, 215, 255),
+		},
 		Lines = {
 			Time = 0.28, -- seconds they show (fading out over the last 40%): as long as the push (Config/Round.Dash)
-			Width = 0.09, -- studs
+			Width = 0.13, -- studs (was 0.09 before the premium pass)
+			Glow = 0.65, -- LightEmission (was 0.3)
 			Length = 6.5, -- studs (x each line's own scale: 22-28% of the screen at the round camera's 12 studs)
 			Gap = 0.7, -- studs from the body's middle to where a line starts
 			-- height over the root, how far in front (+) or behind, and each line's length scale

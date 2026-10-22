@@ -8,6 +8,11 @@
 -- song from Config/Dances (Monstercat / APM, Roblox's licensed library) for you only, looped, quieter than the
 -- background (Dances.MusicVolume), and dips the background to Dances.MusicDuck of its volume; Music.danceStop()
 -- fades it out and brings the background back. UI/DancePlayer calls both. No song = no dip.
+-- Round phonk (owner, Oct 22 16:00: "add the longer mp3 files as phonks when the rounds are played, so when you are
+-- running in the round, the phonk plays, but not too loud, and make it adjustable"): while you're in a round (a
+-- runner or the catcher, from the hero run to the round's end) the background fades out and one of his phonk tracks
+-- (Config/Music.Phonk) plays, looped, through its own sound group (Settings > Audio > Round Phonk; 0% = off).
+-- Spectators keep the background. No IDs yet = the background carries on (he uploads the files: Config/Music).
 local SoundService = game:GetService("SoundService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -44,8 +49,9 @@ local okState, State = pcall(require, script.Parent.Parent:WaitForChild("UI"):Wa
 local function enabled(): boolean
 	return not okState or State.setting("MusicOn") ~= false
 end
+local phonkOn = false -- a round's phonk is playing: the background waits
 local function quiet(): boolean
-	return winnerPlaying or os.clock() < quietUntil
+	return winnerPlaying or phonkOn or os.clock() < quietUntil
 end
 
 local function folder(name: string): Instance?
@@ -85,13 +91,18 @@ local function winnerSong(): { id: string, volume: number }?
 	return nil
 end
 
-local function make(song: { id: string, volume: number }, name: string): Sound
+local function make(song: { id: string, volume: number }, name: string, groupName: string?): Sound
 	local s = Instance.new("Sound")
 	s.Name = name
 	s.SoundId = song.id
 	s.Volume = 0
 	s.Looped = false
 	local g = group()
+	if groupName then
+		local master = SoundService:FindFirstChild("Master")
+		local pg = master and master:FindFirstChild(groupName)
+		g = if pg and pg:IsA("SoundGroup") then pg else g
+	end
 	if g then s.SoundGroup = g end
 	s.Parent = home()
 	return s
@@ -213,7 +224,52 @@ function Music.winner()
 	end)
 end
 
+-- In a round right now? (a runner or the catcher, while the round runs: the Round remote's Stage, your HuzzRole)
+local ROUND_STAGES = { HeroRun = true, Countdown = true, Running = true }
+local function inRound(): boolean
+	local me = game:GetService("Players").LocalPlayer
+	local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+	local round = remotes and remotes:FindFirstChild("Round")
+	local role = me and me:GetAttribute("HuzzRole")
+	return round ~= nil and ROUND_STAGES[round:GetAttribute("Stage")] == true and (role == "Runner" or role == "Catcher")
+end
+local function phonks(): { string }
+	local list = {}
+	for _, id in Config.Phonk or {} do
+		if id ~= "" then table.insert(list, id) end
+	end
+	return list
+end
+Music.inRound = inRound
+
+-- The round phonk: starts as a round starts, a different track each round when there are two, fades out after.
+local function phonkLoop()
+	local turn = math.random(2)
+	while true do
+		task.wait(0.25)
+		local list = phonks()
+		if #list == 0 or not inRound() or (okState and (State.setting("PhonkVolume") or 50) <= 0) then
+			continue
+		end
+		turn = turn % #list + 1
+		local s = make({ id = list[turn], volume = Config.PhonkVolume or 0.35 }, "Phonk", "Phonk")
+		s.Looped = true
+		phonkOn = true
+		s:Play()
+		if loaded(s) then
+			fade(s, Config.PhonkVolume or 0.35, 1.2, function() return not inRound() end)
+			while s.Parent and inRound() and not (okState and (State.setting("PhonkVolume") or 50) <= 0) do
+				task.wait(0.25)
+			end
+			fade(s, 0, 1.5)
+		end
+		gone(s)
+		phonkOn = false
+	end
+end
+
 function Music.start()
+	task.spawn(phonkLoop)
 	-- the win song when a game ends (Round remote "Results", sent to each player as the game finishes)
 	pcall(function()
 		local Net = require(Shared.Net)

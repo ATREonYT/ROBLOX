@@ -6,7 +6,7 @@ local HuzzServer = script.Parent
 local master = SoundService:FindFirstChild("Master") or Instance.new("SoundGroup")
 master.Name = "Master"
 master.Parent = SoundService
-for _, name in { "Music", "Effects", "Interface" } do
+for _, name in { "Music", "Effects", "Interface", "Phonk" } do
 	local g = master:FindFirstChild(name) or Instance.new("SoundGroup")
 	g.Name = name
 	g.Parent = master

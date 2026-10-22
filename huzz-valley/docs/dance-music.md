@@ -81,6 +81,42 @@ dances are not measured yet (the old table measured each one).
 | Moongazer | his "Moongazer" (R6) | Ascension, Vintage & Morelli (Monstercat), `7029070008`, [store](https://create.roblox.com/store/asset/7029070008) | Downtown, APM Music (HIP-HOP FUNK & GROOVE), `1843479959`, [store](https://create.roblox.com/store/asset/1843479959/Downtown) | smooth progressive house, for "Dance under the moonlight." (picked by feel; tempo not measured yet) |
 | Flex Time | his "Flexer" (R6) | Punching The Air, APM Music (David Hearn, AMERICAN ROAD TRIP), `1836723913`, [store](https://create.roblox.com/store/asset/1836723913) | Hype Horns, APM Music (Juice Music, NON STOP POP 2), `1840007010`, [store](https://create.roblox.com/store/asset/1840007010) | rock, 2:12, for "Show off every muscle you've got!" (picked by feel; tempo not measured yet) |
 
+## His own songs (Oct 22)
+
+The owner sent his own songs (16:00, then 16:17: "use these and match up the songs to the dances, and also make the
+balenci balenci balenci song match to the dance you are making that is called balenci, and then the karamel dancen one
+to the caramel dance"). They are pick 1 now; the library song that was pick 1 moved to pick 2 and plays until he
+uploads his file (Id ""). Three library songs no dance used any more were dropped (Skull Crusher, Charleston Dolly,
+The Speakeasy).
+
+- **Which song is which:** his files are named by time only. The Balenci song is the one whose sound matches the music
+  under his Balenci video (by far the closest of the eight). Caramelldansen goes on Sweet Dancin: its hands-up bounce
+  is the Caramelldansen dance, and two of the song's beats are one loop (0.75 s). The other six by tempo.
+- **On the beat:** each song's tempo is measured (tools/sfx/song_loops.py) and the file to upload is cut from its first
+  beat to 1, 2, 4 or 8 bars, so it loops on the beat. Each dance's loop is stretched (at most 4.5%) to a whole number
+  of its song's beats (tools/anim/extract_anims.luau ON_BEAT), so the steps stay on the music however long you dance.
+- **Copyright:** some of these are commercial songs (Caramelldansen is). Roblox checks uploads and can reject or mute
+  copyrighted audio; the library pick 2 keeps playing if that happens.
+- Files to upload: project files `owner-audio-oct22/loops/<song>.ogg` (never the public repo).
+
+| Dance | His song (pick 1) | Tempo | Beats a loop | Pick 2 (library) |
+|---|---|---|---|---|
+| Balenci | Balenci (17-47-31) | 119 | 6 | Downtown |
+| Sweet Dancin | Caramelldansen (17-46-05) | 159.9 | 2 | Big Deal |
+| Tekk Pump | Hardtekk 1 (18-08-42) | 150.9 | 16 | Jumpstyle |
+| Hakken Stomp | Hardtekk 2 (18-09-22) | 199.75 | 16 | Jumpstyle |
+| Jumpstyle Rave | Hardtekk 3 (18-10-52) | 179.75 | 16 | Jumpstyle |
+| Candy Hop, Parrot Wiggle | Rush 180 B (17-44-03) | 179.75 | 2, 12 | Shiawase |
+| Electro Shuffle, Flex Time | Rush 180 A (17-44-43) | 179.75 | 24, 48 | Moshi, Punching The Air |
+| Wavy Grooves, Breakdance, Superstar, Step It Up | Bounce 98 (17-45-12) | 98.45 | 12, 8, 12, 6 | their old pick 1 |
+| Lose Control, High Roller, Wibbly Wobbly, Chill Groove | Groove 107 (17-47-00) | 107.15 | 32, 16, 32, 2 | their old pick 1 |
+| Let's Go, Cat Dance, Pop Star, Moongazer | Hype 125 (17-48-03) | 125.65 | 16, 12, 16, 24 | their old pick 1 |
+| Supreme Groove, Jump Style, Surf's Up | Tick 138 (17-48-42) | 138.05 | 16, 12, 12 | their old pick 1 |
+
+Still on library songs (waiting for his next batch): Orange Swing, Boogie Down, L Bounce, Squat Kicks (Kalinka, the
+Russian folk dance, on purpose), Office Party, Kitty Paws, Beatbox, Quick Shuffle, Snappy Skip, Blossom Break,
+Untouchable, and the Halloween three (Bone Groove, Skeleton Shake, Zombie Walk keep their spooky songs).
+
 ## The songs (22)
 
 | Key in `Config/Dances` | Song | By | Length | Pick 1 for | Pick 2 for |

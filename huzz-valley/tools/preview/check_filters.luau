@@ -266,15 +266,15 @@ end
 check(`DANCES: every dance that isn't free has its card there ({sold})`, cardsOk and sold >= 8) -- (the 4 Dance Pack ones are Robux only since Oct 21)
 check("... the Dance Pack on top of it", body:FindFirstChild("DancePack") ~= nil and body.DancePack.Position.Y.Offset == body.HeadDances.Position.Y.Offset + body.HeadDances.Size.Y.Offset)
 local zombie = Dances.get("FlexTime")
-local zc = body.DanceZombieGroove
+local zc = body["Dance" .. zombie.Id]
 DataService.update(player, function(d) d.Coins = zombie.Coins + 100 end)
 task.wait(0.2)
-check(`a dance card shows its coin price ({zc.Buy:FindFirstChild("Label", true).Text})`, zc.Buy:FindFirstChild("Label", true).Text == "2,000")
+check(`a dance card shows its coin price ({zc.Buy:FindFirstChild("Label", true).Text})`, zc.Buy:FindFirstChild("Label", true).Text == string.format("%d,%03d", zombie.Coins // 1000, zombie.Coins % 1000))
 click(zc.Tap)
 settle()
 local side = panel.Side
-check("tapping a dance slides its panel in: its name, a preview, BUY", side.Visible and side.Panel.DanceView.Visible and side.Panel.Title.Text == "ZOMBIE GROOVE"
-	and side.Panel.DanceView.Backdrop.Still:GetAttribute("Art") == "DanceStillZombieGroove" and side.Panel.DanceView.Buy:FindFirstChild("Label", true).Text == "BUY 2,000")
+check("tapping a dance slides its panel in: its name, a preview, BUY", side.Visible and side.Panel.DanceView.Visible and side.Panel.Title.Text == string.upper(zombie.Name)
+	and side.Panel.DanceView.Backdrop.Still:GetAttribute("Art") == "DanceStill" .. zombie.Id and side.Panel.DanceView.Buy:FindFirstChild("Label", true).Text == string.format("BUY %d,%03d", zombie.Coins // 1000, zombie.Coins % 1000))
 click(side.Panel.DanceView.Buy)
 local data = DataService.get(player).Data
 check(`BUY: the dance is yours, the coins taken once ({data.Coins})`, data.Dances.FlexTime == true and data.Coins == 100)

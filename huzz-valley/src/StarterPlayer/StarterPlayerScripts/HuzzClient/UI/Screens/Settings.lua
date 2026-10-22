@@ -74,10 +74,10 @@ local function onOff(r: Frame, key: string, x: number, wOn: number, xOff: number
 end
 
 -- Audio (owner, Oct 18: "make the setting page have like an audio page ... so they can have many options (turn down
--- music, turn down sfx, master volume etc)"): six rows in a list that scrolls (the window keeps its size; the fifth
--- row peeks out at the bottom so you can tell there's more). Volumes act at once (Main sets the sound groups).
-local AUDIO_ROWS = { 4, 62, 120, 178, 236, 294 }
-local GROUP_OF = { MasterVolume = "Master", MusicVolume = "Music", EffectsVolume = "Effects", InterfaceVolume = "Interface" }
+-- music, turn down sfx, master volume etc)"): seven rows (Round Phonk since Oct 22) in a list that scrolls (the
+-- window keeps its size; the fifth row peeks out at the bottom so you can tell there's more). Volumes act at once (Main sets the sound groups).
+local AUDIO_ROWS = { 4, 62, 120, 178, 236, 294, 352 }
+local GROUP_OF = { MasterVolume = "Master", MusicVolume = "Music", PhonkVolume = "Phonk", EffectsVolume = "Effects", InterfaceVolume = "Interface" }
 local function liveVolume(key: string, v: number)
 	local master = game:GetService("SoundService"):FindFirstChild("Master")
 	local g = master and (if key == "MasterVolume" then master else master:FindFirstChild(GROUP_OF[key]))
@@ -96,6 +96,7 @@ local function buildAudio(page: Frame)
 	local defs = {
 		{ "MasterVolume", "AudioSpeaker", "Master Volume", "Everything you hear in the game." },
 		{ "MusicVolume", "AudioMusic", "Music Volume", "The background songs." },
+		{ "PhonkVolume", "AudioMusic", "Round Phonk", "The phonk while you play a round. 0% is off." },
 		{ "EffectsVolume", "AudioWaveform", "Effects Volume", "Steps, catches and abilities." },
 		{ "InterfaceVolume", "ControlsMenu", "Button Sounds", "Clicks and menu sounds." },
 	}
@@ -123,7 +124,7 @@ local function buildAudio(page: Frame)
 		end)
 	end
 	-- Background music on or off, and a button for the next song (Gameplay/Music)
-	local r = row(list, g, 5, "MusicBenefit", "Background Music", "Songs play in a random order.")
+	local r = row(list, g, 6, "MusicBenefit", "Background Music", "Songs play in a random order.")
 	local skip = Kit.button({ Name = "NextSong", Text = "Next Song", Style = "Slate", TextSize = 15, Corner = 3, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 302 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(120, 35), Parent = r })
 	skip.onClick(function()
 		local ok, Music = pcall(require, UI.Parent:WaitForChild("Gameplay"):WaitForChild("Music", 2))
@@ -132,7 +133,7 @@ local function buildAudio(page: Frame)
 		end
 	end)
 	onOff(r, "MusicOn", 437, 118, 564, 116, 35, 18)
-	r = row(list, g, 6, "Monitor", "Mute While Unfocused", "Mute audio when the game window is not active.")
+	r = row(list, g, 7, "Monitor", "Mute While Unfocused", "Mute audio when the game window is not active.")
 	onOff(r, "MuteUnfocused", 437, 118, 564, 116, 35, 18)
 end
 

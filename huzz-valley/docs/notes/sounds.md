@@ -89,7 +89,13 @@ core `CLAUDE.md` section 6.
   Winner_Music_Showcase), else the same songs by ID in `Config/Music` (Bg1-9 + winner, sent Oct 18).
 - Shuffled, no repeat, fades, `Config/Music.Volume` 0.3 through the Music group; the win song on the Round "Results"
   event (background fades under it); the Secret cutscene quiets it. Bootstrap stops songs set to play by themselves.
-- **Settings > Audio:** a scrolling list of 6 rows: Master, Music, Effects, Button Sounds (`InterfaceVolume`, the
+- **Round phonk** (owner, Oct 22 16:00: "add the longer mp3 files as phonks when the rounds are played ... not too
+  loud, and make it adjustable"): while you're a runner or the catcher and the round's Stage is HeroRun, Countdown or
+  Running, the background fades out and one of `Config/Music.Phonk` plays looped (a different one each round) at
+  `PhonkVolume` 0.35 through its own `Phonk` group; spectators keep the background. Settings > Audio > Round Phonk
+  (`PhonkVolume`, default 50%, 0% = off). His files (2 phonk, 3 hardtekk) are in the project files
+  `owner-audio-oct22/`, not the public repo (other artists' music); IDs stay "" until he uploads them.
+- **Settings > Audio:** a scrolling list of 7 rows: Master, Music, Round Phonk, Effects, Button Sounds (`InterfaceVolume`, the
   `Interface` group: Sfx sends `ui_*` there), Background Music ON/OFF + Next Song, Mute While Unfocused. Every sound
   goes through a group under Master: songs and dance songs = Music, game and Secret sounds = Effects, buttons =
   Interface, and Roblox's own character sounds (landing, falling...) are put in Effects by `Gameplay/Feel` (the running
