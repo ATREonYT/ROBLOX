@@ -86,10 +86,11 @@ local function tileButton(parent: Instance, name: string, picture: string, y: nu
 	end
 	b.Instance.BackgroundTransparency = 1
 	Kit.icon(picture, { Name = "Icon", Size = UDim2.fromScale(1, 1), ZIndex = b.Instance.ZIndex + 1, Parent = b.Instance })
-	-- (12 with a thinner 1.5 outline: at 10 with a 2 outline the letters broke up, owner Oct 22 "it's cut off right now
-	-- in bits"; 61 wide spans his blue face, the outline resting on his light rim)
-	local label = ShopStyle.chunky({ Name = "Label", Text = name, TextSize = 12, TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.fromOffset(62, 15), ZIndex = b.Instance.ZIndex + 2, Parent = b.Instance }, 1.5)
-	Kit.fitLine(label, 62, 12, 10, true)
+	-- (a thinner 1.5 outline: at 10 with a 2 outline the letters broke up, owner Oct 22 "it's cut off right now in
+	-- bits". Roblox sizes it itself, TextScaled up to 12 inside a box 56 wide within his blue face: the offline width
+	-- guess ran narrower than Roblox's real letters, and the word was cut at the sides, owner Oct 22)
+	local label = ShopStyle.chunky({ Name = "Label", Text = name, TextSize = 12, TextScaled = true, TextTruncate = Enum.TextTruncate.None, TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.fromOffset(56, 13), ZIndex = b.Instance.ZIndex + 2, Parent = b.Instance }, 1.5)
+	new("UITextSizeConstraint", { MaxTextSize = 12, MinTextSize = 8, Parent = label })
 	b.onClick(onClick)
 	return b
 end
