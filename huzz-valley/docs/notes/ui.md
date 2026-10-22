@@ -319,3 +319,8 @@ equip it"; "make it your character dancing the dance"; "we can remove the outfit
 - Checks: `check_filters` (Shop STYLE, Inventory tabs), `smoke_shop_dancers`, `check_hidden` (abilities), `check.luau`,
   `check_oct17`. Shots `shop-style`, `shop-filter-style`, `inventory-knives`, `-titles`, `-trails`, `-girls`,
   `-dances`, `-abilities`.
+- Oct 22: the lobby INVENTORY button is his backpack tile (`assets/icons/inventory-backpack.png`, cut from his
+  `design/owner-oct22/inv1.png` by `tools/icons/cut_black_bg.py`: he sent it on solid black), 70 x 67 at y 159, the word
+  fitted inside his rim (LobbyHud `tileButton`); the Menu row and the window use it too. Dance cards: parts no joint
+  reaches (accessories on RigidConstraints or matching attachments) follow their body part (UI/DancePose `rig`); he
+  saw hair, glasses and the knife left standing while the body danced.

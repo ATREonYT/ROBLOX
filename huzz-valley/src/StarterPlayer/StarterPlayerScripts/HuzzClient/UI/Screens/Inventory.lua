@@ -124,7 +124,7 @@ local function swatch(parent: Instance, item: any, dark: boolean)
 end
 
 function Inventory.build(parent: Instance)
-	local window = Kit.window({ Name = "Inventory", Flat = true, Title = "Inventory", Icon = "ShirtEquip", Width = TAB.X + TAB.W, Height = WIN.H, HeaderHeight = WIN.Header, TitleX = 24, TitleSize = WIN.TitleSize, TitleWidth = 230, StudsTo = 760, CloseSize = Vector2.new(46, 46), Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Inventory", Flat = true, Title = "Inventory", Icon = "InventoryBackpack", Width = TAB.X + TAB.W, Height = WIN.H, HeaderHeight = WIN.Header, TitleX = 24, TitleSize = WIN.TitleSize, TitleWidth = 230, StudsTo = 760, CloseSize = Vector2.new(46, 46), Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel, header = window.Panel, window.Header
 	panel.Size = UDim2.fromOffset(WIN.W, WIN.H) -- (the tabs stand outside the window, as the Shop's jump buttons)
 	local titleIcon = header:FindFirstChild("TitleIcon")

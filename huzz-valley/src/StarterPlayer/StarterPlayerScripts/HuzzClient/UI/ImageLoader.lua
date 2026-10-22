@@ -419,7 +419,7 @@ local GLYPH: { [string]: string } = {
 	CheckEquipped = "✅", CheckOwned = "✔", Close = "✖", CollectionBook = "📖", CompanionEffects = "✨", ControlsDash = "💨",
 	ControlsKeyboard = "⌨", ControlsMenu = "☰", CurrencyCoin = "💰", CurrencyGem = "💎", CurrencyPlus = "➕", DancesNote = "🎵",
 	Envelope = "✉", FavouriteFilled = "⭐", FavouriteOutline = "☆", GiftAction = "🎁", GiftBenefit = "🎁",
-	InventoryVisibility = "👁", Lock = "🔒", MainMenuLines = "☰", Map = "🗺", Monitor = "🖥", MusicBenefit = "🎵",
+	InventoryBackpack = "🎒", InventoryVisibility = "👁", Lock = "🔒", MainMenuLines = "☰", Map = "🗺", Monitor = "🖥", MusicBenefit = "🎵",
 	Play = "▶", Players = "👥", QuestsClipboard = "📋", RewardsTrophy = "🏆", Search = "🔍", SettingsGear = "⚙",
 	ShirtBenefit = "👕", ShirtEquip = "👕", ShopCart = "🛒", Sneaker = "👟", SpinWheel = "🎡", Stop = "⏹",
 	Stopwatch = "⏱", TagFist = "✊", TierCrown = "👑", VipCrown = "👑", XpBadge = "⭐", ArrowNext = "▶",

@@ -16,7 +16,7 @@ MainMenu.Entries = {
 	{ Key = "Shop", Text = "Shop", Icon = "ShopCart" },
 	{ Key = "Index", Text = "Index", Icon = "CollectionBook" },
 	{ Key = "Tiers", Text = "Tiers", Icon = "TierCrown" },
-	{ Key = "Inventory", Text = "Inventory", Icon = "ShirtEquip" }, -- (was Dances: owner, Oct 21; Dances is its tab. His kit's equip shirt)
+	{ Key = "Inventory", Text = "Inventory", Icon = "InventoryBackpack" }, -- (was Dances: owner, Oct 21; Dances is its tab. His backpack tile, Oct 22)
 	{ Key = "Progression", Text = "Progression", Icon = "RewardsTrophy" },
 	{ Key = "Settings", Text = "Settings", Icon = "SettingsGear" },
 	{ Key = "HowToPlay", Text = "How to Play", Icon = "Players" },

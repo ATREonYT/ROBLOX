@@ -31,6 +31,7 @@ Assets.Icons = {
 	FavouriteOutline = "",    -- favourite-outline.png
 	GiftAction = "",          -- gift-action.png
 	GiftBenefit = "",         -- gift-benefit.png
+	InventoryBackpack = "",   -- inventory-backpack.png (his Inventory button tile, Oct 22: the whole button)
 	InventoryVisibility = "", -- inventory-visibility.png
 	Lock = "",                -- lock.png
 	MainMenuLines = "",       -- main-menu-lines.png

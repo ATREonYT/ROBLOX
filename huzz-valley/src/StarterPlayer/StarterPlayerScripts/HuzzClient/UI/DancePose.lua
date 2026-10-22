@@ -135,6 +135,16 @@ local function rig(model: Model): ((posed: { [string]: CFrame }) -> ())?
 			local c0, c1 = j.C0, j.C1
 			link(p0, p1, function(a, posed) return a.CFrame * c0 * (if motor then posed[key] or NONE else NONE) * c1:Inverse() end,
 				function(b, posed) return b.CFrame * c1 * (if motor then posed[key] or NONE else NONE):Inverse() * c0:Inverse() end)
+		elseif j:IsA("RigidConstraint") then
+			-- accessories on Roblox's newer welds (hair, glasses, hats): held by their attachments (owner, Oct 22: the
+			-- hair and glasses stayed put while the head danced away)
+			local a0, a1 = (j :: any).Attachment0, (j :: any).Attachment1
+			local p0 = a0 and a0.Parent
+			local p1 = a1 and a1.Parent
+			if p0 and p1 and p0:IsA("BasePart") and p1:IsA("BasePart") then
+				local rel = a0.CFrame * a1.CFrame:Inverse()
+				link(p0, p1, function(a) return a.CFrame * rel end, function(b) return b.CFrame * rel:Inverse() end)
+			end
 		elseif j:IsA("WeldConstraint") and j.Part0 and j.Part1 then
 			local p0, p1 = j.Part0 :: BasePart, j.Part1 :: BasePart
 			local rel = p0.CFrame:ToObjectSpace(p1.CFrame) -- (as built, before anything moves)
@@ -142,7 +152,6 @@ local function rig(model: Model): ((posed: { [string]: CFrame }) -> ())?
 		end
 	end
 	-- the order parts are placed in (from the root out), worked out once
-	local rootWas = root.CFrame
 	local steps: { { part: BasePart, from: BasePart, place: any } } = {}
 	local done = { [root] = true }
 	local queue, i = { root }, 1
@@ -157,11 +166,43 @@ local function rig(model: Model): ((posed: { [string]: CFrame }) -> ())?
 			end
 		end
 	end
-	local loose: { { part: BasePart, at: CFrame } } = {}
+	-- A part no joint reaches (held some other way) follows the body part it belongs to, keeping its place on it: the
+	-- one with an attachment of the same name (how Roblox hangs an accessory: HairAttachment on the Head), else the
+	-- nearest one. Never left where it stood while the body dances (owner, Oct 22: "make the characters be normal").
+	local bodyParts: { BasePart } = {}
+	local byAttachment: { [string]: BasePart } = {}
+	for part in done do
+		table.insert(bodyParts, part)
+		for _, a in part:GetChildren() do
+			if a:IsA("Attachment") and not byAttachment[a.Name] then byAttachment[a.Name] = part end
+		end
+	end
+	local function owner(p: BasePart): BasePart
+		for _, a in p:GetChildren() do
+			local on = a:IsA("Attachment") and byAttachment[a.Name]
+			if on and on ~= p then return on end
+		end
+		local best, bestD = root, math.huge
+		for _, b in bodyParts do
+			local d = (b.CFrame.Position - p.CFrame.Position).Magnitude
+			if d < bestD then best, bestD = b, d end
+		end
+		return best
+	end
+	local loose: { { part: BasePart, on: BasePart, at: CFrame } } = {}
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") then
-			if not done[p] then table.insert(loose, { part = p, at = rootWas:ToObjectSpace(p.CFrame) }) end
+			if not done[p] then
+				local on = owner(p)
+				table.insert(loose, { part = p, on = on, at = on.CFrame:ToObjectSpace(p.CFrame) })
+			end
 			p.Anchored = true
+		end
+	end
+	-- (the joints' places are kept above: take the joints out, so nothing drags a posed part along afterwards)
+	for _, j in model:GetDescendants() do
+		if j:IsA("JointInstance") or j:IsA("WeldConstraint") or j:IsA("RigidConstraint") or j.ClassName == "AnimationConstraint" then
+			pcall(function() j.Enabled = false end)
 		end
 	end
 	return function(posed: { [string]: CFrame })
@@ -170,7 +211,7 @@ local function rig(model: Model): ((posed: { [string]: CFrame }) -> ())?
 			st.part.CFrame = st.place(st.from, posed)
 		end
 		for _, l in loose do
-			l.part.CFrame = l.at
+			l.part.CFrame = l.on.CFrame * l.at
 		end
 	end
 end

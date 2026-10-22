@@ -74,6 +74,24 @@ local function squareButton(parent: Instance, name: string, icon: string, y: num
 	return b
 end
 
+-- A HUD button that is one of his own whole tiles (owner, Oct 22, his backpack tile for the Inventory: "icon this ...
+-- and add the inventory word, but make it fit inside of the icon"): his picture as it is (assets/icons, packed), the
+-- button's own look taken off, and the word in the chunky white letters shrunk to fit inside his tile's light rim.
+-- 70 x 67: his tile's dark outline is inside the picture, the others' 3 px rims stand outside their 66 x 57, so this
+-- reads the same width.
+local function tileButton(parent: Instance, name: string, picture: string, y: number, onClick: () -> ())
+	local b = Kit.button({ Name = name, Style = "Hud", Text = "", Position = UDim2.fromOffset(23, y), Size = UDim2.fromOffset(70, 67), Corner = 8, Parent = parent })
+	for _, x in b.Instance:GetChildren() do
+		if x.Name == "Content" or x.Name == "StudPattern" or x.Name == "TopLine" or x.Name == "Ring" or x:IsA("UIStroke") or x:IsA("UIGradient") then x:Destroy() end
+	end
+	b.Instance.BackgroundTransparency = 1
+	Kit.icon(picture, { Name = "Icon", Size = UDim2.fromScale(1, 1), ZIndex = b.Instance.ZIndex + 1, Parent = b.Instance })
+	local label = ShopStyle.chunky({ Name = "Label", Text = name, TextSize = 13, TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.fromOffset(54, 14), ZIndex = b.Instance.ZIndex + 2, Parent = b.Instance }, 2)
+	Kit.fitLine(label, 54, 13, 8)
+	b.onClick(onClick)
+	return b
+end
+
 function LobbyHud.build(parent: Instance)
 	local root = new("Frame", { Name = "LobbyHud", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = parent })
 
@@ -84,7 +102,8 @@ function LobbyHud.build(parent: Instance)
 	Effects.shine(shop.Instance, { every = 4, corner = 5, z = 4 }) -- (a glint like the reference's shop button) -- (Tiers stays in the Menu; the Index filters by tier)
 	-- INVENTORY where DANCES was (owner, Oct 21: "make the dances button the inventory button"): everything you own,
 	-- to equip (Screens/Inventory; its DANCES tab plays yours and opens the Dances window)
-	squareButton(left, "Inventory", "ShirtEquip", 164, function() MainMenu.go("Inventory") end)
+	-- (his backpack tile, Oct 22: a little bigger than the others' faces, so it starts 5 higher: 159-226, Menu at 233)
+	tileButton(left, "Inventory", "InventoryBackpack", 159, function() MainMenu.go("Inventory") end)
 	local menu = squareButton(left, "Menu", "MainMenuLines", 233, function() ModalManager.toggle("Menu") end)
 	menu.Instance.Icon.Size = UDim2.fromOffset(34, 34) -- the lines icon reads bigger than the others
 	-- Right edge: SPIN opens the Spin the Wheel (Screens/SpinWheel); a green FREE tag while a free spin waits.

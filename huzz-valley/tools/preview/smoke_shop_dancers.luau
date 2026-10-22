@@ -49,6 +49,20 @@ for _, name in order do
 	m.C0 = CFrame.new(0, 0.5, 0)
 	m.Parent = p
 end
+-- hair hung the way Roblox hangs an accessory (matching attachments, no joint the copy can follow) and glasses on a
+-- RigidConstraint (owner, Oct 22: the hair and glasses stayed put while the head danced away)
+local head = char:FindFirstChild("Head") :: BasePart
+local hairOn = Instance.new("Attachment"); hairOn.Name = "HairAttachment"; hairOn.Position = Vector3.new(0, 0.6, 0); hairOn.Parent = head
+local hair = Instance.new("Accessory"); hair.Name = "Hair"; hair.Parent = char
+local hairPart = Instance.new("Part"); hairPart.Name = "Handle"; hairPart.Size = Vector3.new(1, 0.5, 1); hairPart.Parent = hair
+local hairAt = Instance.new("Attachment"); hairAt.Name = "HairAttachment"; hairAt.Parent = hairPart
+local okRigid = pcall(function()
+	local glasses = Instance.new("Accessory"); glasses.Name = "Glasses"; glasses.Parent = char
+	local gp = Instance.new("Part"); gp.Name = "Handle"; gp.Size = Vector3.new(1, 0.2, 0.2); gp.Parent = glasses
+	local a0 = Instance.new("Attachment"); a0.Name = "FaceFrontAttachment"; a0.CFrame = CFrame.new(0, 0, -0.5); a0.Parent = head
+	local a1 = Instance.new("Attachment"); a1.Name = "GlassesGrip"; a1.Parent = gp
+	local rc = Instance.new("RigidConstraint"); rc.Attachment0, rc.Attachment1 = a0, a1; rc.Parent = gp
+end)
 char.Parent = workspace
 me.Character = char
 __fireOn(me, "CharacterAdded", char)
@@ -100,6 +114,23 @@ local a = #dancing > 0 and handOf(dancing[1])
 beat(12)
 local b = #dancing > 0 and handOf(dancing[1])
 check("your copy really dances (the hand moves)", a ~= nil and b ~= nil and (a.Position - b.Position).Magnitude > 0.01)
+
+-- the hair goes with the head: the same place on it in every frame
+local function hairGap(c)
+	local m = c.Dancer:FindFirstChildOfClass("Model")
+	local h, hr = m and m:FindFirstChild("Head"), m and m:FindFirstChild("Hair")
+	local hp = hr and hr:FindFirstChild("Handle")
+	return h and hp and h.CFrame:ToObjectSpace(hp.CFrame)
+end
+local g1 = #dancing > 0 and hairGap(dancing[1])
+beat(9)
+local g2 = #dancing > 0 and hairGap(dancing[1])
+check("the hair stays on the dancing head", g1 ~= nil and g2 ~= nil and (g1.Position - g2.Position).Magnitude < 1e-3 and g1.Position.Magnitude < 3)
+if okRigid then
+	local m = #dancing > 0 and dancing[1].Dancer:FindFirstChildOfClass("Model")
+	local gl = m and m:FindFirstChild("Glasses") and m.Glasses:FindFirstChild("Handle")
+	check("the glasses (RigidConstraint) sit on the face", gl ~= nil and (m.Head.CFrame:ToObjectSpace(gl.CFrame).Position - Vector3.new(0, 0, -0.5)).Magnitude < 1e-3)
+end
 
 -- closing stops it
 MM.close()
