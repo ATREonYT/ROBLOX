@@ -388,5 +388,8 @@ do
 	end
 end
 
+-- R6 bodies for everyone (owner, Oct 22 13:24: "can you please make the game r6")
+local okR6 = pcall(function() theirs:GetService("StarterPlayer").GameSettingsAvatar = roblox.Enum.GameAvatarType.R6 end)
+print(if okR6 then "avatar type: R6" else "avatar type: could not set R6")
 fs.writeFile(ROOT .. "HuzzValley-yours.rbxl", roblox.serializePlace(theirs))
 print("saved " .. ROOT .. "HuzzValley-yours.rbxl")

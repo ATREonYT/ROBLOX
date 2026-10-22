@@ -60,6 +60,21 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   with the cursor swept past him, A and D with the head on the far field, W's 1 s build-up and the halt; next to his
   recording and HV's stop). It prints the head's turn and the speed every 0.2 s.
 
+## R6 and his BZ1 movement pack (Oct 22)
+- The game is R6 (owner, Oct 22 13:24): `StarterPlayer.GameSettingsAvatar = R6` in `tools/place/world.luau`,
+  `build_yours.luau` and `default.project.json`. He must also set Game Settings > Avatar > R6 in Studio before
+  publishing.
+- An R6 body plays his BZ1 "Movement Animation Pack V1.2" through `Gameplay/Locomotion` (R6Idle / R6Walk / R6Run,
+  tuned by `Config/Run.LocoR6`), and `AvatarAnimations` fills Roblox's Animate slots from R6<slot>. Mapping in
+  `tools/anim/extract_anims.luau` (R6_MOVES). On R6 only the lean goes on top (RootJoint); no waist, head look,
+  brace or arm plant (shaped for R15 joints).
+- **Licence:** BZ1 forbids sharing the raw files or place files with them in. The repo is public, so the pack lives
+  only in `design/owner-oct22/anims/` (gitignored) and `/mnt/project-files/huzz-valley/owner-anims-oct22/`. The git
+  HuzzAnimations.rbxm and place files are built WITHOUT it (R6 bodies then use Roblox's own R6 walk); the place with
+  it goes to him through the project files only. If the repo goes private, extract and commit normally.
+- Still R15-shaped (step 2 of `docs/plan-oct22-r6.md`): PlayerMoves (others' bodies), the huss, stab, carry, down,
+  crown, stands, knife hand, auras.
+
 ## Your own moves: never a stiff body (Oct 20)
 - `Gameplay/Locomotion` checks itself: within 3 s (`LOAD_WAIT`) Idle, Walk and Run must have a length and a knee,
   hip or elbow must really move (joints only the Animator writes, looked up again on every check: Roblox swaps the

@@ -152,6 +152,47 @@ do
 	end
 end
 
+-- The game is R6 (owner, Oct 22 13:24: "can you please make the game r6, and use these animations that i sent from
+-- the movement"): his BZ1 Studios "Movement Animation Pack V1.2" (R6), as R6<Name>. Its licence forbids sharing the
+-- raw file, and the repo is public: it lives in the project files (OWNER_MOVES, default the local
+-- design/owner-oct22/anims/, which git ignores). Missing: the R6 moves are left out (and Locomotion keeps Roblox's walk).
+-- His pack has no fall: R6Fall holds the jump's last pose. Run = his "Stylized Run 2" (hunched, arms reaching
+-- forward: the closest to Huss Valley's sprint in his Oct 22 video).
+local R6_MOVES = {
+	{ "R6Idle", "Stylized Idle 1", "Idle", true }, { "R6Walk", "Stylized Walk", "Movement", true },
+	{ "R6Run", "Stylized Run 2", "Movement", true }, { "R6Jump", "Stylized Jump", "Movement", false },
+	{ "R6Climb", "Climbing Ladder", "Movement", true }, { "R6WalkBack", "Walk Backwards", "Movement", true },
+	{ "R6DashLeft", "Dash Left", "Action", false }, { "R6DashRight", "Dash Right", "Action", false },
+	{ "R6DashForward", "Dash Forward", "Action", false }, { "R6DashBack", "Dash Back", "Action", false },
+	{ "R6Slide", "Slide", "Action", true }, { "R6Death", "Death", "Action", false },
+}
+local process = require("@lune/process")
+local MOVES_FILE = process.env.OWNER_MOVES or "huzz-valley/design/owner-oct22/anims/movement-pack-bz1.rbxl"
+if fs.isFile(MOVES_FILE) then
+	local bz1 = roblox.deserializePlace(fs.readFile(MOVES_FILE))
+	for _, m in R6_MOVES do
+		add(find(bz1, m[2]), m[1], m[3], m[4])
+		print(string.format("%-14s <- %s (R6)", m[1], m[2]))
+	end
+	-- the fall: the jump's last pose, held
+	local jump = folder:FindFirstChild("R6Jump")
+	local last
+	for _, k in jump:GetChildren() do
+		if k.ClassName == "Keyframe" and (not last or k.Time > last.Time) then last = k end
+	end
+	local fall = Instance.new("KeyframeSequence")
+	fall.Name, fall.Loop, fall.Priority = "R6Fall", true, Enum.AnimationPriority.Movement
+	for _, t in { 0, 0.5 } do
+		local k = last:Clone()
+		k.Time = t
+		k.Parent = fall
+	end
+	fall.Parent = folder
+	print("R6Fall         <- the end of Stylized Jump, held (R6)")
+else
+	print("(no " .. MOVES_FILE .. ": the R6 moves are left out)")
+end
+
 local dances = roblox.deserializePlace(fs.readFile(DIR .. "200-dances.rbxl"))
 for _, d in DANCES do
 	local seq = add(find(dances, d[2]), "Dance_" .. d[1], "Action", true)

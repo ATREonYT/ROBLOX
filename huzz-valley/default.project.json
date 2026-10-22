@@ -13,6 +13,9 @@
       }
     },
     "StarterPlayer": {
+      "$properties": {
+        "GameSettingsAvatar": "R6"
+      },
       "StarterPlayerScripts": {
         "HuzzClient": {
           "$path": "src/StarterPlayer/StarterPlayerScripts/HuzzClient"

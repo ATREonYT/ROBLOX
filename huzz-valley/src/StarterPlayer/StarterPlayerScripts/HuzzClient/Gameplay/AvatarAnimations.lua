@@ -50,8 +50,10 @@ function M.start()
 		if not animate then
 			return
 		end
+		local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 5)
+		local r6 = humanoid ~= nil and (humanoid :: Humanoid).RigType == Enum.HumanoidRigType.R6
 		for _, slot in SLOTS do
-			local id = Library.id(slot[3])
+			local id = Library.id(if r6 then "R6" .. slot[3] else slot[3]) -- (R6: his BZ1 pack, Oct 22)
 			if id ~= "" then
 				local group = animate:WaitForChild(slot[1], 5)
 				local animation = group and group:FindFirstChild(slot[2])

@@ -503,8 +503,8 @@ window.draw = (f) => {
     const rgba = (hexc, a) => { const c = new THREE.Color(hexc); return 'rgba(' + [c.r, c.g, c.b].map((x) => Math.round(x * 255)).join(',') + ',' + a + ')'; };
     for (const r of asList(o.rects)) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      if (r.fade) {
-        const gr = ctx.createLinearGradient(r.x * k, 0, (r.x + r.w) * k, 0);
+      if (r.fade) { // (vfade: true runs it top to bottom instead, a UIGradient at Rotation 90)
+        const gr = r.vfade ? ctx.createLinearGradient(0, r.y * k, 0, (r.y + r.h) * k) : ctx.createLinearGradient(r.x * k, 0, (r.x + r.w) * k, 0);
         for (const [pos, tr] of asList(r.fade)) gr.addColorStop(pos, rgba(r.c, r.a * (1 - tr)));
         ctx.fillStyle = gr;
       } else ctx.fillStyle = rgba(r.c, r.a);

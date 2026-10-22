@@ -18,4 +18,8 @@ spawn.CanCollide = true
 spawn.Parent = workspace
 -- Roblox's newer replication (owner, Oct 21: the desync at the best possible performance; scripts can't set it)
 pcall(function() workspace.NextGenerationReplication = Enum.RolloutState.Enabled end)
+-- R6 bodies for everyone (owner, Oct 22 13:24: "can you please make the game r6"); Studio's Game Settings > Avatar
+-- says the same, and the live game needs that setting saved there too (Studio's publish keeps it)
+local okR6 = pcall(function() game:GetService("StarterPlayer").GameSettingsAvatar = Enum.GameAvatarType.R6 end)
+print(if okR6 then "avatar type: R6" else "avatar type: could not set R6 (set it in Game Settings > Avatar)")
 return nil

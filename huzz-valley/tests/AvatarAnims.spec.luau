@@ -63,35 +63,47 @@ local function scenario(name, opts)
 	end
 	local root = part("HumanoidRootPart", Vector3.new(2, 2, 1))
 	root.CFrame, root.Anchored, root.AssemblyLinearVelocity = CFrame.new(0, 3, 0), false, Vector3.zero
-	for n, size in { LowerTorso = Vector3.new(2, 0.4, 1), UpperTorso = Vector3.new(2, 1.6, 1), Head = Vector3.new(1.2, 1.2, 1.2) } do part(n, size) end
-	for _, s in { "Left", "Right" } do
-		for _, n in { "UpperArm", "LowerArm", "UpperLeg", "LowerLeg" } do part(s .. n, Vector3.new(1, 1.2, 1)) end
-		part(s .. "Hand", Vector3.new(1, 0.3, 1))
-		part(s .. "Foot", Vector3.new(1, 0.3, 1))
-	end
-	local function joint(n, p0, p1, c0, c1)
-		local j = { Name = n, ClassName = "Motor6D", Part0 = parts[p0], Part1 = parts[p1], C0 = c0, C1 = c1, Transform = CFrame.identity, Parent = parts[p1] }
+	local v = CFrame.new
+	local function joint(n, p0, p1, c0, c1, home)
+		local j = { Name = n, ClassName = "Motor6D", Part0 = parts[p0], Part1 = parts[p1], C0 = c0, C1 = c1, Transform = CFrame.identity, Parent = parts[home or p1] }
 		function j.IsA(_, cls) return cls == "Motor6D" end
 		if opts.newer then -- Roblox's newer joints (his own avatar): AnimationConstraints between attachments
 			j = { Name = n, ClassName = "AnimationConstraint", Attachment0 = { CFrame = c0, Parent = parts[p0] },
 				Attachment1 = { CFrame = c1, Parent = parts[p1] }, Transform = CFrame.identity, Parent = parts[p1] }
 			function j.IsA(_, cls) return cls == "AnimationConstraint" or cls == "Constraint" end
 		end
-		table.insert(parts[p1].kids, j)
+		table.insert(parts[home or p1].kids, j)
 		motors[n] = j
 	end
-	local v = CFrame.new
-	joint("Root", "HumanoidRootPart", "LowerTorso", v(0, -0.2, 0), CFrame.identity)
-	joint("Waist", "LowerTorso", "UpperTorso", v(0, 0.2, 0), v(0, -0.8, 0))
-	joint("Neck", "UpperTorso", "Head", v(0, 0.8, 0), v(0, -0.6, 0))
-	for _, s in { "Left", "Right" } do
-		local x = if s == "Right" then 1 else -1
-		joint(s .. "Shoulder", "UpperTorso", s .. "UpperArm", v(x, 0.55, 0), v(-x * 0.5, 0.4, 0))
-		joint(s .. "Elbow", s .. "UpperArm", s .. "LowerArm", v(0, -0.5, 0), v(0, 0.5, 0))
-		joint(s .. "Wrist", s .. "LowerArm", s .. "Hand", v(0, -0.55, 0), v(0, 0.15, 0))
-		joint(s .. "Hip", "LowerTorso", s .. "UpperLeg", v(x * 0.5, -0.2, 0), v(0, 0.6, 0))
-		joint(s .. "Knee", s .. "UpperLeg", s .. "LowerLeg", v(0, -0.6, 0), v(0, 0.6, 0))
-		joint(s .. "Ankle", s .. "LowerLeg", s .. "Foot", v(0, -0.6, 0), v(0, 0.15, 0))
+	if opts.r6 then -- (an R6 body: Torso, Head, two arms, two legs; Roblox keeps its joints in the Torso)
+		part("Torso", Vector3.new(2, 2, 1))
+		part("Head", Vector3.new(2, 1, 1))
+		for _, n in { "Right Arm", "Left Arm", "Right Leg", "Left Leg" } do part(n, Vector3.new(1, 2, 1)) end
+		joint("RootJoint", "HumanoidRootPart", "Torso", CFrame.identity, CFrame.identity, "HumanoidRootPart")
+		joint("Neck", "Torso", "Head", v(0, 1, 0), v(0, -0.5, 0), "Torso")
+		joint("Right Shoulder", "Torso", "Right Arm", v(1, 0.5, 0), v(-0.5, 0.5, 0), "Torso")
+		joint("Left Shoulder", "Torso", "Left Arm", v(-1, 0.5, 0), v(0.5, 0.5, 0), "Torso")
+		joint("Right Hip", "Torso", "Right Leg", v(1, -1, 0), v(0.5, 1, 0), "Torso")
+		joint("Left Hip", "Torso", "Left Leg", v(-1, -1, 0), v(-0.5, 1, 0), "Torso")
+	else
+		for n, size in { LowerTorso = Vector3.new(2, 0.4, 1), UpperTorso = Vector3.new(2, 1.6, 1), Head = Vector3.new(1.2, 1.2, 1.2) } do part(n, size) end
+		for _, s in { "Left", "Right" } do
+			for _, n in { "UpperArm", "LowerArm", "UpperLeg", "LowerLeg" } do part(s .. n, Vector3.new(1, 1.2, 1)) end
+			part(s .. "Hand", Vector3.new(1, 0.3, 1))
+			part(s .. "Foot", Vector3.new(1, 0.3, 1))
+		end
+		joint("Root", "HumanoidRootPart", "LowerTorso", v(0, -0.2, 0), CFrame.identity)
+		joint("Waist", "LowerTorso", "UpperTorso", v(0, 0.2, 0), v(0, -0.8, 0))
+		joint("Neck", "UpperTorso", "Head", v(0, 0.8, 0), v(0, -0.6, 0))
+		for _, s in { "Left", "Right" } do
+			local x = if s == "Right" then 1 else -1
+			joint(s .. "Shoulder", "UpperTorso", s .. "UpperArm", v(x, 0.55, 0), v(-x * 0.5, 0.4, 0))
+			joint(s .. "Elbow", s .. "UpperArm", s .. "LowerArm", v(0, -0.5, 0), v(0, 0.5, 0))
+			joint(s .. "Wrist", s .. "LowerArm", s .. "Hand", v(0, -0.55, 0), v(0, 0.15, 0))
+			joint(s .. "Hip", "LowerTorso", s .. "UpperLeg", v(x * 0.5, -0.2, 0), v(0, 0.6, 0))
+			joint(s .. "Knee", s .. "UpperLeg", s .. "LowerLeg", v(0, -0.6, 0), v(0, 0.6, 0))
+			joint(s .. "Ankle", s .. "LowerLeg", s .. "Foot", v(0, -0.6, 0), v(0, 0.15, 0))
+		end
 	end
 	-- Roblox swapping in the avatar's own limbs after the body appears: new parts with new Motor6Ds for the hips,
 	-- knees and elbows (the old joints are left behind and never move again)
@@ -236,12 +248,12 @@ local function scenario(name, opts)
 		if opts.moves ~= false then
 			for _, t in tracks do
 				if t.playing and t.Length > 0 and t.WeightCurrent > 0.5 then
-					for k in KNEES do motors[k].Transform = CFrame.Angles(0.3, 0, 0) end
+					for k in (if opts.r6 then { ["Right Hip"] = true, ["Left Hip"] = true } else KNEES) do motors[k].Transform = CFrame.Angles(0.3, 0, 0) end
 				end
 			end
 		end
 		if animate and not animate.Disabled then
-			for k in ELBOWS do motors[k].Transform = CFrame.Angles(0.25, 0, 0) end
+			for k in (if opts.r6 then { ["Right Shoulder"] = true, ["Left Shoulder"] = true } else ELBOWS) do motors[k].Transform = CFrame.Angles(0.25, 0, 0) end
 		end
 		for _, fn in RunService.PreSimulation.fns do
 			local ok = pcall(fn, 1 / 60)
@@ -253,7 +265,7 @@ local function scenario(name, opts)
 		frame()
 	end
 	local moving = false
-	for _, n in LIVE do
+	for _, n in (if opts.r6 then { "Right Hip", "Left Hip", "Right Shoulder", "Left Shoulder" } else LIVE) do
 		local _, a = motors[n].Transform:ToAxisAngle()
 		if math.abs(a) > math.rad(0.5) then moving = true end
 	end
@@ -291,11 +303,15 @@ for _, c in cases do
 	if name == "step fails" then
 		check(string.find(r.logs[2] or "", "failed 30 frames", 1, true) ~= nil, "step fails: Output says the blend kept failing")
 	end
-	if name == "works" or name == "limbs swapped" or name == "newer joints" then
+	-- (R6: the game is R6 since the owner's Oct 22 ask, and an R6 body plays his BZ1 pack, R6Idle / R6Walk / R6Run)
+	-- (the pack is his paid BZ1 one and stays out of the public repo until he says: without it an R6 body keeps
+	-- Roblox's own walk, as before)
+	local r6Pack = raw:FindFirstChild("R6Idle") ~= nil
+	if name == "R6" and not r6Pack then
+		check(not r.drives and r.animateOn and not r.handDrawn, "R6 (his pack not here): Roblox's own walk, nothing drawn over it")
+	elseif name == "works" or name == "limbs swapped" or name == "newer joints" or name == "R6" then
 		check(r.drives and not r.animateOn and not r.handDrawn, name .. ": the pack plays on your Animator, Roblox's Animate off")
 		check(r.logs[1] and string.find(r.logs[1], "your moves", 1, true) ~= nil, name .. ": Output says the pack plays")
-	elseif name == "R6" then
-		check(not r.drives and r.animateOn and not r.handDrawn, "R6: Roblox's own walk, nothing drawn over it")
 	else
 		check(not r.drives and r.handDrawn, name .. ": Locomotion let go and PlayerMoves draws the pack by hand")
 		check(r.animateOn or name == "no Animate", name .. ": Roblox's Animate is back on")

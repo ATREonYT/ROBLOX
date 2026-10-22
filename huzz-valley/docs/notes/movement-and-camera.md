@@ -94,7 +94,14 @@ The huss pose and walk animations: [animations.md](animations.md).
   (`Round.Dash.Cooldown`; the server sets `DashCooldown` on the player for the HUD's bar). The server takes the
   sent facing within 150°. A catcher's lunge eases the same way (72 to 40 over 0.38 s, 19 studs, the old reach):
   [stab-lunge-catch.md](stab-lunge-catch.md).
-- `Gameplay/Feel`: +2° FOV at full sprint, held through a huss; no huss FOV kick, no screen-edge streaks or line ring.
+- `Gameplay/Feel`: +6° FOV at full sprint (2 + `Config/Run.SpeedFX.Fov`, Oct 22: the owner asked for a more intense
+  run with his clip), held through a huss; no huss FOV kick.
+- `Gameplay/SpeedFX` (Oct 22, owner: "add some effects when you are running and make it feel more intense"; his clip
+  in `design/owner-oct22/video-1616`): from sprint 0.45 up, 8 thin white Trails (feet, knees, hands, elbows; R6 and
+  R15 points) on every runner near the camera, off when hidden, down, dancing or dead; a blue glow on the left, right
+  and top screen edges (none at the bottom, as in the clip), eased, never flashing, off with Reduced Motion and the
+  intro camera. Tuned in `Config/Run.SpeedFX`. Film: `motion3d/r6_speed_scene.luau`, side by side with his clip in
+  `docs/previews/oct22-r6-run-side.mp4`. Smoke: `tools/preview/smoke_speed_fx.luau`.
   A huss draws 6 thin white Beams riding with whoever husses (`RunMotion.hussLines`, `Run.Dash.Lines`), seen by
   everyone near (HV's thin speed lines; no white trail). Dust, steps, a `speed_wind` loop. Reduced Motion turns off
   the FOV.

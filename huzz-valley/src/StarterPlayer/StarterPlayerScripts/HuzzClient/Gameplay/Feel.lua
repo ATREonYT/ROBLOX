@@ -27,7 +27,9 @@ function M.start()
 	local Frame = require(script.Parent.Frame)
 
 	local player = Players.LocalPlayer
-	local SPRINT_FOV = 2 -- extra degrees at full sprint (was 11; Huss Valley shows none: a calm camera)
+	-- extra degrees at full sprint (was 11, then 2 for Huss Valley's calm camera; Oct 22 the owner asked for a more
+	-- intense run, with his clip's wider rushing camera: + Config/Run.SpeedFX.Fov, Gameplay/SpeedFX)
+	local SPRINT_FOV = 2 + Run.SpeedFX.Fov
 	local NEAR = 120 -- studs: dust only for runners this close to the camera
 
 	local function inRound(p)

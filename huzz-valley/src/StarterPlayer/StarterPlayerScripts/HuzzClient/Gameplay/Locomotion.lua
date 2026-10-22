@@ -61,6 +61,23 @@ local LIVE_JOINTS = { -- (joints only the Animator writes here: a pose on any of
 	{ "RightUpperLeg", "RightHip" }, { "LeftUpperLeg", "LeftHip" }, { "RightLowerLeg", "RightKnee" },
 	{ "LeftLowerLeg", "LeftKnee" }, { "RightLowerArm", "RightElbow" }, { "LeftLowerArm", "LeftElbow" },
 }
+local LIVE_JOINTS_R6 = { -- (an R6 body has only these: the hips and shoulders, all in the Torso)
+	{ "Right Leg", "Right Hip" }, { "Left Leg", "Left Hip" }, { "Right Arm", "Right Shoulder" }, { "Left Arm", "Left Shoulder" },
+}
+
+-- The game is R6 (owner, Oct 22 13:24: "can you please make the game r6, and use these animations that i sent from
+-- the movement"): an R6 body plays his BZ1 Studios pack (R6Idle, R6Walk, R6Run, ... in HuzzAnimations:
+-- tools/anim/extract_anims.luau), tuned by Config/Run.LocoR6 over Config/Run.Loco. An R15 body keeps the R15 pack.
+local function moveName(r6: boolean, name: string): string
+	return if r6 then "R6" .. name else name
+end
+Locomotion.moveName = moveName
+local function locoConfig(r6: boolean)
+	if not r6 then return RunConfig.Loco end
+	local c = table.clone(RunConfig.Loco)
+	for k, v in RunConfig.LocoR6 or {} do c[k] = v end
+	return c
+end
 
 -- One line in Output saying how your own moves are played (and why, when it isn't the pack).
 local said = {}
@@ -107,9 +124,10 @@ local function attach(character: Model)
 		say("no Humanoid on your character in 10 s: nothing to animate", true)
 		return
 	end
-	if humanoid.RigType ~= Enum.HumanoidRigType.R15 then
-		say("R6 avatar: Roblox's own walk (the pack is made for R15 bodies)")
-		return -- (the owner's animations are R15; an R6 avatar keeps Roblox's own)
+	local r6 = humanoid.RigType == Enum.HumanoidRigType.R6
+	if r6 and not (Library.has("R6Idle") and Library.has("R6Walk") and Library.has("R6Run")) then
+		say("R6 avatar: Roblox's own walk (the owner's R6 moves aren't in this place: tools/anim/extract_anims.luau)", true)
+		return
 	end
 	local animator = humanoid:WaitForChild("Animator", 10) :: Animator?
 	local root = humanoid.RootPart or character:WaitForChild("HumanoidRootPart", 10)
@@ -128,7 +146,7 @@ local function attach(character: Model)
 
 	local tracks, lengths, keep = {}, {}, {}
 	for _, name in Mix.TRACKS do
-		local id = Library.id(name)
+		local id = Library.id(moveName(r6, name))
 		if id ~= "" then
 			local a = Instance.new("Animation")
 			a.Name = "Huzz" .. name
@@ -150,8 +168,9 @@ local function attach(character: Model)
 	task.defer(stopOthers, animator, keep) -- (whatever Animate had started before it stopped)
 
 	-- (a bigger avatar's legs take longer steps: every speed scales with its height)
-	local size = math.clamp((humanoid.HipHeight + root.Size.Y / 2) / RunConfig.Loco.RootHeight, 0.5, 2)
-	local mix = Mix.new(Mix.sized(RunConfig.Loco, size))
+	-- (R6 bodies are all one size: HipHeight 0, the legs below the root are 2 studs)
+	local size = if r6 then 1 else math.clamp((humanoid.HipHeight + root.Size.Y / 2) / RunConfig.Loco.RootHeight, 0.5, 2)
+	local mix = Mix.new(Mix.sized(locoConfig(r6), size))
 	local sent = {} -- name -> { weight, speed } last sent (only real changes go out: they replicate)
 	for name, t in tracks do
 		local w = mix.weights[name] or 0
@@ -183,6 +202,15 @@ local function attach(character: Model)
 		RightHip = jointOf("RightUpperLeg", "RightHip"), RightKnee = jointOf("RightLowerLeg", "RightKnee"),
 		LeftHip = jointOf("LeftUpperLeg", "LeftHip"), LeftKnee = jointOf("LeftLowerLeg", "LeftKnee"),
 	}
+	if r6 then
+		-- R6: only the lean into turns and speeding up goes on top (on the RootJoint); his pack's own arms, legs and
+		-- head stay as he made them (the R15 extras, the strafe twist, the halt's brace and the arm plant, are shaped
+		-- for R15 joints, whose frames differ)
+		rootJoint = jointOf("Torso", "RootJoint")
+		waistJoint, neckJoint, rightArm, leftArm, braceLegs = nil, nil, nil, nil, {}
+	end
+	local liveJoints = if r6 then LIVE_JOINTS_R6 else LIVE_JOINTS
+	local pivotHeight = if r6 then root.Size.Y / 2 + 2 else root.Size.Y / 2 + humanoid.HipHeight -- (root to the ground)
 	-- This frame's animated pose of a joint (or the last one, if nothing animated it since our write: never stack).
 	local function current(motor: Motor6D): CFrame
 		local pose = motor.Transform
@@ -238,7 +266,7 @@ local function attach(character: Model)
 				-- (the six joints looked up again on every check: Roblox swaps in the avatar's own limbs, with new
 				-- Motor6Ds, after the body appears; the old ones never move again, so a list kept from the start
 				-- would fail a body that's playing fine)
-				for _, pair in LIVE_JOINTS do
+				for _, pair in liveJoints do
 					local j = CarryMath.holding(character, pair[1], pair[2])
 					if j then
 						local _, angle = j.Transform:ToAxisAngle()
@@ -329,10 +357,10 @@ local function attach(character: Model)
 			if math.abs(roll) + math.abs(pitch) > 1e-4 then
 				-- turned about the ground under you (in the root part's space), then into the joint's own frame
 				local c0 = rootJoint.C0
-				hipsPose = c0:Inverse() * Mix.leanCFrame(roll, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0 * hipsPose
+				hipsPose = c0:Inverse() * Mix.leanCFrame(roll, pitch, pivotHeight) * c0 * hipsPose
 			end
 			-- the halt's braced stance (hips low and back, one leg forward, knees bent: LocomotionMix.brace)
-			local brace = if quiet > 0 then 0 else Mix.brace(mix)
+			local brace = if quiet > 0 or r6 then 0 else Mix.brace(mix)
 			if brace > 1e-4 then
 				hipsPose = Mix.braceJoint(mix, brace, "Root", rootJoint.C0) * hipsPose
 			end
@@ -363,7 +391,7 @@ local function attach(character: Model)
 			end
 			put(rootJoint, hipsPose)
 			-- the stop's plant: the arms swing out as the feet come together (LocomotionMix.stopAmount)
-			local plant = if quiet > 0 then 0 else Mix.stopAmount(mix)
+			local plant = if quiet > 0 or r6 then 0 else Mix.stopAmount(mix)
 			for side, arm in { [1] = rightArm, [-1] = leftArm } do
 				if arm and arm.Parent then
 					local pose = Mix.swing(current(arm), if quiet > 0 then 1 else Mix.swingK(mix, "Arms"))
@@ -423,7 +451,8 @@ end
 
 -- True when this controller drives your walk and run (the owner's Idle, Walk and Run can all play here).
 function Locomotion.available(): boolean
-	return Library.has("Idle") and Library.has("Walk") and Library.has("Run")
+	return (Library.has("Idle") and Library.has("Walk") and Library.has("Run"))
+		or (Library.has("R6Idle") and Library.has("R6Walk") and Library.has("R6Run"))
 end
 
 -- True while this controller is playing the pack on this character (yours, its tracks loaded).

@@ -46,6 +46,19 @@ return {
 	-- played the walk at 1x at 8 studs/s and asked it to cover the 16 studs/s you set off at (the planted foot slid
 	-- along at half the ground speed: the "skating" walk), and blended walk into run between 13 and 21, so the slow walk
 	-- still showed while you ran.
+	-- R6 bodies (owner, Oct 22 13:24: "make the game r6, and use these animations that i sent from the movement"): his
+	-- BZ1 pack's loops over Loco below (Gameplay/Locomotion). Measured by tools/preview/motion3d/r6_stride.luau: his
+	-- Stylized Walk keeps its feet planted at ~3.3 studs/s, his Stylized Run 2 at ~5; R6 legs are short, so at a
+	-- runner's 16-28 the run is capped at 1.5x = 4.5 steps a second (Huss Valley's ~4.6) and the feet slide, as in
+	-- Huss Valley's R6 recording. Right leg forward at 0.0 (walk) and 0.95 (run) of each loop. His loops already
+	-- swing far: no extra Swing.
+	LocoR6 = {
+		WalkAt = 3.3, WalkRate = { 0.5, 1.7 },
+		RunAt = 10, RunRate = { 0.6, 1.5 },
+		RootHeight = 3,
+		WalkPhase = 0, RunPhase = 0.95,
+		Swing = { Arms = 1, Legs = 1 },
+	},
 	Loco = {
 		SpeedResponse = 13, -- how fast the blend follows the speed (higher = snappier; 13 settles in ~0.35 s)
 		MoveFrom = 0.4, MoveFull = 3, -- studs/s: idle fades into the walk between these
@@ -175,6 +188,25 @@ return {
 			-- height over the root, how far in front (+) or behind, and each line's length scale
 			{ 1.4, 0.15, 0.8 }, { 0.8, -0.25, 1 }, { 0.2, 0.1, 0.7 }, { -0.4, -0.15, 0.95 }, { -1.0, 0.25, 0.75 }, { -1.7, -0.05, 0.6 },
 		},
+	},
+	-- Running at speed (owner, Oct 22 13:24: "add some effects when you are running and make it feel more intense",
+	-- with his clip: design/owner-oct22/video-1616). Measured from the clip at full sprint: thin white wind streaks
+	-- curling off the arms and legs (they follow the limbs' swing), and a blue glow round the screen's edge, about
+	-- (45, 105, 175) at the very edge fading out over ~6% of the screen; none while walking (f7.6). Gameplay/SpeedFX.
+	SpeedFX = {
+		From = 0.45, -- how fast (0 = the walk, 1 = flat out) before any of it shows; full at 1
+		Trails = {
+			Near = 110, -- studs: streaks on runners this close to the camera (yours always)
+			Life = 0.28, -- seconds a streak lasts: curls about as long as the clip's (0.2 read short next to it)
+			Width = 0.13, -- studs at the limb, thinning to nothing
+			See = 0.35, -- how see-through at their thickest
+		},
+		Glow = {
+			Color = Color3.fromRGB(45, 110, 190),
+			Edge = 0.07, -- of the screen, each side
+			Strength = 0.55, -- at flat out (0 = none, 1 = solid at the very edge)
+		},
+		Fov = 4, -- extra degrees of view at flat out (on top of Feel's 2): the clip's wide, rushing camera
 	},
 	-- The cast pose (owner: "make the usage of items smoother"; critic: powers had no body move at all): while a
 	-- power winds up (Config/Powers.Fx WindUp, 0.15 to 0.25 s) the body reaches both arms forward and up and leans

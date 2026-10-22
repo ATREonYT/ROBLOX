@@ -37,12 +37,15 @@ for i, name in names do
 		if d.ClassName == "KeyframeSequence" and d.Name == name and (process.env.ANIM_UNDER == nil or d:GetFullName():find(process.env.ANIM_UNDER, 1, true)) then found = d break end
 	end
 	assert(found, "no animation called " .. name)
-	local rig = scene:addRig(Rig.r15("R" .. i, { shirt = COLORS[(i - 1) % #COLORS + 1], pants = "#22232c" }))
+	-- (an R6 animation, with a Torso pose, goes on an R6 rig: the owner's Oct 22 packs)
+	local r6 = found:FindFirstChild("Torso", true) ~= nil
+	local rig = scene:addRig((if r6 then Rig.r6 else Rig.r15)("R" .. i, { shirt = COLORS[(i - 1) % #COLORS + 1], pants = "#22232c", hair = "#2a1a10" }))
+	local H = if r6 then 3 else Rig.REST_HEIGHT
 	local col, row = (i - 1) % PER_ROW, (i - 1) // PER_ROW
 	local x, z = (col - (PER_ROW - 1) / 2) * 5, row * 6
 	if process.env.ANIM_VIEW == "side" then x, z = (i - 1) * 4.5, 0 end
-	rig.root.CFrame = if process.env.ANIM_VIEW == "side" then Rig.lookAt(Vector3.new(x, Rig.REST_HEIGHT, z), Vector3.new(x + 1, Rig.REST_HEIGHT, z))
-		else Rig.lookAt(Vector3.new(x, Rig.REST_HEIGHT, z), Vector3.new(x, Rig.REST_HEIGHT, z - 1))
+	rig.root.CFrame = if process.env.ANIM_VIEW == "side" then Rig.lookAt(Vector3.new(x, H, z), Vector3.new(x + 1, H, z))
+		else Rig.lookAt(Vector3.new(x, H, z), Vector3.new(x, H, z - 1))
 	rigs[i] = { rig = rig, anim = KFS.load(found) }
 	print(i, name, "length", rigs[i].anim.length)
 end
