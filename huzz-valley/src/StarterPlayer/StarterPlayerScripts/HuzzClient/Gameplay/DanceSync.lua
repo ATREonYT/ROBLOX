@@ -10,7 +10,8 @@
 	  - Another player's dance that can't play on this screen (Studio's stand-in animation IDs only play for the
 	    player who made them, and a published one may still be loading): drawn here by hand from the dance's
 	    KeyframeSequence (CompanionDance.anim: ReplicatedStorage.HuzzAnimations in Studio, HuzzDanceMoves live while
-	    it isn't published, else KeyframeSequenceProvider) on their R15 joints, so everyone sees everyone dance.
+	    it isn't published, else KeyframeSequenceProvider) on their joints (R6 since Oct 22: the owner's R6 dances on
+	    R6 bodies; R15 dances on R15 ones), so everyone sees everyone dance.
 	  - Your own dance in the live game while it has no published ID (UI/DancePlayer.handBeat; owner, Oct 20 15:13:
 	    "inside the actual roblox game, not studio, make it so that dances are available"): drawn the same way on
 	    your own joints, on its beat (no track exists to play).
@@ -27,6 +28,7 @@ local PARTS = {
 	"LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand",
 	"LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot",
 }
+local PARTS_R6 = { "Torso", "Head", "Right Arm", "Left Arm", "Right Leg", "Left Leg" }
 local DRIFT = 0.12 -- seconds a track may drift off its beat before it's nudged back
 local FADE = 0.25 -- seconds a hand-drawn dance fades in and out
 local DRAW_RANGE = 120 -- studs from the camera: hand-drawn dances further away aren't drawn
@@ -99,11 +101,12 @@ function M.start()
 	local function motorsOf(character: Model)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if not (humanoid and root) or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
+		local r6 = humanoid ~= nil and humanoid.RigType == Enum.HumanoidRigType.R6
+		if not (humanoid and root) or (not r6 and humanoid.RigType ~= Enum.HumanoidRigType.R15) then
 			return nil
 		end
 		local want = {}
-		for _, name in PARTS do
+		for _, name in (if r6 then PARTS_R6 else PARTS) do
 			want[name] = false
 		end
 		local list = {}
@@ -125,7 +128,7 @@ function M.start()
 				return nil
 			end
 		end
-		return list, math.clamp((humanoid.HipHeight + root.Size.Y / 2) / 3, 0.5, 2)
+		return list, if r6 then 1 else math.clamp((humanoid.HipHeight + root.Size.Y / 2) / 3, 0.5, 2)
 	end
 
 	-- (written / base are keyed by the joint, in a plain table emptied on release)

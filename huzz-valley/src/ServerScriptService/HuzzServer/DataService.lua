@@ -109,6 +109,35 @@ local function push(player: Player)
 	if snap then stateRemote:FireClient(player, snap) end
 end
 
+-- The old dances (gone Oct 22: the owner's own R6 dances replaced them, Config/Dances) and what each cost in coins.
+-- A save that still has one: its coins come back (kid-safe: never pay for something that vanished), and the old
+-- Robot from the Level 3 reward becomes that reward's new dance (Untouchable) instead. Old favourites go. Safe on
+-- every load (an id handled here is gone after).
+local OLD_DANCES = {
+	Floss = 0, CitrusGroove = 0, HypeUp = 0, ShockShuffle = 0, ClassicGroove = 0, SmoothMoves = 0, SoFresh = 0,
+	PopLock = 0, Robot = 600, PhoneCall = 0, RunningMan = 0, CrazyFeet = 0, Breakdown = 0, SwingTime = 0, FreeFlow = 0,
+	Freestyle = 0, CleanGroove = 0, BounceBounce = 0, Flapper = 0, SquatKick = 0, Sprinkler = 0, CrabDance = 0,
+	Toprock = 0, Aerobics = 0, BoogieBlast = 400, HeadBanger = 400, TheTwist = 600, ZanyZig = 600, PowerMoves = 800,
+	Showstopper = 1200, ZombieGroove = 2000,
+}
+function DataService.migrateDances(data)
+	data.Dances = data.Dances or {}
+	for id in table.clone(data.Dances) do
+		local paid = OLD_DANCES[id]
+		if paid ~= nil and not Dances.get(id) then
+			data.Dances[id] = nil
+			if id == "Robot" and data.Claimed and data.Claimed["3"] then
+				data.Dances.Untouchable = true -- (earned at Level 3: the reward's new dance)
+			elseif paid > 0 then
+				data.Coins = (data.Coins or 0) + paid
+			end
+		end
+	end
+	for id in table.clone(data.FavDances or {}) do
+		if not Dances.get(id) then data.FavDances[id] = nil end
+	end
+end
+
 -- Dances the player can use: owned outright, plus the Dance Pack's dances while they own the pass.
 function DataService.ownedDances(player: Player)
 	local profile = profiles[player]
@@ -221,6 +250,7 @@ local function onPlayerAdded(player: Player)
 	-- Girls are copies by grade since the Combine machine (Oct 20): old saves' girls and spare copies carry over as
 	-- Normal copies (Shared/CombineRules.migrate; safe on every load).
 	CombineRules.migrate(profile.Data)
+	DataService.migrateDances(profile.Data)
 	for _, d in Dances.List do
 		if d.Starter then profile.Data.Dances[d.Id] = true end
 	end

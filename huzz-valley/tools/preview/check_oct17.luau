@@ -215,7 +215,7 @@ local grid = dp.Grid
 local list = {}
 for _, c in grid:GetChildren() do if c:IsA("TextButton") then table.insert(list, c) end end
 table.sort(list, function(a, b) return a.LayoutOrder < b.LayoutOrder end)
-check("all 32 dances have cards (25 + the Dance Crate's 7, Oct 19)", #list == #Dances.List and #list == 32)
+check("all 33 dances have cards (the owner's R6 ones, Oct 22)", #list == #Dances.List and #list == 33)
 if #list >= 4 then
 	local p1, p2, p3, p4 = list[1].Position, list[2].Position, list[3].Position, list[4].Position
 	check("three cards to a row", p1.Y.Offset == p2.Y.Offset and p2.Y.Offset == p3.Y.Offset and p4.Y.Offset > p1.Y.Offset and p4.X.Offset == p1.X.Offset and p3.X.Offset > p2.X.Offset)
@@ -227,17 +227,17 @@ local selectedCount = 0
 for _, c in list do if c.Halo.Visible then selectedCount += 1 end end
 check("exactly one card is highlighted", selectedCount == 1)
 local pv = dp.Preview
-if pv.DanceName.Text ~= "Aerobics" then print("  preview shows: " .. pv.DanceName.Text .. " / " .. pv.Blurb.Text) end
-check("an owned dance's preview shows its name and line", pv.DanceName.Text == "Aerobics" and pv.Blurb.Text == Dances.get("Aerobics").Blurb and grid.Aerobics.Halo.Visible)
-click(grid.SwingTime)
-check("a locked dance shows locked, a dark figure and a lock", pv.Blurb.Text:find("Locked") == 1 and grid.SwingTime:FindFirstChild("Lock") ~= nil and pv.ArtBox:FindFirstChild("Lock") ~= nil and grid.SwingTime.Halo.Visible and not grid.Aerobics.Halo.Visible)
+if pv.DanceName.Text ~= "Beatbox" then print("  preview shows: " .. pv.DanceName.Text .. " / " .. pv.Blurb.Text) end
+check("an owned dance's preview shows its name and line", pv.DanceName.Text == "Beatbox" and pv.Blurb.Text == Dances.get("Beatbox").Blurb and grid.Beatbox.Halo.Visible)
+click(grid.Breakdance)
+check("a locked dance shows locked, a dark figure and a lock", pv.Blurb.Text:find("Locked") == 1 and grid.Breakdance:FindFirstChild("Lock") ~= nil and pv.ArtBox:FindFirstChild("Lock") ~= nil and grid.Breakdance.Halo.Visible and not grid.Beatbox.Halo.Visible)
 check("PLAY and STOP sit inside the preview", dp.Play.Visible and dp.Stop.Visible and dp.Play.Position.X.Offset > pv.Position.X.Offset and dp.Stop.Position.X.Offset + dp.Stop.Size.X.Offset / 2 < pv.Position.X.Offset + pv.Size.X.Offset)
 check("search, sort and the three tabs", dp.Header:FindFirstChild("Search") and dp.Header:FindFirstChild("Sort") and dp:FindFirstChild("AllTab") and dp:FindFirstChild("OwnedTab") and dp:FindFirstChild("FavouritesTab") and dp.SortMenu:FindFirstChild("AToZ") and dp.SortMenu:FindFirstChild("ZToA"))
 check("DANCES: whole pixels only", wholePixels(gui.Dances))
 -- favourites are saved by the server, checked and capped
 local function act(...) local r, why = State.action(...); task.wait(0.2); return r, why end -- (the server refuses actions closer than 0.15 s)
 check("favourite: unknown dance refused", (act("FavoriteDance", "NotADance", true)) == false and profile.Data.FavDances.NotADance == nil)
-check("favourite: needs true or false", (act("FavoriteDance", "Floss", "yes")) == false and profile.Data.FavDances.Floss == nil)
+check("favourite: needs true or false", (act("FavoriteDance", "OrangeSwing", "yes")) == false and profile.Data.FavDances.OrangeSwing == nil)
 for i = 1, Dances.MaxFavourites do act("FavoriteDance", Dances.List[i].Id, true) end
 local n = 0
 for _ in profile.Data.FavDances do n += 1 end

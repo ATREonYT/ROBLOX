@@ -35,10 +35,11 @@ local CollectionService = { GetTagged = function() return {} end }
 local lib = roblox.Instance.new("Folder")
 for _, inst in roblox.deserializeModel(fs.readFile(Env.root .. "/huzz-valley/src/ServerStorage/HuzzAnimations.rbxm")) do inst.Parent = lib end
 local girlMoves = nil -- ReplicatedStorage.HuzzGirlMoves, once "Bootstrap" has made it
+local r6Moves = nil -- ReplicatedStorage.HuzzR6Moves (his R6 pack), likewise
 local SharedNode = Env.game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local ReplicatedStorage = {
 	WaitForChild = function(_, n) assert(n == "Shared"); return SharedNode end,
-	FindFirstChild = function(_, n) if n == "HuzzGirlMoves" then return girlMoves end return nil end,
+	FindFirstChild = function(_, n) if n == "HuzzGirlMoves" then return girlMoves end if n == "HuzzR6Moves" then return r6Moves end return nil end,
 }
 local mocks = { RunService = RunService, Players = Players, Workspace = Workspace, CollectionService = CollectionService, ReplicatedStorage = ReplicatedStorage }
 local realGet = Env.game.GetService
@@ -306,6 +307,99 @@ do
 	check(not hussHalt, "a huss with no key held is no halt on other screens")
 	check(not fallHalt, "nor is a fall (moving fast through the air with no key)")
 end
+-- An R6 body (the game is R6 since Oct 22) gets his R6 pack drawn by hand, and his Dash Left / Right on a huss
+-- (Gameplay/R6Huss). His pack is paid and stays out of the public repo: without it, the R6 body is left alone.
+do
+	local raw = lib:FindFirstChild("HuzzAnimations")
+	local okHuss, errH = pcall(loadGameplay("R6Huss").start)
+	check(okHuss, "R6Huss starts: " .. tostring(errH))
+	-- a real R6 body: Torso, Head, arms and legs, its joints in the Torso
+	local attrs, parts, motors = {}, {}, {}
+	local character = { Name = "Blocky6", Parent = "Workspace" }
+	local function part(n, size)
+		local p = { Name = n, Size = size, CFrame = CFrame.identity, kids = {}, Parent = character }
+		function p.GetChildren() return p.kids end
+		function p.FindFirstChild(_, k) for _, c in p.kids do if c.Name == k then return c end end return nil end
+		function p.IsA(_, c) return c == "BasePart" end
+		parts[n] = p
+		return p
+	end
+	local root = part("HumanoidRootPart", Vector3.new(2, 2, 1))
+	root.CFrame, root.Anchored, root.AssemblyLinearVelocity = CFrame.new(30, 3, 0), false, Vector3.zero
+	part("Torso", Vector3.new(2, 2, 1)); part("Head", Vector3.new(2, 1, 1))
+	for _, n in { "Right Arm", "Left Arm", "Right Leg", "Left Leg" } do part(n, Vector3.new(1, 2, 1)) end
+	local function joint(n, p0, p1, c0, c1, home)
+		local j = { Name = n, ClassName = "Motor6D", Part0 = parts[p0], Part1 = parts[p1], C0 = c0, C1 = c1, Transform = CFrame.identity, Parent = parts[home] }
+		function j.IsA(_, cls) return cls == "Motor6D" end
+		table.insert(parts[home].kids, j)
+		motors[n] = j
+	end
+	local v = CFrame.new
+	joint("RootJoint", "HumanoidRootPart", "Torso", CFrame.identity, CFrame.identity, "HumanoidRootPart")
+	joint("Neck", "Torso", "Head", v(0, 1, 0), v(0, -0.5, 0), "Torso")
+	joint("Right Shoulder", "Torso", "Right Arm", v(1, 0.5, 0), v(-0.5, 0.5, 0), "Torso")
+	joint("Left Shoulder", "Torso", "Left Arm", v(-1, 0.5, 0), v(0.5, 0.5, 0), "Torso")
+	joint("Right Hip", "Torso", "Right Leg", v(1, -1, 0), v(0.5, 1, 0), "Torso")
+	joint("Left Hip", "Torso", "Left Leg", v(-1, -1, 0), v(-0.5, 1, 0), "Torso")
+	local animator = { GetPlayingAnimationTracks = function() return {} end }
+	local humanoid = {
+		RigType = roblox.Enum.HumanoidRigType.R6, HipHeight = 0, Sit = false, Health = 100, MoveDirection = Vector3.zero,
+		GetState = function() return roblox.Enum.HumanoidStateType.Running end,
+		FindFirstChildOfClass = function(_, c) return if c == "Animator" then animator else nil end,
+	}
+	function character.FindFirstChild(_, n) return parts[n] end
+	function character.GetDescendants()
+		local all = {}
+		for _, p in parts do
+			table.insert(all, p)
+			for _, k in p.kids do table.insert(all, k) end
+		end
+		return all
+	end
+	function character.FindFirstChildOfClass(_, c) return if c == "Humanoid" then humanoid else nil end
+	function character.GetAttribute(_, k) return attrs[k] end
+	function character.SetAttribute(_, k, val) attrs[k] = val end
+	r6.Character = character
+	local rhip = motors["Right Hip"]
+	if raw:FindFirstChild("R6Walk") then
+		local f = roblox.Instance.new("Folder")
+		for _, n in { "R6Idle", "R6Walk", "R6Run", "R6DashLeft", "R6DashRight" } do raw:FindFirstChild(n):Clone().Parent = f end
+		r6Moves = f
+		clock += 3
+		frames(20)
+		check(PlayerMoves.drives(character), "an R6 body is drawn with his R6 pack")
+		local pos = root.CFrame
+		root.AssemblyLinearVelocity = Vector3.new(0, 0, -22)
+		frames(90, function()
+			pos = pos * CFrame.new(0, 0, -22 / 60)
+			root.CFrame = pos
+		end)
+		-- (R6 hips swing about their own frame's axis: the angle's travel through the run counts)
+		local travel = 0
+		local prev = nil
+		frames(40, function()
+			pos = pos * CFrame.new(0, 0, -22 / 60)
+			root.CFrame = pos
+			local _, a = rhip.Transform:ToAxisAngle()
+			if prev then travel += math.abs(a - prev) end
+			prev = a
+		end)
+		check(math.deg(travel) > 60, string.format("running, the R6 leg swings through his run (%.0f degrees of travel)", math.deg(travel)))
+		-- a huss to the right: his Dash Right goes over the run, then the run is back
+		local runPose = rhip.Transform
+		attrs.DashAt, attrs.DashDir = clock, Vector3.new(1, 0, 0)
+		frames(12, function() pos = pos * CFrame.new(0, 0, -22 / 60); root.CFrame = pos end)
+		local shown = rhip.Transform
+		attrs.DashAt = nil
+		local _, a1 = shown:ToAxisAngle()
+		check(shown ~= runPose, string.format("a huss poses the R6 body with his dash (hip at %.0f degrees)", math.deg(a1)))
+	else
+		frames(10)
+		check(not PlayerMoves.drives(character), "R6 (his pack not here): left to Roblox's own R6 walk")
+	end
+	r6.Character = nil
+end
+
 -- leaving: dropped
 theirs.character.Parent = nil
 other.Character = nil

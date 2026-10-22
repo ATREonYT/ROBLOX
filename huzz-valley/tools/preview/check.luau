@@ -144,12 +144,12 @@ end
 Characters.addGirls(testGirls)
 check("no placeholder companions (Aiko, Ren, Sora, Hina gone)", Characters.get("Aiko") == nil and Characters.get("Hina") == nil and profile.Data.Characters.Aiko == nil and profile.Data.Equipped == "")
 require(HS.DataService).update(player, function(d) d.Characters.g_mika = os.time() end)
-check("starter dance owned", State.data.Dances.Floss == true)
+check("starter dance owned", State.data.Dances.OrangeSwing == true)
 check("can't equip a companion you don't own", (act("Equip", "g_rin")) == false and profile.Data.Equipped == "")
 check("equip an owned companion", (act("Equip", "g_mika")) == true and profile.Data.Equipped == "g_mika")
 check("unequip works", (act("Unequip")) == true and profile.Data.Equipped == "")
 check("favourite a companion", (act("FavoriteCharacter", "g_rin", true)) == true and profile.Data.FavChars.g_rin == true)
-check("favourite a dance", (act("FavoriteDance", "Robot", true)) == true and profile.Data.FavDances.Robot == true)
+check("favourite a dance", (act("FavoriteDance", "Untouchable", true)) == true and profile.Data.FavDances.Untouchable == true)
 check("bad action refused", (act("GiveMeCoins", 999)) == false)
 local coins = profile.Data.Coins
 check("level 1 reward claims once", (act("ClaimReward", 1)) == true and profile.Data.Coins == coins + 100 and (act("ClaimReward", 1)) == false and profile.Data.Coins == coins + 100)
@@ -160,7 +160,7 @@ check("finished quest gives XP once", (act("ClaimQuest", "Q1Rounds")) == true an
 check("client can't add stats", (act("addStat", "Rounds", 99)) == false)
 check("dance pack pass grants its dances", (function()
 	DataService.setExtra(player, "Passes", { DancePack = true }); task.wait(0.1)
-	local ok2 = State.data.Dances.SwingTime == true and State.data.Dances.Toprock == true
+	local ok2 = State.data.Dances.Breakdance == true and State.data.Dances.Superstar == true
 	DataService.setExtra(player, "Passes", { VIP = true }); task.wait(0.1)
 	return ok2
 end)())

@@ -1,4 +1,4 @@
--- Picks each dance's most telling moment (its "pose") for the Dances cards, and films all 25 frozen in it.
+-- Picks each dance's most telling moment (its "pose") for the Dances cards, and films them all frozen in it.
 -- The pose = the moment the hands, feet and head are furthest from standing still (hands count most), away from
 -- the first and last tenth (where dances ease in and out). Writes Shared/Config/DancePoses.lua.
 -- From the repo root: sh huzz-valley/tools/preview/motion3d/video.sh huzz-valley/tools/preview/motion3d/dance_poses.luau out.mp4
@@ -16,14 +16,19 @@ for _, seq in folder:GetChildren() do
 end
 table.sort(names)
 
-local WEIGHT = { LeftHand = 1.5, RightHand = 1.5, LeftFoot = 1, RightFoot = 1, Head = 0.6 }
+-- (R6 since Oct 22: the owner's R6 dances; the hands and feet are the ends of the arms and legs)
+local WEIGHT = { ["Left Arm"] = 1.5, ["Right Arm"] = 1.5, ["Left Leg"] = 1, ["Right Leg"] = 1, Head = 0.6 }
 local function points(rig)
 	local out = {}
-	for n in WEIGHT do out[n] = rig.root.CFrame:PointToObjectSpace(rig.parts[n].CFrame.Position) end
+	for n in WEIGHT do
+		local tip = if n == "Head" then Vector3.zero else Vector3.new(0, -1, 0)
+		out[n] = rig.root.CFrame:PointToObjectSpace(rig.parts[n].CFrame:PointToWorldSpace(tip))
+	end
 	return out
 end
-local probe = Rig.r15("Probe")
-probe.root.CFrame = CFrame.new(0, Rig.REST_HEIGHT, 0)
+local H = 3
+local probe = Rig.r6("Probe")
+probe.root.CFrame = CFrame.new(0, H, 0)
 Rig.fk(probe)
 local rest = points(probe)
 
@@ -45,9 +50,9 @@ for i, name in names do
 	local id = name:sub(7)
 	poses[i] = { anim = anim, t = bestT }
 	table.insert(lines, string.format("\t%s = %.2f,", id, bestT))
-	local rig = scene:addRig(Rig.r15(id, { shirt = "#3a6fd8", pants = "#22232c" }))
+	local rig = scene:addRig(Rig.r6(id, { shirt = "#3a6fd8", pants = "#22232c" }))
 	local col, row = (i - 1) % PER_ROW, (i - 1) // PER_ROW
-	rig.root.CFrame = Rig.lookAt(Vector3.new((col - 2) * 5, Rig.REST_HEIGHT, row * 6), Vector3.new((col - 2) * 5, Rig.REST_HEIGHT, row * 6 - 1))
+	rig.root.CFrame = Rig.lookAt(Vector3.new((col - 2) * 5, H, row * 6), Vector3.new((col - 2) * 5, H, row * 6 - 1))
 	poses[i].rig = rig
 	print(string.format("%-22s pose at %.2f s of %.2f", name, bestT, anim.length))
 end

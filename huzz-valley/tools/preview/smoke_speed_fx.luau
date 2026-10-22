@@ -70,7 +70,7 @@ check("thin, short and white", t1 and t1.Lifetime <= 0.3 and (t1.Attachment1.Pos
 check("flat out: the blue glow round the edge", edge() > 0.4 and gui.Enabled)
 check("eases in (no pop)", early > 0 and early < edge() * 0.5)
 check("left, right and top; none at the bottom", gui:FindFirstChild("Top") ~= nil and gui:FindFirstChild("Bottom") == nil)
-c:SetAttribute("HuzzDance", "Floss")
+c:SetAttribute("HuzzDance", "OrangeSwing")
 run(0.1)
 check("dancing: streaks off", lit() == 0)
 c:SetAttribute("HuzzDance", nil)

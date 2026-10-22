@@ -4,9 +4,9 @@ local ok, failed = 0, 0
 local function check(name, cond)
 	if cond then ok += 1; print("ok   " .. name) else failed += 1; print("FAIL " .. name) end
 end
--- give Robot (the reward-track dance) a pretend animation id so the "has an id" path can be tried
+-- give Untouchable (the reward-track dance) a pretend animation id so the "has an id" path can be tried
 local D = game.ReplicatedStorage.Shared.Config.Dances
-D.Source = D.Source:gsub('(Id = "Robot", Name = "Robot", AnimationId = )""', '%1"rbxassetid://1"')
+D.Source = D.Source:gsub('(Id = "Untouchable", Name = "Untouchable", AnimationId = )""', '%1"rbxassetid://1"')
 
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
 Players.LocalPlayer = player
@@ -35,7 +35,7 @@ local function names(grid)
 	return table.concat(out, ",")
 end
 
--- DANCES (the 25 from the owner's dance file: 20 for everyone, Robot from the reward track, 4 in the Dance Pack)
+-- DANCES (the owner's 33 R6 dances: 21 for everyone, Untouchable from the reward track and the Shop, 4 in the Dance Pack)
 local Dances = require(game.ReplicatedStorage.Shared.Config.Dances)
 local function expected(filter, desc)
 	local list = {}
@@ -46,28 +46,28 @@ local function expected(filter, desc)
 	return table.concat(out, ",")
 end
 local all = expected(function() return true end)
-check("there are 32 dances (25 + the 7 only the Shop sells, Oct 19)", #Dances.List == 32)
+check("there are 33 dances (the owner's R6 ones, Oct 22)", #Dances.List == 33)
 check("Dances opens", MM.open("Dances") == true and gui.Dances.Visible)
 local panel = gui.Dances.Group.Panel
 local grid = panel.Grid
 check("All shows every dance, A-Z", names(grid) == all)
 click(panel.OwnedTab)
-check("Owned tab shows the 20 everyone has", names(grid) == expected(function(d) return d.Starter == true end))
+check("Owned tab shows the 21 everyone has", names(grid) == expected(function(d) return d.Starter == true end))
 click(panel.FavouritesTab)
 check("Favourites tab empty with a hint", names(grid) == "" and panel.Empty.Visible)
 click(panel.AllTab)
-click(grid.SwingTime)
-check("selecting a card fills the preview", panel.Preview.DanceName.Text == "Swing Time")
-click(grid.SwingTime.Star)
+click(grid.Breakdance)
+check("selecting a card fills the preview", panel.Preview.DanceName.Text == "Breakdance")
+click(grid.Breakdance.Star)
 task.wait(0.3)
-check("star favourites the dance (server saved)", profile.Data.FavDances.SwingTime == true)
+check("star favourites the dance (server saved)", profile.Data.FavDances.Breakdance == true)
 click(panel.FavouritesTab)
-check("favourite shows under Favourites", names(grid) == "SwingTime")
+check("favourite shows under Favourites", names(grid) == "Breakdance")
 click(panel.AllTab)
 click(panel.Play)
 check("Play on a locked dance explains how to get it", toast():find("Dance Pack") ~= nil)
 print("  toast: " .. toast())
-click(grid.Floss)
+click(grid.OrangeSwing)
 click(panel.Play)
 check("Play in a Studio that can't load the dance says so (live, unpublished dances are drawn by hand: smoke_live_dance)", toast():find("couldn't load") ~= nil)
 print("  toast: " .. toast())
@@ -84,17 +84,17 @@ click(header.Sort)
 check("sort menu opens", panel.SortMenu.Visible)
 click(panel.SortMenu.ZToA)
 check("Z-A sort", names(grid) == expected(function() return true end, true) and not panel.SortMenu.Visible and header.Sort.Label.Text == "Sort: Name Z - A")
--- own Robot (pretend id) and play it on a character with an Animator
-DataService.update(player, function(d) d.Dances.Robot = true end)
+-- own Untouchable (pretend id) and play it on a character with an Animator
+DataService.update(player, function(d) d.Dances.Untouchable = true end)
 task.wait(0.2)
 local char = Instance.new("Model"); char.Name = "Tester"
 local hum = Instance.new("Humanoid"); hum.Parent = char
 Instance.new("Animator").Parent = hum
 char.Parent = workspace
 player.Character = char
-click(grid.Robot)
+click(grid.Untouchable)
 click(panel.Play)
-print("  toast after playing Robot with an id: " .. toast())
+print("  toast after playing Untouchable with an id: " .. toast())
 click(panel.Stop)
 check("Stop runs without error", true)
 MM.close()

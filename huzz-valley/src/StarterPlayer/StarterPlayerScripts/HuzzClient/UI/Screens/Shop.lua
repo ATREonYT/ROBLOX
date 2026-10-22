@@ -772,7 +772,7 @@ function Shop.build(parent: Instance)
 	local DV = { ArtY = 58, ArtH = 250 }
 	local dv = new("Frame", { Name = "DanceView", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 32, Parent = sp })
 	local dBack = backdrop(dv, "Backdrop", SIDE.Pad, DV.ArtY, SIDE.W - 2 * SIDE.Pad, DV.ArtH, 32, hex("E56CFF"))
-	local dStill = Kit.art("DanceStillRobot", { Name = "Still", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(dBack.Size.X.Offset // 2, DV.ArtH - 6), Size = UDim2.fromOffset(220, 220), ScaleType = Enum.ScaleType.Fit, ZIndex = 33, Parent = dBack })
+	local dStill = Kit.art("DanceStillUntouchable", { Name = "Still", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(dBack.Size.X.Offset // 2, DV.ArtH - 6), Size = UDim2.fromOffset(220, 220), ScaleType = Enum.ScaleType.Fit, ZIndex = 33, Parent = dBack })
 	Effects.rock(dStill, { degrees = 5, seconds = 0.5 }) -- (a little dance to the beat while no animation plays)
 	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(180, 180, 200), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(-0.5, -1, -0.8), Visible = false, ZIndex = 34, Parent = dBack }, { Kit.corner(6) })
 	local dBlurb = chunky({ Name = "Blurb", Text = "", TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(SIDE.Pad, DV.ArtY + DV.ArtH + 10), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad, 26), ZIndex = 33, Parent = dv }, 1.5)
@@ -870,7 +870,7 @@ function Shop.build(parent: Instance)
 		dStill.Visible = not dancing
 		dBlurb.Text = d.Blurb
 		Kit.fitLine(dBlurb, SIDE.W - 2 * SIDE.Pad, 20, 12, true)
-		dNote.Text = if d.Pack then "Also comes with the Dance Pack." elseif d.Id == "Robot" then "Also on the reward track at Level 3." else "Only sold here."
+		dNote.Text = if d.Pack then "Also comes with the Dance Pack." elseif d.Id == "Untouchable" then "Also on the reward track at Level 3." else "Only sold here."
 		slideIn()
 	end
 

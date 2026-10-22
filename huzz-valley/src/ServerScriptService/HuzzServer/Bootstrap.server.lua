@@ -53,6 +53,26 @@ do
 	end
 end
 
+-- Everywhere too: his R6 movement pack (owner, Oct 22: "make the game r6, and use these animations that i sent from
+-- the movement"; 14:37 "add it by any means possible") goes to ReplicatedStorage.HuzzR6Moves, so every screen draws
+-- it by hand on every R6 body (Gameplay/PlayerMoves; Gameplay/R6Huss for the huss), Studio and live, nothing to
+-- upload. Only the moves the game plays (~120 KB); none of it is in the public repo (docs/notes/animations.md).
+do
+	local raw = game:GetService("ServerStorage"):FindFirstChild("HuzzAnimations")
+	local RS = game:GetService("ReplicatedStorage")
+	if raw and not RS:FindFirstChild("HuzzR6Moves") and raw:FindFirstChild("R6Walk") then
+		local folder = Instance.new("Folder")
+		folder.Name = "HuzzR6Moves"
+		for _, name in { "R6Idle", "R6Walk", "R6Run", "R6Jump", "R6Fall", "R6DashLeft", "R6DashRight", "R6DashForward", "R6DashBack" } do
+			local seq = raw:FindFirstChild(name)
+			if seq then
+				seq:Clone().Parent = folder
+			end
+		end
+		folder.Parent = RS
+	end
+end
+
 -- The owner's 3D knife crates (Workspace > scrates > Standard_Crates) go to ReplicatedStorage.HuzzCrates for Shop >
 -- CRATES and the crate opening (Shared/CrateModels). Before MapService puts his spare lobby copies away; the place
 -- build has usually done it already.

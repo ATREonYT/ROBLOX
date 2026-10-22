@@ -37,7 +37,7 @@ end
 Progression.Rewards = {
 	{ Level = 1, Kind = "Coins", Amount = 100, Name = "100 Coins", Art = "CurrencyCoin" },
 	{ Level = 2, Kind = "Aura", Amount = 25, Name = "25 Aura", Art = "CurrencyGem" },
-	{ Level = 3, Kind = "Dance", Id = "Robot", Name = "Robot", Art = "DanceWave" },
+	{ Level = 3, Kind = "Dance", Id = "Untouchable", Name = "Untouchable", Art = "DanceWave" }, -- (was Robot until Oct 22)
 	{ Level = 4, Kind = "Coins", Amount = 250, Name = "250 Coins", Art = "CurrencyCoin" },
 }
 

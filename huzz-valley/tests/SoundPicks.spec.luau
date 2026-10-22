@@ -75,15 +75,15 @@ for key, t in Dances.Tracks do
 	end
 	check("track " .. key .. " Start is a time", t.Start == nil or (type(t.Start) == "number" and t.Start >= 0))
 end
-check("Dances.track gives CrabDance its song", Dances.track("CrabDance") ~= nil and Dances.track("CrabDance").Id == Dances.Tracks.CrabRave.Id)
-check("Dances.track gives Squat Kick the Russian folk dance (Kalinka)", Dances.track("SquatKick") ~= nil and Dances.track("SquatKick").Id == Dances.Tracks.Kalinka.Id)
+check("Dances.track gives OrangeSwing its song", Dances.track("OrangeSwing") ~= nil and Dances.track("OrangeSwing").Id == Dances.Tracks.CrabRave.Id)
+check("Dances.track gives Squat Kicks the Russian folk dance (Kalinka)", Dances.track("SquatKicks") ~= nil and Dances.track("SquatKicks").Id == Dances.Tracks.Kalinka.Id)
 check("Dances.track: unknown dance = nil", Dances.track("NoSuchDance") == nil)
-local crab = Dances.get("CrabDance")
+local crab = Dances.get("OrangeSwing")
 local saved, savedBackup = Dances.Tracks.CrabRave.Id, Dances.Tracks[crab.Backup].Id
 Dances.Tracks.CrabRave.Id = ""
-check("Dances.track: pick 1 with Id \"\" falls back to pick 2", Dances.track("CrabDance") ~= nil and Dances.track("CrabDance").Id == savedBackup)
+check("Dances.track: pick 1 with Id \"\" falls back to pick 2", Dances.track("OrangeSwing") ~= nil and Dances.track("OrangeSwing").Id == savedBackup)
 Dances.Tracks[crab.Backup].Id = ""
-check("Dances.track: both picks \"\" = nil (dances in silence)", Dances.track("CrabDance") == nil)
+check("Dances.track: both picks \"\" = nil (dances in silence)", Dances.track("OrangeSwing") == nil)
 Dances.Tracks.CrabRave.Id, Dances.Tracks[crab.Backup].Id = saved, savedBackup
 check("dance songs are quieter than the background songs", Dances.MusicVolume > 0 and Dances.MusicVolume < MusicCfg.Volume)
 check("the background dips under a dance song but never goes silent", Dances.MusicDuck > 0.1 and Dances.MusicDuck < 1)

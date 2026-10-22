@@ -22,7 +22,8 @@ table.sort(ids)
 
 local WHITE = "#f4f4f8"
 local scene = Scene.new()
-local rig = scene:addRig(Rig.r15("Still", { shirt = WHITE, pants = "#e6e6ee", skin = "#ffffff", hair = "#ffffff", eyes = "#ffffff" }))
+-- (R6 since Oct 22: the owner's R6 dances on a plain R6 body)
+local rig = scene:addRig(Rig.r6("Still", { shirt = WHITE, pants = "#e6e6ee", skin = "#ffffff", hair = "#ffffff", eyes = "#ffffff" }))
 for _, p in rig.parts do if p.Color == "#3b3b3b" then p.Color = "#e6e6ee" end end -- (white feet too)
 rig.decor = {} -- (no face or hair: the mockup's figures are plain)
 -- one frame per dance, in id order (A-Z, as the cutter expects), after one warm-up frame (the first frame drawn
@@ -34,7 +35,7 @@ for i, id in ids do
 	local seq = folder:FindFirstChild("Dance_" .. id)
 	assert(seq, "no animation for dance " .. id)
 	local anim = KFS.load(seq)
-	rig.root.CFrame = Rig.lookAt(Vector3.new(0, Rig.REST_HEIGHT, 0), Vector3.new(0, Rig.REST_HEIGHT, -1))
+	rig.root.CFrame = Rig.lookAt(Vector3.new(0, 3, 0), Vector3.new(0, 3, -1))
 	KFS.apply(anim, rig, poseAt[id])
 	Rig.fk(rig)
 	scene:frame(Vector3.new(0, 3.4, -11), Vector3.new(0, 2.4, 0))

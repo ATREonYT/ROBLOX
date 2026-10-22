@@ -52,7 +52,7 @@ __fireOn(side.Shade, "Activated")
 frames(20)
 click(gui.Shop:FindFirstChild("DancesTab", true))
 frames(25)
-__fireOn(body.DanceShowstopper.Tap, "Activated")
+__fireOn(body.DanceZombieWalk.Tap, "Activated")
 frames(45)
 print("frames:", n)
 return nil

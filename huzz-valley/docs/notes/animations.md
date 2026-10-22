@@ -72,8 +72,18 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   only in `design/owner-oct22/anims/` (gitignored) and `/mnt/project-files/huzz-valley/owner-anims-oct22/`. The git
   HuzzAnimations.rbxm and place files are built WITHOUT it (R6 bodies then use Roblox's own R6 walk); the place with
   it goes to him through the project files only. If the repo goes private, extract and commit normally.
-- Still R15-shaped (step 2 of `docs/plan-oct22-r6.md`): PlayerMoves (others' bodies), the huss, stab, carry, down,
-  crown, stands, knife hand, auras.
+- Everyone's walk and run on R6 (yours too in the live game, where nothing is published): `Gameplay/PlayerMoves`
+  draws R6Idle / R6Walk / R6Run by hand from `ReplicatedStorage.HuzzR6Moves` (Bootstrap fills it, Studio and live),
+  tuned by `Config/Run.LocoR6`; only the lean on top. The huss on R6: `Gameplay/R6Huss` (Frame 13) draws his Dash
+  Left / Right from DashAt / DashDir. Spec: tests/PlayerMoves.spec (R6 case, only when his pack is on disk).
+- Dances (Oct 22, "input these dances i found and remove the old ones"): his 33 R6 dances (extract_anims R6_DANCES,
+  our own names in `Config/Dances`), 21 for everyone, 4 Dance Pack, 8 coins; Untouchable is the Level 3 reward
+  (was Robot). Old dances in saves: `DataService.migrateDances` gives their coins back (Robot from the reward becomes
+  Untouchable). DanceSync and DancePlayer draw R6 joints; cards: `dance_poses.luau` (R6) + `dance_stills.luau` (R6).
+  Song picks: docs/dance-music.md (by feel; tempos not measured).
+- Still R15-shaped (step 2 of `docs/plan-oct22-r6.md`): the stab, carry, down, crown, stands, knife hand, auras.
+- **Local file:** `src/ServerStorage/HuzzAnimations.rbxm` on disk holds his packs (git is told to ignore changes:
+  `git update-index --assume-unchanged`); the committed copy has none. Checks run against the disk copy.
 
 ## Your own moves: never a stiff body (Oct 20)
 - `Gameplay/Locomotion` checks itself: within 3 s (`LOAD_WAIT`) Idle, Walk and Run must have a length and a knee,

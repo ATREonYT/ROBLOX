@@ -1,13 +1,13 @@
 --!strict
--- Dances: 25 picked from the owner's 200-dance file (tools/anim/extract_anims.luau; the raw animation is
+-- Dances: the owner's own 33 R6 dances (Oct 22; tools/anim/extract_anims.luau R6_DANCES; the raw animation is
 -- HuzzAnimations.Dance_<Id>). Names are our own (most of the originals are other games' emote names).
 -- AnimationId = the published ID; "" plays the raw one in Studio (Shared/AnimationLibrary), and in the live game
 -- it's drawn by hand on the dancer's joints from its moves (UI/DancePlayer, Gameplay/DanceSync) until it's
 -- published (tools/studio/publish-animations.lua, which writes these IDs); never invent one.
---   Starter = owned by everyone. Pack = granted by the Dance Pack pass. Robot = also on the reward track (level 3).
+--   Starter = owned by everyone. Pack = granted by the Dance Pack pass. Untouchable = also on the reward track (level 3; Config/Progression).
 --   Coins = its price in the Shop's DANCES (owner, Oct 20 20:34: "make a seperate section for dances, so that the
 --   dances you get by buying them individually ... make them be able to be bought there"; ActionService "BuyDance").
---   Claude's prices: 400 to 2000 by how fancy (the old Dance Crate's rarities), 600 Robot. The 4 Pack dances have
+--   Claude's prices: 400 to 2000 by how fancy (the old Dance Crate's rarities), 600 Untouchable. The 4 Pack dances have
 --   no Coins: Robux only, through the Dance Pack (owner, Oct 21: "make the dances be some for Robux, some for coins").
 --   Color = the card's glow (Dances.Colors, after the owner's Oct 17 mockup: Aerobics pink, Boogie Down blue, Bounce
 --   Bounce green, Breakdown gold, Floss red, Hype violet). Blurb = the one line under the big picture (short, no dashes).
@@ -90,40 +90,46 @@ Dances.MusicDuck = 0.15
 Dances.MusicFadeIn = 0.4 -- seconds
 Dances.MusicFadeOut = 0.8 -- seconds, when the dance stops
 
+-- The owner's own R6 dances (Oct 22 13:24: "input these dances i found and remove the old ones"): his two R6 emote
+-- packs, dances only (tools/anim/extract_anims.luau R6_DANCES: which of his is which). The old 32 are gone; coins
+-- paid for old dances came back (HuzzServer/DataService OLD_DANCES). Same split as before: most for everyone, 4 in
+-- the Dance Pack, 8 for coins (Untouchable also on the reward track at Level 3, where Robot was).
 Dances.List = {
-	{ Id = "Floss", Name = "Floss", AnimationId = "", Starter = true, Color = "Red", Blurb = "Swing your arms and hips like a pro!", Order = 1, Music = "CrabRave", Backup = "Shiawase" },
-	{ Id = "CitrusGroove", Name = "Citrus Groove", AnimationId = "", Starter = true, Color = "Gold", Blurb = "A fresh and zesty groove to show off.", Order = 2, Music = "Shiawase", Backup = "BigDeal" },
-	{ Id = "HypeUp", Name = "Hype Up", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Pump up the crowd before the run!", Order = 3, Music = "HypeHorns", Backup = "ShakeSomethin" },
-	{ Id = "ShockShuffle", Name = "Shock Shuffle", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Quick feet that zap across the floor.", Order = 4, Music = "Moshi", Backup = "CrabRave" },
-	{ Id = "ClassicGroove", Name = "Classic Groove", AnimationId = "", Starter = true, Color = "Pink", Blurb = "An old school groove that never gets old.", Order = 5, Music = "BigDeal", Backup = "HypeHorns" },
-	{ Id = "BoogieDown", Name = "Boogie Down", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Get down and boogie all night!", Order = 6, Music = "BigDeal", Backup = "Downtown" },
-	{ Id = "SmoothMoves", Name = "Smooth Moves", AnimationId = "", Starter = true, Color = "Green", Blurb = "Glide around with silky smooth steps.", Order = 7, Music = "Ascension", Backup = "Downtown" },
-	{ Id = "SoFresh", Name = "So Fresh", AnimationId = "", Starter = true, Color = "Green", Blurb = "Show everyone how fresh you are.", Order = 8, Music = "ShakeSomethin", Backup = "Downtown" },
-	{ Id = "PopLock", Name = "Pop Lock", AnimationId = "", Starter = true, Color = "Red", Blurb = "Pop, freeze and lock to the beat.", Order = 9, Music = "Moshi", Backup = "Downtown" },
-	{ Id = "Robot", Name = "Robot", AnimationId = "", Coins = 600, Color = "Blue", Blurb = "Beep boop! Move like a real robot.", Order = 10, Music = "Moshi", Backup = "CrabRave" },
-	{ Id = "PhoneCall", Name = "Phone Call", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Hello? The dance floor is calling!", Order = 11, Music = "Shiawase", Backup = "StayUpbeat" },
-	{ Id = "RunningMan", Name = "Running Man", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Run in place right on the beat.", Order = 12, Music = "StayUpbeat", Backup = "CrabRave" },
-	{ Id = "CrazyFeet", Name = "Crazy Feet", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Your feet go wild in every direction!", Order = 13, Music = "CrabRave", Backup = "Jumpstyle" },
-	{ Id = "Breakdown", Name = "Breakdown", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Drop it low and break it down!", Order = 14, Music = "Akim", Backup = "ShakeSomethin" },
-	{ Id = "SwingTime", Name = "Swing Time", AnimationId = "", Pack = true, Color = "Pink", Blurb = "Swing back in time with this classic.", Order = 15, Music = "SwingWithMe", Backup = "CharlestonDolly" },
-	{ Id = "FreeFlow", Name = "Free Flow", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Let the music move you.", Order = 16, Music = "Ascension", Backup = "ShakeSomethin" },
-	{ Id = "Freestyle", Name = "Freestyle", AnimationId = "", Starter = true, Color = "Red", Blurb = "No rules, just your own moves!", Order = 17, Music = "Akim", Backup = "ShakeSomethin" },
-	{ Id = "CleanGroove", Name = "Clean Groove", AnimationId = "", Starter = true, Color = "Green", Blurb = "Neat, sharp steps that look super clean.", Order = 18, Music = "ShakeSomethin", Backup = "Downtown" },
-	{ Id = "BounceBounce", Name = "Bounce Bounce", AnimationId = "", Pack = true, Color = "Green", Blurb = "Bounce, bounce, bounce to the beat!", Order = 19, Music = "Shiawase", Backup = "CrabRave" },
-	{ Id = "Flapper", Name = "Flapper", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Flap your arms in this fun old dance.", Order = 20, Music = "SwingWithMe", Backup = "Speakeasy" },
-	{ Id = "SquatKick", Name = "Squat Kick", AnimationId = "", Pack = true, Color = "Red", Blurb = "Squat down low and kick it high!", Order = 21, Music = "Kalinka", Backup = "Jumpstyle" },
-	{ Id = "Sprinkler", Name = "Sprinkler", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Spray your moves all over the place.", Order = 22, Music = "CrabRave", Backup = "Moshi" },
-	{ Id = "CrabDance", Name = "Crab Dance", AnimationId = "", Starter = true, Color = "Red", Blurb = "Scuttle side to side like a crab!", Order = 23, Music = "CrabRave", Backup = "Shiawase" },
-	{ Id = "Toprock", Name = "Toprock", AnimationId = "", Pack = true, Color = "Gold", Blurb = "Rock your feet before the big moves.", Order = 24, Music = "Akim", Backup = "ShakeSomethin" },
-	{ Id = "Aerobics", Name = "Aerobics", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Get active with this energetic dance!", Order = 25, Music = "StayUpbeat", Backup = "HypeHorns" },
-	-- Dances only the Shop sells (owner, Oct 19: "dances, from crates"; the Dance Crate made way for DANCES on Oct 20).
-	{ Id = "BoogieBlast", Name = "Boogie Blast", AnimationId = "", Coins = 400, Color = "Pink", Blurb = "Throw a party right where you stand!", Order = 26, Music = "BigDeal", Backup = "HypeHorns" },
-	{ Id = "HeadBanger", Name = "Head Banger", AnimationId = "", Coins = 400, Color = "Red", Blurb = "Nod along hard to the beat.", Order = 27, Music = "PunchingTheAir", Backup = "SkullCrusher" },
-	{ Id = "TheTwist", Name = "The Twist", AnimationId = "", Coins = 600, Color = "Blue", Blurb = "Twist and turn like it's the old days.", Order = 28, Music = "BoogieWoogie", Backup = "BoogieManBoogie" },
-	{ Id = "ZanyZig", Name = "Zany Zig", AnimationId = "", Coins = 600, Color = "Green", Blurb = "Silly steps that zig and zag.", Order = 29, Music = "DoItYourSelf", Backup = "Shiawase" },
-	{ Id = "PowerMoves", Name = "Power Moves", AnimationId = "", Coins = 800, Color = "Violet", Blurb = "Big strong moves for big wins.", Order = 30, Music = "Akim", Backup = "HypeHorns" },
-	{ Id = "Showstopper", Name = "Showstopper", AnimationId = "", Coins = 1200, Color = "Gold", Blurb = "All eyes on you. Steal the show!", Order = 31, Music = "CharlestonDolly", Backup = "HypeHorns" },
-	{ Id = "ZombieGroove", Name = "Zombie Groove", AnimationId = "", Coins = 2000, Color = "Green", Blurb = "Rise from the grave and dance!", Order = 32, Music = "HalloweenFunk", Backup = "TrickOrTreat" },
+	{ Id = "OrangeSwing", Name = "Orange Swing", AnimationId = "", Starter = true, Color = "Red", Blurb = "Swing your arms and step side to side!", Order = 1, Music = "CrabRave", Backup = "Shiawase" },
+	{ Id = "BoogieDown", Name = "Boogie Down", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Get down and boogie all night!", Order = 2, Music = "BigDeal", Backup = "BoogieManBoogie" },
+	{ Id = "ElBounce", Name = "L Bounce", AnimationId = "", Starter = true, Color = "Green", Blurb = "Bounce and show them who's winning.", Order = 3, Music = "Moshi", Backup = "CrabRave" },
+	{ Id = "SquatKicks", Name = "Squat Kicks", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Squat down low and kick it out!", Order = 4, Music = "Kalinka", Backup = "Jumpstyle" },
+	{ Id = "HighRoller", Name = "High Roller", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Smooth moves for a lucky winner.", Order = 5, Music = "SwingWithMe", Backup = "Speakeasy" },
+	{ Id = "OfficeParty", Name = "Office Party", AnimationId = "", Starter = true, Color = "Blue", Blurb = "The whole team dances together!", Order = 6, Music = "StayUpbeat", Backup = "BigDeal" },
+	{ Id = "ParrotWiggle", Name = "Parrot Wiggle", AnimationId = "", Starter = true, Color = "Green", Blurb = "Wiggle like a happy parrot.", Order = 7, Music = "Shiawase", Backup = "CrabRave" },
+	{ Id = "KittyPaws", Name = "Kitty Paws", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Cute paws, quick beats. Meow!", Order = 8, Music = "Shiawase", Backup = "Moshi" },
+	{ Id = "CandyHop", Name = "Candy Hop", AnimationId = "", Starter = true, Color = "Pink", Blurb = "A sweet little hop to the beat.", Order = 9, Music = "Shiawase", Backup = "StayUpbeat" },
+	{ Id = "Beatbox", Name = "Beatbox", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Drop the beat right where you stand.", Order = 10, Music = "Akim", Backup = "ShakeSomethin" },
+	{ Id = "SurfsUp", Name = "Surf's Up", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Ride the wave all the way in.", Order = 11, Music = "StayUpbeat", Backup = "HypeHorns" },
+	{ Id = "ElectroShuffle", Name = "Electro Shuffle", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Quick feet that zap across the floor.", Order = 12, Music = "Moshi", Backup = "CrabRave" },
+	{ Id = "JumpStyle", Name = "Jump Style", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Kick and jump on every beat!", Order = 13, Music = "Jumpstyle", Backup = "Moshi" },
+	{ Id = "QuickShuffle", Name = "Quick Shuffle", AnimationId = "", Starter = true, Color = "Red", Blurb = "Shuffle fast and never stop.", Order = 14, Music = "CrabRave", Backup = "Moshi" },
+	{ Id = "ChillGroove", Name = "Chill Groove", AnimationId = "", Starter = true, Color = "Green", Blurb = "Nice and easy, just vibing.", Order = 15, Music = "Downtown", Backup = "Ascension" },
+	{ Id = "SnappySkip", Name = "Snappy Skip", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Skip along with a snap!", Order = 16, Music = "StayUpbeat", Backup = "BoogieWoogie" },
+	{ Id = "CatDance", Name = "Cat Dance", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Purrfect moves for cool cats.", Order = 17, Music = "Shiawase", Backup = "DoItYourSelf" },
+	{ Id = "WavyGrooves", Name = "Wavy Grooves", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Smooth waves from head to toe.", Order = 18, Music = "Ascension", Backup = "Downtown" },
+	{ Id = "StepItUp", Name = "Step It Up", AnimationId = "", Starter = true, Color = "Red", Blurb = "Big steps, big energy!", Order = 19, Music = "HypeHorns", Backup = "ShakeSomethin" },
+	{ Id = "SupremeGroove", Name = "Supreme Groove", AnimationId = "", Starter = true, Color = "Gold", Blurb = "The groove that tops them all.", Order = 20, Music = "ShakeSomethin", Backup = "Downtown" },
+	{ Id = "PopStar", Name = "Pop Star", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Shine like a pop star on stage.", Order = 21, Music = "StayUpbeat", Backup = "Shiawase" },
+	-- the Dance Pack's (Robux only, through the pass)
+	{ Id = "Breakdance", Name = "Breakdance", AnimationId = "", Pack = true, Color = "Gold", Blurb = "Spin and flip like a breaker!", Order = 22, Music = "Akim", Backup = "ShakeSomethin" },
+	{ Id = "Superstar", Name = "Superstar", AnimationId = "", Pack = true, Color = "Violet", Blurb = "All eyes on you. Steal the show!", Order = 23, Music = "HypeHorns", Backup = "CharlestonDolly" },
+	{ Id = "BlossomBreak", Name = "Blossom Break", AnimationId = "", Pack = true, Color = "Pink", Blurb = "A long, beautiful dance in bloom.", Order = 24, Music = "Ascension", Backup = "Shiawase" },
+	{ Id = "WibblyWobbly", Name = "Wibbly Wobbly", AnimationId = "", Pack = true, Color = "Green", Blurb = "Wobble around like jelly!", Order = 25, Music = "DoItYourSelf", Backup = "Shiawase" },
+	-- sold in the Shop's DANCES for coins (Untouchable also on the reward track at Level 3)
+	{ Id = "Untouchable", Name = "Untouchable", AnimationId = "", Coins = 600, Color = "Blue", Blurb = "Too cool to catch. Nobody can touch you.", Order = 26, Music = "Moshi", Backup = "CrabRave" },
+	{ Id = "LetsGo", Name = "Let's Go", AnimationId = "", Coins = 400, Color = "Red", Blurb = "Hype yourself up. Let's go!", Order = 27, Music = "ShakeSomethin", Backup = "HypeHorns" },
+	{ Id = "LoseControl", Name = "Lose Control", AnimationId = "", Coins = 400, Color = "Violet", Blurb = "Go wild and let the beat take over.", Order = 28, Music = "PunchingTheAir", Backup = "SkullCrusher" },
+	{ Id = "BoneGroove", Name = "Bone Groove", AnimationId = "", Coins = 600, Color = "Green", Blurb = "Rattle your bones to the beat.", Order = 29, Music = "HalloweenFunk", Backup = "TrickOrTreat" },
+	{ Id = "SkeletonShake", Name = "Skeleton Shake", AnimationId = "", Coins = 800, Color = "Gold", Blurb = "Shake it like a spooky skeleton!", Order = 30, Music = "TrickOrTreat", Backup = "HalloweenFunk" },
+	{ Id = "ZombieWalk", Name = "Zombie Walk", AnimationId = "", Coins = 1200, Color = "Green", Blurb = "Rise from the grave and dance!", Order = 31, Music = "HalloweenFunk", Backup = "TrickOrTreat" },
+	{ Id = "Moongazer", Name = "Moongazer", AnimationId = "", Coins = 1200, Color = "Blue", Blurb = "Dance under the moonlight.", Order = 32, Music = "Ascension", Backup = "Downtown" },
+	{ Id = "FlexTime", Name = "Flex Time", AnimationId = "", Coins = 2000, Color = "Gold", Blurb = "Show off every muscle you've got!", Order = 33, Music = "PunchingTheAir", Backup = "HypeHorns" },
 } :: { Dance }
 
 local byId: { [string]: Dance } = {}

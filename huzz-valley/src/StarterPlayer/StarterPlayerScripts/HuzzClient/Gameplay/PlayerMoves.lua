@@ -33,7 +33,13 @@
 	  - The halt (owner, Oct 20 07:55: "they move a little forward as a sort of "hault""): yours from Gameplay/Sprint's
 	    HuzzHalt, anyone else's from their MoveDirection going to zero while the body still slides at
 	    a run: the plant at once and the feet skid (LocomotionMix input.halt).
-	Off when the owner has published Idle, Walk and Run (Config/Animations): then the real tracks replicate.
+	Off for R15 bodies when the owner has published Idle, Walk and Run (Config/Animations): then the real tracks
+	replicate.
+	R6 bodies (the game is R6 since Oct 22: "make the game r6, and use these animations that i sent from the
+	movement"; 14:37 "add it by any means possible"): the same, with his BZ1 R6 pack (R6Idle / R6Walk / R6Run from
+	ReplicatedStorage.HuzzR6Moves, which Bootstrap fills, Studio and live) and Config/Run.LocoR6 over Config/Run.Loco,
+	R6 to R6. Only the lean goes on top (on the Torso); the plant, the brace, the strafe twist and the head turn are
+	shaped for R15 joints and stay off. The huss on R6: Gameplay/R6Huss.
 ]]
 local M = {}
 
@@ -50,6 +56,7 @@ function M.halting(character: Model?): boolean
 	return rec ~= nil and rec.halt == true
 end
 
+local PARTS_R6 = { "Torso", "Head", "Right Arm", "Left Arm", "Right Leg", "Left Leg" }
 local PARTS = {
 	"LowerTorso", "UpperTorso", "Head",
 	"LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand",
@@ -64,9 +71,8 @@ function M.start()
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local Animations = require(Shared.Config.Animations)
-	if Animations.Idle ~= "" and Animations.Walk ~= "" and Animations.Run ~= "" then
-		return -- (published: everyone's own Locomotion tracks replicate)
-	end
+	-- (published: everyone's own Locomotion tracks replicate on R15 bodies; his R6 pack is never published)
+	local published = Animations.Idle ~= "" and Animations.Walk ~= "" and Animations.Run ~= ""
 	local RunConfig = require(Shared.Config.Run)
 	local Mix = require(Shared.LocomotionMix)
 	local Sampler = require(Shared.KeyframeSampler)
@@ -85,18 +91,49 @@ function M.start()
 
 	local tried = {} -- character -> when we last failed to build it (its body still loading)
 
+	-- His R6 pack (ReplicatedStorage.HuzzR6Moves, from Bootstrap), read once it's there (asked again every 2 s).
+	local r6Anims, r6Tried = nil, -math.huge
+	local function findR6(now: number)
+		if r6Anims or now - r6Tried < 2 then
+			return r6Anims
+		end
+		r6Tried = now
+		local folder = ReplicatedStorage:FindFirstChild("HuzzR6Moves")
+		if not folder then
+			return nil
+		end
+		local out = {}
+		for key, name in { Idle = "R6Idle", Walk = "R6Walk", Run = "R6Run" } do
+			local seq = folder:FindFirstChild(name)
+			local ok, anim = pcall(Sampler.load, seq)
+			if not (seq and ok and anim and anim.length > 0) then
+				return nil
+			end
+			out[key] = anim
+		end
+		r6Anims = out
+		return out
+	end
+	local R6_CONFIG = table.clone(RunConfig.Loco)
+	for k, v in RunConfig.LocoR6 do
+		R6_CONFIG[k] = v
+	end
+
 	local function build(character: Model, now: number)
 		if tried[character] and now - tried[character] < 1 then
 			return nil
 		end
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if not (humanoid and root) or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
+		local r6 = humanoid ~= nil and humanoid.RigType == Enum.HumanoidRigType.R6
+		if not (humanoid and root) or (not r6 and (published or humanoid.RigType ~= Enum.HumanoidRigType.R15)) then
 			tried[character] = now
 			return nil
 		end
+		local hips = if r6 then "Torso" else "LowerTorso"
+		local list = if r6 then PARTS_R6 else PARTS
 		local motors, count = {}, 0
-		for _, name in PARTS do
+		for _, name in list do
 			-- (Motor6D or the newer AnimationConstraint: CarryMath.holding)
 			local j = CarryMath.holding(character, name)
 			if j then
@@ -104,15 +141,16 @@ function M.start()
 				count += 1
 			end
 		end
-		if count < #PARTS or not motors.LowerTorso then
+		if count < #list or not motors[hips] then
 			tried[character] = now
 			return nil
 		end
 		tried[character] = nil
-		local size = math.clamp((humanoid.HipHeight + root.Size.Y / 2) / RunConfig.Loco.RootHeight, 0.5, 2)
+		local size = if r6 then 1 else math.clamp((humanoid.HipHeight + root.Size.Y / 2) / RunConfig.Loco.RootHeight, 0.5, 2)
 		return {
-			character = character, humanoid = humanoid, root = root, motors = motors, k = size,
-			mix = Mix.new(Mix.sized(RunConfig.Loco, size)), tracker = Mix.tracker(T),
+			character = character, humanoid = humanoid, root = root, motors = motors, k = size, r6 = r6, hips = hips,
+			pivot = if r6 then root.Size.Y / 2 + 2 else nil, -- (R6: the root is 2 studs over the hips, HipHeight 0)
+			mix = Mix.new(Mix.sized(if r6 then R6_CONFIG else RunConfig.Loco, size)), tracker = Mix.tracker(T),
 			idleT = math.random() * 2, -- (idles out of step with each other)
 			weight = 0, acc = math.huge, pose = nil, written = {}, base = {},
 			lastScan = -math.huge, actionUntil = 0,
@@ -152,7 +190,7 @@ function M.start()
 	local function write(rec, pose, w)
 		for name, m in rec.motors do
 			local cf = pose[name]
-			if cf and name == "LowerTorso" then
+			if cf and name == rec.hips then
 				cf = CFrame.new(cf.Position * rec.k) * cf.Rotation -- (the hips' bob, to the avatar's size)
 				if rec.lean then
 					cf = rec.lean * cf
@@ -256,13 +294,15 @@ function M.start()
 				end
 			end
 			rec.lean = nil
-			if not isMe and plant > 1e-4 and pose.LowerTorso then
-				local c0 = rec.motors.LowerTorso.C0
+			local hipsPose = pose[rec.hips]
+			local pivot = rec.pivot or (root.Size.Y / 2 + humanoid.HipHeight)
+			if not isMe and plant > 1e-4 and hipsPose then
+				local c0 = rec.motors[rec.hips].C0
 				local pitch = math.rad(rec.mix.C.Stop.Lean) * plant
-				rec.lean = c0:Inverse() * Mix.leanCFrame(0, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0
+				rec.lean = c0:Inverse() * Mix.leanCFrame(0, pitch, pivot) * c0
 			end
 			rec.roll = 0
-			if pose.LowerTorso and (isMe or plant <= 1e-4) then
+			if hipsPose and (isMe or plant <= 1e-4) then
 				-- the lean into turns and into speeding up (as Locomotion adds on top in Studio); everyone's, so another
 				-- runner banks into a turn too (owner, Oct 21), the stop's plant inside it (Mix.lean)
 				local dashAt = RunMotion.dashAt(character)
@@ -272,8 +312,8 @@ function M.start()
 				rec.lean = nil
 				if math.abs(roll) + math.abs(pitch) > 1e-4 then
 					-- turned about the ground under you (in the root part's space), then into the joint's own frame
-					local c0 = rec.motors.LowerTorso.C0
-					rec.lean = c0:Inverse() * Mix.leanCFrame(roll, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0
+					local c0 = rec.motors[rec.hips].C0
+					rec.lean = c0:Inverse() * Mix.leanCFrame(roll, pitch, pivot) * c0
 				end
 				rec.roll = roll
 			end
@@ -289,7 +329,9 @@ function M.start()
 			local turn = Mix.strafe(rec.mix, sdt, root.CFrame:VectorToObjectSpace(vel), on, still)
 			-- heads: yours toward the point under your mouse (Gameplay/HeadAim), the others' to what their screen sent
 			local look, tilt = 0, 0
-			if isMe and camCF then
+			if rec.r6 then
+				-- (R6: no waist, and the neck's frame differs: the head look and strafe twist are R15-shaped)
+			elseif isMe and camCF then
 				local aim, up = HeadAim.aim(root)
 				look, tilt = Mix.look(rec.mix, sdt, aim, not on, still, up, nil, select(2, root.CFrame:ToEulerAnglesYXZ()))
 				HeadAim.report(look, tilt)
@@ -317,7 +359,7 @@ function M.start()
 				rec.turned = { LowerTorso = r, UpperTorso = w, Head = n }
 			end
 			-- the head stays level while the body banks (Config/Run.Loco.HeadLevel)
-			local level = -(rec.roll or 0) * (rec.mix.C.HeadLevel or 0)
+			local level = if rec.r6 then 0 else -(rec.roll or 0) * (rec.mix.C.HeadLevel or 0)
 			if math.abs(level) > 1e-4 then
 				if rec.turned then
 					rec.turned.Head = rec.turned.Head * CFrame.Angles(0, 0, level)
@@ -337,9 +379,10 @@ function M.start()
 	Frame.on(8, function(dt)
 		dt = math.clamp(dt, 1 / 240, 1 / 15)
 		local now = os.clock()
-		local anims = GirlMoves.find(now)
-		if not anims then
-			return -- (the folder hasn't arrived yet: RunAnimator's scripted run meanwhile)
+		local anims = GirlMoves.find(now) -- (R15; nil until the folder arrives: RunAnimator's scripted run meanwhile)
+		local animsR6 = findR6(now) -- (his R6 pack; nil until it arrives: Roblox's own R6 walk meanwhile)
+		if not anims and not animsR6 then
+			return
 		end
 		local me = Players.LocalPlayer
 		local cam = Workspace.CurrentCamera
@@ -357,7 +400,7 @@ function M.start()
 				return -- (your Animator plays the pack: Gameplay/Locomotion)
 			end
 			local rec = recs[character]
-			if rec and not (rec.motors.LowerTorso.Parent and rec.root.Parent == character) then
+			if rec and not (rec.motors[rec.hips].Parent and rec.root.Parent == character) then
 				recs[character] = nil -- (its body was rebuilt: start over)
 				rec = nil
 			end
@@ -365,9 +408,10 @@ function M.start()
 				rec = build(character, now)
 				recs[character] = rec
 			end
-			if rec then
+			local use = rec and (if rec.r6 then animsR6 else anims)
+			if rec and use then
 				seen[character] = true
-				step(rec, dt, now, anims, isMe, camCF, playing)
+				step(rec, dt, now, use, isMe, camCF, playing)
 			end
 		end
 		for _, p in Players:GetPlayers() do

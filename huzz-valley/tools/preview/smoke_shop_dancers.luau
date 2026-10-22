@@ -27,27 +27,24 @@ task.wait(0.1)
 __fireOn(Players, "PlayerAdded", me)
 task.wait(0.3)
 
--- an R15 body
+-- an R6 body (the game and the owner's dances are R6 since Oct 22): each part held by a Motor6D in the Torso (the
+-- RootJoint in the root)
 local char = Instance.new("Model"); char.Name = "Tester"
 local root = Instance.new("Part"); root.Name = "HumanoidRootPart"; root.Size = Vector3.new(2, 2, 1); root.CFrame = CFrame.new(0, 3, 0); root.Position = Vector3.new(0, 3, 0); root.Parent = char
-local hum = Instance.new("Humanoid"); hum.RigType = Enum.HumanoidRigType.R15; hum.HipHeight = 2; hum.Parent = char
-local PARENT = {
-	LowerTorso = "HumanoidRootPart", UpperTorso = "LowerTorso", Head = "UpperTorso",
-	LeftUpperArm = "UpperTorso", LeftLowerArm = "LeftUpperArm", LeftHand = "LeftLowerArm",
-	RightUpperArm = "UpperTorso", RightLowerArm = "RightUpperArm", RightHand = "RightLowerArm",
-	LeftUpperLeg = "LowerTorso", LeftLowerLeg = "LeftUpperLeg", LeftFoot = "LeftLowerLeg",
-	RightUpperLeg = "LowerTorso", RightLowerLeg = "RightUpperLeg", RightFoot = "RightLowerLeg",
-}
-local order = { "LowerTorso", "UpperTorso", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm",
-	"RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot" }
+local hum = Instance.new("Humanoid"); hum.RigType = Enum.HumanoidRigType.R6; hum.HipHeight = 0; hum.Parent = char
+local order = { "Torso", "Head", "Right Arm", "Left Arm", "Right Leg", "Left Leg" }
+local JOINT = { Torso = "RootJoint", Head = "Neck", ["Right Arm"] = "Right Shoulder", ["Left Arm"] = "Left Shoulder",
+	["Right Leg"] = "Right Hip", ["Left Leg"] = "Left Hip" }
 for _, name in order do
 	local p = Instance.new("Part"); p.Name = name; p.Size = Vector3.new(1, 1, 1); p.Parent = char
+end
+for _, name in order do
 	local m = Instance.new("Motor6D")
-	m.Name = if name == "LowerTorso" then "Root" else name
-	m.Part0 = char:FindFirstChild(PARENT[name]) :: BasePart
-	m.Part1 = p
+	m.Name = JOINT[name]
+	m.Part0 = char:FindFirstChild(if name == "Torso" then "HumanoidRootPart" else "Torso") :: BasePart
+	m.Part1 = char:FindFirstChild(name) :: BasePart
 	m.C0 = CFrame.new(0, 0.5, 0)
-	m.Parent = p
+	m.Parent = m.Part0
 end
 -- hair hung the way Roblox hangs an accessory (matching attachments, no joint the copy can follow) and glasses on a
 -- RigidConstraint (owner, Oct 22: the hair and glasses stayed put while the head danced away)
@@ -107,7 +104,7 @@ check(string.format("only the dances in view were shared (%d)", shared), shared 
 -- it moves
 local function handOf(c)
 	local m = c.Dancer:FindFirstChildOfClass("Model")
-	local h = m and m:FindFirstChild("RightHand")
+	local h = m and m:FindFirstChild("Right Arm")
 	return h and h.CFrame
 end
 local a = #dancing > 0 and handOf(dancing[1])

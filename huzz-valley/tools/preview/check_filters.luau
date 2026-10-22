@@ -265,7 +265,7 @@ for _, d in Dances.List do
 end
 check(`DANCES: every dance that isn't free has its card there ({sold})`, cardsOk and sold >= 8) -- (the 4 Dance Pack ones are Robux only since Oct 21)
 check("... the Dance Pack on top of it", body:FindFirstChild("DancePack") ~= nil and body.DancePack.Position.Y.Offset == body.HeadDances.Position.Y.Offset + body.HeadDances.Size.Y.Offset)
-local zombie = Dances.get("ZombieGroove")
+local zombie = Dances.get("FlexTime")
 local zc = body.DanceZombieGroove
 DataService.update(player, function(d) d.Coins = zombie.Coins + 100 end)
 task.wait(0.2)
@@ -277,18 +277,18 @@ check("tapping a dance slides its panel in: its name, a preview, BUY", side.Visi
 	and side.Panel.DanceView.Backdrop.Still:GetAttribute("Art") == "DanceStillZombieGroove" and side.Panel.DanceView.Buy:FindFirstChild("Label", true).Text == "BUY 2,000")
 click(side.Panel.DanceView.Buy)
 local data = DataService.get(player).Data
-check(`BUY: the dance is yours, the coins taken once ({data.Coins})`, data.Dances.ZombieGroove == true and data.Coins == 100)
+check(`BUY: the dance is yours, the coins taken once ({data.Coins})`, data.Dances.FlexTime == true and data.Coins == 100)
 settle()
 check("... and its card says OWNED", zc.Buy:FindFirstChild("Label", true).Text == "OWNED" and side.Panel.DanceView.Buy:FindFirstChild("Label", true).Text == "YOURS!")
 local Action = game.ReplicatedStorage.Remotes.Action
 task.wait(0.25)
-local okA = Action:InvokeServer("BuyDance", "ZombieGroove")
+local okA = Action:InvokeServer("BuyDance", "FlexTime")
 task.wait(0.25)
-local okB = Action:InvokeServer("BuyDance", "Floss")
+local okB = Action:InvokeServer("BuyDance", "OrangeSwing")
 task.wait(0.25)
 DataService.update(player, function(d) d.Coins = 10 end)
-local okC, whyC = Action:InvokeServer("BuyDance", "Robot")
-check(`the server refuses a dance you own, a free one, and one you can't afford ({whyC})`, okA == false and okB == false and okC == false and data.Coins == 10 and data.Dances.Robot ~= true)
+local okC, whyC = Action:InvokeServer("BuyDance", "Untouchable")
+check(`the server refuses a dance you own, a free one, and one you can't afford ({whyC})`, okA == false and okB == false and okC == false and data.Coins == 10 and data.Dances.Untouchable ~= true)
 click(side.Shade)
 settle()
 

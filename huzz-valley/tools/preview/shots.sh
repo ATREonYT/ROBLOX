@@ -23,7 +23,7 @@ shot shop-top none 2560 1408 '{SCREEN="Shop", SCALE=2.5, GEMS=320}' # (vs his vi
 shot shop-crates none 2560 1408 '{SCREEN="Shop", TAB="Crates", SCALE=2.5, GEMS=320, CRATEPITY=7}'
 shot shop-halloween none 2560 1408 '{SCREEN="Shop", TAB="Witch", SCALE=2.5, GEMS=12000, OWN="CandyReaper"}' # (where WITCH'S BREW opens it: the Witch Crate's panel in)
 shot shop-dances none 2560 1408 '{SCREEN="Shop", TAB="Dances", SCALE=2.5, COINS=900}' # (Oct 20 20:34: every dance for coins, the Dance Pack on top)
-shot shop-dance-panel none 2560 1408 '{SCREEN="Shop", TAB="Dances", SCALE=2.5, COINS=900, SELECT="DanceShowstopper"}' # (a dance's panel: preview and BUY)
+shot shop-dance-panel none 2560 1408 '{SCREEN="Shop", TAB="Dances", SCALE=2.5, COINS=900, SELECT="DanceZombieWalk"}' # (a dance's panel: preview and BUY)
 shot shop-style none 2560 1408 '{SCREEN="Shop", TAB="Style", SCALE=2.5, OWN="MintTrail", COINS=900}' # (Oct 21: the coin looks; owned says OWNED)
 shot shop-abilities none 2560 1408 '{SCREEN="Shop", TAB="Abilities", SCALE=2.5, COINS=700, ABILITIES="Invisible,Radar", LOADOUT="Runner=Invisible,CatcherQ=Radar"}' # (bought abilities, Oct 20: buy and pick them here, UI/AbilityCards)
 shot shop-filter-style none 2560 1408 '{SCREEN="Shop", TAB="Style", SCALE=2.5, SELECT="StyleTypeTag"}' # (NAME COLOURS picked)

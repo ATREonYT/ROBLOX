@@ -146,8 +146,8 @@ end
 -- WHEEL=true: the G dance wheel open, with two favourites and one dance playing.
 if cfg.WHEEL then
 	local State = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.State)
-	State.data.FavDances = { SwingTime = true, Robot = true }
-	State.data.Dances.SwingTime, State.data.Dances.Robot = true, true
+	State.data.FavDances = { Breakdance = true, Untouchable = true }
+	State.data.Dances.Breakdance, State.data.Dances.Untouchable = true, true
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.DanceWheel).setOpen(true)
 end
 if cfg.HERO then

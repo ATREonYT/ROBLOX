@@ -3,12 +3,14 @@
 -- ReplicatedStorage so clients can play them, and in the live game nobody downloads it):
 --   design/anims/movement-pack.rbxl  (Skater Studios' "15+ R15 Movement Animations" pack, licence in the zip):
 --     Idle, Walk, Run (the pack's Sprint as it is: hunched, big arm swings, like Huss Valley), Jump, Fall, Climb
---   design/anims/200-dances.rbxl  (the owner's 200 dances): the 32 in DANCES below, renamed Dance_<Id>
+--   design/anims/200-dances.rbxl  (the owner's 200 dances): the old R15 dances (DANCES below), gone since Oct 22
+--   design/owner-oct22/anims/  (his R6 packs, kept out of git): the R6 moves (R6_MOVES) and dances (R6_DANCES)
 --   DashLeft, DashRight: made here (the huss is sideways only, like Huss Valley): a low hop-slide that way.
 -- In Studio the game plays them straight from these (KeyframeSequenceProvider, Shared/AnimationLibrary); for the
 -- live game the owner publishes them once (tools/studio/publish-animations.lua) and the IDs go in Config/Animations.
 -- Run from the repo root: lune run huzz-valley/tools/anim/extract_anims.luau
 local fs = require("@lune/fs")
+local process = require("@lune/process")
 local roblox = require("@lune/roblox")
 local Instance, CFrame, Enum = roblox.Instance, roblox.CFrame, roblox.Enum
 
@@ -166,7 +168,6 @@ local R6_MOVES = {
 	{ "R6DashForward", "Dash Forward", "Action", false }, { "R6DashBack", "Dash Back", "Action", false },
 	{ "R6Slide", "Slide", "Action", true }, { "R6Death", "Death", "Action", false },
 }
-local process = require("@lune/process")
 local MOVES_FILE = process.env.OWNER_MOVES or "huzz-valley/design/owner-oct22/anims/movement-pack-bz1.rbxl"
 if fs.isFile(MOVES_FILE) then
 	local bz1 = roblox.deserializePlace(fs.readFile(MOVES_FILE))
@@ -193,10 +194,39 @@ else
 	print("(no " .. MOVES_FILE .. ": the R6 moves are left out)")
 end
 
-local dances = roblox.deserializePlace(fs.readFile(DIR .. "200-dances.rbxl"))
-for _, d in DANCES do
-	local seq = add(find(dances, d[2]), "Dance_" .. d[1], "Action", true)
-	print(string.format("%-20s <- %-28s %d keyframes", "Dance_" .. d[1], d[2], keyCount(seq)))
+-- The dances (owner, Oct 22 13:24: "input these dances i found and remove the old ones"): his two R6 emote packs,
+-- the dances only (their poses, sits, naps, carts, bows, threats and dap ups left out), each looped, as Dance_<Id>.
+-- Names in the game are our own (Config/Dances). Like the movement pack, his files stay out of the public repo:
+-- missing, the dances are left out (the old 200-dance ones are gone either way: DANCES above is history).
+local E20 = process.env.OWNER_EMOTES20 or "huzz-valley/design/owner-oct22/anims/20-r6-emotes.rbxm"
+local E32 = process.env.OWNER_EMOTES32 or "huzz-valley/design/owner-oct22/anims/32-emotes-r15-r6.rbxm"
+local R6_DANCES = { -- { Id, his name, which file }
+	{ "OrangeSwing", "Orange Justice", 32 }, { "BoogieDown", "Boogie Down", 32 }, { "ElBounce", "Take the L", 32 },
+	{ "SquatKicks", "Kazotsky Kick", 32 }, { "HighRoller", "Gambler Dance", 32 }, { "OfficeParty", "Company Dance", 32 },
+	{ "ParrotWiggle", "Parrot Wiggle", 32 }, { "KittyPaws", "Neko Dance", 32 }, { "CandyHop", "Candy Dance", 32 },
+	{ "Beatbox", "Beatbox", 32 }, { "SurfsUp", "Surfer", 32 }, { "ElectroShuffle", "Electro Shuffle", 20 },
+	{ "JumpStyle", "Jumpstyle", 20 }, { "QuickShuffle", "Shuffle", 20 }, { "ChillGroove", "Idle Dance", 20 },
+	{ "SnappySkip", "Snappy Skipping", 20 }, { "CatDance", "CatDance", 20 }, { "WavyGrooves", "Wavy Grooves", 20 },
+	{ "StepItUp", "Marat", 20 }, { "SupremeGroove", "E Dance Surpeme", 20 }, { "PopStar", "BTS Dance", 20 },
+	{ "Breakdance", "Breakdance", 32 }, { "Superstar", "The Star Emote", 32 }, { "BlossomBreak", "Blossom Break", 32 },
+	{ "WibblyWobbly", "Wibbly Wobbly", 20 }, { "Untouchable", "The Honored One", 32 }, { "LetsGo", "DaBaby Dance", 20 },
+	{ "LoseControl", "Lose it", 20 }, { "BoneGroove", "Skeleton Grooves", 20 }, { "SkeletonShake", "Skeleton", 20 },
+	{ "ZombieWalk", "Zombie Dance", 32 }, { "Moongazer", "Moongazer", 20 }, { "FlexTime", "Flexer", 20 },
+}
+if fs.isFile(E20) and fs.isFile(E32) then
+	local packs = {}
+	for key, file in { [20] = E20, [32] = E32 } do
+		local holder = Instance.new("Folder")
+		for _, inst in roblox.deserializeModel(fs.readFile(file)) do inst.Parent = holder end
+		packs[key] = holder
+	end
+	for _, d in R6_DANCES do
+		local seq = if d[3] == 32 then find(packs[32], d[2] .. " R6 Idle_KeyframeSequence") else find(packs[20], d[2], "AnimSaves")
+		seq = add(seq, "Dance_" .. d[1], "Action", true)
+		print(string.format("%-22s <- %-20s %d keyframes (R6)", "Dance_" .. d[1], d[2], keyCount(seq)))
+	end
+else
+	print("(no " .. E20 .. " / " .. E32 .. ": the dances are left out)")
 end
 
 fs.writeFile(OUT, roblox.serializeModel({ folder }))

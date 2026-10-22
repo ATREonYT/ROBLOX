@@ -22,7 +22,7 @@ exposed". The GitHub repo is public, so the packs stay out of git (.gitignore) u
 | Step | What | Status |
 | --- | --- | --- |
 | 1. Golden slice | R6 bodies; his Idle / Walk / Run / Jump on your own R6 body; the running effects from his video (Gameplay/SpeedFX); one side-by-side video with his clip (docs/previews/oct22-r6-run-side.mp4) | built, waiting for his yes |
-| 2. R6 everywhere | other players' moves, huss (his Dash Left / Right), stab, lunge, carry, knockdown, crown, stands, knife in the right arm, auras, pictures, admin bot | after a yes |
-| 3. Dances | the 32 old ones out, his R6 ones in (names, prices, music, cards, pictures); bought old dances refunded in coins | after a yes |
+| 2. R6 everywhere | other players' moves and the huss (his Dash Left / Right): done Oct 22 ("add it by any means possible"); still R15-shaped: stab, lunge, carry, knockdown, crown, stands, knife in the right arm, auras, pictures, admin bot | partly done |
+| 3. Dances | the 32 old ones out, his 33 R6 ones in (names, prices, music, cards, pictures); bought old dances refunded in coins | done Oct 22 |
 
 Studio step for him (R6 for real): Game Settings > Avatar > Avatar Type R6 (the place file sets it too).

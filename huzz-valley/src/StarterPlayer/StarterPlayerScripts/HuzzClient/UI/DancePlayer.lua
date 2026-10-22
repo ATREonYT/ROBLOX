@@ -4,7 +4,7 @@
 -- The animation comes from Shared/AnimationLibrary: the published ID, or in Studio the raw one. In the live game a
 -- dance with no published ID (owner, Oct 20 15:13: "inside the actual roblox game, not studio, make it so that dances
 -- are available, right now they arent": every dance said "Coming soon" there) is drawn by hand instead: no track, the
--- server shares its moves (HuzzServer/ActionService.shareDance) and Gameplay/DanceSync poses your R15 joints from
+-- server shares its moves (HuzzServer/ActionService.shareDance) and Gameplay/DanceSync poses your R6 joints from
 -- them on the dance's beat, on every screen; your girl follows (Gameplay/CompanionDance). Publishing them
 -- (tools/studio/publish-animations.lua) makes them real tracks again.
 -- In step: when someone within SYNC_RANGE is already doing the same dance (their character's HuzzDance /
@@ -99,7 +99,7 @@ function DancePlayer.ready(id: string): (boolean, string?)
 	if not d then return false, "Unknown dance." end
 	if not DancePlayer.owned(id) then return false, "locked" end
 	if byHand(id, d) then
-		return true -- (drawn by hand on your joints: needs an R15 avatar, checked when it starts)
+		return true -- (drawn by hand on your joints: needs an R6 avatar, checked when it starts)
 	end
 	if not AnimationLibrary.has("Dance_" .. id, d.AnimationId) then
 		return false, "That dance couldn't load here. Try again in a moment."
@@ -126,8 +126,9 @@ function DancePlayer.play(id: string): (boolean, string?)
 	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
 	if not animator then return false, "Your avatar isn't ready yet." end
 	if byHand(id, d) then
-		if (humanoid :: Humanoid).RigType ~= Enum.HumanoidRigType.R15 then
-			return false, "Dances need an R15 avatar (Avatar settings in Roblox)."
+		-- (his dances are R6, like the game since Oct 22)
+		if (humanoid :: Humanoid).RigType ~= Enum.HumanoidRigType.R6 then
+			return false, "Dances need an R6 avatar."
 		end
 		if track then pcall(function() (track :: AnimationTrack):Stop(0.2) end) end
 		local now = workspace:GetServerTimeNow()
