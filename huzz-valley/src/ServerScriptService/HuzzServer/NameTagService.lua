@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Progression = require(ReplicatedStorage.Shared.Config.Progression)
 local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
 local DataService = require(script.Parent.DataService)
+local GirlSign = require(script.Parent.GirlSign)
 
 local NameTags = {}
 
@@ -180,6 +181,7 @@ function NameTags.set(player, look, badge, rescue)
 	gui.Badge.Visible = badge ~= nil
 	gui.Badge.Text = badge or ""
 	gui.Badge.TextColor3 = BADGES[badge or ""] or Color3.new(1, 1, 1)
+	GirlSign.place(character) -- (the "HAS <HER>" sign goes over the word while it shows)
 	gui.Rescue.Visible = look == "Downed" and (rescue or 0) > 0
 	gui.Rescue.Fill.Size = UDim2.fromScale(math.clamp(rescue or 0, 0, 1), 1)
 	layout(gui, look == "Downed" or look == "Out")

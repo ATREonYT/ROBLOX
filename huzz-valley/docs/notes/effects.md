@@ -45,13 +45,17 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   pink bubble (6.4 studs) shrinks into the body with a ring, sparks and ✨; other screens get only a faint ring at the
   feet and a few sparks (Oct 20: the big bubble on everyone's screen pointed at who was vanishing; this is what the
   Oct 19 batch showed others, in pink). The body fades on every screen (`LocalTransparencyModifier`): others see it at `Seen` 0.88 with a slow
-  shimmer (`Shimmer` 0.8 Hz, a soft swell, never a blink: "so it's fair"), you see yourself at `Self` 0.55; name tag
+  shimmer (`Shimmer` 0.8 Hz, a soft swell, never a blink: "so it's fair"), you see yourself at `Self` (0.55 until Oct 22; now 1: owner, "make the invisible actually 1.00 invisible", so you
+  are gone on your own screen too); name tag
   and outline hide on other screens; still catchable.
 - **Glitchy**: a pink ring where you were; your own screen pushes you `Distance` 9 studs in `Time` 0.14 s (a
   LinearVelocity, so walls stop it); everyone sees two see-through ghosts (cyan and magenta) left behind sliding apart,
   thin glitch slivers, and sparks where you land. No flicker. Ghosts and afterimages are `Gameplay/Ghosts` copies:
   each part keeps its mesh (a classic hat's SpecialMesh, its picture cleared), so a hat ghosts as a hat, not as its
   Handle's plain box (critic Oct 20); `tests/PowerGhosts.spec`.
+- **Body Double, Oct 22** (owner: "the clone double make it 0.00 invisible so its actually useful"): the copy is solid
+  and plain on your own screen too (no pink shimmer, no see-through, no afterimages); `Powers.BodyDouble.Marked =
+  true` brings the marks back. Below is how it was before.
 - **Body Double**: a pink ring, sparks and ✨ where it starts; every screen clones the runner (scripts, sounds,
   constraints, its name tag and outline removed, the root anchored) and runs the copy straight on with `RunMotion`
   legs, following the floor, for `Lasts` 3.5 s or until a wall, a touch see-through (0.15) under a pink Highlight with

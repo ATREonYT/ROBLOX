@@ -17,6 +17,7 @@ local Workspace = game:GetService("Workspace")
 local Carry = require(ReplicatedStorage.Shared.Config.Carry)
 local CarryMath = require(ReplicatedStorage.Shared.CarryMath)
 local GirlService = require(script.Parent.GirlService)
+local GirlSign = require(script.Parent.GirlSign)
 
 local CarryService = {}
 local carried = {} -- Player -> model (carried overhead, or following on foot)
@@ -56,6 +57,7 @@ function CarryService.remove(player)
 	if model then
 		model:Destroy()
 	end
+	GirlSign.remove(player.Character) -- (the "HAS <HER>" sign over their head goes with her)
 end
 
 local function dropWithCarrier(player, humanoid, model)
@@ -97,6 +99,7 @@ function CarryService.follow(player, girl, fromPosition)
 	model:SetAttribute("RootHeight", rootHeight)
 	CollectionService:AddTag(model, "HuzzFollower")
 	carried[player] = model
+	pcall(GirlSign.put, character, girl)
 	dropWithCarrier(player, humanoid, model)
 	return model
 end
@@ -151,6 +154,7 @@ function CarryService.give(player, girl, fromPosition, mood)
 		end
 	end
 	carried[player] = model
+	pcall(GirlSign.put, character, girl)
 
 	-- She goes down with her carrier; RoundService re-gives her on respawn.
 	dropWithCarrier(player, humanoid, model)

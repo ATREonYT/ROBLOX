@@ -48,7 +48,12 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - **Prices** (`Config/Powers` `Price`; 25 coins a game, 50 a win, so 20 to 40 games' pay, spec-checked between 8 and
   40): Invisible 500, Glitchy 500, Banana Peel 600, Body Double 750, Radar 750, Smoke Bomb 900, Lasso 1,000.
   Starters, free and owned by everyone: Shield (runner), Bear Trap and Slow Wave (catcher: two keys, so two).
-- **Old saves keep everything** (the fairer pick): a save from before Oct 20 (no `Abilities` field before Reconcile)
+- **Oct 22 (owner, 12:26: "make everyone start with the shield ability, and then for the other abilities you have to
+  buy them and equip them"):** a fresh save brings Shield on the runner key (was Random, which played bought ones
+  without equipping); Random stays a pick you can choose. `Powers.Grandfathered` is empty: old saves get nothing free
+  now (test saves keep what they were already given). Catchers still start with Bear Trap and Slow Wave (his message
+  only names Shield; one line in `Config/Powers` to make them bought too).
+- **Old saves kept everything** (until Oct 22): a save from before Oct 20 (no `Abilities` field before Reconcile)
   gets the four runner abilities it could already roll (Shield, Invisible, Glitchy, Body Double:
   `Powers.Grandfathered`), so nobody loses anything; new players start with the three starters and buy the rest.
   `AbilityRules.migrate`, called by DataService once on load.

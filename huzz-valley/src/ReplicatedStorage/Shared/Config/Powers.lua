@@ -8,8 +8,8 @@
 --               card shows only then. Free for everyone, never sold.
 --   Catchers Q and E: the two catcher abilities you bring (two different ones).
 -- Bought with coins, kept for good (Shared/AbilityRules, ActionService "BuyAbility" / "EquipAbility"). Everyone
--- starts with Shield (runner), Bear Trap and Slow Wave (catcher): Starter = true. A save from before Oct 20 keeps every
--- ability it could already roll (Shield, Invisible, Glitchy, Body Double; Shared/AbilityRules.migrate).
+-- starts with Shield (runner), Bear Trap and Slow Wave (catcher): Starter = true; the rest are bought and equipped
+-- (owner, Oct 22). Old saves are no longer given the abilities they could roll before Oct 20 (Grandfathered is empty).
 -- Prices against the pay (Config/Round.Pay: 25 coins a game, 50 a win; the knives are 200 / 500 / 1,000 / 2,000 /
 -- 4,000): one ability is about the price of an Uncommon to Rare knife, a few evenings of play.
 -- The cards above the dash bar (Screens/PowerBar) show Card (the title), the key and the state in Accent, like his
@@ -30,13 +30,16 @@ return {
 		Catcher = { "BearTrap", "SlowWave", "Radar", "Lasso" },
 	},
 	-- Loadout keys: which side's abilities go there, and what a fresh save brings. "Random" (runner only): one of the
-	-- runner abilities you own, picked each round.
+	-- runner abilities you own, picked each round, only if you pick it. Owner, Oct 22 12:26: "make everyone start with
+	-- the shield ability, and then for the other abilities you have to buy them and equip them": a fresh save brings
+	-- Shield (was Random, which played bought ones without equipping them).
 	Loadout = {
 		Sides = { Runner = "Runner", CatcherQ = "Catcher", CatcherE = "Catcher" },
-		Default = { Runner = "Random", CatcherQ = "BearTrap", CatcherE = "SlowWave" },
+		Default = { Runner = "Shield", CatcherQ = "BearTrap", CatcherE = "SlowWave" },
 	},
-	-- Every runner ability a save could roll before abilities were bought (Oct 20): an old save keeps them all.
-	Grandfathered = { "Shield", "Invisible", "Glitchy", "BodyDouble" },
+	-- Runner abilities an old save (from before abilities were bought, Oct 20) got for free. None since Oct 22 (the
+	-- owner: everyone starts with Shield only, the rest are bought): old test saves keep what they were already given.
+	Grandfathered = {},
 
 	-- How every power looks when it's used (Gameplay/PowerEffects). Oct 20 15:13 ("kind of quick and feel cheap"):
 	-- each one has a real wind-up now (a gathering ring and a rising charge sound, the body's cast pose), one bright
@@ -77,7 +80,7 @@ return {
 		Name = "Invisible", Card = "INVISIBLE", Icon = "AbilityInvisible", Tile = Color3.fromRGB(81, 74, 147), Emoji = "👻", Text = "Fade out of sight",
 		Accent = Color3.fromRGB(200, 184, 255), Side = "Runner", Price = 500,
 		Counter = "Listen for footsteps, or use Radar",
-		Cooldown = 16, Lasts = 4, Seen = 1, Self = 0.55,
+		Cooldown = 16, Lasts = 4, Seen = 1, Self = 1, -- (owner, Oct 22 12:26: "make the invisible actually 1.00 invisible": was 0.55 on your own screen)
 	},
 	-- A short glitch-blink forward (Distance studs in Time seconds, the walls still stop you) with a glitch effect.
 	Glitchy = {
@@ -94,6 +97,9 @@ return {
 		Accent = Color3.fromRGB(255, 176, 96), Side = "Runner", Price = 750,
 		Counter = "It only runs straight ahead",
 		Cooldown = 14, Lasts = 3.5,
+		-- (owner, Oct 22: "make it 0.00 invisible so its actually useful": solid and plain on your own screen too;
+		-- Marked = true gives it back the pink shimmer and afterimages there, Gameplay/PowerEffects)
+		Marked = false,
 		-- seconds between its fading afterimages (each a pink glowing copy: kid-safe, never more than one a second;
 		-- 0.45 made one pop about twice a second, critic Oct 20). tests/PowerGhosts.spec checks it.
 		AfterimageEvery = 1.2,

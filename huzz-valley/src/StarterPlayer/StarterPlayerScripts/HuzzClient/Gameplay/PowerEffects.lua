@@ -484,6 +484,10 @@ function M.start()
 	function CAST.BodyDouble(root: BasePart, data, wind, flash, _burst, _fade, color, mine)
 		local def = Powers.BodyDouble
 		local character = root.Parent :: Model
+		-- Your own screen marked the copy (a pink shimmer, a touch see-through, afterimages) until the owner, Oct 22
+		-- 12:26: "the clone double make it 0.00 invisible so its actually useful": now it is solid and plain everywhere,
+		-- exactly you. Powers.BodyDouble.Marked = true brings the marks back on your own screen.
+		local marked = mine and def.Marked == true
 		windUp(function() return root.Position + UP * 0.6 end, wind, flash, 0.8, color, feetOf(root))
 		task.delay(wind + flash, function()
 			if not (character and character.Parent and root.Parent) then return end
@@ -514,7 +518,7 @@ function M.start()
 			for _, d in copy:GetDescendants() do
 				if d:IsA("Highlight") and (mine or d.Name == "HuzzSpotted") or (mine and d:IsA("BillboardGui") and d.Name == "HuzzTag") then
 					d:Destroy()
-				elseif not mine and (d:IsA("BasePart") or d:IsA("Decal")) then
+				elseif not marked and (d:IsA("BasePart") or d:IsA("Decal")) then
 					d.LocalTransparencyModifier = 0 -- (a clone of a faded body would start faded)
 				end
 			end
@@ -548,7 +552,7 @@ function M.start()
 			-- your own screen: a pink Highlight with a white outline, swelling softly (one swell in Swell seconds, never a
 			-- blink), so you can tell it from you
 			local glow
-			if mine then
+			if marked then
 				glow = Instance.new("Highlight")
 				glow.Name = "HuzzDoubleGlow"
 				glow.FillColor, glow.OutlineColor = color, WHITE
@@ -585,7 +589,7 @@ function M.start()
 				end
 				glyphs(copyRoot.Position + UP * 0.5, 4, "✨", 2)
 				if near(copyRoot.Position) then Sfx.play("power_end", { at = copyRoot }) end
-				local from = if mine then 0.15 else 0
+				local from = if marked then 0.15 else 0
 				for _, d in copy:GetDescendants() do -- (its tag, trail and outline go with the puff)
 					if d:IsA("BillboardGui") or d:IsA("Trail") or d:IsA("ParticleEmitter") or d:IsA("Highlight") and d ~= glow then
 						(d :: any).Enabled = false
@@ -596,7 +600,7 @@ function M.start()
 					if glow then glow.FillTransparency, glow.OutlineTransparency = 0.7 + 0.3 * k, 0.15 + 0.85 * k end
 				end, function() copy:Destroy() end)
 			end
-			for _, d in if mine then copy:GetDescendants() else {} do -- (on your screen a touch see-through: a projection)
+			for _, d in if marked then copy:GetDescendants() else {} do -- (marked: a touch see-through, a projection)
 				if d:IsA("BasePart") or d:IsA("Decal") then d.LocalTransparencyModifier = 0.15 end
 			end
 			local t0 = os.clock()
@@ -606,7 +610,7 @@ function M.start()
 				if puffed or not copy.Parent then conn:Disconnect() return end
 				local age = os.clock() - t0
 				if glow then glow.FillTransparency = 0.7 - 0.12 * math.sin(age * 2 * math.pi / DOUBLE_SWELL) end -- (a soft swell, slower than once a second)
-				if mine and age >= nextGhost then -- an afterimage left behind now and then, fading (your screen)
+				if marked and age >= nextGhost then -- an afterimage left behind now and then, fading (marked only)
 					nextGhost += DOUBLE_GHOST
 					local ghosts = ghostOf(copy, color)
 					Burst.run(0.35, function(_, k)

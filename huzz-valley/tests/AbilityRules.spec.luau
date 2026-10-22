@@ -82,7 +82,7 @@ check("bad coins count as none", not (A.buy(broken, "Invisible")))
 
 -- Loadout
 local l = A.loadout(fresh)
-check("default loadout: Random, Bear Trap, Slow Wave", l.Runner == "Random" and l.CatcherQ == "BearTrap" and l.CatcherE == "SlowWave")
+check("default loadout: Shield, Bear Trap, Slow Wave", l.Runner == "Shield" and l.CatcherQ == "BearTrap" and l.CatcherE == "SlowWave")
 local e = { Coins = 0, Abilities = { Lasso = true }, Loadout = {} }
 ok = A.equip(e, "CatcherQ", "Lasso")
 l = A.loadout(e)
@@ -108,7 +108,7 @@ ok = A.equip(e, "CatcherQ", "Random")
 check("Random isn't a catcher pick", not ok)
 local stale = { Abilities = {}, Loadout = { Runner = "Invisible", CatcherQ = "Lasso", CatcherE = "Lasso" } }
 l = A.loadout(stale)
-check("a loadout with ones you don't own plays the defaults", l.Runner == "Random" and l.CatcherQ == "BearTrap" and l.CatcherE == "SlowWave")
+check("a loadout with ones you don't own plays the defaults", l.Runner == "Shield" and l.CatcherQ == "BearTrap" and l.CatcherE == "SlowWave")
 local twin = { Abilities = { Radar = true }, Loadout = { CatcherQ = "Radar", CatcherE = "Radar" } }
 l = A.loadout(twin)
 check("a saved twin is split", l.CatcherQ == "Radar" and l.CatcherE ~= "Radar" and l.CatcherE ~= nil)
@@ -152,10 +152,11 @@ check("left counts down", A.left(110, 104) == 6 and A.left(100, 104) == 0)
 -- Old saves
 local old = { Coins = 50, Cosmetics = {} } -- (made before abilities were bought: no Abilities table)
 local gave = A.migrate(old, false)
-check("an old save keeps every runner ability it could roll", gave and A.owns(old, "Shield") and A.owns(old, "Invisible") and A.owns(old, "Glitchy") and A.owns(old, "BodyDouble"))
+-- (owner, Oct 22: everyone starts with Shield only, the rest are bought: an old save gets nothing for free now)
+check("an old save gets Shield and nothing free", not gave and A.owns(old, "Shield") and not A.owns(old, "Invisible") and not A.owns(old, "Glitchy") and not A.owns(old, "BodyDouble"))
 check("an old save gets none of the new ones", not A.owns(old, "BananaPeel") and not A.owns(old, "SmokeBomb") and not A.owns(old, "Radar") and not A.owns(old, "Lasso"))
 check("an old save keeps its coins", old.Coins == 50)
-check("an old save plays Random as before", A.loadout(old).Runner == "Random")
+check("an old save plays Shield", A.loadout(old).Runner == "Shield")
 check("running it again gives nothing", not A.migrate(old, true))
 local new = { Coins = 0, Abilities = {}, Loadout = {} }
 check("a new save gets no free extras", not A.migrate(new, true) and not A.owns(new, "Invisible"))

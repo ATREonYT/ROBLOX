@@ -281,3 +281,13 @@ Not fixed (suspected, look in Studio): stabs through thin walls (no wall ray), t
 for a moment, late joiners miss one-off effects, lobby players can pick Aura stars during a round; a runner who falls
 off the map or a safe runner who resets may be placed oddly.
 The sim's "a shield blocks a stab" now counts over the whole run (one 6-player run missed it about 1 in 10).
+
+## The "HAS <HER>" sign (Oct 22)
+Owner, 12:26: "make it so that there is a sign over the person who has the girl that he has the girl, but dont make it
+overly too big, make it known, with some nice text colours, matching to the girl that he has". `HuzzServer/GirlSign`:
+one line, "HAS <HER NAME>", just over the name tag (4.75 studs over the head; 6.55 while HERO / CHICKEN shows), in her
+two `Config/GirlLooks` colours as a top-to-bottom gradient with an outline in her deep colour (rarity colour if she has
+no look), 3.4 x 0.62 studs plus a 64 x 12 px floor, seen to 160 studs. Put up by `CarryService.give` / `follow`
+(runner carrying her, or a catcher she follows), taken down by `CarryService.remove`; Invisible hides it with the tag.
+Test `tools/preview/smoke_girl_sign.luau`; picture `docs/previews/oct22-girl-sign.jpg` (`motion3d/girl_sign_scene.luau`,
+stand-in blocks for the girls). Not seen in Studio yet: how it sits next to her own name tag over her body.

@@ -14,7 +14,7 @@
 // ScreenGui frames and TextScaled text in 1280 x 720 pixels, and a black fade, drawn in the page). Boxes may add sh ("ball"),
 // n (Neon: unlit), a (opacity), add (additive) and e (0-1: a white Highlight fill); sh "cyl" is a Roblox Cylinder
 // (round along its X axis), sh "wedge" a Roblox WedgePart (its slope from the bottom front edge up to the top back edge). Ribbons may add u (a texture coordinate per point, wrapping: Beam TextureMode Wrap).
-// labels [{p, text, h (studs tall), c, o (outline colour), a (opacity)}]: BillboardGui text, camera-facing, Gotham-like.
+// labels [{p, text, h (studs tall), c, o (outline colour), a (opacity), g ([top, middle, bottom] gradient)}]: BillboardGui text, camera-facing, Gotham-like.
 // Sprite/ribbon t may also be a drawn shape: '@disc', '@ring<px>', '@runner<px>' (AuraFX's SurfaceGui circles).
 // Optional at the top: sky, ground (colours), grid (false to hide), dim (0-1: daylight strength, for evening scenes),
 // stills [frame numbers, 0-based]: with MOTION3D_KEEP=<dir> those frames are also kept there as still_<n>.png.
@@ -223,7 +223,7 @@ const wedge = (() => { // Roblox's WedgePart in a unit box: its side (Y, Z) is t
 })();
 const labelTex = {}, labelSprites = [];
 const textTexture = (q) => { // one canvas per text + colours, cached
-  const key = q.text + '|' + q.c + '|' + (q.o || '');
+  const key = q.text + '|' + q.c + '|' + (q.o || '') + '|' + (q.g || []).join(',');
   let t = labelTex[key];
   if (!t) {
     const cv = document.createElement('canvas'), px = 96;
@@ -234,7 +234,12 @@ const textTexture = (q) => { // one canvas per text + colours, cached
     ctx.font = '900 ' + px + 'px Montserrat, Arial Black, Helvetica, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
     if (q.o) { ctx.strokeStyle = q.o; ctx.lineWidth = px * 0.16; ctx.strokeText(q.text, w / 2, cv.height / 2); }
-    ctx.fillStyle = q.c; ctx.fillText(q.text, w / 2, cv.height / 2);
+    if (q.g) { // a top-to-bottom gradient (a UIGradient with Rotation 90): [top, middle, bottom]
+      const gr = ctx.createLinearGradient(0, cv.height / 2 - px * 0.5, 0, cv.height / 2 + px * 0.5);
+      q.g.forEach((c, i) => gr.addColorStop(i / (q.g.length - 1), c));
+      ctx.fillStyle = gr;
+    } else ctx.fillStyle = q.c;
+    ctx.fillText(q.text, w / 2, cv.height / 2);
     t = labelTex[key] = new THREE.CanvasTexture(cv);
     t.colorSpace = THREE.SRGBColorSpace;
     t.userData = { aspect: w / cv.height };
