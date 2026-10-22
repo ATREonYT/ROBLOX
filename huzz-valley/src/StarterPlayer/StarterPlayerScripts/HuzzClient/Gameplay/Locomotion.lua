@@ -320,7 +320,9 @@ local function attach(character: Model)
 			local hussing = type(dashAt) == "number" and Workspace:GetServerTimeNow() - dashAt < DASH_LENGTH + 0.1
 			local lungeAt = character:GetAttribute("LungeAt")
 			local leaping = type(lungeAt) == "number" and Workspace:GetServerTimeNow() - lungeAt < LEAP_LENGTH
-			local quiet = if downed or hussing or leaping or actionPlaying(now) or mode ~= "ground" then 1 else 0
+			-- (a dance drawn by hand has no Action track: HuzzDance quiets the lean, look and swing too, Oct 22)
+			local dancing = character:GetAttribute("HuzzDance") ~= nil
+			local quiet = if downed or hussing or leaping or dancing or actionPlaying(now) or mode ~= "ground" then 1 else 0
 			local look = root.CFrame.LookVector
 			local roll, pitch = Mix.lean(mix, dt, math.atan2(-look.X, -look.Z), quiet)
 			local hipsPose = current(rootJoint)

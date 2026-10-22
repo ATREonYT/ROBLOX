@@ -12,7 +12,7 @@
 	  DancePose.live(parent, id, props, onReady?) -> { setOn(on) }
 	                            your avatar actually dancing it, looping (owner, Oct 21: "make it your character
 	                            dancing the dance", the Shop's dance cards). The parts are placed by hand from the
-	                            dance's KeyframeSequence, FPS times a second, and only while setOn(true) (the Shop
+	                            dance's KeyframeSequence, FPS (30) times a second, and only while setOn(true) (the Shop
 	                            turns on the cards in view while it's open). onReady() once it shows. In the live
 	                            game a dance with no published ID asks the server for its moves (ActionService
 	                            "SeeDance", which shares them in HuzzDanceMoves) and starts when they arrive.
@@ -285,7 +285,7 @@ function DancePose.picture(parent: Instance, id: string, props: { [string]: any 
 end
 
 -- The live dancers: each placed FPS times a second while it's on (a card in view in an open window).
-local FPS = 15
+local FPS = 30 -- (owner, Oct 22: "they don't dance well": 15 looked choppy next to the real dance)
 type Live = { vp: ViewportFrame, on: boolean, apply: ((any) -> ())?, anim: any, t0: number }
 local lives: { Live } = {}
 local stepping = false
