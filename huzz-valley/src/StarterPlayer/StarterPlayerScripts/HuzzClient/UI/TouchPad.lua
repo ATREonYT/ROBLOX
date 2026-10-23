@@ -8,6 +8,8 @@
 	  Left   : Gameplay/Actions' STAB (a catcher only)
 	  UpLeft : the Q ability
 	  Up     : the E ability
+	  Dance  : Screens/DanceWheel's DANCE button in a round (in the lobby it takes Main's spot: the round's
+	           buttons are gone then). Phones have no G key (owner, Oct 23: "make the dances available on mobile").
 	Each is points from the screen's bottom-right corner to the button's centre, and the button's size (74 across:
 	easy for a thumb, Roblox's own jump is 70). Sizes are even, so the centres land on whole pixels.
 	A keyboard keeps its own layout: this file is used only when the screen is touch only.
@@ -22,6 +24,8 @@ TouchPad.SLOTS = {
 	Left = { X = 172, Y = 62, D = 74 },
 	UpLeft = { X = 140, Y = 140, D = 74 },
 	Up = { X = 62, Y = 172, D = 74 },
+	Dance = { X = 250, Y = 56, D = 60 }, -- (left of STAB, still well clear of the thumbstick's 40%)
+	DanceLobby = { X = 62, Y = 62, D = 74 },
 }
 
 function TouchPad.active(): boolean

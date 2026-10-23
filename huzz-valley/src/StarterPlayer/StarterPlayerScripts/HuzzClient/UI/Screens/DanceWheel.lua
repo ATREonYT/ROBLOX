@@ -5,6 +5,9 @@
 -- or press its number, to dance; click the playing one again to stop. Walking away stops it too (UI/DancePlayer).
 -- G, Esc or a click outside closes it. No dimming and no fading layer (the old CanvasGroup lagged): it grows in
 -- from the middle and the slots glide out. While it shows, shift lock lets go of the mouse ("HuzzWheel").
+-- Phones and tablets have no G key (owner, Oct 23: "make the dances available on mobile also"): a round DANCE button
+-- opens it, in the bottom-right corner in the lobby and left of STAB in a round (UI/TouchPad). Hidden on a keyboard
+-- and while a window is open.
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -245,6 +248,33 @@ function DanceWheel.build(parent: Instance)
 	player:GetAttributeChangedSignal("HuzzChoosing"):Connect(function()
 		if player:GetAttribute("HuzzChoosing") == true then setOpen(false) end
 	end)
+
+	-- the phone's DANCE button (a saved part in StarterGui like the rest; shown only on a touch-only screen)
+	local TouchPad = require(UI.TouchPad)
+	local danceButton = Kit.button({ Name = "DanceButton", Text = "", Style = "Action", Corner = 37, RimThickness = 2.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -62, 1, -62), Size = UDim2.fromOffset(74, 74), Parent = parent })
+	danceButton.Instance.Visible = false
+	local bevel = danceButton.Instance:FindFirstChild("TopLine") -- (a straight line: it shows outside a round button)
+	if bevel then bevel:Destroy() end
+	Kit.icon("DancesNote", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.fromScale(0.5, 0.5), ZIndex = danceButton.Instance.ZIndex + 1, Parent = danceButton.Instance })
+	local danceWord = Kit.text({ Name = "Word", Text = "DANCE", FontFace = F.Heading, TextScaled = true, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.66), Size = UDim2.fromScale(0.8, 0.2), ZIndex = danceButton.Instance.ZIndex + 2, Parent = danceButton.Instance })
+	new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, Parent = danceWord })
+	danceButton.onClick(function() setOpen(not open) end)
+	local function placeDanceButton()
+		local touch = TouchPad.active()
+		local role = player:GetAttribute("HuzzRole")
+		local bar = parent:FindFirstChild("PowerBar", true) -- (the round's tap buttons are showing: step aside for them)
+		local playing = role == "Runner" or role == "Catcher" or (bar ~= nil and bar:IsA("GuiObject") and bar.Visible)
+		danceButton.Instance.Visible = touch and ModalManager.current() == nil and player:GetAttribute("HuzzCinematic") ~= true
+		if touch then TouchPad.place(danceButton.Instance, if playing then "Dance" else "DanceLobby") end
+	end
+	ModalManager.changed(function() task.defer(placeDanceButton) end)
+	player:GetAttributeChangedSignal("HuzzRole"):Connect(placeDanceButton)
+	player:GetAttributeChangedSignal("HuzzCinematic"):Connect(placeDanceButton)
+	pcall(function() UserInputService.LastInputTypeChanged:Connect(placeDanceButton) end)
+	local bar = parent:FindFirstChild("PowerBar", true)
+	if bar then bar:GetPropertyChangedSignal("Visible"):Connect(placeDanceButton) end
+	DanceWheel.placeButton = placeDanceButton -- (the offline preview calls it: its signals don't fire)
+	placeDanceButton()
 
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if UserInputService:GetFocusedTextBox() then return end

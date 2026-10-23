@@ -156,6 +156,8 @@ if cfg.POWERS then
 		player:SetAttribute("KnifeReady", now + 0.4)
 	end
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.PowerBar).refresh()
+	local wheel = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.DanceWheel)
+	if wheel.placeButton then wheel.placeButton() end -- (the phone's DANCE button steps left of STAB in a round)
 	-- on a phone, a catcher's STAB button too (Gameplay/Actions makes it in its own ScreenGui: moved in for the picture)
 	if cfg.TOUCH and not runner then
 		local ok, err = pcall(function() require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay.Actions).start() end)
