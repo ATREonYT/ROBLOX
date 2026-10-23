@@ -30,6 +30,9 @@
 --   Combine        RemoteEvent     server -> client: (userId, girlKey, fromGrade, toGrade, startAt) someone merged two
 --                                  girls at the Combine machine: every screen plays it there (Gameplay/CombineMachine).
 --                                  The merge itself is the Action "Combine" (HuzzServer/CombineService)
+--   Motion         UnreliableRemoteEvent  client -> server: (t, p, v, g, push) a stamp of your own body (Gameplay/
+--                                  MotionSend); server -> client: (character, t, p, v, g, push) someone's stamp, checked
+--                                  and passed on (HuzzServer/MotionRelay), drawn by Gameplay/OthersAhead (Shared/MotionStamps)
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -58,6 +61,7 @@ local SPEC = {
 	HeadLook = "RemoteEvent",
 	Place = "RemoteEvent",
 	Combine = "RemoteEvent",
+	Motion = "UnreliableRemoteEvent",
 }
 
 local folder: Folder

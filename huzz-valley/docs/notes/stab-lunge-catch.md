@@ -112,6 +112,20 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   fair hits that count 98-100% (catcher 400 ms: 38 -> 87%). Cheat reach unchanged (+1 stud). Limits: on a sharp turn
   the body shows a little past the corner for a moment; Interp 0.1 is a guess (Roblox doesn't publish its smoothing),
   only real servers can tune it.
+- **Motion stamps (Oct 23 08:36, owner: "make the desync the most precise it can be")**: no more guessing Roblox's
+  delay. `Gameplay/MotionSend` stamps your own body 20x a second and on every key change (`Shared/MotionStamps`: server
+  clock `t`, root `p`, speed `v`, keys' speed `g` = MoveDirection x WalkSpeed, `push` for a huss/dive/halt) on the
+  `Motion` UnreliableRemoteEvent; `HuzzServer/MotionRelay` checks it (within 1 s of the server clock, alive, unanchored,
+  not downed, within `Near` 6 studs + 0.1 s of speed of the server's copy, keys no faster than WalkSpeed + 2, speed under
+  150, 40/s per player) and sends it on with the character; it stamps HuzzBot bodies itself. `OthersAhead` draws a body
+  with a fresh stamp (<= `MaxAge` 0.6 s) at `predict(stamp, now - t)` (speed eases to the keys' at `K` 12/s; a push
+  kept `PushFor` 0.12 s), capped by `limit` (flat, `MaxStuds` 10, none past `Teleport` 14), eased at
+  `Round.Ahead.StampSmooth` 25; else the old guess. `RoundService.screenHit` adds the runner's newest stamp, moved on to
+  the catcher's frame (now - catcher ping/2), to the runner's path (`Touch.AheadMax` 10.5). Lag model
+  (`STAMP=1 lune run huzz-valley/tools/sim/touch_lag.luau`), runner's-screen gap guess -> stamps: both 50 ms 1.2 -> 0.2
+  studs, 100 ms 1.5 -> 0.9, 200 ms 4.1 -> 1.4; one slow side 0.8; dives 0.3/0.5/1.0; fair hits 99-100% (catcher 400 ms
+  97%). Cheat reach unchanged. Only real servers show Roblox's own smoothing and real pings; tests
+  `MotionStamps.spec`, `OthersAhead.spec`.
 - **Releasing a pose** (StabMotion, DownMotion, CarryMotion): put back the pose underneath only on joints nobody else
   wrote since, or the old pose shows for one frame ([animations.md](animations.md) "Layering").
 - **Red fill** on the caught runner (`Gameplay/RoundHud`, on their team Highlight, everyone's screen,

@@ -89,12 +89,14 @@ return {
 	-- one-way lag plus Smoothing seconds back, at most MaxRewind. The Practice Bot's knife is checked where the runner's screen showed
 	-- the bot (Smoothing seconds back). Keep: seconds of history kept.
 	Touch = { Tolerance = 0.4, Smoothing = 0.1, MaxRewind = 0.35, SeenSlack = 1.5, MineSlack = 1.5, MineBack = 0.2, Lead = 0.06,
-		FaceSlack = 35, CapSlack = 1, Keep = 0.6, AheadMax = 8.5 },
+		FaceSlack = 35, CapSlack = 1, Keep = 0.6, AheadMax = 10.5 },
 	-- Everyone else drawn where the server has them now (Gameplay/OthersAhead; owner, Oct 22 19:45: "you see the
 	-- difference in user locations, please fix it with the desync"): ahead along their movement by your half ping +
 	-- Interp s (Roblox's smoothing, an estimate), at most MaxLead s and MaxStuds studs; Smooth = how fast the offset
 	-- follows (per s); a body faster than MaxSpeed studs/s is a teleport (drawn where it is).
-	Ahead = { Interp = 0.1, MaxLead = 0.3, MaxStuds = 8, Smooth = 12, MaxSpeed = 150 },
+	-- StampSmooth (Oct 23): the same easing when the body's own stamps say where it is (Shared/MotionStamps): quicker,
+	-- since a stamp already knows where it's heading (12 would trail a turn by ~0.08 s).
+	Ahead = { Interp = 0.1, MaxLead = 0.3, MaxStuds = 8, Smooth = 12, MaxSpeed = 150, StampSmooth = 25 },
 
 
 	-- The huss (owner's call): Space throws you left or right on your screen. Jumping is off. The push eases every

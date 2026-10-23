@@ -15,16 +15,50 @@
 	that far (Shared/TouchHit.verify), so the touch is judged where this screen drew them.
 	Honest limits: a sharp turn shows the body a little past the corner for a moment (at most the lead's distance);
 	the 0.1 s smoothing is an estimate, only real servers can show the best number.
+	Since Oct 23 (owner, 08:36: "make the desync the most precise it can be"), no more guessing when the body's own
+	stamps arrive (Shared/MotionStamps: each screen sends where its body is, how fast and where its keys head, with the
+	server's clock; HuzzServer/MotionRelay passes them on; the Practice Bot's come from the server): the body is drawn
+	where its newest stamp says it is right now, moved on by exactly the time since it was taken, heading the way the
+	keys ask (so a turn shows as soon as it reaches this screen, not a smoothing later). Whatever Roblox's own delay is,
+	the offset is from where Roblox draws the body to there, so it is measured, not guessed. A stamp older than
+	MaxAge, or none yet: the guess above. Lag model (STAMP=1 lune run huzz-valley/tools/sim/touch_lag.luau).
 	OthersAhead.offset(character) -> Vector3: how far this screen draws that body ahead (zero for your own).
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Round = require(ReplicatedStorage:WaitForChild("Shared").Config.Round)
+local CollectionService = game:GetService("CollectionService")
+local Workspace = game:GetService("Workspace")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Round = require(Shared.Config.Round)
+local MotionStamps = require(Shared.MotionStamps)
 
 local OthersAhead = {}
 
 type Rec = { joint: Motor6D, root: BasePart, base: CFrame, set: CFrame?, offset: Vector3 }
 local recs: { [Model]: Rec } = {} -- (a plain table, dropped when the body goes)
+local stamps: { [Model]: any } = {} -- character -> its newest stamp (Shared/MotionStamps; dropped with the body)
+
+-- Keeps a stamp the server passed on (Net "Motion": the character, then the stamp).
+function OthersAhead.stamp(model: Model, t, p, v, g, push)
+	if typeof(model) ~= "Instance" or not model:IsA("Model") then return end
+	local st = MotionStamps.read(t, p, v, g, push)
+	local old = stamps[model]
+	if st and not (old and old.t > st.t) then stamps[model] = st end -- (an unreliable one can come late: never go back)
+end
+
+-- Where the stamp says this body's root is drawn from Roblox's copy (flat, capped), or nil with no fresh stamp.
+function OthersAhead.stampOffset(model: Model, root: BasePart, serverNow: number): Vector3?
+	local st = stamps[model]
+	if not st then return nil end
+	-- (caught: their screen stops stamping, and the last one would carry the body on; the guess has it still)
+	if model:GetAttribute("DownedAt") ~= nil then
+		stamps[model] = nil
+		return nil
+	end
+	local age = serverNow - st.t
+	if age < -0.05 or age > MotionStamps.Config.MaxAge then return nil end
+	return MotionStamps.limit(MotionStamps.predict(st, age) - root.CFrame.Position)
+end
 
 -- The seconds to draw others ahead: half your round trip plus Roblox's smoothing, capped.
 function OthersAhead.lead(ping: number?): number
@@ -85,10 +119,18 @@ function OthersAhead.step(dt: number)
 	local me = Players.LocalPlayer
 	local lead = OthersAhead.lead()
 	local k = 1 - math.exp(-Round.Ahead.Smooth * dt)
+	local kStamp = 1 - math.exp(-(Round.Ahead.StampSmooth or Round.Ahead.Smooth) * dt)
+	local serverNow = Workspace:GetServerTimeNow()
 	local live: { [Model]: boolean } = {}
+	local bodies: { Model } = {}
 	for _, p in Players:GetPlayers() do
-		local model = p.Character
-		if p == me or not model then continue end
+		if p ~= me and p.Character then table.insert(bodies, p.Character) end
+	end
+	for _, bot in CollectionService:GetTagged("HuzzBot") do
+		if bot:IsA("Model") then table.insert(bodies, bot) end
+	end
+	for _, model in bodies do
+		if live[model] then continue end
 		live[model] = true
 		local r = recs[model]
 		if r and (r.joint.Parent == nil or r.root.Parent ~= model) then
@@ -104,8 +146,10 @@ function OthersAhead.step(dt: number)
 		local rec = r :: Rec
 		-- (the server changed the joint itself, e.g. a body resized: that is the new base)
 		if rec.set and not same(rec.joint.C0, rec.set) then rec.base = rec.joint.C0 end
-		local target = if rec.root.Anchored then Vector3.zero else OthersAhead.target(rec.root.AssemblyLinearVelocity, lead)
-		rec.offset = rec.offset:Lerp(target, k)
+		local fromStamp = if rec.root.Anchored then nil else OthersAhead.stampOffset(model, rec.root, serverNow)
+		local target = if rec.root.Anchored then Vector3.zero
+			else fromStamp or OthersAhead.target(rec.root.AssemblyLinearVelocity, lead)
+		rec.offset = rec.offset:Lerp(target, if fromStamp then kStamp else k)
 		if rec.offset.Magnitude < 0.01 and target == Vector3.zero then rec.offset = Vector3.zero end
 		local c0 = OthersAhead.c0(rec.base, rec.root.CFrame, rec.offset)
 		rec.joint.C0 = c0
@@ -114,9 +158,13 @@ function OthersAhead.step(dt: number)
 	for model in recs do
 		if not live[model] then release(model) end
 	end
+	for model in stamps do
+		if not live[model] and model.Parent == nil then stamps[model] = nil end
+	end
 end
 
 function OthersAhead.start()
+	require(Shared.Net).get("Motion").OnClientEvent:Connect(OthersAhead.stamp)
 	-- (before the physics step, so the body is drawn and hit-tested where it's shifted to this frame)
 	require(script.Parent.Frame).on(1, OthersAhead.step)
 end

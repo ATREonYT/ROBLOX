@@ -48,8 +48,11 @@ end
 local function runnerPath(seconds)
 	local out, pos, heading, nextTurn, hussUntil, hussDir = {}, Vector3.new(0, 3, 0), 0, 0.5, -1, nil
 	local t = 0
+	local turned = false
 	while t <= seconds do
+		turned = false
 		if t >= nextTurn then
+			turned = true
 			heading += (rand() - 0.5) * 2.2
 			nextTurn = t + 0.3 + rand() * 0.6
 			if rand() < 0.25 then
@@ -64,10 +67,35 @@ local function runnerPath(seconds)
 			v += right * (16 + (120 - 16) * (1 - u) ^ 3)
 		end
 		pos += v * SIM
-		table.insert(out, { t = t, cf = lookAt(pos, pos + fwd) })
+		-- (goal: the speed the keys ask for, Humanoid.MoveDirection x WalkSpeed; input: a key changed this step)
+		table.insert(out, { t = t, cf = lookAt(pos, pos + fwd), vel = v, goal = fwd * 28, input = turned })
 		t += SIM
 	end
 	return out
+end
+
+-- STAMP=1 (Gameplay/MotionStamps, Oct 23): each client also sends its own body's moment (server time, where, how fast,
+-- the speed its keys ask for) 20 times a second and at once when a key changes; the server passes it straight on.
+-- The other screen draws the body where that moment says it is now: from the stamp, moved on by exactly the time since
+-- it was sent (both clocks are the server's), heading for the keys' speed (Shared/MotionStamps.predict).
+local MotionStamps = Env.load(SHARED .. "MotionStamps.lua")
+local function stampsOf(path, up, down, seconds)
+	local out, last = {}, -1
+	for i, s in path do
+		if s.t - last >= MotionStamps.Config.Every or (s.input and s.t - last >= MotionStamps.Config.MinGap) then
+			last = s.t
+			local jitter = rand() * 0.01
+			table.insert(out, { sent = s.t, arrives = s.t + up + down + jitter, p = s.cf.Position, v = s.vel, g = s.goal, push = false })
+		end
+	end
+	return out
+end
+local function newestStamp(st, t)
+	local best = nil
+	for _, s in st do
+		if s.arrives <= t then best = s else break end
+	end
+	return best
 end
 
 local function trueAt(path, t)
@@ -119,8 +147,17 @@ end
 -- Round.Ahead.Interp (capped); the movement is what the drawn body did over the last ~1/Smooth s (the eased offset).
 local AHEAD = require("@lune/process").env.AHEAD == "1"
 local A = Round.Ahead
-local function drawnSeen(pk, t, myPing)
+local STAMP = require("@lune/process").env.STAMP == "1"
+local function drawnSeen(pk, t, myPing, st)
 	local cf = drawnAt(pk, t, myPing / 2)
+	if STAMP and st then
+		local s = newestStamp(st, t)
+		if s then
+			local want = MotionStamps.predict(s, t - s.sent) - cf.Position
+			local off = MotionStamps.limit(Vector3.new(want.X, 0, want.Z))
+			return cf + off, off
+		end
+	end
 	if not AHEAD then return cf, Vector3.zero end
 	local w = 1 / A.Smooth
 	local v = (cf.Position - drawnAt(pk, t - w, myPing / 2).Position) / w
@@ -182,11 +219,12 @@ local function scenario(name, runnerPing, catcherPing, n, speed, knife)
 		trials += 1
 		local rPath = runnerPath(seconds)
 		local rPk = packets(rPath, runnerPing / 2, seconds)
+		local rSt = stampsOf(rPath, runnerPing / 2, catcherPing / 2, seconds)
 		-- the catcher chases where its screen shows the runner, facing them
 		local cPath, cpos = {}, trueAt(rPath, 0).Position + Vector3.new(8, 0, 8)
 		local t = 0
 		while t <= seconds do
-			local target = drawnSeen(rPk, t, catcherPing).Position
+			local target = drawnSeen(rPk, t, catcherPing, rSt).Position
 			local d = Vector3.new(target.X - cpos.X, 0, target.Z - cpos.Z)
 			if d.Magnitude > 0.5 then cpos += d.Unit * math.min(speed * SIM, d.Magnitude - 0.5) end
 			table.insert(cPath, { t = t, cf = lookAt(cpos, target) })
@@ -200,7 +238,7 @@ local function scenario(name, runnerPing, catcherPing, n, speed, knife)
 		while t < seconds - 1 and hits < n do
 			if t >= nextSwing then
 				local mine = trueAt(cPath, t)
-				local seen, ahead = drawnSeen(rPk, t, catcherPing)
+				local seen, ahead = drawnSeen(rPk, t, catcherPing, rSt)
 				local along = if knife == Round.Lunge then mine.LookVector else nil
 				local box, size = TouchHit.reachBox(mine, along, knife.Reach, knife.Width)
 				if TouchHit.touches(box, size, seen, shape, 0) then
@@ -215,8 +253,17 @@ local function scenario(name, runnerPing, catcherPing, n, speed, knife)
 					-- NOW (RoundService.screenHit): the screen's claim; if it fails, the server's own test
 					local back = TouchHit.lookBack(catcherPing, T)
 					local newest = serverPk(cPk, arrive)
+					local rS = samples(rHist, rPk, arrive - T.Keep, arrive)
+					if STAMP then
+						-- (the server's newest stamp of the runner moved on to the claim's moment: RoundService.screenHit)
+						local up = nil -- (the newest the server has: it left the runner half their ping ago)
+						for _, x in rSt do if x.sent + runnerPing / 2 <= arrive then up = x else break end end
+						if up then
+							table.insert(rS, { t = arrive, cf = CFrame.new(MotionStamps.predict(up, t - up.sent)) * rS[#rS].cf.Rotation })
+						end
+					end
 					local ok, why = TouchHit.verify({ seen = seen - ahead, mine = mine, ahead = ahead }, {
-						runner = samples(rHist, rPk, arrive - T.Keep, arrive),
+						runner = rS,
 						catcher = samples(cHist, cPk, arrive - T.Keep, arrive),
 						now = arrive, back = back, shape = shape, knife = knife, along = along,
 						face = newest.cf.LookVector, vel = newest.vel,
@@ -293,7 +340,8 @@ local function newJudge(knife)
 	end
 end
 
-print(if AHEAD then "AHEAD: others drawn ahead (Gameplay/OthersAhead)" else "others drawn where Roblox has them (no lead)")
+print(if STAMP then "STAMP: others drawn where their own stamps say they are now (Shared/MotionStamps)"
+	elseif AHEAD then "AHEAD: others drawn ahead (Gameplay/OthersAhead)" else "others drawn where Roblox has them (no lead)")
 print(string.format("touch lag model: packets %d/s, drawn %.2f s behind, server history 60/s; Touch: MaxRewind %.2f, SeenSlack %.1f, MineSlack %.1f, Lead %.2f, FaceSlack %d, CapSlack %.1f, Tolerance %.1f",
 	math.floor(1 / SEND + 0.5), INTERP, T.MaxRewind, T.SeenSlack, T.MineSlack, T.Lead, T.FaceSlack, T.CapSlack, T.Tolerance))
 local results = {}

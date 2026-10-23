@@ -386,6 +386,7 @@ local function simulate(opts)
 	local GirlRoll = loadShared("ReplicatedStorage/Shared/GirlRoll.lua")
 	local SecretReveal = loadShared("ReplicatedStorage/Shared/SecretReveal.lua")
 	local TouchHit = loadShared("ReplicatedStorage/Shared/TouchHit.lua")
+	local MotionStamps = loadShared("ReplicatedStorage/Shared/MotionStamps.lua")
 	local CombineRules = loadShared("ReplicatedStorage/Shared/CombineRules.lua") -- (the winner gets a copy of her)
 	-- bought abilities and loadouts (Oct 20): the real rules, reading the real Config/Powers
 	local AbilityRules = loadShared("ReplicatedStorage/Shared/AbilityRules.lua", { script = { Parent = { Config = { Powers = Powers } } }, require = function(m) return m end })
@@ -718,7 +719,7 @@ local function simulate(opts)
 		ProgressService = { gameXP = function(_, won, t) return 40 + (if won then 40 else 0), nil end,
 			addStat = function(p, stat, n) DataService.update(p, function(d) d.Stats[stat] = (d.Stats[stat] or 0) + n end) end },
 	}
-	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal, TouchHit = TouchHit, CombineRules = CombineRules,
+	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal, TouchHit = TouchHit, MotionStamps = MotionStamps, CombineRules = CombineRules,
 		KnifeLook = { pick = function() return nil end }, -- (which knife you wear: the default one in the sim)
 		AbilityRules = AbilityRules,
 		BearTrap = { build = function() return new("Model") end, pose = function() end, arm = function() end }, -- (the trap's parts: only a look)
@@ -743,6 +744,7 @@ local function simulate(opts)
 	modules.HitHistory = loadScript("ServerScriptService/HuzzServer/HitHistory.lua")()
 	modules.PlaceService = loadScript("ServerScriptService/HuzzServer/PlaceService.lua")()
 	modules.MoveGuard = loadScript("ServerScriptService/HuzzServer/MoveGuard.lua")() -- (not started here: fine() says yes, flagged() no)
+	modules.MotionRelay = loadScript("ServerScriptService/HuzzServer/MotionRelay.lua")() -- (not started: no stamps, so screenHit uses our own path only)
 	PowerService = loadScript("ServerScriptService/HuzzServer/PowerService.lua")()
 	modules.PowerService = PowerService
 	-- The Practice Bot: the real module with a stand-in body that botFrame walks where it's told.

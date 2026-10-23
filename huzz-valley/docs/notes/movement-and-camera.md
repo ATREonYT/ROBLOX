@@ -271,3 +271,7 @@ The huss pose and walk animations: [animations.md](animations.md).
   forward, back leg braced, arms out) on R6 bodies; the R15 ones were never applied to R6.
 - Not done: a full server-authority movement rewrite (the owner's "make the game server sided"); `sa-test/` (Oct 21)
   is the experiment. MoveGuard still checks speed on the server.
+- Others on your screen (Oct 23, owner: "make the desync the most precise it can be"): every screen stamps its own
+  body (`Gameplay/MotionSend`, `Shared/MotionStamps`, server-checked by `HuzzServer/MotionRelay`) and draws the others
+  where their stamps say they are now (`Gameplay/OthersAhead`). Numbers and limits:
+  [stab-lunge-catch.md](stab-lunge-catch.md) "Motion stamps".

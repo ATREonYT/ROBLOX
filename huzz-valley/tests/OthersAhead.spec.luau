@@ -5,6 +5,9 @@
 --   the lead (ping 55 ms: 0.13 s; capped), the distance (a run, a dive capped at MaxStuds, a teleport and a still
 --   body not moved), a running body's torso drawn that far ahead under a turned root while its root stays, your own
 --   body never touched, a body lying caught eased back, the server's own C0 change kept, a body that leaves let go.
+-- Stamps (Oct 23, Shared/MotionStamps): with a fresh one the body is drawn where it says the body is now (not the
+--   guess), a turn its keys ask for shows before Roblox's copy turns, a late (older) stamp never undoes a newer one,
+--   a stale stamp or a teleport falls back, and the Practice Bot (tagged HuzzBot) is drawn from its stamps too.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local roblox = require("@lune/roblox")
@@ -15,10 +18,18 @@ local Round = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/Config
 local players = {}
 local me = { Name = "me", Character = nil, GetNetworkPing = function() return 0.055 end }
 local fakePlayers = { LocalPlayer = me, GetPlayers = function() return players end }
-local fakeShared = { Config = { Round = Round } }
+local MotionStamps = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/MotionStamps.lua"), { debugName = "MotionStamps", environment = { Vector3 = Vector3 } })()
+local fakeShared = { Config = { Round = Round }, MotionStamps = MotionStamps }
 local fakeRS = { WaitForChild = function() return fakeShared end }
+local serverNow = 1000
+local bots = {}
+local services = {
+	Players = fakePlayers,
+	Workspace = { GetServerTimeNow = function() return serverNow end },
+	CollectionService = { GetTagged = function(_, tag) return if tag == "HuzzBot" then bots else {} end },
+}
 local OA = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/OthersAhead.lua"), { debugName = "OthersAhead",
-	environment = { Vector3 = Vector3, CFrame = CFrame, game = { GetService = function(_, n) return if n == "Players" then fakePlayers else fakeRS end }, require = function(x) return x end } })()
+	environment = { Vector3 = Vector3, CFrame = CFrame, game = { GetService = function(_, n) return services[n] or fakeRS end }, require = function(x) return x end } })()
 
 local passed, failed = 0, 0
 local function check(name, cond)
@@ -90,6 +101,47 @@ check("the server's own change is kept under the shift", near((rJoint.C0.Positio
 players = { me }
 OA.step(1 / 60)
 check("a body that leaves gets its joint back", sameCF(rJoint.C0, NEW) and sameCF(r2Joint.C0, BASE))
+
+-- Stamps: a runner whose own screen says it's at x = 3, 0.1 s ago, running +X at 24 (Roblox has it at x = 0)
+local Z = Vector3.zero
+local s1, s1Root = body("Stamped", CFrame.new(0, 3, 40))
+s1Root.AssemblyLinearVelocity = Vector3.new(24, 0, 0)
+players = { me, { Name = "s1", Character = s1 } }
+OA.stamp(s1, serverNow - 0.1, Vector3.new(3, 3, 40), Vector3.new(24, 0, 0), Vector3.new(24, 0, 0), false)
+frames(60)
+check(string.format("a fresh stamp: drawn where it says the body is now (%.2f, want 5.40)", OA.offset(s1).X), near(OA.offset(s1), Vector3.new(5.4, 0, 0), 0.02))
+-- a late, older stamp arrives: ignored
+OA.stamp(s1, serverNow - 0.4, Vector3.new(-20, 3, 40), Z, Z, false)
+frames(5)
+check("an older stamp that arrives late never undoes a newer one", near(OA.offset(s1), Vector3.new(5.4, 0, 0), 0.02))
+-- the keys turn to -Z; Roblox's copy (and its speed) hasn't turned yet
+OA.stamp(s1, serverNow - 0.1, Vector3.new(3, 3, 40), Vector3.new(24, 0, 0), Vector3.new(0, 0, -24), false)
+frames(60)
+local turned = OA.offset(s1)
+check(string.format("a turn shows as soon as its stamp arrives (%.2f studs along the new way)", -turned.Z), turned.Z < -0.5)
+-- a stamp 1 s old: back to the guess from the drawn speed
+OA.stamp(s1, serverNow + 0.5, Vector3.new(0, 3, 40), Vector3.new(24, 0, 0), Vector3.new(24, 0, 0), false)
+serverNow += 1.6
+frames(120)
+check("a stale stamp: the old guess takes over", near(OA.offset(s1), OA.target(s1Root.AssemblyLinearVelocity, OA.lead()), 0.05))
+-- a teleport: the stamp is far from Roblox's copy, so drawn where Roblox has it
+OA.stamp(s1, serverNow, Vector3.new(300, 3, 40), Z, Z, false)
+frames(120)
+check("a stamp miles away (a teleport): drawn where it is", near(OA.offset(s1), Z, 0.02))
+check("a broken stamp is ignored", (function() OA.stamp(s1, 0 / 0, Z, Z, Z, false); OA.stamp(s1, serverNow, "x", Z, Z); return true end)())
+-- the Practice Bot: a model tagged HuzzBot, stamped by the server
+local bot, botRoot = body("PracticeBot", CFrame.new(0, 3, -40))
+botRoot.AssemblyLinearVelocity = Vector3.new(0, 0, -20)
+bots = { bot }
+OA.stamp(bot, serverNow - 0.05, Vector3.new(0, 3, -42), Vector3.new(0, 0, -20), Vector3.new(0, 0, -20), false)
+frames(60)
+check(string.format("the Practice Bot is drawn from its stamps too (%.2f, want -3.00)", OA.offset(bot).Z), near(OA.offset(bot), Vector3.new(0, 0, -3), 0.02))
+check("its root stays where Roblox has it", botRoot.CFrame.Position == Vector3.new(0, 3, -40))
+-- caught mid-run: the last stamp would carry them on, so it's dropped
+bot:SetAttribute("DownedAt", 1)
+botRoot.AssemblyLinearVelocity = Z
+frames(120)
+check("a body caught mid-run isn't carried on by its last stamp", near(OA.offset(bot), Z, 0.02))
 
 print(string.format("OthersAhead: %d ok, %d failed", passed, failed))
 if failed > 0 then error("OthersAhead spec failed") end

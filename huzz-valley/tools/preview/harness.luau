@@ -183,6 +183,28 @@ roblox.implementMethod("RemoteEvent", "FireAllClients", function(self, ...)
 	local s = signals[self] and signals[self].OnClientEvent
 	if s then for _, fn in s.fns do fn(...) end end
 end)
+-- (UnreliableRemoteEvent: the same, Gameplay/MotionSend and HuzzServer/MotionRelay)
+roblox.implementProperty("UnreliableRemoteEvent", "OnClientEvent", function(self) return instSignal(self, "OnClientEvent") end)
+roblox.implementProperty("UnreliableRemoteEvent", "OnServerEvent", function(self) return instSignal(self, "OnServerEvent") end)
+roblox.implementMethod("UnreliableRemoteEvent", "FireServer", function(self, ...)
+	local args = table.pack(...)
+	table.insert(_G.__shots, { self.Name, ... })
+	local s = signals[self] and signals[self].OnServerEvent
+	if s then
+		local p = game:GetService("Players").LocalPlayer
+		for _, fn in s.fns do task.spawn(fn, p, table.unpack(args, 1, args.n)) end
+	end
+end)
+roblox.implementMethod("UnreliableRemoteEvent", "FireClient", function(self, player, ...)
+	table.insert(_G.__toClient, { self.Name, ... })
+	local s = signals[self] and signals[self].OnClientEvent
+	-- (HOOK) a client handler's error stays on the client, as in Roblox (it never kills the server's thread)
+	if s then for _, fn in s.fns do local ok, err = pcall(fn, ...); if not ok then print("[client error] " .. self.Name .. ": " .. tostring(err):sub(1, 200)) end end end
+end)
+roblox.implementMethod("UnreliableRemoteEvent", "FireAllClients", function(self, ...)
+	local s = signals[self] and signals[self].OnClientEvent
+	if s then for _, fn in s.fns do fn(...) end end
+end)
 roblox.implementProperty("RunService", "PreRender", function(self) return instSignal(self, "PreRender") end)
 roblox.implementProperty("RunService", "RenderStepped", function(self) return instSignal(self, "RenderStepped") end)
 roblox.implementProperty("Instance", "DescendantAdded", function(self) return instSignal(self, "DescendantAdded") end)

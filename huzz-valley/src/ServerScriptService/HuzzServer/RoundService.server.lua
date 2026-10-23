@@ -38,6 +38,8 @@ local HitHistory = require(script.Parent.HitHistory)
 local PlaceService = require(script.Parent.PlaceService) -- (a player's own screen moves their body: the owner moves it)
 local MoveGuard = require(script.Parent.MoveGuard) -- (release check, Oct 22: no safe by a jump, no hits after one)
 local TouchHit = require(Shared.TouchHit)
+local MotionStamps = require(Shared.MotionStamps)
+local MotionRelay = require(script.Parent.MotionRelay) -- (the runner's own stamps: screenHit's path reaches the claim)
 local ProgressService = require(script.Parent.ProgressService)
 
 require(script.Parent.SafetyService).clean()
@@ -1305,11 +1307,25 @@ local function screenHit(id, me: BasePart, runnerId: number, shown, knife, along
 	local shape = character and TouchHit.shape(root.CFrame, character:GetChildren()) or TouchHit.standIn(CFrame.identity)
 	local p = byId[id]
 	local okPing, ping = pcall(function() return p and p:GetNetworkPing() end)
+	ping = if okPing and type(ping) == "number" then ping else 0
+	local runnerPath = HitHistory.samples(root, now - T.MaxRewind)
+	-- The catcher's screen drew the runner where the runner's own newest stamp said they were at its frame (Oct 23,
+	-- Gameplay/OthersAhead), which our copy may not have reached yet (it left the runner half their ping ago). So the
+	-- path gets that one point too: the newest stamp we checked (MotionRelay), moved on to the catcher's frame (half
+	-- the catcher's ping ago) and never more than MotionStamps' cap from our own copy.
+	local st = MotionRelay.latest(byId[runnerId]) or MotionRelay.latest(character)
+	if st and #runnerPath > 0 then
+		local at = Workspace:GetServerTimeNow() - ping / 2
+		if at - st.t <= MotionStamps.Config.MaxAge and at - st.t > -0.25 then
+			local off = MotionStamps.limit(MotionStamps.predict(st, math.max(0, at - st.t)) - root.Position)
+			table.insert(runnerPath, { t = now, cf = root.CFrame + off })
+		end
+	end
 	if not TouchHit.verify(shown, {
-		runner = HitHistory.samples(root, now - T.MaxRewind),
+		runner = runnerPath,
 		catcher = HitHistory.samples(me, now - T.MineBack),
 		now = now,
-		back = TouchHit.lookBack(if okPing and type(ping) == "number" then ping else 0, T),
+		back = TouchHit.lookBack(ping, T),
 		shape = shape, knife = knife, along = along,
 		-- (the speed comes from the catcher's own screen: flat, and never faster than a dive, so a faked speed can't
 		-- stretch the reach; critic, Oct 19)
