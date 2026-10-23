@@ -142,6 +142,7 @@ DataService.start()
 SettingsService.start()
 ShopService.start()
 require(HuzzServer.LuckService).start() -- server luck from the Luck boosts, while each buyer is here
+require(HuzzServer.SkipService).start() -- the SKIP vote during the wait before a game
 CosmeticsService.start()
 ActionService.start()
 CompanionService.start()

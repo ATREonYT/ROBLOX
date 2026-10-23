@@ -41,10 +41,12 @@ local function seq(colors: { Color3 }, white: boolean): ColorSequence
 	return ColorSequence.new(keys)
 end
 
+-- On the middle of the body, top to bottom the same either side of the waist (owner, Oct 23 16:52: "make trails be
+-- on the center of body"; they used to sit behind the back and low).
 local function attachment(root: BasePart, name: string, y: number): Attachment
 	local a = Instance.new("Attachment")
 	a.Name = name
-	a.Position = Vector3.new(0, y, 0.4)
+	a.Position = Vector3.new(0, y, 0)
 	a.Parent = root
 	return a
 end
@@ -69,7 +71,7 @@ local function trail(root: BasePart, key: string, colors: { Color3 }, rich: bool
 	local t = Instance.new("Trail")
 	t.Name = "WornTrail"
 	t:SetAttribute("Item", key)
-	t.Attachment0, t.Attachment1 = attachment(root, "WornTrailTop", 0.7), attachment(root, "WornTrailBottom", -0.95)
+	t.Attachment0, t.Attachment1 = attachment(root, "WornTrailTop", 0.8), attachment(root, "WornTrailBottom", -0.8)
 	if FxTexture.ready("Streak") then -- (solid colour, as before, until our streak picture is uploaded)
 		t.Texture = FxTexture.get("Streak")
 		t.TextureMode = Enum.TextureMode.Stretch
@@ -86,7 +88,7 @@ local function trail(root: BasePart, key: string, colors: { Color3 }, rich: bool
 	if rich then
 		local core = Instance.new("Trail")
 		core.Name = "WornTrailCore"
-		core.Attachment0, core.Attachment1 = attachment(root, "WornTrailCoreTop", 0.3), attachment(root, "WornTrailCoreBottom", -0.5)
+		core.Attachment0, core.Attachment1 = attachment(root, "WornTrailCoreTop", 0.4), attachment(root, "WornTrailCoreBottom", -0.4)
 		if FxTexture.ready("Streak") then
 			core.Texture = FxTexture.get("Streak")
 			core.TextureMode = Enum.TextureMode.Stretch

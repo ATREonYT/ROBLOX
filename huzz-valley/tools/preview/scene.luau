@@ -36,6 +36,7 @@ DataService.update(player, function(d)
 	-- GROUPID=n: the group window as it looks once the owner sets his group (a stand-in number, the preview only)
 	if cfg.GROUPID then require(game.ReplicatedStorage.Shared.Config.Group).Id = tonumber(cfg.GROUPID) end
 	if cfg.LUCK then workspace:SetAttribute("HuzzServerLuck", tonumber(cfg.LUCK)); game.Players.LocalPlayer:SetAttribute("HuzzLuck", tonumber(cfg.LUCK)) end -- (server luck, Screens/Luck and the HUD's LUCK)
+	if cfg.SKIP then workspace:SetAttribute("HuzzSkipVotes", 1); workspace:SetAttribute("HuzzSkipNeed", 2) end -- (the SKIP vote open, one of two)
 	-- the daily quests window: the spin quest done (CLAIM), the first daily one half way
 	if cfg.SCREEN == "DailyQuests" then
 		local DailyRules = require(game.ReplicatedStorage.Shared.DailyRules)
@@ -261,7 +262,7 @@ if cfg.ROLL then
 		{ name = "Epic", chance = 7 }, { name = "Legendary", chance = 3.5 }, { name = "Mythic", chance = 1.2 }, { name = "Secret", chance = 0.3 } }
 	local Roll = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.GirlRoll)
 	local start = workspace:GetServerTimeNow() - tonumber(cfg.ROLL)
-	Roll.show({ cells = cells, stop = 26, start = start, spin = 5.5, odds = odds })
+	Roll.show({ cells = cells, stop = 26, start = start, spin = 5.5, odds = odds, luck = tonumber(cfg.LUCK) })
 	for _ = 1, 20 do __stepTweens(0.05) end
 	Roll.render(workspace:GetServerTimeNow())
 end

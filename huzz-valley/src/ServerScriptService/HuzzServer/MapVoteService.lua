@@ -30,8 +30,9 @@ local function recount()
 	return counts
 end
 
--- Runs the vote: returns the winning name. stillGoing() false (too few players) ends it early with nil.
-function MapVoteService.run(nameA, nameB, seconds, stillGoing)
+-- Runs the vote: returns the winning name. stillGoing() false (too few players) ends it early with nil; skip() true
+-- (HuzzServer/SkipService: the players voted SKIP) ends it early with the votes cast so far.
+function MapVoteService.run(nameA, nameB, seconds, stillGoing, skip)
 	choices, votes, open = { nameA, nameB }, {}, true
 	for _, p in Players:GetPlayers() do
 		p:SetAttribute("HuzzVote", nil)
@@ -46,6 +47,7 @@ function MapVoteService.run(nameA, nameB, seconds, stillGoing)
 			open = false
 			return nil
 		end
+		if skip and skip() then break end
 		task.wait(0.1)
 	end
 	open = false

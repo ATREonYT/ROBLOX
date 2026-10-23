@@ -59,8 +59,8 @@ return {
 		Glitchy = { WindUp = 0.1, Sound = "glitch" },
 		BodyDouble = { WindUp = 0.3, Sound = "decoy", Charge = true },
 		BananaPeel = { WindUp = 0.22, Sound = "banana_drop", Pose = "Throw" },
-		SmokeBomb = { WindUp = 0.3, Sound = "smoke_bomb", Pose = "Throw" },
-		Lasso = { WindUp = 0.3, Sound = "lasso_throw", Pose = "Throw" },
+		SmokeBomb = { WindUp = 0.18, Sound = "smoke_bomb", Pose = "Throw" }, -- (0.3 felt slow: owner, Oct 23)
+		Lasso = { WindUp = 0.18, Sound = "lasso_throw", Pose = "Throw" },
 		Radar = { WindUp = 0.4, Sound = "radar_ping", Charge = true },
 	},
 
@@ -160,6 +160,8 @@ return {
 		Name = "Lasso", Card = "LASSO", Icon = "AbilityLasso", Tile = Color3.fromRGB(130, 78, 29), Emoji = "🤠", Text = "Pull a runner to you",
 		Accent = Color3.fromRGB(240, 170, 90), Side = "Catcher", Price = 1000,
 		Counter = "Huss sideways when the rope flies",
-		Cooldown = 15, Range = 24, Speed = 70, Width = 3, Pull = 7, PullTime = 0.3, MinGap = 4, Hold = 0.6, Slow = 0.6,
+		-- (owner, Oct 23 16:52: "make the lasso go further and quicker": Range 24 -> 40, Speed 70 -> 130, WindUp
+		-- 0.3 -> 0.18 in Fx, and it pulls 10 studs, not 7)
+		Cooldown = 15, Range = 40, Speed = 130, Width = 3, Pull = 10, PullTime = 0.3, MinGap = 4, Hold = 0.6, Slow = 0.6,
 	},
 }

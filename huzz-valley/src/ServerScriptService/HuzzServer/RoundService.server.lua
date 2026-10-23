@@ -1758,17 +1758,23 @@ end
 -- Between games: everyone votes on two maps (one map: a short wait instead), the winner
 -- appears in front of the lobby and everyone in the server is moved onto it.
 local function chooseMap()
+	-- (SKIP: more than half the players can cut the wait short, HuzzServer/SkipService)
+	local Skip = require(script.Parent.SkipService)
 	if #MapService.maps >= 2 then
 		local a, b = MapService.candidates()
 		setStage("Voting", Config.VoteTime)
-		local winner = MapVoteService.run(a.name, b.name, Config.VoteTime, enough)
+		Skip.open()
+		local winner = MapVoteService.run(a.name, b.name, Config.VoteTime, enough, Skip.wanted)
+		Skip.close()
 		return winner and MapService.byName(winner)
 	end
 	setStage("Intermission", Config.IntermissionTime)
+	Skip.open()
 	local deadline = os.clock() + Config.IntermissionTime
-	while os.clock() < deadline and enough() do
+	while os.clock() < deadline and enough() and not Skip.wanted() do
 		task.wait(0.25)
 	end
+	Skip.close()
 	return enough() and MapService.maps[1] or nil
 end
 
@@ -1784,7 +1790,13 @@ local function rollGirl()
 		list[i] = { name = g.name, rarity = g.rarity, key = g.key }
 	end
 	-- In an attribute (not a message), so players who join mid-roll see it too.
-	local roll = { cells = list, stop = R.Stop, start = Workspace:GetServerTimeNow(), spin = R.SpinTime, odds = odds }
+	-- the server's luck on this roll (HuzzServer/LuckService): shown on the roller, and one Output line with the odds
+	local okLuck, luck = pcall(function() return require(script.Parent.LuckService).server() end)
+	luck = if okLuck then luck else 1
+	local line = {}
+	for _, o in odds do table.insert(line, `{o.name} {string.format("%.1f", o.chance)}%`) end
+	print(`[HuzzLuck] server luck x{luck}: {table.concat(line, ", ")}. Rolled {girl.name} ({girl.rarity})`)
+	local roll = { cells = list, stop = R.Stop, start = Workspace:GetServerTimeNow(), spin = R.SpinTime, odds = odds, luck = luck }
 	State:SetAttribute("RollData", HttpService:JSONEncode(roll))
 	setStage("Rolling", R.Time)
 	local ready = false

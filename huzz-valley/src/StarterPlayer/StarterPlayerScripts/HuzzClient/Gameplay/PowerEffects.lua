@@ -45,8 +45,9 @@
 	               yellow ring and 🍌; its ring brightens when it can trip someone. A catcher on it slips: a yellow ring, 🍌
 	               popping, and three stars circling over the head while they're stuck (character SlipUntil; the
 	               Practice Bot too).
-	  Smoke Bomb:  (new Oct 20) a little ball dropped at the feet bursts into a big soft lilac cloud (plain balls, a
-	               ring on the ground) that breathes slowly, hides runners inside it on other screens (they fade out in
+	  Smoke Bomb:  (new Oct 20, redone Oct 23) a little ball hops from the hand and bursts with a soft poof, rings and
+	               flung smoke into a big lilac cloud (plain balls that settle and swirl, wisps of Roblox's smoke rising)
+	               that breathes slowly, hides runners inside it on other screens (they fade out in
 	               0.25 s, the same way Invisible hides them), and thins out over its last second.
 	  Radar:       (new Oct 20) a ring gathers, then a wide ring sweeps out across the floor to its reach; every runner
 	               it reaches glows through walls on every screen (a Highlight in its colour, a soft slow swell, never
@@ -699,38 +700,88 @@ function M.start()
 		local t0 = Workspace:GetServerTimeNow()
 		table.insert(clouds, { at = at, radius = radius, from = t0 + wind + flash, untilT = t0 + wind + flash + lasts })
 		task.delay(wind + flash, function()
-			-- the little ball drops from the hand to the feet
+			-- (owner, Oct 23 16:52: "make the smoke bomb look and feel better"): the ball hops from the hand and
+			-- spins; it bursts with a soft white poof, a ring, puffs flung out from the middle that settle and slowly
+			-- swirl, and wisps of real smoke rising off the whole cloud while it lasts. No bright flash.
 			local ball = Burst.piece(Color3.fromRGB(70, 56, 96), Enum.PartType.Ball)
 			ball.Material = Enum.Material.SmoothPlastic
-			ball.Size = Vector3.one * 0.6
+			ball.Size = Vector3.one * 0.7
 			local from = hand()
-			Burst.run(0.14, function(_, k)
-				ball.CFrame = CFrame.new(from:Lerp(at + UP * 0.3, k * k))
+			local land = at + UP * 0.35
+			local HOP = 0.2
+			Burst.run(HOP, function(_, k)
+				local p = from:Lerp(land, k) + UP * (1.4 * 4 * k * (1 - k))
+				ball.CFrame = CFrame.new(p) * CFrame.Angles(k * 9, k * 5, 0)
 			end, function() ball:Destroy() end)
-			task.delay(0.14, function()
+			task.delay(HOP, function()
+				local life = lasts - HOP
+				-- the poof: a soft pale ball that swells to the cloud's size and melts away
+				local poof = Burst.piece(Color3.fromRGB(244, 240, 255), Enum.PartType.Ball)
+				poof.Material = Enum.Material.SmoothPlastic
+				Burst.run(0.35, function(_, k)
+					local e = Burst.ease(k, "quart")
+					poof.CFrame = CFrame.new(at + UP * (1 + 1.2 * e))
+					poof.Size = Vector3.one * (1 + radius * 1.5 * e)
+					poof.Transparency = 0.35 + 0.65 * k
+				end, function() poof:Destroy() end)
 				Burst.ring(CFrame.new(at + UP * 0.15), {
-					r0 = 1, r1 = radius + 1, time = 0.7, ease = "quart", width = 0.16, glow = 0.7, color = color, fade = 0.55, segs = 20,
+					r0 = 1, r1 = radius + 1.5, time = 0.6, ease = "quart", width = 0.18, glow = 0.7, color = color, fade = 0.55, segs = 24,
 				})
-				-- the cloud: soft balls that puff out, breathe slowly while it lasts, then thin out over its last second
-				local n = 13
+				Burst.ring(CFrame.new(at + UP * 0.25), {
+					r0 = 0.6, r1 = radius * 0.7, time = 0.4, ease = "quart", width = 0.1, glow = 0.4, color = WHITE, edge = color, fade = 0.6, segs = 18, alpha = 0.4,
+				})
+				Burst.sparks(at + UP * 1.2, { LILAC[1], LILAC[2] }, 18, {
+					texture = "rbxasset://textures/particles/smoke_main.dds", speed = NumberRange.new(16, 24), gravity = Vector3.new(0, 3, 0),
+					drag = 5, glow = 0, life = NumberRange.new(0.6, 1),
+					size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.6), NumberSequenceKeypoint.new(1, 3.4) }),
+				})
+				-- the cloud: soft balls flung out from the middle that settle, breathe and slowly swirl round it,
+				-- then thin out over its last second
+				local n = 15
 				for i = 1, n do
 					local puffPart = Burst.piece(LILAC[i % 3 + 1], Enum.PartType.Ball)
 					puffPart.Material = Enum.Material.SmoothPlastic
-					local a = i * 2.39996 -- (golden angle: spread evenly)
-					local r = radius * 0.72 * math.sqrt(i / n)
-					local home = at + Vector3.new(math.cos(a) * r, 1.4 + ((i * 53) % 7) * 0.5, math.sin(a) * r)
-					local size = 4.6 + ((i * 29) % 5) * 0.7
-					local life = lasts - 0.14
+					local a0 = i * 2.39996 -- (golden angle: spread evenly)
+					local r = radius * 0.74 * math.sqrt(i / n)
+					local hgt = 1.3 + ((i * 53) % 7) * 0.5
+					local size = 4.4 + ((i * 29) % 5) * 0.75
+					local spin = (if i % 2 == 0 then 1 else -1) * 0.12 -- (radians a second: a lazy swirl)
 					Burst.run(life, function(age)
-						local grow = Burst.ease(math.clamp(age / 0.5, 0, 1), "back")
 						local out = math.clamp((age - (life - 1)) / 1, 0, 1) -- (the last second: thins out)
-						local breathe = 1 + 0.05 * math.sin(age * 2 * math.pi / 2.4 + i)
-						local drift = UP * (0.25 * age) + (home - at) * 0.04 * age
-						puffPart.CFrame = CFrame.new(home + drift)
-						puffPart.Size = Vector3.one * math.max(0.3, size * (0.15 + 0.85 * grow) * breathe * (1 + 0.15 * out))
-						puffPart.Transparency = 0.12 + 0.2 * (i % 3) / 2 + 0.88 * out ^ 1.3
+						local fling = Burst.ease(math.clamp(age / 0.35, 0, 1), "back")
+						local a = a0 + spin * age
+						local home = at + Vector3.new(math.cos(a) * r * fling, 0.8 + (hgt - 0.8) * fling + 0.22 * age, math.sin(a) * r * fling)
+						local breathe = 1 + 0.06 * math.sin(age * 2 * math.pi / 2.4 + i)
+						puffPart.CFrame = CFrame.new(home)
+						puffPart.Size = Vector3.one * math.max(0.3, size * (0.3 + 0.7 * fling) * breathe * (1 + 0.15 * out))
+						puffPart.Transparency = 0.1 + 0.2 * (i % 3) / 2 + 0.9 * out ^ 1.3
 					end, function() puffPart:Destroy() end)
 				end
+				-- wisps of smoke rising off the whole cloud while it lasts (Roblox's own smoke picture)
+				local base = Instance.new("Part")
+				base.Name = "HuzzSmokeWisps"
+				base.Anchored, base.CanCollide, base.CanQuery, base.CanTouch, base.Transparency = true, false, false, false, 1
+				base.Size = Vector3.new(radius * 1.5, 1, radius * 1.5)
+				base.CFrame = CFrame.new(at + UP * 1.5)
+				base.Parent = Burst.home()
+				local e = Instance.new("ParticleEmitter")
+				e.Texture = "rbxasset://textures/particles/smoke_main.dds"
+				pcall(function() e.Shape = Enum.ParticleEmitterShape.Box end) -- (all over the cloud, not one point)
+				e.Color = ColorSequence.new(LILAC[2], LILAC[3])
+				e.LightEmission, e.LightInfluence = 0, 0.6
+				e.Rate = 14
+				e.Lifetime = NumberRange.new(1.4, 2.4)
+				e.Speed = NumberRange.new(1, 2.5)
+				e.SpreadAngle = Vector2.new(25, 25)
+				e.EmissionDirection = Enum.NormalId.Top
+				e.Acceleration = Vector3.new(0, 1, 0)
+				e.RotSpeed = NumberRange.new(-30, 30)
+				e.Rotation = NumberRange.new(0, 360)
+				e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.5), NumberSequenceKeypoint.new(1, 5.5) })
+				e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.55), NumberSequenceKeypoint.new(1, 1) })
+				e.Parent = base
+				task.delay(math.max(0, life - 1.2), function() e.Enabled = false end)
+				task.delay(life + 2.5, function() base:Destroy() end)
 			end)
 		end)
 	end

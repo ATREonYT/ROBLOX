@@ -228,6 +228,9 @@ function LobbyHud.build(parent: Instance)
 	gear.onClick(function() ModalManager.toggle("Settings") end)
 
 	local top = group(root, "Round", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Vector2.new(261, 118))
+	-- up into Roblox's top bar row, between its buttons (owner, Oct 23 16:52: "move the server luck more up on the
+	-- screen"); set here, so the saved StarterGui part follows this device's top bar too
+	top.Position = UDim2.new(0.5, 0, 0, math.min(0, barY))
 	-- Reference 13: a purple bar with a darker seam low down, a dark rim, two studs at each end, "NEXT ROUND" small
 	-- and the clock bigger.
 	local banner = new("Frame", { Name = "NextRound", Position = UDim2.fromOffset(3, 24), Size = UDim2.fromOffset(255, 36), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Visible = false, Parent = top }, { Kit.corner(6), Kit.stroke(C.BannerRim, 2) })
@@ -280,6 +283,35 @@ function LobbyHud.build(parent: Instance)
 	end
 	luckSign.Activated:Connect(function() ModalManager.open("Luck") end)
 	banner.Position = UDim2.fromOffset(3, 80) -- (NEXT ROUND under the sign)
+	-- SKIP under NEXT ROUND while waiting for a game (owner, Oct 23 16:52: "make a skip round"): a free vote, more than
+	-- half the players and the wait ends (HuzzServer/SkipService). Tap again to take your vote back.
+	local skip = Kit.button({ Name = "Skip", Text = "SKIP", Style = "Action", FontFace = Theme.Fonts.Button, TextSize = 16, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 120), Size = UDim2.fromOffset(132, 32), Parent = top })
+	skip.Instance.Visible = false
+	local skipBusy = false
+	local function showSkip()
+		local votes, need = workspace:GetAttribute("HuzzSkipVotes"), workspace:GetAttribute("HuzzSkipNeed")
+		local mine = game:GetService("Players").LocalPlayer:GetAttribute("HuzzSkip") == true
+		local open = type(votes) == "number" and type(need) == "number"
+		skip.Instance.Visible = open
+		if open then
+			skip.setText(if mine then `SKIPPING {votes}/{need}` else `SKIP {votes}/{need}`)
+			skip.setStyle(if mine then "Selected" else "Action")
+		end
+	end
+	skip.onClick(function()
+		if skipBusy then return end
+		skipBusy = true
+		local mine = game:GetService("Players").LocalPlayer:GetAttribute("HuzzSkip") == true
+		task.spawn(function()
+			local ok, why = State.action("SkipVote", not mine)
+			skipBusy = false
+			if not ok and why then Toast.show(why) end
+		end)
+	end)
+	workspace:GetAttributeChangedSignal("HuzzSkipVotes"):Connect(showSkip)
+	workspace:GetAttributeChangedSignal("HuzzSkipNeed"):Connect(showSkip)
+	game:GetService("Players").LocalPlayer:GetAttributeChangedSignal("HuzzSkip"):Connect(showSkip)
+	showSkip()
 	local lastLuck = 1
 	local function showLuck()
 		local k = tonumber(workspace:GetAttribute("HuzzServerLuck")) or 1

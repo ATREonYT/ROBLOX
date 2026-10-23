@@ -307,3 +307,12 @@ no look), 3.4 x 0.62 studs plus a 64 x 12 px floor, seen to 160 studs. Put up by
 (runner carrying her, or a catcher she follows), taken down by `CarryService.remove`; Invisible hides it with the tag.
 Test `tools/preview/smoke_girl_sign.luau`; picture `docs/previews/oct22-girl-sign.jpg` (`motion3d/girl_sign_scene.luau`,
 stand-in blocks for the girls). Not seen in Studio yet: how it sits next to her own name tag over her body.
+
+## Oct 23 16:52 changes
+- Server luck was already in the roll; tools/preview/check_luck.luau proves it end to end (a paid x10 receipt: Common
+  79.5% -> 28%, 2000 real rolls agree). The roller now shows "x10 LUCK" and Output prints `[HuzzLuck] server luck x..`
+  with the odds and the girl rolled, so the owner can see it in Studio.
+- SKIP (HuzzServer/SkipService): a free vote during the wait (map vote or intermission). More than half the players
+  and the wait ends. Workspace HuzzSkipVotes / HuzzSkipNeed, player HuzzSkip; the button is under NEXT ROUND (LobbyHud).
+- Lasso: Range 40, Speed 130, Pull 10, WindUp 0.18. Smoke Bomb: WindUp 0.18 and a new burst (PowerEffects).
+- Worn trails sit on the body's middle (CosmeticsService: attachments at z 0, +-0.8).

@@ -176,6 +176,15 @@ function GirlRoll.build(parent: Instance)
 	Scale.bind(holder:FindFirstChild("FitScale") :: UIScale, function() return Scale.window(W, H) * SIZE end) -- small, as asked
 
 	local panel = window.Body.Parent :: Instance
+	-- The server's luck on this roll, beside the title (owner, Oct 23 16:52: "make the server luck actually affect the
+	-- chances"): it did, so the roll now says so; the odds on each row are the lucky ones.
+	local luckTag = Kit.text({
+		Name = "LuckTag", Text = "", FontFace = Theme.Fonts.Number, TextSize = 13, TextColor3 = Color3.fromHex("6CF07A"),
+		TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Position = UDim2.fromOffset(198, 10), Size = UDim2.fromOffset(68, 20),
+		BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("123A24"), ZIndex = 8, Visible = false, Parent = panel,
+	})
+	Kit.attach(Kit.corner(6), luckTag)
+	Kit.attach(Kit.stroke(Color3.fromHex("3FD24A"), 1.5), luckTag)
 	local reel = new("Frame", {
 		Name = "Reel", Position = UDim2.fromOffset(REEL.X, REEL.Y), Size = UDim2.fromOffset(REEL.W, REEL.H),
 		BackgroundColor3 = C.Groove, BorderSizePixel = 0, ClipsDescendants = true, Parent = panel,
@@ -281,6 +290,9 @@ function GirlRoll.build(parent: Instance)
 		slotRim.Color = GOLD
 		local chances = {}
 		for _, o in roll.odds or {} do chances[o.name] = o.chance end
+		local luck = tonumber(roll.luck) or 1
+		luckTag.Text = if luck > 1 then `x{luck} LUCK` else ""
+		luckTag.Visible = luck > 1
 		for i, girl in roll.cells do
 			rows[i] = row(track, i, girl, chances[girl.rarity])
 		end

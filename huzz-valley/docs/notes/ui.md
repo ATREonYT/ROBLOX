@@ -359,3 +359,9 @@ equip it"; "make it your character dancing the dance"; "we can remove the outfit
   tile right (rocking); +5 SPINS pink; one wide JOIN GROUP, which opens Roblox's join prompt and then claims (a member
   already: it claims straight away). Still missing next to his picture: his girl-and-player art (the empty "Pair"
   slot), the painted temple backdrop, and the triangle pointer on top of the wheel (his wheel icon points right).
+
+## Oct 23 16:52: sign higher, SKIP, phone dance circle
+- The Round group (SERVER LUCK sign + NEXT ROUND) moves up into Roblox's top bar row (`math.min(0, barY)`), set at runtime.
+- SKIP button under NEXT ROUND while the vote is open. Shots `hud-skip`, `hud-skip-phone`.
+- The DANCE button shows on any touch screen whose last input was touch (some phones report a keyboard). Shot
+  `dance-wheel-phone` shows the circle fits an 844x390 phone.
