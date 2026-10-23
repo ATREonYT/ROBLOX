@@ -177,10 +177,26 @@ end
 function Music.dance(id: string)
 	if danceFor == id and danceSound and danceSound.Parent then return end
 	Music.danceStop()
+	if okDances and not enabled() then print("[HuzzMusic] " .. id .. ": no song, Background Music is off in Settings") end
 	if not okDances or not enabled() or winnerPlaying or os.clock() < quietUntil then return end
 	local track = Dances.track(id)
-	if not track then return end
+	if not track then
+		print("[HuzzMusic] " .. id .. ": this dance has no song")
+		return
+	end
 	local s = make({ id = track.Id, volume = Dances.MusicVolume }, "Dance")
+	-- (says in Output whether the song really plays: Roblox refuses a song this place may not use, Oct 23 owner:
+	-- "add songs to all the dances" though each has one)
+	task.spawn(function()
+		local ok = loaded(s)
+		if danceSound ~= s then return end
+		if ok then
+			print(string.format("[HuzzMusic] %s: playing %s (%s)", id, track.Name or "?", track.Id))
+		else
+			warn(string.format("[HuzzMusic] %s: the song %s (%s) didn't load: Roblox didn't allow it here, or it's still uploading",
+				id, track.Name or "?", track.Id))
+		end
+	end)
 	s.Looped = true
 	danceSound, danceFor = s, id
 	duckWant = Dances.MusicDuck

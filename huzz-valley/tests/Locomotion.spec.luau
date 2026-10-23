@@ -99,6 +99,13 @@ do -- the game's R6 bodies (Config/Run.LocoR6 over Loco): setting off is a walk,
 	for k, v in Run.LocoR6 do r6[k] = v end
 	check(settle(Run.StartSpeed, r6).weights.Walk > 0.97, "R6: setting off (StartSpeed) is a walk (owner, Oct 23: \"add the walking animation first\")")
 	check(settle(Round.Speeds.Lobby, r6).weights.Run > 0.97, "R6: built up to the lobby's top speed, a full run")
+	-- (Oct 23 13:52, "every step is a walk, not many steps per one step": his R6Walk loop is 0.867 s, two steps)
+	local walk = settle(Run.StartSpeed, r6)
+	local foot = Mix.footSpeed(walk)
+	local rate = math.clamp(Run.StartSpeed / r6.WalkAt, r6.WalkRate[1], r6.WalkRate[2])
+	check(math.abs(foot - Run.StartSpeed) < Run.StartSpeed * 0.1,
+		string.format("R6: the set-off walk's feet stay planted (foot %.1f vs ground %.1f studs/s)", foot, Run.StartSpeed))
+	check(2 * rate / 0.867 < 3.4, string.format("R6: the walk takes calm steps (%.1f a second, was 4.9)", 2 * rate / 0.867))
 end
 check(settle(4).weights.Walk > 0.97, "a slow thumbstick (4 studs/s) is a walk")
 check(settle(0).weights.Idle > 0.99, "standing is the idle")

@@ -515,15 +515,45 @@ end
 
 --[[ The blended pose { [partName] = CFrame }: Idle at idleT, Walk and Run at the shared phase's times, each loop
 	taking its share by weight (only the loops that show are sampled). sample = Shared/KeyframeSampler.sample. ]]
+-- The walk's longer stride (Config/Run.LocoR6.WalkStride; owner, Oct 23 13:52: "make the walk animation be a bit
+-- quicker and look more natural, with every step is a walk, not many steps per one step"): his pack's walk swings
+-- its legs only ~21 degrees, a short shuffle that had to play at 2.1x (~5 steps a second) to keep up with the ground.
+-- Its legs and arms swing further here (Legs, Arms x), so each step covers more ground at a calmer rate, and the
+-- hips drop by what the longer stride lifts the feet (s.drop, studs: the lower foot stays on the ground).
+local STRIDE_LEGS, STRIDE_ARMS = { "Right Leg", "Left Leg" }, { "Right Arm", "Left Arm" }
+local function longer(pose, W)
+	local lowest = math.huge
+	for _, name in STRIDE_LEGS do
+		local cf = pose[name]
+		if cf then
+			local _, angle = cf:ToAxisAngle()
+			lowest = math.min(lowest, math.abs(angle))
+			pose[name] = LocomotionMix.swing(cf, W.Legs)
+		end
+	end
+	for _, name in STRIDE_ARMS do
+		if pose[name] then pose[name] = LocomotionMix.swing(pose[name], W.Arms) end
+	end
+	if lowest == math.huge then return 0 end
+	local a = math.min(lowest * W.Legs, math.pi / 2)
+	return math.max(0, (W.LegLength or 2) * (math.cos(lowest) - math.cos(a)))
+end
+
 function LocomotionMix.pose(s, anims, idleT: number, sample)
 	local w = s.weights
 	local out, total = {}, 0
+	s.drop = 0
 	for _, item in { { anims.Idle, idleT, w.Idle }, { anims.Walk, s.times.Walk, w.Walk }, { anims.Run, s.times.Run, w.Run } } do
 		local weight = item[3]
 		if weight > 1e-3 and item[1] then
 			total += weight
 			local f = weight / total -- (running blend: each loop takes its share of what's there so far)
-			for name, cf in sample(item[1], item[2]) do
+			local pose = sample(item[1], item[2])
+			if item[1] == anims.Walk and s.C.WalkStride then
+				pose = table.clone(pose)
+				s.drop = longer(pose, s.C.WalkStride) * weight
+			end
+			for name, cf in pose do
 				local have = out[name]
 				out[name] = if have then have:Lerp(cf, f) else cf
 			end

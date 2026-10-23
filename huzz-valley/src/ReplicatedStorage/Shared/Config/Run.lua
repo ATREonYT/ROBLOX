@@ -6,7 +6,7 @@ return {
 	-- walk (StartSpeed, a little under Huss Valley's set-off 9: docs/feel-study.md gap 8), his pack's R6 walk playing, and
 	-- keep walking for WalkHold seconds; hold on and you build up into the run (his pack's run) over Ramp. Until Oct 23
 	-- you set off at 16, already a run, so his walk never showed.
-	StartSpeed = 7, -- you set off at this speed (a walk: his R6 walk's feet stay planted up to ~7)... (Gameplay/Sprint)
+	StartSpeed = 8, -- you set off at this speed (a walk; Oct 23 13:52 "a bit quicker": was 7)... (Gameplay/Sprint)
 	WalkHold = 0.4, -- ...and walk this long while you hold a direction...
 	Ramp = 1.0, -- ...then build up to full speed in exactly this many seconds (owner, Oct 20 07:55: "Make
 	-- acceleration 1 second long"; was 0.5 s to ~95%). Shared/RunMotion.rampSpeed: eases out with RampEase (2: the
@@ -57,10 +57,16 @@ return {
 	-- Huss Valley's R6 recording. Right leg forward at 0.0 (walk) and 0.95 (run) of each loop. His loops already
 	-- swing far: no extra Swing.
 	LocoR6 = {
-		-- the walk hands over to the run between RunFrom and RunFull studs/s: above the walk's 8, so setting off is all
-		-- walk (Oct 23); the walk plays up to 2.1x, so at the set-off's 7 its feet stay planted (~4.9 steps a second)
+		-- the walk hands over to the run between RunFrom and RunFull studs/s: above the set-off's 8, so setting off is
+		-- all walk (Oct 23)
 		RunFrom = 9, RunFull = 15,
-		WalkAt = 3.3, WalkRate = { 0.5, 2.1 },
+		-- Oct 23 13:52 (owner: "a bit quicker and look more natural, with every step is a walk, not many steps per one
+		-- step"): his pack's walk is a short shuffle (feet planted at only 3.3 studs/s, so it played at 2.1x: ~4.9
+		-- steps a second). Its legs now swing 1.8x as far and its arms 1.4x (LocomotionMix.pose, the hips dropping to
+		-- keep the lower foot down), so its feet stay planted at 6 studs/s at 1x: at the set-off's 8, 1.35x (~3.1
+		-- calm steps a second, each one covering the ground)
+		WalkStride = { Legs = 1.8, Arms = 1.4, LegLength = 2 },
+		WalkAt = 5.95, WalkRate = { 0.5, 1.6 },
 		RunAt = 10, RunRate = { 0.6, 1.5 },
 		RootHeight = 3,
 		WalkPhase = 0, RunPhase = 0.95,

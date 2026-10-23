@@ -329,6 +329,12 @@ function M.start()
 			if rec.r6 and not (downed or quiet or airborne) and (plant > 1e-4 or brace > 1e-4) then
 				r6Stop(rec, pose, plant, brace)
 			end
+			-- the walk's longer stride lifts the feet: the body drops that much (Config/Run.LocoR6.WalkStride)
+			local drop = rec.mix.drop or 0
+			if drop > 1e-3 and pose[rec.hips] and rec.motors[rec.hips] then
+				local c0 = rec.motors[rec.hips].C0
+				pose[rec.hips] = CFrame.new(c0.Rotation:Inverse() * Vector3.new(0, -drop, 0)) * pose[rec.hips]
+			end
 			rec.lean = nil
 			local hipsPose = pose[rec.hips]
 			local pivot = rec.pivot or (root.Size.Y / 2 + humanoid.HipHeight)

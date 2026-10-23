@@ -4,7 +4,7 @@
 -- RunMotion.rampSpeed), the halt from a full run (Shared/Halt's slide, RunMotion.haltPush) with PlayerMoves' R6 plant
 -- and brace (r6Stop), and a stop from a walk. Filmed side on, following.
 --   0.0 - 0.5 s  standing
---   0.5 - 3.6 s  W held: the walk, the build-up, the run (lobby speed)
+--   0.5 - 3.6 s  W held: the walk (its longer stride, Oct 23), the build-up, the run (lobby speed)
 --   3.6 s        let go at full speed: the halt (slide, plant, brace), then standing
 --   4.8 - 5.5 s  W tapped: only the walk
 --   5.5 s        let go: a plain stop
@@ -81,15 +81,15 @@ for f = 0, math.floor(SECONDS * FPS) - 1 do
 	local halting = halt ~= nil and not halt.done
 	Mix.step(mix, DT, { speed = speed, state = "ground", lengths = { Walk = A.Walk.length, Run = A.Run.length }, halt = halting })
 	idleT += DT
-	local total = 0
-	local function layer(anim, at, w)
-		if w <= 1e-4 then return end
-		total += w
-		KFS.apply(anim, rig, at % anim.length, w / total)
+	-- (the same blend PlayerMoves draws: LocomotionMix.pose, with the walk's longer stride and the hips' drop)
+	local pose = Mix.pose(mix, A, idleT, KFS.sample)
+	for name, cf in pose do
+		if motor[name] then motor[name].Transform = cf end
 	end
-	layer(A.Idle, idleT, mix.weights.Idle)
-	layer(A.Walk, mix.times.Walk, mix.weights.Walk)
-	layer(A.Run, mix.times.Run, mix.weights.Run)
+	if (mix.drop or 0) > 1e-3 then
+		local m = motor.Torso
+		m.Transform = CFrame.new(m.C0.Rotation:Inverse() * Vector3.new(0, -mix.drop, 0)) * m.Transform
+	end
 	local plant, brace = Mix.stopAmount(mix), Mix.brace(mix)
 	if plant > 1e-4 or brace > 1e-4 then
 		for _, side in { 1, -1 } do
