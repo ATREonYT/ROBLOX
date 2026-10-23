@@ -54,13 +54,38 @@ local function showMap(viewport: ViewportFrame, name: string)
 	end
 	Kit.attach(copy, viewport)
 	if not (a and b and mid) then return end
-	local centre = mid.Position
+	-- Framed on the field itself (the two safe zones and the middle), centred in the card with its whole length in view
+	-- (owner, Oct 23 19:33: "make the maps centered"; before, it aimed at the Middle part from too close, so a long
+	-- field ran off one side and the props floating over it filled the picture).
 	local run = (b.Position - a.Position) * Vector3.new(1, 0, 1)
-	local half = run.Magnitude / 2
-	local across = run.Unit:Cross(Vector3.yAxis)
-	local cam = new("Camera", { Name = "MapCamera", FieldOfView = 50, Parent = viewport })
+	if run.Magnitude < 1 then return end
+	local dir = run.Unit
+	local across = dir:Cross(Vector3.yAxis)
+	local lo, hi = math.huge, -math.huge -- (the field's extent along the run, zone edges included)
+	local wide, floorY = 0, mid.Position.Y
+	for _, part in { a, b, mid } do
+		if part:IsA("BasePart") then
+			local reach = (math.abs(part.CFrame.XVector:Dot(dir)) * part.Size.X + math.abs(part.CFrame.ZVector:Dot(dir)) * part.Size.Z) / 2
+			local along = (part.Position - mid.Position):Dot(dir)
+			lo, hi = math.min(lo, along - reach), math.max(hi, along + reach)
+			wide = math.max(wide, (math.abs(part.CFrame.XVector:Dot(across)) * part.Size.X + math.abs(part.CFrame.ZVector:Dot(across)) * part.Size.Z) / 2)
+			floorY = math.min(floorY, part.Position.Y)
+		end
+	end
+	if lo > hi then lo, hi = -run.Magnitude / 2, run.Magnitude / 2 end
+	local centre = mid.Position + dir * ((lo + hi) / 2)
+	centre = Vector3.new(centre.X, floorY, centre.Z)
+	local half = (hi - lo) / 2
+	local fov = 50
+	local aspect = CARD.W / CARD.H
+	local fit = math.tan(math.rad(fov / 2)) * aspect -- (the horizontal half-view at distance 1)
+	local distance = math.max(half * 1.12 / fit, wide * 2.2, 20)
+	local cam = new("Camera", { Name = "MapCamera", FieldOfView = fov, Parent = viewport })
 	cam:SetAttribute("RuntimeOnly", true)
-	cam.CFrame = CFrame.lookAt(centre + across * half * 0.95 + Vector3.yAxis * half * 0.55, centre + Vector3.yAxis * 4)
+	-- from the side and above (about 35 degrees down), aimed a little below the middle so the field sits in the upper
+	-- part of the card, clear of the map's name and the VOTE button
+	local eye = centre + (across * math.cos(math.rad(35)) + Vector3.yAxis * math.sin(math.rad(35))) * distance
+	cam.CFrame = CFrame.lookAt(eye, centre - Vector3.yAxis * distance * 0.12)
 	viewport.CurrentCamera = cam
 end
 

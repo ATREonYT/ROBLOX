@@ -36,6 +36,7 @@ local SecretReveal = require(ReplicatedStorage.Shared.SecretReveal)
 local PracticeBot = require(script.Parent.PracticeBot)
 local HitHistory = require(script.Parent.HitHistory)
 local PlaceService = require(script.Parent.PlaceService) -- (a player's own screen moves their body: the owner moves it)
+local Skip = require(script.Parent.SkipService) -- (SKIP (skip game): who sits the next game out)
 local MoveGuard = require(script.Parent.MoveGuard) -- (release check, Oct 22: no safe by a jump, no hits after one)
 local TouchHit = require(Shared.TouchHit)
 local MotionStamps = require(Shared.MotionStamps)
@@ -266,7 +267,7 @@ local function place(id)
 	local middle = if zones.Middle then zones.Middle.Position elseif zones.Lobby then zones.Lobby.Position else Vector3.zero
 	-- (every spot is open ground: MapService + Shared/SpawnSpots; the lobby's is its spawn pad)
 	if not role then
-		local zone = (match and zones.Bench) or zones.Lobby
+		local zone = (match and not Skip.sitting(id) and zones.Bench) or zones.Lobby
 		local at = if zone == zones.Bench then MapService.benchSpot(middle) else MapService.lobbySpot()
 		if at or zone then
 			PlaceService.place(p, at or MapService.spot(zone, middle), "lobby")
@@ -1154,6 +1155,7 @@ local function runGame()
 	end
 	local ids, all = {}, {}
 	for id, p in byId do
+		if Skip.sitting(id) then continue end -- (SKIP (skip game): they stay in the lobby this game)
 		table.insert(all, id)
 		-- (only players whose save has loaded: pay, XP and a won girl go into the save; release check, Oct 22. A
 		-- slow load, e.g. a save handed over from another server, joins the next game)
@@ -1196,6 +1198,7 @@ local function cleanUp()
 	MapService.showGoal(nil) -- the lines stay on the map, the SAFE ZONE sign goes out
 	match, girl = nil, nil
 	lastRunner = nil
+	Skip.clear()
 	table.clear(frozen)
 	table.clear(rescueTime)
 	table.clear(protectedUntil)
@@ -1758,20 +1761,19 @@ end
 -- Between games: everyone votes on two maps (one map: a short wait instead), the winner
 -- appears in front of the lobby and everyone in the server is moved onto it.
 local function chooseMap()
-	-- (SKIP: more than half the players can cut the wait short, HuzzServer/SkipService)
-	local Skip = require(script.Parent.SkipService)
+	-- (SKIP (skip game): players can choose to sit the next game out while they wait, HuzzServer/SkipService)
 	if #MapService.maps >= 2 then
 		local a, b = MapService.candidates()
 		setStage("Voting", Config.VoteTime)
 		Skip.open()
-		local winner = MapVoteService.run(a.name, b.name, Config.VoteTime, enough, Skip.wanted)
+		local winner = MapVoteService.run(a.name, b.name, Config.VoteTime, enough)
 		Skip.close()
 		return winner and MapService.byName(winner)
 	end
 	setStage("Intermission", Config.IntermissionTime)
 	Skip.open()
 	local deadline = os.clock() + Config.IntermissionTime
-	while os.clock() < deadline and enough() and not Skip.wanted() do
+	while os.clock() < deadline and enough() do
 		task.wait(0.25)
 	end
 	Skip.close()
@@ -1824,6 +1826,13 @@ local function onePass()
 		task.wait(1)
 	end
 	local map = chooseMap()
+	if map and Skip.everyone() then
+		-- (everyone chose SKIP: no game this time, the vote starts again)
+		announce("Everyone skipped this game", Color3.new(1, 1, 1))
+		Skip.clear()
+		task.wait(2)
+		return
+	end
 	if map and enough() then
 		-- The winning map replaces the one in front of the lobby and everyone moves to the lobby beside it
 		-- (owner: "one per map"; after the load, so they face the new map), then the girl roller spins.

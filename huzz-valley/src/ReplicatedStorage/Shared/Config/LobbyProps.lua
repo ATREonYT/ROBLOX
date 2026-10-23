@@ -13,7 +13,8 @@
 	  Shop_Stall          "SHOP"           opens the Shop.
 	  Pumpkin_Patch_Chest "FREE SPIN"      opens Spin the Wheel (its real free spin every 15 minutes; odds and pity are
 	                                       on that screen). The line under the title counts down to your next free spin.
-	  Like_Reward_Gift    "LIKE THE GAME!" decoration: Roblox can't tell a game who liked it, so there is no reward
+	  Like_Reward_Gift    "LIKE THE GAME!" opens the LIKE THE GAME window (Screens/LikeGame, Oct 23 19:44): how to like
+	                                       it on Roblox. Roblox can't tell a game who liked it, so there is no reward
 	                                       to claim (rename it LIKE REWARD only once a real reward exists).
 	  Witch_Brew_Cauldron "WITCH'S BREW"   opens the Shop at its crate (owner, Oct 19 17:41: "make a halloween shop when
 	  Sweets_Treats_Coffin "SWEETS & TREATS" you press on one of the two crates"; Oct 20 14:31: one Shop, "all close to
@@ -57,6 +58,7 @@ return {
 		},
 		Like_Reward_Gift = {
 			Title = "LIKE THE GAME!", Color = Color3.fromRGB(110, 226, 72), -- the reference's green
+			Opens = "LikeGame", Action = "Like the Game", -- (Oct 23 19:44: E opens Screens/LikeGame)
 			Line = "Thumbs up on the game page!",
 			Scale = 2.3,
 			Glow = Color3.fromRGB(255, 240, 150), -- his sparkles

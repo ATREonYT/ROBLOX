@@ -93,10 +93,11 @@ Products.Aura = {
 
 -- Spin the Wheel spins (Screens/SpinWheel's purple buttons; the owner's prices, halved Oct 19: "spin prices lower"). Developer Products: create them on
 -- the Creator Dashboard and put each ID here. While Id = 0 the button shows its price and only says "coming soon".
+-- (IDs from the owner, Oct 23 19:46.)
 Products.Spins = {
-	{ Key = "Spins1", Kind = "Spins", Name = "1 Spin", Blurb = "One more spin\non the wheel.", Id = 0, Price = 24, Amount = 1, OnSale = true, Icon = "SpinWheel", Art = "" },
-	{ Key = "Spins10", Kind = "Spins", Name = "10 Spins", Blurb = "Ten more spins\non the wheel.", Id = 0, Price = 170, Amount = 10, OnSale = true, Icon = "SpinWheel", Art = "" },
-	{ Key = "Spins100", Kind = "Spins", Name = "100 Spins", Blurb = "A hundred spins\non the wheel.", Id = 0, Price = 600, Amount = 100, OnSale = true, Icon = "SpinWheel", Art = "" },
+	{ Key = "Spins1", Kind = "Spins", Name = "1 Spin", Blurb = "One more spin\non the wheel.", Id = 3721699870, Price = 24, Amount = 1, OnSale = true, Icon = "SpinWheel", Art = "" },
+	{ Key = "Spins10", Kind = "Spins", Name = "10 Spins", Blurb = "Ten more spins\non the wheel.", Id = 3721699951, Price = 170, Amount = 10, OnSale = true, Icon = "SpinWheel", Art = "" },
+	{ Key = "Spins100", Kind = "Spins", Name = "100 Spins", Blurb = "A hundred spins\non the wheel.", Id = 3721700010, Price = 600, Amount = 100, OnSale = true, Icon = "SpinWheel", Art = "" },
 } :: { Product }
 
 -- The Halloween shop's Robux items (Config/HalloweenShop, sold in Screens/Shop; owner, Oct 19: "buy the crates, or
@@ -131,7 +132,7 @@ Products.Crates = {
 -- buyer is in the server (HuzzServer/LuckService, Screens/Luck). A ladder: you buy your own boost one step at a time
 -- (x2, then x3 ...: owner, Oct 23 17:32), so each buy costs more. Price = shown until Roblox's live price loads (the live price always wins).
 Products.Luck = {
-	{ Key = "Luck2", Kind = "Luck", Name = "x2 Server Luck", Blurb = "x2 server luck\nwhile you're here.", Id = 3721632432, Price = 3, Amount = 2, OnSale = true, Icon = "", Art = "" }, -- (price not sent: the live price from Roblox shows instead)
+	{ Key = "Luck2", Kind = "Luck", Name = "x2 Server Luck", Blurb = "x2 server luck\nwhile you're here.", Id = 3721632432, Price = 2, Amount = 2, OnSale = true, Icon = "", Art = "" }, -- (owner, Oct 23 19:38: "start at 2 robux"; set 2 on the Creator Dashboard too: the live price from Roblox wins)
 	{ Key = "Luck3", Kind = "Luck", Name = "x3 Server Luck", Blurb = "x3 server luck\nwhile you're here.", Id = 3721632574, Price = 5, Amount = 3, OnSale = true, Icon = "", Art = "" },
 	{ Key = "Luck4", Kind = "Luck", Name = "x4 Server Luck", Blurb = "x4 server luck\nwhile you're here.", Id = 3721632674, Price = 7, Amount = 4, OnSale = true, Icon = "", Art = "" },
 	{ Key = "Luck5", Kind = "Luck", Name = "x5 Server Luck", Blurb = "x5 server luck\nwhile you're here.", Id = 3721632764, Price = 12, Amount = 5, OnSale = true, Icon = "", Art = "" },

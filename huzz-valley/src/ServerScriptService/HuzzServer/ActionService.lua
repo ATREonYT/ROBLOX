@@ -209,7 +209,8 @@ end
 
 -- Shop > DANCES shows your avatar dancing each dance (owner, Oct 21: "make it your character dancing the dance"):
 -- the cards in view ask for their dances' moves when they have no published ID (shareDance; each dance once per
--- server, ~70 KB), up to 12 in one call, 24 every 2 seconds at most per player.
+-- server, ~70 KB), up to 12 in one call, 48 every 2 seconds at most per player (a dance already shared costs nothing
+-- and isn't counted: owner, Oct 23 19:36, some Shop cards stayed empty when a long page asked for more than 24).
 local seeAsked: { [Player]: { at: number, n: number } } = {}
 Players.PlayerRemoving:Connect(function(p) seeAsked[p] = nil end)
 function VERBS.SeeDance(player, ids)
@@ -224,9 +225,14 @@ function VERBS.SeeDance(player, ids)
 	local any = false
 	for i, id in ids do
 		if i > 12 then break end
-		r.n += 1
-		if r.n > 24 then return any, "Slow down." end
-		if type(id) == "string" and Dances.get(id) and ActionService.shareDance(id) then any = true end
+		local folder = game:GetService("ReplicatedStorage"):FindFirstChild("HuzzDanceMoves")
+		if type(id) == "string" and folder and folder:FindFirstChild("Dance_" .. id) then
+			any = true
+		else
+			r.n += 1
+			if r.n > 48 then return any, "Slow down." end
+			if type(id) == "string" and Dances.get(id) and ActionService.shareDance(id) then any = true end
+		end
 	end
 	return any
 end

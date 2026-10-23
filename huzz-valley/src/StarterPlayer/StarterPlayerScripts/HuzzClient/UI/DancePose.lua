@@ -318,10 +318,11 @@ end
 local asked: { [string]: boolean } = {}
 local queue: { string } = {}
 local sending = false
+local tries: { [string]: number } = {} -- (how often a dance's ask was refused and sent again)
 local function askFor(id: string, fn: (boolean) -> ())
 	if asked[id] then -- (asked already: wait for the same moves)
 		task.spawn(function()
-			for _ = 1, 40 do
+			for _ = 1, 100 do
 				local shared = ReplicatedStorage:FindFirstChild("HuzzDanceMoves")
 				if shared and shared:FindFirstChild("Dance_" .. id) then break end
 				task.wait(0.2)
@@ -340,18 +341,27 @@ local function askFor(id: string, fn: (boolean) -> ())
 				task.wait(0.1) -- (the rest of this moment's cards join in)
 				local batch = {}
 				while #queue > 0 and #batch < 12 do table.insert(batch, table.remove(queue, 1)) end
-				pcall(function()
+				local okCall, answered, why = pcall(function()
 					local Net = require(Shared.Net)
-					;(Net.get("Action") :: RemoteFunction):InvokeServer("SeeDance", batch)
+					return (Net.get("Action") :: RemoteFunction):InvokeServer("SeeDance", batch)
 				end)
-				task.wait(0.4)
+				-- refused (another action a moment ago: "Too fast.", or "Slow down.") or failed: ask again in a moment,
+				-- up to 5 times, so no card is left without its dancer (owner, Oct 23 19:36: some dances were missing)
+				if not okCall or (answered == false and why ~= nil) then
+					for _, id in batch do
+						tries[id] = (tries[id] or 0) + 1
+						if tries[id] <= 5 then table.insert(queue, id) end
+					end
+					task.wait(1)
+				end
+				task.wait(0.6)
 			end
 			sending = false
 		end)
 	end
 	task.spawn(function()
 		local seq = nil
-		for _ = 1, 40 do -- (up to 8 s)
+		for _ = 1, 100 do -- (up to 20 s: a refused ask is sent again, above)
 			local shared = ReplicatedStorage:FindFirstChild("HuzzDanceMoves")
 			seq = shared and shared:FindFirstChild("Dance_" .. id)
 			if seq then break end

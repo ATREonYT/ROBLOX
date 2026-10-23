@@ -715,7 +715,7 @@ local function simulate(opts)
 		KnockdownService = KnockdownService, MapVoteService = MapVoteService, KnifeService = KnifeService, SafetyService = SafetyService,
 		NameTagService = NameTagService,
 		SpinService = { boost = function() return 1 end }, -- (the Spin the Wheel's x2 Coins: none in the sim)
-		SkipService = { open = function() end, close = function() end, wanted = function() return false end }, -- (nobody votes SKIP in the sim)
+		SkipService = { open = function() end, close = function() end, clear = function() end, sitting = function() return false end, everyone = function() return false end }, -- (nobody skips in the sim)
 		FriendService = { coins = function(_, n) return n end }, -- (no Roblox friends in the sim)
 		ProgressService = { gameXP = function(_, won, t) return 40 + (if won then 40 else 0), nil end,
 			addStat = function(p, stat, n) DataService.update(p, function(d) d.Stats[stat] = (d.Stats[stat] or 0) + n end) end },

@@ -6,7 +6,9 @@
 -- wide JOIN GROUP button. JOIN GROUP opens Roblox's own join prompt (GroupService:PromptJoinAsync, guarded: not every
 -- device or Studio has it), then claims by itself: the server checks with Roblox that you're in the group and gives
 -- the spins once (ActionService "ClaimGroup" -> ProgressService.claimGroup); already in it, the same button claims.
--- His picture's girl and player hugging on the left need his art as a transparent PNG (the slot "Pair" waits for it).
+-- Since Oct 23 19:33 laid out after his second picture (design/owner-oct23/group-reward-ref2.png): the scenery, the
+-- girl hugging the player and the player with a red katana, four tiles round the wheel, a status line and two buttons
+-- (JOIN GROUP and CLAIM SPINS).
 -- It opens by itself once per visit, Config/Group.PopupAfter seconds into the lobby, while the spins aren't claimed
 -- (like How to Play: never over a round or another window). The lobby's GROUP button (Screens/LobbyHud) opens it too.
 -- With no group set (Config/Group.Id 0): the button says COMING SOON and does nothing, and it never pops up live
@@ -28,7 +30,7 @@ local C, F = Theme.Colors, Theme.Fonts
 
 local GroupRewardScreen = {}
 
-local W, H = 500, 392
+local W, H = 560, 386
 
 -- A four-point sparkle made of parts (the "\u{2726}" glyph showed as a box in Roblox's font: owner's screenshot,
 -- Oct 23 17:48): two crossed bars that fade to points, and a small glow dot in the middle.
@@ -59,80 +61,101 @@ function GroupRewardScreen.build(parent: Instance)
 	local panel = window.Panel
 	-- the header words: FREE white, SPINS pink, a sparkle
 	local words = new("Frame", { Name = "Words", Position = UDim2.fromOffset(56, 0), Size = UDim2.new(0, 280, 1, 0), BackgroundTransparency = 1, ZIndex = 3, Parent = window.Header }, { Kit.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
-	line({ Name = "Free", Text = "FREE", FontFace = F.Heading, TextSize = 28, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 34), LayoutOrder = 1, ZIndex = 3, Parent = words }, 2.5)
-	local spins = line({ Name = "Spins", Text = "SPINS", FontFace = F.Heading, TextSize = 28, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 34), LayoutOrder = 2, ZIndex = 3, Parent = words }, 2.5)
+	line({ Name = "Free", Text = "FREE", FontFace = F.Heading, TextSize = 32, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 34), LayoutOrder = 1, ZIndex = 3, Parent = words }, 2.5)
+	local spins = line({ Name = "Spins", Text = "SPINS", FontFace = F.Heading, TextSize = 32, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 34), LayoutOrder = 2, ZIndex = 3, Parent = words }, 2.5)
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("FFD2F2"), Color3.fromHex("FF5FC8")), Parent = spins })
 	local sparkBox = new("Frame", { Name = "Spark", Size = UDim2.fromOffset(26, 34), BackgroundTransparency = 1, LayoutOrder = 3, ZIndex = 3, Parent = words })
 	local spark = sparkle(sparkBox, 22, UDim2.fromOffset(11, 15), 3)
 	sparkle(sparkBox, 10, UDim2.fromOffset(21, 27), 3, "Small")
 	Effects.breathe(spark, { scale = 1.25, seconds = 0.9 })
 
-	-- the sky-blue body (his picture's backdrop is a painted temple; ours a soft sky until he sends it as a PNG)
+	-- His second picture (Oct 23 19:33, design/owner-oct23/group-reward-ref2.png: "please use the reference to make the
+	-- group join ui"), measured and scaled to this 560-wide window (his is 1240: x 0.4516, the body 14 higher for our
+	-- shorter header). The scenery, the girl hugging the player (left) and the player with the red katana (right) are
+	-- cut from his picture (tools/icons/make_group_art.py) until he sends them as transparent PNGs.
 	local bodyH = H - 47
-	local sky = new("Frame", { Name = "Sky", Position = UDim2.fromOffset(4, 47), Size = UDim2.fromOffset(W - 8, bodyH - 4), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 2, Parent = panel }, { Kit.corner(4) })
-	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("78B4F4")), ColorSequenceKeypoint.new(0.55, Color3.fromHex("8C90DE")), ColorSequenceKeypoint.new(1, Color3.fromHex("5C5AA8")) }), Parent = sky })
+	local back = Kit.art("GroupBackdrop", { Name = "Backdrop", Position = UDim2.fromOffset(4, 47), Size = UDim2.fromOffset(W - 8, bodyH - 4), ScaleType = Enum.ScaleType.Crop, ZIndex = 2, Parent = panel })
+	Kit.attach(Kit.corner(4), back)
+	local sky = new("Frame", { Name = "Sky", Position = UDim2.fromOffset(4, 47), Size = UDim2.fromOffset(W - 8, bodyH - 4), BackgroundTransparency = 1, ZIndex = 2, Parent = panel })
 	Effects.motes(sky, { colour = Color3.fromHex("FF9FD6"), shape = "petal", count = 9, area = Rect.new(10, 10, W - 18, bodyH - 14), rise = 70, z = 3, seed = 4 })
-	-- the slot for his girl-and-player picture (empty until he sends it)
-	new("Frame", { Name = "Pair", Position = UDim2.fromOffset(0, bodyH - 190), Size = UDim2.fromOffset(150, 186), BackgroundTransparency = 1, ZIndex = 4, Parent = sky })
+	local pair = Kit.art("GroupPair", { Name = "Pair", Position = UDim2.fromOffset(4, 71), Size = UDim2.fromOffset(159, 246), ScaleType = Enum.ScaleType.Fit, ZIndex = 4, Parent = panel })
+	Effects.breathe(pair, { scale = 1.02, seconds = 2.2 })
+	local fighter = Kit.art("GroupFighter", { Name = "Fighter", Position = UDim2.fromOffset(W - 4 - 146, 127), Size = UDim2.fromOffset(146, 217), ScaleType = Enum.ScaleType.Fit, ZIndex = 4, Parent = panel })
+	Effects.breathe(fighter, { scale = 1.02, seconds = 2.6 })
 
-	-- the wheel in a pink glow, with turning rays; a knife tile left, a coins tile right
-	local CX, CY = W // 2, 47 + 104
-	local rays = Effects.rays(panel, UDim2.fromOffset(CX, CY), 230, { color = Color3.fromHex("FF8AD8"), transparency = 0.45, seconds = 12, z = 3, name = "Rays" })
-	-- a pink glow round the wheel: three soft rings, brightest inside
-	for i, g in { { 160, 4, 0.05 }, { 172, 5, 0.5 }, { 186, 6, 0.78 } } do
-		new("Frame", { Name = "Glow" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(g[1], g[1]), BackgroundTransparency = 1, ZIndex = 4, Parent = panel }, { Kit.corner(g[1] // 2), Kit.stroke(Color3.fromHex("FF6FD0"), g[2], g[3]) })
+	-- the wheel in a pink glow, with turning rays; four tilted tiles round it: a knife and a gem left, coins and a
+	-- mystery "?" right (his picture)
+	local CX, CY = 297, 145
+	local rays = Effects.rays(panel, UDim2.fromOffset(CX, CY), 210, { color = Color3.fromHex("FF8AD8"), transparency = 0.45, seconds = 12, z = 3, name = "Rays" })
+	for i, g in { { 144, 4, 0.05 }, { 154, 5, 0.5 }, { 166, 6, 0.78 } } do
+		new("Frame", { Name = "Glow" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(g[1], g[1]), BackgroundTransparency = 1, ZIndex = 5, Parent = panel }, { Kit.corner(g[1] // 2), Kit.stroke(Color3.fromHex("FF6FD0"), g[2], g[3]) })
 	end
 	-- (it stays still, as in his picture: turning it turned its pointer away from the top too, Oct 23 17:48)
-	local wheel = Kit.icon("SpinWheel", { Name = "Wheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(150, 150), ZIndex = 5, Parent = panel })
+	local wheel = Kit.icon("SpinWheel", { Name = "Wheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(132, 132), ZIndex = 6, Parent = panel })
 	Effects.breathe(wheel, { scale = 1.03, seconds = 1.6 })
 	local spinning = false
-	local function tile(name: string, x: number, tilt: number, delay: number)
+	local function tile(name: string, x: number, y: number, size: number, tilt: number, delay: number)
 		-- (a tilted holder, so the tile rocks round its tilt: Effects.rock sets the tile's own Rotation)
 		-- (his picture: a deep navy tile lit purple at the top, a bright violet rim, a sparkle in its corner)
-		local holder = new("Frame", { Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, CY - 14), Size = UDim2.fromOffset(92, 92), Rotation = tilt, BackgroundTransparency = 1, ZIndex = 4, Parent = panel })
-		local t = new("Frame", { Name = "Tile", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 4, Parent = holder }, { Kit.corner(12), Kit.stroke(Color3.fromHex("A98BFF"), 3) })
+		local holder = new("Frame", { Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(size, size), Rotation = tilt, BackgroundTransparency = 1, ZIndex = 5, Parent = panel })
+		local t = new("Frame", { Name = "Tile", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 5, Parent = holder }, { Kit.corner(8), Kit.stroke(Color3.fromHex("A98BFF"), 2.5) })
 		new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("3A2C8C"), Color3.fromHex("141238")), Parent = t })
-		sparkle(t, 16, UDim2.fromOffset(18, 18), 6, "Corner")
+		sparkle(t, 12, UDim2.fromOffset(13, 13), 8, "Corner")
 		Effects.rock(t, { degrees = 3, seconds = 1.8, delay = delay })
 		return t
 	end
-	local knifeTile = tile("KnifeTile", CX - 150, -10, 0)
+	local knifeTile = tile("KnifeTile", 183, 102, 60, -15, 0)
 	-- (his knife picture has its own dark backdrop: it fills the tile, rounded like it, so no square shows past the rim)
-	local knife = Kit.art("KnifeCovenKatana", { Name = "Knife", Size = UDim2.fromScale(1, 1), ScaleType = Enum.ScaleType.Crop, ZIndex = 5, Parent = knifeTile })
-	Kit.attach(Kit.corner(12), knife)
-	local corner = knifeTile:FindFirstChild("Corner")
-	if corner and corner:IsA("GuiObject") then corner.ZIndex = 7; for _, d in corner:GetDescendants() do if d:IsA("GuiObject") then d.ZIndex = 7 end end end
-	local coinTile = tile("CoinsTile", CX + 150, 10, 0.9)
-	Kit.icon("CurrencyCoin", { Name = "Coins", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(62, 62), ZIndex = 5, Parent = coinTile })
+	local knife = Kit.art("KnifeCovenKatana", { Name = "Knife", Size = UDim2.fromScale(1, 1), ScaleType = Enum.ScaleType.Crop, ZIndex = 6, Parent = knifeTile })
+	Kit.attach(Kit.corner(8), knife)
+	local gemTile = tile("GemTile", 200, 178, 50, -12, 0.5)
+	Kit.icon("CurrencyGem", { Name = "Gem", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(32, 32), ZIndex = 6, Parent = gemTile })
+	local coinTile = tile("CoinsTile", 410, 100, 60, 15, 0.9)
+	Kit.icon("CurrencyCoin", { Name = "Coins", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(40, 40), ZIndex = 6, Parent = coinTile })
+	local mysteryTile = tile("MysteryTile", 398, 178, 50, 12, 1.3)
+	local mark = line({ Name = "Mystery", Text = "?", FontFace = F.Heading, TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = mysteryTile }, 2.5)
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("FFE2F6"), Color3.fromHex("C08BFF")), Parent = mark })
+	for _, t in { knifeTile, gemTile, coinTile, mysteryTile } do
+		local corner = t:FindFirstChild("Corner")
+		if corner and corner:IsA("GuiObject") then corner.ZIndex = 8; for _, d in corner:GetDescendants() do if d:IsA("GuiObject") then d.ZIndex = 8 end end end
+	end
 	-- sparkles round the wheel, twinkling in turn
-	for i, sp in { { CX + 96, CY - 70, 18 }, { CX - 92, CY + 62, 14 }, { CX + 88, CY + 58, 10 } } do
-		local st = sparkle(panel, sp[3], UDim2.fromOffset(sp[1], sp[2]), 6, "Twinkle" .. i)
+	for i, sp in { { CX + 38, CY - 78, 14 }, { CX + 54, CY - 70, 9 }, { CX - 30, CY - 80, 8 } } do
+		local st = sparkle(panel, sp[3], UDim2.fromOffset(sp[1], sp[2]), 7, "Twinkle" .. i)
 		Effects.breathe(st, { scale = 1.35, seconds = 0.8 + i * 0.25 })
 	end
 
-	-- +5 SPINS, the line, JOIN GROUP
-	local amount = line({ Name = "Amount", Text = "+" .. Group.Spins .. " SPINS", FontFace = F.Heading, TextSize = 48, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, CY + 82), Size = UDim2.fromOffset(W - 32, 50), ZIndex = 6, Parent = panel }, 3)
+	-- +5 SPINS, the line, the status line, JOIN GROUP and CLAIM side by side
+	local amount = line({ Name = "Amount", Text = "+" .. Group.Spins .. " SPINS", FontFace = F.Heading, TextSize = 46, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(26, 206), Size = UDim2.fromOffset(W - 32, 50), ZIndex = 7, Parent = panel }, 3)
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("FFE2F6"), Color3.fromHex("FF5FC8")), Parent = amount })
 	local name = if Group.Name ~= "" then Group.Name else "our group"
-	local about = line({ Name = "About", Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!", FontFace = F.Name, TextSize = 17, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(110, CY + 130), Size = UDim2.fromOffset(W - 220, 42), ZIndex = 6, Parent = panel })
-	local join = Kit.button({ Name = "Join", Text = "JOIN GROUP", Icon = "Players", IconSize = 32, Style = "Action", FontFace = F.Button, TextSize = 26, Corner = 9, RimThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.fromOffset(W - 90, 50), ZIndex = 6, Parent = panel })
+	local about = line({ Name = "About", Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!", FontFace = F.Name, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(20, 261), Size = UDim2.fromOffset(W - 40, 22), ZIndex = 7, Parent = panel }, 2)
+	local status = Kit.text({ Name = "Status", Text = "", FontFace = F.Body, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = Color3.fromHex("DCE6FF"), Position = UDim2.fromOffset(20, 286), Size = UDim2.fromOffset(W - 40, 18), ZIndex = 7, Parent = panel })
+	new("UIStroke", { Name = "Outline", Color = Color3.fromHex("1A1F4A"), Thickness = 1, Transparency = 0.4, Parent = status })
+	local join = Kit.button({ Name = "Join", Text = "JOIN GROUP", Icon = "Players", IconSize = 26, Style = "Action", FontFace = F.Button, TextSize = 22, Corner = 9, RimThickness = 2.5, Position = UDim2.fromOffset(42, 317), Size = UDim2.fromOffset(230, 56), ZIndex = 7, Parent = panel })
+	local claimBtn = Kit.button({ Name = "Claim", Text = "CLAIM SPINS", Icon = "SpinWheel", IconSize = 26, Style = "Action", FontFace = F.Button, TextSize = 22, Corner = 9, RimThickness = 2.5, Position = UDim2.fromOffset(290, 317), Size = UDim2.fromOffset(230, 56), ZIndex = 7, Parent = panel })
 
 	local pending = false
 	local function refresh()
 		local got = State.data.GroupReward == true
 		if not GroupRewardScreen.set() then
-			join.setText("COMING SOON"); join.setStyle("Disabled"); join.setEnabled(false)
+			status.Text = "Our group is coming soon. Check back later!"
+			for _, b in { join, claimBtn } do b.setText("COMING SOON"); b.setStyle("Disabled"); b.setEnabled(false) end
 		elseif got then
-			about.Text = "Thanks for joining! Your spins are on the wheel."
-			join.setText("CLAIMED"); join.setStyle("Disabled"); join.setEnabled(false)
+			about.Text = "Thanks for joining " .. name .. "!"
+			status.Text = "Your " .. Group.Spins .. " spins are on the wheel."
+			join.setText("JOINED"); join.setStyle("Disabled"); join.setEnabled(false)
+			claimBtn.setText("CLAIMED"); claimBtn.setStyle("Disabled"); claimBtn.setEnabled(false)
 		else
 			about.Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!"
+			status.Text = "Join the group, then press CLAIM SPINS."
 			join.setText(if pending then "..." else "JOIN GROUP"); join.setStyle("Action"); join.setEnabled(not pending)
+			claimBtn.setText(if pending then "..." else "CLAIM SPINS"); claimBtn.setStyle("Selected"); claimBtn.setEnabled(not pending)
 		end
 		rays.Visible = not got
 	end
 
-	-- Roblox's join prompt, then the claim (the server checks with Roblox); already in the group, it just claims
+	-- the claim: the server checks with Roblox that you're in the group and gives the spins once
 	local function claim()
 		local ok, why = State.action("ClaimGroup")
 		if ok then
@@ -141,6 +164,7 @@ function GroupRewardScreen.build(parent: Instance)
 		end
 		return ok, why
 	end
+	-- JOIN GROUP: Roblox's join prompt, then the claim by itself; already in the group, it just claims
 	join.onClick(function()
 		if pending or State.data.GroupReward == true or not GroupRewardScreen.set() then return end
 		pending = true
@@ -151,11 +175,22 @@ function GroupRewardScreen.build(parent: Instance)
 				local opened = pcall(function() game:GetService("GroupService"):PromptJoinAsync(Group.Id) end)
 				if opened then
 					local done, why = claim()
-					if not done then Toast.show(why or "Join the group, then press JOIN GROUP again to get your spins.") end
+					if not done then Toast.show(why or "Join the group, then press CLAIM SPINS.") end
 				else
-					Toast.show("The join window can't open here. Find " .. name .. " on our game's page, join it, then press JOIN GROUP again.")
+					Toast.show("The join window can't open here. Find " .. name .. " on our game's page, join it, then press CLAIM SPINS.")
 				end
 			end
+			pending = false
+			refresh()
+		end)
+	end)
+	claimBtn.onClick(function()
+		if pending or State.data.GroupReward == true or not GroupRewardScreen.set() then return end
+		pending = true
+		refresh()
+		task.spawn(function()
+			local ok, why = claim()
+			if not ok then Toast.show(why or "Join " .. name .. " first, then press CLAIM SPINS.") end
 			pending = false
 			refresh()
 		end)

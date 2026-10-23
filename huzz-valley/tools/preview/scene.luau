@@ -36,7 +36,7 @@ DataService.update(player, function(d)
 	-- GROUPID=n: the group window as it looks once the owner sets his group (a stand-in number, the preview only)
 	if cfg.GROUPID then require(game.ReplicatedStorage.Shared.Config.Group).Id = tonumber(cfg.GROUPID) end
 	if cfg.LUCK then workspace:SetAttribute("HuzzServerLuck", tonumber(cfg.LUCK)); game.Players.LocalPlayer:SetAttribute("HuzzLuck", tonumber(cfg.LUCK)) end -- (server luck, Screens/Luck and the HUD's LUCK)
-	if cfg.SKIP then workspace:SetAttribute("HuzzSkipVotes", 1); workspace:SetAttribute("HuzzSkipNeed", 2) end -- (the SKIP vote open, one of two)
+	if cfg.SKIP then workspace:SetAttribute("HuzzSkipVotes", 0) end -- (SKIP (skip game) open while waiting)
 	-- the daily quests window: the spin quest done (CLAIM), the first daily one half way
 	if cfg.SCREEN == "DailyQuests" then
 		local DailyRules = require(game.ReplicatedStorage.Shared.DailyRules)

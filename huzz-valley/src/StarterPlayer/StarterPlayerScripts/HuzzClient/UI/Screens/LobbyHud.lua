@@ -143,24 +143,76 @@ function LobbyHud.build(parent: Instance)
 		State.changed(showGroup)
 		showGroup()
 	end
-	-- LUCK over INVITE (owner, Oct 23 15:22: "make a button to clearly show the luck boost, and make it clearly seen"):
-	-- the server's luck in big letters where the icon would be ("x1", "x4"), opening the LUCK window (Screens/Luck)
-	local luck = squareButton(right, "Luck", "AuraStar", 0, function() ModalManager.open("Luck") end)
-	if not Kit.reused(luck.Instance) then luck.Instance.Position = UDim2.fromOffset(100 - 25 - 33, luck.Instance.Position.Y.Offset) end
-	-- (Oct 23 17:53, his clover picture: "make this used for the button to buy the luck, and make the number be matched
-	-- to the server luck"): the button is his clover as it is, with the server's luck written on it ("8x"); the
-	-- square look underneath is taken off
-	local luckIcon = luck.Instance:FindFirstChild("Icon")
-	if luckIcon and luckIcon:IsA("GuiObject") then luckIcon.Visible = false end
-	luck.Instance.BackgroundTransparency = 1
-	for _, d in luck.Instance:GetChildren() do
-		if d:IsA("UIStroke") then d.Enabled = false
-		elseif d:IsA("UIGradient") then d.Enabled = false
-		elseif d:IsA("GuiObject") and d.Name ~= "Clover" and d.Name ~= "Multiplier" then d.Visible = false end
+	-- LUCK over INVITE, as his speed button (owner, Oct 23 19:36, his "x256 Speed / ONLY 299" picture: "make the 1x
+	-- luck be 2x luck so people click on it to buy the 2x luck and then it continues"): a wide sky-blue button with
+	-- his clover over its top edge, the next step big ("x2 Luck") and its price under it ("ONLY 3"). A tap opens
+	-- Roblox's prompt for that step (the server checks it again, HuzzServer/LuckService); after each buy it shows the
+	-- next one, and at the top "MAX Luck" opens the LUCK window. The odds are in the LUCK window (the SERVER LUCK sign).
+	local luckOld = right:FindFirstChild("Luck") -- (the clover square before; saved places still have it)
+	if luckOld and luckOld:IsA("GuiObject") then luckOld.Visible = false end
+	local LUCK_W, LUCK_H = 150, 60
+	local luck = new("TextButton", {
+		Name = "LuckBuy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromOffset(76, 2), Size = UDim2.fromOffset(LUCK_W, LUCK_H),
+		BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AutoButtonColor = false, Text = "", ZIndex = 2, Parent = right,
+	}, { Kit.corner(10), Kit.stroke(ShopStyle.INK, 3) })
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("8BE6FF")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("4FC8F2")), ColorSequenceKeypoint.new(1, Color3.fromHex("2AA2DB")) }), Parent = luck })
+	Kit.studPattern(luck, 0.35)
+	new("Frame", { Name = "Ring", Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 1, -4), BackgroundTransparency = 1, ZIndex = 2, Parent = luck }, { Kit.corner(8), Kit.stroke(Color3.fromHex("C9F4FF"), 2, 0.2) })
+	local luckClover = Kit.art("LuckClover", { Name = "Clover", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.fromOffset(40, 40), ScaleType = Enum.ScaleType.Fit, ZIndex = 5, Parent = luck })
+	Effects.rock(luckClover, { degrees = 6, seconds = 1.6 })
+	local luckText = ShopStyle.chunky({ Name = "Step", Text = "x2 Luck", TextSize = 24, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 30), Size = UDim2.new(1, -8, 0, 26), ZIndex = 4, Parent = luck }, 3)
+	local luckPrice = ShopStyle.chunky({ Name = "Price", Text = "", TextSize = 15, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 48), Size = UDim2.new(1, -8, 0, 16), ZIndex = 4, Parent = luck }, 2.5)
+	Effects.breathe(luck, { scale = 1.04, seconds = 1.2 })
+	local Products = require(Shared.Config.Products)
+	local LUCK_MAX = (require(Shared.Config.Round).Luck or {}).Max or 10
+	local luckPrices: { [string]: number } = {} -- (Roblox's live prices once they load; the config's until then)
+	local luckBusy = false
+	local function nextLuck()
+		local me = game:GetService("Players").LocalPlayer
+		local server = tonumber(workspace:GetAttribute("HuzzServerLuck")) or 1
+		if server >= LUCK_MAX then return nil end
+		return Products.nextLuck(tonumber(me:GetAttribute("HuzzLuck")) or 1)
 	end
-	Kit.art("LuckClover", { Name = "Clover", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -1), Size = UDim2.fromOffset(70, 70), ScaleType = Enum.ScaleType.Fit, ZIndex = luck.Instance.ZIndex + 1, Parent = luck.Instance })
-	local luckText = ShopStyle.chunky({ Name = "Multiplier", Text = "1x", TextSize = 24, TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 2, 0.5, -3), Size = UDim2.new(1, 0, 0, 30), Rotation = -8, ZIndex = luck.Instance.ZIndex + 2, Parent = luck.Instance }, 3)
-	Effects.rock(luck.Instance:FindFirstChild("Clover") :: GuiObject, { degrees = 4, seconds = 1.6 })
+	local function showLuckBuy()
+		local p = nextLuck()
+		if p then
+			luckText.Text = `x{p.Amount or 1} Luck`
+			luckPrice.Text = if luckBusy then "..." else `ONLY {luckPrices[p.Key] or p.Price} {Format.RobuxMark}`
+		else
+			luckText.Text = "MAX Luck"
+			luckPrice.Text = `x{LUCK_MAX} SERVER`
+		end
+	end
+	luck.Activated:Connect(function()
+		local p = nextLuck()
+		if not p then ModalManager.open("Luck") return end
+		if luckBusy then return end
+		if Products.status(p) ~= "Ready" then
+			Toast.show(`{p.Name} for Robux is coming soon.`)
+			return
+		end
+		luckBusy = true
+		showLuckBuy()
+		task.spawn(function()
+			local ok, why = State.action("PromptLuck", p.Key) -- (the server checks again and opens Roblox's prompt)
+			luckBusy = false
+			if not ok then Toast.show(why or "The purchase couldn't open. Try again.") end
+			showLuckBuy()
+		end)
+	end)
+	game:GetService("Players").LocalPlayer:GetAttributeChangedSignal("HuzzLuck"):Connect(showLuckBuy)
+	workspace:GetAttributeChangedSignal("HuzzServerLuck"):Connect(showLuckBuy)
+	task.spawn(function() -- the live prices, once (guarded: none offline or in some Studio setups)
+		local MarketplaceService = game:GetService("MarketplaceService")
+		for _, p in Products.Luck do
+			if p.Id ~= 0 then
+				local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, p.Id, Enum.InfoType.Product)
+				if ok and type(info) == "table" and type(info.PriceInRobux) == "number" then luckPrices[p.Key] = info.PriceInRobux end
+			end
+		end
+		showLuckBuy()
+	end)
+	showLuckBuy()
 	-- INVITE over SPIN (owner, Oct 19: "make friend rewards, add a friend knife (for inviting them)"): Roblox's own
 	-- invite prompt (SocialService, guarded: it isn't there offline or on every device)
 	local invite = squareButton(right, "Invite", "Players", 66, function()
@@ -260,7 +312,11 @@ function LobbyHud.build(parent: Instance)
 	-- while you play (the round's message line is there then); NEXT ROUND sits under it.
 	local INK_GREEN = Color3.fromHex("08200F")
 	local luckSign = new("TextButton", { Name = "ServerLuck", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 0), Size = UDim2.fromOffset(250, 76), BackgroundTransparency = 1, AutoButtonColor = false, Text = "", Parent = top })
-	local luckPop = new("UIScale", { Name = "Pop", Parent = luckSign })
+	-- (owner, Oct 23 19:37: "make the server luck sign on the top be smaller so it doesnt overlap with the other
+	-- things": drawn at SIGN_SCALE of its 250 x 76, from its top centre; NEXT ROUND and SKIP moved up to match)
+	local SIGN_SCALE = 0.72
+	local luckPop = new("UIScale", { Name = "Pop", Scale = SIGN_SCALE, Parent = luckSign })
+	luckPop.Scale = SIGN_SCALE
 	-- the title row: a clover, SERVER, LUCK, a clover, centred by a list (Roblox measures the words itself)
 	local TITLE = 24
 	local titleRow = new("Frame", { Name = "Title", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 0), Size = UDim2.fromOffset(250, 30), BackgroundTransparency = 1, ZIndex = 3, Parent = luckSign }, { Kit.list(Enum.FillDirection.Horizontal, 5, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
@@ -293,19 +349,21 @@ function LobbyHud.build(parent: Instance)
 		task.delay(sp[3], function() Effects.breathe(l, { scale = 1.35, seconds = 0.9 }) end)
 	end
 	luckSign.Activated:Connect(function() ModalManager.open("Luck") end)
-	banner.Position = UDim2.fromOffset(3, 80) -- (NEXT ROUND under the sign)
-	-- SKIP under NEXT ROUND while waiting for a game (owner, Oct 23 16:52: "make a skip round"): a free vote, more than
-	-- half the players and the wait ends (HuzzServer/SkipService). Tap again to take your vote back.
-	local skip = Kit.button({ Name = "Skip", Text = "SKIP", Style = "Action", FontFace = Theme.Fonts.Button, TextSize = 16, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 120), Size = UDim2.fromOffset(132, 32), Parent = top })
+	banner.Position = UDim2.fromOffset(3, 58) -- (NEXT ROUND under the sign)
+	-- SKIP under NEXT ROUND while waiting for a game (owner, Oct 23 19:33: "you dont get teleported into the game if you
+	-- select it, add in brackets (skip game)"): you sit the next game out in the lobby (HuzzServer/SkipService). Tap
+	-- again to play after all.
+	local skip = Kit.button({ Name = "Skip", Text = "SKIP (skip game)", Style = "Action", FontFace = Theme.Fonts.Button, TextSize = 15, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 102), Size = UDim2.fromOffset(176, 32), Parent = top })
+	skip.Instance.Position = UDim2.fromOffset(130, 102)
+	skip.Instance.Size = UDim2.fromOffset(176, 32) -- (saved places have the older, narrower button)
 	skip.Instance.Visible = false
 	local skipBusy = false
 	local function showSkip()
-		local votes, need = workspace:GetAttribute("HuzzSkipVotes"), workspace:GetAttribute("HuzzSkipNeed")
 		local mine = game:GetService("Players").LocalPlayer:GetAttribute("HuzzSkip") == true
-		local open = type(votes) == "number" and type(need) == "number"
+		local open = type(workspace:GetAttribute("HuzzSkipVotes")) == "number"
 		skip.Instance.Visible = open
 		if open then
-			skip.setText(if mine then `SKIPPING {votes}/{need}` else `SKIP {votes}/{need}`)
+			skip.setText(if mine then "SKIPPING (tap to play)" else "SKIP (skip game)")
 			skip.setStyle(if mine then "Selected" else "Action")
 		end
 	end
@@ -320,7 +378,6 @@ function LobbyHud.build(parent: Instance)
 		end)
 	end)
 	workspace:GetAttributeChangedSignal("HuzzSkipVotes"):Connect(showSkip)
-	workspace:GetAttributeChangedSignal("HuzzSkipNeed"):Connect(showSkip)
 	game:GetService("Players").LocalPlayer:GetAttributeChangedSignal("HuzzSkip"):Connect(showSkip)
 	showSkip()
 	local lastLuck = 1
@@ -328,10 +385,9 @@ function LobbyHud.build(parent: Instance)
 		local k = tonumber(workspace:GetAttribute("HuzzServerLuck")) or 1
 		local n = if k == math.floor(k) then tostring(math.floor(k)) else string.format("%.1f", k)
 		number.Text = n .. "x"
-		luckText.Text = n .. "x"
 		if k > lastLuck then
-			luckPop.Scale = 1.25
-			Motion.tween(luckPop, "luckpop", 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
+			luckPop.Scale = SIGN_SCALE * 1.25
+			Motion.tween(luckPop, "luckpop", 0.4, { Scale = SIGN_SCALE }, Enum.EasingStyle.Back)
 		end
 		lastLuck = k
 	end

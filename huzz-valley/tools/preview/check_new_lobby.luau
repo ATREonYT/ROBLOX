@@ -200,7 +200,7 @@ check("the Halloween stands bigger", byName.Witch_Brew_Cauldron and byName.Witch
 	and byName.Sweets_Treats_Coffin:GetAttribute("Grow") == 1.5 and byName.Pumpkin_Patch_Chest:GetAttribute("Grow") == nil)
 check("the shop opens the Shop", byName.Shop_Stall and byName.Shop_Stall:GetAttribute("Opens") == "Shop")
 check("the chest opens Spin the Wheel", byName.Pumpkin_Patch_Chest and byName.Pumpkin_Patch_Chest:GetAttribute("Opens") == "SpinWheel")
-check("the gift doesn't pretend to check likes", byName.Like_Reward_Gift and byName.Like_Reward_Gift:GetAttribute("Opens") == nil)
+check("the gift opens the LIKE THE GAME window (no reward: Roblox can't tell who liked)", byName.Like_Reward_Gift and byName.Like_Reward_Gift:GetAttribute("Opens") == "LikeGame")
 check("the shop on the two-pad side", byName.Shop_Stall and byName.Shop_Stall.Pad.CFrame.Position.X < -131)
 check("his old grey block stays a block", not block:HasTag("HuzzAvatarStand") and block.Name == "Part" and block:GetAttribute("Pass") == nil)
 

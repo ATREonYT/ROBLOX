@@ -253,5 +253,6 @@ return {
 	-- stays with the person while he is in the game, and then when he leaves it resets"; "they can go up to like 10x").
 	-- A buy sets its buyer's luck (x2 to x10, his nine products); the server's luck is the highest of anyone here,
 	-- never above Max. When a buyer leaves, their boost goes with them. The products: Config/Products.Luck.
-	Luck = { Max = 10 },
+	-- Curve (Oct 23 19:39): how the steps grow (Shared/GirlRoll.power): x2 is a small step, x7 and x8 big ones.
+	Luck = { Max = 10, Curve = 1.8 },
 }

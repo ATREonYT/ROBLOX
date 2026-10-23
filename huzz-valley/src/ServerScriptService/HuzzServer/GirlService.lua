@@ -148,7 +148,7 @@ end
 -- odds everyone is shown all use the same list.
 function GirlService.rarities()
 	local ok, luck = pcall(function() return require(script.Parent.LuckService).server() end)
-	return GirlRoll.withLuck(Config.Rarities, if ok then luck else 1)
+	return GirlRoll.withLuck(Config.Rarities, if ok then luck else 1, Config.Luck)
 end
 
 function GirlService.roll()

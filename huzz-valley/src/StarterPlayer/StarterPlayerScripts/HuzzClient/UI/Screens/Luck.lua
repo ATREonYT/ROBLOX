@@ -50,7 +50,7 @@ end
 
 -- Each rarity's chance in percent at this luck, Common first (every rarity in Config/Round has girls).
 function LuckScreen.odds(luck: number): { { name: string, chance: number, color: Color3 } }
-	local list = GirlRoll.withLuck(Round.Rarities, luck)
+	local list = GirlRoll.withLuck(Round.Rarities, luck, Round.Luck)
 	local total = 0
 	for _, r in list do total += r.Weight end
 	local out = {}

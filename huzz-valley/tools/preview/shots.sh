@@ -50,6 +50,7 @@ shot progression 04-progression-rewards 1536 700 '{SCREEN="Progression", TAB="Re
 shot tiers 11-tier-index 1536 700 '{SCREEN="Tiers", SCALE=2}'
 shot quests 05-progression-quests 1536 700 '{SCREEN="Progression", TAB="Quests", SCALE=2}'
 shot map-vote 15-map-vote 1536 656 '{SCREEN="MapVote", SCALE=2, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
+shot map-vote-phone none 844 390 '{SCREEN="MapVote", TOUCH=true, VIEW="844x390", VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}' # (Oct 23 19:33 "make the maps centered")
 shot girl-roll 15-map-vote 1536 656 '{SCREEN="Hud", SCALE=2, ROLL=6.5}'
 shot power-bar none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner"}' # (vs his pic c: tools/preview/side_by_side_bar.py)
 shot power-bar-catcher none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher"}' # (vs his pic b)
@@ -68,6 +69,7 @@ shot results none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", XP=1073}'
 shot results-catchers none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", TEAM="Catchers", XP=1073}'
 shot daily-quests none 1536 980 '{SCREEN="DailyQuests", SCALE=2}' # (vs his picture d: side_by_side.py daily-quests)
 shot group-reward none 1536 980 '{SCREEN="GroupReward", SCALE=2, GROUPID=1}' # (Oct 22: the "join our group" window, 5 free spins)
+shot like-game none 1536 760 '{SCREEN="LikeGame", SCALE=2}' # (Oct 23 19:44: the LIKE THE GAME! gift's window)
 shot luck none 1536 1100 '{SCREEN="Luck", SCALE=2, LUCK=4}' # (Oct 23: server luck, its boosts and the girl odds at that luck)
 shot hud-luck none 1536 694 '{SCREEN="Hud", SCALE=2, LUCK=4, ROUND=9}' # (the LUCK button and the SERVER LUCK sign)
 shot hud-skip none 1536 694 '{SCREEN="Hud", SCALE=2, LUCK=4, ROUND=9, SKIP=true}' # (Oct 23 16:52: the sign higher, SKIP under NEXT ROUND)

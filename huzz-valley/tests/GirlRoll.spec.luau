@@ -75,7 +75,7 @@ do
 	for _, r in Round.Rarities do table.insert(live, { id = r.Name, name = r.Name, rarity = r.Name }) end
 	local function at(k)
 		local t = {}
-		for _, o in GirlRoll.odds(live, GirlRoll.withLuck(Round.Rarities, k)) do t[o.name] = o.chance end
+		for _, o in GirlRoll.odds(live, GirlRoll.withLuck(Round.Rarities, k, Round.Luck)) do t[o.name] = o.chance end
 		return t
 	end
 	local x1, x10 = at(1), at(10)
@@ -87,6 +87,11 @@ do
 	check(secret(1) < 1, `no luck: Secret is rare ({secret(1)}%)`)
 	check(secret(1) < secret(2) and secret(2) < secret(4) and secret(4) < secret(8) and secret(8) < secret(10), "each boost makes a Secret likelier")
 	check(GirlRoll.withLuck(Round.Rarities, 1) == Round.Rarities, "x1 is the config as set")
+	-- (Oct 23 19:39: x2 a small step, the big jumps at x7 and x8)
+	local x2, x7, x8 = at(2), at(7), at(8)
+	check(x1.Common - x2.Common < 6, `x2 is a small step (Common {x1.Common}% to {x2.Common}%)`)
+	check(at(6).Common - x7.Common > 3 and x7.Common - x8.Common > 3, `x7 and x8 are big steps (Common {at(6).Common}%, {x7.Common}%, {x8.Common}%)`)
+	check(GirlRoll.power(10, Round.Luck) == 10 and GirlRoll.power(1, Round.Luck) == 1, "x1 and x10 as before")
 	local boosted = GirlRoll.withLuck(Round.Rarities, 4)
 	check(boosted[1].Weight == Round.Rarities[1].Weight and Round.Rarities[2].Weight == 9, "Common unboosted, config untouched")
 end

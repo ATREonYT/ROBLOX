@@ -39,10 +39,23 @@ local function groups(catalog, rarities)
 	return ordered, total
 end
 
--- The rarities with the server's luck in (Config/Round.Luck): every rarity not marked Lucky = false has its Weight
--- multiplied by `luck` (1 = as set). A new list; the config is never changed.
-function GirlRoll.withLuck(rarities, luck: number?)
+-- How strong a luck step really is (Config/Round.Luck): the low steps are small and the high ones big (owner, Oct 23
+-- 19:39: "people do get a x2 luck, but its a small upgrade ... so people are more likely to buy up to like 7-8x").
+-- 1 + (Max - 1) * ((luck - 1) / (Max - 1)) ^ Curve: with Max 10 and Curve 1.8, x2 = 1.17, x5 = 3.1, x8 = 6.7, x10 = 10.
+-- With no settings, the luck as it is.
+function GirlRoll.power(luck: number?, settings: { Max: number?, Curve: number? }?): number
 	local k = math.max(1, tonumber(luck) or 1)
+	local max = settings and settings.Max or 0
+	local curve = settings and settings.Curve or 1
+	if max <= 1 or curve == 1 then return k end
+	k = math.min(k, max)
+	return 1 + (max - 1) * ((k - 1) / (max - 1)) ^ curve
+end
+
+-- The rarities with the server's luck in (Config/Round.Luck): every rarity not marked Lucky = false has its Weight
+-- multiplied by the luck's power (GirlRoll.power; 1 = as set). A new list; the config is never changed.
+function GirlRoll.withLuck(rarities, luck: number?, settings: { Max: number?, Curve: number? }?)
+	local k = GirlRoll.power(luck, settings)
 	if k == 1 then return rarities end
 	local out = {}
 	for i, r in rarities do
