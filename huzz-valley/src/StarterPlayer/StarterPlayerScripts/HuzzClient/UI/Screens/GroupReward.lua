@@ -8,7 +8,9 @@
 -- the spins once (ActionService "ClaimGroup" -> ProgressService.claimGroup); already in it, the same button claims.
 -- Since Oct 23 19:33 laid out after his second picture (design/owner-oct23/group-reward-ref2.png): the scenery, the
 -- girl hugging the player and the player with a red katana, four tiles round the wheel, a status line and two buttons
--- (JOIN GROUP and CLAIM SPINS).
+-- (JOIN GROUP and CLAIM SPINS). Since Oct 23 21:22 ("make it claim the spins only when you join the group, and make
+-- them automatically add, so you cant just claim them") only JOIN GROUP: the server adds the spins by itself once
+-- Roblox says you're in the group (HuzzServer/ProgressService.watchGroup), and this window just says so.
 -- It opens by itself once per visit, Config/Group.PopupAfter seconds into the lobby, while the spins aren't claimed
 -- (like How to Play: never over a round or another window). The lobby's GROUP button (Screens/LobbyHud) opens it too.
 -- With no group set (Config/Group.Id 0): the button says COMING SOON and does nothing, and it never pops up live
@@ -132,68 +134,55 @@ function GroupRewardScreen.build(parent: Instance)
 	local about = line({ Name = "About", Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!", FontFace = F.Name, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(20, 261), Size = UDim2.fromOffset(W - 40, 22), ZIndex = 7, Parent = panel }, 2)
 	local status = Kit.text({ Name = "Status", Text = "", FontFace = F.Body, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = Color3.fromHex("DCE6FF"), Position = UDim2.fromOffset(20, 286), Size = UDim2.fromOffset(W - 40, 18), ZIndex = 7, Parent = panel })
 	new("UIStroke", { Name = "Outline", Color = Color3.fromHex("1A1F4A"), Thickness = 1, Transparency = 0.4, Parent = status })
-	local join = Kit.button({ Name = "Join", Text = "JOIN GROUP", Icon = "Players", IconSize = 26, Style = "Action", FontFace = F.Button, TextSize = 22, Corner = 9, RimThickness = 2.5, Position = UDim2.fromOffset(42, 317), Size = UDim2.fromOffset(230, 56), ZIndex = 7, Parent = panel })
-	local claimBtn = Kit.button({ Name = "Claim", Text = "CLAIM SPINS", Icon = "SpinWheel", IconSize = 26, Style = "Action", FontFace = F.Button, TextSize = 22, Corner = 9, RimThickness = 2.5, Position = UDim2.fromOffset(290, 317), Size = UDim2.fromOffset(230, 56), ZIndex = 7, Parent = panel })
+	local join = Kit.button({ Name = "Join", Text = "JOIN GROUP", Icon = "Players", IconSize = 26, Style = "Action", FontFace = F.Button, TextSize = 22, Corner = 9, RimThickness = 2.5, Position = UDim2.fromOffset(130, 317), Size = UDim2.fromOffset(300, 56), ZIndex = 7, Parent = panel })
+	Kit.place(join.Instance, UDim2.fromOffset(130, 317), UDim2.fromOffset(300, 56)) -- (saved places have it at the left)
+	local oldClaim = panel:FindFirstChild("Claim") -- (the CLAIM SPINS button before: saved places still have it)
+	if oldClaim then oldClaim:Destroy() end
 
 	local pending = false
 	local function refresh()
 		local got = State.data.GroupReward == true
 		if not GroupRewardScreen.set() then
 			status.Text = "Our group is coming soon. Check back later!"
-			for _, b in { join, claimBtn } do b.setText("COMING SOON"); b.setStyle("Disabled"); b.setEnabled(false) end
+			join.setText("COMING SOON"); join.setStyle("Disabled"); join.setEnabled(false)
 		elseif got then
 			about.Text = "Thanks for joining " .. name .. "!"
 			status.Text = "Your " .. Group.Spins .. " spins are on the wheel."
 			join.setText("JOINED"); join.setStyle("Disabled"); join.setEnabled(false)
-			claimBtn.setText("CLAIMED"); claimBtn.setStyle("Disabled"); claimBtn.setEnabled(false)
 		else
 			about.Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!"
-			status.Text = "Join the group, then press CLAIM SPINS."
+			status.Text = "Once you're in the group, your spins are added by themselves."
 			join.setText(if pending then "..." else "JOIN GROUP"); join.setStyle("Action"); join.setEnabled(not pending)
-			claimBtn.setText(if pending then "..." else "CLAIM SPINS"); claimBtn.setStyle("Selected"); claimBtn.setEnabled(not pending)
 		end
 		rays.Visible = not got
 	end
 
-	-- the claim: the server checks with Roblox that you're in the group and gives the spins once
-	local function claim()
-		local ok, why = State.action("ClaimGroup")
-		if ok then
-			Toast.show("+" .. Group.Spins .. " spins on the wheel!")
-			Motion.pop(amount)
-		end
-		return ok, why
-	end
-	-- JOIN GROUP: Roblox's join prompt, then the claim by itself; already in the group, it just claims
+	-- JOIN GROUP: Roblox's join prompt; when it closes the server looks at once (it only gives the spins to a member;
+	-- it also looks by itself every Group.CheckEvery seconds, for someone who joins on the group's page instead)
 	join.onClick(function()
 		if pending or State.data.GroupReward == true or not GroupRewardScreen.set() then return end
 		pending = true
 		refresh()
 		task.spawn(function()
-			local ok = claim() -- (already a member: done)
-			if not ok then
-				local opened = pcall(function() game:GetService("GroupService"):PromptJoinAsync(Group.Id) end)
-				if opened then
-					local done, why = claim()
-					if not done then Toast.show(why or "Join the group, then press CLAIM SPINS.") end
-				else
-					Toast.show("The join window can't open here. Find " .. name .. " on our game's page, join it, then press CLAIM SPINS.")
-				end
+			local opened = pcall(function() game:GetService("GroupService"):PromptJoinAsync(Group.Id) end)
+			if not opened then
+				Toast.show("The join window can't open here. Find " .. name .. " on our game's page and join it: your spins come by themselves.")
 			end
+			State.action("ClaimGroup") -- (the server checks with Roblox; nothing for someone not in the group)
 			pending = false
 			refresh()
 		end)
 	end)
-	claimBtn.onClick(function()
-		if pending or State.data.GroupReward == true or not GroupRewardScreen.set() then return end
-		pending = true
-		refresh()
-		task.spawn(function()
-			local ok, why = claim()
-			if not ok then Toast.show(why or "Join " .. name .. " first, then press CLAIM SPINS.") end
-			pending = false
-			refresh()
-		end)
+	-- the moment the server adds them: a toast and a pop (not when the save just loads with them)
+	local had = State.data.Loaded == true and State.data.GroupReward == true
+	local loaded = State.data.Loaded == true
+	State.changed(function()
+		local now = State.data.GroupReward == true
+		if loaded and now and not had then
+			Toast.show("Thanks for joining " .. name .. "! +" .. Group.Spins .. " spins on the wheel!")
+			Motion.pop(amount)
+		end
+		had, loaded = now, State.data.Loaded == true
 	end)
 
 	local open = false

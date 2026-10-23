@@ -56,7 +56,7 @@ function ProgressService.claimGroup(player: Player): (boolean, string?)
 		if not ok2 then return false, "Roblox didn't answer. Try again in a moment." end
 		member = inGroup == true
 	end
-	if not member then return false, "Join the group first, then press CLAIM." end
+	if not member then return false, "Join the group first: your spins come by themselves once you're in it." end
 	local given = false
 	DataService.update(player, function(d)
 		if d.GroupReward then return end
@@ -66,6 +66,29 @@ function ProgressService.claimGroup(player: Player): (boolean, string?)
 	end)
 	if not given then return false, "You already got your group spins." end
 	return true
+end
+
+-- The spins come by themselves (owner, Oct 23 21:22: "make it claim the spins only when you join the group, and make
+-- them automatically add, so you cant just claim them"): no CLAIM button. Each player whose save hasn't had them is
+-- checked with Roblox when their save loads and then every Group.CheckEvery seconds while they play (and at once
+-- when the window's JOIN GROUP prompt closes: ActionService "ClaimGroup", which can only give them to a member).
+function ProgressService.watchGroup()
+	local Players = game:GetService("Players")
+	local Group = require(ReplicatedStorage.Shared.Config.Group)
+	local function watch(player: Player)
+		task.spawn(function()
+			pcall(DataService.waitFor, player, 30)
+			while player.Parent do
+				local data = DataService.get(player)
+				if data and data.GroupReward then return end
+				if data and (tonumber(Group.Id) or 0) > 0 then pcall(ProgressService.claimGroup, player) end
+				local t0 = os.clock() -- (in short steps, so a changed CheckEvery takes at once)
+				repeat task.wait(math.min(1, Group.CheckEvery or 20)) until os.clock() - t0 >= (Group.CheckEvery or 20) or not player.Parent
+			end
+		end)
+	end
+	Players.PlayerAdded:Connect(watch)
+	for _, p in Players:GetPlayers() do watch(p) end
 end
 
 -- A finished game's XP (Progression.gameXP). Returns the XP and the new level if one was reached; each new level

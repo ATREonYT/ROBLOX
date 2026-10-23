@@ -9,6 +9,7 @@ return {
 	Id = 836119652,
 	Name = "Emergent Gaming", -- its name, shown in the window (empty = "our group")
 	Spins = 5, -- the reward: spins on the wheel (the same kind of spins the shop sells)
+	CheckEvery = 20, -- seconds between the server's "are you in the group yet?" checks (the spins come by themselves)
 	PopupAfter = 20, -- seconds in the lobby before the window opens by itself, once per visit, until it's claimed
 	-- Roblox's own "add this game to your favourites?" (owner, Oct 23 14:03: "make the thing on roblox pop up asking you
 	-- if you want to add the game to your favourites randomly"; Gameplay/FavouritePrompt): once per visit, at a random
