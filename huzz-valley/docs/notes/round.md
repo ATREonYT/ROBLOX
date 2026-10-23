@@ -140,10 +140,10 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 - **Everyone caught turns into a catcher** (owner Oct 19) from the next round (not mid-round, so a round stays
   readable); a rescue in the same round keeps them a runner. The last runner standing still wins the game and her.
   The sim checks every caught runner is a catcher at the next line-up.
-- **Girl odds** (`Config/Round.Rarities`): since Oct 23 ("make the girls chances be way lower", "make it be normal in
-  like 10x luck") weights Common 28, Uncommon 2.4, Rare 2, Epic 1.4, Legendary 0.8, Mythic 0.45, Secret 0.15 (with no
-  luck: 79.5 / 6.8 / 5.7 / 4.0 / 2.3 / 1.3 / 0.43%). **Server luck** multiplies every rarity past Common
-  (`Shared/GirlRoll.withLuck`); at x10 the odds are the old 28 / 24 / 20 / 14 / 8 / 4.5 / 1.5. Luck comes from the
+- **Girl odds** (`Config/Round.Rarities`): since Oct 23 17:49 ("make them get way more rares and above", keeping luck
+  worth buying) weights Common 28, Uncommon 9, Rare 7, Epic 5, Legendary 2.4, Mythic 1.2, Secret 0.4 (with no luck:
+  52.8 / 17 / 13.2 / 9.4 / 4.5 / 2.3 / 0.75%). **Server luck** multiplies every rarity past Common
+  (`Shared/GirlRoll.withLuck`): x2 Common 36%, x5 18%, x10 10%. Luck comes from the
   Luck boosts (`Config/Products.Luck`: his nine, x2 to x10, Oct 23 16:06; Amount = the luck; ShopService grants,
   `HuzzServer/LuckService` holds it): a buy sets its buyer's luck, never saved, gone when they leave; the server's =
   the highest of anyone here, capped at `Round.Luck.Max` 10 (not multiplied: his prices would let x2 + x5 buy x10
@@ -319,3 +319,7 @@ stand-in blocks for the girls). Not seen in Studio yet: how it sits next to her 
 - Oct 23 17:32: the luck ladder. Only the next step above the server's luck can be bought (Products.nextLuck,
   checked in LuckService.prompt), so x10 can't be bought first and each buy costs more. Screens/Luck: a row of steps
   and one big BUY button for the next step.
+- Oct 23 17:53: boosts stack. The server's luck = everyone's own boosts added up (x5 + x3 = x8; the x5 buyer leaves:
+  x3), capped at Round.Luck.Max; nobody boosted = x1. The ladder is per player (your next step above YOUR boost), and
+  nothing can be bought while the server is at the top. check_luck covers it.
+- Oct 23 17:48: Config/Group.Name = "Emergent Gaming"; Id still 0 until the owner sends the group number.

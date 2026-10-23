@@ -64,6 +64,7 @@ Assets.Art = {
 	BlossomAura = "",    -- assets/art/blossom-aura.png
 	CoinPack2000 = "",   -- assets/art/coin-pack-2000.png (cut from the Oct 17 mockup: placeholder until a sharp PNG)
 	CoinPack500 = "",    -- assets/art/coin-pack-500.png (same)
+	LuckClover = "",     -- assets/art/luck-clover.png (the owner's luck clover, Oct 23 17:53, his "5x" taken out: tools/icons/make_luck_clover.py)
 	CoinPack5000 = "",   -- assets/art/coin-pack-5000.png (same)
 	CrownPose = "",      -- assets/art/crown-pose.png
 	DancePack = "",      -- assets/art/dance-pack.png

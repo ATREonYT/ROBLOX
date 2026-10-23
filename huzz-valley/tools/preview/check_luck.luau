@@ -43,7 +43,7 @@ end
 check(`the catalog has girls ({#GirlService.catalog})`, #GirlService.catalog > 0)
 local before, shown0 = commonShare(), shownCommon()
 print(`[luck] x1: Common shown {string.format("%.1f", shown0)}%, rolled {string.format("%.1f", before)}%`)
-check("with no luck most girls are Common", shown0 > 70 and math.abs(before - shown0) < 5)
+check("with no luck about half the girls are Common", shown0 > 45 and shown0 < 60 and math.abs(before - shown0) < 5)
 
 -- the ladder (Oct 23 17:32: "you have to buy x2 luck then x3 luck, etc. so they can't just buy x10 luck")
 local okJump, whyJump = LuckService.prompt(me, "Luck10")
@@ -52,7 +52,7 @@ check("the next step at x1 is x2", Products.nextLuck(1).Key == "Luck2")
 local _, why2 = LuckService.prompt(me, "Luck2")
 check(`x2 is allowed at x1 ({why2})`, why2 == nil or not tostring(why2):find("first"))
 ShopService._processReceipt({ PlayerId = me.UserId, ProductId = Products.get("Luck2").Id, PurchaseId = "luck-0" })
-check(`after x2 the next is x3 ({Products.nextLuck(LuckService.server()).Key})`, Products.nextLuck(LuckService.server()).Key == "Luck3")
+check(`after x2 the next is x3 ({Products.nextLuck(LuckService.of(me)).Key})`, Products.nextLuck(LuckService.of(me)).Key == "Luck3")
 local okBack = LuckService.prompt(me, "Luck2")
 check("x2 again is refused", okBack == false)
 check("each step costs more than the one before", (function()
@@ -66,12 +66,32 @@ check(`the x10 receipt is granted ({d})`, d == Enum.ProductPurchaseDecision.Purc
 check(`server luck is x10 ({LuckService.server()}, attribute {workspace:GetAttribute("HuzzServerLuck")})`, LuckService.server() == 10 and workspace:GetAttribute("HuzzServerLuck") == 10)
 local after, shown10 = commonShare(), shownCommon()
 print(`[luck] x10: Common shown {string.format("%.1f", shown10)}%, rolled {string.format("%.1f", after)}%`)
-check("at x10 the strip's odds show far fewer Commons", shown10 > 0 and shown10 < 35)
+check("at x10 the strip's odds show far fewer Commons", shown10 > 0 and shown10 < 15)
 check("... and the real rolls follow them", math.abs(after - shown10) < 5)
 
 local p3 = Products.get("Luck3")
 ShopService._processReceipt({ PlayerId = me.UserId, ProductId = p3.Id, PurchaseId = "luck-2" })
 check("a lower boost after it keeps x10", LuckService.server() == 10)
+
+-- stacking (17:53: "if one person who bought 5x luck, leaves a server with 8x luck, the luck turns into 3x luck if the
+-- other guy who bought 3x stays"): everyone's boosts add up; a buyer's leaves with them
+local a = Instance.new("Player"); a.Name = "A"; a.UserId = 91; a.Parent = Players
+local b = Instance.new("Player"); b.Name = "B"; b.UserId = 92; b.Parent = Players
+__fireOn(Players, "PlayerAdded", a); __fireOn(Players, "PlayerAdded", b)
+me.Parent = nil; __fireOn(Players, "PlayerRemoving", me); task.wait(0.1)
+check(`with only A and B (no boosts) the server is x1 ({LuckService.server()})`, LuckService.server() == 1)
+LuckService.add(a, 5); LuckService.add(b, 3)
+check(`x5 + x3 = x8 ({LuckService.server()})`, LuckService.server() == 8 and workspace:GetAttribute("HuzzServerLuck") == 8)
+a.Parent = nil; __fireOn(Players, "PlayerRemoving", a); task.wait(0.1)
+check(`the x5 buyer leaves: x3 ({LuckService.server()}, attribute {workspace:GetAttribute("HuzzServerLuck")})`, LuckService.server() == 3 and workspace:GetAttribute("HuzzServerLuck") == 3)
+LuckService.add(b, 10)
+local c = Instance.new("Player"); c.Name = "C"; c.UserId = 93; c.Parent = Players; __fireOn(Players, "PlayerAdded", c)
+LuckService.add(c, 4)
+check(`never above x10 ({LuckService.server()})`, LuckService.server() == 10)
+local okFull = LuckService.prompt(c, "Luck5")
+check("no buying at the top", okFull == false)
+me.Parent = Players; __fireOn(Players, "PlayerAdded", me); b.Parent = nil; c.Parent = nil
+__fireOn(Players, "PlayerRemoving", b); __fireOn(Players, "PlayerRemoving", c); task.wait(0.1)
 
 -- SKIP (Oct 23 16:52 "make a skip round"): a free vote while waiting for a game; more than half and the wait ends
 local Skip = require(HS.SkipService)

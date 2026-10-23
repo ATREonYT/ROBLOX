@@ -234,19 +234,20 @@ return {
 	GirlRig = "Original", -- owner: the R15 rebuild came out deformed, so the girls stay exactly as built
 
 	-- Weight = how often the round's girl comes from this rarity (only rarities that have girls count).
-	-- Owner, Oct 23 15:22 / 15:25: "make the girls chances be way lower" and "make the chances lower so its worth to buy
-	-- more luck ... make it be normal in like 10x luck". So every rarity past Common is 10 times rarer than before
-	-- (it was 28 / 24 / 20 / 14 / 8 / 4.5 / 1.5), and the server's luck (Luck below, HuzzServer/LuckService) multiplies
-	-- every Lucky rarity's weight: at x10 the odds are exactly the old ones. With no luck, out of 1,000 rounds about
-	-- 795 Common, 68 Uncommon, 57 Rare, 40 Epic, 23 Legendary, 13 Mythic, 4 Secret.
+	-- Owner, Oct 23 15:22 / 15:25: "make the girls chances be way lower ... so its worth to buy more luck"; then 17:49:
+	-- "make the percentage less common based so you get more rares and epics, but keep it enough so people get the dev
+	-- product for more luck in the server, but make them get way more rares and above". With no luck, out of 1,000
+	-- rounds about 528 Common, 170 Uncommon, 132 Rare, 94 Epic, 45 Legendary, 23 Mythic, 8 Secret (Rare or better:
+	-- 30%, it was 13%). The server's luck (Luck below, HuzzServer/LuckService) multiplies every Lucky rarity's weight:
+	-- x2 makes Common 36%, x5 18%, x10 10% (and Secret 1.4%).
 	Rarities = {
 		{ Name = "Common", Weight = 28, Lucky = false, Color = Color3.fromRGB(196, 202, 214) },
-		{ Name = "Uncommon", Weight = 2.4, Color = Color3.fromRGB(111, 214, 120) },
-		{ Name = "Rare", Weight = 2, Color = Color3.fromRGB(86, 156, 255) },
-		{ Name = "Epic", Weight = 1.4, Color = Color3.fromRGB(176, 104, 255) },
-		{ Name = "Legendary", Weight = 0.8, Color = Color3.fromRGB(255, 190, 60) },
-		{ Name = "Mythic", Weight = 0.45, Color = Color3.fromRGB(255, 84, 120) },
-		{ Name = "Secret", Weight = 0.15, Color = Color3.fromRGB(30, 30, 30) },
+		{ Name = "Uncommon", Weight = 9, Color = Color3.fromRGB(111, 214, 120) },
+		{ Name = "Rare", Weight = 7, Color = Color3.fromRGB(86, 156, 255) },
+		{ Name = "Epic", Weight = 5, Color = Color3.fromRGB(176, 104, 255) },
+		{ Name = "Legendary", Weight = 2.4, Color = Color3.fromRGB(255, 190, 60) },
+		{ Name = "Mythic", Weight = 1.2, Color = Color3.fromRGB(255, 84, 120) },
+		{ Name = "Secret", Weight = 0.4, Color = Color3.fromRGB(30, 30, 30) },
 	},
 	-- Server luck (owner, Oct 23: "add a x2 luck, x4 luck, x8 luck dev products ... if someone bought server luck, it
 	-- stays with the person while he is in the game, and then when he leaves it resets"; "they can go up to like 10x").

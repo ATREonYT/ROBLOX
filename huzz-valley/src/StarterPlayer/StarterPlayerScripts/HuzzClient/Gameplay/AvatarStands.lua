@@ -33,7 +33,7 @@
 	the feet any more (owner, Oct 19 evening: "without that green circle on the bottom ... add some vfx, make the
 	characters more atrractive"): an aura in the knife's own colours (Shared/KnifeLook.AURA: specks rising from round
 	the feet, a few stars twinkling round the body, a soft light on the character). Above: the tag,
-	the title plate and the subtitle; at the waist the price button ("1,799 · VIEW"). No timers, no "limited",
+	the title plate and the subtitle; under them, over the head, the price button ("1,799 · VIEW"). No timers, no "limited",
 	no "ends in" (kid-safe, even though the reference has them).
 	The copy is one rigid piece (owner, Oct 20 20:34, his picture of the stands: Moonlit's Hollow Eclipse lay flat on
 	the floor beside its copy, nothing in the hand). His avatar is built on Roblox's newer joints (AnimationConstraints
@@ -410,7 +410,7 @@ function M.start()
 		rec.aura = { ring, column }
 	end
 
-	-- The sign over the head and the price button at the waist (BillboardGuis in PlayerGui, so the button clicks).
+	-- The sign over the head and the price button just under it (BillboardGuis in PlayerGui, so the button clicks).
 	local function signs(rec)
 		local info, accent = rec.info, rec.accent
 		local head = rec.copy:FindFirstChild("Head") or rec.root
@@ -470,11 +470,14 @@ function M.start()
 		sub.Parent = plate
 		top.Parent = playerGui
 
+		-- the price over the head, just under the sign (owner, Oct 23 17:48, his screenshot: at the waist it hid behind
+		-- the body; "make the robux sign over the characters that sell the gamepass knifes, so people see how much
+		-- they cost")
 		local low = Instance.new("BillboardGui")
 		low.Name = "StandButton"
-		low.Adornee = rec.root
-		low.Size = UDim2.fromScale(4.6, 1.15)
-		low.StudsOffsetWorldSpace = Vector3.new(0, -0.6, 0)
+		low.Adornee = head
+		low.Size = UDim2.fromScale(5.2, 1.35)
+		low.StudsOffsetWorldSpace = Vector3.new(0, 1.3, 0)
 		low.LightInfluence = 0
 		low.MaxDistance = 90
 		low.Active = true

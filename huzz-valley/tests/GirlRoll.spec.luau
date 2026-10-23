@@ -66,23 +66,29 @@ for _, g in strip do
 end
 check(GirlRoll.pick({}, rarities, rand) == nil, "empty catalog -> nil")
 
--- Server luck (owner, Oct 23: "make the chances lower so its worth to buy more luck ... make it be normal in like 10x
--- luck"): the live config's odds at x10 are the old ones (28 / 24 / 20 / 14 / 8 / 4.5 / 1.5), Common is never
--- boosted, every boost makes a Secret likelier, and the config itself never changes.
+-- Server luck (owner, Oct 23: "make the chances lower so its worth to buy more luck"; 17:49: "make them get way more
+-- rares and above"): with no luck about half are Common and Rare or better is 30%; x10 makes Common about 10%;
+-- Common is never boosted, every boost makes a Secret likelier, and the config itself never changes.
 do
 	local Round = require("../tools/preview/motion3d/env").load("huzz-valley/src/ReplicatedStorage/Shared/Config/Round.lua")
 	local live = {}
 	for _, r in Round.Rarities do table.insert(live, { id = r.Name, name = r.Name, rarity = r.Name }) end
-	local old = { Common = 28, Uncommon = 24, Rare = 20, Epic = 14, Legendary = 8, Mythic = 4.5, Secret = 1.5 }
-	for _, o in GirlRoll.odds(live, GirlRoll.withLuck(Round.Rarities, 10)) do
-		check(math.abs(o.chance - old[o.name]) < 0.01, `x10 luck: {o.name} {o.chance}% (was {old[o.name]}%)`)
+	local function at(k)
+		local t = {}
+		for _, o in GirlRoll.odds(live, GirlRoll.withLuck(Round.Rarities, k)) do t[o.name] = o.chance end
+		return t
 	end
-	local function secret(k) for _, o in GirlRoll.odds(live, GirlRoll.withLuck(Round.Rarities, k)) do if o.name == "Secret" then return o.chance end end return 0 end
-	check(secret(1) < 0.5, `no luck: Secret is rare ({secret(1)}%)`)
+	local x1, x10 = at(1), at(10)
+	local rarePlus = x1.Rare + x1.Epic + x1.Legendary + x1.Mythic + x1.Secret
+	check(x1.Common > 45 and x1.Common < 60, `no luck: about half Common ({x1.Common}%)`)
+	check(rarePlus >= 28, `no luck: Rare or better is common enough ({rarePlus}%)`)
+	check(x10.Common < 15 and x10.Rare > 20, `x10: few Commons ({x10.Common}%), many Rares ({x10.Rare}%)`)
+	local function secret(k) return at(k).Secret end
+	check(secret(1) < 1, `no luck: Secret is rare ({secret(1)}%)`)
 	check(secret(1) < secret(2) and secret(2) < secret(4) and secret(4) < secret(8) and secret(8) < secret(10), "each boost makes a Secret likelier")
 	check(GirlRoll.withLuck(Round.Rarities, 1) == Round.Rarities, "x1 is the config as set")
 	local boosted = GirlRoll.withLuck(Round.Rarities, 4)
-	check(boosted[1].Weight == Round.Rarities[1].Weight and Round.Rarities[2].Weight == 2.4, "Common unboosted, config untouched")
+	check(boosted[1].Weight == Round.Rarities[1].Weight and Round.Rarities[2].Weight == 9, "Common unboosted, config untouched")
 end
 
 print(if failed == 0 then "GirlRoll ok" else `GirlRoll: {failed} failed`)

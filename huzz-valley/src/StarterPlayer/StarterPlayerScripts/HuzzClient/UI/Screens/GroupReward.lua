@@ -28,7 +28,21 @@ local C, F = Theme.Colors, Theme.Fonts
 
 local GroupRewardScreen = {}
 
-local W, H = 500, 360
+local W, H = 500, 392
+
+-- A four-point sparkle made of parts (the "\u{2726}" glyph showed as a box in Roblox's font: owner's screenshot,
+-- Oct 23 17:48): two crossed bars that fade to points, and a small glow dot in the middle.
+local function sparkle(parent: Instance, size: number, pos: UDim2, z: number, name: string?): Frame
+	local f = new("Frame", { Name = name or "Sparkle", AnchorPoint = Vector2.new(0.5, 0.5), Position = pos, Size = UDim2.fromOffset(size, size), BackgroundTransparency = 1, ZIndex = z, Parent = parent })
+	local thick = math.max(2, math.round(size / 7))
+	for i, rot in { 0, 90 } do
+		local bar = new("Frame", { Name = "Bar" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(thick, size), Rotation = rot, BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = z, Parent = f }, { Kit.corner(thick // 2) })
+		new("UIGradient", { Name = "Points", Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 1) }), Parent = bar })
+	end
+	local dot = math.max(4, math.round(size / 3.5))
+	new("Frame", { Name = "Core", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(dot, dot), Rotation = 45, BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = z, Parent = f }, { Kit.corner(1) })
+	return f
+end
 
 local function line(props: { [string]: any }, stroke: number?): TextLabel
 	props.TextWrapped = props.TextWrapped == true
@@ -44,12 +58,14 @@ function GroupRewardScreen.build(parent: Instance)
 	local window = Kit.window({ Name = "GroupReward", Title = " ", Icon = "SpinWheel", Width = W, Height = H, TitleX = 56, TitleWidth = 0, StudsTo = 0, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel = window.Panel
 	-- the header words: FREE white, SPINS pink, a sparkle
-	local words = new("Frame", { Name = "Words", Position = UDim2.fromOffset(56, 0), Size = UDim2.new(0, 260, 1, 0), BackgroundTransparency = 1, ZIndex = 3, Parent = window.Header }, { Kit.list(Enum.FillDirection.Horizontal, 2, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
+	local words = new("Frame", { Name = "Words", Position = UDim2.fromOffset(56, 0), Size = UDim2.new(0, 280, 1, 0), BackgroundTransparency = 1, ZIndex = 3, Parent = window.Header }, { Kit.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
 	line({ Name = "Free", Text = "FREE", FontFace = F.Heading, TextSize = 28, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 34), LayoutOrder = 1, ZIndex = 3, Parent = words }, 2.5)
 	local spins = line({ Name = "Spins", Text = "SPINS", FontFace = F.Heading, TextSize = 28, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 34), LayoutOrder = 2, ZIndex = 3, Parent = words }, 2.5)
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("FFD2F2"), Color3.fromHex("FF5FC8")), Parent = spins })
-	local spark = Kit.text({ Name = "Spark", Text = "\u{2726}", TextSize = 20, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(20, 34), LayoutOrder = 3, ZIndex = 3, Parent = words })
-	Effects.breathe(spark, { scale = 1.3, seconds = 0.9 })
+	local sparkBox = new("Frame", { Name = "Spark", Size = UDim2.fromOffset(26, 34), BackgroundTransparency = 1, LayoutOrder = 3, ZIndex = 3, Parent = words })
+	local spark = sparkle(sparkBox, 22, UDim2.fromOffset(11, 15), 3)
+	sparkle(sparkBox, 10, UDim2.fromOffset(21, 27), 3, "Small")
+	Effects.breathe(spark, { scale = 1.25, seconds = 0.9 })
 
 	-- the sky-blue body (his picture's backdrop is a painted temple; ours a soft sky until he sends it as a PNG)
 	local bodyH = H - 47
@@ -60,34 +76,45 @@ function GroupRewardScreen.build(parent: Instance)
 	new("Frame", { Name = "Pair", Position = UDim2.fromOffset(0, bodyH - 190), Size = UDim2.fromOffset(150, 186), BackgroundTransparency = 1, ZIndex = 4, Parent = sky })
 
 	-- the wheel in a pink glow, with turning rays; a knife tile left, a coins tile right
-	local CX, CY = W // 2, 47 + 98
-	local rays = Effects.rays(panel, UDim2.fromOffset(CX, CY), 190, { color = Color3.fromHex("FF8AD8"), transparency = 0.45, seconds = 12, z = 3, name = "Rays" })
+	local CX, CY = W // 2, 47 + 104
+	local rays = Effects.rays(panel, UDim2.fromOffset(CX, CY), 230, { color = Color3.fromHex("FF8AD8"), transparency = 0.45, seconds = 12, z = 3, name = "Rays" })
 	-- a pink glow round the wheel: three soft rings, brightest inside
-	for i, g in { { 136, 3, 0.05 }, { 146, 4, 0.55 }, { 158, 5, 0.8 } } do
+	for i, g in { { 160, 4, 0.05 }, { 172, 5, 0.5 }, { 186, 6, 0.78 } } do
 		new("Frame", { Name = "Glow" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(g[1], g[1]), BackgroundTransparency = 1, ZIndex = 4, Parent = panel }, { Kit.corner(g[1] // 2), Kit.stroke(Color3.fromHex("FF6FD0"), g[2], g[3]) })
 	end
-	local wheel = Kit.icon("SpinWheel", { Name = "Wheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(124, 124), ZIndex = 5, Parent = panel })
+	-- (it stays still, as in his picture: turning it turned its pointer away from the top too, Oct 23 17:48)
+	local wheel = Kit.icon("SpinWheel", { Name = "Wheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(150, 150), ZIndex = 5, Parent = panel })
+	Effects.breathe(wheel, { scale = 1.03, seconds = 1.6 })
 	local spinning = false
-	Effects.spin(wheel, 8, function() return spinning end)
 	local function tile(name: string, x: number, tilt: number, delay: number)
 		-- (a tilted holder, so the tile rocks round its tilt: Effects.rock sets the tile's own Rotation)
-		local holder = new("Frame", { Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, CY - 10), Size = UDim2.fromOffset(84, 84), Rotation = tilt, BackgroundTransparency = 1, ZIndex = 4, Parent = panel })
-		local t = new("Frame", { Name = "Tile", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 4, Parent = holder }, { Kit.corner(10), Kit.stroke(Color3.fromHex("9C7CFF"), 2.5) })
-		new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("1D1848"), Color3.fromHex("08070F")), Parent = t })
+		-- (his picture: a deep navy tile lit purple at the top, a bright violet rim, a sparkle in its corner)
+		local holder = new("Frame", { Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, CY - 14), Size = UDim2.fromOffset(92, 92), Rotation = tilt, BackgroundTransparency = 1, ZIndex = 4, Parent = panel })
+		local t = new("Frame", { Name = "Tile", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 4, Parent = holder }, { Kit.corner(12), Kit.stroke(Color3.fromHex("A98BFF"), 3) })
+		new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("3A2C8C"), Color3.fromHex("141238")), Parent = t })
+		sparkle(t, 16, UDim2.fromOffset(18, 18), 6, "Corner")
 		Effects.rock(t, { degrees = 3, seconds = 1.8, delay = delay })
 		return t
 	end
-	local knifeTile = tile("KnifeTile", CX - 128, -10, 0)
-	Kit.art("KnifeCovenKatana", { Name = "Knife", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(76, 76), ZIndex = 5, Parent = knifeTile })
-	local coinTile = tile("CoinsTile", CX + 128, 10, 0.9)
-	Kit.icon("CurrencyCoin", { Name = "Coins", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(56, 56), ZIndex = 5, Parent = coinTile })
+	local knifeTile = tile("KnifeTile", CX - 150, -10, 0)
+	-- (his knife picture has its own dark backdrop: it fills the tile, rounded like it, so no square shows past the rim)
+	local knife = Kit.art("KnifeCovenKatana", { Name = "Knife", Size = UDim2.fromScale(1, 1), ScaleType = Enum.ScaleType.Crop, ZIndex = 5, Parent = knifeTile })
+	Kit.attach(Kit.corner(12), knife)
+	local corner = knifeTile:FindFirstChild("Corner")
+	if corner and corner:IsA("GuiObject") then corner.ZIndex = 7; for _, d in corner:GetDescendants() do if d:IsA("GuiObject") then d.ZIndex = 7 end end end
+	local coinTile = tile("CoinsTile", CX + 150, 10, 0.9)
+	Kit.icon("CurrencyCoin", { Name = "Coins", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(62, 62), ZIndex = 5, Parent = coinTile })
+	-- sparkles round the wheel, twinkling in turn
+	for i, sp in { { CX + 96, CY - 70, 18 }, { CX - 92, CY + 62, 14 }, { CX + 88, CY + 58, 10 } } do
+		local st = sparkle(panel, sp[3], UDim2.fromOffset(sp[1], sp[2]), 6, "Twinkle" .. i)
+		Effects.breathe(st, { scale = 1.35, seconds = 0.8 + i * 0.25 })
+	end
 
 	-- +5 SPINS, the line, JOIN GROUP
-	local amount = line({ Name = "Amount", Text = "+" .. Group.Spins .. " SPINS", FontFace = F.Heading, TextSize = 40, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, CY + 64), Size = UDim2.fromOffset(W - 32, 44), ZIndex = 6, Parent = panel }, 3)
+	local amount = line({ Name = "Amount", Text = "+" .. Group.Spins .. " SPINS", FontFace = F.Heading, TextSize = 48, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, CY + 82), Size = UDim2.fromOffset(W - 32, 50), ZIndex = 6, Parent = panel }, 3)
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("FFE2F6"), Color3.fromHex("FF5FC8")), Parent = amount })
 	local name = if Group.Name ~= "" then Group.Name else "our group"
-	local about = line({ Name = "About", Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!", FontFace = F.Name, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, CY + 108), Size = UDim2.fromOffset(W - 32, 22), ZIndex = 6, Parent = panel })
-	Kit.fitLine(about, W - 32, 16, 12, true)
+	local about = line({ Name = "About", Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!", FontFace = F.Name, TextSize = 17, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(110, CY + 130), Size = UDim2.fromOffset(W - 220, 42), ZIndex = 6, Parent = panel })
 	local join = Kit.button({ Name = "Join", Text = "JOIN GROUP", Icon = "Players", IconSize = 32, Style = "Action", FontFace = F.Button, TextSize = 26, Corner = 9, RimThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.fromOffset(W - 90, 50), ZIndex = 6, Parent = panel })
 
 	local pending = false

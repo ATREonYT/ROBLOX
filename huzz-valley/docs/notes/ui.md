@@ -367,3 +367,8 @@ equip it"; "make it your character dancing the dance"; "we can remove the outfit
   `dance-wheel-phone` shows the circle fits an 844x390 phone.
 - Oct 23 17:32: no placeholders. Kit.art / Kit.setArt blank every "DanceStill<id>" (the drawn dance figures): only your
   avatar (UI/DancePose) shows, else the card's backdrop and name. The wheel's note fallback is gone too.
+- Oct 23 17:53: his luck clover (assets/art/luck-clover.png, tools/icons/make_luck_clover.py: white cleared, his "5x"
+  taken out) is the HUD LUCK button with the server's luck on it, the badge on the LUCK window's BUY button (the step
+  it buys) and the two clovers on the SERVER LUCK sign. FREE SPINS: part-built sparkles (the ✦ glyph was a box in
+  Roblox), a still 150 px wheel (spinning turned its pointer), navy tiles; side-by-side in the pictures page.
+- Knife stands: the price button sits over the head under the sign (at the waist it hid behind the body).

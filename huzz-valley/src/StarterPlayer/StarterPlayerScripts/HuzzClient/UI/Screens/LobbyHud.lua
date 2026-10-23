@@ -147,9 +147,20 @@ function LobbyHud.build(parent: Instance)
 	-- the server's luck in big letters where the icon would be ("x1", "x4"), opening the LUCK window (Screens/Luck)
 	local luck = squareButton(right, "Luck", "AuraStar", 0, function() ModalManager.open("Luck") end)
 	if not Kit.reused(luck.Instance) then luck.Instance.Position = UDim2.fromOffset(100 - 25 - 33, luck.Instance.Position.Y.Offset) end
+	-- (Oct 23 17:53, his clover picture: "make this used for the button to buy the luck, and make the number be matched
+	-- to the server luck"): the button is his clover as it is, with the server's luck written on it ("8x"); the
+	-- square look underneath is taken off
 	local luckIcon = luck.Instance:FindFirstChild("Icon")
 	if luckIcon and luckIcon:IsA("GuiObject") then luckIcon.Visible = false end
-	local luckText = ShopStyle.chunky({ Name = "Multiplier", Text = "x1", TextSize = 26, TextColor3 = Color3.fromHex("FFF27A"), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 21), Size = UDim2.new(1, 0, 0, 30), ZIndex = luck.Instance.ZIndex + 2, Parent = luck.Instance }, 2.5)
+	luck.Instance.BackgroundTransparency = 1
+	for _, d in luck.Instance:GetChildren() do
+		if d:IsA("UIStroke") then d.Enabled = false
+		elseif d:IsA("UIGradient") then d.Enabled = false
+		elseif d:IsA("GuiObject") and d.Name ~= "Clover" and d.Name ~= "Multiplier" then d.Visible = false end
+	end
+	Kit.art("LuckClover", { Name = "Clover", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -1), Size = UDim2.fromOffset(70, 70), ScaleType = Enum.ScaleType.Fit, ZIndex = luck.Instance.ZIndex + 1, Parent = luck.Instance })
+	local luckText = ShopStyle.chunky({ Name = "Multiplier", Text = "1x", TextSize = 24, TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 2, 0.5, -3), Size = UDim2.new(1, 0, 0, 30), Rotation = -8, ZIndex = luck.Instance.ZIndex + 2, Parent = luck.Instance }, 3)
+	Effects.rock(luck.Instance:FindFirstChild("Clover") :: GuiObject, { degrees = 4, seconds = 1.6 })
 	-- INVITE over SPIN (owner, Oct 19: "make friend rewards, add a friend knife (for inviting them)"): Roblox's own
 	-- invite prompt (SocialService, guarded: it isn't there offline or on every device)
 	local invite = squareButton(right, "Invite", "Players", 66, function()
@@ -257,9 +268,9 @@ function LobbyHud.build(parent: Instance)
 		local l = ShopStyle.chunky({ Name = name, Text = text, TextSize = TITLE, TextColor3 = Color3.new(1, 1, 1), AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 30), LayoutOrder = order, ZIndex = 3, Parent = titleRow }, 2.5)
 		new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(top, foot), Parent = l })
 	end
-	-- (the clovers are Roblox's own emoji: no picture to upload; swap for his clover art when he sends a PNG)
+	-- (the clovers are his own clover picture since Oct 23 17:53, assets/art/luck-clover.png; they were emoji)
 	local function clover(name: string, order: number, delay: number)
-		local l = Kit.text({ Name = name, Text = "\u{1F340}", TextSize = 32, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromOffset(34, 34), LayoutOrder = order, ZIndex = 4, Parent = titleRow })
+		local l = Kit.art("LuckClover", { Name = name, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(36, 36), LayoutOrder = order, ZIndex = 4, Parent = titleRow })
 		Effects.rock(l, { degrees = 10, seconds = 1.6, delay = delay })
 	end
 	clover("CloverLeft", 1, 0)
@@ -317,7 +328,7 @@ function LobbyHud.build(parent: Instance)
 		local k = tonumber(workspace:GetAttribute("HuzzServerLuck")) or 1
 		local n = if k == math.floor(k) then tostring(math.floor(k)) else string.format("%.1f", k)
 		number.Text = n .. "x"
-		luckText.Text = "x" .. n
+		luckText.Text = n .. "x"
 		if k > lastLuck then
 			luckPop.Scale = 1.25
 			Motion.tween(luckPop, "luckpop", 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
