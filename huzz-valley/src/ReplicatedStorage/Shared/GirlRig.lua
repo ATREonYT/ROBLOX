@@ -37,6 +37,27 @@ function GirlRig.toMotors(model: Model)
 			d:Destroy()
 		end
 	end
+	-- (Oct 23, C.C.: "make cc's body move normally") If Roblox ever puts its own newer joints back on the copy (an R15
+	-- body can rebuild them, e.g. after a resize), a limb would be held twice and the poses on the Motor6D might not
+	-- show. Any that come back are removed, and Output says so once ([Huzz] line), so we know if it happens.
+	if next(done) then
+		pcall(function()
+			local told = false
+			model.DescendantAdded:Connect(function(d)
+				if d.ClassName == "AnimationConstraint" or d:IsA("BallSocketConstraint") then
+					task.defer(function()
+						if d.Parent then
+							d:Destroy()
+						end
+					end)
+					if not told then
+						told = true
+						print(`[Huzz] {model.Name}: Roblox put its own {d.ClassName} ({d.Name}) back on her; removed so her moves show`)
+					end
+				end
+			end)
+		end)
+	end
 end
 
 -- Body parts: every part not inside an accessory, and not the root (nothing should hang off the root but the body).

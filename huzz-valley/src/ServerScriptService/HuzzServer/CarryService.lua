@@ -130,10 +130,10 @@ function CarryService.give(player, girl, fromPosition, mood)
 
 	local model, root, centre, size = GirlService.makeCopy(girl, folder)
 	model.Name = "Carried_" .. player.Name
+	-- (her own name tag goes: carried, it sat in the carrier's body; owner, Oct 23 14:10: "the girl name isnt above
+	-- his head but inside the body". Her name shows over his head instead: GirlSign, "HAS <HER NAME>")
 	local tag = model:FindFirstChild("HuzzNameTag")
-	if tag then
-		tag.StudsOffsetWorldSpace = Vector3.new(0, size.Z * 0.5 + 1.4, 0) -- she's lying down
-	end
+	if tag then tag:Destroy() end
 	model:SetAttribute("Carrier", player.UserId)
 	model:SetAttribute("GirlName", girl.name)
 	model:SetAttribute("Start", Workspace:GetServerTimeNow())

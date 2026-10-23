@@ -48,7 +48,7 @@ function M.start()
 
 	-- The leap's ribbon (KnifeLook.CATCH.Streak): one Trail per character, between two points on the UpperTorso.
 	local function streakOf(character)
-		local torso = character:FindFirstChild("UpperTorso")
+		local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso") -- (R6: its one Torso)
 		if not (torso and torso:IsA("BasePart")) then return nil end
 		local trail = torso:FindFirstChild("HuzzLungeStreak")
 		if trail then return trail end
@@ -174,7 +174,9 @@ function M.start()
 	local function playStab(p, model: Model?, ago: number?, lunge: boolean?)
 		local character = model or (typeof(p) == "Instance" and (p :: Player).Character or nil)
 		local rig = character and CarryMath.rig(character)
-		if not (rig and rig.kind == "R15") then
+		-- (R6 too: the game is R6 since Oct 22 and StabMotion has had its R6 swing and dive since then, but this
+		-- still let only R15 bodies through, so nobody's swing or dive showed; owner, Oct 23 14:10/14:11)
+		if not (rig and (rig.kind == "R15" or rig.kind == "R6")) then
 			return
 		end
 		local s = stabs[p]

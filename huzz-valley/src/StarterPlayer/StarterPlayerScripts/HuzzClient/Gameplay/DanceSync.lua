@@ -15,7 +15,7 @@
 	  - Your own dance in the live game while it has no published ID (UI/DancePlayer.handBeat; owner, Oct 20 15:13:
 	    "inside the actual roblox game, not studio, make it so that dances are available"): drawn the same way on
 	    your own joints, on its beat (no track exists to play).
-	  - Sync dance: walk up to someone dancing (not in a round, not in a cutscene) and press F or tap "SYNC DANCE"
+	  - Sync dance: walk up to someone dancing (not in a round, not in a cutscene) and press E or tap "SYNC DANCE"
 	    (also while you dance something else or the same dance off their beat; Oct 22 18:54): you start their dance on
 	    their beat. Only a dance you own: otherwise it says where to get it (nothing sold from here).
 	Gameplay/Frame order 9: after the walk pack (PlayerMoves 8, which steps aside while someone dances), before the
@@ -200,7 +200,7 @@ function M.start()
 				prompt = Instance.new("ProximityPrompt")
 				prompt.Name = PROMPT_NAME
 				prompt.ActionText = "SYNC DANCE"
-				prompt.KeyboardKeyCode = Enum.KeyCode.F
+				prompt.KeyboardKeyCode = Enum.KeyCode.E -- (owner, Oct 23: "make everything be E"; was F)
 				prompt.GamepadKeyCode = Enum.KeyCode.ButtonY
 				prompt.MaxActivationDistance = 12
 				prompt.RequiresLineOfSight = false

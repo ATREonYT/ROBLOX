@@ -280,6 +280,11 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   so since the dances went R6 the girls stood still. An R6 pose is now read through the R6 joints' own C0 turns into
   each parent's space and put on her joints the same way (R6 girl: exactly the dance; R15 girl: waist, elbows, knees
   straight). `tests/DanceRetarget.spec.luau`; film `tools/preview/motion3d/dance_scene.luau`.
+- **C.C. on R6 dances (Oct 23: "make cc's body move normally, keep the head attatched"):** her root joint sits at her
+  hips, the R6 one mid-torso, so each lean swung her whole body round her hips (head up to 18% of her height off the R6
+  girls', feet through the floor). DanceRetarget now turns her about her root's middle: every piece within 0°, head 1%,
+  feet 3% (spec). GirlRig also removes and reports (`[Huzz] ... put its own ...`) any Roblox joint put back on a copy.
+  Film `motion3d/cc_body_scene.luau` (C.C. beside Yui: Balenci, walk, held). Offline only.
 
 ## Honest gaps
 - Live dances drawn by hand are checked offline only: whether Roblox's own Animate (or a published walk) fights the

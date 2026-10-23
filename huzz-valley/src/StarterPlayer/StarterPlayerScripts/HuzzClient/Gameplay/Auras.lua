@@ -357,9 +357,16 @@ function M.start()
 			c.leaderY = root.Position.Y
 			w.moves = w.moves or GirlMoves.find(os.clock()) -- (the owner's walk/run/idle once they've arrived: Shared/GirlMoves)
 			local head = character:FindFirstChild("Head")
-			FollowMotion.step(w, dt, clock, root.CFrame, c.groundAt, head and head.Position)
-			CompanionDance.step(p, character, w.joints, dt, COMPANION_HEIGHT, w.speed < 6)
-			c.handle.step(dt)
+			-- (a girl far away moves 10 times a second, not every frame: her walk's ground ray and her pose cost the
+			-- same however small she is on screen; owner, Oct 23 "its very laggy")
+			c.acc = (c.acc or 0) + dt
+			if c.acc >= (if far > 100 and p ~= Players.LocalPlayer then 0.1 else 0) then
+				local sdt = math.min(c.acc, 0.2)
+				c.acc = 0
+				FollowMotion.step(w, sdt, clock, root.CFrame, c.groundAt, head and head.Position)
+				CompanionDance.step(p, character, w.joints, sdt, COMPANION_HEIGHT, w.speed < 6)
+				c.handle.step(sdt)
+			end
 			if c.puff then
 				c.puff = nil
 				Burst.sparks(c.model:GetPivot().Position, c.colors, 16,

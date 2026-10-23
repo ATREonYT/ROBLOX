@@ -292,6 +292,7 @@ function M.start()
 	-- RespectCanCollide she stood on top of a zone box after the win (owner, Oct 20 15:13: "make the girls always be
 	-- on the floor after the game is won"; tests/GirlFloor.spec: up to several studs up on his maps).
 	local rayParams = RaycastParams.new()
+	local filterAt = -math.huge -- (when the ray filter was last rebuilt)
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
 	rayParams.RespectCanCollide = true
 	local function groundAt(from, above)
@@ -337,7 +338,8 @@ function M.start()
 				end
 			end
 		end
-		if next(followers) then
+		if next(followers) and now - filterAt > 0.5 then -- (rebuilt twice a second, not every frame)
+			filterAt = now
 			local ignore = { folder, Workspace:FindFirstChild("HuzzFollowers") }
 			for _, p in Players:GetPlayers() do
 				table.insert(ignore, p.Character)

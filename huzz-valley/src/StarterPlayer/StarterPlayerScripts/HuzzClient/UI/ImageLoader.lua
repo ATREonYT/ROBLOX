@@ -30,7 +30,8 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Images = Shared:WaitForChild("Images")
 
 local ImageLoader = {}
-ImageLoader.IDLE_FREE = 30 -- seconds a drawn picture may stay off screen before it's freed
+ImageLoader.IDLE_FREE = 120 -- seconds a drawn picture may stay off screen before it's freed (was 30: a window opened
+-- again a little later decoded all its pictures again, a hitch each time; owner, Oct 23 "its very laggy")
 ImageLoader.RETRY = 5 -- seconds before a picture that failed is tried again (doubles each time, up to RETRY_MAX)
 ImageLoader.RETRY_MAX = 60
 
@@ -44,7 +45,15 @@ local function decode(s: string): buffer
 	local len = n // 4 * 3 - pad
 	local out = buffer.create(len)
 	local o = 0
+	-- (a big picture is up to ~1 MB of text: decoded in slices of 48 KB a frame where it can wait, so opening a window
+	-- never freezes the game for a moment; Oct 23)
+	local slice = if coroutine.isyieldable() then 49152 else math.huge
+	local nextWait = slice
 	for i = 1, n, 4 do
+		if i > nextWait then
+			nextWait += slice
+			task.wait()
+		end
 		local a, b, c, d = string.byte(s, i, i + 3)
 		local v = VALUE[a] * 262144 + VALUE[b] * 4096 + (VALUE[c] or 0) * 64 + (VALUE[d] or 0)
 		buffer.writeu8(out, o, v // 65536)

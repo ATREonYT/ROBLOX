@@ -1158,7 +1158,11 @@ function M.start()
 				body:SetAttribute("HuzzCastLen", wind + flash)
 				body:SetAttribute("HuzzCastKind", fx.Pose)
 			end
-			task.spawn(CAST[data.name], root, data, wind, flash, burst, fade, PINK, mine, data.id)
+			-- (someone else's: on their torso, which this screen draws ahead of their root, Gameplay/OthersAhead, so the
+			-- look goes with the body you see instead of trailing behind it; owner, Oct 23 14:10)
+			local torso = body and (body:FindFirstChild("Torso") or body:FindFirstChild("UpperTorso"))
+			local on = if not mine and torso and torso:IsA("BasePart") then torso else root
+			task.spawn(CAST[data.name], on, data, wind, flash, burst, fade, PINK, mine, data.id)
 			if not mine then
 				-- (root +7: clear above their name tag, which ends ~root +6)
 				Burst.pop(root.Position + UP * 7, string.upper(def.Name), PINK, { height = 1.1, rise = 1.2, time = 1.2, onTop = false })

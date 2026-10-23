@@ -171,7 +171,10 @@ end
 
 -- Only the name tag (role title, HERO/CHICKEN badge, rescue bar). The rescue loop calls this every frame instead of
 -- the whole syncPlayer, which walks every body part and refits the worn knife (bug hunt, Oct 20).
-local function syncTag(id)
+-- onlyIfMoved (the rescue loop, every frame): skips it unless the look, the badge or the bar moved a step (1/40), so
+-- the tag isn't rewritten and sent to everyone 60 times a second (owner, Oct 23: "its very laggy").
+local tagSent = {} -- id -> what the tag last showed
+local function syncTag(id, onlyIfMoved: boolean?)
 	local p = byId[id]
 	if not p then
 		return
@@ -180,7 +183,12 @@ local function syncTag(id)
 	if match and match.picked == id and match.choice then
 		badge = string.upper(match.choice)
 	end
-	NameTags.set(p, tagLook(id), badge, rescueTime[id] and rescueTime[id] / Config.Rescue.Time)
+	local rescue = rescueTime[id] and rescueTime[id] / Config.Rescue.Time
+	local look = tagLook(id)
+	local key = string.format("%s|%s|%d", tostring(look), tostring(badge), math.floor((rescue or 0) * 40))
+	if onlyIfMoved and tagSent[id] == key then return end
+	tagSent[id] = key
+	NameTags.set(p, look, badge, rescue)
 end
 
 local function syncPlayer(id)
@@ -543,11 +551,11 @@ local function step(dt)
 				if rescueTime[downedId] >= Config.Rescue.Time then
 					apply(Rules.rescue(match, helper, downedId)) -- (a full sync: handlers.Rescued)
 				else
-					syncTag(downedId) -- (only the bar moves: nothing else about them changed)
+					syncTag(downedId, true) -- (only the bar moves: nothing else about them changed)
 				end
 			elseif before then
 				rescueTime[downedId] = if before > dt * 2 then before - dt * 2 else nil
-				syncTag(downedId)
+				syncTag(downedId, rescueTime[downedId] ~= nil) -- (the bar emptied: always shown)
 			end
 		end
 	end

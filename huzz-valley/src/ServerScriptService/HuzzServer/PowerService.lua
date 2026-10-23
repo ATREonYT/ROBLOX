@@ -173,6 +173,15 @@ local function removeShield(id)
 	end
 end
 
+-- What a power's look hangs on: the torso, not the root (owner, Oct 23 14:10: "when someone activates the shield, it
+-- like drags behind him"). Other screens draw a body ahead of its root (Gameplay/OthersAhead moves the torso's
+-- joint), so a bubble or trail on the root stayed behind the body they see; on the torso it goes with it.
+local function bodyOf(root: BasePart?): BasePart?
+	local character = root and root.Parent
+	local torso = character and (character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
+	return if torso and torso:IsA("BasePart") then torso else root
+end
+
 local function boost(id, amount, seconds, color)
 	local s = stateOf(id)
 	-- (a smaller boost never cuts a bigger one short: a Shield pop's +6 during a Speed Boost's +12)
@@ -181,7 +190,7 @@ local function boost(id, amount, seconds, color)
 	s.trailUntil = math.max(s.trailUntil or 0, s.boostUntil)
 	-- A trail behind them while it lasts (the power's colour).
 	local p = ctx.playerOf(id)
-	local root = ctx.rootOf(id)
+	local root = bodyOf(ctx.rootOf(id))
 	if root and not root:FindFirstChild("HuzzRushTrail") then
 		local a0 = Instance.new("Attachment")
 		a0.Name = "HuzzRushA"
@@ -291,7 +300,7 @@ function USE.Shield(id, def)
 		bubble.CanCollide, bubble.CanQuery, bubble.CanTouch, bubble.Massless, bubble.CastShadow = false, false, false, true, false
 		bubble.CFrame = root.CFrame
 		local weld = Instance.new("WeldConstraint")
-		weld.Part0, weld.Part1 = root, bubble
+		weld.Part0, weld.Part1 = bodyOf(root), bubble
 		weld.Parent = bubble
 		-- Outside the character, so the team outline (a Highlight on the character) doesn't ring it.
 		bubble.Parent = folder("HuzzShields")

@@ -502,7 +502,7 @@ function M.start()
 		end
 		rec.refresh = refresh
 		refresh()
-		button.Activated:Connect(function()
+		local function buy()
 			local owned = info.Key ~= nil and State.owns(info.Key)
 			if owned then
 				Toast.show("You own " .. info.Title .. ".")
@@ -516,11 +516,25 @@ function M.start()
 					warn("[Huzz] Avatar stand " .. rec.stand:GetFullName() .. " isn't on sale: " .. info.Why)
 				end
 			end
-		end)
+		end
+		button.Activated:Connect(buy)
+		-- walk up and press E (owner, Oct 23 14:10: "make you be able to press e and it brings up the buy gamepass
+		-- menu"): the same as the button, Roblox's own purchase window
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "StandBuy"
+		prompt.ActionText = "Buy"
+		prompt.ObjectText = info.Title or ""
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 12
+		prompt.RequiresLineOfSight = false
+		prompt.Triggered:Connect(buy)
+		prompt.Parent = rec.root
+		rec.prompt = prompt
 	end
 
 	local function clear(rec)
-		for _, k in { "copy", "sign", "buttonGui" } do
+		for _, k in { "copy", "sign", "buttonGui", "prompt" } do
 			if rec[k] then rec[k]:Destroy() rec[k] = nil end
 		end
 		for _, p in rec.aura or {} do p:Destroy() end

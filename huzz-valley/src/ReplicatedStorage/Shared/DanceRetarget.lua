@@ -82,12 +82,22 @@ function DanceRetarget.apply(J, pose, weight: number, scale: number)
 			if t then
 				local r = R6_C0[part]
 				local cf = r * t * r:Inverse()
-				if joint == "Root" then
-					cf = CFrame.new(cf.Position * scale) * cf.Rotation
+				local m = J[joint]
+				if joint == "Root" and m and J.Waist then
+					-- R15 girl (C.C., Oct 23 "make cc's body move normally"): her root joint sits at her hips, the R6
+					-- one in the middle of the torso, so the dance's leans swung her whole body round her hips (head
+					-- and feet up to 15% of her height off the R6 girls'). Turn her about her root's middle instead.
+					local c0 = m.C0
+					local want = c0:Inverse() * CFrame.new(cf.Position * scale) * cf.Rotation * c0
+					m.Transform = if weight >= 1 then want else m.Transform:Lerp(want, weight)
 				else
-					cf = cf.Rotation
+					if joint == "Root" then
+						cf = CFrame.new(cf.Position * scale) * cf.Rotation
+					else
+						cf = cf.Rotation
+					end
+					put(m, cf, weight)
 				end
-				put(J[joint], cf, weight)
 			end
 		end
 		for _, joint in { "Waist", "LElbow", "RElbow", "LWrist", "RWrist", "LKnee", "RKnee", "LAnkle", "RAnkle" } do

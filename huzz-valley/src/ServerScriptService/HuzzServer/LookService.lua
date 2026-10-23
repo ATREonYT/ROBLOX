@@ -45,6 +45,18 @@ function LookService.apply()
 	end
 	local dof = Lighting:FindFirstChildOfClass("DepthOfFieldEffect")
 	if dof and Look.DepthOfField == false then (dof :: DepthOfFieldEffect).Enabled = false end
+	LookService.lightShadows(workspace)
+end
+
+-- Lamps that cast shadows are one of the costliest things a screen draws (owner, Oct 23 14:10: "its very laggy ...
+-- check everything in the game that can make it laggy"): the lobby and maps had 22 shadow-casting PointLights. They
+-- still light everything; only their shadows go (the sun's stay). Now and for any map loaded later.
+function LookService.lightShadows(root: Instance)
+	local function fix(d: Instance)
+		if (d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight")) and d.Shadows then d.Shadows = false end
+	end
+	for _, d in root:GetDescendants() do fix(d) end
+	root.DescendantAdded:Connect(fix)
 end
 
 return LookService

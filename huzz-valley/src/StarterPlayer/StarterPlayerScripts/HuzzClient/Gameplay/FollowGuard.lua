@@ -180,9 +180,10 @@ end
 function M.following(rec: { [BasePart]: any }, pool: { [BasePart]: boolean }, at: Vector3, now: number): { { part: BasePart, moved: number } }
 	local out = {}
 	local near = {}
+	local reach = M.NEAR + M.BIGGEST / 2 -- (the pool holds only parts up to BIGGEST: anything further can't be near)
 	for p in pool do
-		if p.Parent then
-			local d = (p.CFrame.Position - at).Magnitude
+		local d = if p.Parent then (p.CFrame.Position - at).Magnitude else math.huge
+		if d <= reach then
 			-- (a piece of something big, e.g. a moving platform he rides, moves with that, not with him)
 			local holder = read(p, "AssemblyRootPart")
 			local onBig = holder ~= nil and holder ~= p and isA(holder, "BasePart") and biggest(holder) > M.BIGGEST
