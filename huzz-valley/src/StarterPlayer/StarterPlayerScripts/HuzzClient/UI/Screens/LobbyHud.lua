@@ -152,9 +152,11 @@ function LobbyHud.build(parent: Instance)
 	-- next one, and at the top "MAX Luck" opens the LUCK window. The odds are in the LUCK window (the SERVER LUCK sign).
 	local luckOld = right:FindFirstChild("Luck") -- (the clover square before; saved places still have it)
 	if luckOld and luckOld:IsA("GuiObject") then luckOld.Visible = false end
-	local LUCK_W, LUCK_H = 150, 60
+	-- (owner, Oct 23 20:51: "fix the top button with the server luck not overlapping with the others": 54 tall and
+	-- centred at 22, so with its rim and its breathing it stays 8 clear of INVITE's rim; set again below for saved places)
+	local LUCK_W, LUCK_H, LUCK_Y = 150, 54, 22
 	local luck = new("TextButton", {
-		Name = "LuckBuy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromOffset(76, 30), Size = UDim2.fromOffset(LUCK_W, LUCK_H),
+		Name = "LuckBuy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromOffset(76, LUCK_Y), Size = UDim2.fromOffset(LUCK_W, LUCK_H),
 		BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AutoButtonColor = false, Text = "", ZIndex = 2, Parent = right,
 	}, { Kit.corner(10), Kit.stroke(ShopStyle.INK, 3) })
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("8BE6FF")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("4FC8F2")), ColorSequenceKeypoint.new(1, Color3.fromHex("2AA2DB")) }), Parent = luck })
@@ -164,7 +166,9 @@ function LobbyHud.build(parent: Instance)
 	Effects.rock(luckClover, { degrees = 6, seconds = 1.6 })
 	local luckText = ShopStyle.chunky({ Name = "Step", Text = "x2 Luck", TextSize = 24, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 30), Size = UDim2.new(1, -8, 0, 26), ZIndex = 4, Parent = luck }, 3)
 	local luckPrice = ShopStyle.chunky({ Name = "Price", Text = "", TextSize = 15, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 48), Size = UDim2.new(1, -8, 0, 16), ZIndex = 4, Parent = luck }, 2.5)
-	Effects.breathe(luck, { scale = 1.04, seconds = 1.2 })
+	luck.Position, luck.Size = UDim2.fromOffset(76, LUCK_Y), UDim2.fromOffset(LUCK_W, LUCK_H)
+	luckText.Position, luckPrice.Position = UDim2.new(0.5, 0, 0, 26), UDim2.new(0.5, 0, 0, 43)
+	Effects.breathe(luck, { scale = 1.03, seconds = 1.2 })
 	local Products = require(Shared.Config.Products)
 	local LUCK_MAX = (require(Shared.Config.Round).Luck or {}).Max or 10
 	local luckPrices: { [string]: number } = {} -- (Roblox's live prices once they load; the config's until then)
@@ -312,7 +316,8 @@ function LobbyHud.build(parent: Instance)
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = gear.Instance })
 	gear.onClick(function() ModalManager.toggle("Settings") end)
 
-	local top = group(root, "Round", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Vector2.new(261, 118))
+	local top = group(root, "Round", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Vector2.new(261, 142))
+	top.Size = UDim2.fromOffset(261, 142) -- (saved places have the shorter group)
 	-- up into Roblox's top bar row, between its buttons (owner, Oct 23 16:52: "move the server luck more up on the
 	-- screen"); set here, so the saved StarterGui part follows this device's top bar too
 	top.Position = UDim2.new(0.5, 0, 0, math.min(0, barY))
@@ -384,13 +389,16 @@ function LobbyHud.build(parent: Instance)
 		task.delay(sp[3], function() Effects.breathe(l, { scale = 1.35, seconds = 0.9 }) end)
 	end
 	luckSign.Activated:Connect(function() ModalManager.open("Luck") end)
-	banner.Position = UDim2.fromOffset(3, 58) -- (NEXT ROUND under the sign)
+	-- (owner, Oct 23 20:51: "not overlapping with the others": the sign 0-55, NEXT ROUND 62-98, SKIP 108-140, each
+	-- with a clear gap outside its rim)
+	banner.Position = UDim2.fromOffset(3, 62) -- (NEXT ROUND under the sign)
 	-- SKIP under NEXT ROUND while waiting for a game (owner, Oct 23 19:33: "you dont get teleported into the game if you
 	-- select it, add in brackets (skip game)"): you sit the next game out in the lobby (HuzzServer/SkipService). Tap
 	-- again to play after all.
-	local skip = Kit.button({ Name = "Skip", Text = "SKIP (skip game)", Style = "Action", FontFace = Theme.Fonts.Button, TextSize = 15, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 102), Size = UDim2.fromOffset(176, 32), Parent = top })
-	skip.Instance.Position = UDim2.fromOffset(130, 102)
-	skip.Instance.Size = UDim2.fromOffset(176, 32) -- (saved places have the older, narrower button)
+	local skip = Kit.button({ Name = "Skip", Text = "SKIP (skip game)", Style = "Action", FontFace = Theme.Fonts.Button, TextSize = 15, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 108), Size = UDim2.fromOffset(176, 32), Parent = top })
+	-- (Kit buttons sit on their centre, for the press effect: Kit.place turns "top centre at 130, 108" into that; a
+	-- plain Position here put SKIP 16 higher, over NEXT ROUND. Saved places have the older, narrower button.)
+	Kit.place(skip.Instance, UDim2.fromOffset(130, 108), UDim2.fromOffset(176, 32), Vector2.new(0.5, 0))
 	skip.Instance.Visible = false
 	local skipBusy = false
 	local function showSkip()

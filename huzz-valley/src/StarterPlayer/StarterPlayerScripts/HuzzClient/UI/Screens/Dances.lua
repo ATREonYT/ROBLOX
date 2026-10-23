@@ -119,14 +119,21 @@ end
 
 -- The glowing backdrop of a dance picture: a dark fill lit in the dance's colour, the soft glow (floor light, halos)
 -- and the crisp notes and sparkles on top, all tinted. Returns the frame the figure goes in.
-local function glow(parent: Instance, d, size: Vector2, pos: Vector2, corner: number)
+-- Yours are lit up bright in the dance's colour; locked ones stay dim (owner, Oct 23 20:51: "fix the dances being
+-- dark when you own it, do it well": owned and locked looked the same dark navy).
+local function glow(parent: Instance, d, size: Vector2, pos: Vector2, corner: number, mine: boolean)
 	local color = colorOf(d)
 	local back = new("Frame", { Name = "Glow", Position = UDim2.fromOffset(pos.X, pos.Y), Size = UDim2.fromOffset(size.X, size.Y), BackgroundColor3 = WHITE, BorderSizePixel = 0, Parent = parent }, { Kit.corner(corner) })
-	new("UIGradient", { Name = "Light", Rotation = 90, Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, COL.ArtBottom), ColorSequenceKeypoint.new(0.55, color:Lerp(COL.ArtBottom, 0.72)), ColorSequenceKeypoint.new(1, color:Lerp(COL.ArtBottom, 0.5)),
-	}), Parent = back })
-	Kit.art("DanceFxGlow", { Name = "FxGlow", Size = UDim2.fromScale(1, 1), ImageColor3 = color, Parent = back })
-	Kit.art("DanceFxCore", { Name = "FxCore", Size = UDim2.fromScale(1, 1), ImageColor3 = color:Lerp(WHITE, 0.55), Parent = back })
+	local light = new("UIGradient", { Name = "Light", Rotation = 90, Parent = back })
+	light.Color = if mine
+		then ColorSequence.new({ ColorSequenceKeypoint.new(0, color:Lerp(COL.ArtBottom, 0.55)), ColorSequenceKeypoint.new(0.55, color:Lerp(COL.ArtBottom, 0.25)), ColorSequenceKeypoint.new(1, color:Lerp(WHITE, 0.15)) })
+		else ColorSequence.new({ ColorSequenceKeypoint.new(0, COL.ArtBottom), ColorSequenceKeypoint.new(0.55, color:Lerp(COL.ArtBottom, 0.88)), ColorSequenceKeypoint.new(1, color:Lerp(COL.ArtBottom, 0.75)) })
+	local fx = Kit.art("DanceFxGlow", { Name = "FxGlow", Size = UDim2.fromScale(1, 1), ImageColor3 = color, Parent = back })
+	local core = Kit.art("DanceFxCore", { Name = "FxCore", Size = UDim2.fromScale(1, 1), ImageColor3 = color:Lerp(WHITE, 0.55), Parent = back })
+	fx.ImageColor3 = if mine then color:Lerp(WHITE, 0.35) else color:Lerp(COL.ArtBottom, 0.6)
+	core.ImageColor3 = if mine then color:Lerp(WHITE, 0.75) else color:Lerp(COL.ArtBottom, 0.45)
+	fx.ImageTransparency = if mine then 0 else 0.35
+	core.ImageTransparency = if mine then 0 else 0.45
 	return back
 end
 
@@ -214,7 +221,7 @@ function DancesScreen.build(parent: Instance)
 
 	-- Your avatar doing the selected dance: a copy of your character in a ViewportFrame (a WorldModel inside, so
 	-- its Animator runs), seen from the front. Rebuilt only when the dance or your character changes.
-	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(205, 205, 215), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(0.35, -0.75, 0.55), Visible = false, ZIndex = 3, Parent = artBox }, { Kit.corner(5) })
+	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(225, 225, 232), LightColor = Color3.fromRGB(255, 252, 245), LightDirection = Vector3.new(0.35, -0.75, 0.55), Visible = false, ZIndex = 3, Parent = artBox }, { Kit.corner(5) })
 	local shownDance, shownChar = nil, nil
 	-- A still copy of your character for a ViewportFrame: no scripts, name tags or effects, standing at the origin.
 	local function avatarCopy(character: Model): Model
@@ -367,7 +374,7 @@ function DancesScreen.build(parent: Instance)
 			return
 		end
 		local mine = owned(d.Id)
-		glow(artBox, d, Vector2.new(artW, PREVIEW.ArtH), Vector2.zero, 5)
+		glow(artBox, d, Vector2.new(artW, PREVIEW.ArtH), Vector2.zero, 5, mine)
 		-- the figure stands on the glowing floor, as big as the box allows
 		local fig = figure(artBox, d, Vector2.new(128, 128), Vector2.new(math.floor((artW - 128) / 2), 14), Vector2.new(artW - 2, PREVIEW.ArtH - 2), mine, 30)
 		if mine and showDancer(d) then
@@ -405,7 +412,7 @@ function DancesScreen.build(parent: Instance)
 		local halo = new("Frame", { Name = "Halo", Position = UDim2.fromOffset(-3, -3), Size = UDim2.new(1, 6, 1, 6), BackgroundTransparency = 1, Visible = false, Parent = c }, { Kit.corner(8) })
 		new("UIStroke", { Name = "Glow", Color = COL.Halo, Thickness = 3, Transparency = 0.45, Parent = halo })
 		Motion.bindButton(c, function() return nil end)
-		glow(c, d, Vector2.new(GRID.CardW - 2, GRID.PicH), Vector2.new(1, 1), 5)
+		glow(c, d, Vector2.new(GRID.CardW - 2, GRID.PicH), Vector2.new(1, 1), 5, mine)
 		figure(c, d, Vector2.new(72, 72), Vector2.new(math.floor((GRID.CardW - 72) / 2), 4), Vector2.new(GRID.CardW - 2, GRID.PicH), mine, 22)
 		local band = new("Frame", { Name = "Band", Position = UDim2.new(0, 1, 1, -GRID.Band - 1), Size = UDim2.new(1, -2, 0, GRID.Band), BackgroundColor3 = COL.Band, BackgroundTransparency = 0.1, BorderSizePixel = 0, ZIndex = 2, Parent = c }, { Kit.corner(5) })
 		Kit.name({ Name = "Name", Text = d.Name, TextSize = 12, Position = UDim2.fromOffset(8, 0), Size = UDim2.new(1, -12, 1, -1), ZIndex = 3, Parent = band })
@@ -415,8 +422,8 @@ function DancesScreen.build(parent: Instance)
 		local outline = Kit.icon("FavouriteOutline", { Name = "Outline", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(20, 19), ZIndex = 3, Parent = star })
 		local api = {}
 		function api.setSelected(on: boolean)
-			rim.Color = if on then COL.Selected else COL.CardRim
-			rim.Thickness = if on then 2 else 1.5
+			rim.Color = if on then COL.Selected elseif mine then colorOf(d):Lerp(WHITE, 0.25) else COL.CardRim
+			rim.Thickness = if on or mine then 2 else 1.5
 			halo.Visible = on
 			local fav = favourite(d.Id)
 			filled.Visible = fav
