@@ -71,8 +71,9 @@ for _, t in trails() do if t.Parent and t.Parent.Name == "Right Arm" then hasArm
 check("they come off the R6 limbs", hasArm)
 local t1 = trails()[1]
 check("thin, short and white", t1 and t1.Lifetime <= 0.3 and (t1.Attachment1.Position - t1.Attachment0.Position).Magnitude <= 0.2)
-check("flat out: the blue glow round the edge", edge() > 0.4 and gui.Enabled)
-check("eases in (no pop)", early > 0 and early < edge() * 0.5)
+-- (the glow is off since Oct 23, owner: "fix the blue thing on my screen popping up when I run": Config/Run.SpeedFX.Glow.Strength 0)
+check("flat out: no blue glow (owner, Oct 23)", edge() == 0 and not gui.Enabled)
+check("... and none on the way up", early == 0)
 check("left, right and top; none at the bottom", gui:FindFirstChild("Top") ~= nil and gui:FindFirstChild("Bottom") == nil)
 c:SetAttribute("HuzzDance", "OrangeSwing")
 run(0.1)

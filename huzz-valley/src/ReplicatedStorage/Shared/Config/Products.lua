@@ -125,15 +125,21 @@ Products.Crates = {
 	{ Key = "BeastCrateKey", Kind = "CrateKey", Crate = "Beast", Name = "Void Beast Chest", Blurb = "One open of the\nVoid Beast Chest.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
 } :: { Product }
 
--- Luck boosts (owner, Oct 23 15:22: "add a x2 luck, x4 luck, x8 luck dev products, and make it go up in price"; he
--- sends the real products and multipliers later: add a row per product, any Amount works). Amount = the multiplier.
--- Each buy multiplies the buyer's luck, which the whole server shares while they're here (Config/Round.Luck,
--- HuzzServer/LuckService, Screens/Luck). While Id = 0 the button shows its price and only says "coming soon".
--- Prices are Claude's pick until he sends his.
+-- Server luck boosts (owner, Oct 23 15:22: "add a x2 luck, x4 luck, x8 luck dev products, and make it go up in price";
+-- 16:06 he sent these nine, x2 to x10, with their IDs and prices). Amount = the luck it sets. The server's luck is the
+-- highest boost of anyone here, never above Config/Round.Luck.Max, and a boost lasts while its buyer is in the server
+-- (HuzzServer/LuckService, Screens/Luck). Only boosts above the server's luck now can be bought, so a buy always
+-- raises it. Price = shown until Roblox's live price loads (the live price always wins).
 Products.Luck = {
-	{ Key = "Luck2", Kind = "Luck", Name = "x2 Luck", Blurb = "x2 server luck\nwhile you're here.", Id = 0, Price = 49, Amount = 2, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
-	{ Key = "Luck4", Kind = "Luck", Name = "x4 Luck", Blurb = "x4 server luck\nwhile you're here.", Id = 0, Price = 99, Amount = 4, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
-	{ Key = "Luck8", Kind = "Luck", Name = "x8 Luck", Blurb = "x8 server luck\nwhile you're here.", Id = 0, Price = 199, Amount = 8, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "Luck2", Kind = "Luck", Name = "x2 Server Luck", Blurb = "x2 server luck\nwhile you're here.", Id = 3721632432, Price = 3, Amount = 2, OnSale = true, Icon = "", Art = "" }, -- (price not sent: the live price from Roblox shows instead)
+	{ Key = "Luck3", Kind = "Luck", Name = "x3 Server Luck", Blurb = "x3 server luck\nwhile you're here.", Id = 3721632574, Price = 5, Amount = 3, OnSale = true, Icon = "", Art = "" },
+	{ Key = "Luck4", Kind = "Luck", Name = "x4 Server Luck", Blurb = "x4 server luck\nwhile you're here.", Id = 3721632674, Price = 7, Amount = 4, OnSale = true, Icon = "", Art = "" },
+	{ Key = "Luck5", Kind = "Luck", Name = "x5 Server Luck", Blurb = "x5 server luck\nwhile you're here.", Id = 3721632764, Price = 12, Amount = 5, OnSale = true, Icon = "", Art = "" },
+	{ Key = "Luck6", Kind = "Luck", Name = "x6 Server Luck", Blurb = "x6 server luck\nwhile you're here.", Id = 3721632933, Price = 22, Amount = 6, OnSale = true, Icon = "", Art = "" },
+	{ Key = "Luck7", Kind = "Luck", Name = "x7 Server Luck", Blurb = "x7 server luck\nwhile you're here.", Id = 3721633112, Price = 79, Amount = 7, OnSale = true, Icon = "", Art = "" },
+	{ Key = "Luck8", Kind = "Luck", Name = "x8 Server Luck", Blurb = "x8 server luck\nwhile you're here.", Id = 3721642574, Price = 129, Amount = 8, OnSale = true, Icon = "", Art = "" },
+	{ Key = "Luck9", Kind = "Luck", Name = "x9 Server Luck", Blurb = "x9 server luck\nwhile you're here.", Id = 3721642680, Price = 179, Amount = 9, OnSale = true, Icon = "", Art = "" },
+	{ Key = "Luck10", Kind = "Luck", Name = "x10 Server Luck", Blurb = "x10 server luck\nwhile you're here.", Id = 3721642791, Price = 219, Amount = 10, OnSale = true, Icon = "", Art = "" },
 } :: { Product }
 
 Products.Tabs = { "Passes", "Cosmetics", "Items", "Crates", "Coins", "Aura" } -- (Items: the coin shop, Config/CoinShop)

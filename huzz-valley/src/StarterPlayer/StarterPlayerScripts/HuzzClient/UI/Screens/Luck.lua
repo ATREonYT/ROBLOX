@@ -1,9 +1,10 @@
 -- The LUCK window (owner, Oct 23 15:22: "add a x2 luck, x4 luck, x8 luck dev products ... make a button to clearly
 -- show the luck boost, and make it clearly seen"). Our kit's window: the server's luck now, big and green, and yours;
--- one row per Luck product (Config/Products.Luck: add rows there and they show here) with its Robux price; then the
--- girl odds at this luck, every rarity, so a kid always sees what luck changes before paying.
+-- one tile per Luck product (Config/Products.Luck, his nine x2 to x10: add rows there and they show here, three to a
+-- line) with its Robux price (Roblox's live price once it loads); then the girl odds at this luck, every rarity, so a
+-- kid always sees what luck changes before paying. Tiles at or under the server's luck say ACTIVE / grey out.
 -- Opened by the LUCK button (Screens/LobbyHud). The server decides (ActionService "PromptLuck" ->
--- HuzzServer/LuckService): Id 0 = "coming soon", never a purchase; at the top luck every button says MAX.
+-- HuzzServer/LuckService): Id 0 = "coming soon", never a purchase; only a boost above the server's luck opens one.
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -27,7 +28,7 @@ local MAX = (Round.Luck and Round.Luck.Max) or 10
 local LuckScreen = {}
 
 local W = 460
-local ROW_H, ROW_GAP = 48, 8
+local COLS, TILE_H, GAP = 3, 78, 8
 local ODDS_ROW = 22
 
 local function line(props: { [string]: any }, stroke: number?): TextLabel
@@ -59,27 +60,29 @@ end
 function LuckScreen.build(parent: Instance)
 	local player = Players.LocalPlayer
 	local items = Products.Luck
-	local rowsH = #items * ROW_H + (#items - 1) * ROW_GAP
+	local tileRows = math.ceil(#items / COLS)
+	local rowsH = tileRows * TILE_H + (tileRows - 1) * GAP
 	local oddsRows = math.ceil(#Round.Rarities / 2)
-	local H = 47 + 104 + rowsH + 18 + 26 + oddsRows * ODDS_ROW + 22
+	local H = 47 + 104 + rowsH + 14 + 26 + oddsRows * ODDS_ROW + 18
 	local window = Kit.window({ Name = "Luck", Title = "LUCK", Icon = "AuraStar", Width = W, Height = H, TitleX = 56, TitleWidth = 70, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel = window.Panel
 	local y = 47 + 10
 	local big = line({ Name = "ServerLuck", Text = "SERVER LUCK x1", FontFace = F.Heading, TextSize = 30, TextColor3 = GREEN, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, y), Size = UDim2.fromOffset(W - 32, 36), ZIndex = 3, Parent = panel }, 2.5)
 	local yours = line({ Name = "Yours", Text = "", FontFace = F.Name, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, y + 38), Size = UDim2.fromOffset(W - 32, 20), ZIndex = 3, Parent = panel })
-	local about = line({ Name = "About", Text = `Luck makes rarer girls come up more, for everyone in this server. It lasts while you're here and goes when you leave. Boosts multiply, up to x{MAX}.`, FontFace = F.Body, TextSize = 13, TextColor3 = C.NoteText, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(24, y + 60), Size = UDim2.fromOffset(W - 48, 34), ZIndex = 3, Parent = panel }, 1)
+	local about = line({ Name = "About", Text = "Rarer girls come up more for everyone in this server. Your boost lasts until you leave. The highest boost counts.", FontFace = F.Body, TextSize = 13, TextColor3 = C.NoteText, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(24, y + 60), Size = UDim2.fromOffset(W - 48, 34), ZIndex = 3, Parent = panel }, 1)
 	y += 104
 
-	-- one row per product: its name on the left, BUY with the Robux price on the right
+	-- one tile per product, three to a line: the luck big and green, BUY with the Robux price under it
 	local rows = {}
+	local tileW = (W - 40 - (COLS - 1) * GAP) // COLS
 	for i, p in items do
-		local row = new("Frame", { Name = "Row" .. p.Key, Position = UDim2.fromOffset(20, y + (i - 1) * (ROW_H + ROW_GAP)), Size = UDim2.fromOffset(W - 40, ROW_H), BackgroundColor3 = C.Row, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 3, Parent = panel }, { Kit.corner(8) })
-		line({ Name = "Name", Text = string.upper(p.Name), FontFace = F.Heading, TextSize = 22, TextColor3 = GREEN, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(14, 0), Size = UDim2.fromOffset(150, ROW_H), ZIndex = 4, Parent = row }, 2)
-		line({ Name = "Blurb", Text = "for the whole server", FontFace = F.Body, TextSize = 13, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(122, 0), Size = UDim2.fromOffset(140, ROW_H), ZIndex = 4, Parent = row }, 1)
-		local buy = Kit.button({ Name = "Buy", Text = "", Style = "Action", FontFace = F.Button, TextSize = 17, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(130, 36), ZIndex = 5, Parent = row })
+		local col, rowN = (i - 1) % COLS, (i - 1) // COLS
+		local tile = new("Frame", { Name = "Row" .. p.Key, Position = UDim2.fromOffset(20 + col * (tileW + GAP), y + rowN * (TILE_H + GAP)), Size = UDim2.fromOffset(tileW, TILE_H), BackgroundColor3 = C.Row, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 3, Parent = panel }, { Kit.corner(8) })
+		line({ Name = "Name", Text = LuckScreen.word(p.Amount or 1) .. " LUCK", FontFace = F.Heading, TextSize = 22, TextColor3 = GREEN, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(tileW - 8, 28), ZIndex = 4, Parent = tile }, 2)
+		local buy = Kit.button({ Name = "Buy", Text = "", Style = "Action", FontFace = F.Button, TextSize = 17, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -7), Size = UDim2.fromOffset(tileW - 16, 34), ZIndex = 5, Parent = tile })
 		rows[p.Key] = { p = p, buy = buy }
 	end
-	y += rowsH + 18
+	y += rowsH + 14
 
 	-- the girl odds at this luck
 	local oddsTitle = line({ Name = "OddsTitle", Text = "GIRL ODDS NOW", FontFace = F.Heading, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, y), Size = UDim2.fromOffset(W - 32, 22), ZIndex = 3, Parent = panel }, 1.5)
@@ -94,6 +97,7 @@ function LuckScreen.build(parent: Instance)
 	end
 
 	local pending: { [string]: boolean } = {}
+	local price: { [string]: number } = {} -- Roblox's live prices (the config's until they load)
 	local shown = 1
 	local function refresh()
 		local server = tonumber(Workspace:GetAttribute("HuzzServerLuck")) or 1
@@ -101,12 +105,12 @@ function LuckScreen.build(parent: Instance)
 		big.Text = "SERVER LUCK " .. LuckScreen.word(server)
 		if server > shown then Motion.pop(big) end
 		shown = server
-		yours.Text = if mine > 1 then `Your boosts: {LuckScreen.word(mine)}` else "You have no boost yet."
-		local top = server >= MAX
+		yours.Text = if mine > 1 then `Your boost: {LuckScreen.word(mine)}` else "You have no boost yet."
 		for _, e in rows do
 			local p = e.p
-			e.buy.setText(if pending[p.Key] then "..." elseif top then "MAX" else `{Format.RobuxMark} {p.Price}`)
-			e.buy.setStyle(if top then "Disabled" else "Action")
+			local k = p.Amount or 1
+			e.buy.setText(if pending[p.Key] then "..." elseif k == server then "ACTIVE" elseif k < server then "-" else `{Format.RobuxMark} {price[p.Key] or p.Price}`)
+			e.buy.setStyle(if k == server then "Selected" elseif k < server then "Disabled" else "Action")
 		end
 		for _, o in LuckScreen.odds(server) do
 			local c = cells[o.name]
@@ -118,8 +122,9 @@ function LuckScreen.build(parent: Instance)
 		e.buy.onClick(function()
 			local p = e.p
 			if pending[p.Key] then return end
-			if (tonumber(Workspace:GetAttribute("HuzzServerLuck")) or 1) >= MAX then
-				Toast.show(`Server luck is already at the top ({LuckScreen.word(MAX)}).`)
+			local server = tonumber(Workspace:GetAttribute("HuzzServerLuck")) or 1
+			if (p.Amount or 1) <= server then
+				Toast.show(if server >= MAX then `Server luck is already at the top ({LuckScreen.word(MAX)}).` else `Server luck is already {LuckScreen.word(server)}. Pick a bigger boost.`)
 				return
 			end
 			local status = Products.status(p)
@@ -148,6 +153,16 @@ function LuckScreen.build(parent: Instance)
 			for k in pending do pending[k] = nil end
 			refresh()
 		end)
+	end)
+	task.spawn(function() -- the live prices, once (guarded: none offline or in some Studio setups)
+		local MarketplaceService = game:GetService("MarketplaceService")
+		for _, p in items do
+			if p.Id ~= 0 then
+				local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, p.Id, Enum.InfoType.Product)
+				if ok and type(info) == "table" and type(info.PriceInRobux) == "number" then price[p.Key] = info.PriceInRobux end
+			end
+		end
+		refresh()
 	end)
 	Workspace:GetAttributeChangedSignal("HuzzServerLuck"):Connect(refresh)
 	player:GetAttributeChangedSignal("HuzzLuck"):Connect(refresh)

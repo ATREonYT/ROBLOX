@@ -144,9 +144,10 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   like 10x luck") weights Common 28, Uncommon 2.4, Rare 2, Epic 1.4, Legendary 0.8, Mythic 0.45, Secret 0.15 (with no
   luck: 79.5 / 6.8 / 5.7 / 4.0 / 2.3 / 1.3 / 0.43%). **Server luck** multiplies every rarity past Common
   (`Shared/GirlRoll.withLuck`); at x10 the odds are the old 28 / 24 / 20 / 14 / 8 / 4.5 / 1.5. Luck comes from the
-  Luck boosts (`Config/Products.Luck`, Amount = multiplier; ShopService grants, `HuzzServer/LuckService` holds it):
-  each buy multiplies its buyer's luck, never saved, gone when they leave; the server's = everyone's here multiplied,
-  capped at `Round.Luck.Max` 10 (buys refused at the top). Shown on Workspace "HuzzServerLuck" / player "HuzzLuck":
+  Luck boosts (`Config/Products.Luck`: his nine, x2 to x10, Oct 23 16:06; Amount = the luck; ShopService grants,
+  `HuzzServer/LuckService` holds it): a buy sets its buyer's luck, never saved, gone when they leave; the server's =
+  the highest of anyone here, capped at `Round.Luck.Max` 10 (not multiplied: his prices would let x2 + x5 buy x10
+  for a tenth); only a boost above the server's luck can be bought (tiles at it say ACTIVE, under it grey). Shown on Workspace "HuzzServerLuck" / player "HuzzLuck":
   the lobby's LUCK button (the multiplier in big letters), the SERVER LUCK plate under NEXT ROUND (hidden while you
   play), and `Screens/Luck` (boosts, prices, the odds at this luck). The roll's strip and shown odds use the same
   luck. `tests/GirlRoll.spec` checks x10 = the old odds. Shots `luck`, `hud-luck`.

@@ -250,7 +250,7 @@ return {
 	},
 	-- Server luck (owner, Oct 23: "add a x2 luck, x4 luck, x8 luck dev products ... if someone bought server luck, it
 	-- stays with the person while he is in the game, and then when he leaves it resets"; "they can go up to like 10x").
-	-- Each buy multiplies its buyer's luck; the server's luck is everyone's here multiplied together, never above Max.
-	-- When a buyer leaves, their part goes with them. The products: Config/Products.Luck.
+	-- A buy sets its buyer's luck (x2 to x10, his nine products); the server's luck is the highest of anyone here,
+	-- never above Max. When a buyer leaves, their boost goes with them. The products: Config/Products.Luck.
 	Luck = { Max = 10 },
 }
