@@ -3,6 +3,7 @@
 	intense, let me send you a video and reference it"; his clip: design/owner-oct22/video-1616), on this screen only:
 	  - thin white wind streaks curl off the arms and legs of every runner going near flat out (yours and anyone near
 	    the camera): short Trails at the hands, elbows, feet and knees, so they follow the limbs' swing like the clip's;
+	    only once the body is really running (Config/Run.SpeedFX.RunFrom: never on a walk or the build-up, Oct 23);
 	  - a blue glow round the left, right and top of your screen while you sprint (the clip's edges at full speed;
 	    none at the bottom, none while walking), easing in and out, never flashing;
 	  - the camera widens a little more at full speed (Feel adds Config/Run.SpeedFX.Fov to its sprint widening).
@@ -95,13 +96,19 @@ function M.start()
 		end
 	end
 
-	-- How fast a body goes: 0 at Run.From (the walk), 1 at its top speed.
+	-- How fast a body goes: 0 at FX.RunFrom (fully into the run), 1 at its top speed; 0 below RunFrom (a walk, the
+	-- build-up) and 0 for yours with no key held (a halt still slides at speed).
 	local function sprintOf(character: Model, root: BasePart): number
 		local v = root.AssemblyLinearVelocity
 		local speed = Vector3.new(v.X, 0, v.Z).Magnitude
 		local h = character:FindFirstChildOfClass("Humanoid")
+		if character == player.Character and (character:GetAttribute("HuzzHalt") == true or (h ~= nil and h.MoveDirection.Magnitude < 0.1)) then
+			return 0
+		end
+		local from = FX.RunFrom or Run.From
+		if speed < from then return 0 end
 		local cap = (h and h:GetAttribute("HuzzSpeed")) or (h and h.WalkSpeed) or 20
-		return math.clamp((speed - Run.From) / math.max(cap - Run.From, 4), 0, 1)
+		return math.clamp((speed - from) / math.max(cap - from, 4), 0, 1)
 	end
 
 	-- The blue glow: three soft gradients (left, right, top) under the HUD.

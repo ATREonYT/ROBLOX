@@ -1,5 +1,5 @@
 -- The dance wheel (owner's reference: another game's taunt wheel): press G (gamepad Y) anywhere and 8 round,
--- see-through slots pop up round a big centre circle. Each slot shows your avatar frozen mid-dance (UI/DancePose),
+-- see-through slots pop up round a big centre circle. Each slot shows your avatar dancing it (UI/DancePose),
 -- its name and its number. Your favourite dances fill the slots first (star them in the Dances window), then the
 -- rest you own; an empty slot opens your dances. Hover (or select) a slot and the centre says what it is; click it,
 -- or press its number, to dance; click the playing one again to stop. Walking away stops it too (UI/DancePlayer).

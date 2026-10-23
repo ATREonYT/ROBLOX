@@ -73,7 +73,13 @@ do
 end
 
 -- The run start and step rate.
-check(Run.StartSpeed >= 14 and Run.StartSpeed <= 18 and Run.Ramp == 1, "the run starts at ~16 and is full after 1 s (owner, Oct 20: \"Make acceleration 1 second long\")")
+check(Run.StartSpeed >= 6 and Run.StartSpeed <= 10 and Run.Ramp == 1, "you set off at a walk (~8) and the build-up to the run takes 1 s (owner, Oct 20: \"Make acceleration 1 second long\")")
+check(Run.WalkHold and Run.WalkHold >= 0.25 and Run.WalkHold <= 0.6, "a walk first, then the run if you keep holding (owner, Oct 23: \"add the walking animation first, then after holding w ... the character starts running\")")
+do -- (the walk is all walk on his R6 pack: the run only blends in above it, Config/Run.LocoR6)
+	local R6 = Run.LocoR6
+	check(R6.RunFrom > Run.StartSpeed and R6.RunFull > R6.RunFrom and R6.RunFrom ~= R6.RunAt, "the walk's speed shows the walk, not the run")
+	check(Run.SpeedFX.RunFrom >= R6.RunFull, "the speed lines wait for the full run")
+end
 -- the build-up (Gameplay/Sprint, RunMotion.rampSpeed): exactly 1 s, clearly still building at 0.5 s, no jolt
 do
 	local cap, start = Round.Speeds.Runner, Run.StartSpeed
@@ -90,13 +96,13 @@ do
 	for i = 0, 120 do
 		if not at90 and RunMotion.rampSpeed(start, cap, i / 120) >= start + 0.9 * (cap - start) then at90 = i / 120 end
 	end
-	print(string.format("  build-up 16 to %d: %.0f%% at 0.5 s, 90%% at %.2f s, full at %.2f s; biggest gain a 60 fps frame %.2f, last %.3f",
-		cap, half * 100, at90 or -1, Run.Ramp, biggest, lastGain))
+	print(string.format("  build-up %d to %d: %.0f%% at 0.5 s, 90%% at %.2f s, full at %.2f s; biggest gain a 60 fps frame %.2f, last %.3f",
+		start, cap, half * 100, at90 or -1, Run.Ramp, biggest, lastGain))
 	check(RunMotion.rampSpeed(start, cap, 0) == start and math.abs(RunMotion.rampSpeed(start, cap, 1) - cap) < 1e-6
-		and RunMotion.rampSpeed(start, cap, 3) == cap, "the build goes from 16 to the top in exactly 1 s, then holds")
-	check(rising and biggest < 0.5 and lastGain < 0.01, "only ever up, at most 0.5 studs/s a frame, and settling softly into the top (no jolt)")
+		and RunMotion.rampSpeed(start, cap, 3) == cap, "the build goes from the walk to the top in exactly 1 s, then holds")
+	check(rising and biggest < 0.75 and lastGain < 0.01, "only ever up, at most 0.75 studs/s a frame, and settling softly into the top (no jolt)")
 	check(half >= 0.65 and half <= 0.8 and at90 and at90 >= 0.6, string.format("clearly still building at 0.5 s (%.0f%%; was ~95%%), 90%% not before 0.6 s", half * 100))
-	check(RunMotion.rampSpeed(start, 12, 0.3) == 12, "a top speed under the start (slowed, frozen) is kept as it is")
+	check(RunMotion.rampSpeed(start, start - 2, 0.3) == start - 2, "a top speed under the start (slowed, frozen) is kept as it is")
 end
 
 -- the halt (owner, Oct 20 07:55: "after they randomly stop after fully running they move a little forward as a sort

@@ -44,7 +44,7 @@ function M.start()
 					rec = DownMotion.new(jointsOf(character))
 					active[character] = rec
 				end
-				rec.risingAt = nil -- (downed again while getting up)
+				rec.risingAt, rec.riseFrom = nil, nil -- (downed again while getting up)
 				local feet, height = character:GetAttribute("DownedFeet"), character:GetAttribute("DownedHeight")
 				rec.height = height or rec.height
 				if feet and height then
@@ -68,7 +68,14 @@ function M.start()
 			if not seen[character] then
 				-- getting up: eases from lying flat back to standing (no pop), then hands the joints back
 				rec.risingAt = rec.risingAt or os.clock()
-				if not character.Parent or not DownMotion.rise(rec, os.clock() - rec.risingAt, rec.height) then
+				local r = character:FindFirstChild("HumanoidRootPart")
+				local at = r and r:IsA("BasePart") and r.Position
+				rec.riseFrom = rec.riseFrom or at
+				-- (moved away meanwhile, e.g. back to the lobby after the game: standing there at once, never seen lying
+				-- in the lobby and tipping up; owner, Oct 23: "make the user character not fall when getting
+				-- transported back to the main lobby")
+				local moved = at and rec.riseFrom and (at - rec.riseFrom).Magnitude > 12
+				if not character.Parent or moved or not DownMotion.rise(rec, os.clock() - rec.risingAt, rec.height) then
 					active[character] = nil
 					DownMotion.release(rec)
 				end

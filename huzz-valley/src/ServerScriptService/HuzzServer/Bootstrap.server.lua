@@ -34,6 +34,30 @@ if game:GetService("RunService"):IsStudio() then
 	end
 end
 
+-- Every dance needs its moves in ServerStorage > HuzzAnimations (owner, Oct 23 03:37: "all of the new dances dont
+-- import"). His packs are only in the place files sent to him (the public repo can't hold them), and until Oct 23
+-- Rojo put the repo's copy, with 5 dances, over the place's 38. Rojo leaves it alone now (default.project.json), and
+-- this says in Output when a place is missing some, on one tagged line.
+do
+	local ok, Dances = pcall(function() return require(game:GetService("ReplicatedStorage").Shared.Config.Dances) end)
+	local raw = game:GetService("ServerStorage"):FindFirstChild("HuzzAnimations")
+	if ok and type(Dances) == "table" and Dances.List then
+		local missing = {}
+		for _, d in Dances.List do
+			local has = raw and raw:FindFirstChild("Dance_" .. d.Id)
+			local published = d.AnimationId ~= nil and d.AnimationId ~= ""
+			if not has and not published then table.insert(missing, d.Name) end
+		end
+		local walk = raw and raw:FindFirstChild("R6Walk")
+		if #missing > 0 or not walk then
+			warn(string.format("[HuzzAnim] this place is missing %d of %d dances%s. Open HuzzValley-yours.rbxl from the 'Huzz Valley WITH YOUR MOVES' folder (Rojo no longer replaces them). Missing: %s",
+				#missing, #Dances.List, if walk then "" else " and your R6 walk and run", table.concat(missing, ", ")))
+		else
+			print(string.format("[HuzzAnim] all %d dances and your R6 moves are in this place", #Dances.List))
+		end
+	end
+end
+
 -- Everywhere (Studio AND the live game): the movement pack's Idle, Walk and Run (~180 KB) go to
 -- ReplicatedStorage.HuzzGirlMoves, so every screen can play them by hand on the anime girls (Shared/GirlMoves:
 -- the prize's idle, a girl following a catcher, your companion). No upload needed; the dances stay server-side.

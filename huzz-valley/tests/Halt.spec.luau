@@ -149,14 +149,19 @@ local W, S, D, NONE = Vector3.new(0, 0, -1), Vector3.new(0, 0, 1), Vector3.new(1
 hattrs.HuzzSpeed = Round.Speeds.Runner
 frames(30, NONE)
 
--- 1. the build-up: from 16 to 28 in 1 s, 75% of the way at 0.5 s
+-- 1. a walk first (Config/Run WalkHold at StartSpeed), then the build-up to 28 in 1 s (owner, Oct 23: "add the walking
+-- animation first, then after holding w or going forward, the character starts running")
 local at = {}
-for i = 1, 72 do
+local hold, start = Run.WalkHold or 0, Run.StartSpeed
+local fullAt = math.ceil((hold + Run.Ramp) * 60)
+for i = 1, fullAt + 12 do
 	frame(W)
 	at[i] = humanoid.WalkSpeed
 end
-print(string.format("  build-up: %.1f at 0.1 s, %.1f at 0.5 s, %.1f at 0.75 s, %.1f at 1.0 s, %.1f at 1.2 s", at[6], at[30], at[45], at[60], at[72]))
-check(at[1] < 17 and math.abs(at[30] - 25) < 0.6 and at[60] > 27.9 and at[72] > 27.99, "W: 16 at once, ~25 at 0.5 s, 28 at 1 s (the owner's 1 second)")
+local mid = math.floor((hold + 0.5) * 60)
+print(string.format("  build-up: %.1f at 0.1 s, %.1f at %.2f s (walking), %.1f at %.2f s, %.1f at %.2f s, %.1f after", at[6], at[math.floor(hold * 60) - 1], hold, at[mid], mid / 60, at[fullAt], fullAt / 60, at[fullAt + 12]))
+check(math.abs(at[1] - start) < 0.01 and math.abs(at[math.floor(hold * 60) - 1] - start) < 0.01, "W: a walk at once, still a walk until WalkHold")
+check(math.abs(at[mid] - (start + 0.75 * (28 - start))) < 1 and at[fullAt] > 27.9 and at[fullAt + 12] > 27.99, "then ~75% of the run 0.5 s into the build-up, 28 after 1 s (the owner's 1 second)")
 
 -- 2. let go from a full run: the halt
 local from = root.Position

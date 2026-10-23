@@ -1,12 +1,15 @@
 --[[
-	Pictures of your avatar frozen mid-dance, for the Dances cards and the dance wheel's slots.
-	A still copy of your character is put in the dance's most telling pose (Config/DancePoses, the second picked by
-	tools/preview/motion3d/dance_poses.luau), read straight from the dance's KeyframeSequence (Shared/KeyframeSampler):
-	no Animator and nothing that moves, so a screen full of them costs nothing per frame (the old cards each ran a
-	live animation, which lagged). Every part is placed once by hand from its joints, so accessories follow.
+	Pictures of your avatar dancing, for the Dances cards, the Inventory, the dance wheel's slots and the crate cards
+	(owner, Oct 23 03:37: "make the characters in the ui showcasing the dances, dance, everywhere where its shown").
+	A copy of your character starts in the dance's most telling pose (Config/DancePoses, the second picked by
+	tools/preview/motion3d/dance_poses.luau) and then dances it, looping, read straight from the dance's
+	KeyframeSequence (Shared/KeyframeSampler): no Animator, every part placed by hand from its joints, so accessories
+	follow. Only the pictures you can actually see move (their window open, not scrolled or clipped out of view:
+	inView, looked at 4 times a second), FPS times a second, so a closed window or a long list costs nothing.
 	  DancePose.anim(id)        the dance, sampled (nil while loading or if it can't be read). In Studio straight
 	                            from ReplicatedStorage.HuzzAnimations; live, from its published ID.
 	  DancePose.picture(parent, id, props, dark?, onFail?, onReady?) -> ViewportFrame? (nil until your character is there)
+	                            your avatar dancing it while it's in view (a still pose until then);
 	                            props = ViewportFrame properties (Position, Size, ...); dark = a locked silhouette;
 	                            fills in when the dance has loaded and your character is there (onReady: hide the
 	                            stand-in), or calls onFail (show the note instead). Owner, Oct 22 19:09: "make all of
@@ -266,22 +269,37 @@ end
 
 -- The live dancers: each placed FPS times a second while it's on (a card in view in an open window).
 local FPS = 30 -- (owner, Oct 22: "they don't dance well": 15 looked choppy next to the real dance)
-type Live = { vp: ViewportFrame, on: boolean, apply: ((any) -> ())?, anim: any, t0: number }
+-- (auto: on whenever it's in view, else the caller's setOn decides)
+type Live = { vp: ViewportFrame, on: boolean, auto: boolean?, apply: ((any) -> ())?, anim: any, t0: number }
 local lives: { Live } = {}
 local stepping = false
+local inView: (GuiObject) -> boolean
 local function startStepping()
 	if stepping then return end
 	stepping = true
-	local last = 0
+	local last, looked, tick = 0, 0, 0
+	local BUSY = 8
 	game:GetService("RunService").Heartbeat:Connect(function()
 		local now = os.clock()
 		if now - last < 1 / FPS then return end
 		last = now
+		local look = now - looked >= 0.25
+		if look then looked = now end
+		tick += 1
+		-- (more than BUSY pictures dancing at once: each moves every other tick, 15 times a second, so a full grid on
+		-- a phone stays smooth)
+		local many = 0
+		for _, l in lives do if l.on and l.auto then many += 1 end end
+		local half = many > BUSY
 		for i = #lives, 1, -1 do
 			local l = lives[i]
+			if look and l.auto and l.vp.Parent then
+				local ok, seen = pcall(inView, l.vp)
+				l.on = ok and seen == true
+			end
 			if not l.vp.Parent then
 				table.remove(lives, i)
-			elseif l.on and l.apply and l.anim then
+			elseif l.on and l.apply and l.anim and not (half and l.auto and (i + tick) % 2 == 0) then
 				local ok, err = pcall(function()
 					local len = math.max(l.anim.length, 0.05)
 					l.apply(Sampler.sample(l.anim, (now - l.t0) % len))
@@ -352,6 +370,30 @@ local function onScreen(g: Instance?): boolean
 	end
 	return g ~= nil and (g :: LayerCollector).Enabled
 end
+-- In view: on screen, and not scrolled or clipped out by any frame above it (a ScrollingFrame's window, a clipping
+-- frame's box). Only these dance.
+function inView(g: GuiObject): boolean
+	if not onScreen(g) then return false end
+	local function rect(x: GuiObject): (Vector2?, Vector2?)
+		local ok, p, sz = pcall(function()
+			local size = if x:IsA("ScrollingFrame") then (x :: ScrollingFrame).AbsoluteWindowSize else x.AbsoluteSize
+			return x.AbsolutePosition, size
+		end)
+		if not ok or sz.X < 1 or sz.Y < 1 then return nil, nil end -- (not laid out yet: by its windows alone)
+		return p, p + sz
+	end
+	local p0, p1 = rect(g)
+	if not (p0 and p1) then return true end
+	local a = g.Parent
+	while a and not a:IsA("LayerCollector") do
+		if a:IsA("GuiObject") and (a :: GuiObject).ClipsDescendants then
+			local q0, q1 = rect(a :: GuiObject)
+			if q0 and q1 and (p1.X <= q0.X or p0.X >= q1.X or p1.Y <= q0.Y or p0.Y >= q1.Y) then return false end
+		end
+		a = a.Parent
+	end
+	return true
+end
 -- Pictures waiting to be seen before they ask for their moves: one look for all of them twice a second.
 local unseen: { { vp: ViewportFrame, go: () -> () } } = {}
 local watching = false
@@ -407,7 +449,14 @@ function DancePose.picture(parent: Instance, id: string, props: { [string]: any 
 		end
 		local model = template:Clone()
 		model.Parent = v
-		frame(v, model, 1.15)
+		frame(v, model, 1.25) -- (a little room: the arms and legs swing out as it dances)
+		-- and it dances, from its telling pose on, whenever it's in view (startStepping)
+		local anim = DancePose.anim(id)
+		local apply = anim and rig(model)
+		if apply then
+			table.insert(lives, { vp = v, on = false, auto = true, apply = apply, anim = anim, t0 = os.clock() - (DancePoses[id] or 0) })
+			startStepping()
+		end
 		if onReady then onReady() end
 	end
 	local function go()

@@ -1,10 +1,14 @@
 -- The Huss Valley run and huss dash (Shared/RunMotion), matched to the owner's reference video, built in
 -- until the owner's own animations are uploaded (Config/Animations.Run). Degrees, studs, seconds.
 return {
-	-- Owner: "walk builds into a run"; Huss Valley's run looks instant (docs/feel-study.md gap 8: 9 -> 16, 1.2 -> 0.5 s),
-	-- so the walk is a short quick build now, not a slow one.
-	StartSpeed = 16, -- you set off at this speed (a fast walk) and build up to full speed... (Gameplay/Sprint)
-	Ramp = 1.0, -- ...reaching it after exactly this many seconds of holding a direction (owner, Oct 20 07:55: "Make
+	-- Walk first, then run (owner, Oct 23 03:37: "add the walking animation first, then after holding w or going
+	-- forward, the character starts running, like in huss valley, add the walking from the pack"): you set off at a
+	-- walk (StartSpeed, a little under Huss Valley's set-off 9: docs/feel-study.md gap 8), his pack's R6 walk playing, and
+	-- keep walking for WalkHold seconds; hold on and you build up into the run (his pack's run) over Ramp. Until Oct 23
+	-- you set off at 16, already a run, so his walk never showed.
+	StartSpeed = 7, -- you set off at this speed (a walk: his R6 walk's feet stay planted up to ~7)... (Gameplay/Sprint)
+	WalkHold = 0.4, -- ...and walk this long while you hold a direction...
+	Ramp = 1.0, -- ...then build up to full speed in exactly this many seconds (owner, Oct 20 07:55: "Make
 	-- acceleration 1 second long"; was 0.5 s to ~95%). Shared/RunMotion.rampSpeed: eases out with RampEase (2: the
 	-- quickest gain at the start, none at the top, so no jolt at either end): 44% of the build at 0.25 s, 75% at 0.5 s.
 	RampEase = 2,
@@ -53,7 +57,10 @@ return {
 	-- Huss Valley's R6 recording. Right leg forward at 0.0 (walk) and 0.95 (run) of each loop. His loops already
 	-- swing far: no extra Swing.
 	LocoR6 = {
-		WalkAt = 3.3, WalkRate = { 0.5, 1.7 },
+		-- the walk hands over to the run between RunFrom and RunFull studs/s: above the walk's 8, so setting off is all
+		-- walk (Oct 23); the walk plays up to 2.1x, so at the set-off's 7 its feet stay planted (~4.9 steps a second)
+		RunFrom = 9, RunFull = 15,
+		WalkAt = 3.3, WalkRate = { 0.5, 2.1 },
 		RunAt = 10, RunRate = { 0.6, 1.5 },
 		RootHeight = 3,
 		WalkPhase = 0, RunPhase = 0.95,
@@ -63,8 +70,8 @@ return {
 		SpeedResponse = 13, -- how fast the blend follows the speed (higher = snappier; 13 settles in ~0.35 s)
 		MoveFrom = 0.4, MoveFull = 3, -- studs/s: idle fades into the walk between these
 		RunFrom = 6, RunFull = 11, -- studs/s: the walk hands over to the run between these (was 13 to 21), where both
-		-- loops step at nearly the same rate (2.3 to 3.3 steps/s), so the swap never pops. You set off at 16:
-		-- a run at once, like HV
+		-- loops step at nearly the same rate (2.3 to 3.3 steps/s), so the swap never pops (R15 bodies; the game's R6
+		-- bodies hand over above their walk: LocoR6)
 		WalkAt = 4.3, WalkRate = { 0.5, 1.7 }, -- the walk plays at 1x at 4.3 studs/s (the pack's own: was 8), within
 		-- these rates: its feet stay planted from 2.2 to 7.3 studs/s (a slow thumbstick, slowing down)
 		RunAt = 14, RunRate = { 0.55, 1.12 }, -- the run too (was 25): planted feet up to ~16 studs/s, then held at
@@ -205,7 +212,12 @@ return {
 	-- curling off the arms and legs (they follow the limbs' swing), and a blue glow round the screen's edge, about
 	-- (45, 105, 175) at the very edge fading out over ~6% of the screen; none while walking (f7.6). Gameplay/SpeedFX.
 	SpeedFX = {
-		From = 0.45, -- how fast (0 = the walk, 1 = flat out) before any of it shows; full at 1
+		-- Only while really running (owner, Oct 23 03:37: "make the lines behind the user when running appear only when
+		-- he is running"; they came on at 18 studs/s, in the first steps of a lobby walk): 0 at RunFrom studs/s (where
+		-- the legs are fully in the run, LocoR6.RunFull), 1 at your top speed; and yours only while you hold a direction
+		-- (never on a halt's slide)
+		RunFrom = 15,
+		From = 0.45, -- how fast (0 = RunFrom, 1 = flat out) before any of it shows; full at 1
 		Trails = {
 			Near = 110, -- studs: streaks on runners this close to the camera (yours always)
 			Life = 0.28, -- seconds a streak lasts: curls about as long as the clip's (0.2 read short next to it)

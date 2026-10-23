@@ -155,5 +155,43 @@ for _, x in win:GetDescendants() do
 	if x.Name == "Figure" and x:IsA("ImageLabel") and x.Visible then standIns += 1 end
 end
 check(string.format("open: your avatar on the dance cards (%d posed, %d drawn stand-ins left)", posed, standIns), posed >= 4)
+-- and they dance (owner, Oct 23 03:37: "make the characters in the ui showcasing the dances, dance, everywhere"): the
+-- cards in view move from frame to frame; once the window closes they stop (nothing steps out of view)
+local function cardArms(): { CFrame }
+	local list = {}
+	for _, x in win:GetDescendants() do
+		if x.Name == "Dancer" and x:IsA("ViewportFrame") then
+			local m = x:FindFirstChildOfClass("Model")
+			local arm = m and m:FindFirstChild("Right Arm")
+			if arm then table.insert(list, arm.CFrame) end
+		end
+	end
+	return list
+end
+local function beats(n)
+	for _ = 1, n do
+		__fireOn(RunService, "Heartbeat", 1 / 30)
+		task.wait(0.04)
+	end
+end
+local function changed(a, b): number
+	local n = 0
+	for i, cf in a do
+		if b[i] and (cf.Position - b[i].Position).Magnitude > 1e-3 then n += 1 end
+	end
+	return n
+end
+beats(10)
+local a0 = cardArms()
+beats(12)
+local a1 = cardArms()
+local moving = changed(a0, a1)
+check(string.format("the cards in view dance (%d of %d moved)", moving, #a0), moving >= 4)
 MM.close()
+win.Visible = false -- (the close tween ends by hiding it: the harness's tweens don't run on their own)
+beats(10)
+local c0 = cardArms()
+beats(12)
+local still3 = changed(c0, cardArms())
+check(string.format("closed: they stop (%d still moving)", still3), still3 == 0)
 print(string.format("live dance smoke: %d ok, %d failed", ok, fails))

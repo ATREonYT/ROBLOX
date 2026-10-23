@@ -290,6 +290,9 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   your character (windows are built before it exists) and, live, asks for an unpublished dance's moves once the
   picture is on screen (`DancePose.ask`, batched SeeDance). The Dances grid, Inventory and the dance wheel use it.
 - Shop's dance panel: `DancePose.live` (your avatar dancing) instead of a published track (none exists yet).
+- Oct 23 "make the characters in the ui showcasing the dances, dance, everywhere": `DancePose.picture` dances too (from
+  its telling pose on), only while in view (`inView`: window shown, not scrolled or clipped out; looked at 4x a second),
+  30 fps. Used by Dances, Inventory, the dance wheel and the crate cards (`CrateArt.picture`, boxes 48 px or taller).
 - Dances window preview: your avatar dancing the picked dance (`showDancer`), asked for only while the window is open.
 - SYNC DANCE prompt (`Gameplay/DanceSync`): next to someone dancing a dance you own, joins it on their beat.
 - The drawn DanceStill pictures stay as the stand-in until your avatar is ready, and for How to Play's art.

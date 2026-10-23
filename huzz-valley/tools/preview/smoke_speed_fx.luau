@@ -23,9 +23,9 @@ me.Character = c
 local Gameplay = game:GetService("StarterPlayer").StarterPlayerScripts.HuzzClient.Gameplay
 local mod = Gameplay.SpeedFX
 local step
-local box = { v = Vector3.zero }
+local box = { v = Vector3.zero, md = Vector3.zero }
 -- (this harness can't move bodies: the test feeds the speed in through the root's velocity, read as `v` below)
-local src = mod.Source:gsub("root%.AssemblyLinearVelocity", "__vel.v")
+local src = mod.Source:gsub("root%.AssemblyLinearVelocity", "__vel.v"):gsub("h%.MoveDirection", "__vel.md") -- (and the keys held)
 local G = getfenv(1)
 local env = setmetatable({ script = mod, Instance = Instance, Vector3 = Vector3, CFrame = CFrame, Color3 = Color3, Enum = Enum,
 	UDim2 = UDim2, NumberSequence = NumberSequence, NumberSequenceKeypoint = NumberSequenceKeypoint, ColorSequence = ColorSequence,
@@ -53,10 +53,14 @@ local gui = me.PlayerGui:FindFirstChild("HuzzSpeedGlow")
 check("the glow is on the screen", gui ~= nil)
 local function edge() return gui and gui:FindFirstChild("Left") and (1 - gui.Left.BackgroundTransparency) or 0 end
 
+box.md = Vector3.new(0, 0, -1) -- (W held)
 box.v = Vector3.new(0, 0, -10) -- walking
 run(1)
 check("walking: no streaks", lit() == 0)
 check("walking: no glow", edge() == 0 and not gui.Enabled)
+box.v = Vector3.new(0, 0, -18) -- (owner, Oct 23: "appear only when he is running") the build-up, not yet the full run
+run(1)
+check("building up into the run: no streaks yet", lit() == 0)
 box.v = Vector3.new(0, 0, -24) -- flat out
 run(1 / 15)
 local early = edge()
@@ -76,6 +80,11 @@ check("dancing: streaks off", lit() == 0)
 c:SetAttribute("HuzzDance", nil)
 run(0.1)
 check("back on after", lit() == 8)
+box.md = Vector3.zero -- let go: a halt still slides at speed
+run(0.1)
+check("no key held (a halt's slide): streaks off", lit() == 0)
+box.md = Vector3.new(0, 0, -1)
+run(0.1)
 box.v = Vector3.new(0, 0, -10)
 run(2)
 check("slowing down: streaks off", lit() == 0)

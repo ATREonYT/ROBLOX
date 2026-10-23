@@ -10,6 +10,10 @@ The huss pose and walk animations: [animations.md](animations.md).
   jolt at either end). Once built, a new cap (a boost, carrying, slowed) is followed over ~0.15 s. The legs follow
   the speed (the run's step rate is already at its 1.12x cap from ~16 studs/s, so the slower build adds no foot
   slide); the forward lean is `Loco.AccelLean` 0.2 (~5° at the start, upright as the build tops out).
+- **Walk first** (Oct 23: "add the walking animation first, then after holding w ... starts running"): you set off at
+  `Run.StartSpeed` 7 (his R6 walk, up to 2.1x so its feet stay planted), keep walking `Run.WalkHold` 0.4 s, then build up to the cap in `Ramp` 1 s. R6 hands
+  the walk to the run between `LocoR6.RunFrom` 9 and `RunFull` 15 (R15's `Loco` keeps 6 to 11). Speed lines only above
+  `SpeedFX.RunFrom` 15 and only while you hold a direction.
 - **Feet first** (`Sprint`): after a spawn or a teleport (more than 12 studs in one frame: the round start, the fall
   net), WalkSpeed is 0 until
   `Humanoid.FloorMaterial` says the feet are on the floor (sets the local attribute `HuzzFeetFirst`; the huss waits

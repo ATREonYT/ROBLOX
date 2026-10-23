@@ -1,7 +1,8 @@
 --[[
 	Walk first, then run (owner: "make the animations slowly fade in from walking when you press W to running
-	if you continue holding it, just like in the references"). When you start moving you set off at a walk
-	and build up to your full speed (the server's HuzzSpeed on your Humanoid, RoundService) in exactly Config/Run
+	if you continue holding it, just like in the references"; Oct 23: "add the walking animation first, then after
+	holding w or going forward, the character starts running"). When you start moving you set off at a walk
+	(Config/Run StartSpeed), keep walking for WalkHold seconds, then build up to your full speed (the server's HuzzSpeed on your Humanoid, RoundService) in exactly Config/Run
 	Ramp seconds (owner, Oct 20 07:55: "Make acceleration 1 second long"; Shared/RunMotion.rampSpeed, easing out: the
 	quickest gain at the start, settling softly into the top); let go for a moment and the next start is a walk
 	again. Gameplay/Locomotion cross-fades the owner's Walk into their Run by speed, so the legs follow the build-up
@@ -33,6 +34,7 @@ function M.start()
 	local RunMotion = require(Shared.RunMotion)
 	local Halt = require(Shared.Halt)
 	local RAMP = Run.Ramp or 1 -- seconds from a walk to full speed
+	local HOLD = Run.WalkHold or 0 -- seconds you walk before the build-up starts (owner, Oct 23: walk first, then run)
 	local START = Run.StartSpeed or 16 -- studs a second you set off at
 	local GRACE = 0.18 -- seconds you can let go (a quick turn) and keep your speed
 	local CAP_EASE = 0.15 -- seconds: once built up, a new top speed (a boost, carrying, slowed) is followed this softly
@@ -157,10 +159,11 @@ function M.start()
 			speed, built = cap, 0
 		else
 			if idle == 0 then
-				-- from the walk to the top in exactly RAMP seconds, easing out (no jolt at either end)
+				-- a walk for HOLD seconds, then from the walk to the top in exactly RAMP seconds, easing out (no jolt
+				-- at either end)
 				built += dt
-				local target = RunMotion.rampSpeed(START, cap, built)
-				if built < RAMP then
+				local target = if built < HOLD then START else RunMotion.rampSpeed(START, cap, built - HOLD)
+				if built < HOLD + RAMP then
 					speed = target
 				else
 					speed += (target - speed) * (1 - math.exp(-dt / CAP_EASE)) -- (a new top speed, followed softly)

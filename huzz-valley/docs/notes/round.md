@@ -186,6 +186,9 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   floor mark start and finish. Every move of a player's body (lobby, middle, line-up, `keepSafe`, `keepOnLine`, the
   fall net) asks that player's own screen to make it (`HuzzServer/PlaceService`, Oct 20 "the peoples locations are
   off on eachothers screens": [movement-and-camera.md](movement-and-camera.md), "Same place on every screen").
+  Landing (Oct 23, "make the user character not fall when getting transported back to the main lobby"): `PlaceSelf`
+  sets the body down standing on the floor under the spot (no drop), upright, still, and out of any trip or stand-up;
+  your humanoid's FallingDown and Ragdoll states are off for good (`PlaceSelf.noTrip`). Unloaded floor: held, then set down.
 - **Field edges:** safe lines, start wall and goal gate are trimmed to the real floor (`MapService` `edge()`); the
   invisible walls (`boundary()`) stand at the floor's edge (a prop doesn't count as an edge). Across the run the
   walls may go up to 40 studs past the zone boxes over the map's own level floor, and the loaded copy's zones are

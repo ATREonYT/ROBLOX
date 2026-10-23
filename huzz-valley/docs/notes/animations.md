@@ -90,6 +90,10 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 - Still R15-shaped (step 2 of `docs/plan-oct22-r6.md`): the stab, carry, down, crown, stands, knife hand, auras.
 - **Local file:** `src/ServerStorage/HuzzAnimations.rbxm` on disk holds his packs (git is told to ignore changes:
   `git update-index --assume-unchanged`); the committed copy has none. Checks run against the disk copy.
+- **Rojo doesn't touch HuzzAnimations** (Oct 23, "all of the new dances dont import"): `default.project.json` no longer
+  maps `ServerStorage/HuzzAnimations`, so Rojo leaves the place's own copy (his 38 dances and R6 moves) alone; before,
+  connecting Rojo put the public 5-dance file over it. The place build still reads the file from `src/`. Bootstrap says
+  in Output (`[HuzzAnim]`) how many dances the open place is missing.
 
 ## Your own moves: never a stiff body (Oct 20)
 - `Gameplay/Locomotion` checks itself: within 3 s (`LOAD_WAIT`) Idle, Walk and Run must have a length and a knee,

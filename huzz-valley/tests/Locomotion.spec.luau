@@ -94,7 +94,12 @@ check(math.abs(walkSwap / runStart - 1) < 0.3 and math.abs(walkEnd / runSwap - 1
 	string.format("walk and run step at nearly the same rate where they swap (%.1f vs %.1f and %.1f vs %.1f steps/s)", walkSwap, runStart, walkEnd, runSwap))
 local top = Mix.stepsPerSecond(settle(Round.Speeds.Runner), lengths)
 check(top >= 4.2 and top <= 4.8, string.format("a runner (28) steps ~4.6 times a second like HV (%.2f)", top))
-check(settle(Run.StartSpeed).weights.Run > 0.97, "setting off at 16 is already a run (HV runs at once)")
+do -- the game's R6 bodies (Config/Run.LocoR6 over Loco): setting off is a walk, the run once you've built up
+	local r6 = table.clone(L)
+	for k, v in Run.LocoR6 do r6[k] = v end
+	check(settle(Run.StartSpeed, r6).weights.Walk > 0.97, "R6: setting off (StartSpeed) is a walk (owner, Oct 23: \"add the walking animation first\")")
+	check(settle(Round.Speeds.Lobby, r6).weights.Run > 0.97, "R6: built up to the lobby's top speed, a full run")
+end
 check(settle(4).weights.Walk > 0.97, "a slow thumbstick (4 studs/s) is a walk")
 check(settle(0).weights.Idle > 0.99, "standing is the idle")
 

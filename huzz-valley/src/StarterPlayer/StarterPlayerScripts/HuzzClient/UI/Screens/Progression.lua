@@ -103,6 +103,17 @@ local function rewardArt(r): string
 	return r.Art
 end
 
+-- A dance reward: your avatar dancing it over its picture once that's ready (owner, Oct 23 03:37: "make the
+-- characters in the ui showcasing the dances, dance, everywhere where its shown"; UI/DancePose, in view only).
+local function dancer(parent: Instance, r, pic: ImageLabel, pos: UDim2, size: UDim2)
+	if r.Kind ~= "Dance" or not r.Id then return end
+	pcall(function()
+		require(UI.DancePose).picture(parent, r.Id, { Name = "Dancer", Position = pos, Size = size, ZIndex = pic.ZIndex + 1 }, false, nil, function()
+			pic.ImageTransparency = 1
+		end)
+	end)
+end
+
 local function claim(verb: string, arg: any, done: string)
 	task.spawn(function()
 		local ok, why = State.action(verb, arg)
@@ -122,6 +133,7 @@ local function buildRewards(page: Frame, refreshers: { () -> () })
 		local card = panel(free, "Reward" .. r.Level, x, 27, CARD_W, 66, COL.Card, COL.CardRim, COL.CardBottom)
 		local pic = Kit.art(rewardArt(r), { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(72, 64), Parent = card })
 		Kit.attach(Kit.corner(3), pic)
+		dancer(card, r, pic, UDim2.fromOffset(1, 1), UDim2.fromOffset(72, 64))
 		Kit.name({ Name = "Name", Text = r.Name, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(71, 6), Size = UDim2.fromOffset(CARD_W - 73, 22), Parent = card })
 		local holder = new("Frame", { Name = "State", BackgroundTransparency = 1, Position = UDim2.fromOffset(76, 33), Size = UDim2.fromOffset(CARD_W - 82, 25), Parent = card })
 		local shown = ""
@@ -318,6 +330,7 @@ local function buildLevelBar(parent: Instance, refreshers: { () -> () })
 			if want then
 				local pic = Kit.art(want, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = nextArt })
 				Kit.attach(Kit.corner(3), pic)
+				dancer(nextArt, nextReward, pic, UDim2.new(), UDim2.fromScale(1, 1))
 			end
 		end
 	end)

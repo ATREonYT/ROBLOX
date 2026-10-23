@@ -29,9 +29,6 @@
       "HuzzStudioTools": {
         "$path": "src/ServerStorage/HuzzStudioTools"
       },
-      "HuzzAnimations": {
-        "$path": "src/ServerStorage/HuzzAnimations.rbxm"
-      },
       "HuzzImages": {
         "$path": "src/ServerStorage/HuzzImages"
       },

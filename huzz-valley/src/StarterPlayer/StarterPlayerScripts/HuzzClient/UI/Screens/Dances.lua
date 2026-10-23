@@ -5,8 +5,8 @@
 -- still plays (DancePlayer draws it by hand on your joints) and never pretends to. Locked dances (Dance Pack pass, reward track) can't be played; tapping PLAY
 -- says how to get them. The star on a card saves it as a favourite (server-checked, ActionService FavoriteDance).
 -- Each card glows in its dance's colour (Config/Dances Color) with glowing notes (assets/art/dance-fx-*, ours) and
--- shows your avatar frozen in the dance's most telling moment (UI/DancePose: a still picture, so the grid never
--- lags). Until that picture can be made (no character yet, or the dance not published in the live game) a white
+-- shows your avatar dancing it (UI/DancePose: only the cards in view move, so the grid never lags; owner, Oct 23
+-- 03:37: "make the characters in the ui showcasing the dances, dance"). Until that picture can be made (no character yet, or the dance not published in the live game) a white
 -- blocky figure in the same pose stands in (assets/art/dance-still-*, ours), tinted like the mockup's figures. The
 -- big picture shows your avatar actually dancing (a copy in a ViewportFrame, posed by hand: showDancer).
 -- Layout numbers are the mockup's, measured and scaled to the 701 x 320 window (x 0.77).
@@ -128,8 +128,8 @@ local function glow(parent: Instance, d, size: Vector2, pos: Vector2, corner: nu
 	return back
 end
 
--- The dance's figure: the white stand-in (tinted, or a dark silhouette with a lock when locked), and your avatar in
--- the same pose over it (the whole picture area: UI/DancePose frames it) once that picture is ready; then the
+-- The dance's figure: the white stand-in (tinted, or a dark silhouette with a lock when locked), and your avatar
+-- dancing over it (the whole picture area: UI/DancePose frames it) once that picture is ready; then the
 -- stand-in hides.
 local function figure(parent: Instance, d, size: Vector2, pos: Vector2, area: Vector2, mine: boolean, lockSize: number)
 	local color = colorOf(d)

@@ -3,8 +3,9 @@
 -- light corner caps and the owner's Aura star on a white lock plate): a STAND-IN until the owner sends his own crate
 -- art (then swap crate() for Kit.art). Its lid is its own part, so the opening can pop it off.
 -- Item cards use the game's real pictures: the coin shop's own art (Config/CoinShop Art: trails, name colours, the
--- owner's knives), the dance's still (DanceStill<Id>) and the coin pack art for coins, with a rim and a foot bar in the
--- rarity's colour (the Spin wheel's rarity colours: see CrateArt.color).
+-- owner's knives), your avatar dancing the dance (UI/DancePose; its still DanceStill<Id> until that's ready) and the
+-- coin pack art for coins, with a rim and a foot bar in the rarity's colour (the Spin wheel's rarity colours: see
+-- CrateArt.color).
 -- CrateArt.hisPicture: the owner's own crate pictures (his crate shop mockup's cards, Kit.art CrateCard*) for Shop >
 -- CRATES and the Halloween shop, with his real 3D crate standing in whenever a picture can't be drawn (owner, Oct 20
 -- 14:07: his CRATES tab showed three cardboard boxes, ImageLoader's glyph, "please add the crates into the normal
@@ -105,6 +106,16 @@ function CrateArt.picture(parent: Instance, item: any, w: number, h: number, r: 
 	if art then
 		local img = Kit.art(art, { Name = "Art", Size = UDim2.fromScale(1, 1), ScaleType = if fit then Enum.ScaleType.Fit else Enum.ScaleType.Crop, ZIndex = (z or 2) + 1, Parent = box })
 		round(img, r) -- (rounded on the picture itself: clipping ignores corners)
+		-- a dance: your own avatar dancing it over the still once it's ready (owner, Oct 23 03:37: "make the characters
+		-- in the ui showcasing the dances, dance, everywhere where its shown"; UI/DancePose, in view only). Not in the
+		-- crate list's tiny rows, where a body would be a few pixels tall.
+		if item.Kind == "Dance" and h >= 48 then
+			pcall(function()
+				require(script.Parent.DancePose).picture(box, item.Id, { Name = "Dancer", Size = UDim2.fromScale(1, 1), ZIndex = (z or 2) + 2 }, false, nil, function()
+					img.ImageTransparency = 1
+				end)
+			end)
+		end
 	end
 	return box
 end

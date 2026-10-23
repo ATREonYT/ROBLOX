@@ -8,7 +8,7 @@
 --              what you own first (EQUIP / EQUIPPED: tap EQUIPPED to take it off), then the ones you can still earn,
 --              dark with a lock and how to get them (Config/CoinShop Unlock); coin looks you don't own say where to
 --              buy them (Shop > STYLE);
---   DANCES     the dances you own, each with your avatar in its pose (UI/DancePose): PLAY / STOP on you
+--   DANCES     the dances you own, each with your avatar dancing it (UI/DancePose): PLAY / STOP on you
 --              (UI/DancePlayer), and ALL DANCES opens the Dances window (favourites for the G wheel);
 --   ABILITIES  your round abilities: what you bring, EQUIP (runner) and Q / E (catcher), from UI/AbilityCards.
 -- The window, its title bar and its tabs are real parts saved in StarterGui (the place build); the cards are made
