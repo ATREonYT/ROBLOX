@@ -346,3 +346,16 @@ equip it"; "make it your character dancing the dance"; "we can remove the outfit
   fitted inside his rim (LobbyHud `tileButton`); the Menu row and the window use it too. Dance cards: parts no joint
   reaches (accessories on RigidConstraints or matching attachments) follow their body part (UI/DancePose `rig`); he
   saw hair, glasses and the knife left standing while the body danced.
+
+## Server luck sign and the FREE SPINS window (Oct 23 16:26, his pictures in `design/owner-oct23/`)
+- **SERVER LUCK** (`Screens/LobbyHud`, in the top group above NEXT ROUND, lobby only): after `server-luck-ref.png`.
+  A clover, SERVER in white and LUCK in green (a list row, so Roblox measures the words), a clover; a dark green card
+  with a black rim behind it, and a dark green plate with a thin bright green rim showing the luck as "4x". The clovers
+  rock, the sparkles beside the number breathe, a shine crosses the plate, the number breathes, and the whole sign pops
+  when the luck goes up. A tap opens the LUCK window. The clovers are Roblox's emoji until he sends clover art.
+  Shots `hud-luck`, `hud-phone`.
+- **FREE SPINS** (`Screens/GroupReward`): after `free-spins-ref.png`. FREE white, SPINS pink and a sparkle in the header;
+  a sky body with pink petals rising; the wheel in a pink glow with turning rays, a tilted knife tile left and coins
+  tile right (rocking); +5 SPINS pink; one wide JOIN GROUP, which opens Roblox's join prompt and then claims (a member
+  already: it claims straight away). Still missing next to his picture: his girl-and-player art (the empty "Pair"
+  slot), the painted temple backdrop, and the triangle pointer on top of the wheel (his wheel icon points right).

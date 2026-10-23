@@ -69,7 +69,7 @@ shot results-catchers none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", 
 shot daily-quests none 1536 980 '{SCREEN="DailyQuests", SCALE=2}' # (vs his picture d: side_by_side.py daily-quests)
 shot group-reward none 1536 980 '{SCREEN="GroupReward", SCALE=2, GROUPID=1}' # (Oct 22: the "join our group" window, 5 free spins)
 shot luck none 1536 1100 '{SCREEN="Luck", SCALE=2, LUCK=4}' # (Oct 23: server luck, its boosts and the girl odds at that luck)
-shot hud-luck none 1536 694 '{SCREEN="Hud", SCALE=2, LUCK=2, ROUND=9}' # (the LUCK button and the SERVER LUCK sign)
+shot hud-luck none 1536 694 '{SCREEN="Hud", SCALE=2, LUCK=4, ROUND=9}' # (the LUCK button and the SERVER LUCK sign)
 shot combine none 1536 1200 '{SCREEN="Combine", SCALE=2, GIRLS=true, COPIES="t_kurumi:Normal=3,Silver=1;t_zero:Normal=1;t_rem:Gold=2", TAB="t_kurumi"}' # (the Combine machine's window, Oct 20)
 shot index-prestige none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_kurumi", DUPES="t_kurumi=2", PRESTIGE="t_kurumi=1"}'
 shot lobby-hud-friend none 1536 694 '{SCREEN="Hud", SCALE=2, ROUND=17, FRIEND=true}' # (INVITE, SPIN, QUESTS; "+10% COINS" with a friend in)

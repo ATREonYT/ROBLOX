@@ -227,7 +227,7 @@ function LobbyHud.build(parent: Instance)
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = gear.Instance })
 	gear.onClick(function() ModalManager.toggle("Settings") end)
 
-	local top = group(root, "Round", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Vector2.new(261, 100))
+	local top = group(root, "Round", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Vector2.new(261, 118))
 	-- Reference 13: a purple bar with a darker seam low down, a dark rim, two studs at each end, "NEXT ROUND" small
 	-- and the clock bigger.
 	local banner = new("Frame", { Name = "NextRound", Position = UDim2.fromOffset(3, 24), Size = UDim2.fromOffset(255, 36), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Visible = false, Parent = top }, { Kit.corner(6), Kit.stroke(C.BannerRim, 2) })
@@ -238,23 +238,57 @@ function LobbyHud.build(parent: Instance)
 	local row = new("Frame", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = banner }, { Kit.list(Enum.FillDirection.Horizontal, 10, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
 	Kit.text({ Name = "Label", Text = "NEXT ROUND", FontFace = Theme.Fonts.Button, TextSize = 17, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, Parent = row })
 	local bannerText = Kit.text({ Name = "Clock", Text = "", FontFace = Theme.Fonts.Number, TextSize = 25, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 2, Parent = row })
-	-- SERVER LUCK under it (owner, Oct 23 15:22: "make a server luck: x sign on the top of the screen"): a green plate,
-	-- always there in the lobby (x1 too, so everyone knows luck exists), brighter and pulsing once when it goes up; a
-	-- tap opens the LUCK window. Out of the way while you play (the round's message line is there then).
-	local luckSign = new("TextButton", { Name = "ServerLuck", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 65), Size = UDim2.fromOffset(220, 32), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AutoButtonColor = false, Text = "", Parent = top }, { Kit.corner(16), Kit.stroke(ShopStyle.INK, 2.5) })
-	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("5BEA7A"), Color3.fromHex("14A35A")), Parent = luckSign })
-	local luckSignText = ShopStyle.chunky({ Name = "Label", Text = "SERVER LUCK: x1", TextSize = 19, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = luckSign }, 2)
+	-- SERVER LUCK at the very top (owner, Oct 23 16:26, his picture design/owner-oct23/server-luck-ref.png: "make the
+	-- server luck be in a better place, or completely at the top ... make the server luck also nicely animated"):
+	-- SERVER in white and LUCK in green over a dark green plate with the luck big in green ("4x"), clovers at both
+	-- ends that rock, sparkles that breathe beside the number, a shine across the plate and a pop when it goes up.
+	-- Always there in the lobby (1x too, so everyone knows luck exists); a tap opens the LUCK window. Out of the way
+	-- while you play (the round's message line is there then); NEXT ROUND sits under it.
+	local INK_GREEN = Color3.fromHex("08200F")
+	local luckSign = new("TextButton", { Name = "ServerLuck", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 0), Size = UDim2.fromOffset(250, 76), BackgroundTransparency = 1, AutoButtonColor = false, Text = "", Parent = top })
 	local luckPop = new("UIScale", { Name = "Pop", Parent = luckSign })
+	-- the title row: a clover, SERVER, LUCK, a clover, centred by a list (Roblox measures the words itself)
+	local TITLE = 24
+	local titleRow = new("Frame", { Name = "Title", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 0), Size = UDim2.fromOffset(250, 30), BackgroundTransparency = 1, ZIndex = 3, Parent = luckSign }, { Kit.list(Enum.FillDirection.Horizontal, 5, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	local function word(name: string, text: string, order: number, top: Color3, foot: Color3)
+		local l = ShopStyle.chunky({ Name = name, Text = text, TextSize = TITLE, TextColor3 = Color3.new(1, 1, 1), AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 30), LayoutOrder = order, ZIndex = 3, Parent = titleRow }, 2.5)
+		new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(top, foot), Parent = l })
+	end
+	-- (the clovers are Roblox's own emoji: no picture to upload; swap for his clover art when he sends a PNG)
+	local function clover(name: string, order: number, delay: number)
+		local l = Kit.text({ Name = name, Text = "\u{1F340}", TextSize = 32, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromOffset(34, 34), LayoutOrder = order, ZIndex = 4, Parent = titleRow })
+		Effects.rock(l, { degrees = 10, seconds = 1.6, delay = delay })
+	end
+	clover("CloverLeft", 1, 0)
+	word("Server", "SERVER", 2, Color3.new(1, 1, 1), Color3.fromHex("C9D2E2"))
+	word("Luck", "LUCK", 3, Color3.fromHex("A6FFB9"), Color3.fromHex("1FC45A"))
+	clover("CloverRight", 4, 0.8)
+	-- the card behind it all, as in his picture: dark green, a black rim, the title sitting over its top edge
+	local card = new("Frame", { Name = "Card", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 16), Size = UDim2.fromOffset(214, 58), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1, Parent = luckSign }, { Kit.corner(12), Kit.stroke(INK_GREEN, 3) })
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("234D36"), Color3.fromHex("0F2619")), Parent = card })
+	-- the plate: a dark rim, then dark green with a thin bright green rim inside
+	local plate = new("Frame", { Name = "Plate", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 30), Size = UDim2.fromOffset(180, 38), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 2, Parent = luckSign }, { Kit.corner(10), Kit.stroke(INK_GREEN, 2.5) })
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("1F5A3A"), Color3.fromHex("0E2E1C")), Parent = plate })
+	new("Frame", { Name = "InnerRim", Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), BackgroundTransparency = 1, ZIndex = 2, Parent = plate }, { Kit.corner(7), Kit.stroke(Color3.fromHex("3FE184"), 1.5, 0.35) })
+	Effects.shine(plate, { every = 3.5, corner = 10, strength = 0.25, z = 5 })
+	local number = ShopStyle.chunky({ Name = "Number", Text = "1x", TextSize = 32, TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(110, 36), ZIndex = 4, Parent = plate }, 2.5)
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("D8FFE0"), Color3.fromHex("2BD873")), Parent = number })
+	Effects.breathe(number, { scale = 1.06, seconds = 1.1 })
+	for _, sp in { { "SparkLeft", 24, 0 }, { "SparkRight", 156, 0.55 } } do
+		local l = Kit.text({ Name = sp[1], Text = "\u{2726}", TextSize = 16, TextColor3 = Color3.fromHex("C8FFD6"), TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(sp[2], 20), Size = UDim2.fromOffset(20, 20), ZIndex = 4, Parent = plate })
+		task.delay(sp[3], function() Effects.breathe(l, { scale = 1.35, seconds = 0.9 }) end)
+	end
 	luckSign.Activated:Connect(function() ModalManager.open("Luck") end)
+	banner.Position = UDim2.fromOffset(3, 80) -- (NEXT ROUND under the sign)
 	local lastLuck = 1
 	local function showLuck()
 		local k = tonumber(workspace:GetAttribute("HuzzServerLuck")) or 1
-		local word = "x" .. (if k == math.floor(k) then tostring(math.floor(k)) else string.format("%.1f", k))
-		luckSignText.Text = "SERVER LUCK: " .. word
-		luckText.Text = word
+		local n = if k == math.floor(k) then tostring(math.floor(k)) else string.format("%.1f", k)
+		number.Text = n .. "x"
+		luckText.Text = "x" .. n
 		if k > lastLuck then
 			luckPop.Scale = 1.25
-			Motion.tween(luckPop, "luckpop", 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+			Motion.tween(luckPop, "luckpop", 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
 		end
 		lastLuck = k
 	end

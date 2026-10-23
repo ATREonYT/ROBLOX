@@ -1,11 +1,15 @@
 -- "Join our group" window (owner, Oct 22 19:09: "make a 'join the group' ui pop up for a reward in the style of our
--- ui, and make the reward 5 free spins on the wheel"). Our kit's window: FREE SPINS, the wheel icon turning in green
--- rays, "+5 SPINS", what to do in two steps, then JOIN GROUP (Roblox's own join prompt, GroupService:PromptJoinAsync,
--- guarded: not every device or Studio has it) and CLAIM. The server checks with Roblox that you're in the group and
--- gives the spins once (ActionService "ClaimGroup" -> ProgressService.claimGroup); this window only asks.
+-- ui, and make the reward 5 free spins on the wheel"). Laid out after his picture (Oct 23 16:26,
+-- design/owner-oct23/free-spins-ref.png): FREE in white and SPINS in pink with a sparkle in the header; a sky-blue
+-- body with pink petals drifting up; the wheel big in the middle in a pink glow and turning rays, a knife tile on its
+-- left and a coins tile on its right (each tilted and rocking a little); "+5 SPINS" big and pink, one line, and one
+-- wide JOIN GROUP button. JOIN GROUP opens Roblox's own join prompt (GroupService:PromptJoinAsync, guarded: not every
+-- device or Studio has it), then claims by itself: the server checks with Roblox that you're in the group and gives
+-- the spins once (ActionService "ClaimGroup" -> ProgressService.claimGroup); already in it, the same button claims.
+-- His picture's girl and player hugging on the left need his art as a transparent PNG (the slot "Pair" waits for it).
 -- It opens by itself once per visit, Config/Group.PopupAfter seconds into the lobby, while the spins aren't claimed
 -- (like How to Play: never over a round or another window). The lobby's GROUP button (Screens/LobbyHud) opens it too.
--- With no group set (Config/Group.Id 0): both buttons say COMING SOON and do nothing, and it never pops up live
+-- With no group set (Config/Group.Id 0): the button says COMING SOON and does nothing, and it never pops up live
 -- (in Studio it still does, so you can see it).
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -24,7 +28,7 @@ local C, F = Theme.Colors, Theme.Fonts
 
 local GroupRewardScreen = {}
 
-local W, H = 440, 330
+local W, H = 500, 360
 
 local function line(props: { [string]: any }, stroke: number?): TextLabel
 	props.TextWrapped = props.TextWrapped == true
@@ -37,60 +41,95 @@ function GroupRewardScreen.set(): boolean return (tonumber(Group.Id) or 0) > 0 e
 
 function GroupRewardScreen.build(parent: Instance)
 	local player = Players.LocalPlayer
-	local window = Kit.window({ Name = "GroupReward", Title = "FREE SPINS", Icon = "SpinWheel", Width = W, Height = H, TitleX = 56, TitleWidth = 140, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "GroupReward", Title = " ", Icon = "SpinWheel", Width = W, Height = H, TitleX = 56, TitleWidth = 0, StudsTo = 0, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel = window.Panel
-	-- the wheel, turning in green rays, and the reward under it
-	local rays = Effects.rays(panel, UDim2.fromOffset(W // 2, 112), 150, { color = C.Accent, transparency = 0.35, seconds = 12, z = 2, name = "Rays" })
-	local wheel = Kit.icon("SpinWheel", { Name = "Wheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(W // 2, 112), Size = UDim2.fromOffset(84, 84), ZIndex = 3, Parent = panel })
+	-- the header words: FREE white, SPINS pink, a sparkle
+	local words = new("Frame", { Name = "Words", Position = UDim2.fromOffset(56, 0), Size = UDim2.new(0, 260, 1, 0), BackgroundTransparency = 1, ZIndex = 3, Parent = window.Header }, { Kit.list(Enum.FillDirection.Horizontal, 2, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
+	line({ Name = "Free", Text = "FREE", FontFace = F.Heading, TextSize = 28, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 34), LayoutOrder = 1, ZIndex = 3, Parent = words }, 2.5)
+	local spins = line({ Name = "Spins", Text = "SPINS", FontFace = F.Heading, TextSize = 28, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 34), LayoutOrder = 2, ZIndex = 3, Parent = words }, 2.5)
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("FFD2F2"), Color3.fromHex("FF5FC8")), Parent = spins })
+	local spark = Kit.text({ Name = "Spark", Text = "\u{2726}", TextSize = 20, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(20, 34), LayoutOrder = 3, ZIndex = 3, Parent = words })
+	Effects.breathe(spark, { scale = 1.3, seconds = 0.9 })
+
+	-- the sky-blue body (his picture's backdrop is a painted temple; ours a soft sky until he sends it as a PNG)
+	local bodyH = H - 47
+	local sky = new("Frame", { Name = "Sky", Position = UDim2.fromOffset(4, 47), Size = UDim2.fromOffset(W - 8, bodyH - 4), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 2, Parent = panel }, { Kit.corner(4) })
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("78B4F4")), ColorSequenceKeypoint.new(0.55, Color3.fromHex("8C90DE")), ColorSequenceKeypoint.new(1, Color3.fromHex("5C5AA8")) }), Parent = sky })
+	Effects.motes(sky, { colour = Color3.fromHex("FF9FD6"), shape = "petal", count = 9, area = Rect.new(10, 10, W - 18, bodyH - 14), rise = 70, z = 3, seed = 4 })
+	-- the slot for his girl-and-player picture (empty until he sends it)
+	new("Frame", { Name = "Pair", Position = UDim2.fromOffset(0, bodyH - 190), Size = UDim2.fromOffset(150, 186), BackgroundTransparency = 1, ZIndex = 4, Parent = sky })
+
+	-- the wheel in a pink glow, with turning rays; a knife tile left, a coins tile right
+	local CX, CY = W // 2, 47 + 98
+	local rays = Effects.rays(panel, UDim2.fromOffset(CX, CY), 190, { color = Color3.fromHex("FF8AD8"), transparency = 0.45, seconds = 12, z = 3, name = "Rays" })
+	-- a pink glow round the wheel: three soft rings, brightest inside
+	for i, g in { { 136, 3, 0.05 }, { 146, 4, 0.55 }, { 158, 5, 0.8 } } do
+		new("Frame", { Name = "Glow" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(g[1], g[1]), BackgroundTransparency = 1, ZIndex = 4, Parent = panel }, { Kit.corner(g[1] // 2), Kit.stroke(Color3.fromHex("FF6FD0"), g[2], g[3]) })
+	end
+	local wheel = Kit.icon("SpinWheel", { Name = "Wheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(124, 124), ZIndex = 5, Parent = panel })
 	local spinning = false
 	Effects.spin(wheel, 8, function() return spinning end)
-	local amount = line({ Name = "Amount", Text = "+" .. Group.Spins .. " SPINS", FontFace = F.Heading, TextSize = 26, TextColor3 = C.Accent, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, 158), Size = UDim2.fromOffset(W - 32, 30), ZIndex = 3, Parent = panel }, 2)
+	local function tile(name: string, x: number, tilt: number, delay: number)
+		-- (a tilted holder, so the tile rocks round its tilt: Effects.rock sets the tile's own Rotation)
+		local holder = new("Frame", { Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, CY - 10), Size = UDim2.fromOffset(84, 84), Rotation = tilt, BackgroundTransparency = 1, ZIndex = 4, Parent = panel })
+		local t = new("Frame", { Name = "Tile", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 4, Parent = holder }, { Kit.corner(10), Kit.stroke(Color3.fromHex("9C7CFF"), 2.5) })
+		new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("1D1848"), Color3.fromHex("08070F")), Parent = t })
+		Effects.rock(t, { degrees = 3, seconds = 1.8, delay = delay })
+		return t
+	end
+	local knifeTile = tile("KnifeTile", CX - 128, -10, 0)
+	Kit.art("KnifeCovenKatana", { Name = "Knife", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(76, 76), ZIndex = 5, Parent = knifeTile })
+	local coinTile = tile("CoinsTile", CX + 128, 10, 0.9)
+	Kit.icon("CurrencyCoin", { Name = "Coins", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(56, 56), ZIndex = 5, Parent = coinTile })
+
+	-- +5 SPINS, the line, JOIN GROUP
+	local amount = line({ Name = "Amount", Text = "+" .. Group.Spins .. " SPINS", FontFace = F.Heading, TextSize = 40, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, CY + 64), Size = UDim2.fromOffset(W - 32, 44), ZIndex = 6, Parent = panel }, 3)
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("FFE2F6"), Color3.fromHex("FF5FC8")), Parent = amount })
 	local name = if Group.Name ~= "" then Group.Name else "our group"
-	local about = line({ Name = "About", Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!", FontFace = F.Name, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, 192), Size = UDim2.fromOffset(W - 32, 22), ZIndex = 3, Parent = panel })
+	local about = line({ Name = "About", Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!", FontFace = F.Name, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, CY + 108), Size = UDim2.fromOffset(W - 32, 22), ZIndex = 6, Parent = panel })
 	Kit.fitLine(about, W - 32, 16, 12, true)
-	local steps = line({ Name = "Steps", Text = "1. Press JOIN GROUP.   2. Come back and press CLAIM.", FontFace = F.Body, TextSize = 14, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, 216), Size = UDim2.fromOffset(W - 32, 20), ZIndex = 3, Parent = panel }, 1)
-	local join = Kit.button({ Name = "Join", Text = "JOIN GROUP", Style = "Action", FontFace = F.Button, TextSize = 16, Corner = 7, RimThickness = 2, Position = UDim2.fromOffset(32, H - 78), Size = UDim2.fromOffset(176, 44), ZIndex = 4, Parent = panel })
-	local claim = Kit.button({ Name = "Claim", Text = "CLAIM", Style = "Selected", FontFace = F.Button, TextSize = 16, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -32, 1, -78), Size = UDim2.fromOffset(176, 44), ZIndex = 4, Parent = panel })
+	local join = Kit.button({ Name = "Join", Text = "JOIN GROUP", Icon = "Players", IconSize = 32, Style = "Action", FontFace = F.Button, TextSize = 26, Corner = 9, RimThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.fromOffset(W - 90, 50), ZIndex = 6, Parent = panel })
 
 	local pending = false
 	local function refresh()
 		local got = State.data.GroupReward == true
 		if not GroupRewardScreen.set() then
-			steps.Text = "Our group is coming soon. Check back later!"
 			join.setText("COMING SOON"); join.setStyle("Disabled"); join.setEnabled(false)
-			claim.setText("COMING SOON"); claim.setStyle("Disabled"); claim.setEnabled(false)
 		elseif got then
-			steps.Text = "Thanks for joining! Your spins are on the wheel."
-			join.setText("JOIN GROUP"); join.setStyle("Disabled"); join.setEnabled(false)
-			claim.setText("CLAIMED"); claim.setStyle("Disabled"); claim.setEnabled(false)
+			about.Text = "Thanks for joining! Your spins are on the wheel."
+			join.setText("CLAIMED"); join.setStyle("Disabled"); join.setEnabled(false)
 		else
-			steps.Text = "1. Press JOIN GROUP.   2. Come back and press CLAIM."
-			join.setText("JOIN GROUP"); join.setStyle("Action"); join.setEnabled(true)
-			claim.setText(if pending then "..." else "CLAIM"); claim.setStyle("Selected"); claim.setEnabled(not pending)
+			about.Text = "Join " .. name .. " and get " .. Group.Spins .. " free spins on the wheel!"
+			join.setText(if pending then "..." else "JOIN GROUP"); join.setStyle("Action"); join.setEnabled(not pending)
 		end
 		rays.Visible = not got
 	end
 
+	-- Roblox's join prompt, then the claim (the server checks with Roblox); already in the group, it just claims
+	local function claim()
+		local ok, why = State.action("ClaimGroup")
+		if ok then
+			Toast.show("+" .. Group.Spins .. " spins on the wheel!")
+			Motion.pop(amount)
+		end
+		return ok, why
+	end
 	join.onClick(function()
-		if not GroupRewardScreen.set() then return end
-		task.spawn(function()
-			local ok = pcall(function() game:GetService("GroupService"):PromptJoinAsync(Group.Id) end)
-			if not ok then Toast.show("The join window can't open here. Find " .. name .. " on our game's page, join it, then press CLAIM.") end
-		end)
-	end)
-	claim.onClick(function()
 		if pending or State.data.GroupReward == true or not GroupRewardScreen.set() then return end
 		pending = true
 		refresh()
 		task.spawn(function()
-			local ok, why = State.action("ClaimGroup")
-			pending = false
-			if ok then
-				Toast.show("+" .. Group.Spins .. " spins on the wheel!")
-				Motion.pop(amount)
-			else
-				Toast.show(why or "Couldn't claim that. Try again.")
+			local ok = claim() -- (already a member: done)
+			if not ok then
+				local opened = pcall(function() game:GetService("GroupService"):PromptJoinAsync(Group.Id) end)
+				if opened then
+					local done, why = claim()
+					if not done then Toast.show(why or "Join the group, then press JOIN GROUP again to get your spins.") end
+				else
+					Toast.show("The join window can't open here. Find " .. name .. " on our game's page, join it, then press JOIN GROUP again.")
+				end
 			end
+			pending = false
 			refresh()
 		end)
 	end)
@@ -100,7 +139,7 @@ function GroupRewardScreen.build(parent: Instance)
 		window = window,
 		onOpen = function() open = true; spinning = true; refresh() end,
 		onClose = function() open = false; spinning = false end,
-		firstSelect = function() return claim.Instance end,
+		firstSelect = function() return join.Instance end,
 	})
 	State.changed(function() if open then refresh() end end)
 	refresh()
