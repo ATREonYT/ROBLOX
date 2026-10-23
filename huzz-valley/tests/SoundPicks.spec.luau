@@ -50,43 +50,25 @@ for name, id in ids do
 end
 check("button sounds wait for the owner's upload (\"\", never a made-up ID)", ids.ui_click == "" and ids.ui_hover == "" and ids.ui_open == "" and ids.ui_close == "")
 
--- 2. dances and their songs (Oct 20: two picks per dance, docs/dance-music.md)
-local danceDoc = if fs.isFile(ROOT .. "docs/dance-music.md") then fs.readFile(ROOT .. "docs/dance-music.md") else ""
-check("docs/dance-music.md exists", danceDoc ~= "")
-local used, firstUses = {}, {}
+-- 2. dances and their songs: none for now (owner, Oct 23 21:11: "get rid of all emote sounds, completely, tomorrow i
+-- will add new ones tuned for every dance"): every dance is silent; the pick / fallback logic still works for his new ones
+check("no dance songs are left", next(Dances.Tracks) == nil)
 for _, d in Dances.List do
-	check(d.Id .. " has a song", type(d.Music) == "string" and Dances.Tracks[d.Music] ~= nil)
-	check(d.Id .. " has a second pick, different from the first", type(d.Backup) == "string" and Dances.Tracks[d.Backup] ~= nil and d.Backup ~= d.Music)
-	check(d.Id .. " is in docs/dance-music.md", string.find(danceDoc, "| " .. d.Name .. " |", 1, true) ~= nil)
-	if d.Music then used[d.Music] = true; firstUses[d.Music] = (firstUses[d.Music] or 0) + 1 end
-	if d.Backup then used[d.Backup] = true end
+	check(d.Id .. " has no song", d.Music == nil and d.Backup == nil and Dances.track(d.Id) == nil)
 end
-for key, n in firstUses do
-	check("track " .. key .. " is the first pick of at most 4 dances (each song stays a clear style)", n <= 4)
-end
-for key, t in Dances.Tracks do
-	check("track " .. key .. " Id is \"\" or rbxassetid://<number>", goodId(t.Id))
-	check("track " .. key .. " is used by a dance", used[key] == true)
-	if t.Id ~= "" and t.Full then -- (his own upload, Oct 23: no store page; listed in docs/dance-music.md by ID)
-		check("track " .. key .. " (his upload) is in docs/dance-music.md", string.find(danceDoc, string.match(t.Id, "%d+"), 1, true) ~= nil)
-	elseif t.Id ~= "" then
-		local n = string.match(t.Id, "%d+")
-		check("track " .. key .. " Source is its store page", string.find(t.Source, "create.roblox.com/store/asset/" .. n, 1, true) ~= nil)
-		check("track " .. key .. " is in docs/sound-picks.md or docs/dance-music.md", string.find(doc, n, 1, true) ~= nil or string.find(danceDoc, n, 1, true) ~= nil)
-		check("track " .. key .. " is in docs/dance-music.md with its store page", string.find(danceDoc, "create.roblox.com/store/asset/" .. n, 1, true) ~= nil)
-	end
-	check("track " .. key .. " Start is a time", t.Start == nil or (type(t.Start) == "number" and t.Start >= 0))
-end
-check("Dances.track gives OrangeSwing its song", Dances.track("OrangeSwing") ~= nil and Dances.track("OrangeSwing").Id == Dances.Tracks.CrabRave.Id)
-check("Dances.track gives Squat Kicks the Russian folk dance (Kalinka)", Dances.track("SquatKicks") ~= nil and Dances.track("SquatKicks").Id == Dances.Tracks.Kalinka.Id)
 check("Dances.track: unknown dance = nil", Dances.track("NoSuchDance") == nil)
-local crab = Dances.get("OrangeSwing")
-local saved, savedBackup = Dances.Tracks.CrabRave.Id, Dances.Tracks[crab.Backup].Id
-Dances.Tracks.CrabRave.Id = ""
-check("Dances.track: pick 1 with Id \"\" falls back to pick 2", Dances.track("OrangeSwing") ~= nil and Dances.track("OrangeSwing").Id == savedBackup)
-Dances.Tracks[crab.Backup].Id = ""
-check("Dances.track: both picks \"\" = nil (dances in silence)", Dances.track("OrangeSwing") == nil)
-Dances.Tracks.CrabRave.Id, Dances.Tracks[crab.Backup].Id = saved, savedBackup
+do -- (a pretend song pair, to check the picking still works when his songs arrive)
+	local d = Dances.List[1]
+	Dances.Tracks.TestA = { Id = "rbxassetid://1", Name = "A", By = "test", Style = "", Source = "" }
+	Dances.Tracks.TestB = { Id = "rbxassetid://2", Name = "B", By = "test", Style = "", Source = "" }
+	d.Music, d.Backup = "TestA", "TestB"
+	check("Dances.track plays a dance's song", Dances.track(d.Id) ~= nil and Dances.track(d.Id).Id == "rbxassetid://1")
+	Dances.Tracks.TestA.Id = ""
+	check("Dances.track: pick 1 with Id \"\" falls back to pick 2", Dances.track(d.Id) ~= nil and Dances.track(d.Id).Id == "rbxassetid://2")
+	Dances.Tracks.TestB.Id = ""
+	check("Dances.track: both picks \"\" = nil (dances in silence)", Dances.track(d.Id) == nil)
+	d.Music, d.Backup, Dances.Tracks.TestA, Dances.Tracks.TestB = nil, nil, nil, nil
+end
 check("dance songs are quieter than the background songs", Dances.MusicVolume > 0 and Dances.MusicVolume < MusicCfg.Volume)
 check("the background dips under a dance song but never goes silent", Dances.MusicDuck > 0.1 and Dances.MusicDuck < 1)
 check("the dip is deep enough that the dance song clearly wins (at least ~12 dB under it)", Dances.MusicDuck * MusicCfg.Volume <= Dances.MusicVolume / 4)
@@ -204,7 +186,7 @@ do
 			fulls[key] = t.Full
 		end
 	end
-	check(string.format("all 11 of his songs (%d)", n), n == 11)
+	-- (his 11 dance songs were taken out with the rest on Oct 23 21:11; his new ones get these checks when they come)
 	check("the Studio song check exists and reports on [HuzzSongs] lines", fs.isFile(ROOT .. "tools/studio/song_check.lua")
 		and string.find(fs.readFile(ROOT .. "tools/studio/song_check.lua"), "[HuzzSongs] SWAP", 1, true) ~= nil)
 end

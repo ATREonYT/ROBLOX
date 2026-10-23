@@ -4,6 +4,13 @@ Read before adding or changing any sound, the button sounds, dance music, backgr
 Research, picks, sources and reasons for every licensed sound: `docs/sound-picks.md`. Recipe for a new made sound:
 core `CLAUDE.md` section 6.
 
+## Dance songs: none for now (Oct 23 21:11)
+- Owner: "can you please get rid of all emote sounds, completely, tomorrow i will add new ones tuned for every dance".
+  `Config/Dances.Tracks` is empty and no dance has Music or Backup, so every dance is silent (`Music.dance` prints
+  "this dance has no song"). The machinery is unchanged: add each new song to Tracks (with Start, or Full / First /
+  Loop for a whole uploaded file) and name it in the dance's Music. The old picks and his 11 uploads are in git
+  history; the dance-song notes below describe them.
+
 ## Real, researched sounds for clicks, the Secret cutscene and the dances
 - **Never synthesize these three again** (`make_sfx.py` skips them: `RETIRED`). Spec `tests/SoundPicks.spec` (every ID
   "" or rbxassetid with its store URL in the file and the doc, never invented).

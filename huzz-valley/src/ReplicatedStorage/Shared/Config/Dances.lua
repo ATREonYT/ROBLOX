@@ -31,79 +31,11 @@ Dances.Colors = {
 
 Dances.MaxFavourites = 12 -- (the server's cap on a player's saved favourites)
 
--- The dance songs. All from Roblox's licensed library (Monstercat and APM Music tracks that Roblox distributes for
--- free use in any experience, public, so nothing to upload). Id "" = no song for that dance (it dances in silence).
--- Every ID was seen on the Source page; none is invented. Start = seconds into the song to begin (0 until someone
--- listens in Studio and picks the moment the beat kicks in). One song serves several dances of the same kind.
-Dances.Tracks = {
-	CrabRave = { Id = "rbxassetid://5410086218", Name = "Crab Rave", By = "Noisestorm (Monstercat)", Style = "electro house, the meme-dance anthem",
-		Source = "https://create.roblox.com/store/asset/5410086218/Noisestorm-Crab-Rave" },
-	Shiawase = { Id = "rbxassetid://5409360995", Name = "Shiawase", By = "Dion Timmer (Monstercat)", Style = "kawaii future bass, 150 BPM",
-		Source = "https://create.roblox.com/store/asset/5409360995/Dion-Timmer-Shiawase" },
-	Moshi = { Id = "rbxassetid://7024340270", Name = "Moshi", By = "Pegboard Nerds & Tokyo Machine (Monstercat)", Style = "video-game electro",
-		Source = "https://create.roblox.com/store/asset/7024340270/Pegboard-Nerds-Tokyo-Machine-Moshi" },
-	Ascension = { Id = "rbxassetid://7029070008", Name = "Ascension", By = "Vintage & Morelli (Monstercat)", Style = "smooth progressive house",
-		Source = "https://create.roblox.com/store/asset/7029070008" },
-	HypeHorns = { Id = "rbxassetid://1840007010", Name = "Hype Horns", By = "APM Music (Juice Music, NON STOP POP 2)", Style = "sassy funky horns and slick synth beats",
-		Source = "https://create.roblox.com/store/asset/1840007010" },
-	StayUpbeat = { Id = "rbxassetid://9044014229", Name = "Stay Upbeat B", By = "APM Music (Sonoton, THE NEW 80s)", Style = "uptempo 80s radio pop, 126 BPM",
-		Source = "https://create.roblox.com/store/asset/9044014229/Stay-Upbeat-B" },
-	-- (was "Funky People" 1835417126: only a 32 s cut, so a dance heard its ending and a restart every 32 s)
-	BigDeal = { Id = "rbxassetid://9039954904", Name = "Big Deal", By = "APM Music (Conroy, Sounds Funky - Pop Brass Background)", Style = "funky pop brass groove, 2:06",
-		Source = "https://create.roblox.com/store/asset/9039954904/Big-Deal" },
-	Downtown = { Id = "rbxassetid://1843479959", Name = "Downtown", By = "APM Music (HIP-HOP FUNK & GROOVE)", Style = "hip-hop funk groove",
-		Source = "https://create.roblox.com/store/asset/1843479959/Downtown" },
-	SwingWithMe = { Id = "rbxassetid://1838645022", Name = "Swing With Me (Electro Swing Mix)", By = "APM Music (Themes International)", Style = "electro swing",
-		Source = "https://create.roblox.com/store/asset/1838645022" },
-	Akim = { Id = "rbxassetid://1843270078", Name = "Akim", By = "APM Music (Justement Music)", Style = "breakbeat",
-		Source = "https://create.roblox.com/store/asset/1843270078" },
-	Jumpstyle = { Id = "rbxassetid://1839246711", Name = "Jumpstyle", By = "APM Music", Style = "jumpstyle techno (kicks on every beat)",
-		Source = "https://create.roblox.com/store/asset/1839246711/Jumpstyle" },
-	-- Oct 20 dance deep dive (docs/dance-music.md): a song per dance style, all by @APMOfficial, all seen on their page
-	Kalinka = { Id = "rbxassetid://1845855354", Name = "Kalinka A", By = "APM Music (Igor Tuhmanov, Authentic Russia)", Style = "Russian folk dance, 2:03 (starts slow, then speeds up)",
-		Source = "https://create.roblox.com/store/asset/1845855354/Kalinka" },
-	BoogieWoogie = { Id = "rbxassetid://1839965449", Name = "Boogie Woogie", By = "APM Music (Juice Music, GUITAR USA 2)", Style = "rockabilly rock 'n' roll with a boogie bass, 1:38",
-		Source = "https://create.roblox.com/store/asset/1839965449" },
-	BoogieManBoogie = { Id = "rbxassetid://1841081879", Name = "Boogie Man Boogie", By = "APM Music (Kenny Graham, 50S AND 60S VINYL CLASSICS)", Style = "50s and 60s vinyl boogie, 1:38",
-		Source = "https://create.roblox.com/store/asset/1841081879" },
-	HalloweenFunk = { Id = "rbxassetid://1841274055", Name = "Halloween Funk", By = "APM Music (KIDS CLUB)", Style = "kids' pop Halloween funk, 2:05",
-		Source = "https://create.roblox.com/store/asset/1841274055/Halloween-Funk" },
-	TrickOrTreat = { Id = "rbxassetid://1837467234", Name = "Trick or Treat", By = "APM Music (The Box, HALLOWEEN THEMES)", Style = "mischievous intro into a Halloween hip-hop beat, 2:00",
-		Source = "https://create.roblox.com/store/asset/1837467234/Trick-or-Treat" },
-	PunchingTheAir = { Id = "rbxassetid://1836723913", Name = "Punching The Air", By = "APM Music (David Hearn, AMERICAN ROAD TRIP)", Style = "rock, 2:12",
-		Source = "https://create.roblox.com/store/asset/1836723913" },
-	-- His own songs (Oct 22). Not in Roblox's library: he uploads the files and sends the IDs; until then a dance plays
-	-- its Backup. The files to upload are cut from the first beat to whole bars, so a looped song stays on the beat
-	-- (Start = 0): project files owner-audio-oct22/loops/<key>.ogg, never the public repo (tools/sfx/song_loops.py).
-	-- Each dance is paired with the song whose beat fits its loop, and the loop is stretched to whole beats of it
-	-- (tools/anim/extract_anims.luau ON_BEAT; the made dances are built on it). Tempos measured off the files.
-	-- Uploaded Oct 23 (his Creator Hub list, 03:20): balenci and Karmel by name; the three German hardtekks in the
-	-- order he named them (GermanHARDtek, germanht2, HeartbeatTek = 1, 2, 3: a guess); the six he kept the file names
-	-- of ("2026-10-22 17-44-03" ...) by those names. He uploaded the whole files, not the cut loops, so each song also
-	-- carries Full (the whole file's seconds), First (its first beat) and Loop (whole bars): Gameplay/Music plays a
-	-- whole file from First and loops First .. First + Loop, so the dance stays on the beat; a cut loop (TimeLength
-	-- about Loop) just loops. tools/studio/song_check.lua says in Studio which song each ID really is.
-	-- The hardtekk three (16:00), one per hardtekk dance (16 beats of it):
-	Hardtekk1 = { Id = "rbxassetid://116215611645438", Name = "Hardtekk 1", By = "the owner's file (2026-10-22 18-08-42)", Style = "hardtekk, 150.9 BPM", Source = "owner-audio-oct22/loops/Hardtekk1.ogg", Start = 0, Full = 21.528, First = 0.151, Loop = 12.724 },
-	Hardtekk2 = { Id = "rbxassetid://125450809865884", Name = "Hardtekk 2", By = "the owner's file (2026-10-22 18-09-22)", Style = "hardtekk, 199.75 BPM", Source = "owner-audio-oct22/loops/Hardtekk2.ogg", Start = 0, Full = 36.12, First = 0.293, Loop = 9.612 },
-	Hardtekk3 = { Id = "rbxassetid://77960131592091", Name = "Hardtekk 3", By = "the owner's file (2026-10-22 18-10-52)", Style = "hardtekk, 179.75 BPM", Source = "owner-audio-oct22/loops/Hardtekk3.ogg", Start = 0, Full = 19.368, First = 0.11, Loop = 10.682 },
-	-- The 16:17 batch ("match up the songs to the dances, ... the balenci balenci balenci song match to the dance ...
-	-- called balenci, and then the karamel dancen one to the caramel dance"). The Balenci song is the one playing under
-	-- his Balenci video (their sound matches); Caramelldansen goes on Sweet Dancin, the hands-up bounce that is the
-	-- Caramelldansen dance (two of its beats a loop). The other six by tempo.
-	BalenciSong = { Id = "rbxassetid://75404670819866", Name = "Balenci", By = "the owner's file (2026-10-22 17-47-31)", Style = "the Balenci song, 119 BPM", Source = "owner-audio-oct22/loops/Balenci.ogg", Start = 0, Full = 17.856, First = 0.054, Loop = 16.134 },
-	Caramelldansen = { Id = "rbxassetid://115666023509551", Name = "Caramelldansen", By = "the owner's file (2026-10-22 17-46-05)", Style = "Caramelldansen, 159.9 BPM", Source = "owner-audio-oct22/loops/Caramelldansen.ogg", Start = 0, Full = 12.456, First = 0.257, Loop = 12.008 },
-	Bounce98 = { Id = "rbxassetid://78590691290289", Name = "Bounce 98", By = "the owner's file (2026-10-22 17-45-12)", Style = "98.45 BPM", Source = "owner-audio-oct22/loops/Bounce98.ogg", Start = 0, Full = 10.152, First = 0.065, Loop = 9.751 },
-	Groove107 = { Id = "rbxassetid://99829674865036", Name = "Groove 107", By = "the owner's file (2026-10-22 17-47-00)", Style = "107.15 BPM", Source = "owner-audio-oct22/loops/Groove107.ogg", Start = 0, Full = 9.072, First = 0.469, Loop = 4.48 },
-	Hype125 = { Id = "rbxassetid://109350486502699", Name = "Hype 125", By = "the owner's file (2026-10-22 17-48-03)", Style = "125.65 BPM", Source = "owner-audio-oct22/loops/Hype125.ogg", Start = 0, Full = 8.04, First = 0.456, Loop = 3.82 },
-	Tick138 = { Id = "rbxassetid://83001530640950", Name = "Tick 138", By = "the owner's file (2026-10-22 17-48-42)", Style = "138.05 BPM", Source = "owner-audio-oct22/loops/Tick138.ogg", Start = 0, Full = 11.736, First = 0.322, Loop = 6.954 },
-	Rush180a = { Id = "rbxassetid://81712841399159", Name = "Rush 180 A", By = "the owner's file (2026-10-22 17-44-43)", Style = "179.75 BPM", Source = "owner-audio-oct22/loops/Rush180a.ogg", Start = 0, Full = 6.072, First = 0.284, Loop = 5.341 },
-	Rush180b = { Id = "rbxassetid://137739495261914", Name = "Rush 180 B", By = "the owner's file (2026-10-22 17-44-03)", Style = "179.75 BPM", Source = "owner-audio-oct22/loops/Rush180b.ogg", Start = 0, Full = 9.624, First = 0.2, Loop = 5.341 },
-	DoItYourSelf = { Id = "rbxassetid://1840412669", Name = "Do It Your Self", By = "APM Music (KPM Main Series, Quirky And Curious)", Style = "quirky jazz, 2:16",
-		Source = "https://create.roblox.com/store/asset/1840412669" },
-	ShakeSomethin = { Id = "rbxassetid://1841134586", Name = "Shake Somethin'", By = "APM Music (Drew Milligan, HIP HOP BEDS)", Style = "hip-hop beat, 2:40",
-		Source = "https://create.roblox.com/store/asset/1841134586" },
-} :: { [string]: Track }
+-- The dance songs: none for now (owner, Oct 23 21:11: "get rid of all emote sounds, completely, tomorrow i will add
+-- new ones tuned for every dance"). Every dance plays in silence until its new song goes here and its Music names it
+-- (Gameplay/Music.dance plays Dances.track(id); Start, Full, First and Loop work as before). The old picks are in
+-- git history (Config/Dances before Oct 23 21:11, docs/dance-music.md).
+Dances.Tracks = {} :: { [string]: Track }
 
 Dances.MusicVolume = 0.22 -- each dance song before the sliders (the background songs are 0.3: this stays under them)
 -- the background music drops to this share of its volume while you dance (0.15 = about 16 dB down: two songs in
@@ -117,48 +49,48 @@ Dances.MusicFadeOut = 0.8 -- seconds, when the dance stops
 -- paid for old dances came back (HuzzServer/DataService OLD_DANCES). Same split as before: most for everyone, 4 in
 -- the Dance Pack, 8 for coins (Untouchable also on the reward track at Level 3, where Robot was).
 Dances.List = {
-	{ Id = "OrangeSwing", Name = "Orange Swing", AnimationId = "", Starter = true, Color = "Red", Blurb = "Swing your arms and step side to side!", Order = 1, Music = "CrabRave", Backup = "Shiawase" },
-	{ Id = "BoogieDown", Name = "Boogie Down", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Get down and boogie all night!", Order = 2, Music = "BigDeal", Backup = "BoogieManBoogie" },
-	{ Id = "ElBounce", Name = "L Bounce", AnimationId = "", Starter = true, Color = "Green", Blurb = "Bounce and show them who's winning.", Order = 3, Music = "Moshi", Backup = "CrabRave" },
-	{ Id = "SquatKicks", Name = "Squat Kicks", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Squat down low and kick it out!", Order = 4, Music = "Kalinka", Backup = "Jumpstyle" },
-	{ Id = "HighRoller", Name = "High Roller", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Smooth moves for a lucky winner.", Order = 5, Music = "Groove107", Backup = "SwingWithMe" },
-	{ Id = "OfficeParty", Name = "Office Party", AnimationId = "", Starter = true, Color = "Blue", Blurb = "The whole team dances together!", Order = 6, Music = "StayUpbeat", Backup = "BigDeal" },
-	{ Id = "ParrotWiggle", Name = "Parrot Wiggle", AnimationId = "", Starter = true, Color = "Green", Blurb = "Wiggle like a happy parrot.", Order = 7, Music = "Rush180b", Backup = "Shiawase" },
-	{ Id = "KittyPaws", Name = "Kitty Paws", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Cute paws, quick beats. Meow!", Order = 8, Music = "Shiawase", Backup = "Moshi" },
-	{ Id = "CandyHop", Name = "Candy Hop", AnimationId = "", Starter = true, Color = "Pink", Blurb = "A sweet little hop to the beat.", Order = 9, Music = "Rush180b", Backup = "Shiawase" },
-	{ Id = "Beatbox", Name = "Beatbox", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Drop the beat right where you stand.", Order = 10, Music = "Akim", Backup = "ShakeSomethin" },
-	{ Id = "SurfsUp", Name = "Surf's Up", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Ride the wave all the way in.", Order = 11, Music = "Tick138", Backup = "StayUpbeat" },
-	{ Id = "ElectroShuffle", Name = "Electro Shuffle", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Quick feet that zap across the floor.", Order = 12, Music = "Rush180a", Backup = "Moshi" },
-	{ Id = "JumpStyle", Name = "Jump Style", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Kick and jump on every beat!", Order = 13, Music = "Tick138", Backup = "Jumpstyle" },
-	{ Id = "QuickShuffle", Name = "Quick Shuffle", AnimationId = "", Starter = true, Color = "Red", Blurb = "Shuffle fast and never stop.", Order = 14, Music = "CrabRave", Backup = "Moshi" },
-	{ Id = "ChillGroove", Name = "Chill Groove", AnimationId = "", Starter = true, Color = "Green", Blurb = "Nice and easy, just vibing.", Order = 15, Music = "Groove107", Backup = "Downtown" },
-	{ Id = "SnappySkip", Name = "Snappy Skip", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Skip along with a snap!", Order = 16, Music = "StayUpbeat", Backup = "BoogieWoogie" },
-	{ Id = "CatDance", Name = "Cat Dance", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Purrfect moves for cool cats.", Order = 17, Music = "Hype125", Backup = "Shiawase" },
-	{ Id = "WavyGrooves", Name = "Wavy Grooves", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Smooth waves from head to toe.", Order = 18, Music = "Bounce98", Backup = "Ascension" },
-	{ Id = "StepItUp", Name = "Step It Up", AnimationId = "", Starter = true, Color = "Red", Blurb = "Big steps, big energy!", Order = 19, Music = "Bounce98", Backup = "HypeHorns" },
-	{ Id = "SupremeGroove", Name = "Supreme Groove", AnimationId = "", Starter = true, Color = "Gold", Blurb = "The groove that tops them all.", Order = 20, Music = "Tick138", Backup = "ShakeSomethin" },
-	{ Id = "PopStar", Name = "Pop Star", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Shine like a pop star on stage.", Order = 21, Music = "Hype125", Backup = "StayUpbeat" },
+	{ Id = "OrangeSwing", Name = "Orange Swing", AnimationId = "", Starter = true, Color = "Red", Blurb = "Swing your arms and step side to side!", Order = 1 },
+	{ Id = "BoogieDown", Name = "Boogie Down", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Get down and boogie all night!", Order = 2 },
+	{ Id = "ElBounce", Name = "L Bounce", AnimationId = "", Starter = true, Color = "Green", Blurb = "Bounce and show them who's winning.", Order = 3 },
+	{ Id = "SquatKicks", Name = "Squat Kicks", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Squat down low and kick it out!", Order = 4 },
+	{ Id = "HighRoller", Name = "High Roller", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Smooth moves for a lucky winner.", Order = 5 },
+	{ Id = "OfficeParty", Name = "Office Party", AnimationId = "", Starter = true, Color = "Blue", Blurb = "The whole team dances together!", Order = 6 },
+	{ Id = "ParrotWiggle", Name = "Parrot Wiggle", AnimationId = "", Starter = true, Color = "Green", Blurb = "Wiggle like a happy parrot.", Order = 7 },
+	{ Id = "KittyPaws", Name = "Kitty Paws", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Cute paws, quick beats. Meow!", Order = 8 },
+	{ Id = "CandyHop", Name = "Candy Hop", AnimationId = "", Starter = true, Color = "Pink", Blurb = "A sweet little hop to the beat.", Order = 9 },
+	{ Id = "Beatbox", Name = "Beatbox", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Drop the beat right where you stand.", Order = 10 },
+	{ Id = "SurfsUp", Name = "Surf's Up", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Ride the wave all the way in.", Order = 11 },
+	{ Id = "ElectroShuffle", Name = "Electro Shuffle", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Quick feet that zap across the floor.", Order = 12 },
+	{ Id = "JumpStyle", Name = "Jump Style", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Kick and jump on every beat!", Order = 13 },
+	{ Id = "QuickShuffle", Name = "Quick Shuffle", AnimationId = "", Starter = true, Color = "Red", Blurb = "Shuffle fast and never stop.", Order = 14 },
+	{ Id = "ChillGroove", Name = "Chill Groove", AnimationId = "", Starter = true, Color = "Green", Blurb = "Nice and easy, just vibing.", Order = 15 },
+	{ Id = "SnappySkip", Name = "Snappy Skip", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Skip along with a snap!", Order = 16 },
+	{ Id = "CatDance", Name = "Cat Dance", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Purrfect moves for cool cats.", Order = 17 },
+	{ Id = "WavyGrooves", Name = "Wavy Grooves", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Smooth waves from head to toe.", Order = 18 },
+	{ Id = "StepItUp", Name = "Step It Up", AnimationId = "", Starter = true, Color = "Red", Blurb = "Big steps, big energy!", Order = 19 },
+	{ Id = "SupremeGroove", Name = "Supreme Groove", AnimationId = "", Starter = true, Color = "Gold", Blurb = "The groove that tops them all.", Order = 20 },
+	{ Id = "PopStar", Name = "Pop Star", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Shine like a pop star on stage.", Order = 21 },
 	-- the Dance Pack's (Robux only, through the pass)
-	{ Id = "Breakdance", Name = "Breakdance", AnimationId = "", Pack = true, Color = "Gold", Blurb = "Spin and flip like a breaker!", Order = 22, Music = "Bounce98", Backup = "Akim" },
-	{ Id = "Superstar", Name = "Superstar", AnimationId = "", Pack = true, Color = "Violet", Blurb = "All eyes on you. Steal the show!", Order = 23, Music = "Bounce98", Backup = "HypeHorns" },
-	{ Id = "BlossomBreak", Name = "Blossom Break", AnimationId = "", Pack = true, Color = "Pink", Blurb = "A long, beautiful dance in bloom.", Order = 24, Music = "Ascension", Backup = "Shiawase" },
-	{ Id = "WibblyWobbly", Name = "Wibbly Wobbly", AnimationId = "", Pack = true, Color = "Green", Blurb = "Wobble around like jelly!", Order = 25, Music = "Groove107", Backup = "DoItYourSelf" },
+	{ Id = "Breakdance", Name = "Breakdance", AnimationId = "", Pack = true, Color = "Gold", Blurb = "Spin and flip like a breaker!", Order = 22 },
+	{ Id = "Superstar", Name = "Superstar", AnimationId = "", Pack = true, Color = "Violet", Blurb = "All eyes on you. Steal the show!", Order = 23 },
+	{ Id = "BlossomBreak", Name = "Blossom Break", AnimationId = "", Pack = true, Color = "Pink", Blurb = "A long, beautiful dance in bloom.", Order = 24 },
+	{ Id = "WibblyWobbly", Name = "Wibbly Wobbly", AnimationId = "", Pack = true, Color = "Green", Blurb = "Wobble around like jelly!", Order = 25 },
 	-- sold in the Shop's DANCES for coins (Untouchable also on the reward track at Level 3)
-	{ Id = "Untouchable", Name = "Untouchable", AnimationId = "", Coins = 600, Color = "Blue", Blurb = "Too cool to catch. Nobody can touch you.", Order = 26, Music = "Moshi", Backup = "CrabRave" },
-	{ Id = "LetsGo", Name = "Let's Go", AnimationId = "", Coins = 400, Color = "Red", Blurb = "Hype yourself up. Let's go!", Order = 27, Music = "Hype125", Backup = "ShakeSomethin" },
-	{ Id = "LoseControl", Name = "Lose Control", AnimationId = "", Coins = 400, Color = "Violet", Blurb = "Go wild and let the beat take over.", Order = 28, Music = "Groove107", Backup = "PunchingTheAir" },
-	{ Id = "BoneGroove", Name = "Bone Groove", AnimationId = "", Coins = 600, Color = "Green", Blurb = "Rattle your bones to the beat.", Order = 29, Music = "HalloweenFunk", Backup = "TrickOrTreat" },
-	{ Id = "SkeletonShake", Name = "Skeleton Shake", AnimationId = "", Coins = 800, Color = "Gold", Blurb = "Shake it like a spooky skeleton!", Order = 30, Music = "TrickOrTreat", Backup = "HalloweenFunk" },
-	{ Id = "ZombieWalk", Name = "Zombie Walk", AnimationId = "", Coins = 1200, Color = "Green", Blurb = "Rise from the grave and dance!", Order = 31, Music = "HalloweenFunk", Backup = "TrickOrTreat" },
-	{ Id = "Moongazer", Name = "Moongazer", AnimationId = "", Coins = 1200, Color = "Blue", Blurb = "Dance under the moonlight.", Order = 32, Music = "Hype125", Backup = "Ascension" },
-	{ Id = "FlexTime", Name = "Flex Time", AnimationId = "", Coins = 2000, Color = "Gold", Blurb = "Show off every muscle you've got!", Order = 33, Music = "Rush180a", Backup = "PunchingTheAir" },
+	{ Id = "Untouchable", Name = "Untouchable", AnimationId = "", Coins = 600, Color = "Blue", Blurb = "Too cool to catch. Nobody can touch you.", Order = 26 },
+	{ Id = "LetsGo", Name = "Let's Go", AnimationId = "", Coins = 400, Color = "Red", Blurb = "Hype yourself up. Let's go!", Order = 27 },
+	{ Id = "LoseControl", Name = "Lose Control", AnimationId = "", Coins = 400, Color = "Violet", Blurb = "Go wild and let the beat take over.", Order = 28 },
+	{ Id = "BoneGroove", Name = "Bone Groove", AnimationId = "", Coins = 600, Color = "Green", Blurb = "Rattle your bones to the beat.", Order = 29 },
+	{ Id = "SkeletonShake", Name = "Skeleton Shake", AnimationId = "", Coins = 800, Color = "Gold", Blurb = "Shake it like a spooky skeleton!", Order = 30 },
+	{ Id = "ZombieWalk", Name = "Zombie Walk", AnimationId = "", Coins = 1200, Color = "Green", Blurb = "Rise from the grave and dance!", Order = 31 },
+	{ Id = "Moongazer", Name = "Moongazer", AnimationId = "", Coins = 1200, Color = "Blue", Blurb = "Dance under the moonlight.", Order = 32 },
+	{ Id = "FlexTime", Name = "Flex Time", AnimationId = "", Coins = 2000, Color = "Gold", Blurb = "Show off every muscle you've got!", Order = 33 },
 	-- the two from his videos (owner, Oct 22 15:28; tools/anim/fit): the Balenci spin and Sweet Dancin's arms-up bounce
-	{ Id = "Balenci", Name = "Balenci", AnimationId = "", Coins = 2000, Color = "Pink", Blurb = "Hop, swing and spin all the way round!", Order = 34, Music = "BalenciSong", Backup = "Downtown" },
-	{ Id = "SweetDancin", Name = "Sweet Dancin", AnimationId = "", Coins = 800, Color = "Violet", Blurb = "Hands up and bounce to the beat.", Order = 35, Music = "Caramelldansen", Backup = "BigDeal" },
+	{ Id = "Balenci", Name = "Balenci", AnimationId = "", Coins = 2000, Color = "Pink", Blurb = "Hop, swing and spin all the way round!", Order = 34 },
+	{ Id = "SweetDancin", Name = "Sweet Dancin", AnimationId = "", Coins = 800, Color = "Violet", Blurb = "Hands up and bounce to the beat.", Order = 35 },
 	-- the hardtekk three (owner, Oct 22 16:00), each made beat by beat for one of his songs (tools/anim/fit/author_dances.py)
-	{ Id = "TekkPump", Name = "Tekk Pump", AnimationId = "", Coins = 1200, Color = "Red", Blurb = "Pump your fist on every kick!", Order = 36, Music = "Hardtekk1", Backup = "Jumpstyle" },
-	{ Id = "HakkenStomp", Name = "Hakken Stomp", AnimationId = "", Coins = 1200, Color = "Gold", Blurb = "Stomp and kick at full speed.", Order = 37, Music = "Hardtekk2", Backup = "Jumpstyle" },
-	{ Id = "JumpstyleRave", Name = "Jumpstyle Rave", AnimationId = "", Coins = 1500, Color = "Blue", Blurb = "Jump, kick and spin with your hands up!", Order = 38, Music = "Hardtekk3", Backup = "Jumpstyle" },
+	{ Id = "TekkPump", Name = "Tekk Pump", AnimationId = "", Coins = 1200, Color = "Red", Blurb = "Pump your fist on every kick!", Order = 36 },
+	{ Id = "HakkenStomp", Name = "Hakken Stomp", AnimationId = "", Coins = 1200, Color = "Gold", Blurb = "Stomp and kick at full speed.", Order = 37 },
+	{ Id = "JumpstyleRave", Name = "Jumpstyle Rave", AnimationId = "", Coins = 1500, Color = "Blue", Blurb = "Jump, kick and spin with your hands up!", Order = 38 },
 } :: { Dance }
 
 local byId: { [string]: Dance } = {}
