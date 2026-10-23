@@ -424,6 +424,39 @@ end
 	lowest block touches the floor while crouching, landing and getting up. ]]
 local DOWN = Vector3.new(0, -1, 0)
 
+--[[ The R6 swing (owner, Oct 23 20:07: "fix the swing animation, right now it doesnt look good, make more of a swing to
+	it and make it look more premium"). Before, the arm only rose out to the side and stayed there. Now it is a real
+	forehand slash in the same 0.4 s (Config/Round.Stab.Time): a quick wind-up (knife high over the right shoulder,
+	the body coiled to the right), a fast cut down and across the front to the low left with the body uncoiling into
+	it and leaning in, a follow-through past the left hip, a short hold, then back to the run. The free arm reaches
+	ahead for balance and pulls back as the knife comes through; the head stays on the target. Arms are directions
+	in the torso's space (x right, y up, -z ahead); yaw + = turned left, lean + = forward (degrees). ]]
+local R6_SWING = {
+	{ at = 0.00, knife = Vector3.new(0.55, 0.35, 0.35), free = Vector3.new(-0.45, -0.3, -0.85), yaw = -14, lean = 0 },
+	{ at = 0.20, ease = "out", knife = Vector3.new(0.4, 0.85, 0.35), free = Vector3.new(-0.55, 0.05, -0.85), yaw = -28, lean = -4 },
+	{ at = 0.36, ease = "in", knife = Vector3.new(-0.55, -0.4, -0.75), free = Vector3.new(-0.6, -0.55, 0.35), yaw = 24, lean = 8 },
+	{ at = 0.50, ease = "out", knife = Vector3.new(-0.75, -0.5, 0.15), free = Vector3.new(-0.55, -0.65, 0.35), yaw = 30, lean = 8 },
+	{ at = 0.62, ease = "smooth", knife = Vector3.new(-0.65, -0.62, 0.1), free = Vector3.new(-0.45, -0.75, 0.3), yaw = 24, lean = 6 },
+	{ at = 1.00, ease = "smooth", knife = Vector3.new(-0.3, -0.92, 0.05), free = Vector3.new(-0.15, -0.95, 0.15), yaw = 8, lean = 3 },
+}
+StabMotion.R6_SWING = R6_SWING
+-- The R6 swing at u (0..1): the knife arm's and the free arm's directions, the body's yaw and lean in degrees.
+local function r6Swing(u: number): (Vector3, Vector3, number, number)
+	for i = 1, #R6_SWING - 1 do
+		local a, b = R6_SWING[i], R6_SWING[i + 1]
+		if u <= b.at or i == #R6_SWING - 1 then
+			local e = EASE[b.ease] or smooth
+			local x = e(math.clamp((u - a.at) / (b.at - a.at), 0, 1))
+			local k = a.knife.Unit:Lerp(b.knife.Unit, x)
+			local f = a.free.Unit:Lerp(b.free.Unit, x)
+			return k.Unit, f.Unit, a.yaw + (b.yaw - a.yaw) * x, a.lean + (b.lean - a.lean) * x
+		end
+	end
+	local z = R6_SWING[1]
+	return z.knife.Unit, z.free.Unit, z.yaw, z.lean
+end
+StabMotion.r6Swing = r6Swing
+
 local function fromTo(a: Vector3, b: Vector3): CFrame
 	local d = math.clamp(a:Dot(b), -1, 1)
 	if d > 0.99999 then
@@ -618,24 +651,31 @@ function StabMotion.step(rec, now, animatedArm)
 		-- the arms' turns: the slash's (a dive's: the knife arm sweeps, the free arm stays reaching ahead, then
 		-- lies ahead and pushes up; R15's free arm swings to the slash's "pointing ahead", into the floor on a flat body)
 		local turns = {}
+		-- (the swing: R6_SWING above; a dive keeps its own arms)
+		local knifeDir, freeDir, yaw, lean = r6Swing(math.clamp(u, 0, 1))
 		if w > 0 then
 			if j.arms[1] and animatedArm ~= false then
-				turns[j.arms[1]] = if rec.lunge then angles(diveDeg("shoulder")) else pose("shoulder")
+				turns[j.arms[1]] = if rec.lunge then angles(diveDeg("shoulder")) else fromTo(DOWN, knifeDir)
 			end
 			if j.arms[2] then
-				turns[j.arms[2]] = if not rec.lunge then pose("off") elseif reaching then angles(StabMotion.LEAP.REACH.off) else angles(ground.off)
+				turns[j.arms[2]] = if not rec.lunge then fromTo(DOWN, freeDir) elseif reaching then angles(StabMotion.LEAP.REACH.off) else angles(ground.off)
 			end
 		end
 		local lift
 		if rec.lunge then
 			lift = r6Leap(rec, j, t, turns)
 		elseif j.root and w > 0 then
-			-- (the slash's waist turn on the root joint: the whole body turns into the sweep)
+			-- (the swing's coil and uncoil on the root joint: the whole body turns and leans into the cut)
 			local anim = animated(rec, j.root)
-			write(rec, j.root, toT(j.root, CFrame.identity:Lerp(pose("waist"), w)) * anim)
+			write(rec, j.root, toT(j.root, CFrame.identity:Lerp(CFrame.Angles(rad(-lean), rad(yaw), 0), w)) * anim)
+			-- (the legs lean back as much, so they stay under the body and the feet stay on the floor)
+			for _, leg in j.legs do
+				if leg then write(rec, leg, toT(leg, CFrame.identity:Lerp(CFrame.Angles(rad(lean), 0, 0), w)) * animated(rec, leg)) end
+			end
 		end
 		if j.neck then
-			local head = CFrame.identity:Lerp(pose("neck"), w)
+			-- (the head counter-turns, so it stays on the target while the body coils and uncoils)
+			local head = if rec.lunge then CFrame.identity:Lerp(pose("neck"), w) else CFrame.identity:Lerp(CFrame.Angles(0, rad(-yaw * 0.65), 0), w)
 			if lift then head = CFrame.identity:Lerp(lift, StabMotion.leapWeight(t)) * head end
 			write(rec, j.neck, animated(rec, j.neck) * toT(j.neck, head))
 		end

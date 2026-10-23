@@ -208,3 +208,8 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   dive direction, arms ahead, legs trailing, never under the floor (arms counted), then hands the joints back.
 - Every limb is aimed with the shortest turn (`fromTo(DOWN, dir)`), so the twist about the C1 offset stays right.
 - Test: `tests/R6Knife.spec.luau`. Video: `tools/preview/motion3d/r6_knife_scene.luau` (needs his R6Run: private).
+- **The slash (Oct 23 20:07: "make more of a swing to it and make it look more premium").** `R6_SWING` keys: wind-up
+  high and back on the right (body coiled right, yaw -28), a fast cut across and down to the low left (yaw +30, lean
+  8°), then a slow follow-through settling low. The legs are counter-leaned so the lean never pushes them under the
+  floor; the head counter-turns 65% so the eyes stay on target. Video: `motion3d/r6_swing_scene.luau` (STAB_OLD=path
+  to an older StabMotion films the two side by side).

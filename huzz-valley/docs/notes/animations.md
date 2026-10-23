@@ -204,6 +204,12 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   Your first girl is equipped when you win her (if you had none), so she walks behind you for everyone.
 
 ## Dances
+- **Feet on the floor (Oct 23 20:07: "fix the dances so they look appropriate").** `motion3d/dance_audit.luau`
+  measured every dance on a plain R6 body: 26 pushed the legs into the floor in their crouches (Breakdance 1.5 studs)
+  and Untouchable / SurfsUp floated. `motion3d/ground_dances.luau` fixes the files (his private one and the public
+  one): only the Torso pose's height moves, per keyframe, so the lowest block touches the floor (and sampled every
+  1/60 s between keyframes); floating dances come down. Re-run both when a dance is added. Still left as made: the
+  quick Constant-easing pops (SnappySkip, SupremeGroove, WibblyWobbly) and WibblyWobbly wandering ~4 studs.
 - **In the live game with nothing published** (owner, Oct 20 15:13: "inside the actual roblox game, not studio,
   make it so that dances are available, right now they arent"). Cause: all 32 `Config/Dances` AnimationIds are "",
   Studio's temporary IDs don't exist live and `HuzzAnimations` reaches clients only in Studio, so

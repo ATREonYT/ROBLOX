@@ -1,7 +1,6 @@
 -- lune run tests/R6Knife.spec.luau  (Shared/StabMotion on R6 bodies; owner, Oct 22 18:53-18:55: "make the animations for
 -- swinging the knives"; "make the jumping animation way better")
--- On a stock R6 body standing on the floor (facing -Z): the swing turns the body into the sweep and puts the knife arm
--- out level to the right; the dive tips the body flat along the floor, arms ahead, nothing under the floor, and
+-- On a stock R6 body standing on the floor (facing -Z): the swing winds up high and cuts down across the front; the dive tips the body flat along the floor, arms ahead, nothing under the floor, and
 -- hands every joint back when it's over.
 local roblox = require("@lune/roblox")
 local CFrame, Vector3 = roblox.CFrame, roblox.Vector3
@@ -46,15 +45,23 @@ local function lowest(P)
 end
 local function armDir(P, name) return -P[name].CFrame.UpVector end
 
--- the swing: held out at 0.25 of the slash
+-- the swing (Oct 23 20:07 "make more of a swing to it"): wound up high over the right shoulder with the body coiled
+-- right, then cut down across the front to the low left with the body turned into it, free arm pulled back
 do
 	local rig, rec = body()
 	StabMotion.play(rec, 0, false)
-	local P = at(rig, rec, 0.25 * Round.Stab.Time)
+	local P = at(rig, rec, 0.2 * Round.Stab.Time)
 	local knife = armDir(P, "Right Arm")
-	check(knife.X > 0.8 and math.abs(knife.Y) < 0.45, string.format("swing: the knife arm out to the right, about level (%.2f, %.2f, %.2f)", knife.X, knife.Y, knife.Z))
-	check(P.Torso.CFrame.LookVector.X > 0.25, string.format("swing: the body turned into the sweep (%.2f)", P.Torso.CFrame.LookVector.X))
-	check(armDir(P, "Left Arm").Z < -0.6, "swing: the free arm points ahead")
+	check(knife.Y > 0.6, string.format("swing: wound up, the knife arm high (%.2f, %.2f, %.2f)", knife.X, knife.Y, knife.Z))
+	check(P.Torso.CFrame.LookVector.X > 0.25, string.format("swing: wound up, the body coiled to the right (%.2f)", P.Torso.CFrame.LookVector.X))
+	P = at(rig, rec, 0.36 * Round.Stab.Time)
+	knife = armDir(P, "Right Arm")
+	check(knife.X < -0.2 and knife.Y < 0, string.format("swing: cut across to the low left (%.2f, %.2f, %.2f)", knife.X, knife.Y, knife.Z))
+	check(P.Torso.CFrame.LookVector.X < -0.2, string.format("swing: the body turned into the cut (%.2f)", P.Torso.CFrame.LookVector.X))
+	check(armDir(P, "Left Arm").Z > 0, "swing: the free arm pulled back")
+	local low = math.huge
+	for i = 0, 12 do low = math.min(low, lowest(at(rig, rec, i / 12 * Round.Stab.Time))) end
+	check(low > -0.1, string.format("swing: nothing under the floor (lowest %.2f)", low))
 	P = at(rig, rec, Round.Stab.Time + 0.1)
 	check(rig.parts["Right Arm"].CFrame.UpVector.Y > 0.99, "swing: over, the arm is the animation's again")
 end
