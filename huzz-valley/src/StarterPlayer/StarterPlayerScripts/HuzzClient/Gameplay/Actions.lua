@@ -461,6 +461,9 @@ function M.start()
 	local y0 = if touch then -150 else -110
 	local Device = require(script.Parent.Parent.UI.Device)
 	local stabButton, paintStab = button("Stab", "STAB", string.upper(Device.word("Stab") or "CLICK"), y0, stab)
+	-- (a phone: a round 74 button left of the CATCH button in the bottom-right group, UI/TouchPad; owner Oct 23,
+	-- "make the placement of all the abilities better")
+	if touch then require(script.Parent.Parent.UI.TouchPad).place(stabButton, "Left") end
 	-- (the hint under STAB says the button you press on what you play with: CLICK, R2 or RT; owner, Oct 21)
 	Device.changed(function(kind)
 		local small

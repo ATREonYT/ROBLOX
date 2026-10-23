@@ -272,6 +272,8 @@ end
 function VERBS.PromptHalloween(player, key) return require(script.Parent.ShopService).promptHalloween(player, key) end
 -- Shop > CRATES' BUY under his knife crates (ShopService.promptCrateKey: Id 0 = "coming soon", never a prompt)
 function VERBS.PromptCrateKey(player, key) return require(script.Parent.ShopService).promptCrateKey(player, key) end
+-- Screens/Luck's Robux buttons (HuzzServer/LuckService.prompt: Id 0 = "coming soon"; never past the top luck)
+function VERBS.PromptLuck(player, key) return require(script.Parent.LuckService).prompt(player, key) end
 
 function VERBS.ClaimReward(player, level) return ProgressService.claimReward(player, level) end
 function VERBS.ClaimQuest(player, id) return ProgressService.claimQuest(player, id) end

@@ -233,7 +233,8 @@ return {
 		Glow = {
 			Color = Color3.fromRGB(45, 110, 190),
 			Edge = 0.07, -- of the screen, each side
-			Strength = 0.55, -- at flat out (0 = none, 1 = solid at the very edge)
+			-- Off (owner, Oct 23 15:22, his phone picture: "fix the blue thing on my screen popping up when I run"); was 0.55
+			Strength = 0, -- at flat out (0 = none, 1 = solid at the very edge)
 		},
 		Fov = 4, -- extra degrees of view at flat out (on top of Feel's 2): the clip's wide, rushing camera
 	},

@@ -57,6 +57,8 @@ shot power-bar-stunned none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher", 
 shot power-bar-carrying none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner", POWERSTATE="Carrying", ABILITY="BodyDouble"}'
 shot power-bar-cooldown none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher", POWERSTATE="Cooldown"}'
 shot power-bar-banana none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner", POWERSTATE="Carrying", ABILITY="BananaPeel"}' # (his power pictures, Oct 20 20:34)
+shot power-bar-phone none 844 390 '{SCREEN="Hud", TOUCH=true, VIEW="844x390", POWERS="Catcher", POWERSTATE="Cooldown"}' # (a phone: round buttons bottom right, UI/TouchPad; GHOSTS=true draws Roblox's thumbstick and jump)
+shot power-bar-phone-runner none 844 390 '{SCREEN="Hud", TOUCH=true, VIEW="844x390", POWERS="Runner", POWERSTATE="Carrying"}'
 shot hero-choice 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, HERO=true}'
 shot next-map 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, NEXTMAP=true, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
 shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'
@@ -65,6 +67,8 @@ shot results none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", XP=1073}'
 shot results-catchers none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", TEAM="Catchers", XP=1073}'
 shot daily-quests none 1536 980 '{SCREEN="DailyQuests", SCALE=2}' # (vs his picture d: side_by_side.py daily-quests)
 shot group-reward none 1536 980 '{SCREEN="GroupReward", SCALE=2, GROUPID=1}' # (Oct 22: the "join our group" window, 5 free spins)
+shot luck none 1536 1100 '{SCREEN="Luck", SCALE=2, LUCK=4}' # (Oct 23: server luck, its boosts and the girl odds at that luck)
+shot hud-luck none 1536 694 '{SCREEN="Hud", SCALE=2, LUCK=2, ROUND=9}' # (the LUCK button and the SERVER LUCK sign)
 shot combine none 1536 1200 '{SCREEN="Combine", SCALE=2, GIRLS=true, COPIES="t_kurumi:Normal=3,Silver=1;t_zero:Normal=1;t_rem:Gold=2", TAB="t_kurumi"}' # (the Combine machine's window, Oct 20)
 shot index-prestige none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_kurumi", DUPES="t_kurumi=2", PRESTIGE="t_kurumi=1"}'
 shot lobby-hud-friend none 1536 694 '{SCREEN="Hud", SCALE=2, ROUND=17, FRIEND=true}' # (INVITE, SPIN, QUESTS; "+10% COINS" with a friend in)

@@ -6,7 +6,7 @@ const path = require('path');
 (async () => {
   const [json, out, W, H, ref] = process.argv.slice(2);
   const browser = await chromium.launch({ args: ['--allow-file-access-from-files'] });
-  const page = await browser.newPage({ viewport: { width: +W, height: +H * (ref ? 2 : 1) + (ref ? 8 : 0) } });
+  const page = await browser.newPage({ viewport: { width: +W, height: +H * (ref ? 2 : 1) + (ref ? 8 : 0) }, deviceScaleFactor: +process.env.DPR || 1 }); // (DPR=2: a phone drawn sharp)
   await page.goto('file://' + path.resolve(__dirname, 'render.html'));
   if (process.env.STUDIO) await page.evaluate(() => { window.STUDIO = true; });
   const tree = JSON.parse(require('fs').readFileSync(json, 'utf8'));

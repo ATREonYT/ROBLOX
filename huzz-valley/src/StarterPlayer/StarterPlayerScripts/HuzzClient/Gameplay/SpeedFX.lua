@@ -5,7 +5,8 @@
 	    the camera): short Trails at the hands, elbows, feet and knees, so they follow the limbs' swing like the clip's;
 	    only once the body is really running (Config/Run.SpeedFX.RunFrom: never on a walk or the build-up, Oct 23);
 	  - a blue glow round the left, right and top of your screen while you sprint (the clip's edges at full speed;
-	    none at the bottom, none while walking), easing in and out, never flashing;
+	    none at the bottom, none while walking), easing in and out, never flashing; OFF since Oct 23 (owner: "fix the
+	    blue thing on my screen popping up when I run"), Config/Run.SpeedFX.Glow.Strength 0;
 	  - the camera widens a little more at full speed (Feel adds Config/Run.SpeedFX.Fov to its sprint widening).
 	Tuned in Config/Run.SpeedFX. Off on bodies that are hidden (Gameplay/Hidden), down, or dancing; the glow is off
 	with the Reduced Motion setting and while the intro camera has the view.
@@ -174,7 +175,7 @@ function M.start()
 		glow += (want - glow) * k
 		if glow < 0.005 and want == 0 then glow = 0 end
 		for _, f in edges do f.BackgroundTransparency = 1 - glow * FX.Glow.Strength end
-		gui.Enabled = glow > 0
+		gui.Enabled = glow > 0 and FX.Glow.Strength > 0
 	end)
 end
 

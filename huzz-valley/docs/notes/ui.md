@@ -135,6 +135,16 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   colour, `Config/Powers` Tile), with ABILITY, the title, the state and the line beside it instead of over it (owner,
   Oct 20 20:34: "bring back the old pictures for the powers. Right now this is a bare copy of huss valley. We want to
   stand out"). Before and after: `docs/previews/power-bar-his-pictures.png` (shot `power-bar-banana` too).
+- **On a phone** (touch only; owner Oct 23: "make the placement of all the abilities better"): no long bar and no
+  cards in the middle. At 844 x 390 they shrank to 0.6 (cards 116 x 46, their words 6 pt) and sat over the thumbstick's
+  touch area, and STAB (104 round, y -150) floated half way up the right side. Now round buttons are grouped in the
+  bottom-right corner, as in popular chase games (`UI/TouchPad`, points from the corner to each centre): DASH / CATCH
+  86 at (62, 62), on the spot Roblox's jump button would use (hidden here: jump power 0); STAB 74 at (172, 62); Q 74
+  at (140, 140); E 74 at (62, 172). DASH fills from the bottom in the bar's colours as it charges, with a short line
+  under its name (READY, 0.6s, WAIT, STUNNED, STUCK!); an ability shows just its picture with a rim in its colour when
+  ready, dimmed under a short word otherwise (4s, ON 3s, USED, WAIT, STUNNED). Set at runtime, so the saved parts keep
+  the PC layout. Shot: `TOUCH=true, VIEW="844x390", GHOSTS=true` (Roblox's thumbstick and jump drawn as red rings),
+  `DPR=2 node shoot.js ... 844 390`. Only Studio's phone emulator or a real phone shows the true safe area and notch.
 - **Shop > ABILITIES** (Oct 20; the Menu keeps its 7 rows: an 8th "Abilities" row pushed MENU off a 658 px screen,
   critic): `UI/AbilityCards` in the Shop's slot: a "YOU BRING" line, then the cards (116 high, two columns: his
   picture in its rounded tile, rimmed in its colour, name, STARTER / OWNED, what it does, "Beat it: ..." on up to two lines,

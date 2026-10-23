@@ -39,6 +39,20 @@ local function groups(catalog, rarities)
 	return ordered, total
 end
 
+-- The rarities with the server's luck in (Config/Round.Luck): every rarity not marked Lucky = false has its Weight
+-- multiplied by `luck` (1 = as set). A new list; the config is never changed.
+function GirlRoll.withLuck(rarities, luck: number?)
+	local k = math.max(1, tonumber(luck) or 1)
+	if k == 1 then return rarities end
+	local out = {}
+	for i, r in rarities do
+		local c = table.clone(r)
+		if r.Lucky ~= false then c.Weight = r.Weight * k end
+		out[i] = c
+	end
+	return out
+end
+
 -- The real chance of each rarity, in percent: { { name, chance } } in Rarities order.
 function GirlRoll.odds(catalog, rarities)
 	local ordered, total = groups(catalog, rarities)

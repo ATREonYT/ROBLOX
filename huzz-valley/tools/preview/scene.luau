@@ -10,6 +10,18 @@ Players.LocalPlayer = player
 local pg = Instance.new("PlayerGui"); pg.Parent = player
 __copyStarterGui(player)
 if cfg.SCALE then workspace:SetAttribute("UIPreviewScale", tonumber(cfg.SCALE)) end
+-- TOUCH=true: a phone (touch, no keyboard); VIEW="844x390" its screen in points (no SCALE: the game's own sizes;
+-- shoot.js with DPR=2 draws it sharp). GHOSTS=true also draws Roblox's thumbstick and jump button as circles.
+if cfg.TOUCH then
+	local UIS = game:GetService("UserInputService")
+	pcall(function() UIS.TouchEnabled = true end)
+	pcall(function() UIS.KeyboardEnabled = false end)
+end
+if cfg.VIEW then
+	local w, h = string.match(cfg.VIEW, "(%d+)x(%d+)")
+	_G.__screenSize = Vector2.new(tonumber(w), tonumber(h))
+	pcall(function() workspace.CurrentCamera.ViewportSize = Vector2.new(tonumber(w), tonumber(h)) end)
+end
 if cfg.ROUND then workspace:SetAttribute("NextRoundAt", workspace:GetServerTimeNow() + tonumber(cfg.ROUND) + 0.5) end
 __runScript(game.ServerScriptService.HuzzServer.Bootstrap)
 task.wait(0.1)
@@ -23,6 +35,7 @@ DataService.update(player, function(d)
 	d.XP = tonumber(cfg.XP) or d.XP -- (the winner page's level bar)
 	-- GROUPID=n: the group window as it looks once the owner sets his group (a stand-in number, the preview only)
 	if cfg.GROUPID then require(game.ReplicatedStorage.Shared.Config.Group).Id = tonumber(cfg.GROUPID) end
+	if cfg.LUCK then workspace:SetAttribute("HuzzServerLuck", tonumber(cfg.LUCK)); game.Players.LocalPlayer:SetAttribute("HuzzLuck", tonumber(cfg.LUCK)) end -- (server luck, Screens/Luck and the HUD's LUCK)
 	-- the daily quests window: the spin quest done (CLAIM), the first daily one half way
 	if cfg.SCREEN == "DailyQuests" then
 		local DailyRules = require(game.ReplicatedStorage.Shared.DailyRules)
@@ -143,6 +156,34 @@ if cfg.POWERS then
 		player:SetAttribute("KnifeReady", now + 0.4)
 	end
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.PowerBar).refresh()
+	-- on a phone, a catcher's STAB button too (Gameplay/Actions makes it in its own ScreenGui: moved in for the picture)
+	if cfg.TOUCH and not runner then
+		local ok, err = pcall(function() require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay.Actions).start() end)
+		local stab = pg:FindFirstChild("HuzzActions") and pg.HuzzActions:FindFirstChild("Stab")
+		if stab then stab.Visible = true; stab.Parent = pg:WaitForChild("HuzzUI") else warn("[preview] no stab button: " .. tostring(err)) end
+	end
+end
+-- GHOSTS=true: Roblox's own touch controls as plain circles (landscape phone, small screen): the thumbstick bottom
+-- left, the jump button 70 across, 95 in from the right and 90 up from the bottom (this game hides it: jump power 0).
+if cfg.GHOSTS then
+	local ui = pg:WaitForChild("HuzzUI")
+	local function ghost(name, pos, d, text, fill)
+		local f = Instance.new("Frame")
+		f.Name, f.AnchorPoint, f.Position, f.Size = name, Vector2.new(0, 0), pos, UDim2.fromOffset(d, d)
+		f.BackgroundColor3, f.BackgroundTransparency, f.ZIndex = Color3.new(1, 1, 1), fill, 50
+		local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0.5, 0); c.Parent = f
+		local s = Instance.new("UIStroke"); s.Color, s.Thickness = Color3.fromRGB(255, 60, 60), 2; s.Parent = f
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency, l.Size, l.Text, l.TextSize, l.ZIndex = 1, UDim2.fromScale(1, 1), text, 11, 51
+		l.TextColor3, l.TextWrapped, l.Parent = Color3.fromRGB(255, 60, 60), true, f
+		f.Parent = ui
+	end
+	-- (in a round the lobby's side buttons, coin pills and luck sign slide away: Screens/LobbyHud)
+	for _, d in ui:GetDescendants() do
+		if (d.Name == "Left" or d.Name == "Right" or d.Name == "Balances" or d.Name == "ServerLuck") and d:IsA("GuiObject") then d.Visible = false end
+	end
+	ghost("GhostStick", UDim2.new(0, 30, 1, -150), 120, "ROBLOX THUMBSTICK", 0.75)
+	ghost("GhostJump", UDim2.new(1, -95, 1, -90), 70, "", 1) -- (a ring only: our DASH button sits on that spot)
 end
 -- HERO=true: the picked runner's Chicken or Hero choice (5 seconds left), with the power tiles under it.
 -- WHEEL=true: the G dance wheel open, with two favourites and one dance playing.

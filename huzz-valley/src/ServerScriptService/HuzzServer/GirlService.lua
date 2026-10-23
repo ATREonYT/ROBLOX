@@ -144,6 +144,13 @@ function GirlService.setNext(girl)
 	nextGirl = girl
 end
 
+-- The rarities with this server's luck in (HuzzServer/LuckService, Config/Round.Luck): the roll, its strip and the
+-- odds everyone is shown all use the same list.
+function GirlService.rarities()
+	local ok, luck = pcall(function() return require(script.Parent.LuckService).server() end)
+	return GirlRoll.withLuck(Config.Rarities, if ok then luck else 1)
+end
+
 function GirlService.roll()
 	if nextGirl then
 		local g = nextGirl
@@ -157,12 +164,13 @@ function GirlService.roll()
 			if g.rarity == test then return g end
 		end
 	end
-	return GirlRoll.pick(GirlService.catalog, Config.Rarities, rand)
+	return GirlRoll.pick(GirlService.catalog, GirlService.rarities(), rand)
 end
 
 -- The roller strip shown to everyone: honest picks with the winner at `at`, plus the real odds.
 function GirlService.strip(winner, length, at)
-	return GirlRoll.strip(GirlService.catalog, Config.Rarities, winner, length, at, rand), GirlRoll.odds(GirlService.catalog, Config.Rarities)
+	local rarities = GirlService.rarities()
+	return GirlRoll.strip(GirlService.catalog, rarities, winner, length, at, rand), GirlRoll.odds(GirlService.catalog, rarities)
 end
 
 local function nameTag(model, girl, root, offsetY)

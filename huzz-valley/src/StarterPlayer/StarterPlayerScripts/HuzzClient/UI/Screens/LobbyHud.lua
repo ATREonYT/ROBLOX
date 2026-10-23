@@ -143,6 +143,13 @@ function LobbyHud.build(parent: Instance)
 		State.changed(showGroup)
 		showGroup()
 	end
+	-- LUCK over INVITE (owner, Oct 23 15:22: "make a button to clearly show the luck boost, and make it clearly seen"):
+	-- the server's luck in big letters where the icon would be ("x1", "x4"), opening the LUCK window (Screens/Luck)
+	local luck = squareButton(right, "Luck", "AuraStar", 0, function() ModalManager.open("Luck") end)
+	if not Kit.reused(luck.Instance) then luck.Instance.Position = UDim2.fromOffset(100 - 25 - 33, luck.Instance.Position.Y.Offset) end
+	local luckIcon = luck.Instance:FindFirstChild("Icon")
+	if luckIcon and luckIcon:IsA("GuiObject") then luckIcon.Visible = false end
+	local luckText = ShopStyle.chunky({ Name = "Multiplier", Text = "x1", TextSize = 26, TextColor3 = Color3.fromHex("FFF27A"), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 21), Size = UDim2.new(1, 0, 0, 30), ZIndex = luck.Instance.ZIndex + 2, Parent = luck.Instance }, 2.5)
 	-- INVITE over SPIN (owner, Oct 19: "make friend rewards, add a friend knife (for inviting them)"): Roblox's own
 	-- invite prompt (SocialService, guarded: it isn't there offline or on every device)
 	local invite = squareButton(right, "Invite", "Players", 66, function()
@@ -220,7 +227,7 @@ function LobbyHud.build(parent: Instance)
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = gear.Instance })
 	gear.onClick(function() ModalManager.toggle("Settings") end)
 
-	local top = group(root, "Round", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Vector2.new(261, 70))
+	local top = group(root, "Round", Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), Vector2.new(261, 100))
 	-- Reference 13: a purple bar with a darker seam low down, a dark rim, two studs at each end, "NEXT ROUND" small
 	-- and the clock bigger.
 	local banner = new("Frame", { Name = "NextRound", Position = UDim2.fromOffset(3, 24), Size = UDim2.fromOffset(255, 36), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Visible = false, Parent = top }, { Kit.corner(6), Kit.stroke(C.BannerRim, 2) })
@@ -231,6 +238,28 @@ function LobbyHud.build(parent: Instance)
 	local row = new("Frame", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = banner }, { Kit.list(Enum.FillDirection.Horizontal, 10, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
 	Kit.text({ Name = "Label", Text = "NEXT ROUND", FontFace = Theme.Fonts.Button, TextSize = 17, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, Parent = row })
 	local bannerText = Kit.text({ Name = "Clock", Text = "", FontFace = Theme.Fonts.Number, TextSize = 25, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 2, Parent = row })
+	-- SERVER LUCK under it (owner, Oct 23 15:22: "make a server luck: x sign on the top of the screen"): a green plate,
+	-- always there in the lobby (x1 too, so everyone knows luck exists), brighter and pulsing once when it goes up; a
+	-- tap opens the LUCK window. Out of the way while you play (the round's message line is there then).
+	local luckSign = new("TextButton", { Name = "ServerLuck", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 65), Size = UDim2.fromOffset(220, 32), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AutoButtonColor = false, Text = "", Parent = top }, { Kit.corner(16), Kit.stroke(ShopStyle.INK, 2.5) })
+	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("5BEA7A"), Color3.fromHex("14A35A")), Parent = luckSign })
+	local luckSignText = ShopStyle.chunky({ Name = "Label", Text = "SERVER LUCK: x1", TextSize = 19, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = luckSign }, 2)
+	local luckPop = new("UIScale", { Name = "Pop", Parent = luckSign })
+	luckSign.Activated:Connect(function() ModalManager.open("Luck") end)
+	local lastLuck = 1
+	local function showLuck()
+		local k = tonumber(workspace:GetAttribute("HuzzServerLuck")) or 1
+		local word = "x" .. (if k == math.floor(k) then tostring(math.floor(k)) else string.format("%.1f", k))
+		luckSignText.Text = "SERVER LUCK: " .. word
+		luckText.Text = word
+		if k > lastLuck then
+			luckPop.Scale = 1.25
+			Motion.tween(luckPop, "luckpop", 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+		end
+		lastLuck = k
+	end
+	workspace:GetAttributeChangedSignal("HuzzServerLuck"):Connect(showLuck)
+	showLuck()
 
 	task.spawn(function()
 		while root.Parent do
@@ -289,6 +318,7 @@ function LobbyHud.build(parent: Instance)
 		local side = ModalManager.isSide(current)
 		local playing = inRound()
 		local busy = running()
+		luckSign.Visible = not playing
 		pcall(function() -- (Roblox's player list steps aside too while running; there are no tools, so no backpack)
 			local StarterGui = game:GetService("StarterGui")
 			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, not busy)

@@ -39,6 +39,7 @@ local UI = script.Parent.Parent
 local Kit = require(UI.Kit)
 local Device = require(UI.Device) -- (each control by its name on a controller: owner, Oct 21)
 local Scale = require(UI.Scale)
+local TouchPad = require(UI.TouchPad) -- (a phone: round buttons round the right thumb, owner Oct 23)
 local ImageLoader = require(UI.ImageLoader)
 local Assets = require(Shared.Config.Assets)
 local okSfx, Sfx = pcall(function() return require(UI.Parent.Gameplay.Sfx) end)
@@ -123,7 +124,7 @@ local function card(parent: Instance, slot: number)
 	tileRim = Kit.attach(tileRim, icon) :: UIStroke
 	local emoji = label({ Name = "Emoji", Text = "", TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center,
 		Position = UDim2.fromOffset(5, 5), Size = UDim2.fromOffset(65, 65), ZIndex = 3, Visible = false, Parent = b })
-	label({ Name = "Tag", Text = "ABILITY", TextSize = sizeFor(6), Position = UDim2.fromOffset(79, 8), Size = UDim2.fromOffset(60, 9),
+	local tag = label({ Name = "Tag", Text = "ABILITY", TextSize = sizeFor(6), Position = UDim2.fromOffset(79, 8), Size = UDim2.fromOffset(60, 9),
 		ZIndex = 3, Parent = b })
 	local title = label({ Name = "Title", Text = "", TextSize = sizeFor(9), Position = UDim2.fromOffset(78, 20), Size = UDim2.fromOffset(110, 14),
 		ZIndex = 3, TextTruncate = Enum.TextTruncate.AtEnd, Parent = b })
@@ -135,7 +136,7 @@ local function card(parent: Instance, slot: number)
 	local line = new("Frame", { Name = "Line", Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE, BorderSizePixel = 0,
 		ZIndex = 4, Parent = track }, { Kit.corner(2) })
 	return { button = b, shade = shade, rim = rim, press = press, icon = icon, tileRim = tileRim, emoji = emoji, title = title, status = status,
-		line = line, glowUntil = 0, name = nil }
+		line = line, track = track, tag = tag, glowUntil = 0, name = nil }
 end
 
 local SPRING = TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
@@ -172,6 +173,7 @@ function PowerBar.build(parent: Instance)
 		Size = UDim2.fromOffset(P.W, TOP + P.BarH), BackgroundTransparency = 1, Visible = false, Parent = parent,
 	})
 	Scale.bind(new("UIScale", { Name = "FitScale", Parent = root }), function()
+		if touchOnly then return 1 end -- (a phone lays its round buttons out in points: UI/TouchPad)
 		return Scale.touchMin(Scale.hud(PAGE_H) / REF_HUD, 0.6, P.W)
 	end)
 	local inner = new("Frame", { Name = "Inner", Position = UDim2.fromOffset(0, TOP), Size = UDim2.fromOffset(P.W, P.BarH),
@@ -198,7 +200,39 @@ function PowerBar.build(parent: Instance)
 	-- (a phone has no Space: the bar and its key line are the dash button there)
 	local dashHit = new("TextButton", { Name = "DashHit", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(P.W / 2, P.KeyCapTop - 10),
 		Size = UDim2.fromOffset(460, -P.KeyCapTop + 10 + P.BarH), BackgroundTransparency = 1, Text = "", Visible = touchOnly, Parent = inner })
+	-- (its look as the round DASH / CATCH button a phone shows: filled from the bottom as it charges, his bar's colours)
+	local dashShade = new("UIGradient", { Name = "Shade", Rotation = -90, Parent = dashHit })
+	local dashTitle = label({ Name = "DashTitle", Text = "DASH", FontFace = HEAVY, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.fromOffset(0, 22), Size = UDim2.fromOffset(86, 24), ZIndex = 2, Parent = dashHit }, 1.5)
+	local dashSub = label({ Name = "DashSub", Text = "", TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.fromOffset(0, 47), Size = UDim2.fromOffset(86, 16), ZIndex = 2, Parent = dashHit }, 1)
 	local cards = { card(inner, 1), card(inner, 2) }
+	-- A phone (touch only): no long bar; round buttons in the bottom-right corner instead (UI/TouchPad): DASH / CATCH
+	-- where Roblox's jump button would be (hidden here: no jumping), Q up-left of it, E above it, a catcher's STAB
+	-- (Gameplay/Actions) to its left. The bar's words become the DASH button's short line. (Set here, not in the
+	-- props above: a part saved in StarterGui keeps its saved place and size.)
+	if touchOnly then
+		root.AnchorPoint, root.Position, root.Size = Vector2.new(0, 0), UDim2.fromScale(0, 0), UDim2.fromScale(1, 1)
+		inner.Position, inner.Size = UDim2.fromScale(0, 0), UDim2.fromScale(1, 1)
+		for _, g in { track, state, keyLine, help, attack, mouseBody } do g.Visible = false end
+		TouchPad.place(dashHit, "Main")
+		dashHit.BackgroundColor3, dashHit.BackgroundTransparency = WHITE, 0
+		Kit.attach(new("UICorner", { Name = "Round", CornerRadius = UDim.new(0.5, 0) }), dashHit)
+		local ring = Kit.stroke(BLACK, 2)
+		ring.Name = "Ring"
+		Kit.attach(ring, dashHit)
+		for slot, c in cards do
+			TouchPad.place(c.button, if slot == 1 then "UpLeft" else "Up")
+			local corner = c.button:FindFirstChildOfClass("UICorner")
+			if corner then corner.CornerRadius = UDim.new(0.5, 0) end
+			c.tag.Visible, c.title.Visible = false, false
+			c.icon.Position, c.icon.Size = UDim2.fromOffset(15, 10), UDim2.fromOffset(44, 44)
+			c.emoji.Position, c.emoji.Size = UDim2.fromOffset(15, 10), UDim2.fromOffset(44, 44)
+			c.status.Position, c.status.Size = UDim2.fromOffset(0, 23), UDim2.fromOffset(74, 18)
+			c.status.TextXAlignment, c.status.FontFace, c.status.ZIndex = Enum.TextXAlignment.Center, HEAVY, 5
+			c.track.Position, c.track.Size = UDim2.fromOffset(20, 59), UDim2.fromOffset(34, 4)
+		end
+	end
 	local Dash = require(script.Parent.Parent.Parent:WaitForChild("Gameplay"):WaitForChild("Dash"))
 
 	local function nameIn(slot: number): string?
@@ -260,6 +294,14 @@ function PowerBar.build(parent: Instance)
 		fillShade.Color = ColorSequence.new(f[1], f[2])
 		fill.Size = UDim2.fromScale(math.clamp(frac, 0, 1), 1)
 		fill.Visible = frac > 0.005
+		if touchOnly then -- (the round button: his colours up to how charged it is, the bar's dark above)
+			local t = math.clamp(frac, 0, 1)
+			local dark = rgb(16, 28, 22)
+			dashShade.Color = if t >= 0.995 then ColorSequence.new(f[2], f[1])
+				elseif t <= 0.005 then ColorSequence.new(dark)
+				else ColorSequence.new({ ColorSequenceKeypoint.new(0, f[2]), ColorSequenceKeypoint.new(t, f[1]),
+					ColorSequenceKeypoint.new(math.min(t + 0.01, 0.999), dark), ColorSequenceKeypoint.new(1, dark) })
+		end
 	end
 
 	-- A card's look for its power and state.
@@ -319,11 +361,18 @@ function PowerBar.build(parent: Instance)
 			c.cooling = false
 		end
 		c.status.Text = text
+		if touchOnly then -- (a round button: the picture alone when it's ready, dimmed under a short word otherwise)
+			local short = if waiting then "WAIT" elseif hold then hold elseif string.find(text, "^ON") then string.format("%ds", math.ceil(onUntil - now))
+				elseif ready < 0 then "USED" elseif ready > now then string.format("%ds", math.ceil(ready - now)) else ""
+			c.status.Text = short
+			c.status.TextSize = if #short > 5 then 12 else 17
+			c.icon.ImageColor3 = if short == "" or string.find(text, "^ON") then WHITE else rgb(110, 110, 110)
+		end
 		c.title.TextColor3 = if live then WHITE else GREY_TITLE
 		c.line.Size = UDim2.fromScale(math.clamp(frac, 0, 1), 1)
 		local glowing = os.clock() < c.glowUntil
-		c.rim.Color = if glowing then def.Accent else BLACK
-		c.rim.Thickness = if glowing then 2 else 1
+		c.rim.Color = if glowing or (touchOnly and live) then def.Accent else BLACK
+		c.rim.Thickness = if touchOnly then (if glowing then 4 else 2) elseif glowing then 2 else 1
 	end
 
 	-- Every frame: what Space does and how charged it is, and the cards.
@@ -340,7 +389,8 @@ function PowerBar.build(parent: Instance)
 		local catcher = role == "Catcher"
 		local dashReady = player:GetAttribute("DashReady") or 0
 		local hold: string? = nil
-		attack.Visible, mouseBody.Visible = catcher, catcher
+		attack.Visible, mouseBody.Visible = catcher and not touchOnly, catcher and not touchOnly
+		dashTitle.Text = if catcher then "CATCH" else "DASH"
 		keyLine.TextColor3 = if catcher then WHITE else SOFT -- (his catcher picture is white, his runner one DEDEDE)
 		-- the bar
 		if catcher then
@@ -392,15 +442,24 @@ function PowerBar.build(parent: Instance)
 				paintFill("Ready", 1)
 			end
 		end
+		if touchOnly then -- (the round button's short line: the bar's state in a word, or the seconds left)
+			local t = state.Text
+			local left = if t == "KNIFE CHARGING" then (player:GetAttribute("KnifeReady") or 0) - now
+				elseif string.find(t, "RECHARGING") then dashReady - now else nil
+			dashSub.Text = if left then string.format("%.1fs", math.max(left, 0)) elseif string.find(t, "READY") then "READY"
+				elseif string.find(t, "PAUSED") then "WAIT" else (string.gsub(t, "[^%w!]", ""))
+		end
 		-- the cards, centred over the bar, side by side
 		local slots = shownSlots()
 		local span = #slots * P.Card.W + (#slots - 1) * P.Card.Gap
 		for slot, c in cards do
 			local i = table.find(slots, slot)
 			c.button.Visible = i ~= nil
-			if i then
+			if i and not touchOnly then
 				local x = P.W / 2 - span / 2 + (i - 1) * (P.Card.W + P.Card.Gap) + P.Card.W / 2
 				c.button.Position = UDim2.fromOffset(math.floor(x), P.Card.Bottom - 1)
+			end
+			if i then
 				paintCard(c, nameIn(slot) :: string, waiting, now, slot, hold)
 			end
 		end

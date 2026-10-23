@@ -141,6 +141,7 @@ local CompanionService = require(HuzzServer.CompanionService)
 DataService.start()
 SettingsService.start()
 ShopService.start()
+require(HuzzServer.LuckService).start() -- server luck from the Luck boosts, while each buyer is here
 CosmeticsService.start()
 ActionService.start()
 CompanionService.start()

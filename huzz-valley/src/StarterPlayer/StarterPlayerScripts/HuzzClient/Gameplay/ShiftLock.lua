@@ -3,8 +3,10 @@
 	the camera sits over your shoulder and you face where the camera looks. Hold Alt to let go of it for
 	as long as you hold it. The mouse pointer is hidden while it's on (owner's call: no cursor in the game;
 	Alt brings it back). It lets go of the mouse whenever a window is open (MenuOpen), the Chicken or Hero
-	pick shows (HuzzChoosing) or the round's intro camera plays (HuzzCinematic), and does nothing on
-	phones and tablets.
+	pick shows (HuzzChoosing) or the round's intro camera plays (HuzzCinematic). Phones and tablets get it too
+	since Oct 23 (owner, playing on his phone: "make the shift lock be turned on when you are in the game"): the
+	body faces where the camera looks and the camera sits over the shoulder; there is no mouse to hold, so the
+	thumb still drags the camera round as usual.
 	Roblox's own Shift-key mouse lock is switched off by the server (DevEnableMouseLock), so the two
 	never fight.
 	M.wouldLock() answers "will shift lock be on once the camera shots let go?" with the same test (Gameplay/Cinematic
@@ -22,9 +24,6 @@ local round: Instance? = nil
 
 -- The one test for "shift lock on". ignoreCinematic: answer as if no camera shot were playing (for the hand-back).
 local function wants(ignoreCinematic: boolean?): boolean
-	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
-		return false
-	end
 	local player = Players.LocalPlayer
 	local c = player.Character
 	local h = c and c:FindFirstChildOfClass("Humanoid")
@@ -51,10 +50,6 @@ function M.start()
 	local active = false
 	local Net = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Net)
 	round = Net.get("Round") :: RemoteEvent
-
-	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
-		return
-	end
 
 	local function humanoidAndRoot()
 		local c = player.Character
@@ -107,7 +102,9 @@ function M.start()
 		if not on or not root then
 			return
 		end
-		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+		if UserInputService.MouseEnabled then -- (a phone has no pointer to hold in the middle)
+			UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+		end
 		-- Face where the camera looks (not while lying on the floor: the server holds the body still; nor while
 		-- stunned on your belly after a dive, HuzzServer/PowerService.stun, or the body would spin on the floor).
 		local camera = Workspace.CurrentCamera

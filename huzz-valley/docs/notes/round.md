@@ -140,9 +140,21 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 - **Everyone caught turns into a catcher** (owner Oct 19) from the next round (not mid-round, so a round stays
   readable); a rescue in the same round keeps them a runner. The last runner standing still wins the game and her.
   The sim checks every caught runner is a catcher at the next line-up.
-- **Girl odds** (`Config/Round.Rarities`): Common 28, Uncommon 24, Rare 20, Epic 14, Legendary 8, Mythic 4.5,
-  Secret 1.5. The Secret girls are **C.C. and Marin** (owner, Oct 17; `Config/GirlNames`); their cutscene:
-  [secret-cutscene.md](secret-cutscene.md).
+- **Girl odds** (`Config/Round.Rarities`): since Oct 23 ("make the girls chances be way lower", "make it be normal in
+  like 10x luck") weights Common 28, Uncommon 2.4, Rare 2, Epic 1.4, Legendary 0.8, Mythic 0.45, Secret 0.15 (with no
+  luck: 79.5 / 6.8 / 5.7 / 4.0 / 2.3 / 1.3 / 0.43%). **Server luck** multiplies every rarity past Common
+  (`Shared/GirlRoll.withLuck`); at x10 the odds are the old 28 / 24 / 20 / 14 / 8 / 4.5 / 1.5. Luck comes from the
+  Luck boosts (`Config/Products.Luck`, Amount = multiplier; ShopService grants, `HuzzServer/LuckService` holds it):
+  each buy multiplies its buyer's luck, never saved, gone when they leave; the server's = everyone's here multiplied,
+  capped at `Round.Luck.Max` 10 (buys refused at the top). Shown on Workspace "HuzzServerLuck" / player "HuzzLuck":
+  the lobby's LUCK button (the multiplier in big letters), the SERVER LUCK plate under NEXT ROUND (hidden while you
+  play), and `Screens/Luck` (boosts, prices, the odds at this luck). The roll's strip and shown odds use the same
+  luck. `tests/GirlRoll.spec` checks x10 = the old odds. Shots `luck`, `hud-luck`.
+  The Secret girls are **The Cosplayer and Cee Cee** (Marin and C.C. until Oct 23; `Config/GirlNames`); their
+  cutscene: [secret-cutscene.md](secret-cutscene.md).
+- **Girl names** (Oct 23 15:23, "fully change them everywhere to these: The shrimp - Kita ..."): every girl shows a
+  title now (`Config/GirlNames`, and the `Who` in `Config/GirlLooks`); both Ninos are The Tsundere. Saves key girls
+  by model name, so nothing owned changes.
 - Girl names (`Config/GirlNames`): the owner's own list (Oct 18), matched by the code at the end of each model's name
   (e.g. `_E2B52D` = Rem); Alya, Rize, Waguri, Yui and Miku Nakano had no code match and are best guesses (header).
 

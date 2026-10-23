@@ -168,7 +168,12 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
       IDs into `Products.lua` under `Products.Crates`: **Shinobi Dojo Chest key** (`DojoCrateKey`), **Elemental Storm
       Vault key** (`StormCrateKey`) and **Void Beast Chest key** (`BeastCrateKey`), 25 Robux each (our pick). Until
       an ID is in, BUY shows the price mark and only says "coming soon".
-   8. **Your spin wheel model:** name it with "Spin" and "Wheel" in the name (for example `Spin Wheel`), or tag it
+   8. **Luck boosts** (the green LUCK button and the SERVER LUCK sign): Developer Products in `Products.lua` under
+      `Products.Luck`, one row each: `Luck2` (x2, 49 Robux), `Luck4` (x4, 99), `Luck8` (x8, 199), our pick until you
+      send yours. Put each ID in `Id = ...`; for another multiplier copy a row and change `Key`, `Name`, `Amount`
+      (the multiplier) and `Price`. Boosts multiply and the server's luck tops out at x10 (`Config/Round.lua`,
+      `Luck.Max`). Until an ID is in, the button shows the price and only says "coming soon".
+   9. **Your spin wheel model:** name it with "Spin" and "Wheel" in the name (for example `Spin Wheel`), or tag it
       `HuzzSpinWheel`. The game adds "Spin the Wheel" (E) and a click to it by itself. Press Play, walk up to it and
       press E: the Output shows `[Huzz] Spin the Wheel found: ...`.
 3. **Send me your girls and map**, so I can check every girl in the carry (size, how her limbs hang, rarity names)

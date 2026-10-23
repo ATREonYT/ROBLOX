@@ -12,7 +12,7 @@
 export type Benefit = { Icon: string, Text: string }
 export type Product = {
 	Key: string,
-	Kind: "Pass" | "Cosmetic" | "Coins" | "Aura" | "Spins" | "CrateKey" | "Knife",
+	Kind: "Pass" | "Cosmetic" | "Coins" | "Aura" | "Spins" | "CrateKey" | "Knife" | "Luck",
 	Name: string,
 	Blurb: string,
 	Id: number,
@@ -21,7 +21,7 @@ export type Product = {
 	Icon: string,
 	Benefits: { Benefit }?,
 	Art: string,
-	Amount: number?, -- Coins packs: how many coins it gives; Aura packs: how much Aura; Spins packs: how many spins
+	Amount: number?, -- Coins packs: how many coins it gives; Aura packs: how much Aura; Spins packs: how many spins; Luck: the multiplier
 	Giftable: boolean?,
 	Slot: string?, -- Cosmetics: where it's worn (Config/CoinShop.Slots); owners tap WEAR / WEARING in the Shop
 	Why: string?, -- OnSale = false: what is missing, for the owner's checklist
@@ -125,11 +125,22 @@ Products.Crates = {
 	{ Key = "BeastCrateKey", Kind = "CrateKey", Crate = "Beast", Name = "Void Beast Chest", Blurb = "One open of the\nVoid Beast Chest.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
 } :: { Product }
 
+-- Luck boosts (owner, Oct 23 15:22: "add a x2 luck, x4 luck, x8 luck dev products, and make it go up in price"; he
+-- sends the real products and multipliers later: add a row per product, any Amount works). Amount = the multiplier.
+-- Each buy multiplies the buyer's luck, which the whole server shares while they're here (Config/Round.Luck,
+-- HuzzServer/LuckService, Screens/Luck). While Id = 0 the button shows its price and only says "coming soon".
+-- Prices are Claude's pick until he sends his.
+Products.Luck = {
+	{ Key = "Luck2", Kind = "Luck", Name = "x2 Luck", Blurb = "x2 server luck\nwhile you're here.", Id = 0, Price = 49, Amount = 2, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "Luck4", Kind = "Luck", Name = "x4 Luck", Blurb = "x4 server luck\nwhile you're here.", Id = 0, Price = 99, Amount = 4, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "Luck8", Kind = "Luck", Name = "x8 Luck", Blurb = "x8 server luck\nwhile you're here.", Id = 0, Price = 199, Amount = 8, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+} :: { Product }
+
 Products.Tabs = { "Passes", "Cosmetics", "Items", "Crates", "Coins", "Aura" } -- (Items: the coin shop, Config/CoinShop)
 
 local byKey: { [string]: Product } = {}
 local byId: { [string]: Product } = {}
-for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura, Products.Spins, Products.Halloween, Products.Crates } do
+for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura, Products.Spins, Products.Halloween, Products.Crates, Products.Luck } do
 	for _, p in list do
 		assert(not byKey[p.Key], "duplicate product key " .. p.Key)
 		byKey[p.Key] = p

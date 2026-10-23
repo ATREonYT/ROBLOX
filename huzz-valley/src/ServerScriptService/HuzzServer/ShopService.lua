@@ -127,7 +127,7 @@ end
 -- shop screens, HalloweenShop.canPrompt), and a purchase already paid for must always give something (bug hunt,
 -- Oct 20: a coin pack or spins switched off after a kid paid used to wait unanswered forever). A product that gives
 -- nothing yet never has a prompt, so it can't arrive here.
-local function grant(data, product): (boolean, string?)
+local function grant(data, product, player: Player): (boolean, string?)
 	if product.Kind == "CrateKey" and Products.crateKey(product.Crate or "") == product then
 		-- Shop > CRATES' BUY (his three knife crates): one open of that crate, used before Aura (ActionService OpenCrate)
 		if not Crates.get(product.Crate) then return false end
@@ -156,6 +156,8 @@ local function grant(data, product): (boolean, string?)
 	elseif product.Kind == "Spins" then -- Spin the Wheel spins (SpinService)
 		data.Spins = (data.Spins or 0) + (product.Amount or 0)
 		return true
+	elseif product.Kind == "Luck" then -- server luck while the buyer is here, never saved (HuzzServer/LuckService)
+		return require(script.Parent.LuckService).add(player, product.Amount)
 	end
 	return false
 end
@@ -208,7 +210,7 @@ local function processReceipt(info)
 	if not table.find(receipts, info.PurchaseId) then
 		local ok, note = false, nil
 		DataService.update(player, function(data)
-			ok, note = grant(data, product)
+			ok, note = grant(data, product, player)
 			if ok then
 				table.insert(data.Receipts, info.PurchaseId)
 				while #data.Receipts > RECEIPT_MEMORY do table.remove(data.Receipts, 1) end
