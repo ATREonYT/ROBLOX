@@ -72,8 +72,8 @@ function Admin.build(parent: Instance)
 		lists[i] = list
 	end
 
-	-- the corner button, only for the owner (the server sets HuzzAdmin; it checks every request again anyway)
-	local toggle = Kit.button({ Name = "AdminToggle", Style = "Slate", Text = "ADMIN", TextSize = 14, Position = UDim2.new(0, 12, 1, -12), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(84, 30), Parent = parent })
+	-- the corner button (top-left: bottom-left holds the coin pills on computers and the thumbstick on phones), only for the owner (the server sets HuzzAdmin; it checks every request again anyway)
+	local toggle = Kit.button({ Name = "AdminToggle", Style = "Slate", Text = "ADMIN", TextSize = 14, Position = UDim2.fromOffset(12, 8), Size = UDim2.fromOffset(84, 30), Parent = parent })
 	local player = Players.LocalPlayer
 	local function showToggle()
 		toggle.Instance.Visible = player ~= nil and player:GetAttribute("HuzzAdmin") == true
