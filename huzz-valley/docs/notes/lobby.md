@@ -212,3 +212,7 @@ inspection with Lune: core `CLAUDE.md` section 4.
 - **Lobby props** (owner, Oct 18: "implementing these objects into the lobby on top of the already placed circles.
   Give it some VFX and make it look good just like in the pictures"). The Oct 19 light turned their lamps down from
   1.4/12 (fainter pad pools); the boards' from 0.8/7, 0.5/5, 0.6/9.
+- Favourites pop-up (Oct 23 14:03, owner: "make the thing on roblox pop up asking you if you want to add the game to
+  your favourites randomly"): `Gameplay/FavouritePrompt`, Roblox's own `AvatarEditorService:PromptSetFavorite`, once per
+  visit at a random 4-9 minutes in (`Config/Group.FavouriteAfter`), lobby only with no window open, skipped if already
+  a favourite. Live only (Studio prints a `[Huzz] favourites` line).

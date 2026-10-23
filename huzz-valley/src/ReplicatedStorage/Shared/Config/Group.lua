@@ -8,4 +8,8 @@ return {
 	Name = "", -- its name, shown in the window (optional; empty = "our group")
 	Spins = 5, -- the reward: spins on the wheel (the same kind of spins the shop sells)
 	PopupAfter = 20, -- seconds in the lobby before the window opens by itself, once per visit, until it's claimed
+	-- Roblox's own "add this game to your favourites?" (owner, Oct 23 14:03: "make the thing on roblox pop up asking you
+	-- if you want to add the game to your favourites randomly"; Gameplay/FavouritePrompt): once per visit, at a random
+	-- moment this many seconds in, in the lobby with nothing open; never if it's already a favourite.
+	FavouriteAfter = { 240, 540 },
 }
