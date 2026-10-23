@@ -85,7 +85,7 @@ local function stampsOf(path, up, down, seconds)
 		if s.t - last >= MotionStamps.Config.Every or (s.input and s.t - last >= MotionStamps.Config.MinGap) then
 			last = s.t
 			local jitter = rand() * 0.01
-			table.insert(out, { sent = s.t, arrives = s.t + up + down + jitter, p = s.cf.Position, v = s.vel, g = s.goal, push = false })
+			table.insert(out, { sent = s.t, arrives = s.t + up + down + jitter, p = s.cf.Position, v = s.vel, g = s.goal, push = 0 })
 		end
 	end
 	return out
@@ -148,13 +148,14 @@ end
 local AHEAD = require("@lune/process").env.AHEAD == "1"
 local A = Round.Ahead
 local STAMP = require("@lune/process").env.STAMP == "1"
+local NOCAP = require("@lune/process").env.NOCAP == "1"
 local function drawnSeen(pk, t, myPing, st)
 	local cf = drawnAt(pk, t, myPing / 2)
 	if STAMP and st then
 		local s = newestStamp(st, t)
 		if s then
 			local want = MotionStamps.predict(s, t - s.sent) - cf.Position
-			local off = MotionStamps.limit(Vector3.new(want.X, 0, want.Z))
+			local off = MotionStamps.limit(Vector3.new(want.X, 0, want.Z), MotionStamps.speed(s))
 			return cf + off, off
 		end
 	end
@@ -258,8 +259,14 @@ local function scenario(name, runnerPing, catcherPing, n, speed, knife)
 						-- (the server's newest stamp of the runner moved on to the claim's moment: RoundService.screenHit)
 						local up = nil -- (the newest the server has: it left the runner half their ping ago)
 						for _, x in rSt do if x.sent + runnerPing / 2 <= arrive then up = x else break end end
-						if up then
-							table.insert(rS, { t = arrive, cf = CFrame.new(MotionStamps.predict(up, t - up.sent)) * rS[#rS].cf.Rotation })
+						if up and t - up.sent <= 0.35 then
+							-- (never further from our copy than its own speed covers in the time it's behind, plus a stud)
+							local last = rS[#rS].cf
+							local sv = serverPk(rPk, arrive).vel or Vector3.zero
+							local most = Vector3.new(sv.X, 0, sv.Z).Magnitude * (runnerPing / 2 + 0.1) + 1
+							local off = MotionStamps.limit(MotionStamps.predict(up, t - up.sent) - last.Position)
+							if off.Magnitude > most and not NOCAP then off = off.Unit * most end
+							table.insert(rS, { t = arrive, cf = last + off })
 						end
 					end
 					local ok, why = TouchHit.verify({ seen = seen - ahead, mine = mine, ahead = ahead }, {

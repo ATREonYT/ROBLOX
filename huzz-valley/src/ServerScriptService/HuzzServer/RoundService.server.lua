@@ -1312,12 +1312,19 @@ local function screenHit(id, me: BasePart, runnerId: number, shown, knife, along
 	-- The catcher's screen drew the runner where the runner's own newest stamp said they were at its frame (Oct 23,
 	-- Gameplay/OthersAhead), which our copy may not have reached yet (it left the runner half their ping ago). So the
 	-- path gets that one point too: the newest stamp we checked (MotionRelay), moved on to the catcher's frame (half
-	-- the catcher's ping ago) and never more than MotionStamps' cap from our own copy.
-	local st = MotionRelay.latest(byId[runnerId]) or MotionRelay.latest(character)
+	-- the catcher's ping ago), and never further from our own copy than our copy's own speed could cover in the time
+	-- it is behind (half the runner's ping and Roblox's 0.1 s, plus a stud): a stamp can't stretch the reach.
+	local runner = byId[runnerId]
+	local st = MotionRelay.latest(runner) or MotionRelay.latest(character)
 	if st and #runnerPath > 0 then
 		local at = Workspace:GetServerTimeNow() - ping / 2
-		if at - st.t <= MotionStamps.Config.MaxAge and at - st.t > -0.25 then
+		if at - st.t <= 0.35 and at - st.t > -0.25 then
+			local okR, rPing = pcall(function() return runner and runner:GetNetworkPing() end)
+			rPing = if okR and type(rPing) == "number" then math.clamp(rPing, 0, 0.5) else 0.1
+			local v = root.AssemblyLinearVelocity
+			local most = Vector3.new(v.X, 0, v.Z).Magnitude * (rPing / 2 + 0.1) + 1
 			local off = MotionStamps.limit(MotionStamps.predict(st, math.max(0, at - st.t)) - root.Position)
+			if off.Magnitude > most then off = off.Unit * most end
 			table.insert(runnerPath, { t = now, cf = root.CFrame + off })
 		end
 	end

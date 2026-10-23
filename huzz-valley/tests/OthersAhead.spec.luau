@@ -137,6 +137,26 @@ OA.stamp(bot, serverNow - 0.05, Vector3.new(0, 3, -42), Vector3.new(0, 0, -20), 
 frames(60)
 check(string.format("the Practice Bot is drawn from its stamps too (%.2f, want -3.00)", OA.offset(bot).Z), near(OA.offset(bot), Vector3.new(0, 0, -3), 0.02))
 check("its root stays where Roblox has it", botRoot.CFrame.Position == Vector3.new(0, 3, -40))
+-- a batch from the server (a few stamps in one message); a new stamp that disagrees a little is eased in, not popped
+local b1, b1Root = body("Batch", CFrame.new(0, 3, 80))
+b1Root.AssemblyLinearVelocity = Z
+players = { me, { Name = "b1", Character = b1 } }
+OA.stamps({ { b1, serverNow, Vector3.new(2, 3, 80), Z, Z, 0 }, { "junk" }, 5 })
+frames(60)
+check("a batch of stamps is read (junk in it ignored)", near(OA.offset(b1), Vector3.new(2, 0, 0), 0.02))
+OA.stamps({ { b1, serverNow + 0.01, Vector3.new(3, 3, 80), Z, Z, 0 } })
+OA.step(1 / 60)
+local mid = OA.offset(b1).X
+check(string.format("a new stamp 1 stud off is eased in (%.2f after one frame)", mid), mid > 2.05 and mid < 2.95)
+frames(60)
+check("and gets there", near(OA.offset(b1), Vector3.new(3, 0, 0), 0.02))
+-- a moving body whose stamps stop coming (a hitch): not carried on
+OA.stamps({ { b1, serverNow + 0.02, Vector3.new(3, 3, 80), Vector3.new(24, 0, 0), Vector3.new(24, 0, 0), 0 } })
+local t0 = os.clock()
+while os.clock() - t0 < 0.25 do end
+frames(60)
+check("a moving body gone quiet isn't carried on (the guess: still)", near(OA.offset(b1), Z, 0.02))
+
 -- caught mid-run: the last stamp would carry them on, so it's dropped
 bot:SetAttribute("DownedAt", 1)
 botRoot.AssemblyLinearVelocity = Z

@@ -36,28 +36,58 @@ local OthersAhead = {}
 
 type Rec = { joint: Motor6D, root: BasePart, base: CFrame, set: CFrame?, offset: Vector3 }
 local recs: { [Model]: Rec } = {} -- (a plain table, dropped when the body goes)
-local stamps: { [Model]: any } = {} -- character -> its newest stamp (Shared/MotionStamps; dropped with the body)
+-- character -> { st = its newest stamp (Shared/MotionStamps), got = os.clock() it came, resid = the eased-out jump
+-- between where the old stamp and the new one put it (so a new stamp never pops the body) }
+local stamps: { [Model]: any } = {}
+
+local function flat(v: Vector3): Vector3
+	return Vector3.new(v.X, 0, v.Z)
+end
 
 -- Keeps a stamp the server passed on (Net "Motion": the character, then the stamp).
 function OthersAhead.stamp(model: Model, t, p, v, g, push)
 	if typeof(model) ~= "Instance" or not model:IsA("Model") then return end
 	local st = MotionStamps.read(t, p, v, g, push)
-	local old = stamps[model]
-	if st and not (old and old.t > st.t) then stamps[model] = st end -- (an unreliable one can come late: never go back)
+	if not st then return end
+	local e = stamps[model]
+	if e and e.st.t > st.t then return end -- (an unreliable one can come late: never go back)
+	local now = Workspace:GetServerTimeNow()
+	local resid = Vector3.zero
+	if e and now - e.st.t <= MotionStamps.Config.MaxAge then
+		-- (where the old stamp had it now, against the new one: eased out over a few frames)
+		resid = e.resid + flat(MotionStamps.predict(e.st, now - e.st.t) - MotionStamps.predict(st, now - st.t))
+		if resid.Magnitude > MotionStamps.Config.MaxStuds then resid = Vector3.zero end -- (a teleport: no easing)
+	end
+	stamps[model] = { st = st, got = os.clock(), resid = resid }
+end
+
+-- A batch of stamps (HuzzServer/MotionRelay sends each frame's in a few messages: { { character, t, p, v, g, push } }).
+function OthersAhead.stamps(list)
+	if type(list) ~= "table" then return end
+	for i, e in list do
+		if i > 64 then break end
+		if type(e) == "table" then OthersAhead.stamp(e[1], e[2], e[3], e[4], e[5], e[6]) end
+	end
 end
 
 -- Where the stamp says this body's root is drawn from Roblox's copy (flat, capped), or nil with no fresh stamp.
-function OthersAhead.stampOffset(model: Model, root: BasePart, serverNow: number): Vector3?
-	local st = stamps[model]
-	if not st then return nil end
+-- dt eases out the jump between stamps (StampSmooth); none = as it is.
+function OthersAhead.stampOffset(model: Model, root: BasePart, serverNow: number, dt: number?): Vector3?
+	local e = stamps[model]
+	if not e then return nil end
 	-- (caught: their screen stops stamping, and the last one would carry the body on; the guess has it still)
 	if model:GetAttribute("DownedAt") ~= nil then
 		stamps[model] = nil
 		return nil
 	end
+	local st = e.st
+	local C = MotionStamps.Config
 	local age = serverNow - st.t
-	if age < -0.05 or age > MotionStamps.Config.MaxAge then return nil end
-	return MotionStamps.limit(MotionStamps.predict(st, age) - root.CFrame.Position)
+	if age < -0.05 or age > C.MaxAge then return nil end
+	-- (a moving body's stamps come 20 a second: gone quiet, it hitched or lost them, so don't carry it on)
+	if os.clock() - e.got > C.Silent and MotionStamps.speed(st) > 0.5 then return nil end
+	if dt then e.resid *= math.exp(-(Round.Ahead.StampSmooth or 25) * dt) end
+	return MotionStamps.limit(MotionStamps.predict(st, age) + e.resid - root.CFrame.Position, MotionStamps.speed(st))
 end
 
 -- The seconds to draw others ahead: half your round trip plus Roblox's smoothing, capped.
@@ -146,10 +176,13 @@ function OthersAhead.step(dt: number)
 		local rec = r :: Rec
 		-- (the server changed the joint itself, e.g. a body resized: that is the new base)
 		if rec.set and not same(rec.joint.C0, rec.set) then rec.base = rec.joint.C0 end
-		local fromStamp = if rec.root.Anchored then nil else OthersAhead.stampOffset(model, rec.root, serverNow)
+		local fromStamp = if rec.root.Anchored then nil else OthersAhead.stampOffset(model, rec.root, serverNow, dt)
 		local target = if rec.root.Anchored then Vector3.zero
 			else fromStamp or OthersAhead.target(rec.root.AssemblyLinearVelocity, lead)
-		rec.offset = rec.offset:Lerp(target, if fromStamp then kStamp else k)
+		-- (from a stamp: where it is, already eased between stamps, so Roblox's own copy's wobble doesn't show; a quick
+		-- ease only for a bigger change: taking over from the guess, a cap)
+		rec.offset = if fromStamp and (target - rec.offset).Magnitude < 1 then target
+			else rec.offset:Lerp(target, if fromStamp then kStamp else k)
 		if rec.offset.Magnitude < 0.01 and target == Vector3.zero then rec.offset = Vector3.zero end
 		local c0 = OthersAhead.c0(rec.base, rec.root.CFrame, rec.offset)
 		rec.joint.C0 = c0
@@ -164,7 +197,7 @@ function OthersAhead.step(dt: number)
 end
 
 function OthersAhead.start()
-	require(Shared.Net).get("Motion").OnClientEvent:Connect(OthersAhead.stamp)
+	require(Shared.Net).get("Motion").OnClientEvent:Connect(OthersAhead.stamps)
 	-- (before the physics step, so the body is drawn and hit-tested where it's shifted to this frame)
 	require(script.Parent.Frame).on(1, OthersAhead.step)
 end

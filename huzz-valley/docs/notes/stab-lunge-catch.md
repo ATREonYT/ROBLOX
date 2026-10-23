@@ -126,6 +126,16 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   studs, 100 ms 1.5 -> 0.9, 200 ms 4.1 -> 1.4; one slow side 0.8; dives 0.3/0.5/1.0; fair hits 99-100% (catcher 400 ms
   97%). Cheat reach unchanged. Only real servers show Roblox's own smoothing and real pings; tests
   `MotionStamps.spec`, `OthersAhead.spec`.
+  - Critic pass (Oct 23 12:31, owner: "check it again"), fixed: a huss (120 studs/s) looked like a teleport (cap now
+    grows with the stamp's speed, `cap(speed)` up to `PushStuds` 30; teleport = `Teleport` past the cap); a hitch kept
+    a body running (`Silent` 0.2 s without a stamp while moving: the guess); the stop overshot for 0.5 s (a "came to
+    rest" change sends at once, and 20/s for `Settle` 0.3 s after); a body pressed into a wall says its real speed
+    after 0.12 s; lasso and glitch pulls carried `PullFor` 0.3 s (`push` is now a hold time, not true/false); relay
+    checks tighter (0.6 s old at most, a run's speed only within its walk unless pushed, push at most 125, slack from
+    the sender's ping); stamps go out once a frame in packets of 10, never back to their sender; a new body clears its
+    stamp; a new stamp's jump is eased out (`resid`), not the root's wobble; `screenHit`'s added point never further
+    than our copy's own speed covers in the time it's behind (+1 stud). Left: a cheat can claim a push to be drawn
+    up to 30 studs off on others' screens only (never on the server's hit check).
 - **Releasing a pose** (StabMotion, DownMotion, CarryMotion): put back the pose underneath only on joints nobody else
   wrote since, or the old pose shows for one frame ([animations.md](animations.md) "Layering").
 - **Red fill** on the caught runner (`Gameplay/RoundHud`, on their team Highlight, everyone's screen,
