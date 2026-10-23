@@ -422,7 +422,7 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 ## Earning speed and Robux IDs (Oct 21)
 - Owner, Oct 21 17:25 / 17:34: all 11 Game Passes and 8 Developer Products have his IDs and prices (`Config/Products`).
   The 4 Halloween knives are Game Passes (`GamePass = true`): Roblox's pass prompt, given in `ShopService.refreshPasses`.
-  Still Id 0: the 3 Spin packs, the 3 Shop crate keys (Dojo, Storm, Beast) and the 4 Cosmetics.
+  No product left at Id 0 (the Spin packs came Oct 23 19:46, the 3 Shop crate keys Oct 23 21:10).
 - "you get very quick aura and coins, so please pop it down a bit": Aura stars 4 out (was 7), back in 60-90 s (was
   25-45): ~550 Aura an hour at most (was ~1,900). Game pay 15 / 30 for a win (was 25 / 50). The wheel's coin and Aura
   slices about halved (keys unchanged: 50 / 100 / 250 / 500 coins, 15 / 40 Aura).

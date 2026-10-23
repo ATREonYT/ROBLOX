@@ -119,11 +119,11 @@ Products.Halloween = {
 -- Shop > CRATES' BUY buttons (the owner's crate shop mockup, Oct 20: a violet BUY with the Robux mark under each of
 -- his three knife crates): one open of that crate (Config/Crates; saved as CrateKeys, used before Aura). Developer
 -- Products: while Id = 0 BUY only says "coming soon", never a purchase (ShopService.promptCrateKey checks it again).
--- Prices are Claude's pick (the Halloween crate keys' 25).
+-- 25 Robux each; the IDs are the owner's (Oct 23 21:10: Void Beast Key, Elemental Storm Key, Shinobi Dojo Key).
 Products.Crates = {
-	{ Key = "DojoCrateKey", Kind = "CrateKey", Crate = "Dojo", Name = "Shinobi Dojo Chest", Blurb = "One open of the\nShinobi Dojo Chest.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
-	{ Key = "StormCrateKey", Kind = "CrateKey", Crate = "Storm", Name = "Elemental Storm Vault", Blurb = "One open of the\nElemental Storm Vault.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
-	{ Key = "BeastCrateKey", Kind = "CrateKey", Crate = "Beast", Name = "Void Beast Chest", Blurb = "One open of the\nVoid Beast Chest.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "DojoCrateKey", Kind = "CrateKey", Crate = "Dojo", Name = "Shinobi Dojo Chest", Blurb = "One open of the\nShinobi Dojo Chest.", Id = 3721719036, Price = 25, OnSale = true, Icon = "", Art = "" },
+	{ Key = "StormCrateKey", Kind = "CrateKey", Crate = "Storm", Name = "Elemental Storm Vault", Blurb = "One open of the\nElemental Storm Vault.", Id = 3721719107, Price = 25, OnSale = true, Icon = "", Art = "" },
+	{ Key = "BeastCrateKey", Kind = "CrateKey", Crate = "Beast", Name = "Void Beast Chest", Blurb = "One open of the\nVoid Beast Chest.", Id = 3721719197, Price = 25, OnSale = true, Icon = "", Art = "" },
 } :: { Product }
 
 -- Server luck boosts (owner, Oct 23 15:22: "add a x2 luck, x4 luck, x8 luck dev products, and make it go up in price";

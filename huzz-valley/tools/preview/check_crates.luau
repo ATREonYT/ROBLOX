@@ -11,6 +11,9 @@ local function check(name, cond)
 end
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
+-- (the shipped config has the owner's real crate key IDs since Oct 23 21:10: the Dojo key goes back to 0 here, so the
+-- "no ID yet: coming soon, never a purchase" path is still tested)
+for _, p in require(RS.Shared.Config.Products).Crates do if p.Key == "DojoCrateKey" then p.Id = 0 end end
 local RunService = game:GetService("RunService")
 
 local me = Instance.new("Player"); me.Name = "Tester"; me.UserId = 77; me.Parent = Players
