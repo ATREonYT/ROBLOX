@@ -137,6 +137,24 @@ local passes = #require(RS.Shared.Config.Products).Passes
 check("every knife and game pass has a row (" .. rows(knifeList) .. " of " .. knives + passes .. ")", rows(knifeList) == knives + passes)
 check("every girl has a row", girlList ~= nil and girlList:FindFirstChild("Girl_TEST1") ~= nil and girlList:FindFirstChild("Girl_TEST2") ~= nil)
 check("a girl row has SPAWN and NEXT GAME", girlList ~= nil and girlList.Girl_TEST1:FindFirstChild("SpawnGirl") ~= nil and girlList.Girl_TEST1:FindFirstChild("NextGirl") ~= nil)
+check("the panel has LUCK FOR ALL SERVERS", window ~= nil and window:FindFirstChild("AllServers", true) ~= nil and window:FindFirstChild("AllServersLuck", true) ~= nil)
+
+-- every server's luck for a while (owner, Oct 23 20:21): x5 for 30 min counts in this server's luck; bad input refused
+local AdminRules = require(RS.Shared.AdminRules)
+check("luck 1 or 11 refused", AdminRules.luckTime("1 30") == nil and AdminRules.luckTime("11 30") == nil)
+check("0 or 2000 minutes refused", AdminRules.luckTime("5 0") == nil and AdminRules.luckTime("5 2000") == nil)
+check("\"0 0\" ends it", AdminRules.luckTime("0 0") == 0)
+task.wait(0.2)
+n = #replies
+remote:FireServer("AllServersLuck", "5 30")
+task.wait(0.3)
+check(`ALL SERVERS x5 for 30 min answers ({replies[n + 1] and replies[n + 1].message})`, replies[n + 1] ~= nil and replies[n + 1].ok == true)
+check(`the server's luck is x5 ({workspace:GetAttribute("HuzzServerLuck")})`, workspace:GetAttribute("HuzzServerLuck") == 5 and workspace:GetAttribute("HuzzGlobalLuck") == 5)
+check(`it ends in 30 min ({workspace:GetAttribute("HuzzGlobalLuckEnds")} vs {os.time()})`, math.abs((workspace:GetAttribute("HuzzGlobalLuckEnds") or 0) - os.time() - 1800) <= 60) -- (the harness clock runs on a little)
+task.wait(0.2)
+remote:FireServer("AllServersLuck", "0 0")
+task.wait(0.3)
+check(`END IT puts it back to x1 ({workspace:GetAttribute("HuzzServerLuck")})`, workspace:GetAttribute("HuzzServerLuck") == 1)
 _G.__isStudio = false
 
 print(`admin panel: {ok} ok, {fails} failed`)

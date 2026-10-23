@@ -646,6 +646,7 @@ function Shop.build(parent: Instance)
 	-- preview and BUY. Tap the dark page beside it, or its X, to close it. Everything is built once (and saved with
 	-- the UI): one view per crate and one dance view, shown as needed.
 	local scrollTo: (string, boolean?) -> ()
+	local dancersInViewRef = { fn = function() end }
 	local side = new("Frame", { Name = "Side", Position = UDim2.fromOffset(BODY.X, BODY.Y), Size = UDim2.fromOffset(BODY.W, BODY.H), BackgroundTransparency = 1, ClipsDescendants = true, Visible = false, ZIndex = 30, Parent = panel })
 	local shade = new("TextButton", { Name = "Shade", Text = "", AutoButtonColor = false, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 30, Parent = side })
 	local SHUT_X, OPEN_X = BODY.W + 4, BODY.W - SIDE.W
@@ -773,7 +774,7 @@ function Shop.build(parent: Instance)
 	local dBack = backdrop(dv, "Backdrop", SIDE.Pad, DV.ArtY, SIDE.W - 2 * SIDE.Pad, DV.ArtH, 32, hex("E56CFF"))
 	local dStill = Kit.art("DanceStillUntouchable", { Name = "Still", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(dBack.Size.X.Offset // 2, DV.ArtH - 6), Size = UDim2.fromOffset(220, 220), ScaleType = Enum.ScaleType.Fit, ZIndex = 33, Parent = dBack })
 	Effects.rock(dStill, { degrees = 5, seconds = 0.5 }) -- (a little dance to the beat while no animation plays)
-	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(180, 180, 200), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(-0.5, -1, -0.8), Visible = false, ZIndex = 34, Parent = dBack }, { Kit.corner(6) })
+	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(205, 205, 215), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(0.35, -0.75, 0.55), Visible = false, ZIndex = 34, Parent = dBack }, { Kit.corner(6) })
 	local dBlurb = chunky({ Name = "Blurb", Text = "", TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(SIDE.Pad, DV.ArtY + DV.ArtH + 10), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad, 26), ZIndex = 33, Parent = dv }, 1.5)
 	local dNote = chunky({ Name = "Note", Text = "", TextSize = 15, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(SIDE.Pad, DV.ArtY + DV.ArtH + 40), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad, 22), ZIndex = 33, Parent = dv }, 1)
 	local dBuy = chunkyButton(Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconAfter = true, IconSize = 28, Gap = 8, TextSize = 28, FontFace = SHOP_FONT, Style = "ShopGreen", Corner = 4, Position = UDim2.fromOffset(SIDE.Pad, CV.ButtonY), Size = UDim2.fromOffset(SIDE.W - 2 * SIDE.Pad, SIDE.ButtonH), ZIndex = 34, Parent = dv }))
@@ -1057,6 +1058,7 @@ function Shop.build(parent: Instance)
 			chunkyButton(b)
 		end)
 		table.insert(danceCards, c)
+		if not cardsOf[d.Id] then cardsOf[d.Id] = c end -- (Dances' PLAY on a locked dance jumps here)
 	end
 	grid(danceCards, 5, SMALL.W, SMALL.H, SMALL.Gap, 6)
 
@@ -1250,8 +1252,32 @@ function Shop.build(parent: Instance)
 	-- The jump buttons: one per section, scrolling the page there; the one on screen wears a white rim.
 	local jumps = {}
 	local current: string? = nil
+	-- Where the page is scrolled to, in the page's own units (layout's). Roblox measures CanvasPosition in screen
+	-- pixels or in the page's units depending on the window's scale (owner, Oct 23 20:21: "fix ui buttons not bring
+	-- you to the right places in the shop"): `ratio` (page units per CanvasPosition unit) is measured on screen from
+	-- a card's real place the first time the page is scrolled, and every jump and check uses it.
+	local ratio: number? = nil
+	local function measureRatio(): number?
+		local cp = body.CanvasPosition.Y
+		if cp < 20 then return nil end
+		local ok, r = pcall(function()
+			local scale = body.AbsoluteSize.Y / BODY.H
+			if scale <= 0 then return nil end
+			for _, c in body:GetChildren() do
+				local pop = c:FindFirstChildOfClass("UIScale") -- (a card popping in is drawn smaller than its place)
+				if c:IsA("GuiObject") and c.Visible and c.Position.Y.Scale == 0 and not (pop and pop.Scale ~= 1) then
+					local seen = (c.AbsolutePosition.Y - body.AbsolutePosition.Y) / scale -- (page units below the window's top)
+					return (PAD + c.Position.Y.Offset - seen) / cp
+				end
+			end
+			return nil
+		end)
+		if ok and r and r > 0.2 and r < 5 then return r end
+		return nil
+	end
+	local function scrolledY(): number return body.CanvasPosition.Y * (ratio or 1) end
 	local function highlight()
-		local y = body.CanvasPosition.Y + 60
+		local y = scrolledY() + 60
 		local now = SECTIONS[1].Key
 		for _, s in SECTIONS do
 			if sectionY[s.Key] and sectionY[s.Key] <= y then now = s.Key end
@@ -1276,10 +1302,28 @@ function Shop.build(parent: Instance)
 		if okA and abs and abs.Y > 0 then scale = abs.Y / BODY.H end
 		local viewH = if okW and win and win.Y > 0 then win.Y / scale else BODY.H
 		local maxY = math.max(0, body.CanvasSize.Y.Offset - math.floor(viewH))
-		local target = Vector2.new(0, math.clamp(y + PAD, 0, maxY)) -- (the page's padding sits above its content)
-		if animate then Motion.tween(body, "scroll", 0.35, { CanvasPosition = target }, Enum.EasingStyle.Quad) else body.CanvasPosition = target end
+		local want = math.clamp(y + PAD, 0, maxY) -- (the page's padding sits above its content)
+		local function go(tween: boolean)
+			local target = Vector2.new(0, math.floor(want / (ratio or 1) + 0.5))
+			if tween then Motion.tween(body, "scroll", 0.35, { CanvasPosition = target }, Enum.EasingStyle.Quad) else body.CanvasPosition = target end
+		end
+		go(animate == true)
 		task.defer(highlight)
 		if animate then task.delay(0.4, highlight) end
+		-- the first time, check where it really landed and put it right (the window's scale is only known on screen)
+		if ratio == nil then
+			task.delay(if animate then 0.45 else 0.05, function()
+				local r = measureRatio()
+				if r and math.abs(r - 1) > 0.02 then
+					ratio = r
+					go(false)
+					highlight()
+					dancersInViewRef.fn()
+				elseif r then
+					ratio = r
+				end
+			end)
+		end
 	end
 	local slot = 0
 	for i, s in SECTIONS do
@@ -1363,7 +1407,7 @@ function Shop.build(parent: Instance)
 	-- The cards in view pop in one after another (Motion.stagger's rhythm; Reduced Motion: they just show).
 	local function popIn()
 		if Motion.reduced then return end
-		local top = body.CanvasPosition.Y - 40
+		local top = scrolledY() - 40
 		local k = 0
 		for _, e in popList do
 			local c = e.card
@@ -1379,13 +1423,14 @@ function Shop.build(parent: Instance)
 	-- the dance cards in view dance while the Shop is open (UI/DancePose.live: only a few cards at a time)
 	local shopOpen = false
 	local function dancersInView()
-		local top = body.CanvasPosition.Y
+		local top = scrolledY()
 		for _, e in dancers do
 			local c = e.card
 			local y = c.Position.Y.Offset
 			e.live.setOn(shopOpen and c.Visible and y + c.Size.Y.Offset > top and y < top + BODY.H)
 		end
 	end
+	dancersInViewRef.fn = dancersInView
 	body:GetPropertyChangedSignal("CanvasPosition"):Connect(dancersInView)
 	ModalManager.register("Shop", {
 		window = window,

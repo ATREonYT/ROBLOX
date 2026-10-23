@@ -86,6 +86,8 @@ end
 local function playDance(d)
 	if not owned(d.Id) then
 		Toast.show(howToGet(d))
+		-- and straight to where you get it (owner, Oct 23 20:21: "route it to the correct places")
+		if d.Coins then ModalManager.open("Shop", d.Id) elseif d.Pack then ModalManager.open("Shop", "Passes") end
 		return
 	end
 	local ok, why = DancePlayer.play(d.Id)
@@ -212,7 +214,7 @@ function DancesScreen.build(parent: Instance)
 
 	-- Your avatar doing the selected dance: a copy of your character in a ViewportFrame (a WorldModel inside, so
 	-- its Animator runs), seen from the front. Rebuilt only when the dance or your character changes.
-	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(180, 180, 200), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(-0.5, -1, -0.8), Visible = false, ZIndex = 3, Parent = artBox }, { Kit.corner(5) })
+	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(205, 205, 215), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(0.35, -0.75, 0.55), Visible = false, ZIndex = 3, Parent = artBox }, { Kit.corner(5) })
 	local shownDance, shownChar = nil, nil
 	-- A still copy of your character for a ViewportFrame: no scripts, name tags or effects, standing at the origin.
 	local function avatarCopy(character: Model): Model

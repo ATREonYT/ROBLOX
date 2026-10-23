@@ -60,6 +60,8 @@ shot power-bar-cooldown none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher",
 shot power-bar-banana none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner", POWERSTATE="Carrying", ABILITY="BananaPeel"}' # (his power pictures, Oct 20 20:34)
 shot power-bar-phone none 844 390 '{SCREEN="Hud", TOUCH=true, VIEW="844x390", POWERS="Catcher", POWERSTATE="Cooldown"}' # (a phone: round buttons bottom right, UI/TouchPad; GHOSTS=true draws Roblox's thumbstick and jump)
 shot power-bar-phone-runner none 844 390 '{SCREEN="Hud", TOUCH=true, VIEW="844x390", POWERS="Runner", POWERSTATE="Carrying"}'
+shot admin none 1536 900 '{SCREEN="Admin", SCALE=2}' # (Oct 23 20:21: LUCK FOR ALL SERVERS; shown with x5 running)
+shot hud-claim none 1536 694 '{SCREEN="Hud", SCALE=2, ROUND=17, CLAIM=true, SPINS=3}' # (Oct 23 20:21: "+N" on SPIN, QUESTS and MENU)
 shot hud-phone none 844 390 '{SCREEN="Hud", TOUCH=true, VIEW="844x390", ROUND=9, LUCK=2}' # (the lobby on a phone: DANCE bottom right, Oct 23 "make the dances available on mobile")
 shot hero-choice 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, HERO=true}'
 shot next-map 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, NEXTMAP=true, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'

@@ -19,6 +19,8 @@
 	  GivePass  <pass key>    what a game pass gives (saved: AdminPasses; ShopService counts it as owned)
 	  GiveCoins <number>      coins, 1 to 1,000,000
 	  GiveAura  <number>      Aura, 1 to 1,000,000
+	  AllServersLuck "<luck> <minutes>"  every server gets that luck for that long (HuzzServer/LuckService.everywhere;
+	                          "0 0" ends it); the third value is ignored
 	Every grant prints one "[HuzzAdmin] <admin> gave <who> ..." line in Output.
 ]]
 local Players = game:GetService("Players")
@@ -151,6 +153,11 @@ function DO.NextGirl(_player: Player, id: string): (boolean, string?)
 	return true, `{girl and girl.name or id} is the next game's girl.`
 end
 
+function DO.AllServersLuck(_player: Player, arg: string): (boolean, string?)
+	local luck, minutes = AdminRules.luckTime(arg)
+	return require(script.Parent.LuckService).everywhere(luck or 0, (minutes :: number) or 0)
+end
+
 -- One request: refused unless the server says this player is an admin and the request names a real knife or girl.
 function AdminService.handle(player: Player, verb: any, arg: any, who: any): (boolean, string?)
 	local now = os.clock()
@@ -159,7 +166,7 @@ function AdminService.handle(player: Player, verb: any, arg: any, who: any): (bo
 	local ok, why = AdminRules.check(AdminService.isAdmin(player), verb, arg, CoinShop.get, GirlService.byId, Products.get)
 	if not ok then return false, why end
 	local target, whyNot = player, nil
-	if verb ~= "NextGirl" then target, whyNot = AdminService.find(player, who) end
+	if verb ~= "NextGirl" and verb ~= "AllServersLuck" then target, whyNot = AdminService.find(player, who) end
 	if not target then return false, whyNot end
 	if not DataService.get(target) then return false, "Their save is still loading." end
 	local done, message = DO[verb](target, arg, player)

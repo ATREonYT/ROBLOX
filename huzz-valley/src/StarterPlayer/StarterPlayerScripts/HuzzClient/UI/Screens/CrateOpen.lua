@@ -365,7 +365,7 @@ function CrateOpen.build(parent: Instance)
 			sub.Text = ""
 		elseif result.new then
 			status.Text, status.TextColor3 = "NEW!", C.Accent
-			sub.Text = if item.Kind == "Dance" then "Find it in Dances" else "Wear it from Shop > Items"
+			sub.Text = if item.Kind == "Dance" then "Find it in Dances" else "Wear it from your Inventory"
 		else
 			status.Text, status.TextColor3 = `Duplicate: +{Format.commas(result.coins)} coins`, C.Text
 			sub.Text = "You already have this one"
@@ -393,7 +393,7 @@ function CrateOpen.build(parent: Instance)
 			sub.Text = ""
 		elseif result.new then
 			status.Text, status.TextColor3 = "NEW!", C.Accent
-			sub.Text = if item.Kind == "Dance" then "Find it in Dances" else "Wear it from Shop > Items"
+			sub.Text = if item.Kind == "Dance" then "Find it in Dances" else "Wear it from your Inventory"
 		else
 			status.Text, status.TextColor3 = `Duplicate: +{Format.commas(result.coins)} coins`, C.Text
 			sub.Text = "You already have this one"

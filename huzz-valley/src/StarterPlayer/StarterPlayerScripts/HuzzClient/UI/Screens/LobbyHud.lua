@@ -11,6 +11,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
 local SpinRules = require(Shared.SpinRules)
 local DailyRules = require(Shared.DailyRules)
+local Progression = require(Shared.Config.Progression)
 local Friends = require(Shared.Config.Friends)
 local Net = require(Shared.Net)
 local UI = script.Parent.Parent
@@ -123,7 +124,8 @@ function LobbyHud.build(parent: Instance)
 	spin.Instance.ZIndex = 2
 	local at = spin.Instance.Position
 	local rays = Effects.rays(right, UDim2.fromOffset(at.X.Offset + 33, at.Y.Offset + 28), 104, { color = C.Accent, transparency = 0.3, seconds = 10, z = 1, name = "SpinRays" })
-	Effects.spin(spinIcon, 6, function() return freeTag.Visible end)
+	local freeReady = false
+	Effects.spin(spinIcon, 6, function() return freeReady end)
 	Effects.breathe(freeTag)
 	-- QUESTS under SPIN (owner, Oct 19: "add easy quests as in this photo"), a green "!" while one can be claimed
 	local quests = squareButton(right, "Quests", "QuestsClipboard", 198, function() ModalManager.open("DailyQuests") end)
@@ -238,11 +240,31 @@ function LobbyHud.build(parent: Instance)
 		end)
 	end
 	if not Kit.reused(invite.Instance) then invite.Instance.Position = UDim2.fromOffset(100 - 25 - 33, invite.Instance.Position.Y.Offset) end
+	-- (a tag: "+N", as wide as its number)
+	local menuTag = Kit.text({ Name = "ClaimTag", Text = "", FontFace = Theme.Fonts.Button, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(26, 20), ZIndex = 3, Visible = false, Parent = menu.Instance })
+	Kit.attach(Kit.corner(10), menuTag)
+	local function count(tag: TextLabel, n: number)
+		tag.Visible = n > 0
+		if n <= 0 then return end
+		local text = "+" .. (if n > 99 then "99" else tostring(n))
+		if tag.Text ~= text then
+			tag.Text = text
+			tag.Size = UDim2.fromOffset(12 + 8 * #text, 20)
+		end
+	end
 	task.spawn(function()
 		while root.Parent do
-			freeTag.Visible = State.data.Loaded == true and SpinRules.available(State.data, workspace:GetServerTimeNow()) == 1
-			rays.Visible = freeTag.Visible
-			questTag.Visible = State.data.Loaded == true and DailyRules.ready(State.data.Daily, workspace:GetServerTimeNow()) > 0
+			-- "+N" on each button with things to claim (owner, Oct 23 20:21: "add +(amount of things you have to
+			-- claim)"): SPIN your spins (the free one and the ones you have), QUESTS the daily quests done, MENU the
+			-- level rewards and quests ready on its REWARDS page
+			local loaded = State.data.Loaded == true
+			local now = workspace:GetServerTimeNow()
+			local free, bought = SpinRules.available(State.data, now)
+			freeReady = loaded and free == 1
+			rays.Visible = freeReady
+			count(freeTag, if loaded then free + bought else 0)
+			count(questTag, if loaded then DailyRules.ready(State.data.Daily, now) else 0)
+			count(menuTag, if loaded then Progression.claimable(State.data) else 0)
 			task.wait(1)
 		end
 	end)

@@ -442,7 +442,7 @@ function DancePose.picture(parent: Instance, id: string, props: { [string]: any 
 		if dark then
 			v.Ambient, v.LightColor, v.ImageColor3 = Color3.new(0, 0, 0), Color3.new(0, 0, 0), Color3.fromHex("0B1426")
 		else
-			v.Ambient, v.LightColor, v.LightDirection = Color3.fromRGB(180, 180, 200), Color3.fromRGB(255, 250, 240), Vector3.new(-0.5, -1, -0.8)
+			v.Ambient, v.LightColor, v.LightDirection = Color3.fromRGB(205, 205, 215), Color3.fromRGB(255, 250, 240), Vector3.new(0.35, -0.75, 0.55)
 		end
 		for k, x in props do (v :: any)[k] = x end
 		v.Parent = parent
@@ -499,7 +499,7 @@ function DancePose.live(parent: Instance, id: string, props: { [string]: any }, 
 		vp.Name = "Dancer"
 		vp.BackgroundTransparency = 1
 		vp:SetAttribute("RuntimeOnly", true)
-		vp.Ambient, vp.LightColor, vp.LightDirection = Color3.fromRGB(180, 180, 200), Color3.fromRGB(255, 250, 240), Vector3.new(-0.5, -1, -0.8)
+		vp.Ambient, vp.LightColor, vp.LightDirection = Color3.fromRGB(205, 205, 215), Color3.fromRGB(255, 250, 240), Vector3.new(0.35, -0.75, 0.55)
 		for k, v in props do (vp :: any)[k] = v end
 		vp.Parent = parent
 		local live: Live = { vp = vp, on = true, apply = nil, anim = nil, t0 = os.clock() }

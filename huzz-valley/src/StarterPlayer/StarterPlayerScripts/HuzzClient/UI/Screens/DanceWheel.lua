@@ -261,7 +261,11 @@ function DanceWheel.build(parent: Instance)
 	local function placeDanceButton()
 		-- (any touch screen whose last input was a touch: some phones and tablets say they have a keyboard too, and
 		-- hid the button there; owner, Oct 23 16:52: "make a dance circle for mobile")
-		local touch = TouchPad.active() or (UserInputService.TouchEnabled and UserInputService:GetLastInputType() == Enum.UserInputType.Touch)
+		-- (owner, Oct 23 20:21: "add a dance button somewhere for mobile players": also any touch screen phone-sized,
+		-- as Studio's phone test shows, whatever its last input was)
+		local cam = workspace.CurrentCamera
+		local small = cam ~= nil and math.min(cam.ViewportSize.X, cam.ViewportSize.Y) < 600
+		local touch = TouchPad.active() or (UserInputService.TouchEnabled and (small or UserInputService:GetLastInputType() == Enum.UserInputType.Touch))
 		local role = player:GetAttribute("HuzzRole")
 		local bar = parent:FindFirstChild("PowerBar", true) -- (the round's tap buttons are showing: step aside for them)
 		local playing = role == "Runner" or role == "Catcher" or (bar ~= nil and bar:IsA("GuiObject") and bar.Visible)
@@ -274,6 +278,7 @@ function DanceWheel.build(parent: Instance)
 	pcall(function() UserInputService.LastInputTypeChanged:Connect(placeDanceButton) end)
 	local bar = parent:FindFirstChild("PowerBar", true)
 	if bar then bar:GetPropertyChangedSignal("Visible"):Connect(placeDanceButton) end
+	pcall(function() workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(placeDanceButton) end)
 	DanceWheel.placeButton = placeDanceButton -- (the offline preview calls it: its signals don't fire)
 	placeDanceButton()
 

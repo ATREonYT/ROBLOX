@@ -48,7 +48,21 @@ end
 --               pass can only be bought from Roblox; this gives its perks and knife)
 --   GiveCoins   a whole number from 1 to MAX: that many coins
 --   GiveAura    a whole number from 1 to MAX: that much Aura
-AdminRules.VERBS = { GiveKnife = true, AllKnives = true, SpawnGirl = true, NextGirl = true, GivePass = true, GiveCoins = true, GiveAura = true }
+--   AllServersLuck  "<luck> <minutes>": every server of the game gets that luck for that long (owner, Oct 23 20:21:
+--               "give admin panel a way to add all servers luck for a specific amount of time"); luck 2 to
+--               LUCK_MAX, minutes 1 to MINUTES_MAX; "0 0" ends it now
+AdminRules.VERBS = { GiveKnife = true, AllKnives = true, SpawnGirl = true, NextGirl = true, GivePass = true, GiveCoins = true, GiveAura = true, AllServersLuck = true }
+AdminRules.LUCK_MAX, AdminRules.MINUTES_MAX = 10, 1440
+
+-- "<luck> <minutes>" -> luck, minutes (0, 0 = end it), or nil and why.
+function AdminRules.luckTime(arg: any): (number?, number | string)
+	local l, m = string.match(type(arg) == "string" and arg or "", "^%s*[xX]?(%d+)%s+(%d+)%s*$")
+	local luck, minutes = tonumber(l), tonumber(m)
+	if luck == 0 and minutes == 0 then return 0, 0 end
+	if not luck or luck < 2 or luck > AdminRules.LUCK_MAX then return nil, `Type a luck from 2 to {AdminRules.LUCK_MAX}.` end
+	if not minutes or minutes < 1 or minutes > AdminRules.MINUTES_MAX then return nil, `Type the minutes, 1 to {AdminRules.MINUTES_MAX}.` end
+	return luck, minutes
+end
 AdminRules.MAX = 1000000
 
 -- Checks a request before anything happens. Returns ok, why. knives: Config/CoinShop.get; girls: id -> girl or nil.
@@ -60,6 +74,9 @@ function AdminRules.check(admin: boolean, verb: any, arg: any, getKnife: (string
 	if verb == "GiveCoins" or verb == "GiveAura" then
 		local n = tonumber(arg)
 		if not n or n ~= math.floor(n) or n < 1 or n > AdminRules.MAX then return false, "Type a whole number from 1 to 1,000,000." end
+	elseif verb == "AllServersLuck" then
+		local luck, why = AdminRules.luckTime(arg)
+		if not luck then return false, why :: string end
 	elseif verb == "AllKnives" then
 		if arg ~= "all" then return false, "Unknown command." end
 	elseif verb == "GivePass" then

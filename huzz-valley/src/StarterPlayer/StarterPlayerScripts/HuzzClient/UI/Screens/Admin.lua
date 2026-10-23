@@ -31,11 +31,12 @@ local new = Kit.new
 
 local Admin = {}
 
-local W, H = 701, 368
+local W, H = 701, 412
 local COL = { { X = 16, Title = "KNIVES & PASSES" }, { X = 357, Title = "GIRLS" } }
 local BAR_Y, BAR_H = 52, 36
-local TITLE_Y = 100
-local LIST_Y, LIST_W, LIST_H, ROW_H = 130, 328, 226, 34
+local BAR2_Y = 96 -- (the every-server luck row)
+local TITLE_Y = 144
+local LIST_Y, LIST_W, LIST_H, ROW_H = 174, 328, 226, 34
 
 local rarityColor: { [string]: Color3 } = {}
 local rarityOrder: { [string]: number } = {}
@@ -86,8 +87,8 @@ function Admin.build(parent: Instance)
 
 	-- the bar: who it's for, coins, aura, every knife
 	local bar = new("Frame", { Name = "Bar", Position = UDim2.fromOffset(16, BAR_Y), Size = UDim2.fromOffset(W - 32, BAR_H), BackgroundTransparency = 1, Parent = panel })
-	local function box(name: string, x: number, w: number, hint: string): TextBox
-		local f = new("Frame", { Name = name, Position = UDim2.fromOffset(x, 0), Size = UDim2.fromOffset(w, BAR_H), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = bar }, { Kit.corner(4), Kit.stroke(C.RowBorder, 1) })
+	local function box(name: string, x: number, w: number, hint: string, row: Instance?): TextBox
+		local f = new("Frame", { Name = name, Position = UDim2.fromOffset(x, 0), Size = UDim2.fromOffset(w, BAR_H), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = row or bar }, { Kit.corner(4), Kit.stroke(C.RowBorder, 1) })
 		f:SetAttribute("ShopStyleKeep", true)
 		return new("TextBox", { Name = "Box", Text = "", PlaceholderText = hint, ClearTextOnFocus = false, BackgroundTransparency = 1, FontFace = Theme.Fonts.Name, TextSize = 14, TextColor3 = C.Text, PlaceholderColor3 = C.TextDim or C.Text, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = false, ClipsDescendants = true, Position = UDim2.fromOffset(8, 0), Size = UDim2.fromOffset(w - 16, BAR_H), Parent = f })
 	end
@@ -96,14 +97,29 @@ function Admin.build(parent: Instance)
 	local aura = box("Aura", 360, 96, "Aura")
 	local remote = Net.get("Admin") :: RemoteEvent
 	local function send(verb: string, key: string) remote:FireServer(verb, key, who.Text) end
-	local function barButton(name: string, text: string, x: number, w: number, fn: () -> ())
-		local b = Kit.button({ Name = name, Text = text, TextSize = 12, Style = "Action", Position = UDim2.fromOffset(x, 4), Size = UDim2.fromOffset(w, BAR_H - 8), Corner = 3, Parent = bar })
+	local function barButton(name: string, text: string, x: number, w: number, fn: () -> (), row: Instance?)
+		local b = Kit.button({ Name = name, Text = text, TextSize = 12, Style = "Action", Position = UDim2.fromOffset(x, 4), Size = UDim2.fromOffset(w, BAR_H - 8), Corner = 3, Parent = row or bar })
 		b.Instance:SetAttribute("ShopStyleKeep", true)
 		b.onClick(fn)
 	end
 	barButton("GiveCoins", "GIVE", 302, 50, function() send("GiveCoins", coins.Text) end)
 	barButton("GiveAura", "GIVE", 460, 50, function() send("GiveAura", aura.Text) end)
 	barButton("AllKnives", "ALL KNIVES", 532, W - 32 - 532, function() send("AllKnives", "all") end)
+	-- Every server's luck for a while (owner, Oct 23 20:21; HuzzServer/LuckService.everywhere): luck, minutes, GIVE
+	local bar2 = new("Frame", { Name = "AllServers", Position = UDim2.fromOffset(16, BAR2_Y), Size = UDim2.fromOffset(W - 32, BAR_H), BackgroundTransparency = 1, Parent = panel })
+	local status = Kit.text({ Name = "Label", Text = "LUCK FOR ALL SERVERS", FontFace = Theme.Fonts.Button, TextSize = 14, TextWrapped = false, Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(190, BAR_H), Parent = bar2 })
+	local luckBox = box("Luck", 202, 96, "Luck x2-10", bar2)
+	local minutesBox = box("Minutes", 306, 96, "Minutes", bar2)
+	barButton("AllServersLuck", "GIVE ALL SERVERS", 410, 150, function() send("AllServersLuck", `{luckBox.Text} {minutesBox.Text}`) end, bar2)
+	barButton("EndAllServersLuck", "END IT", 568, W - 32 - 568, function() send("AllServersLuck", "0 0") end, bar2)
+	task.spawn(function()
+		while window.Holder.Parent do
+			local g = tonumber(workspace:GetAttribute("HuzzGlobalLuck")) or 1
+			local left = (tonumber(workspace:GetAttribute("HuzzGlobalLuckEnds")) or 0) - os.time()
+			status.Text = if g > 1 and left > 0 then `ALL SERVERS: x{g}, {math.ceil(left / 60)} MIN LEFT` else "LUCK FOR ALL SERVERS"
+			task.wait(1)
+		end
+	end)
 	remote.OnClientEvent:Connect(function(ok, message)
 		Toast.show(tostring(message or (if ok then "Done." else "That didn't work.")))
 	end)

@@ -155,6 +155,23 @@ function Progression.level(xp: number): (number, number, number)
 	return level, xp % Progression.XPPerLevel, Progression.XPPerLevel
 end
 
+-- How many things on the Rewards and Quests pages are ready to claim now (owner, Oct 23 20:21: "add +(amount of
+-- things you have to claim)"): level rewards reached and not claimed, and finished quests in an open chapter.
+function Progression.claimable(data: any): number
+	local n = 0
+	local level = Progression.level(data.XP or 0)
+	local claimed = data.Claimed or {}
+	for _, r in Progression.Rewards do
+		if not r.Unavailable and level >= r.Level and not claimed[tostring(r.Level)] then n += 1 end
+	end
+	local done, stats = data.QuestsClaimed or {}, data.Stats or {}
+	local open = Progression.currentChapter(done)
+	for _, q in Progression.Quests do
+		if not done[q.Id] and (q.Chapter or 1) <= open and (stats[q.Stat] or 0) >= q.Target then n += 1 end
+	end
+	return n
+end
+
 function Progression.reward(level: number)
 	for _, r in Progression.Rewards do if r.Level == level then return r end end
 	return nil

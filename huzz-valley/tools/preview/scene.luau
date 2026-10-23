@@ -72,6 +72,11 @@ if cfg.SPINS then
 		d.Boosts = { Coins = os.time() + (tonumber(cfg.BOOST) or 0), Aura = 0 }
 	end)
 end
+-- CLAIM=true: level 4 with nothing claimed (the MENU's "+N", Oct 23)
+if cfg.CLAIM then
+	local XPPer = require(game.ReplicatedStorage.Shared.Config.Progression).XPPerLevel
+	DataService.update(player, function(d) d.XP = XPPer * 3 end)
+end
 if cfg.FRIEND then player:SetAttribute("HuzzFriendBoost", true) end -- (a friend in the server: "+10% COINS")
 if cfg.PASSES then
 	local owned = {}
@@ -282,6 +287,11 @@ if cfg.RESULTS then
 		},
 	})
 	workspace:SetAttribute("NextRoundAt", workspace:GetServerTimeNow() + 12)
+end
+if cfg.SCREEN == "Admin" then -- (the panel opens only for an admin: the server sets this)
+	game:GetService("Players").LocalPlayer:SetAttribute("HuzzAdmin", true)
+	workspace:SetAttribute("HuzzGlobalLuck", 5)
+	workspace:SetAttribute("HuzzGlobalLuckEnds", os.time() + 1800)
 end
 if cfg.SCREEN and cfg.SCREEN ~= "Hud" then
 	assert(MM.open(cfg.SCREEN, cfg.TAB), "no screen " .. tostring(cfg.SCREEN))
