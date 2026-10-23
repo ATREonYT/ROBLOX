@@ -168,3 +168,26 @@ Untouchable, and the Halloween three (Bone Groove, Skeleton Shake, Zombie Walk k
 - **Loudness:** Monstercat songs are usually much louder than APM ones; nothing evens them out yet.
 - **`Start` is 0 for every song** (where the song starts when you dance): set it once someone has listened.
 - Tempos with strength under 0.4 are hints only (see "How the fit was judged").
+
+## His own songs, uploaded (Oct 23)
+He uploaded the whole files (not the cut loops); `Gameplay/Music` plays each from its first beat and loops whole bars
+(`Config/Dances` Full, First, Loop). Matched from his Creator Hub list: balenci and Karmel by name, the three German
+hardtekks in the order he named them (a guess), the six "2026-10-22 ..." ones by their file names in name order.
+`tools/studio/song_check.lua` (Command Bar) measures each ID and says SWAP if a guess is wrong.
+
+| Song (key) | His name | ID | Whole file | First beat | Loop |
+|---|---|---|---|---|---|
+| Balenci (BalenciSong) | balenci | 75404670819866 | 17.86 s | 0.054 | 16.13 |
+| Caramelldansen | Karmel | 115666023509551 | 12.46 s | 0.257 | 12.01 |
+| Hardtekk 1 | GermanHARDtek (guess) | 116215611645438 | 21.53 s | 0.151 | 12.72 |
+| Hardtekk 2 | germanht2 (guess) | 125450809865884 | 36.12 s | 0.293 | 9.61 |
+| Hardtekk 3 | HeartbeatTek (guess) | 77960131592091 | 19.37 s | 0.110 | 10.68 |
+| Rush 180 B | 2026-10-22 17-44-03 | 137739495261914 | 9.62 s | 0.200 | 5.34 |
+| Rush 180 A | 2026-10-22 17-44-43 | 81712841399159 | 6.07 s | 0.284 | 5.34 |
+| Bounce 98 | 2026-10-22 17-45-12 | 78590691290289 | 10.15 s | 0.065 | 9.75 |
+| Groove 107 | 2026-10-22 17-47-00 | 99829674865036 | 9.07 s | 0.469 | 4.48 |
+| Hype 125 | 2026-10-22 17-48-03 | 109350486502699 | 8.04 s | 0.456 | 3.82 |
+| Tick 138 | 2026-10-22 17-48-42 | 83001530640950 | 11.74 s | 0.322 | 6.95 |
+
+Not used yet (he hasn't said what they're for): Blueshirtguy 140718661321125, ChillGuy 111764296034785 (a warning
+sign in his list: moderation?), idk 89771962003411, Kwekblekoplaugh 70756236258771.

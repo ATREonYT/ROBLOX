@@ -187,6 +187,21 @@ function Music.dance(id: string)
 	local start = track.Start or 0
 	pcall(function() s.TimePosition = start end)
 	s:Play()
+	-- (his whole file uploaded, not the cut loop, Oct 23: once it's loaded and is the whole file's length, play from
+	-- its first beat and loop whole bars of it, First .. First + Loop, so the dance stays on the beat)
+	if track.Full and track.First and track.Loop then
+		task.spawn(function()
+			if not loaded(s) or danceSound ~= s then return end
+			local ok, length = pcall(function() return s.TimeLength end)
+			if ok and type(length) == "number" and math.abs(length - track.Full) < 0.35 then
+				pcall(function()
+					s.LoopRegion = NumberRange.new(track.First, track.First + track.Loop)
+					s.PlaybackRegionsEnabled = true
+					s.TimePosition = track.First
+				end)
+			end
+		end)
+	end
 	if start > 0 then -- (a song that hasn't downloaded yet can drop its start point: set it again once it has)
 		task.spawn(function()
 			if loaded(s) and danceSound == s and s.TimePosition < start then s.TimePosition = start end

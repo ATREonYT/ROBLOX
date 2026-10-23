@@ -19,7 +19,7 @@
 --   them logically fit the dances"; no Fortnite audio: it's Epic's, not ours to upload). Each dance's style, tempo
 --   and both picks with their reasons: docs/dance-music.md. Older research: docs/sound-picks.md.
 export type Dance = { Id: string, Name: string, AnimationId: string, Art: string?, Starter: boolean?, Pack: boolean?, Coins: number?, Color: string, Blurb: string, Order: number, Music: string?, Backup: string? }
-export type Track = { Id: string, Name: string, By: string, Style: string, Source: string, Start: number? }
+export type Track = { Id: string, Name: string, By: string, Style: string, Source: string, Start: number?, Full: number?, First: number?, Loop: number? }
 
 local Dances = {}
 
@@ -77,22 +77,28 @@ Dances.Tracks = {
 	-- (Start = 0): project files owner-audio-oct22/loops/<key>.ogg, never the public repo (tools/sfx/song_loops.py).
 	-- Each dance is paired with the song whose beat fits its loop, and the loop is stretched to whole beats of it
 	-- (tools/anim/extract_anims.luau ON_BEAT; the made dances are built on it). Tempos measured off the files.
+	-- Uploaded Oct 23 (his Creator Hub list, 03:20): balenci and Karmel by name; the three German hardtekks in the
+	-- order he named them (GermanHARDtek, germanht2, HeartbeatTek = 1, 2, 3: a guess); the six he kept the file names
+	-- of ("2026-10-22 17-44-03" ...) by those names. He uploaded the whole files, not the cut loops, so each song also
+	-- carries Full (the whole file's seconds), First (its first beat) and Loop (whole bars): Gameplay/Music plays a
+	-- whole file from First and loops First .. First + Loop, so the dance stays on the beat; a cut loop (TimeLength
+	-- about Loop) just loops. tools/studio/song_check.lua says in Studio which song each ID really is.
 	-- The hardtekk three (16:00), one per hardtekk dance (16 beats of it):
-	Hardtekk1 = { Id = "", Name = "Hardtekk 1", By = "the owner's file (2026-10-22 18-08-42)", Style = "hardtekk, 150.9 BPM", Source = "owner-audio-oct22/loops/Hardtekk1.ogg", Start = 0 },
-	Hardtekk2 = { Id = "", Name = "Hardtekk 2", By = "the owner's file (2026-10-22 18-09-22)", Style = "hardtekk, 199.75 BPM", Source = "owner-audio-oct22/loops/Hardtekk2.ogg", Start = 0 },
-	Hardtekk3 = { Id = "", Name = "Hardtekk 3", By = "the owner's file (2026-10-22 18-10-52)", Style = "hardtekk, 179.75 BPM", Source = "owner-audio-oct22/loops/Hardtekk3.ogg", Start = 0 },
+	Hardtekk1 = { Id = "rbxassetid://116215611645438", Name = "Hardtekk 1", By = "the owner's file (2026-10-22 18-08-42)", Style = "hardtekk, 150.9 BPM", Source = "owner-audio-oct22/loops/Hardtekk1.ogg", Start = 0, Full = 21.528, First = 0.151, Loop = 12.724 },
+	Hardtekk2 = { Id = "rbxassetid://125450809865884", Name = "Hardtekk 2", By = "the owner's file (2026-10-22 18-09-22)", Style = "hardtekk, 199.75 BPM", Source = "owner-audio-oct22/loops/Hardtekk2.ogg", Start = 0, Full = 36.12, First = 0.293, Loop = 9.612 },
+	Hardtekk3 = { Id = "rbxassetid://77960131592091", Name = "Hardtekk 3", By = "the owner's file (2026-10-22 18-10-52)", Style = "hardtekk, 179.75 BPM", Source = "owner-audio-oct22/loops/Hardtekk3.ogg", Start = 0, Full = 19.368, First = 0.11, Loop = 10.682 },
 	-- The 16:17 batch ("match up the songs to the dances, ... the balenci balenci balenci song match to the dance ...
 	-- called balenci, and then the karamel dancen one to the caramel dance"). The Balenci song is the one playing under
 	-- his Balenci video (their sound matches); Caramelldansen goes on Sweet Dancin, the hands-up bounce that is the
 	-- Caramelldansen dance (two of its beats a loop). The other six by tempo.
-	BalenciSong = { Id = "", Name = "Balenci", By = "the owner's file (2026-10-22 17-47-31)", Style = "the Balenci song, 119 BPM", Source = "owner-audio-oct22/loops/Balenci.ogg", Start = 0 },
-	Caramelldansen = { Id = "", Name = "Caramelldansen", By = "the owner's file (2026-10-22 17-46-05)", Style = "Caramelldansen, 159.9 BPM", Source = "owner-audio-oct22/loops/Caramelldansen.ogg", Start = 0 },
-	Bounce98 = { Id = "", Name = "Bounce 98", By = "the owner's file (2026-10-22 17-45-12)", Style = "98.45 BPM", Source = "owner-audio-oct22/loops/Bounce98.ogg", Start = 0 },
-	Groove107 = { Id = "", Name = "Groove 107", By = "the owner's file (2026-10-22 17-47-00)", Style = "107.15 BPM", Source = "owner-audio-oct22/loops/Groove107.ogg", Start = 0 },
-	Hype125 = { Id = "", Name = "Hype 125", By = "the owner's file (2026-10-22 17-48-03)", Style = "125.65 BPM", Source = "owner-audio-oct22/loops/Hype125.ogg", Start = 0 },
-	Tick138 = { Id = "", Name = "Tick 138", By = "the owner's file (2026-10-22 17-48-42)", Style = "138.05 BPM", Source = "owner-audio-oct22/loops/Tick138.ogg", Start = 0 },
-	Rush180a = { Id = "", Name = "Rush 180 A", By = "the owner's file (2026-10-22 17-44-43)", Style = "179.75 BPM", Source = "owner-audio-oct22/loops/Rush180a.ogg", Start = 0 },
-	Rush180b = { Id = "", Name = "Rush 180 B", By = "the owner's file (2026-10-22 17-44-03)", Style = "179.75 BPM", Source = "owner-audio-oct22/loops/Rush180b.ogg", Start = 0 },
+	BalenciSong = { Id = "rbxassetid://75404670819866", Name = "Balenci", By = "the owner's file (2026-10-22 17-47-31)", Style = "the Balenci song, 119 BPM", Source = "owner-audio-oct22/loops/Balenci.ogg", Start = 0, Full = 17.856, First = 0.054, Loop = 16.134 },
+	Caramelldansen = { Id = "rbxassetid://115666023509551", Name = "Caramelldansen", By = "the owner's file (2026-10-22 17-46-05)", Style = "Caramelldansen, 159.9 BPM", Source = "owner-audio-oct22/loops/Caramelldansen.ogg", Start = 0, Full = 12.456, First = 0.257, Loop = 12.008 },
+	Bounce98 = { Id = "rbxassetid://78590691290289", Name = "Bounce 98", By = "the owner's file (2026-10-22 17-45-12)", Style = "98.45 BPM", Source = "owner-audio-oct22/loops/Bounce98.ogg", Start = 0, Full = 10.152, First = 0.065, Loop = 9.751 },
+	Groove107 = { Id = "rbxassetid://99829674865036", Name = "Groove 107", By = "the owner's file (2026-10-22 17-47-00)", Style = "107.15 BPM", Source = "owner-audio-oct22/loops/Groove107.ogg", Start = 0, Full = 9.072, First = 0.469, Loop = 4.48 },
+	Hype125 = { Id = "rbxassetid://109350486502699", Name = "Hype 125", By = "the owner's file (2026-10-22 17-48-03)", Style = "125.65 BPM", Source = "owner-audio-oct22/loops/Hype125.ogg", Start = 0, Full = 8.04, First = 0.456, Loop = 3.82 },
+	Tick138 = { Id = "rbxassetid://83001530640950", Name = "Tick 138", By = "the owner's file (2026-10-22 17-48-42)", Style = "138.05 BPM", Source = "owner-audio-oct22/loops/Tick138.ogg", Start = 0, Full = 11.736, First = 0.322, Loop = 6.954 },
+	Rush180a = { Id = "rbxassetid://81712841399159", Name = "Rush 180 A", By = "the owner's file (2026-10-22 17-44-43)", Style = "179.75 BPM", Source = "owner-audio-oct22/loops/Rush180a.ogg", Start = 0, Full = 6.072, First = 0.284, Loop = 5.341 },
+	Rush180b = { Id = "rbxassetid://137739495261914", Name = "Rush 180 B", By = "the owner's file (2026-10-22 17-44-03)", Style = "179.75 BPM", Source = "owner-audio-oct22/loops/Rush180b.ogg", Start = 0, Full = 9.624, First = 0.2, Loop = 5.341 },
 	DoItYourSelf = { Id = "rbxassetid://1840412669", Name = "Do It Your Self", By = "APM Music (KPM Main Series, Quirky And Curious)", Style = "quirky jazz, 2:16",
 		Source = "https://create.roblox.com/store/asset/1840412669" },
 	ShakeSomethin = { Id = "rbxassetid://1841134586", Name = "Shake Somethin'", By = "APM Music (Drew Milligan, HIP HOP BEDS)", Style = "hip-hop beat, 2:40",

@@ -67,7 +67,9 @@ end
 for key, t in Dances.Tracks do
 	check("track " .. key .. " Id is \"\" or rbxassetid://<number>", goodId(t.Id))
 	check("track " .. key .. " is used by a dance", used[key] == true)
-	if t.Id ~= "" then
+	if t.Id ~= "" and t.Full then -- (his own upload, Oct 23: no store page; listed in docs/dance-music.md by ID)
+		check("track " .. key .. " (his upload) is in docs/dance-music.md", string.find(danceDoc, string.match(t.Id, "%d+"), 1, true) ~= nil)
+	elseif t.Id ~= "" then
 		local n = string.match(t.Id, "%d+")
 		check("track " .. key .. " Source is its store page", string.find(t.Source, "create.roblox.com/store/asset/" .. n, 1, true) ~= nil)
 		check("track " .. key .. " is in docs/sound-picks.md or docs/dance-music.md", string.find(doc, n, 1, true) ~= nil or string.find(danceDoc, n, 1, true) ~= nil)
@@ -186,6 +188,26 @@ check("the old synthesized Secret sounds are gone", not fs.isFile(ROOT .. "asset
 check("the Studio check script exists", fs.isFile(ROOT .. "tools/studio/check-sound-picks.lua"))
 check("the Studio dance-song helper exists and reports on [HuzzSfx] lines", fs.isFile(ROOT .. "tools/studio/try-dance-songs.lua")
 	and string.find(fs.readFile(ROOT .. "tools/studio/try-dance-songs.lua"), "[HuzzSfx] SEND", 1, true) ~= nil)
+
+-- His uploaded songs (Oct 23): each has its ID, a loop of whole bars inside the whole file, and lengths no other song
+-- shares (tools/studio/song_check.lua tells them apart by length; the two Rush cut loops are the same, their files not)
+do
+	local fulls, n = {}, 0
+	for key, t in Dances.Tracks do
+		if t.Full then
+			n += 1
+			check(key .. " has its uploaded ID", string.match(t.Id, "^rbxassetid://%d+$") ~= nil)
+			check(key .. " loops inside its whole file", t.First >= 0 and t.Loop > 1 and t.First + t.Loop <= t.Full + 0.01)
+			for other, f in fulls do
+				check(key .. " and " .. other .. " have different whole-file lengths", math.abs(f - t.Full) > 0.35)
+			end
+			fulls[key] = t.Full
+		end
+	end
+	check(string.format("all 11 of his songs (%d)", n), n == 11)
+	check("the Studio song check exists and reports on [HuzzSongs] lines", fs.isFile(ROOT .. "tools/studio/song_check.lua")
+		and string.find(fs.readFile(ROOT .. "tools/studio/song_check.lua"), "[HuzzSongs] SWAP", 1, true) ~= nil)
+end
 
 print(`SoundPicks: {passed} ok, {failed} failed`)
 if failed > 0 then error("SoundPicks spec failed") end
