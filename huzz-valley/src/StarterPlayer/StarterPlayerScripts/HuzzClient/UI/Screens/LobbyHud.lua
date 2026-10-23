@@ -152,7 +152,7 @@ function LobbyHud.build(parent: Instance)
 	if luckOld and luckOld:IsA("GuiObject") then luckOld.Visible = false end
 	local LUCK_W, LUCK_H = 150, 60
 	local luck = new("TextButton", {
-		Name = "LuckBuy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromOffset(76, 2), Size = UDim2.fromOffset(LUCK_W, LUCK_H),
+		Name = "LuckBuy", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.fromOffset(76, 30), Size = UDim2.fromOffset(LUCK_W, LUCK_H),
 		BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AutoButtonColor = false, Text = "", ZIndex = 2, Parent = right,
 	}, { Kit.corner(10), Kit.stroke(ShopStyle.INK, 3) })
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("8BE6FF")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("4FC8F2")), ColorSequenceKeypoint.new(1, Color3.fromHex("2AA2DB")) }), Parent = luck })
@@ -311,15 +311,21 @@ function LobbyHud.build(parent: Instance)
 	-- Always there in the lobby (1x too, so everyone knows luck exists); a tap opens the LUCK window. Out of the way
 	-- while you play (the round's message line is there then); NEXT ROUND sits under it.
 	local INK_GREEN = Color3.fromHex("08200F")
-	local luckSign = new("TextButton", { Name = "ServerLuck", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 0), Size = UDim2.fromOffset(250, 76), BackgroundTransparency = 1, AutoButtonColor = false, Text = "", Parent = top })
 	-- (owner, Oct 23 19:37: "make the server luck sign on the top be smaller so it doesnt overlap with the other
-	-- things": drawn at SIGN_SCALE of its 250 x 76, from its top centre; NEXT ROUND and SKIP moved up to match)
+	-- things": drawn at SIGN_SCALE of its 250 x 76, from its top centre; NEXT ROUND and SKIP moved up to match.
+	-- The scale sits on the sign's own frame inside the button: on the button itself it fought the press effect's
+	-- UIScale (Roblox uses only one), so in Studio the sign stayed full size over NEXT ROUND, Oct 23 20:04.)
 	local SIGN_SCALE = 0.72
-	local luckPop = new("UIScale", { Name = "Pop", Scale = SIGN_SCALE, Parent = luckSign })
+	local luckSign = new("TextButton", { Name = "ServerLuck", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(130, 0), Size = UDim2.fromOffset(180, 55), BackgroundTransparency = 1, AutoButtonColor = false, Text = "", Parent = top })
+	luckSign.Size = UDim2.fromOffset(180, 55) -- (250 x 76 at SIGN_SCALE; saved places have the bigger button)
+	local oldPop = luckSign:FindFirstChild("Pop") -- (the scale's old place, in saved places)
+	if oldPop then oldPop:Destroy() end
+	local signBody = new("Frame", { Name = "Sign", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.fromOffset(250, 76), BackgroundTransparency = 1, Parent = luckSign })
+	local luckPop = new("UIScale", { Name = "SignScale", Scale = SIGN_SCALE, Parent = signBody })
 	luckPop.Scale = SIGN_SCALE
 	-- the title row: a clover, SERVER, LUCK, a clover, centred by a list (Roblox measures the words itself)
 	local TITLE = 24
-	local titleRow = new("Frame", { Name = "Title", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 0), Size = UDim2.fromOffset(250, 30), BackgroundTransparency = 1, ZIndex = 3, Parent = luckSign }, { Kit.list(Enum.FillDirection.Horizontal, 5, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	local titleRow = new("Frame", { Name = "Title", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 0), Size = UDim2.fromOffset(250, 30), BackgroundTransparency = 1, ZIndex = 3, Parent = signBody }, { Kit.list(Enum.FillDirection.Horizontal, 5, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
 	local function word(name: string, text: string, order: number, top: Color3, foot: Color3)
 		local l = ShopStyle.chunky({ Name = name, Text = text, TextSize = TITLE, TextColor3 = Color3.new(1, 1, 1), AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 30), LayoutOrder = order, ZIndex = 3, Parent = titleRow }, 2.5)
 		new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(top, foot), Parent = l })
@@ -334,10 +340,10 @@ function LobbyHud.build(parent: Instance)
 	word("Luck", "LUCK", 3, Color3.fromHex("A6FFB9"), Color3.fromHex("1FC45A"))
 	clover("CloverRight", 4, 0.8)
 	-- the card behind it all, as in his picture: dark green, a black rim, the title sitting over its top edge
-	local card = new("Frame", { Name = "Card", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 16), Size = UDim2.fromOffset(214, 58), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1, Parent = luckSign }, { Kit.corner(12), Kit.stroke(INK_GREEN, 3) })
+	local card = new("Frame", { Name = "Card", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 16), Size = UDim2.fromOffset(214, 58), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 1, Parent = signBody }, { Kit.corner(12), Kit.stroke(INK_GREEN, 3) })
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("234D36"), Color3.fromHex("0F2619")), Parent = card })
 	-- the plate: a dark rim, then dark green with a thin bright green rim inside
-	local plate = new("Frame", { Name = "Plate", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 30), Size = UDim2.fromOffset(180, 38), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 2, Parent = luckSign }, { Kit.corner(10), Kit.stroke(INK_GREEN, 2.5) })
+	local plate = new("Frame", { Name = "Plate", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(125, 30), Size = UDim2.fromOffset(180, 38), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 2, Parent = signBody }, { Kit.corner(10), Kit.stroke(INK_GREEN, 2.5) })
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("1F5A3A"), Color3.fromHex("0E2E1C")), Parent = plate })
 	new("Frame", { Name = "InnerRim", Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, -8, 1, -8), BackgroundTransparency = 1, ZIndex = 2, Parent = plate }, { Kit.corner(7), Kit.stroke(Color3.fromHex("3FE184"), 1.5, 0.35) })
 	Effects.shine(plate, { every = 3.5, corner = 10, strength = 0.25, z = 5 })
@@ -345,7 +351,14 @@ function LobbyHud.build(parent: Instance)
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("D8FFE0"), Color3.fromHex("2BD873")), Parent = number })
 	Effects.breathe(number, { scale = 1.06, seconds = 1.1 })
 	for _, sp in { { "SparkLeft", 24, 0 }, { "SparkRight", 156, 0.55 } } do
-		local l = Kit.text({ Name = sp[1], Text = "\u{2726}", TextSize = 16, TextColor3 = Color3.fromHex("C8FFD6"), TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(sp[2], 20), Size = UDim2.fromOffset(20, 20), ZIndex = 4, Parent = plate })
+		-- (two crossed bars fading to points: the "\u{2726}" glyph showed as a box in Roblox's font, Oct 23 20:04)
+		local old = plate:FindFirstChild(sp[1])
+		if old and old:IsA("TextLabel") then old:Destroy() end
+		local l = new("Frame", { Name = sp[1], AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(sp[2], 19), Size = UDim2.fromOffset(14, 14), BackgroundTransparency = 1, ZIndex = 4, Parent = plate })
+		for k, rot in { 0, 90 } do
+			local bar = new("Frame", { Name = "Bar" .. k, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(3, 14), Rotation = rot, BackgroundColor3 = Color3.fromHex("C8FFD6"), BorderSizePixel = 0, ZIndex = 4, Parent = l }, { Kit.corner(1) })
+			new("UIGradient", { Name = "Points", Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 1) }), Parent = bar })
+		end
 		task.delay(sp[3], function() Effects.breathe(l, { scale = 1.35, seconds = 0.9 }) end)
 	end
 	luckSign.Activated:Connect(function() ModalManager.open("Luck") end)

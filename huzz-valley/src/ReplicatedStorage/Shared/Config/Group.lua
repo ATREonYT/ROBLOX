@@ -4,9 +4,9 @@
 return {
 	-- YOUR group's number (owner to fill in: the digits in its page link, roblox.com/communities/<number>/...).
 	-- 0 = not set yet: the window says the group is coming soon and gives nothing, and it never pops up live.
-	-- Owner, Oct 23 17:48: the group is Emergent Gaming ("the game that made the game"). Its number is still needed:
-	-- open the group on Roblox and copy the digits from its link into Id.
-	Id = 0,
+	-- Owner, Oct 23 17:48: the group is Emergent Gaming ("the game that made the game"); its link from him, Oct 23
+	-- 20:05: roblox.com/communities/836119652/Emergent-Gaming.
+	Id = 836119652,
 	Name = "Emergent Gaming", -- its name, shown in the window (empty = "our group")
 	Spins = 5, -- the reward: spins on the wheel (the same kind of spins the shop sells)
 	PopupAfter = 20, -- seconds in the lobby before the window opens by itself, once per visit, until it's claimed

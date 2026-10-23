@@ -12,7 +12,8 @@ end
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local Group = require(RS.Shared.Config.Group)
-check("no group number made up (Config/Group.Id is 0 until the owner sets it)", Group.Id == 0)
+check("the owner's group number (Emergent Gaming, his link Oct 23 20:05)", Group.Id == 836119652)
+Group.Id = 0 -- (first without a group, as before he sent it)
 check("the reward is 5 spins", Group.Spins == 5)
 Group.PopupAfter = 0.4 -- (quick, for the check)
 
