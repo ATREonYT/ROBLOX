@@ -145,9 +145,8 @@ function DanceWheel.build(parent: Instance)
 				if oldNote then oldNote:Destroy() end
 				if d then
 					local circle = s.circle
-					local function note()
-						Kit.icon("DancesNote", { Name = "Note", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(SLOT / 2, SLOT / 2 - 10), Size = UDim2.fromOffset(46, 46), ZIndex = 33, Parent = circle })
-					end
+					-- (no stand-in note any more, owner Oct 23 17:32 "remove all of the placeholders": your avatar or nothing)
+					local function note() end
 					if character then
 						DancePose.picture(circle, d.Id, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(SLOT / 2, SLOT / 2 - 8), Size = UDim2.fromOffset(84, 84), ZIndex = 33 }, false, note)
 					else

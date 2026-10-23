@@ -1,10 +1,12 @@
 -- The LUCK window (owner, Oct 23 15:22: "add a x2 luck, x4 luck, x8 luck dev products ... make a button to clearly
 -- show the luck boost, and make it clearly seen"). Our kit's window: the server's luck now, big and green, and yours;
--- one tile per Luck product (Config/Products.Luck, his nine x2 to x10: add rows there and they show here, three to a
--- line) with its Robux price (Roblox's live price once it loads); then the girl odds at this luck, every rarity, so a
--- kid always sees what luck changes before paying. Tiles at or under the server's luck say ACTIVE / grey out.
--- Opened by the LUCK button (Screens/LobbyHud). The server decides (ActionService "PromptLuck" ->
--- HuzzServer/LuckService): Id 0 = "coming soon", never a purchase; only a boost above the server's luck opens one.
+-- the luck ladder (owner, Oct 23 17:32: "make it so that you have to buy x2 luck then x3 luck, etc. so they can't just
+-- buy x10 luck ... make a bigger button to buy the luck"): a row of steps, x2 to x10 (Config/Products.Luck: add rows
+-- there and they show here), lit up to the server's luck, and ONE big BUY button for the next step only, with its
+-- Robux price (Roblox's live price once it loads), so each buy costs more than the last. Then the girl odds at this
+-- luck, every rarity, so a kid always sees what luck changes before paying.
+-- Opened by the LUCK button and the SERVER LUCK sign (Screens/LobbyHud). The server decides (ActionService
+-- "PromptLuck" -> HuzzServer/LuckService): Id 0 = "coming soon", never a purchase; only the next step opens one.
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -28,7 +30,7 @@ local MAX = (Round.Luck and Round.Luck.Max) or 10
 local LuckScreen = {}
 
 local W = 460
-local COLS, TILE_H, GAP = 3, 78, 8
+local STEP_ROW, BUY_ROW = 36, 92 -- (the ladder row; the big BUY button and the line under it)
 local ODDS_ROW = 22
 
 local function line(props: { [string]: any }, stroke: number?): TextLabel
@@ -59,33 +61,37 @@ end
 
 function LuckScreen.build(parent: Instance)
 	local player = Players.LocalPlayer
-	local items = Products.Luck
-	local tileRows = math.ceil(#items / COLS)
-	local rowsH = tileRows * TILE_H + (tileRows - 1) * GAP
+	local items = table.clone(Products.Luck)
+	table.sort(items, function(a, b) return (a.Amount or 1) < (b.Amount or 1) end)
 	local oddsRows = math.ceil(#Round.Rarities / 2)
-	local H = 47 + 104 + rowsH + 14 + 26 + oddsRows * ODDS_ROW + 18
+	local H = 47 + 104 + STEP_ROW + BUY_ROW + 26 + oddsRows * ODDS_ROW + 18
 	local window = Kit.window({ Name = "Luck", Title = "LUCK", Icon = "AuraStar", Width = W, Height = H, TitleX = 56, TitleWidth = 70, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel = window.Panel
 	local y = 47 + 10
 	local big = line({ Name = "ServerLuck", Text = "SERVER LUCK x1", FontFace = F.Heading, TextSize = 30, TextColor3 = GREEN, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, y), Size = UDim2.fromOffset(W - 32, 36), ZIndex = 3, Parent = panel }, 2.5)
 	local yours = line({ Name = "Yours", Text = "", FontFace = F.Name, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, y + 38), Size = UDim2.fromOffset(W - 32, 20), ZIndex = 3, Parent = panel })
-	local about = line({ Name = "About", Text = "Rarer girls come up more for everyone in this server. Your boost lasts until you leave. The highest boost counts.", FontFace = F.Body, TextSize = 13, TextColor3 = C.NoteText, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(24, y + 60), Size = UDim2.fromOffset(W - 48, 34), ZIndex = 3, Parent = panel }, 1)
+	line({ Name = "About", Text = "Rarer girls come up more for everyone here. Luck goes up one step at a time, until x" .. MAX .. ". Your boost lasts until you leave.", FontFace = F.Body, TextSize = 13, TextColor3 = C.NoteText, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(24, y + 60), Size = UDim2.fromOffset(W - 48, 34), ZIndex = 3, Parent = panel }, 1)
 	y += 104
 
-	-- one tile per product, three to a line: the luck big and green, BUY with the Robux price under it
-	local rows = {}
-	local tileW = (W - 40 - (COLS - 1) * GAP) // COLS
+	-- the ladder: one step per product, lit up to the server's luck; the next one has a gold rim
+	local stepW, stepGap = 40, 6
+	local rowW = #items * stepW + (#items - 1) * stepGap
+	local steps = {}
 	for i, p in items do
-		local col, rowN = (i - 1) % COLS, (i - 1) // COLS
-		local tile = new("Frame", { Name = "Row" .. p.Key, Position = UDim2.fromOffset(20 + col * (tileW + GAP), y + rowN * (TILE_H + GAP)), Size = UDim2.fromOffset(tileW, TILE_H), BackgroundColor3 = C.Row, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 3, Parent = panel }, { Kit.corner(8) })
-		line({ Name = "Name", Text = LuckScreen.word(p.Amount or 1) .. " LUCK", FontFace = F.Heading, TextSize = 22, TextColor3 = GREEN, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(tileW - 8, 28), ZIndex = 4, Parent = tile }, 2)
-		local buy = Kit.button({ Name = "Buy", Text = "", Style = "Action", FontFace = F.Button, TextSize = 17, Corner = 7, RimThickness = 2, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -7), Size = UDim2.fromOffset(tileW - 16, 34), ZIndex = 5, Parent = tile })
-		rows[p.Key] = { p = p, buy = buy }
+		local step = new("Frame", { Name = "Step" .. p.Key, Position = UDim2.fromOffset((W - rowW) // 2 + (i - 1) * (stepW + stepGap), y), Size = UDim2.fromOffset(stepW, 26), BackgroundColor3 = C.Row, BorderSizePixel = 0, ZIndex = 3, Parent = panel }, { Kit.corner(6) })
+		local rim = Kit.attach(Kit.stroke(C.TitleStroke, 2), step) :: UIStroke
+		local word = line({ Name = "Word", Text = LuckScreen.word(p.Amount or 1), FontFace = F.Number, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = step }, 1.2)
+		steps[i] = { p = p, frame = step, rim = rim, word = word }
 	end
-	y += rowsH + 14
+	y += STEP_ROW
+
+	-- the one big BUY button: the next step and its price
+	local buy = Kit.button({ Name = "Buy", Text = "", Style = "Action", FontFace = F.Button, TextSize = 26, Corner = 10, RimThickness = 3, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(W // 2, y), Size = UDim2.fromOffset(340, 64), ZIndex = 5, Parent = panel })
+	local after = line({ Name = "After", Text = "", FontFace = F.Body, TextSize = 13, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, y + 66), Size = UDim2.fromOffset(W - 32, 18), ZIndex = 3, Parent = panel }, 1)
+	y += BUY_ROW
 
 	-- the girl odds at this luck
-	local oddsTitle = line({ Name = "OddsTitle", Text = "GIRL ODDS NOW", FontFace = F.Heading, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, y), Size = UDim2.fromOffset(W - 32, 22), ZIndex = 3, Parent = panel }, 1.5)
+	line({ Name = "OddsTitle", Text = "GIRL ODDS NOW", FontFace = F.Heading, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, y), Size = UDim2.fromOffset(W - 32, 22), ZIndex = 3, Parent = panel }, 1.5)
 	y += 26
 	local cells = {}
 	local colW = (W - 48) // 2
@@ -96,8 +102,9 @@ function LuckScreen.build(parent: Instance)
 		cells[r.Name] = { name = name, chance = chance }
 	end
 
-	local pending: { [string]: boolean } = {}
+	local pending = false
 	local price: { [string]: number } = {} -- Roblox's live prices (the config's until they load)
+	local function priceOf(p) return price[p.Key] or p.Price end
 	local shown = 1
 	local function refresh()
 		local server = tonumber(Workspace:GetAttribute("HuzzServerLuck")) or 1
@@ -106,11 +113,25 @@ function LuckScreen.build(parent: Instance)
 		if server > shown then Motion.pop(big) end
 		shown = server
 		yours.Text = if mine > 1 then `Your boost: {LuckScreen.word(mine)}` else "You have no boost yet."
-		for _, e in rows do
-			local p = e.p
-			local k = p.Amount or 1
-			e.buy.setText(if pending[p.Key] then "..." elseif k == server then "ACTIVE" elseif k < server then "-" else `{Format.RobuxMark} {price[p.Key] or p.Price}`)
-			e.buy.setStyle(if k == server then "Selected" elseif k < server then "Disabled" else "Action")
+		local nextOne = Products.nextLuck(server)
+		for _, st in steps do
+			local k = st.p.Amount or 1
+			local lit, isNext = k <= server, nextOne ~= nil and st.p.Key == nextOne.Key
+			st.frame.BackgroundColor3 = if lit then GREEN else C.Row
+			st.frame.BackgroundTransparency = if lit or isNext then 0 else 0.35
+			st.rim.Color = if isNext then Color3.fromHex("FFD23F") else C.TitleStroke
+			st.rim.Thickness = if isNext then 3 else 2
+			st.word.TextTransparency = if lit or isNext then 0 else 0.45
+		end
+		if not nextOne then
+			buy.setText(`MAX LUCK {LuckScreen.word(server)}`)
+			buy.setStyle("Selected")
+			after.Text = "The server's luck is at the top."
+		else
+			buy.setText(if pending then "..." else `BUY {LuckScreen.word(nextOne.Amount or 1)} LUCK   {Format.RobuxMark} {priceOf(nextOne)}`)
+			buy.setStyle("Action")
+			local later = Products.nextLuck(nextOne.Amount)
+			after.Text = if later then `Then {LuckScreen.word(later.Amount or 1)} for {Format.RobuxMark} {priceOf(later)}` else "This is the last step."
 		end
 		for _, o in LuckScreen.odds(server) do
 			local c = cells[o.name]
@@ -118,39 +139,37 @@ function LuckScreen.build(parent: Instance)
 		end
 	end
 
-	for _, e in rows do
-		e.buy.onClick(function()
-			local p = e.p
-			if pending[p.Key] then return end
-			local server = tonumber(Workspace:GetAttribute("HuzzServerLuck")) or 1
-			if (p.Amount or 1) <= server then
-				Toast.show(if server >= MAX then `Server luck is already at the top ({LuckScreen.word(MAX)}).` else `Server luck is already {LuckScreen.word(server)}. Pick a bigger boost.`)
-				return
+	buy.onClick(function()
+		if pending then return end
+		local server = tonumber(Workspace:GetAttribute("HuzzServerLuck")) or 1
+		local p = Products.nextLuck(server)
+		if not p then
+			Toast.show(`Server luck is already at the top ({LuckScreen.word(MAX)}).`)
+			return
+		end
+		local status = Products.status(p)
+		if status ~= "Ready" then
+			Toast.show(`{p.Name} for Robux is coming soon.`)
+			if status == "NoId" then warn(`[Shop] {p.Key} has no Developer Product ID in Shared/Config/Products.lua`) end
+			return
+		end
+		pending = true
+		refresh()
+		task.spawn(function()
+			local ok, why = State.action("PromptLuck", p.Key) -- (the server checks again and opens Roblox's prompt)
+			if not ok then
+				pending = false
+				Toast.show(why or "The purchase couldn't open. Try again.")
+			else
+				task.delay(90, function() if pending then pending = false; refresh() end end)
 			end
-			local status = Products.status(p)
-			if status ~= "Ready" then
-				Toast.show(`{p.Name} for Robux is coming soon.`)
-				if status == "NoId" then warn(`[Shop] {p.Key} has no Developer Product ID in Shared/Config/Products.lua`) end
-				return
-			end
-			pending[p.Key] = true
 			refresh()
-			task.spawn(function()
-				local ok, why = State.action("PromptLuck", p.Key) -- (the server checks again and opens Roblox's prompt)
-				if not ok then
-					pending[p.Key] = nil
-					Toast.show(why or "The purchase couldn't open. Try again.")
-				else
-					task.delay(90, function() if pending[p.Key] then pending[p.Key] = nil; refresh() end end)
-				end
-				refresh()
-			end)
 		end)
-	end
+	end)
 	pcall(function()
 		game:GetService("MarketplaceService").PromptProductPurchaseFinished:Connect(function(userId)
 			if userId ~= player.UserId then return end
-			for k in pending do pending[k] = nil end
+			pending = false
 			refresh()
 		end)
 	end)
@@ -170,7 +189,7 @@ function LuckScreen.build(parent: Instance)
 	ModalManager.register("Luck", {
 		window = window,
 		onOpen = refresh,
-		firstSelect = function() local first = items[1] and rows[items[1].Key]; return first and first.buy.Instance end,
+		firstSelect = function() return buy.Instance end,
 	})
 	refresh()
 	return window.Holder

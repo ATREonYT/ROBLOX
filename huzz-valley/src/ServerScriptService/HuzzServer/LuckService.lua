@@ -9,8 +9,11 @@
 	    girl odds past Common (Shared/GirlRoll.withLuck, used by GirlService).
 	  - Shown to everyone: Workspace attribute "HuzzServerLuck" (the server's) and each player's "HuzzLuck" (their own),
 	    read by Screens/LobbyHud (the LUCK button and the SERVER LUCK sign) and Screens/Luck.
-	  - Robux buttons ask here (ActionService "PromptLuck"), never prompt from the client: only a Luck product with its
-	    real ID, and only one above the server's luck now (a lower one would give nothing).
+	  - A ladder (owner, Oct 23 17:32: "make it so that you have to buy x2 luck then x3 luck, etc. so they can't just
+	    buy x10 luck"): only the next step above the server's luck can be bought (Products.nextLuck), so each buy
+	    costs more than the last.
+	  - Robux buttons ask here (ActionService "PromptLuck"), never prompt from the client: only that next step, with
+	    its real ID.
 	Granted only in ShopService's ProcessReceipt, once per PurchaseId.
 ]]
 local Players = game:GetService("Players")
@@ -59,7 +62,10 @@ function LuckService.prompt(player: Player, key: any): (boolean, string?)
 	if not product or product.Kind ~= "Luck" then return false, "That isn't sold here." end
 	if Products.status(product) ~= "Ready" then return false, `{product.Name} is coming soon.` end
 	if LuckService.server() >= MAX then return false, `Server luck is already at the top (x{MAX}).` end
-	if (product.Amount or 1) <= LuckService.server() then return false, `Server luck is already x{LuckService.server()}. Pick a bigger boost.` end
+	local nextOne = Products.nextLuck(LuckService.server())
+	if not nextOne or nextOne.Key ~= product.Key then
+		return false, if nextOne then `Buy the {nextOne.Name} first.` else `Server luck is already at the top (x{MAX}).`
+	end
 	if not pcall(function() MarketplaceService:PromptProductPurchase(player, product.Id) end) then
 		return false, "The purchase couldn't open. Try again."
 	end

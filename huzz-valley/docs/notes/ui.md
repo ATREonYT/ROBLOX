@@ -365,3 +365,5 @@ equip it"; "make it your character dancing the dance"; "we can remove the outfit
 - SKIP button under NEXT ROUND while the vote is open. Shots `hud-skip`, `hud-skip-phone`.
 - The DANCE button shows on any touch screen whose last input was touch (some phones report a keyboard). Shot
   `dance-wheel-phone` shows the circle fits an 844x390 phone.
+- Oct 23 17:32: no placeholders. Kit.art / Kit.setArt blank every "DanceStill<id>" (the drawn dance figures): only your
+  avatar (UI/DancePose) shows, else the card's backdrop and name. The wheel's note fallback is gone too.

@@ -316,3 +316,6 @@ stand-in blocks for the girls). Not seen in Studio yet: how it sits next to her 
   and the wait ends. Workspace HuzzSkipVotes / HuzzSkipNeed, player HuzzSkip; the button is under NEXT ROUND (LobbyHud).
 - Lasso: Range 40, Speed 130, Pull 10, WindUp 0.18. Smoke Bomb: WindUp 0.18 and a new burst (PowerEffects).
 - Worn trails sit on the body's middle (CosmeticsService: attachments at z 0, +-0.8).
+- Oct 23 17:32: the luck ladder. Only the next step above the server's luck can be bought (Products.nextLuck,
+  checked in LuckService.prompt), so x10 can't be bought first and each buy costs more. Screens/Luck: a row of steps
+  and one big BUY button for the next step.

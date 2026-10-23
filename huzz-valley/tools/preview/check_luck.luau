@@ -45,6 +45,21 @@ local before, shown0 = commonShare(), shownCommon()
 print(`[luck] x1: Common shown {string.format("%.1f", shown0)}%, rolled {string.format("%.1f", before)}%`)
 check("with no luck most girls are Common", shown0 > 70 and math.abs(before - shown0) < 5)
 
+-- the ladder (Oct 23 17:32: "you have to buy x2 luck then x3 luck, etc. so they can't just buy x10 luck")
+local okJump, whyJump = LuckService.prompt(me, "Luck10")
+check(`x10 can't be bought first ({whyJump})`, okJump == false and tostring(whyJump):find("x2") ~= nil)
+check("the next step at x1 is x2", Products.nextLuck(1).Key == "Luck2")
+local _, why2 = LuckService.prompt(me, "Luck2")
+check(`x2 is allowed at x1 ({why2})`, why2 == nil or not tostring(why2):find("first"))
+ShopService._processReceipt({ PlayerId = me.UserId, ProductId = Products.get("Luck2").Id, PurchaseId = "luck-0" })
+check(`after x2 the next is x3 ({Products.nextLuck(LuckService.server()).Key})`, Products.nextLuck(LuckService.server()).Key == "Luck3")
+local okBack = LuckService.prompt(me, "Luck2")
+check("x2 again is refused", okBack == false)
+check("each step costs more than the one before", (function()
+	local last = 0
+	for k = 1, 9 do local n = Products.nextLuck(k); if n.Price <= last then return false end; last = n.Price end
+	return Products.nextLuck(10) == nil
+end)())
 local p10 = Products.get("Luck10")
 local d = ShopService._processReceipt({ PlayerId = me.UserId, ProductId = p10.Id, PurchaseId = "luck-1" })
 check(`the x10 receipt is granted ({d})`, d == Enum.ProductPurchaseDecision.PurchaseGranted)

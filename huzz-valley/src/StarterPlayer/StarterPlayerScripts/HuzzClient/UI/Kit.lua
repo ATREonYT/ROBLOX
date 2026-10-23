@@ -314,13 +314,27 @@ function Kit.icon(name: string, props: { [string]: any }?): ImageLabel
 	return img
 end
 
+-- The drawn dance figures ("DanceStill<id>") are placeholders, never shown (owner, Oct 23 17:32: "remove all of the
+-- placeholders for all of the ui things such as dances"): only your own avatar dancing it shows (UI/DancePose);
+-- until it can, the card's backdrop and the dance's name. The label stays (callers hide or swap it), empty.
+local function placeholder(name: string): boolean
+	return string.sub(name, 1, 10) == "DanceStill"
+end
+local function blank(img: ImageLabel)
+	img.Image = ""
+	img.ImageTransparency = 1
+	img:SetAttribute("Placeholder", true)
+	ImageLoader.clearStandIn(img)
+end
+
 -- A product picture from Config/Assets.Art (cropped from the kit's pages); fills its frame like the reference.
 function Kit.art(name: string, props: { [string]: any }?): ImageLabel
 	local p: { [string]: any } = { BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Image = Assets.art(name) }
 	for k, v in props or {} do p[k] = v end
 	local img = new("ImageLabel", p)
-	if img.Image == "" and p.Image ~= "" then img.Image = p.Image end
 	img:SetAttribute("Art", name)
+	if placeholder(name) then blank(img); return img end
+	if img.Image == "" and p.Image ~= "" then img.Image = p.Image end
 	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
 	ImageLoader.apply(img, "Art", name, img.Image)
 	return img
@@ -330,6 +344,8 @@ end
 function Kit.setArt(img: ImageLabel, name: string)
 	if img:GetAttribute("Art") == name then return end
 	img:SetAttribute("Art", name)
+	if placeholder(name) then blank(img); return end
+	if img:GetAttribute("Placeholder") then img.ImageTransparency = 0; img:SetAttribute("Placeholder", nil) end
 	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
 	img.Image = Assets.art(name)
 	ImageLoader.clearStandIn(img) -- (the old picture's stand-in glyph)

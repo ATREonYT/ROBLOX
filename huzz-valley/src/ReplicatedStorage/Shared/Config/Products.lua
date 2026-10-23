@@ -128,8 +128,8 @@ Products.Crates = {
 -- Server luck boosts (owner, Oct 23 15:22: "add a x2 luck, x4 luck, x8 luck dev products, and make it go up in price";
 -- 16:06 he sent these nine, x2 to x10, with their IDs and prices). Amount = the luck it sets. The server's luck is the
 -- highest boost of anyone here, never above Config/Round.Luck.Max, and a boost lasts while its buyer is in the server
--- (HuzzServer/LuckService, Screens/Luck). Only boosts above the server's luck now can be bought, so a buy always
--- raises it. Price = shown until Roblox's live price loads (the live price always wins).
+-- (HuzzServer/LuckService, Screens/Luck). A ladder: only the next step above the server's luck can be bought (x2,
+-- then x3 ...: owner, Oct 23 17:32), so a buy always raises it and each costs more. Price = shown until Roblox's live price loads (the live price always wins).
 Products.Luck = {
 	{ Key = "Luck2", Kind = "Luck", Name = "x2 Server Luck", Blurb = "x2 server luck\nwhile you're here.", Id = 3721632432, Price = 3, Amount = 2, OnSale = true, Icon = "", Art = "" }, -- (price not sent: the live price from Roblox shows instead)
 	{ Key = "Luck3", Kind = "Luck", Name = "x3 Server Luck", Blurb = "x3 server luck\nwhile you're here.", Id = 3721632574, Price = 5, Amount = 3, OnSale = true, Icon = "", Art = "" },
@@ -146,6 +146,16 @@ Products.Tabs = { "Passes", "Cosmetics", "Items", "Crates", "Coins", "Aura" } --
 
 local byKey: { [string]: Product } = {}
 local byId: { [string]: Product } = {}
+-- The luck ladder's next step above `luck` (the server's luck now): the Luck product with the smallest Amount above
+-- it, or nil at the top. Only this one can be bought (HuzzServer/LuckService, Screens/Luck).
+function Products.nextLuck(luck: number?)
+	local best = nil
+	for _, p in Products.Luck do
+		if (p.Amount or 1) > (tonumber(luck) or 1) and (best == nil or (p.Amount or 1) < (best.Amount or 1)) then best = p end
+	end
+	return best
+end
+
 for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura, Products.Spins, Products.Halloween, Products.Crates, Products.Luck } do
 	for _, p in list do
 		assert(not byKey[p.Key], "duplicate product key " .. p.Key)
