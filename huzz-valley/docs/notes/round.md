@@ -359,3 +359,7 @@ recording (his runner carrying her with a Speed Boost, snapping sideways and for
   lobby sends none and draws everyone where Roblox has them.
 - PlaceService Grace 0.4 -> 1.2 s before the server moves a body itself (it fought slow screens).
 Not proven offline: only a busy live server shows whether it's enough. Ask for F9 (Developer Console) Server/Client logs.
+- Oct 24 07:06 ("make it so that the runenrs cant go back into the safe zone if they left"): `keepSafe` remembers who
+  left this round's start zone (Running / HeroRun) and pushes them back out if they step in again.
+- Oct 24 07:03 ("make the help action actuall work"): Rescue Range 5.5 -> 8 studs across the ground, to the nearer of
+  the feet spot and the body's middle (a helper by the head was out of reach); Time 1.2 -> 1 s.

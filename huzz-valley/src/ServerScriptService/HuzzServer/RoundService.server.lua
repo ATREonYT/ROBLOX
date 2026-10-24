@@ -544,7 +544,11 @@ local function step(dt)
 				for id, st in match.status do
 					local root = st == "Active" and not frozen[id] and rootOf(id)
 					-- (from inside the start zone they couldn't be stabbed: no risk-free rescues)
-					if root and (root.Position - at).Magnitude <= Config.Rescue.Range and not (start and MapService.inZone(start, root.Position)) then
+					-- (owner, Oct 24 07:03: "make the help action actuall work": measured across the ground, to the
+					-- nearer of where the feet lie and the body's middle; a helper by the head was out of reach of the feet)
+					local function flat(v: Vector3): number return Vector3.new(v.X, 0, v.Z).Magnitude end
+					local near = root and math.min(flat(root.Position - at), if body then flat(root.Position - body.Position) else math.huge)
+					if root and near <= Config.Rescue.Range and not (start and MapService.inZone(start, root.Position)) then
 						helper = id
 						break
 					end
@@ -570,6 +574,7 @@ end
 -- push) goes back in. Every frame of the round, not only while running (a Hero safe after the solo run waits
 -- through the countdown too). Their own screen moves them (PlaceService), once: no new move while one is on its way
 -- (the server's copy of a moving body is a moment old, so a move every frame fought the player's own movement).
+local leftStart = { ids = {} } -- runners out of this round's start zone ({ round, match, ids = { [id] = true } })
 local function keepSafe()
 	-- catchers who got past a zone's wall (a lunge into a corner, lag) go back out onto the field
 	for id, role in match.roles do
@@ -589,6 +594,28 @@ local function keepSafe()
 			local out = MapService.pushOut(zone, bot)
 			if out and (out - bot).Magnitude > 2 then
 				PracticeBot.nudge(CFrame.new(out))
+			end
+		end
+	end
+	-- Runners who have left the start zone can't go back into it (owner, Oct 24 07:06: "make it so that the runenrs cant
+	-- go back into the safe zone if they left"): out on the field once, pushed back out like a catcher.
+	local start = zones[MapService.startFor(match.round)]
+	local stage = State:GetAttribute("Stage")
+	if start and (stage == "Running" or stage == "HeroRun") then
+		if leftStart.round ~= match.round or leftStart.match ~= match then
+			leftStart = { round = match.round, match = match, ids = {} }
+		end
+		for id, status in match.status do
+			local root = status == "Active" and not frozen[id] and rootOf(id)
+			if root then
+				if not MapService.inZone(start, root.Position) then
+					leftStart.ids[id] = true
+				elseif leftStart.ids[id] then
+					local out = MapService.pushOut(start, root.Position)
+					if out and (out - root.Position).Magnitude > 2 and not PlaceService.pending(byId[id]) then
+						PlaceService.place(byId[id], CFrame.new(out) * root.CFrame.Rotation, "no going back to the start")
+					end
+				end
 			end
 		end
 	end

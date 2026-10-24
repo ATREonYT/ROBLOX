@@ -44,7 +44,8 @@ return {
 	-- Rescue (as in Huss Valley): a runner still out on the field stands within Range studs of a downed
 	-- runner for Time seconds to get them back up.
 	-- Rescued runners can't be stabbed for Shield seconds (no camping the downed).
-	Rescue = { Range = 5.5, Time = 1.2, Shield = 2 },
+	-- (Range 5.5 and Time 1.2 until Oct 24: owner, 07:03 "make the help action actuall work")
+	Rescue = { Range = 8, Time = 1, Shield = 2 },
 	-- The game's girl, big, floating over the middle of the map for the whole game (owner's call).
 	-- Studio testing only (ignored in the live game): every roll picks a girl of this rarity, e.g. "Secret" to see
 	-- the Secret girl's arrival cutscene every game. "" = the normal fair roll.
