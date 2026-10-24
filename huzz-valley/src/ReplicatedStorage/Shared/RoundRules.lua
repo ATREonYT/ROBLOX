@@ -174,6 +174,7 @@ function RoundRules.startRound(s)
 	s.round += 1
 	s.status = {}
 	s.picked, s.choice, s.hero = nil, nil, nil
+	s.firstIn = nil -- (the first runner across this round)
 
 	local runners = idsWithRole(s, "Runner")
 	if #runners == 0 then
@@ -259,6 +260,8 @@ function RoundRules.reachSafe(s, id)
 	end
 	s.status[id] = "Safe"
 	table.insert(events, { type = "Safe", id = id })
+	local first = s.firstIn == nil
+	s.firstIn = s.firstIn or id
 	if s.hero == id then
 		s.hero = nil
 		s.lastHero = id
@@ -266,13 +269,26 @@ function RoundRules.reachSafe(s, id)
 		moveGirl(s, id, "Hero", events) -- the reward: she comes down to the Hero
 	elseif s.holder ~= nil and s.roles[s.holder] == "Catcher" then
 		moveGirl(s, id, "Reclaimed", events) -- the next runner across takes her back from the catcher
-	elseif s.holder == nil and s.hero == nil and (s.choice ~= nil or s.picked == nil) then -- (picked == nil: the picked runner left before choosing, release check Oct 22)
-		-- No Hero run won her (Chicken, or the Hero was caught or ran out of time): the first runner across takes
-		-- her (owner, Oct 18: "if you go chicken, still the first person to reach the safe zone gets the girl"),
-		-- the one who chose Chicken too (owner, Oct 19: "make them get her").
+	elseif first and s.hero == nil and (s.choice ~= nil or s.picked == nil) then -- (picked == nil: the picked runner left before choosing, release check Oct 22)
+		-- No Hero run won her this round (Chicken, or the Hero was caught or ran out of time): the first runner across
+		-- takes her (owner, Oct 18: "if you go chicken, still the first person to reach the safe zone gets the girl"),
+		-- the one who chose Chicken too (owner, Oct 19: "make them get her"), and off the runner who carries her from
+		-- an earlier round too (owner, Oct 24 06:54: "make it so that if someone else goes into the safe zone first,
+		-- they get the girl, right now it doesnt work": she stayed with her carrier).
 		moveGirl(s, id, "First", events)
 	end
 	return events
+end
+
+-- An admin ends the game now (owner, Oct 24 06:57: "make a admin command to end the game"): nobody wins, nobody is
+-- paid for a win, nobody gets the girl.
+function RoundRules.stop(s)
+	if s.over then
+		return {}
+	end
+	s.over = true
+	s.team, s.winner, s.reason = nil, nil, "Stopped"
+	return { { type = "Stopped" } }
 end
 
 -- catcherId nil = caught by the clock or by dying.

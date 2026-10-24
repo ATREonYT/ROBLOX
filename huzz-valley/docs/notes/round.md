@@ -117,6 +117,10 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 - **First across wins her when no Hero did:** after Chicken, a caught Hero or a timed-out Hero, while she still
   floats, the first runner across takes her (`RoundRules.reachSafe`, GirlMoved "First", "X got there first and won
   <girl> over!"), the one who chose Chicken included.
+- **First across each round takes her, off her carrier too** (owner Oct 24 06:54: "make it so that if someone else goes
+  into the safe zone first, they get the girl, right now it doesnt work"): `s.firstIn` per round; a runner who carried
+  her from an earlier round loses her to whoever crosses first (GirlMoved "First" from that runner). Her carrier
+  crossing first keeps her. A Hero who makes the solo run still wins her.
 - **A catcher who catches her carrier keeps her only until the next runner gets across** (owner Oct 19, rule
   "Reclaimed"): she walks behind him (on foot, as before: `CarryService.follow`), the line says "X caught her carrier!
   Next runner across takes <girl> back!" (only while someone can still get across: on the catch that ends the game it

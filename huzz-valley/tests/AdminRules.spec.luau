@@ -64,5 +64,9 @@ check("every knife in the shop can be given", (function()
 	return true
 end)())
 
+-- END GAME (owner, Oct 24 06:57: "make a admin command to end the game")
+check("an admin can end the game", Admin.check(true, "EndGame", "now", CoinShop.get, girl) == true)
+check("a stranger can't end the game", not Admin.check(false, "EndGame", "now", CoinShop.get, girl))
+check("end game takes only 'now'", not Admin.check(true, "EndGame", "later", CoinShop.get, girl))
 print(`AdminRules: {passed} ok, {failed} failed`)
 if failed > 0 then error("AdminRules spec failed") end

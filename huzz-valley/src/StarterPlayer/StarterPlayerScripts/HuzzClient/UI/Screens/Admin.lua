@@ -120,6 +120,22 @@ function Admin.build(parent: Instance)
 			task.wait(1)
 		end
 	end)
+	-- END GAME in the header (owner, Oct 24 06:57: "make a admin command to end the game"): ends the game on now for
+	-- everyone (HuzzServer/AdminService "EndGame"; no winner, nobody gets the girl). Tap twice: the first tap asks.
+	local endBtn = Kit.button({ Name = "EndGame", Text = "END GAME", TextSize = 13, Style = "Close", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -64, 0.5, 0), Size = UDim2.fromOffset(120, 30), Corner = 4, Parent = window.Header })
+	endBtn.Instance:SetAttribute("ShopStyleKeep", true)
+	local askedAt = 0
+	endBtn.onClick(function()
+		if os.clock() - askedAt > 3 then
+			askedAt = os.clock()
+			endBtn.setText("TAP AGAIN")
+			task.delay(3, function() if os.clock() - askedAt >= 3 then endBtn.setText("END GAME") end end)
+			return
+		end
+		askedAt = 0
+		endBtn.setText("END GAME")
+		remote:FireServer("EndGame", "now", "")
+	end)
 	remote.OnClientEvent:Connect(function(ok, message)
 		Toast.show(tostring(message or (if ok then "Done." else "That didn't work.")))
 	end)

@@ -1183,7 +1183,29 @@ local function runGame()
 	while not match.over do
 		runRound()
 	end
+	if match.reason == "Stopped" then
+		-- (an admin ended it, HuzzServer/AdminService "EndGame": no winner, no results; everyone back to the lobby)
+		PracticeBot.remove()
+		if match.holder then moveGirlTo(match.holder, nil, "Dropped") end
+		table.clear(frozen)
+		syncAll()
+		task.wait(2)
+		return
+	end
 	finishGame()
+end
+
+-- The admin panel's END GAME (HuzzServer/AdminService, through ServerStorage.HuzzEndGame): ends the game on now.
+do
+	local endGame = Instance.new("BindableFunction")
+	endGame.Name = "HuzzEndGame"
+	endGame.OnInvoke = function(adminName)
+		if not match or match.over then return false, "No game is on right now." end
+		Rules.stop(match)
+		announce(`{adminName or "An admin"} ended the game`, RED)
+		return true, "The game is ended. Everyone goes back to the lobby."
+	end
+	endGame.Parent = game:GetService("ServerStorage")
 end
 
 local function cleanUp()

@@ -21,6 +21,7 @@
 	  GiveAura  <number>      Aura, 1 to 1,000,000
 	  AllServersLuck "<luck> <minutes>"  every server gets that luck for that long (HuzzServer/LuckService.everywhere;
 	                          "0 0" ends it); the third value is ignored
+	  EndGame   now           ends the game on in this server (RoundService's ServerStorage.HuzzEndGame): no winner
 	Every grant prints one "[HuzzAdmin] <admin> gave <who> ..." line in Output.
 ]]
 local Players = game:GetService("Players")
@@ -153,6 +154,12 @@ function DO.NextGirl(_player: Player, id: string): (boolean, string?)
 	return true, `{girl and girl.name or id} is the next game's girl.`
 end
 
+function DO.EndGame(_player: Player, _arg: string, admin: Player?): (boolean, string?)
+	local endGame = game:GetService("ServerStorage"):FindFirstChild("HuzzEndGame")
+	if not (endGame and endGame:IsA("BindableFunction")) then return false, "The game loop isn't running." end
+	return endGame:Invoke(admin and admin.DisplayName or nil)
+end
+
 function DO.AllServersLuck(_player: Player, arg: string): (boolean, string?)
 	local luck, minutes = AdminRules.luckTime(arg)
 	return require(script.Parent.LuckService).everywhere(luck or 0, (minutes :: number) or 0)
@@ -166,7 +173,7 @@ function AdminService.handle(player: Player, verb: any, arg: any, who: any): (bo
 	local ok, why = AdminRules.check(AdminService.isAdmin(player), verb, arg, CoinShop.get, GirlService.byId, Products.get)
 	if not ok then return false, why end
 	local target, whyNot = player, nil
-	if verb ~= "NextGirl" and verb ~= "AllServersLuck" then target, whyNot = AdminService.find(player, who) end
+	if verb ~= "NextGirl" and verb ~= "AllServersLuck" and verb ~= "EndGame" then target, whyNot = AdminService.find(player, who) end
 	if not target then return false, whyNot end
 	if not DataService.get(target) then return false, "Their save is still loading." end
 	local done, message = DO[verb](target, arg, player)
