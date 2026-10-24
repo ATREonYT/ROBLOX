@@ -33,6 +33,8 @@
 --   Motion         UnreliableRemoteEvent  client -> server: (t, p, v, g, push) a stamp of your own body (Gameplay/
 --                                  MotionSend); server -> client: (character, t, p, v, g, push) someone's stamp, checked
 --                                  and passed on (HuzzServer/MotionRelay), drawn by Gameplay/OthersAhead (Shared/MotionStamps)
+--   Away           RemoteEvent     client -> server: (on) no input on this screen for Config/Afk.IdleAfter s (true), or
+--                                  back (false) (Gameplay/AfkRejoin; HuzzServer/AfkService makes them AFK)
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -62,6 +64,7 @@ local SPEC = {
 	Place = "RemoteEvent",
 	Combine = "RemoteEvent",
 	Motion = "UnreliableRemoteEvent",
+	Away = "RemoteEvent",
 }
 
 local folder: Folder

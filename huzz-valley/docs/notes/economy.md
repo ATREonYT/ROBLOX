@@ -438,3 +438,15 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   players who left.
 Not fixed: the leaderboard saves after the profile on leave (order), and big full-save updates may spike with many
 players. Only Studio / the live game can confirm real pass timing and prompts.
+
+## Playtime coin boost and auto AFK (Oct 24 06:12)
+- Owner: "make the playtime rewards be like coin boosts, and they stack overtime if you are playing, but when you leave
+  they go away". `Config/Playtime`: +10% game pay every 5 minutes played in the server (the clock waits while AFK), up
+  to +100%; `HuzzServer/PlaytimeService` (attributes HuzzPlayStacks, HuzzPlayNextAt), added in RoundService after the
+  friend boost; the lobby tag "+30% COINS 04:12" over the coins (LobbyHud PlayBoost). Gone on leaving; a rejoin to the
+  same server within 2 minutes (the AFK rejoin) keeps it.
+- Auto AFK: no input for 270 s (`Config/Afk.IdleAfter`) -> remote Away -> AfkService sets HuzzAfk (sits out games,
+  tag AFK) until any input. Roblox kicks after 20 idle minutes and a game can't turn that off: Gameplay/AfkRejoin
+  tries a VirtualUser click on Idled (Output says whether Roblox allows it) and otherwise rejoins the same server at 17
+  minutes, as before.
+- Daily rewards: waiting for the owner's items (he said he'll send them).

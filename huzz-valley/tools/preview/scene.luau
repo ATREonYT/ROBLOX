@@ -78,6 +78,10 @@ if cfg.CLAIM then
 	DataService.update(player, function(d) d.XP = XPPer * 3 end)
 end
 if cfg.FRIEND then player:SetAttribute("HuzzFriendBoost", true) end -- (a friend in the server: "+10% COINS")
+if cfg.PLAY then -- the playtime boost (Config/Playtime): PLAY steps, the next one in 4:12
+	player:SetAttribute("HuzzPlayStacks", cfg.PLAY)
+	player:SetAttribute("HuzzPlayNextAt", game:GetService("Workspace"):GetServerTimeNow() + 252)
+end
 if cfg.PASSES then
 	local owned = {}
 	for key in string.gmatch(cfg.PASSES, "[^,]+") do owned[key] = true end

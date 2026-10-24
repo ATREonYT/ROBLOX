@@ -1,6 +1,6 @@
 --[[
-	The AFK zone (Config/Afk): a glowing round pad in the lobby. Standing on it makes you AFK (player attribute
-	HuzzAfk = true): SkipService counts you as sitting out, so RoundService leaves you out of the next game, and your
+	The AFK zone (Config/Afk): a glowing round pad in the lobby. Standing on it, or no input on your screen for
+	Afk.IdleAfter seconds (Away, below), makes you AFK (player attribute HuzzAfk = true; HuzzAfkWhy "Zone" / "Away"): SkipService counts you as sitting out, so RoundService leaves you out of the next game, and your
 	name tag shows AFK. RoundService starts it after MapService.init (it needs the lobby's spawn pad to find room).
 	Logs on lines starting [HuzzAfk].
 ]]
@@ -12,6 +12,7 @@ local Afk = require(ReplicatedStorage:WaitForChild("Shared").Config.Afk)
 local SpawnSpots = require(ReplicatedStorage.Shared.SpawnSpots)
 local MapService = require(script.Parent.MapService)
 local NameTags = require(script.Parent.NameTagService)
+local Net = require(ReplicatedStorage.Shared.Net)
 
 local AfkService = {}
 local zone = nil -- { centre: Vector3 (on the floor), radius: number }
@@ -122,13 +123,22 @@ local function showTag(player: Player, on: boolean)
 	end
 end
 
+-- Away (owner, Oct 24 06:12: "make the afk system be automatic, if a person is not moving for 4-5 minutes"): their
+-- own screen says when it has had no input for Afk.IdleAfter seconds, and when they're back (Gameplay/AfkRejoin,
+-- remote Away). Trusted as it is: being away only sits you out of games.
+local away: { [Player]: boolean } = {}
+local lastAway: { [Player]: number } = {}
+
 local function check()
 	for _, p in Players:GetPlayers() do
 		local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-		local on = zone ~= nil and root ~= nil and root:IsA("BasePart") and Afk.inside(zone.centre, zone.radius, root.Position)
+		local onZone = zone ~= nil and root ~= nil and root:IsA("BasePart") and Afk.inside(zone.centre, zone.radius, root.Position)
+		local on = onZone or away[p] == true
 		if (p:GetAttribute("HuzzAfk") == true) ~= on then
 			p:SetAttribute("HuzzAfk", if on then true else nil)
 		end
+		local why = if onZone then "Zone" elseif on then "Away" else nil
+		if p:GetAttribute("HuzzAfkWhy") ~= why then p:SetAttribute("HuzzAfkWhy", why) end
 		showTag(p, on)
 	end
 end
@@ -142,6 +152,22 @@ function AfkService.zone()
 end
 
 function AfkService.start()
+	Net.get("Away").OnServerEvent:Connect(function(player, on)
+		local t = os.clock()
+		if type(on) ~= "boolean" or t - (lastAway[player] or 0) < 0.5 then return end
+		lastAway[player] = t
+		away[player] = if on then true else nil
+		pcall(check)
+	end)
+	Players.PlayerRemoving:Connect(function(p)
+		away[p], lastAway[p] = nil, nil
+	end)
+	task.spawn(function()
+		while true do
+			pcall(check)
+			task.wait(Afk.Check)
+		end
+	end)
 	-- (a moment first: the leaderboards, stands and props go up as the game starts, and the search must see them)
 	task.wait(5)
 	local theirs = own()
@@ -160,12 +186,6 @@ function AfkService.start()
 	zone = { centre = centre, radius = radius }
 	build(centre, radius, theirs ~= nil)
 	print(string.format("[HuzzAfk] AFK zone at %.0f, %.0f, %.0f (%s)", centre.X, centre.Y, centre.Z, if theirs then "your AfkZone part" else "beside the spawn"))
-	task.spawn(function()
-		while true do
-			pcall(check)
-			task.wait(Afk.Check)
-		end
-	end)
 end
 
 return AfkService

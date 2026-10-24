@@ -13,6 +13,7 @@ local SpinRules = require(Shared.SpinRules)
 local DailyRules = require(Shared.DailyRules)
 local Progression = require(Shared.Config.Progression)
 local Friends = require(Shared.Config.Friends)
+local Playtime = require(Shared.Config.Playtime)
 local Net = require(Shared.Net)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
@@ -298,6 +299,12 @@ function LobbyHud.build(parent: Instance)
 		BackgroundColor3 = C.Banner, BorderSizePixel = 0, Visible = false, Parent = bottom,
 	}, { Kit.corner(5), Kit.stroke(C.BannerRim, 1.5) })
 	Kit.text({ Name = "Label", Text = Friends.BoostTag, FontFace = Theme.Fonts.Number, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Size = UDim2.fromScale(1, 1), Parent = friendTag })
+	-- The playtime coin boost (Config/Playtime, owner Oct 24 06:12): "+30% COINS 4:12" (the next step's real clock)
+	local playTag = new("Frame", {
+		Name = "PlayBoost", Position = UDim2.fromOffset(23, if touch then 43 else -18), Size = UDim2.fromOffset(176, 22),
+		BackgroundColor3 = C.Banner, BorderSizePixel = 0, Visible = false, Parent = bottom,
+	}, { Kit.corner(5), Kit.stroke(C.BannerRim, 1.5) })
+	local playText = Kit.text({ Name = "Label", Text = "", FontFace = Theme.Fonts.Number, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Size = UDim2.fromScale(1, 1), Parent = playTag })
 	local gemIcon = gems.Instance:FindFirstChild("Icon")
 	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.new(1, 1, 1) end
 	coins.plus.onClick(function() ModalManager.open("Shop", "Coins") end)
@@ -449,10 +456,24 @@ function LobbyHud.build(parent: Instance)
 			local left = ((State.data.Boosts or {}).Coins or 0) - workspace:GetServerTimeNow()
 			boost.Visible = left > 0
 			if left > 0 then boostText.Text = "x2 COINS  " .. Format.clock(left) end
-			-- the friend tag stacks over the x2 tag when both show
-			friendTag.Visible = game:GetService("Players").LocalPlayer:GetAttribute("HuzzFriendBoost") == true
+			-- the friend tag stacks over the x2 tag when both show, the playtime tag over those
+			local me = game:GetService("Players").LocalPlayer
+			friendTag.Visible = me:GetAttribute("HuzzFriendBoost") == true
+			local stacks, nextAt = me:GetAttribute("HuzzPlayStacks"), me:GetAttribute("HuzzPlayNextAt")
+			playTag.Visible = type(stacks) == "number"
+			if type(stacks) == "number" then
+				local clock = if type(nextAt) == "number" then "  " .. Format.clock(math.max(0, nextAt - workspace:GetServerTimeNow())) else ""
+				local afk = me:GetAttribute("HuzzAfk") == true and stacks < Playtime.Max
+				-- (no steps yet: what the first one gives and when; AFK: the clock waits)
+				playText.Text = if stacks == 0 then (if afk then "AFK: BOOST PAUSED" else "NEXT " .. Playtime.tag(1) .. clock)
+					else Playtime.tag(stacks) .. (if afk then "  AFK" else clock)
+			end
 			local step = if touch then 26 else -24
-			friendTag.Position = UDim2.fromOffset(23, (if touch then 43 else -18) + (if boost.Visible then step else 0))
+			local y = if touch then 43 else -18
+			local n = if boost.Visible then 1 else 0
+			friendTag.Position = UDim2.fromOffset(23, y + n * step)
+			if friendTag.Visible then n += 1 end
+			playTag.Position = UDim2.fromOffset(23, y + n * step)
 			task.wait(0.25)
 		end
 	end)
