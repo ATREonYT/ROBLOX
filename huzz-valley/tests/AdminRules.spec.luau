@@ -68,5 +68,7 @@ end)())
 check("an admin can end the game", Admin.check(true, "EndGame", "now", CoinShop.get, girl) == true)
 check("a stranger can't end the game", not Admin.check(false, "EndGame", "now", CoinShop.get, girl))
 check("end game takes only 'now'", not Admin.check(true, "EndGame", "later", CoinShop.get, girl))
+check("an admin can kick", Admin.check(true, "Kick", "now", CoinShop.get, girl) == true)
+check("a stranger can't kick", not Admin.check(false, "Kick", "now", CoinShop.get, girl))
 print(`AdminRules: {passed} ok, {failed} failed`)
 if failed > 0 then error("AdminRules spec failed") end

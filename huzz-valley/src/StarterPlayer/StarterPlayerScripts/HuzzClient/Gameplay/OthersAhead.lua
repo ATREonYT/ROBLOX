@@ -153,8 +153,13 @@ function OthersAhead.step(dt: number)
 	local serverNow = Workspace:GetServerTimeNow()
 	local live: { [Model]: boolean } = {}
 	local bodies: { Model } = {}
+	-- (only bodies playing in a game: in the lobby everyone is drawn just where Roblox has them; owner, Oct 24 07:03:
+	-- "make the characters also be moving normally")
 	for _, p in Players:GetPlayers() do
-		if p ~= me and p.Character then table.insert(bodies, p.Character) end
+		if p ~= me and p.Character then
+			local role = p:GetAttribute("HuzzRole")
+			if role == "Runner" or role == "Catcher" then table.insert(bodies, p.Character) end
+		end
 	end
 	for _, bot in CollectionService:GetTagged("HuzzBot") do
 		if bot:IsA("Model") then table.insert(bodies, bot) end

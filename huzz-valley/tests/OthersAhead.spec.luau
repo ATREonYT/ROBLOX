@@ -16,6 +16,8 @@ local Instance, Vector3, CFrame = roblox.Instance, roblox.Vector3, roblox.CFrame
 local ROOT = if fs.isDir("huzz-valley") then "huzz-valley/" else ""
 local Round = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/Config/Round.lua"), { debugName = "Round", environment = { Color3 = roblox.Color3, Vector3 = Vector3, CFrame = CFrame, Enum = roblox.Enum } })()
 local players = {}
+-- (since Oct 24 only bodies playing in a game are drawn ahead: these all play)
+local function playing(_, name) return if name == "HuzzRole" then "Runner" else nil end
 local me = { Name = "me", Character = nil, GetNetworkPing = function() return 0.055 end }
 local fakePlayers = { LocalPlayer = me, GetPlayers = function() return players end }
 local MotionStamps = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/MotionStamps.lua"), { debugName = "MotionStamps", environment = { Vector3 = Vector3 } })()
@@ -67,7 +69,7 @@ local mine, mRoot, mJoint = body("Me", CFrame.new(0, 3, 0))
 rRoot.AssemblyLinearVelocity = Vector3.new(24, 0, 0)
 mRoot.AssemblyLinearVelocity = Vector3.new(24, 0, 0)
 me.Character = mine
-players = { me, { Name = "runner", Character = runner } }
+players = { me, { Name = "runner", Character = runner, GetAttribute = playing } }
 local before = drawn(rRoot, rJoint)
 frames(120)
 local shift = drawn(rRoot, rJoint) - before
@@ -80,7 +82,7 @@ check("the joint's turn is untouched (poses on top stay right)", sameCF(rJoint.C
 -- it eases in: one frame in it's only part of the way
 local r2, r2Root, r2Joint = body("Runner2", CFrame.new(0, 3, 20))
 r2Root.AssemblyLinearVelocity = Vector3.new(0, 0, -24)
-players = { me, { Name = "runner", Character = runner }, { Name = "r2", Character = r2 } }
+players = { me, { Name = "runner", Character = runner, GetAttribute = playing }, { Name = "r2", Character = r2, GetAttribute = playing } }
 OA.step(1 / 60)
 local first = OA.offset(r2).Magnitude
 check(string.format("it eases in (%.2f studs after one frame)", first), first > 0 and first < 24 * lead * 0.5)
@@ -106,7 +108,7 @@ check("a body that leaves gets its joint back", sameCF(rJoint.C0, NEW) and sameC
 local Z = Vector3.zero
 local s1, s1Root = body("Stamped", CFrame.new(0, 3, 40))
 s1Root.AssemblyLinearVelocity = Vector3.new(24, 0, 0)
-players = { me, { Name = "s1", Character = s1 } }
+players = { me, { Name = "s1", Character = s1, GetAttribute = playing } }
 OA.stamp(s1, serverNow - 0.1, Vector3.new(3, 3, 40), Vector3.new(24, 0, 0), Vector3.new(24, 0, 0), false)
 frames(60)
 check(string.format("a fresh stamp: drawn where it says the body is now (%.2f, want 5.40)", OA.offset(s1).X), near(OA.offset(s1), Vector3.new(5.4, 0, 0), 0.02))
@@ -140,7 +142,7 @@ check("its root stays where Roblox has it", botRoot.CFrame.Position == Vector3.n
 -- a batch from the server (a few stamps in one message); a new stamp that disagrees a little is eased in, not popped
 local b1, b1Root = body("Batch", CFrame.new(0, 3, 80))
 b1Root.AssemblyLinearVelocity = Z
-players = { me, { Name = "b1", Character = b1 } }
+players = { me, { Name = "b1", Character = b1, GetAttribute = playing } }
 OA.stamps({ { b1, serverNow, Vector3.new(2, 3, 80), Z, Z, 0 }, { "junk" }, 5 })
 frames(60)
 check("a batch of stamps is read (junk in it ignored)", near(OA.offset(b1), Vector3.new(2, 0, 0), 0.02))

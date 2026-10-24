@@ -23,15 +23,24 @@ local MoveGuard = {}
 
 MoveGuard.EVERY = 0.25 -- seconds between looks
 MoveGuard.WINDOW = 2 -- seconds the accepted spot is kept before it moves on
-MoveGuard.SLACK = 1.25 -- times the top speed (a lag spike's catch-up, a slope, a push)
+MoveGuard.SLACK = 1.6 -- times the top speed (a lag spike's catch-up, a slope, a push; 1.25 until Oct 24)
 MoveGuard.BURST = 36 -- studs on top (a huss and a dive inside the same window, with room)
 MoveGuard.MAX_GAP = 2.5 -- seconds: the most time a jump is spread over
 MoveGuard.GRACE = 2 -- seconds after the game moved you itself
 MoveGuard.MIN_TOP = 16 -- studs a second: the least top speed counted (Roblox's own walk)
 MoveGuard.MAX_LINES = 12
-MoveGuard.SMALL_BURST = 22 -- studs on top with no huss or dive just accepted (a huss is ~15: one the server refused still passes)
+MoveGuard.SMALL_BURST = 30 -- studs (22 until Oct 24) on top with no huss or dive just accepted (a huss is ~15: one the server refused still passes)
 MoveGuard.BURST_FOR = 2.5 -- seconds after a huss or dive the full BURST holds
 MoveGuard.FLAG_HOLD = 2 -- seconds a body sent back can't hit anyone
+-- Owner, Oct 24 07:04 ("its very laggy when people are playing and joning ... moving very glitchy"): a body is only
+-- watched while it plays in a game (HuzzRole Runner / Catcher; the lobby gives nobody anything for speed), and not
+-- while its player's connection is slow (a laggy screen catches up in jumps, and sending it back made it rubber-band).
+MoveGuard.MAX_PING = 0.35 -- seconds of round trip over which a player isn't checked
+-- His recording of the live game (Oct 24 07:20, "here is how the lag looks like"): his own runner, carrying her with a
+-- Speed Boost, snapping sideways and forward every few frames. Being sent back for a little too much speed was worse
+-- than any cheat it stopped, so only a jump of more than FAR studs past the allowance (a teleport across the map) is
+-- sent back now; smaller ones are just written in Output ("[HuzzMove] ... (not sent back)").
+MoveGuard.FAR = 100
 
 -- How far (studs, across the ground) a body may go in dt seconds at this top speed. top 0 = held still (no
 -- walking at all); burst = the studs on top (default BURST).
@@ -82,7 +91,11 @@ local function check(player: Player, now: number): boolean
 	local rec = recs[player]
 	if not (root and humanoid) or (read(humanoid, "Health") or 100) <= 0 then recs[player] = nil return false end
 	-- (a new body, lying caught, sitting, or a move the game sent: start again from here)
-	if (rec and rec.character ~= character) or read(root, "Anchored") or read(humanoid, "Sit") or read(humanoid, "PlatformStand")
+	local role = player:GetAttribute("HuzzRole")
+	local okPing, ping = pcall(function() return player:GetNetworkPing() end)
+	local slow = okPing and type(ping) == "number" and ping * 2 > MoveGuard.MAX_PING
+	if (role ~= "Runner" and role ~= "Catcher") or slow
+		or (rec and rec.character ~= character) or read(root, "Anchored") or read(humanoid, "Sit") or read(humanoid, "PlatformStand")
 		or PlaceService.pending(player) or now - PlaceService.lastMoveAt(player) < MoveGuard.GRACE then
 		recs[player] = { at = root.CFrame.Position, t = now, character = character }
 		return false
@@ -97,6 +110,15 @@ local function check(player: Player, now: number): boolean
 	local burst = if moved then MoveGuard.BURST else MoveGuard.SMALL_BURST
 	local new, far = MoveGuard.look(rec, root.CFrame.Position, now, top, burst)
 	if far and rec then
+		local went = Vector3.new(root.CFrame.Position.X - rec.at.X, 0, root.CFrame.Position.Z - rec.at.Z).Magnitude
+		if went <= MoveGuard.allowed(top, now - rec.t, burst) + MoveGuard.FAR then
+			if told < MoveGuard.MAX_LINES then
+				told += 1
+				warn(string.format("[HuzzMove] %s moved %.0f studs in %.2f s (at most %.0f at speed %.0f): not sent back", player.Name, went, now - rec.t, MoveGuard.allowed(top, now - rec.t, burst), top))
+			end
+			recs[player] = { at = root.CFrame.Position, t = now, top = top, character = character } -- (start again from here)
+			return false
+		end
 		flaggedAt[player] = now
 		if told < MoveGuard.MAX_LINES then
 			told += 1

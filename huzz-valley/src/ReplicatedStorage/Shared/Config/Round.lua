@@ -138,7 +138,9 @@ return {
 	-- Moving a player's body (HuzzServer/PlaceService; owner, Oct 20 15:13: "make the DSYNC way, way better"): the
 	-- owner's own screen moves it; the server waits Grace seconds plus the player's round trip, and moves it itself
 	-- only if its copy isn't within Near studs by then. StreamWait: seconds at most to load the spot around them first.
-	Place = { Grace = 0.4, Near = 4, StreamWait = 1 },
+	-- (Grace 0.4 until Oct 24: under lag a screen took longer, the server moved the body itself and the two fought:
+	-- owner, 07:04 "moving very glitchy")
+	Place = { Grace = 1.2, Near = 4, StreamWait = 1 },
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).
 	Knockdown = {

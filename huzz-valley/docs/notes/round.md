@@ -348,3 +348,14 @@ stand-in blocks for the girls). Not seen in Studio yet: how it sits next to her 
 - Oct 24 06:41 ("also please remove this one", a picture of the pad): `Afk.Pad = false`, so no pad is built. A part named
   AfkZone in his lobby still works as a zone. Going idle (Afk.IdleAfter) is the AFK now.
 - Like window: "It helps more players find Huss Anime Girls!".
+
+## Lag fix (Oct 24 07:04-07:20)
+Owner: "its very laggy when people are playing and joning ... going under the map, moving very glitchy", and a
+recording (his runner carrying her with a Speed Boost, snapping sideways and forward every few frames). Changed:
+- MoveGuard watches only bodies in a game (HuzzRole Runner/Catcher), skips a player whose ping is over MAX_PING, has
+  more room (SLACK 1.6, SMALL_BURST 30), and sends a body back only past the allowance + FAR (100 studs, a teleport);
+  smaller overs are only logged ("not sent back").
+- Motion stamps (MotionSend, MotionRelay) and the drawn-ahead bodies (OthersAhead) only for players in a game: the
+  lobby sends none and draws everyone where Roblox has them.
+- PlaceService Grace 0.4 -> 1.2 s before the server moves a body itself (it fought slow screens).
+Not proven offline: only a busy live server shows whether it's enough. Ask for F9 (Developer Console) Server/Client logs.

@@ -53,7 +53,9 @@ end
 --               LUCK_MAX, minutes 1 to MINUTES_MAX; "0 0" ends it now
 --   EndGame     "now": ends the game on in this server (owner, Oct 24 06:57: "make a admin command to end the game"):
 --               no winner, nobody gets the girl, everyone back to the lobby
-AdminRules.VERBS = { GiveKnife = true, AllKnives = true, SpawnGirl = true, NextGirl = true, GivePass = true, GiveCoins = true, GiveAura = true, AllServersLuck = true, EndGame = true }
+--   Kick        "now": the player named in For leaves this server (owner, Oct 24 07:14: "make the admin command be
+--               able to kick players"); never yourself, never another admin
+AdminRules.VERBS = { GiveKnife = true, AllKnives = true, SpawnGirl = true, NextGirl = true, GivePass = true, GiveCoins = true, GiveAura = true, AllServersLuck = true, EndGame = true, Kick = true }
 AdminRules.LUCK_MAX, AdminRules.MINUTES_MAX = 10, 1440
 
 -- "<luck> <minutes>" -> luck, minutes (0, 0 = end it), or nil and why.
@@ -81,7 +83,7 @@ function AdminRules.check(admin: boolean, verb: any, arg: any, getKnife: (string
 		if not luck then return false, why :: string end
 	elseif verb == "AllKnives" then
 		if arg ~= "all" then return false, "Unknown command." end
-	elseif verb == "EndGame" then
+	elseif verb == "EndGame" or verb == "Kick" then
 		if arg ~= "now" then return false, "Unknown command." end
 	elseif verb == "GivePass" then
 		local pass = getPass and getPass(arg)

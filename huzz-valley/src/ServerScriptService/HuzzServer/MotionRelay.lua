@@ -99,6 +99,8 @@ function MotionRelay.start()
 	local remote = require(Shared.Net).get("Motion")
 	remote.OnServerEvent:Connect(function(player, t, p, v, g, push)
 		if not allow(player, os.clock()) then return end
+		local role = player:GetAttribute("HuzzRole") -- (only bodies in a game: Oct 24, lag with a full lobby)
+		if role ~= "Runner" and role ~= "Catcher" then return end
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		if not (root and root:IsA("BasePart")) or character:GetAttribute("DownedAt") ~= nil then return end

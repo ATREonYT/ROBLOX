@@ -136,6 +136,23 @@ function Admin.build(parent: Instance)
 		endBtn.setText("END GAME")
 		remote:FireServer("EndGame", "now", "")
 	end)
+	-- KICK beside it (owner, Oct 24 07:14: "make the admin command be able to kick players"): the player named in For
+	-- leaves this server. Tap twice too.
+	local kickBtn = Kit.button({ Name = "Kick", Text = "KICK", TextSize = 13, Style = "Close", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -192, 0.5, 0), Size = UDim2.fromOffset(110, 30), Corner = 4, Parent = window.Header })
+	kickBtn.Instance:SetAttribute("ShopStyleKeep", true)
+	local kickAskedAt = 0
+	kickBtn.onClick(function()
+		if who.Text == "" then Toast.show("Type who to kick in For first.") return end
+		if os.clock() - kickAskedAt > 3 then
+			kickAskedAt = os.clock()
+			kickBtn.setText("KICK " .. string.upper(string.sub(who.Text, 1, 6)) .. "?")
+			task.delay(3, function() if os.clock() - kickAskedAt >= 3 then kickBtn.setText("KICK") end end)
+			return
+		end
+		kickAskedAt = 0
+		kickBtn.setText("KICK")
+		send("Kick", "now")
+	end)
 	remote.OnClientEvent:Connect(function(ok, message)
 		Toast.show(tostring(message or (if ok then "Done." else "That didn't work.")))
 	end)

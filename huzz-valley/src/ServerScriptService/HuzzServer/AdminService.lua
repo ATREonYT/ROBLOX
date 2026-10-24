@@ -21,6 +21,7 @@
 	  GiveAura  <number>      Aura, 1 to 1,000,000
 	  AllServersLuck "<luck> <minutes>"  every server gets that luck for that long (HuzzServer/LuckService.everywhere;
 	                          "0 0" ends it); the third value is ignored
+	  Kick      now           the player in For leaves this server (never you, never an admin)
 	  EndGame   now           ends the game on in this server (RoundService's ServerStorage.HuzzEndGame): no winner
 	Every grant prints one "[HuzzAdmin] <admin> gave <who> ..." line in Output.
 ]]
@@ -154,6 +155,14 @@ function DO.NextGirl(_player: Player, id: string): (boolean, string?)
 	return true, `{girl and girl.name or id} is the next game's girl.`
 end
 
+function DO.Kick(player: Player, _arg: string, admin: Player?): (boolean, string?)
+	if admin == nil or player == admin then return false, "Type who to kick in For first." end
+	if AdminService.isAdmin(player) then return false, "You can't kick another admin." end
+	local name = player.Name
+	player:Kick("An admin removed you from this server.")
+	return true, `{name} was kicked.`
+end
+
 function DO.EndGame(_player: Player, _arg: string, admin: Player?): (boolean, string?)
 	local endGame = game:GetService("ServerStorage"):FindFirstChild("HuzzEndGame")
 	if not (endGame and endGame:IsA("BindableFunction")) then return false, "The game loop isn't running." end
@@ -177,7 +186,7 @@ function AdminService.handle(player: Player, verb: any, arg: any, who: any): (bo
 	if not target then return false, whyNot end
 	if not DataService.get(target) then return false, "Their save is still loading." end
 	local done, message = DO[verb](target, arg, player)
-	if done then print(`[HuzzAdmin] {player.Name} gave {target.Name}: {verb} {arg}`) end
+	if done then print(`[HuzzAdmin] {player.Name} -> {target.Name}: {verb} {arg}`) end
 	return done, message
 end
 

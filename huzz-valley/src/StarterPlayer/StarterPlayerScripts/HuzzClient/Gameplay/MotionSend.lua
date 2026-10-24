@@ -40,6 +40,10 @@ function M.start()
 		if not (root and root:IsA("BasePart") and h) or root.Anchored or h.Health <= 0 or character:GetAttribute("DownedAt") ~= nil then
 			return
 		end
+		-- (only while you play in a game: in the lobby nobody needs them, and with a full server they were most of
+		-- what everyone downloaded; owner, Oct 24 07:04: "its very laggy when people are playing and joning")
+		local role = player:GetAttribute("HuzzRole")
+		if role ~= "Runner" and role ~= "Catcher" then return end
 		local now = os.clock()
 		local v = root.AssemblyLinearVelocity
 		local flatV = Vector3.new(v.X, 0, v.Z)
