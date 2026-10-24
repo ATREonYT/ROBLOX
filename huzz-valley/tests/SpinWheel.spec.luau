@@ -90,11 +90,11 @@ SpinRules.spin(g, Wheel, 1, T, only("Aura60")); check("the Aura60 slice: 40 Aura
 SpinRules.spin(g, Wheel, 1, T, only("CoinBoost")); check("x2 coins for 15 minutes", g.Boosts.Coins == T + 900 and SpinRules.boost(g, "Coins", T + 899) == 2 and SpinRules.boost(g, "Coins", T + 900) == 1)
 SpinRules.spin(g, Wheel, 1, T + 100, only("CoinBoost")); check("a second boost adds its minutes", g.Boosts.Coins == T + 1800)
 check("no boost = x1", SpinRules.boost({}, "Coins", T) == 1)
-SpinRules.spin(g, Wheel, 1, T, only("SpinKnife")); check("the Spin Knife is yours and worn", g.Cosmetics.SpinKnife == true and g.Wear.Knife == "SpinKnife" and g.SpinPity == 0)
+SpinRules.spin(g, Wheel, 1, T, only("InvertedHex")); check("the wheel knife is yours and worn", g.Cosmetics.InvertedHex == true and g.Wear.Knife == "InvertedHex" and g.SpinPity == 0)
 local c0 = g.Coins
-ok, res = SpinRules.spin(g, Wheel, 1, T, only("SpinKnife")); check("a second Spin Knife becomes 1500 coins", g.Coins == c0 + 1500 and res.rolls[1].Duplicate == true)
-g.Wear.Knife = "IceKnife"; g.Cosmetics.SpinKnife = nil
-SpinRules.spin(g, Wheel, 1, T, only("SpinKnife")); check("winning it keeps the knife you wear", g.Wear.Knife == "IceKnife")
+ok, res = SpinRules.spin(g, Wheel, 1, T, only("InvertedHex")); check("a second wheel knife becomes 1500 coins", g.Coins == c0 + 1500 and res.rolls[1].Duplicate == true)
+g.Wear.Knife = "IceKnife"; g.Cosmetics.InvertedHex = nil
+SpinRules.spin(g, Wheel, 1, T, only("InvertedHex")); check("winning it keeps the knife you wear", g.Wear.Knife == "IceKnife")
 
 -- the wheel lands on the server's slice, with the offset inside the slice
 local rot = 0

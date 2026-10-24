@@ -23,14 +23,15 @@ local function check(name, cond)
 end
 
 local bakedAll = serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json"))
-local baked, bakedPass, bakedHalloween = {}, {}, {}
+local baked, bakedPass, bakedHalloween, bakedReward = {}, {}, {}, {}
 for _, b in bakedAll do
-	table.insert(if b.rarity == "Exclusive" then bakedPass elseif string.find(b.file, "halloween/", 1, true) then bakedHalloween else baked, b)
+	table.insert(if b.rarity == "Exclusive" then bakedPass elseif string.find(b.file, "halloween/", 1, true) then bakedHalloween
+		elseif string.find(b.file, "rewards/", 1, true) then bakedReward else baked, b)
 end
-local knives, passKnives, halloween = {}, {}, {}
+local knives, passKnives, halloween, rewardKnives = {}, {}, {}, {}
 for _, item in CoinShop.Items do
 	if item.Slot == "Knife" then
-		table.insert(if item.Pass then passKnives elseif item.Set then halloween else knives, item)
+		table.insert(if item.Pass then passKnives elseif item.Set == "Reward" then rewardKnives elseif item.Set then halloween else knives, item)
 	end
 end
 table.sort(halloween, function(a, b) return a.Order < b.Order end)
@@ -129,6 +130,16 @@ check("26 knives for sale", sold == 26)
 
 -- his 18 Halloween knives (design/knives/halloween/Halloween_Knives.glb): coin knives like the 30, one group of three
 -- sets of 6 in his rows, each set Common to Mythic in his order, priced on the same ladder, sold all year
+-- his 4 reward knives (design/knives/rewards/Reward_Knives.glb, owner Oct 24 06:38): never sold, each from one reward
+check("4 reward knives, baked from his rewards file", #rewardKnives == 4 and #bakedReward == 4 and fs.isFile(ROOT .. "design/knives/rewards/Reward_Knives.glb"))
+for _, item in rewardKnives do
+	local b = nil
+	for _, x in bakedReward do if x.key == item.Key then b = x end end
+	check(item.Key .. ": his name, his model, his length", b ~= nil and b.name == item.Name and item.Model == "Reward_Knives/" .. b.node and item.Studs == b.studs)
+	check(item.Key .. ": never sold, says where it comes from", item.NotForSale == true and type(item.Unlock) == "string" and item.Price == 0)
+	local kebab = string.lower((string.gsub(item.Key, "(%l)(%u)", "%1-%2")))
+	check(item.Key .. ": card picture", item.Art ~= nil and fs.isFile(ROOT .. "assets/art/knife-" .. kebab .. ".png") and packed[item.Art .. ".lua"] == true)
+end
 check("18 Halloween knives in the Knife slot", #halloween == 18 and #bakedHalloween == 18)
 check("the Halloween file is there", fs.isFile(ROOT .. "design/knives/halloween/Halloween_Knives.glb"))
 local SETS = { "Pumpkin", "Witch", "Candy" }

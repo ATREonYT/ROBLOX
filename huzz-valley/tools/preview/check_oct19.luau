@@ -147,9 +147,9 @@ me:SetAttribute("HuzzFriendBoost", false)
 task.wait(0.4)
 check("and hides without one", not hud:FindFirstChild("FriendBoost", true).Visible)
 local give
-DataService.update(me, function(d) give = FriendRules.grant(d) end)
-check("the friend knife once", give == "Knife" and data.Cosmetics[Friends.Knife] == true and data.FriendReward == true)
-DataService.update(me, function(d) give = FriendRules.grant(d) end)
+for id = 1, Friends.Need do DataService.update(me, function(d) give = FriendRules.grant(d, 900 + id) end) end
+check("the friend knife at 5 friends", give == "Knife" and data.Cosmetics[Friends.Knife] == true and data.FriendReward == true)
+DataService.update(me, function(d) give = FriendRules.grant(d, 999) end)
 check("never twice", give == nil)
 
 print(`oct19: {ok} ok, {fails} failed`)

@@ -97,9 +97,9 @@ local function circle(props: { [string]: any }, d: number, children: { Instance 
 	return f
 end
 
--- The Spin Knife drawn from parts, in its own colours (as the Shop draws knives).
-local function knife(box: Frame, s: number)
-	local item = CoinShop.get("SpinKnife")
+-- The wheel's knife drawn from parts, in its own colours (as the Shop draws knives).
+local function knife(box: Frame, s: number, key: string)
+	local item = CoinShop.get(key)
 	local seq = if item then CoinShop.sequence(item) else ColorSequence.new(Color3.new(1, 1, 1))
 	local u = Vector2.new(1, -1).Unit
 	local function at(t: number) local p = Vector2.new(s / 2, s / 2) + u * (t * s); return UDim2.fromOffset(math.round(p.X), math.round(p.Y)) end
@@ -136,10 +136,10 @@ local function prizeArt(parent: Instance, item: any, s: number, pos: UDim2, name
 		icon("Stopwatch", "Clock", s * 0.48, s * 0.76, s * 0.74, 2)
 	elseif item.Kind == "Knife" then
 		local skin = CoinShop.get(item.Key)
-		if skin and skin.Art then -- the owner's knife (its Shop card picture: Celestial Edge), else the drawn one
+		if skin and skin.Art then -- the owner's knife (its Shop card picture: Inverted Hex), else the drawn one
 			Kit.attach(Kit.corner(math.round(s * 0.12)), Kit.art(skin.Art, { Name = "Knife", Size = UDim2.fromOffset(s, s), ZIndex = 2, Parent = box }))
 		else
-			knife(box, s)
+			knife(box, s, item.Key)
 		end
 	end
 	return box

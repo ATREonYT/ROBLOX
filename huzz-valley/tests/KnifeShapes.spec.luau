@@ -66,7 +66,12 @@ local SHEET = {} -- every knife of his files of several (the 5 pass knives, his 
 for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do
 	if string.find(k.file, "/", 1, true) then table.insert(SHEET, k.key) end
 end
-check("23 stand-ins cut from his files (" .. #SHEET .. ")", #SHEET == 23)
+-- (Oct 24: his 4 reward knives too; their imported models aren't in HuzzKnives yet, so they show as stand-ins)
+local REWARD = {}
+for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do
+	if string.find(k.file, "rewards/", 1, true) then REWARD[k.key] = true end
+end
+check("27 stand-ins cut from his files (" .. #SHEET .. ")", #SHEET == 27)
 -- (a stand-in shows where his model isn't in ServerStorage > HuzzKnives. Since Oct 20 20:34 the file holds his own
 -- models of these 23 too, tools/knives/add_import_knives.luau: set aside for part 1, checked in part 1b)
 local his23 = {}
@@ -120,7 +125,7 @@ for _, key in SHEET do
 		end
 	end
 	check(string.format("%s: the stand-in fills his .glb's box (%.3f, %.3f studs off)", key, (mlo - lo).Magnitude, (mhi - hi).Magnitude),
-		(mlo - lo).Magnitude < 0.06 and (mhi - hi).Magnitude < 0.06)
+		(mlo - lo).Magnitude < 0.06 and (mhi - hi).Magnitude < (if REWARD[key] then 0.25 else 0.06)) -- (Thousand Blossom's loose petals past the tip go first in the part budget)
 	check(key .. ": every stand-in part in one of his colours (" .. foreign .. " not)", foreign == 0)
 	check(key .. ": " .. count .. " parts, at most 200", count <= 200 and count >= 20)
 	check(key .. ": slash trail points", model:FindFirstChild("TrailBase", true) ~= nil and model:FindFirstChild("TrailTip", true) ~= nil)
@@ -154,8 +159,8 @@ do
 	end
 	check("his 23: the game uses his own model (" .. ownN .. ")", ownN == 23)
 	check("his 23: every part one of his meshes (" .. meshOnly .. ")", meshOnly == 23)
-	check("his 23: shaped like a knife, its length (" .. sane .. ")", sane == 23)
-	check("his 23: slash trail points (" .. trail .. ")", trail == 23)
+	check("all 27 (the 4 reward stand-ins too): shaped like a knife, its length (" .. sane .. ")", sane == 27)
+	check("all 27: slash trail points (" .. trail .. ")", trail == 27)
 end
 
 -- 2. the scaler

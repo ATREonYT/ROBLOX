@@ -450,3 +450,9 @@ players. Only Studio / the live game can confirm real pass timing and prompts.
   tries a VirtualUser click on Idled (Output says whether Roblox allows it) and otherwise rejoins the same server at 17
   minutes, as before.
 - Daily rewards: waiting for the owner's items (he said he'll send them).
+
+## Daily login rewards (Oct 24)
+- `Config/DailyLogin`: 7 days, one claim per UTC day, a missed day keeps your place (no streak to lose). Days 1-6
+  are our picks (100 coins, 15 Aura, 1 spin, 250 coins, 40 Aura, 2 spins) until he sends his items; day 7 is his
+  Stormfang Chokuto. Window `Screens/DailyLogin` (opens itself once per visit when ready), HUD DAILY button under MENU.
+- Friends: the friend knife is now his Thousand Blossom at 5 different friends; the first friend gives 500 coins.

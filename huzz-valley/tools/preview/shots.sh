@@ -71,6 +71,7 @@ shot how-to-play none 1536 694 '{SCREEN="HowToPlay", SCALE=2}' # (vs the Oct 17 
 shot results none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", XP=1073}' # (the winner page vs his picture a: side_by_side.py winner)
 shot results-catchers none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", TEAM="Catchers", XP=1073}'
 shot daily-quests none 1536 980 '{SCREEN="DailyQuests", SCALE=2}' # (vs his picture d: side_by_side.py daily-quests)
+shot daily-login none 1536 980 '{SCREEN="DailyLogin", SCALE=2, LOGIN=3}' # (Oct 24: the 7-day login rewards, his Stormfang Chokuto on day 7)
 shot group-reward none 1536 980 '{SCREEN="GroupReward", SCALE=2, GROUPID=1}' # (Oct 22: the "join our group" window, 5 free spins)
 shot like-game none 1536 760 '{SCREEN="LikeGame", SCALE=2}' # (Oct 23 19:44: the LIKE THE GAME! gift's window)
 shot luck none 1536 1100 '{SCREEN="Luck", SCALE=2, LUCK=4}' # (Oct 23: server luck, its boosts and the girl odds at that luck)

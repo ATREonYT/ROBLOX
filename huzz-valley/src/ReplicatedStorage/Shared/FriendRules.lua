@@ -11,18 +11,39 @@ function FriendRules.coins(amount: number, friendIn: boolean): number
 	return math.max(amount, math.floor(amount * Friends.CoinBoost + 0.5))
 end
 
--- The friend reward on a save, once per account: the friend knife, or coins when it's already owned.
--- Changes `data` and returns "Knife", "Coins" or nil (already given).
-function FriendRules.grant(data: any): string?
-	if data.FriendReward then return nil end
-	data.FriendReward = true
+-- How many different friends have joined you (counted for the knife).
+function FriendRules.met(data: any): number
+	local n = 0
+	for _ in (type(data) == "table" and data.FriendsMet) or {} do n += 1 end
+	return n
+end
+
+-- A friend (UserId `friendId`) joined a server you're in: counted once per friend. The first friend ever gives
+-- FirstCoins, the Need-th the friend knife (coins if already owned). Changes `data`; returns "Coins", "Knife",
+-- "More" (counted, nothing given) or nil (already counted, or the knife's done).
+function FriendRules.grant(data: any, friendId: number?): string?
+	if type(friendId) ~= "number" or data.FriendKnife then return nil end
+	data.FriendsMet = data.FriendsMet or {}
+	local id = tostring(friendId)
+	if data.FriendsMet[id] then return nil end
+	data.FriendsMet[id] = true
 	data.Cosmetics = data.Cosmetics or {}
-	if data.Cosmetics[Friends.Knife] then
-		data.Coins = (data.Coins or 0) + Friends.FriendKnifeCoins
+	if FriendRules.met(data) >= Friends.Need then
+		data.FriendKnife = true
+		data.FriendsMet = nil -- (done: the list isn't needed any more)
+		if data.Cosmetics[Friends.Knife] then
+			data.Coins = (data.Coins or 0) + Friends.FriendKnifeCoins
+			return "Coins"
+		end
+		data.Cosmetics[Friends.Knife] = true
+		return "Knife"
+	end
+	if not data.FriendReward then
+		data.FriendReward = true
+		data.Coins = (data.Coins or 0) + Friends.FirstCoins
 		return "Coins"
 	end
-	data.Cosmetics[Friends.Knife] = true
-	return "Knife"
+	return "More"
 end
 
 return FriendRules

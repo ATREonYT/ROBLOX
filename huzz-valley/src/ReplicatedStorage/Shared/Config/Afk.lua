@@ -8,6 +8,9 @@
 	carpet and into the plaza from the pad's middle, nearest first). Kid-safe: nothing flashes; the glow is steady.
 ]]
 local Afk = {
+	-- Owner, Oct 24 06:41 (a picture of the pad): "also please remove this one": no pad of ours any more; going idle
+	-- (IdleAfter) is the AFK system. A part he names AfkZone still works as one, if he ever places it.
+	Pad = false,
 	PartName = "AfkZone", -- his own part, if he places one
 	Radius = 8, -- studs (the pad is 16 across)
 	Height = 7, -- studs above and below the pad that still count as standing on it

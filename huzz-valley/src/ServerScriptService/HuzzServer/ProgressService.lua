@@ -19,6 +19,18 @@ function ProgressService.addStat(player: Player, stat: string, amount: number)
 	end)
 end
 
+-- Today's daily login reward (Config/DailyLogin): once a day by the server's clock, given into the save.
+function ProgressService.claimLogin(player: Player): (boolean, string?)
+	local LoginRules = require(ReplicatedStorage.Shared.LoginRules)
+	local ok, why = false, nil
+	DataService.update(player, function(data)
+		local reward
+		reward, why = LoginRules.claim(data, os.time())
+		ok = reward ~= nil
+	end)
+	return ok, why
+end
+
 -- A finished daily quest (Config/DailyQuests): once each, checked against the saved progress and the server's clock.
 function ProgressService.claimDaily(player: Player, key: any): (boolean, string?)
 	local ok, why = false, nil
@@ -129,6 +141,12 @@ function ProgressService.claimReward(player: Player, level: any): (boolean, stri
 			-- (a dance you bought already: its coin price back, never nothing; release check, Oct 22)
 			if data.Dances[reward.Id] then data.Coins = (data.Coins or 0) + (Dances.get(reward.Id).Coins or 0) end
 			data.Dances[reward.Id] = true
+		elseif reward.Kind == "Knife" and CoinShop.get(reward.Id) then
+			-- (yours already: its duplicate coins, as a quest knife does)
+			if data.Cosmetics[reward.Id] then
+				data.Coins = (data.Coins or 0) + ((Crates.KnifeDuplicate :: any)[CoinShop.get(reward.Id).Rarity] or 60)
+			end
+			data.Cosmetics[reward.Id] = true
 		else why = "That reward can't be given yet."; return end
 		data.Claimed[key] = true
 		ok = true

@@ -175,12 +175,12 @@ function AfkService.start()
 	if theirs then
 		radius = math.max(theirs.Size.X, theirs.Size.Z) / 2
 		centre = theirs.Position - Vector3.new(0, theirs.Size.Y / 2, 0)
-	else
+	elseif Afk.Pad then
 		radius = Afk.Radius
 		centre = findRoom(radius)
 	end
 	if not centre then
-		warn("[HuzzAfk] no open ground beside the spawn found for the AFK zone: add a part named AfkZone where you want it")
+		if Afk.Pad then warn("[HuzzAfk] no open ground beside the spawn found for the AFK zone: add a part named AfkZone where you want it") end
 		return
 	end
 	zone = { centre = centre, radius = radius }

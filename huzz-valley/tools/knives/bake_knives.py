@@ -18,6 +18,10 @@ import numpy as np
 SRC = 'design/knives/Knives'
 GAMEPASS = 'design/knives/gamepass/Gamepass_Knives.glb'  # (owner, Oct 18: "here are the gamepass knives")
 HALLOWEEN = 'design/knives/halloween/Halloween_Knives.glb'  # (owner, Oct 19: his Halloween knives, "make it one to one")
+# (owner, Oct 24 06:38: "use it to make one knife for exmaple rewarded for inviting 5 friends, one knife to be at day 7
+# of daily logins, another to be in the progression, another to be in the wheel"): never sold, each from its reward
+REWARDS = 'design/knives/rewards/Reward_Knives.glb'
+REWARD_RARITY = {'Thousand_Blossom': 'Legendary', 'Broken_Wrath': 'Legendary', 'Inverted_Hex': 'Legendary', 'Stormfang_Chokuto': 'Mythic'}
 RARITIES = ('Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic')
 # His Halloween file's three rows (his order: dagger or shuriken first, the katana, reaper or scythe last), one set each
 HALLOWEEN_SETS = ('Pumpkin', 'Witch', 'Candy')
@@ -79,9 +83,14 @@ def halloween_knives():
     return file_knives(HALLOWEEN)
 
 
+def reward_knives():
+    """The same for his reward knives (4: the friend, daily, level and wheel knives)."""
+    return file_knives(REWARDS)
+
+
 def sheet_knives():
-    """Every knife of his files that hold several (the Game Pass and the Halloween ones), in file order."""
-    return gamepass_knives() + halloween_knives()
+    """Every knife of his files that hold several (the Game Pass, Halloween and reward ones), in file order."""
+    return gamepass_knives() + halloween_knives() + reward_knives()
 
 
 def file_knives(path):
@@ -177,6 +186,23 @@ def main():
             k['glow'] = k['sheen'] = max(glows, key=vivid)
         studs = min(MAX_STUDS, max(MIN_STUDS, MIN_STUDS + (k['length'] - lo) / (hi - lo) * (MAX_STUDS - MIN_STUDS)))
         k['studs'] = round(min(studs, k['length'] * per_max), 2)
+        knives.append(k)
+    # the reward knives: numbered after the Halloween ones, sized like them; rarity by REWARD_RARITY
+    for i, (node_name, prims, inv, js, binc) in enumerate(reward_knives()):
+        key = node_name.replace('_s_', 's_').replace('_', '')
+        k = describe(node_name, knife_nodes(prims, js, binc, inv), REWARD_RARITY.get(node_name, 'Legendary'), 'rewards/Reward_Knives', node_name, 54 + i, key)
+        k['set'] = 'Reward'
+        top = max(n['ymax'] for n in k['nodes'] if not n['kind'].startswith(DANGLE))
+        if top > k['tip']:
+            k['tip'] = round(top, 4)
+            k['length'] = round(k['tip'] - k['bottom'], 4)
+        glows = [n['hex'] for n in k['nodes'] if n['glow']]
+        if glows:
+            k['glow'] = k['sheen'] = max(glows, key=vivid)
+        studs = min(MAX_STUDS, max(MIN_STUDS, MIN_STUDS + (k['length'] - lo) / (hi - lo) * (MAX_STUDS - MIN_STUDS)))
+        # (at most his katanas' 3.27: Thousand Blossom at 3.3 dipped its tip a hair under the 0.15 studs over the floor in
+        # hand, tests/KnifeWear)
+        k['studs'] = round(min(studs, k['length'] * per_max, 3.27), 2)
         knives.append(k)
     # how wide each knife is for its length (its widest way, as KnifeLook.shape measures it: the .glb's X and Z), for
     # the ones wider than a knife usually is (sickles, karambits, shurikens: Shared/KnifeLook.sane allows them that)

@@ -576,3 +576,15 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   screenshots `design/owner-oct19/1840-*.png`). The missing details were the plain stand-ins: Rojo never sent
   `HuzzKnifeGlb` (fixed d6db14f), checked one to one after; the red pop-up and the dress's own on-screen line went
   (Output only); the effects went one calm step up; the disc became the aura and the guard's free arm relaxes.
+
+## His 4 reward knives (Oct 24 06:38)
+- `design/knives/rewards/Reward_Knives.glb`, baked by `tools/knives/bake_knives.py` (REWARDS, numbered 54-57, Set
+  "Reward", studs capped at 3.27). Never sold (`NotForSale`, `Price = 0`); each has one way to get it:
+  - Thousand Blossom (Legendary): 5 different friends who join a server you're in (`Config/Friends.Need`,
+    `Shared/FriendRules.grant(data, friendId)`, save `FriendsMet` then `FriendKnife`). The first friend gives 500 coins.
+  - Stormfang Chokuto (Mythic): day 7 of the daily login rewards (`Config/DailyLogin`, `Shared/LoginRules`,
+    `Screens/DailyLogin`, save `Login`). Owned already: 1500 coins.
+  - Broken Wrath (Legendary): the Level 10 reward on Progression (`ProgressService.claimReward` Kind "Knife").
+  - Inverted Hex (Legendary, was Epic): the wheel's 1% knife slice (was Celestial Edge, which stays in the crates).
+- They show as stand-ins until he imports `Reward_Knives.glb` in HuzzValley-yours.rbxl, runs SetupKnives (57 rows) and
+  sends `HuzzKnives.rbxm`.

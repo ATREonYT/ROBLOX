@@ -287,6 +287,7 @@ function VERBS.ClaimReward(player, level) return ProgressService.claimReward(pla
 function VERBS.ClaimQuest(player, id) return ProgressService.claimQuest(player, id) end
 function VERBS.ClaimDaily(player, key) return ProgressService.claimDaily(player, key) end
 function VERBS.ClaimGroup(player) return ProgressService.claimGroup(player) end
+function VERBS.ClaimLogin(player) return ProgressService.claimLogin(player) end
 
 function ActionService.start()
 	(Net.get("Action") :: RemoteFunction).OnServerInvoke = function(player, verb, ...)

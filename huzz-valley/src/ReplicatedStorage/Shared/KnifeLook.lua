@@ -675,6 +675,9 @@ VFX.OF = {
 	JacksReaper = "Pumpkin", ToadstoolSickle = "Venom", MoonlitCleaver = "Moon", CovenKatana = "Witch",
 	GrandWitchScythe = "Witch", TaffyKarambit = "Candy", CupcakeCleaver = "Candy", SugarRushKatana = "Candy",
 	CandyReaper = "Candy",
+	-- his reward knives (Oct 24): petals off the Thousand Blossom, Stormfang's lightning, Broken Wrath's red gems burn,
+	-- Inverted Hex's dark violet pulls in
+	ThousandBlossom = "Sakura", StormfangChokuto = "Storm", BrokenWrath = "Fire", InvertedHex = "Void",
 }
 
 local function hexColour(h: string): Color3

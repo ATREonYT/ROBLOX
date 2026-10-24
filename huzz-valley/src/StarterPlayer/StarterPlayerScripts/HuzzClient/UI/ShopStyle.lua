@@ -58,7 +58,7 @@ Kit.Styles.ShopOrange = ShopStyle.look(Color3.fromHex("E8661A"), Color3.fromHex(
 -- buttons and the Menu's rows: ShopStyle.vivid(name) is the Kit style name ("Vivid" .. name), made once.
 ShopStyle.VIVID = {
 	Index = Color3.fromHex("A64DFF"), Shop = Color3.fromHex("FFC21A"), Dances = Color3.fromHex("2FA8FF"), Inventory = Color3.fromHex("2FA8FF"), Menu = Color3.fromHex("FF5468"),
-	Invite = Color3.fromHex("3FD24A"), Spin = Color3.fromHex("FF4FB8"), Quests = Color3.fromHex("FF8A1F"), Group = Color3.fromHex("A64DFF"), Luck = Color3.fromHex("16C784"),
+	Invite = Color3.fromHex("3FD24A"), Spin = Color3.fromHex("FF4FB8"), Quests = Color3.fromHex("FF8A1F"), Group = Color3.fromHex("A64DFF"), Daily = Color3.fromHex("FF4FB8"), Luck = Color3.fromHex("16C784"),
 	Tiers = Color3.fromHex("FF8A1F"), Progression = Color3.fromHex("3FD24A"), Settings = Color3.fromHex("5C7BD9"), HowToPlay = Color3.fromHex("FF4FB8"),
 }
 function ShopStyle.vivid(name: string): string

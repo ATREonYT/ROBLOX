@@ -138,6 +138,13 @@ CoinShop.Items = {
 	{ Key = "CupcakeCleaver", Slot = "Knife", Name = "Cupcake Cleaver", Rarity = "Epic", Price = 2000, Set = "Candy", Glow = hex("fff6f0"), Model = "Halloween_Knives/Cupcake_Cleaver", Studs = 2.73, Wear = "Side", Art = "KnifeCupcakeCleaver", Colors = { hex("6a3a1e"), hex("6a3a1e") }, Order = 155 },
 	{ Key = "SugarRushKatana", Slot = "Knife", Name = "Sugar Rush Katana", Rarity = "Legendary", Price = 4000, Set = "Candy", Glow = hex("fff0ff"), Model = "Halloween_Knives/Sugar_Rush_Katana", Studs = 3.27, Wear = "Back", Art = "KnifeSugarRushKatana", Colors = { hex("d4d6d1"), hex("e8b070") }, Order = 156 },
 	{ Key = "CandyReaper", Slot = "Knife", Name = "Candy Reaper", Rarity = "Mythic", Price = 8000, Set = "Candy", Glow = hex("5ad8ff"), Model = "Halloween_Knives/Candy_Reaper", Studs = 3.3, Wear = "Back", Art = "KnifeCandyReaper", Colors = { hex("e4a843"), hex("e4a843") }, Order = 157 },
+	-- His four reward knives (design/knives/rewards/Reward_Knives.glb; owner, Oct 24 06:38: "one knife for exmaple
+	-- rewarded for inviting 5 friends, one knife to be at day 7 of daily logins, another to be in the progression,
+	-- another to be in the wheel"): never sold, each only from its reward (Unlock says which).
+	{ Key = "ThousandBlossom", Slot = "Knife", Name = "Thousand Blossom", Rarity = "Legendary", Price = 0, NotForSale = true, Unlock = "Invite 5 friends", Set = "Reward", Glow = hex("ff8ac4"), Model = "Reward_Knives/Thousand_Blossom", Studs = 3.27, Wear = "Back", Art = "KnifeThousandBlossom", Colors = { hex("d7c5d7"), hex("2a2430") }, Order = 158 },
+	{ Key = "StormfangChokuto", Slot = "Knife", Name = "Stormfang Chokuto", Rarity = "Mythic", Price = 0, NotForSale = true, Unlock = "Day 7 of daily rewards", Set = "Reward", Glow = hex("5ac8ff"), Model = "Reward_Knives/Stormfang_Chokuto", Studs = 3.27, Wear = "Back", Art = "KnifeStormfangChokuto", Colors = { hex("abb3be"), hex("d8dee8") }, Order = 159 },
+	{ Key = "BrokenWrath", Slot = "Knife", Name = "Broken Wrath", Rarity = "Legendary", Price = 0, NotForSale = true, Unlock = "Level 10 reward", Set = "Reward", Glow = hex("ff2a3a"), Model = "Reward_Knives/Broken_Wrath", Studs = 2.93, Wear = "Side", Art = "KnifeBrokenWrath", Colors = { hex("514f59"), hex("e8b830") }, Order = 160 },
+	{ Key = "InvertedHex", Slot = "Knife", Name = "Inverted Hex", Rarity = "Legendary", Price = 0, NotForSale = true, Unlock = "Spin the Wheel", Set = "Reward", Glow = hex("9b5cff"), Model = "Reward_Knives/Inverted_Hex", Studs = 2.86, Wear = "Side", Art = "KnifeInvertedHex", Colors = { hex("332e41"), hex("9b5cff") }, Order = 161 },
 } :: { Item }
 
 local byKey: { [string]: Item } = {}

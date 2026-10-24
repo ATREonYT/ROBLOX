@@ -5,15 +5,16 @@
 	or be slow). For each pair of friends:
 	  * both carry the player attribute HuzzFriendBoost = true while the other is in the server (the lobby HUD shows
 	    "+10% COINS"; RoundService adds 10% to their game pay through FriendService.coins);
-	  * the one who was already here gets the friend reward once per account (the friend joined THEIR server, which
-	    is what an invite does): the friend knife, or coins if they own it. HuzzFriendGift = "Knife"/"Coins" tells
-	    their HUD to say so.
+	  * the one who was already here counts that friend once per account (the friend joined THEIR server, which is
+	    what an invite does): coins for the first, the friend knife at Config/Friends.Need (Oct 24: 5, his Thousand
+	    Blossom). HuzzFriendGift = "Coins:n" / "Knife:n" / "More:n" tells their HUD to say so; HuzzFriendsMet = n.
 	Nothing here is bought; inviting opens Roblox's own window on the client (Screens/LobbyHud INVITE).
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataService = require(script.Parent.DataService)
 local FriendRules = require(ReplicatedStorage.Shared.FriendRules)
+local Friends = require(ReplicatedStorage.Shared.Config.Friends)
 
 local FriendService = {}
 
@@ -32,11 +33,16 @@ local function refresh(p: Player)
 	p:SetAttribute("HuzzFriendBoost", any)
 end
 
-local function reward(host: Player)
+local function reward(host: Player, friend: Player)
 	if not DataService.waitFor(host, 60) or host.Parent ~= Players then return end
-	local given
-	DataService.update(host, function(data) given = FriendRules.grant(data) end)
-	if given then host:SetAttribute("HuzzFriendGift", given) end
+	local given, met
+	DataService.update(host, function(data)
+		given = FriendRules.grant(data, friend.UserId)
+		met = if data.FriendKnife then Friends.Need else FriendRules.met(data)
+	end)
+	host:SetAttribute("HuzzFriendsMet", met)
+	-- (a fresh value each time, so the HUD's toast fires again for the next friend)
+	if given then host:SetAttribute("HuzzFriendGift", given .. ":" .. tostring(met)) end
 end
 
 -- The game's coin pay for this player, with +10% while a friend plays in the server.
@@ -55,7 +61,7 @@ function FriendService.start()
 					friends[host][joiner], friends[joiner][host] = true, true
 					refresh(host)
 					refresh(joiner)
-					reward(host)
+					reward(host, joiner)
 				end)
 			end
 		end

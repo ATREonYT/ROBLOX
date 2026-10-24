@@ -53,7 +53,7 @@ local env = { game = game, Instance = Instance, Vector3 = Vector3, CFrame = CFra
 	print = function(s) table.insert(lines, s) end, warn = function(s) table.insert(lines, "WARN " .. tostring(s)) end }
 source = string.gsub(source, "if script == nil then run%(%) end[^\n]*\n", "") -- (no Command Bar run at load: the test runs it)
 local run, KNIVES = luau.load(source, { debugName = "SetupKnives", environment = env })()
-check("53 knives baked in (30 shop + 5 Game Pass + 18 Halloween)", #KNIVES == 53)
+check("57 knives baked in (30 shop + 5 Game Pass + 18 Halloween + 4 reward)", #KNIVES == 57)
 local fromHalloween = 0
 for _, k in KNIVES do if string.sub(k.file, 1, 10) == "halloween/" then fromHalloween += 1 end end
 check("18 from his Halloween file", fromHalloween == 18)
@@ -88,7 +88,7 @@ check("the setup runs (" .. tostring(count) .. ")", ok)
 if not ok then print(count) end
 local holder = ServerStorage:FindFirstChild("HuzzKnives")
 check("ServerStorage/HuzzKnives made", holder ~= nil)
-check("Done: 53 of 53", table.find(lines, "[HuzzKnife] Done: 53 of 53 knives are in ServerStorage > HuzzKnives.") ~= nil)
+check("Done: 57 of 57", table.find(lines, "[HuzzKnife] Done: 57 of 57 knives are in ServerStorage > HuzzKnives.") ~= nil)
 check("the import is tidied away", all.Parent == nil)
 local tagged = 0
 for _, l in lines do if string.sub(l, 1, 11) == "[HuzzKnife]" then tagged += 1 end end
@@ -160,7 +160,7 @@ end
 lines = {}
 env.print = function(s) table.insert(lines, s) end
 local ok2 = pcall(run)
-check("a second run keeps all 53", ok2 and #holder:GetChildren() == 53)
+check("a second run keeps all 57", ok2 and #holder:GetChildren() == 57)
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- The owner's real Oct 18 run: 8 knives (BoneKnife, BoxCutter, CopperCleaver, EmberEdge, IceKnife, JadeKunai,
@@ -308,7 +308,7 @@ do
 	local ok3, err3 = pcall(run2)
 	check("laid-flat import with Studio's names: the setup runs", ok3)
 	if not ok3 then print(err3) end
-	check("Studio-style imports: Done: 53 of 53", table.find(out, "[HuzzKnife] Done: 53 of 53 knives are in ServerStorage > HuzzKnives.") ~= nil)
+	check("Studio-style imports: Done: 57 of 57", table.find(out, "[HuzzKnife] Done: 57 of 57 knives are in ServerStorage > HuzzKnives.") ~= nil)
 	for _, l in out do
 		if string.find(l, "didn't match") or string.find(l, "roughly") or string.find(l, "WRONG") or string.find(l, "WARN") then print("  " .. l) end
 	end
@@ -435,11 +435,13 @@ do
 		end
 	end
 	local ok5 = pcall(run4)
-	check("our file: runs, 53 of 53", ok5 and table.find(out, "[HuzzKnife] Done: 53 of 53 knives are in ServerStorage > HuzzKnives.") ~= nil)
+	-- (his 4 reward knives, Oct 24, aren't in our file until his import of Reward_Knives.glb: 53 of 57, those 4 skipped)
+	check("our file: runs, 53 of 57", ok5 and table.find(out, "[HuzzKnife] Done: 53 of 57 knives are in ServerStorage > HuzzKnives.") ~= nil)
 	for _, l in out do
 		if string.find(l, "WRONG") or string.find(l, "couldn't") or string.find(l, "repaired") then print("  " .. l) end
 	end
 	for _, k in KNIVES do
+		if string.sub(k.file, 1, 8) == "rewards/" then continue end
 		local m = holder4:FindFirstChild(k.key)
 		local h = m and m:FindFirstChild("Handle")
 		local moved, worst = 0, 0

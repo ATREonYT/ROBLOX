@@ -7,7 +7,7 @@
 	     design/knives/halloween/Halloween_Knives.glb.
 	  2. View > Command Bar. Paste this whole script (or, in the downloaded place, the one line
 	     require(game.ServerStorage.HuzzStudioTools.SetupKnives)() ) and press Enter.
-	  3. Output shows one [HuzzKnife] line per knife and "Done: 53 of 53". Take a screenshot if anything says "missing".
+	  3. Output shows one [HuzzKnife] line per knife and "Done: 57 of 57" (57 once his 4 reward knives are imported too). Take a screenshot if anything says "missing".
 	  4. File > Save. Then right-click ServerStorage > HuzzKnives > Save to File, and send that file, so every new
 	     download has the knives too.
 	What it does for each knife: finds it by name, lines it up whatever way Studio imported it (from the parts' names

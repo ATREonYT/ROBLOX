@@ -33,12 +33,15 @@ function Progression.xpParts(won: boolean, t: { [string]: number }): { { Name: s
 end
 
 -- Free reward track: reaching Level unlocks the reward; the player claims it.
---   Kind: "Coins" | "Aura" | "Dance" | "Outfit"   (Outfit rewards stay unavailable until the outfit exists)
+--   Kind: "Coins" | "Aura" | "Dance" | "Knife" (Id = a Config/CoinShop key) | "Outfit" (stays unavailable until the
+--   outfit exists)
 Progression.Rewards = {
 	{ Level = 1, Kind = "Coins", Amount = 100, Name = "100 Coins", Art = "CurrencyCoin" },
 	{ Level = 2, Kind = "Aura", Amount = 25, Name = "25 Aura", Art = "CurrencyGem" },
 	{ Level = 3, Kind = "Dance", Id = "Untouchable", Name = "Untouchable", Art = "DanceWave" }, -- (was Robot until Oct 22)
 	{ Level = 4, Kind = "Coins", Amount = 250, Name = "250 Coins", Art = "CurrencyCoin" },
+	-- (owner, Oct 24 06:38: one of his reward knives "to be in the progression")
+	{ Level = 10, Kind = "Knife", Id = "BrokenWrath", Name = "Broken Wrath", Art = "KnifeBrokenWrath" },
 }
 
 -- Bonus cosmetics row: things you can't earn yet. Empty, so the row is hidden (the kit's mock-up outfits were

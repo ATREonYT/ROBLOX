@@ -154,6 +154,18 @@ for _, list in { Products.Passes or {}, Products.List or {}, Products.Halloween 
 end
 local auraKnife = {}
 for _, k in Halloween.Knives do auraKnife[k.Key] = true end
+-- his 4 reward knives (Oct 24 06:38): 5 friends, day 7 of the daily logins, the Level 10 reward, the wheel
+local rewardKnife = {}
+rewardKnife[Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Friends.lua").Knife] = "5 friends"
+for _, d in Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/DailyLogin.lua").Days do
+	if d.Kind == "Knife" then rewardKnife[d.Id] = "daily login" end
+end
+for _, r in Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Progression.lua").Rewards do
+	if r.Kind == "Knife" then rewardKnife[r.Id] = "level reward" end
+end
+for _, w in Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/SpinWheel.lua").Items do
+	if w.Kind == "Knife" then rewardKnife[w.Key] = "the wheel" end
+end
 local knives, without = 0, {}
 for _, it in CoinShop.Items do
 	if it.Slot == "Knife" then
@@ -166,10 +178,11 @@ for _, it in CoinShop.Items do
 		if auraKnife[it.Key] then table.insert(ways, "Aura") end
 		if pass then table.insert(ways, "Game Pass") end
 		if robuxKnife[it.Key] then table.insert(ways, "Robux") end
-		if it.Unlock then table.insert(ways, "quest") end
+		if rewardKnife[it.Key] then table.insert(ways, rewardKnife[it.Key]) end
+		if it.Unlock and not rewardKnife[it.Key] then table.insert(ways, "quest") end
 		if show then print(string.format("  %-20s %-10s %s", it.Key, it.Rarity or "", table.concat(ways, ", "))) end
-		local got = inCrates[it.Key] or coins or auraKnife[it.Key] or pass or robuxKnife[it.Key]
-		check(it.Key .. ": can be got through a crate, coins, Aura or Robux", got)
+		local got = inCrates[it.Key] or coins or auraKnife[it.Key] or pass or robuxKnife[it.Key] or (it.Set == "Reward" and rewardKnife[it.Key] ~= nil)
+		check(it.Key .. ": can be got through a crate, coins, Aura, Robux or (his reward knives) its reward", got)
 		if not got then table.insert(without, it.Key) end
 	end
 end

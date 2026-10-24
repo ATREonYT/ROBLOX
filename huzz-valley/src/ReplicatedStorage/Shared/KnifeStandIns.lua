@@ -26,6 +26,10 @@ local KEYS = {
 	"CupcakeCleaver",
 	"SugarRushKatana",
 	"CandyReaper",
+	"ThousandBlossom",
+	"BrokenWrath",
+	"InvertedHex",
+	"StormfangChokuto",
 }
 local folder = script.Parent:WaitForChild("KnifeStandInParts")
 local list = {}

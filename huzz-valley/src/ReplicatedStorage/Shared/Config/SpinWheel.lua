@@ -8,7 +8,9 @@
 	Odds list shows each one exactly). Kind:
 	  Coins  Amount coins          Aura  Amount Aura
 	  Boost  x2 coins from games for Minutes (stacks: another one adds its minutes)
-	  Knife  the Spin Knife skin (Config/CoinShop "SpinKnife" = the owner's Celestial Edge model, only from here); already owned = Duplicate coins
+	  Knife  a knife skin: Key = its Config/CoinShop key; already owned = Duplicate coins. Since Oct 24 (owner, 06:38:
+	         one of his reward knives "to be in the wheel") it's his Inverted Hex; the Celestial Edge it gave before stays
+	         in the crates, and saves that won it keep it.
 	Pity: after Pity.After - 1 spins in a row without a Legendary, the next spin is one (shown on the screen).
 	Earnings for scale (Config/Round.Pay): 25 coins a game, 50 more for a win; coin shop looks cost 200 to 8,000.
 ]]
@@ -16,7 +18,7 @@ local SpinWheel = {}
 
 SpinWheel.FreeEvery = 15 * 60 -- seconds between free spins
 SpinWheel.Multi = { 5, 10 } -- the Spin x5 / Spin x10 buttons
-SpinWheel.Duplicate = 1500 -- coins instead of the Spin Knife when you own it already
+SpinWheel.Duplicate = 1500 -- coins instead of the wheel's knife when you own it already
 SpinWheel.Pity = { After = 40, Rarity = "Legendary" }
 
 local hex = Color3.fromHex
@@ -24,7 +26,7 @@ local hex = Color3.fromHex
 SpinWheel.Colors = { Legendary = hex("FF4FAE"), A = hex("2F9BFF"), B = hex("7A4DFF") }
 
 SpinWheel.Items = {
-	{ Key = "SpinKnife", Kind = "Knife", Name = "Celestial Edge", Big = "SPIN", Small = "KNIFE", Rarity = "Legendary", Weight = 1, Color = "Legendary" },
+	{ Key = "InvertedHex", Kind = "Knife", Name = "Inverted Hex", Big = "SPIN", Small = "KNIFE", Rarity = "Legendary", Weight = 1, Color = "Legendary" },
 	{ Key = "Coins100", Kind = "Coins", Amount = 50, Name = "50 Coins", Big = "50", Small = "COINS", Rarity = "Common", Weight = 28, Color = "A" },
 	{ Key = "Aura25", Kind = "Aura", Amount = 15, Name = "15 Aura", Big = "15", Small = "AURA", Rarity = "Uncommon", Weight = 16, Color = "B" },
 	{ Key = "Coins500", Kind = "Coins", Amount = 250, Name = "250 Coins", Big = "250", Small = "COINS", Rarity = "Rare", Weight = 10, Color = "A" },

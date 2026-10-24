@@ -122,7 +122,10 @@ local function claim(verb: string, arg: any, done: string)
 end
 
 -- REWARDS ---------------------------------------------------------------------------------------------------------
-local CARD_W, CARD_GAP = 155, 13
+-- (4 cards fill the row at 155 wide; with more, they narrow and the picture with them: Oct 24, the Level 10 knife)
+local CARD_GAP = if #Progression.Rewards > 4 then 10 else 13
+local CARD_W = math.min(155, (BODY_W - 24 - (#Progression.Rewards - 1) * CARD_GAP) // #Progression.Rewards)
+local PIC_W = if CARD_W < 155 then 50 else 72
 
 local function buildRewards(page: Frame, refreshers: { () -> () })
 	local free = panel(page, "FreeRewards", BODY_X, 51, BODY_W, 132, COL.Section, COL.SectionRim)
@@ -131,11 +134,11 @@ local function buildRewards(page: Frame, refreshers: { () -> () })
 	for i, r in Progression.Rewards do
 		local x = 12 + (i - 1) * (CARD_W + CARD_GAP)
 		local card = panel(free, "Reward" .. r.Level, x, 27, CARD_W, 66, COL.Card, COL.CardRim, COL.CardBottom)
-		local pic = Kit.art(rewardArt(r), { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(72, 64), Parent = card })
+		local pic = Kit.art(rewardArt(r), { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(PIC_W, 64), ScaleType = if r.Kind == "Knife" then Enum.ScaleType.Fit else nil, Parent = card })
 		Kit.attach(Kit.corner(3), pic)
-		dancer(card, r, pic, UDim2.fromOffset(1, 1), UDim2.fromOffset(72, 64))
-		Kit.name({ Name = "Name", Text = r.Name, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(71, 6), Size = UDim2.fromOffset(CARD_W - 73, 22), Parent = card })
-		local holder = new("Frame", { Name = "State", BackgroundTransparency = 1, Position = UDim2.fromOffset(76, 33), Size = UDim2.fromOffset(CARD_W - 82, 25), Parent = card })
+		dancer(card, r, pic, UDim2.fromOffset(1, 1), UDim2.fromOffset(PIC_W, 64))
+		Kit.name({ Name = "Name", Text = r.Name, TextSize = if CARD_W < 155 then 12 else 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(PIC_W - 1, 6), Size = UDim2.fromOffset(CARD_W - PIC_W - 1, 22), Parent = card })
+		local holder = new("Frame", { Name = "State", BackgroundTransparency = 1, Position = UDim2.fromOffset(PIC_W + 4, 33), Size = UDim2.fromOffset(CARD_W - PIC_W - 10, 25), Parent = card })
 		local shown = ""
 		table.insert(refreshers, function()
 			local level = Progression.level(State.data.XP or 0)
@@ -181,7 +184,11 @@ local function buildRewards(page: Frame, refreshers: { () -> () })
 	for i, r in Progression.Rewards do hexes[i] = hexagon(free, tostring(r.Level), nodes[i], cy) end
 	table.insert(refreshers, function()
 		local level = Progression.level(State.data.XP or 0)
-		for i, set in pieces do set(if level >= i then 1 else 0) end -- piece i ends at node i
+		-- (piece i ends at node i; the last runs past the last node)
+		for i, set in pieces do
+			local r = Progression.Rewards[math.min(i, #Progression.Rewards)]
+			set(if level > r.Level or (i <= #Progression.Rewards and level >= r.Level) then 1 else 0)
+		end
 		for i, r in Progression.Rewards do hexes[i](level >= r.Level) end
 	end)
 

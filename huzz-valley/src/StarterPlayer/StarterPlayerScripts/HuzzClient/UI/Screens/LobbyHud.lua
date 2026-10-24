@@ -11,6 +11,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
 local SpinRules = require(Shared.SpinRules)
 local DailyRules = require(Shared.DailyRules)
+local LoginRules = require(Shared.LoginRules)
 local Progression = require(Shared.Config.Progression)
 local Friends = require(Shared.Config.Friends)
 local Playtime = require(Shared.Config.Playtime)
@@ -111,6 +112,12 @@ function LobbyHud.build(parent: Instance)
 	tileButton(left, "Inventory", "InventoryBackpack", 159, function() MainMenu.go("Inventory") end)
 	local menu = squareButton(left, "Menu", "MainMenuLines", 233, function() ModalManager.toggle("Menu") end)
 	menu.Instance.Icon.Size = UDim2.fromOffset(34, 34) -- the lines icon reads bigger than the others
+	-- DAILY under MENU (owner, Oct 24 06:12: "lets make daily rewards"): the 7-day login rewards (Screens/DailyLogin),
+	-- a "+1" while today's is ready. The column moves up by half a button so it stays in the middle of the edge.
+	local daily = squareButton(left, "Daily", "GiftBenefit", 299, function() ModalManager.open("DailyLogin") end)
+	left.Position = UDim2.new(0, 0, 0.5, -33)
+	local dailyTag = Kit.text({ Name = "ReadyTag", Text = "!", FontFace = Theme.Fonts.Button, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(20, 20), ZIndex = 3, Visible = false, Parent = daily.Instance })
+	Kit.attach(Kit.corner(10), dailyTag)
 	-- Right edge: SPIN opens the Spin the Wheel (Screens/SpinWheel); a green FREE tag while a free spin waits.
 	local right = group(root, "Right", Vector2.new(1, 0.5), UDim2.fromScale(1, 0.5), Vector2.new(100, 322))
 	local spin = squareButton(right, "Spin", "SpinWheel", 132, function() ModalManager.open("SpinWheel") end)
@@ -241,7 +248,17 @@ function LobbyHud.build(parent: Instance)
 		end)
 		me:GetAttributeChangedSignal("HuzzFriendGift"):Connect(function()
 			local gift = me:GetAttribute("HuzzFriendGift")
-			if gift == "Knife" then Toast.show(Friends.KnifeToast) elseif gift == "Coins" then Toast.show(Friends.CoinsToast) end
+			-- ("Knife:5", "Coins:1", "More:3": what was given, and how many friends have joined you)
+			local what, n = string.match(tostring(gift), "^(%a+):?(%d*)")
+			if what == "Knife" then
+				Toast.show(Friends.KnifeToast)
+			elseif what == "Coins" and n == tostring(Friends.Need) then
+				Toast.show(string.format("5 friends joined you! You already own the %s, so here's %d coins.", Friends.KnifeName, Friends.FriendKnifeCoins))
+			elseif what == "Coins" then
+				Toast.show(Friends.CoinsToast)
+			elseif what == "More" then
+				Toast.show(string.format(Friends.MoreToast, tonumber(n) or 0))
+			end
 		end)
 	end
 	if not Kit.reused(invite.Instance) then invite.Instance.Position = UDim2.fromOffset(100 - 25 - 33, invite.Instance.Position.Y.Offset) end
@@ -270,6 +287,7 @@ function LobbyHud.build(parent: Instance)
 			count(freeTag, if loaded then free + bought else 0)
 			count(questTag, if loaded then DailyRules.ready(State.data.Daily, now) else 0)
 			count(menuTag, if loaded then Progression.claimable(State.data) else 0)
+			count(dailyTag, if loaded and select(2, LoginRules.next(State.data.Login, now)) then 1 else 0)
 			task.wait(1)
 		end
 	end)

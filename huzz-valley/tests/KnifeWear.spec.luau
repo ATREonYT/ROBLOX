@@ -369,7 +369,7 @@ do
 		end
 	end
 	check(`every knife's Wear matches its measured length ({backs} back, {sides} side)` .. (if #wrong > 0 then ": " .. table.concat(wrong, ", ") else ""),
-		#wrong == 0 and backs + sides == 53)
+		#wrong == 0 and backs + sides == 57) -- (his 30, 5 pass, 18 Halloween and, Oct 24, 4 reward knives)
 	for _, key in { "PumpkinKingKatana", "CovenKatana", "SugarRushKatana", "JacksReaper", "GrandWitchScythe", "CandyReaper", "SolarReaper",
 		"AbyssEclipse", "CrimsonRequiem", "CelestialSeraph" } do
 		check(key .. ": on the back", CoinShop.get(key).Wear == "Back")
@@ -424,7 +424,7 @@ do
 		for key in hiddenAny do table.insert(list, key) end
 		print(string.format("  guard, %s: farthest worn grip %.2f studs outside its body part (%s)", b[1], worst, worstKey))
 		check(string.format("guard, %s: no worn knife is hidden (%d knives)", b[1], #all) .. (if #list > 0 then ": " .. table.concat(list, ", ") else ""),
-			#list == 0 and #all == 54)
+			#list == 0 and #all == 58)
 	end
 end
 -- 1b) Oct 21: each screen's Gameplay/FollowGuard (c) removes a visible part inside a character whose box is more

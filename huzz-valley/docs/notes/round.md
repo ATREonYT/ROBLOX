@@ -341,4 +341,6 @@ stand-in blocks for the girls). Not seen in Studio yet: how it sits next to her 
 - AFK zone (`Config/Afk`, `HuzzServer/AfkService`): a 16-stud pad beside the spawn (or his own part named AfkZone).
   Standing on it sets HuzzAfk; SkipService counts them as sitting out every game; the name tag says AFK. No reward.
   Studio only: where it lands in his lobby (Output `[HuzzAfk] AFK zone at ...`).
+- Oct 24 06:41 ("also please remove this one", a picture of the pad): `Afk.Pad = false`, so no pad is built. A part named
+  AfkZone in his lobby still works as a zone. Going idle (Afk.IdleAfter) is the AFK now.
 - Like window: "It helps more players find Huss Anime Girls!".

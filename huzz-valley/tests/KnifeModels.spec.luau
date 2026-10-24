@@ -50,14 +50,16 @@ local boxes = serde.decode("json", fs.readFile(ROOT .. "tools/knives/knife_boxes
 local baked = {}
 for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do baked[k.key] = k end
 -- the knives of his files of several (5 Game Pass, 18 Halloween): drawn from the .glb until his import
-local PASS, isPass = {}, {}
+-- (Oct 24: and his 4 reward knives, whose import isn't in HuzzKnives yet: isReward)
+local PASS, isPass, isReward = {}, {}, {}
 for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do
 	if string.find(k.file, "/", 1, true) then
 		table.insert(PASS, k.key)
 		isPass[k.key] = true
+		if string.find(k.file, "rewards/", 1, true) then isReward[k.key] = true end
 	end
 end
-check("23 knives drawn from his files of several (" .. #PASS .. ")", #PASS == 23)
+check("27 knives drawn from his files of several (" .. #PASS .. ")", #PASS == 27)
 
 -- the colouring tool's matcher (the same rule the file was coloured by)
 local Colour = luau.load(fs.readFile(ROOT .. "tools/knives/colour_knives.luau"), { debugName = "colour_knives", environment = {
@@ -264,7 +266,11 @@ for _, item in CoinShop.Items do
 		-- his import is in the file since Oct 20 20:34: the game uses it; set aside (an older place), the stand-in
 		-- is still tagged for the .glb dress
 		local _, own = KnifeService.template(item)
-		check(key .. ": his import in the file, so his model", own == true)
+		if isReward[key] then
+			check(key .. ": not imported yet, so the stand-in (tagged for the .glb dress)", own ~= true and KnifeService.template(item):GetAttribute("Glb") == key)
+		else
+			check(key .. ": his import in the file, so his model", own == true)
+		end
 		local his = folder:FindFirstChild(key)
 		if his then his.Parent = nil end
 		local t = KnifeService.template(item)
@@ -272,7 +278,7 @@ for _, item in CoinShop.Items do
 		if his then his.Parent = folder end
 	end
 end
-check("53 knife keys checked (" .. knives .. ")", knives == 53)
+check("57 knife keys checked (" .. knives .. ")", knives == 57)
 
 -- 3. the baked .glb meshes of the 23 knives of his files of several
 local Dress = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/KnifeDress.lua"), { debugName = "KnifeDress", environment = {
