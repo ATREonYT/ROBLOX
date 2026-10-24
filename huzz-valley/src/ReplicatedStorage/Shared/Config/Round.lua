@@ -114,7 +114,8 @@ return {
 	-- Owner, Oct 24: "if you huss infront of someone they go from 1x-0.75x speed": a huss (in a game, while running)
 	-- whose path passes up to Ahead studs in front of someone on the other side, and at most Side studs to their side,
 	-- slows them to Slow of their speed for Time seconds (RoundRules.cutsOff). Path = the huss's length (about 12, above).
-	Cut = { Ahead = 12, Side = 4, Path = 12, Slow = 0.75, Time = 2 },
+	-- (Slow 0.75 until Oct 24 10:21: "make when you huss a seeker. they go to 0.82x not 0.75x")
+	Cut = { Ahead = 12, Side = 4, Path = 12, Slow = 0.82, Time = 2 },
 	-- Catchers' Space (owner: "when they press space they jump and haul at the runner, and if they go into them,
 	-- they get stabbed"): a leap forward the way they face, a hard burst that eases off (Speed to EndSpeed over
 	-- Time: 0.38 x (40 + 32/3) = 19 studs, the old flat 56 x 0.36 reach). Any runner they reach during the leap
@@ -175,9 +176,9 @@ return {
 		Speed = 30, -- studs a second (where it starts)
 		-- It adapts to the kids playing it (loop audit, Oct 17: how often a kid alone beat it swung from 14% to 82%
 		-- with how well they steer): Step slower after it wins a game, Step faster after it loses, between MinSpeed and
-		-- MaxSpeed (never as fast as a runner's 35). The message line says so.
+		-- MaxSpeed (never as fast as a runner's 33.6). The message line says so.
 		MinSpeed = 26,
-		MaxSpeed = 34,
+		MaxSpeed = 32, -- (34 until runners went to 33.6, Oct 24)
 		Step = 2,
 		Reach = 5, -- studs at Speed 30: it stabs a runner this close (no lag allowance); scales with its speed
 		Pause = 1.0, -- seconds it stands still after each stab
@@ -196,13 +197,14 @@ return {
 	-- PerRound, up to Max (Shared/RoundRules.speedScale, RoundService.speedFor). The lobby never changes.
 	-- Owner, Oct 24: "Make hunters 1x speed and normal peopl 1,25x": catchers keep the old runner top (28), runners
 	-- run 1.25x that (35). Was Runner 28, Catcher 30, Holder 27, LastRunner 30, Thief 30.
+	-- Owner, Oct 24 10:21: "make the speed of the runner 1.2x": runners 1.2 x 28 = 33.6 (carrying her 32.6).
 	SpeedUp = { PerRound = 0.02, Max = 0.20 },
 	Speeds = {
 		Lobby = 22, -- everyone not in a game
-		Runner = 35,
+		Runner = 33.6,
 		Catcher = 28,
-		Holder = 34, -- a runner carrying the girl
-		LastRunner = 35, -- the only runner still out on the field (already faster than a catcher: no extra)
+		Holder = 32.6, -- a runner carrying the girl
+		LastRunner = 33.6, -- the only runner still out on the field (already faster than a catcher: no extra)
 		Thief = 28, -- a catcher she's following (she walks behind him, so no slowdown)
 	},
 
