@@ -1,0 +1,43 @@
+{
+  "name": "HuzzValley",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/ReplicatedStorage/Shared"
+      }
+    },
+    "ServerScriptService": {
+      "HuzzServer": {
+        "$path": "src/ServerScriptService/HuzzServer"
+      }
+    },
+    "StarterPlayer": {
+      "$properties": {
+        "GameSettingsAvatar": "R6"
+      },
+      "StarterPlayerScripts": {
+        "HuzzClient": {
+          "$path": "src/StarterPlayer/StarterPlayerScripts/HuzzClient"
+        }
+      }
+    },
+    "StarterGui": {
+      "$path": "src/StarterGui"
+    },
+    "ServerStorage": {
+      "HuzzStudioTools": {
+        "$path": "src/ServerStorage/HuzzStudioTools"
+      },
+      "HuzzImages": {
+        "$path": "src/ServerStorage/HuzzImages"
+      },
+      "HuzzKnifeGlb": {
+        "$path": "src/ServerStorage/HuzzKnifeGlb"
+      },
+      "HuzzKnifeBackups": {
+        "$path": "src/ServerStorage/HuzzKnifeBackups"
+      }
+    }
+  }
+}

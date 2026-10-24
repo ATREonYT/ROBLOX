@@ -1,0 +1,638 @@
+[
+  {
+    "id": "shop-cart",
+    "file": "exact-pixel-icon-references/shop-cart.png",
+    "source_rect_xywh": [
+      48,
+      46,
+      44,
+      39
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "collection-book",
+    "file": "exact-pixel-icon-references/collection-book.png",
+    "source_rect_xywh": [
+      817,
+      46,
+      34,
+      36
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "dances-note",
+    "file": "exact-pixel-icon-references/dances-note.png",
+    "source_rect_xywh": [
+      49,
+      404,
+      34,
+      33
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "rewards-trophy",
+    "file": "exact-pixel-icon-references/rewards-trophy.png",
+    "source_rect_xywh": [
+      818,
+      402,
+      35,
+      34
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "quests-clipboard",
+    "file": "exact-pixel-icon-references/quests-clipboard.png",
+    "source_rect_xywh": [
+      47,
+      748,
+      32,
+      34
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "settings-gear",
+    "file": "exact-pixel-icon-references/settings-gear.png",
+    "source_rect_xywh": [
+      815,
+      748,
+      36,
+      35
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "currency-coin",
+    "file": "exact-pixel-icon-references/currency-coin.png",
+    "source_rect_xywh": [
+      393,
+      47,
+      30,
+      35
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "currency-gem",
+    "file": "exact-pixel-icon-references/currency-gem.png",
+    "source_rect_xywh": [
+      528,
+      46,
+      29,
+      34
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "currency-plus",
+    "file": "exact-pixel-icon-references/currency-plus.png",
+    "source_rect_xywh": [
+      489,
+      52,
+      21,
+      25
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "vip-crown",
+    "file": "exact-pixel-icon-references/vip-crown.png",
+    "source_rect_xywh": [
+      55,
+      149,
+      70,
+      63
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "chat-benefit",
+    "file": "exact-pixel-icon-references/chat-benefit.png",
+    "source_rect_xywh": [
+      392,
+      150,
+      26,
+      28
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "shirt-benefit",
+    "file": "exact-pixel-icon-references/shirt-benefit.png",
+    "source_rect_xywh": [
+      392,
+      182,
+      26,
+      27
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "music-benefit",
+    "file": "exact-pixel-icon-references/music-benefit.png",
+    "source_rect_xywh": [
+      392,
+      261,
+      28,
+      31
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "gift-benefit",
+    "file": "exact-pixel-icon-references/gift-benefit.png",
+    "source_rect_xywh": [
+      390,
+      296,
+      30,
+      33
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "gift-action",
+    "file": "exact-pixel-icon-references/gift-action.png",
+    "source_rect_xywh": [
+      669,
+      269,
+      35,
+      42
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "favourite-filled",
+    "file": "exact-pixel-icon-references/favourite-filled.png",
+    "source_rect_xywh": [
+      823,
+      130,
+      33,
+      33
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "favourite-outline",
+    "file": "exact-pixel-icon-references/favourite-outline.png",
+    "source_rect_xywh": [
+      981,
+      249,
+      32,
+      32
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "check-owned",
+    "file": "exact-pixel-icon-references/check-owned.png",
+    "source_rect_xywh": [
+      892,
+      208,
+      31,
+      28
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "check-equipped",
+    "file": "exact-pixel-icon-references/check-equipped.png",
+    "source_rect_xywh": [
+      1372,
+      189,
+      31,
+      31
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "lock",
+    "file": "exact-pixel-icon-references/lock.png",
+    "source_rect_xywh": [
+      1044,
+      282,
+      31,
+      35
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "play",
+    "file": "exact-pixel-icon-references/play.png",
+    "source_rect_xywh": [
+      476,
+      661,
+      28,
+      28
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "stop",
+    "file": "exact-pixel-icon-references/stop.png",
+    "source_rect_xywh": [
+      621,
+      661,
+      26,
+      28
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "search",
+    "file": "exact-pixel-icon-references/search.png",
+    "source_rect_xywh": [
+      407,
+      412,
+      25,
+      25
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "close",
+    "file": "exact-pixel-icon-references/close.png",
+    "source_rect_xywh": [
+      689,
+      47,
+      31,
+      35
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "tag-fist",
+    "file": "exact-pixel-icon-references/tag-fist.png",
+    "source_rect_xywh": [
+      58,
+      801,
+      45,
+      55
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "stopwatch",
+    "file": "exact-pixel-icon-references/stopwatch.png",
+    "source_rect_xywh": [
+      394,
+      801,
+      44,
+      50
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "sneaker",
+    "file": "exact-pixel-icon-references/sneaker.png",
+    "source_rect_xywh": [
+      57,
+      880,
+      50,
+      50
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "players",
+    "file": "exact-pixel-icon-references/players.png",
+    "source_rect_xywh": [
+      396,
+      880,
+      45,
+      51
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "xp-badge",
+    "file": "exact-pixel-icon-references/xp-badge.png",
+    "source_rect_xywh": [
+      321,
+      797,
+      29,
+      34
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "envelope",
+    "file": "exact-pixel-icon-references/envelope.png",
+    "source_rect_xywh": [
+      828,
+      847,
+      35,
+      26
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "inventory-visibility",
+    "file": "exact-pixel-icon-references/inventory-visibility.png",
+    "source_rect_xywh": [
+      829,
+      800,
+      32,
+      32
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "companion-effects",
+    "file": "exact-pixel-icon-references/companion-effects.png",
+    "source_rect_xywh": [
+      828,
+      901,
+      35,
+      29
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "monitor",
+    "file": "exact-pixel-icon-references/monitor.png",
+    "source_rect_xywh": [
+      827,
+      946,
+      35,
+      27
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "robux-mockup-not-official",
+    "file": "exact-pixel-icon-references/robux-mockup-not-official.png",
+    "source_rect_xywh": [
+      568,
+      273,
+      34,
+      37
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": false
+  },
+  {
+    "id": "tier-mtb",
+    "file": "exact-pixel-icon-references/tier-mtb.png",
+    "source_rect_xywh": [
+      931,
+      122,
+      41,
+      31
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "tier-sub5",
+    "file": "exact-pixel-icon-references/tier-sub5.png",
+    "source_rect_xywh": [
+      1080,
+      124,
+      55,
+      28
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "tier-sub3",
+    "file": "exact-pixel-icon-references/tier-sub3.png",
+    "source_rect_xywh": [
+      920,
+      249,
+      56,
+      29
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "tier-stacy",
+    "file": "exact-pixel-icon-references/tier-stacy.png",
+    "source_rect_xywh": [
+      1080,
+      249,
+      55,
+      29
+    ],
+    "source": "approved-original.png",
+    "exactness": "Exact source pixels inside this rectangle; background and neighbouring antialias pixels retained.",
+    "transparent": false,
+    "official": null
+  },
+  {
+    "id": "audio-speaker",
+    "file": "exact-pixel-icon-references/audio-speaker.png",
+    "source": "pages/09-settings-audio.png",
+    "source_rect_xywh": [
+      52,
+      82,
+      48,
+      48
+    ],
+    "exactness": "Exact pixels from generated extension, background retained.",
+    "transparent": false
+  },
+  {
+    "id": "audio-music",
+    "file": "exact-pixel-icon-references/audio-music.png",
+    "source": "pages/09-settings-audio.png",
+    "source_rect_xywh": [
+      53,
+      140,
+      45,
+      48
+    ],
+    "exactness": "Exact pixels from generated extension, background retained.",
+    "transparent": false
+  },
+  {
+    "id": "audio-waveform",
+    "file": "exact-pixel-icon-references/audio-waveform.png",
+    "source": "pages/09-settings-audio.png",
+    "source_rect_xywh": [
+      52,
+      198,
+      48,
+      48
+    ],
+    "exactness": "Exact pixels from generated extension, background retained.",
+    "transparent": false
+  },
+  {
+    "id": "controls-dash",
+    "file": "exact-pixel-icon-references/controls-dash.png",
+    "source": "pages/10-settings-controls.png",
+    "source_rect_xywh": [
+      52,
+      80,
+      48,
+      48
+    ],
+    "exactness": "Exact pixels from generated extension, background retained.",
+    "transparent": false
+  },
+  {
+    "id": "controls-menu",
+    "file": "exact-pixel-icon-references/controls-menu.png",
+    "source": "pages/10-settings-controls.png",
+    "source_rect_xywh": [
+      52,
+      139,
+      48,
+      48
+    ],
+    "exactness": "Exact pixels from generated extension, background retained.",
+    "transparent": false
+  },
+  {
+    "id": "controls-keyboard",
+    "file": "exact-pixel-icon-references/controls-keyboard.png",
+    "source": "pages/10-settings-controls.png",
+    "source_rect_xywh": [
+      49,
+      248,
+      50,
+      43
+    ],
+    "exactness": "Exact pixels from generated extension, background retained.",
+    "transparent": false
+  },
+  {
+    "id": "main-menu-lines",
+    "file": "exact-pixel-icon-references/main-menu-lines.png",
+    "source": "pages/12-main-menu.png",
+    "source_rect_xywh": [
+      42,
+      19,
+      40,
+      33
+    ],
+    "exactness": "Exact pixels from generated extension, background retained.",
+    "transparent": false
+  },
+  {
+    "id": "tier-crown",
+    "file": "exact-pixel-icon-references/tier-crown.png",
+    "source": "pages/11-tier-index.png",
+    "source_rect_xywh": [
+      47,
+      18,
+      42,
+      37
+    ],
+    "exactness": "Exact pixels from generated extension, background retained.",
+    "transparent": false
+  }
+]
