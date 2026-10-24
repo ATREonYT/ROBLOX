@@ -65,12 +65,12 @@ return {
 	},
 
 	-- A pink bubble for a few seconds. It blocks the next stab: the catcher gets dizzy (slow, can't stab) and you get
-	-- a burst of speed to run off. Once per round. Lasts counts from when the bubble shows (after the wind-up).
+	-- a burst of speed to run off. Once a game (all its rounds). Lasts counts from when the bubble shows (after the wind-up).
 	Shield = {
 		Name = "Shield", Card = "ONE HIT SHIELD", Icon = "AbilityShield", Tile = Color3.fromRGB(32, 176, 245), Emoji = "🛡️", Text = "Blocks one stab",
 		Accent = Color3.fromRGB(110, 205, 255), Side = "Runner", Starter = true, Price = 0,
 		Counter = "Wait it out: it lasts 6 s",
-		OncePerRound = true, Lasts = 6, Dizzy = 1.5, DizzySlow = 0.5, Boost = 6, BoostTime = 1.5,
+		OncePerGame = true, Lasts = 6, Dizzy = 1.5, DizzySlow = 0.5, Boost = 6, BoostTime = 1.5,
 	},
 	-- Gone for a few seconds (owner, Oct 21: "the invisible should be completely invisible"; still catchable, and
 	-- your footsteps still sound). Other screens lose all of you: body, knife, name tag, trail, aura and the girl you
@@ -161,7 +161,13 @@ return {
 		Accent = Color3.fromRGB(240, 170, 90), Side = "Catcher", Price = 1000,
 		Counter = "Huss sideways when the rope flies",
 		-- (owner, Oct 23 16:52: "make the lasso go further and quicker": Range 24 -> 40, Speed 70 -> 130, WindUp
-		-- 0.3 -> 0.18 in Fx, and it pulls 10 studs, not 7)
-		Cooldown = 15, Range = 40, Speed = 130, Width = 3, Pull = 10, PullTime = 0.3, MinGap = 4, Hold = 0.6, Slow = 0.6,
+		-- 0.3 -> 0.18 in Fx)
+		-- Owner, Oct 24: "make the lasso work better (all the way to you and you can throw it to near the end of the
+		-- map)": Range 40 -> 220 (the fields are about 160 to 330 studs end to end), Speed 130 -> 240 (the far end in
+		-- under a second), Width 3 -> 5 (easier to land far off), and the pull drags them all the way to MinGap
+		-- studs from you (Pull was 10) at PullSpeed studs a second, PullTime to MaxPullTime long
+		-- (AbilityRules.pullTime).
+		Cooldown = 15, Range = 220, Speed = 240, Width = 5, Pull = 1000, PullSpeed = 110, PullTime = 0.3, MaxPullTime = 2.2,
+		MinGap = 4, Hold = 0.6, Slow = 0.6,
 	},
 }

@@ -100,7 +100,8 @@ do
 		start, cap, half * 100, at90 or -1, Run.Ramp, biggest, lastGain))
 	check(RunMotion.rampSpeed(start, cap, 0) == start and math.abs(RunMotion.rampSpeed(start, cap, 1) - cap) < 1e-6
 		and RunMotion.rampSpeed(start, cap, 3) == cap, "the build goes from the walk to the top in exactly 1 s, then holds")
-	check(rising and biggest < 0.75 and lastGain < 0.01, "only ever up, at most 0.75 studs/s a frame, and settling softly into the top (no jolt)")
+	local perStud = biggest / (cap - start) -- (the shape: 0.75 studs/s a frame was the bar for a 20-stud build, 8 to 28)
+	check(rising and perStud < 0.75 / 20 and lastGain < 0.01, "only ever up, at most 0.75 studs/s a frame per 20 of build-up, and settling softly into the top (no jolt)")
 	check(half >= 0.65 and half <= 0.8 and at90 and at90 >= 0.6, string.format("clearly still building at 0.5 s (%.0f%%; was ~95%%), 90%% not before 0.6 s", half * 100))
 	check(RunMotion.rampSpeed(start, start - 2, 0.3) == start - 2, "a top speed under the start (slowed, frozen) is kept as it is")
 end
@@ -119,7 +120,7 @@ do
 		"a tap in the lobby (0.2 s) never halts")
 	check(not RunMotion.haltFrom(RunMotion.rampSpeed(start, cap, 0.3), cap, start), "nor a short dash in a round (0.3 s)")
 	local d = RunMotion.pushDistance(RunMotion.haltPush(cap))
-	local dMax = RunMotion.pushDistance(RunMotion.haltPush(Round.Speeds.Catcher * (1 + Round.SpeedUp.Max)))
+	local dMax = RunMotion.pushDistance(RunMotion.haltPush(math.max(Round.Speeds.Runner, Round.Speeds.Catcher) * (1 + Round.SpeedUp.Max)))
 	local dLobby = RunMotion.pushDistance(RunMotion.haltPush(lobby))
 	print(string.format("  halt: %.2f studs from a runner's %d over %.2f s (fastest catcher %.2f, lobby %.2f)", d, cap, H.Time, dMax, dLobby))
 	check(d >= 1.5 and d <= 2.5, string.format("a runner carries on ~2 studs (%.2f; HV's last 0.28 s ~2.5)", d))
@@ -135,7 +136,7 @@ do
 	check(RunMotion.pushSpeed(cfg, 0) == cap and down and RunMotion.pushSpeed(cfg, H.Time) == nil,
 		"it starts at your speed (no jump), only ever slows, and ends at a stand")
 end
-local steps = 2 * Round.Speeds.Runner / Run.Stride
+local steps = 2 * Round.Speeds.Runner / RunMotion.stride(Round.Speeds.Runner)
 check(steps >= 4.2 and steps <= 5, string.format("the scripted run and the footsteps step ~4.6 times a second at runner speed (%.2f)", steps))
 check(Run.ArmOut <= 12, "arms swing front to back, not out wide")
 

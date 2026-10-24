@@ -219,7 +219,7 @@ function M.start()
 				local dashing = type(dashAt) == "number" and now - dashAt < 0.35 -- (no quick-fire steps from the huss push)
 				if speed > 4 and not dashing and math.abs(v.Y) < 8 and (p == player or (camera.CFrame.Position - root.Position).Magnitude < STEP_NEAR) then
 					local t = (stepped[p] or 0) + speed * dt
-					if t >= Run.Stride / 2 then
+					if t >= RunMotion.stride(speed) / 2 then
 						t = 0
 						if p == player then Sfx.play("step") else Sfx.play("step", { at = root, volume = 0.8 }) end
 					end
@@ -252,7 +252,7 @@ function M.start()
 				-- a puff each step (half a stride) while running on the ground
 				if speed > Run.From and math.abs(v.Y) < 8 then
 					d.travelled += speed * dt
-					if d.travelled >= Run.Stride / 2 then
+					if d.travelled >= RunMotion.stride(speed) / 2 then
 						d.travelled = 0
 						d.emitter:Emit(2)
 					end

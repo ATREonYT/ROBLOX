@@ -45,7 +45,7 @@ local function line(props: { [string]: any }, stroke: number?): TextLabel
 end
 
 local function cooldownText(def): string
-	if def.OncePerRound then return "ONCE A ROUND" end
+	if def.OncePerGame then return "ONCE A GAME" end
 	if def.Cooldown then return string.format("COOLDOWN %ds", def.Cooldown) end
 	return ""
 end

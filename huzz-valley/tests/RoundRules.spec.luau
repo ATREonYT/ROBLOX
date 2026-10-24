@@ -639,6 +639,17 @@ test("a death counts as a catch only while you can run (bug hunt, Oct 20)", func
 	eq(Rules.deathCounts(nil, false), false, "no stage")
 end)
 
+test("a huss across in front of someone cuts them off (owner, Oct 24)", function()
+	local cut = { Ahead = 12, Side = 4 }
+	local v = function(x, z) return { X = x, Z = z } end
+	-- they stand at 0,0 looking +Z; a huss across 6 studs ahead of them, left to right
+	eq(Rules.cutsOff(v(-6, 6), v(1, 0), 12, v(0, 0), v(0, 1), cut), true, "across their path")
+	eq(Rules.cutsOff(v(-6, -6), v(1, 0), 12, v(0, 0), v(0, 1), cut), false, "behind them")
+	eq(Rules.cutsOff(v(-6, 20), v(1, 0), 12, v(0, 0), v(0, 1), cut), false, "too far ahead")
+	eq(Rules.cutsOff(v(8, 6), v(1, 0), 12, v(0, 0), v(0, 1), cut), false, "off to their side, going away")
+	eq(Rules.cutsOff(v(14, 6), v(-1, 0), 12, v(0, 0), v(0, 1), cut), true, "ends right in front of them")
+end)
+
 print(`RoundRules: {passed} passed, {failed} failed`)
 if failed > 0 then
 	error("RoundRules tests failed")

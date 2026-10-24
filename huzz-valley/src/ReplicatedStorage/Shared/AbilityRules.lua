@@ -126,21 +126,22 @@ function AbilityRules.slot(role: string?, slot: number, loadout: any, runnerPick
 	return loadout and loadout[entry.Loadout]
 end
 
--- Cooldowns: a slot's ready time is a server time; -1 = used up this round (once per round). A press counts from
+-- Cooldowns: a slot's ready time is a server time; -1 = used up (a once-a-game power, owner Oct 24: "Make the shield a
+-- 1 time thing in the whole game not rounds"). A press counts from
 -- GRACE before it's ready.
 function AbilityRules.canUse(readyAt: number?, now: number): boolean
 	local r = readyAt or 0
 	return r >= 0 and now >= r - AbilityRules.GRACE
 end
 
--- When a slot is ready again after a use at `now`: -1 for a once-a-round power.
+-- When a slot is ready again after a use at `now`: -1 for a once-a-game power.
 function AbilityRules.nextReady(name: string, now: number): number
 	local d = Powers[name]
-	if d.OncePerRound then return -1 end
+	if d.OncePerGame then return -1 end
 	return now + (d.Cooldown or 0)
 end
 
--- Seconds left on a cooldown (0 when ready; math.huge when used up for the round).
+-- Seconds left on a cooldown (0 when ready; math.huge when used up for the game).
 function AbilityRules.left(readyAt: number?, now: number): number
 	local r = readyAt or 0
 	if r < 0 then return math.huge end
@@ -195,6 +196,11 @@ function AbilityRules.pullSpot(fromX: number, fromZ: number, towardX: number, to
 	return fromX + dx / len * d, fromZ + dz / len * d
 end
 -- When to check: after the pull, plus the runner's round trip (ping both ways, at most 1 s), plus a little slack.
+-- How long a lasso pull of `dist` studs takes: at def.PullSpeed, between def.PullTime and def.MaxPullTime.
+function AbilityRules.pullTime(dist: number, def: any): number
+	return math.clamp(dist / def.PullSpeed, def.PullTime, def.MaxPullTime)
+end
+
 function AbilityRules.pullCheckAfter(pullTime: number, ping: number?): number
 	local rtt = if type(ping) == "number" then math.clamp(ping * 2, 0, 1) else 0.3
 	return pullTime + rtt + 0.15

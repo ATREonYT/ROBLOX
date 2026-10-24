@@ -148,6 +148,11 @@ function RunMotion.haltFrom(speed: number, cap: number, start: number): boolean
 end
 
 -- The halt's push from `speed`, for pushSpeed / pushDistance: down to 0 over Config.Halt.Time, eased (quickest at first).
+-- Studs a full stride (two steps) at `speed`: Config.Stride, longer once that would step more than MaxSteps a second.
+function RunMotion.stride(speed: number): number
+	return math.max(Config.Stride, 2 * speed / (Config.MaxSteps or math.huge))
+end
+
 function RunMotion.haltPush(speed: number)
 	local H = Config.Halt
 	return { Speed = speed, EndSpeed = 0, Time = H.Time, Ease = H.Ease }
@@ -339,7 +344,7 @@ function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir, ca
 		end
 		return
 	end
-	rec.phase = (rec.phase + dt * speed / C.Stride * 2 * pi) % (2 * pi)
+	rec.phase = (rec.phase + dt * speed / RunMotion.stride(speed) * 2 * pi) % (2 * pi)
 	local J = rec.joints
 	local run = runPose(J, rec.phase, carrying)
 	local depth = nil

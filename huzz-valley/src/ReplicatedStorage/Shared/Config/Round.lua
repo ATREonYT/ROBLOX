@@ -110,6 +110,10 @@ return {
 	-- 0.15 s (was 0.22 s), and it ends at 16 sideways instead of 28, so the hand-back to the run is soft.
 	-- Cooldown 2 s (owner's number; was 2.5).
 	Dash = { Speed = 120, EndSpeed = 16, Time = 0.28, Ease = 3, Cooldown = 2 },
+	-- Owner, Oct 24: "if you huss infront of someone they go from 1x-0.75x speed": a huss (in a game, while running)
+	-- whose path passes up to Ahead studs in front of someone on the other side, and at most Side studs to their side,
+	-- slows them to Slow of their speed for Time seconds (RoundRules.cutsOff). Path = the huss's length (about 12, above).
+	Cut = { Ahead = 12, Side = 4, Path = 12, Slow = 0.75, Time = 2 },
 	-- Catchers' Space (owner: "when they press space they jump and haul at the runner, and if they go into them,
 	-- they get stabbed"): a leap forward the way they face, a hard burst that eases off (Speed to EndSpeed over
 	-- Time: 0.38 x (40 + 32/3) = 19 studs, the old flat 56 x 0.36 reach). Any runner they reach during the leap
@@ -158,23 +162,28 @@ return {
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 
 	-- The Practice Bot (HuzzServer/PracticeBot; owner picked "Yes, add bots" so a round works alone): a catcher that
-	-- joins any round with runners and no catcher. Slower than a sprinting runner (28) so the huss and a straight run
+	-- joins any round with runners and no catcher. Slower than a sprinting runner (35) so the huss and a straight run
 	-- beat it; it never wins a girl and is never paid.
 	Bot = {
 		Enabled = true,
 		Name = "Practice Bot",
-		Speed = 24, -- studs a second (where it starts)
+		-- Owner, Oct 24: "make the bots better so if people join they have someone to vs" (and runners now run 35):
+		-- was Speed 24 between 18 and 28, Reaction 0.6, aiming at most 0.35 s ahead and no lunge.
+		Speed = 30, -- studs a second (where it starts)
 		-- It adapts to the kids playing it (loop audit, Oct 17: how often a kid alone beat it swung from 14% to 82%
 		-- with how well they steer): Step slower after it wins a game, Step faster after it loses, between MinSpeed and
-		-- MaxSpeed (never faster than a runner's 28). The message line says so.
-		MinSpeed = 18,
-		MaxSpeed = 28,
+		-- MaxSpeed (never as fast as a runner's 35). The message line says so.
+		MinSpeed = 26,
+		MaxSpeed = 34,
 		Step = 2,
-		Reach = 5, -- studs at Speed 24: it stabs a runner this close (no lag allowance); scales with its speed
-		Pause = 1.2, -- seconds it stands still after each stab
-		Reaction = 0.6, -- seconds after GO before it moves
+		Reach = 5, -- studs at Speed 30: it stabs a runner this close (no lag allowance); scales with its speed
+		Pause = 1.0, -- seconds it stands still after each stab
+		Reaction = 0.4, -- seconds after GO before it moves
 		Think = 0.15, -- seconds between picking where to run
-		Lead = 0.35, -- seconds it aims ahead of a runner (less when they're far)
+		Lead = 2.5, -- at most this many seconds it aims ahead of a runner: where they'll meet (PracticeBot meetIn)
+		-- A haul at a runner From to To studs off with nothing in the way, like a catcher's Space: Boost x its speed for
+		-- Time seconds, then Cooldown seconds before the next.
+		Lunge = { From = 6, To = 18, Boost = 1.8, Time = 0.35, Cooldown = 2.5 }, -- (its reach is 1.3x while it lunges)
 	},
 
 	-- Faster than Roblox's 16 (owner: "make the people run quicker", and again: "make the running quicker at max
@@ -182,14 +191,16 @@ return {
 	-- Owner, Oct 19: "speed goes up every round a very tiny bit" (Huss Valley's round banner says "Speed unchanged"
 	-- or what changed): every round after the first, runners' and catchers' top speeds (and the Practice Bot's) go up
 	-- PerRound, up to Max (Shared/RoundRules.speedScale, RoundService.speedFor). The lobby never changes.
+	-- Owner, Oct 24: "Make hunters 1x speed and normal peopl 1,25x": catchers keep the old runner top (28), runners
+	-- run 1.25x that (35). Was Runner 28, Catcher 30, Holder 27, LastRunner 30, Thief 30.
 	SpeedUp = { PerRound = 0.02, Max = 0.20 },
 	Speeds = {
 		Lobby = 22, -- everyone not in a game
-		Runner = 28,
-		Catcher = 30,
-		Holder = 27, -- a runner carrying the girl
-		LastRunner = 30, -- the only runner still out on the field (a catch-up: as fast as a catcher)
-		Thief = 30, -- a catcher she's following (she walks behind him, so no slowdown)
+		Runner = 35,
+		Catcher = 28,
+		Holder = 34, -- a runner carrying the girl
+		LastRunner = 35, -- the only runner still out on the field (already faster than a catcher: no extra)
+		Thief = 28, -- a catcher she's following (she walks behind him, so no slowdown)
 	},
 
 	-- Map parts. Each map is a folder or model in Workspace holding ZoneA, ZoneB and

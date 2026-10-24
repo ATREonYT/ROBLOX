@@ -334,6 +334,11 @@ function MapService.useLobbyFor(entry): boolean
 	return true
 end
 
+-- The lobby's spawn pad ({ centre, inward, across, ... }; nil before init or without a lobby floor).
+function MapService.lobbyPad()
+	return activeLobby and activeLobby.pad
+end
+
 -- Where players stand in the lobby: the middle of its spawn pad, else its spawn, else the top of its floor.
 function MapService.lobbySpawn(): Vector3?
 	local pad = activeLobby and activeLobby.pad

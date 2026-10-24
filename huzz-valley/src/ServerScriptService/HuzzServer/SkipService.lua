@@ -5,6 +5,7 @@
 	    it when the game starts. A tap toggles your choice (ActionService "SkipVote").
 	  - The choice lasts for that one game: RoundService leaves you out of it (no role, you stay in the lobby) and
 	    clears every choice when the game ends. If everyone here skips, there is no game and the vote starts again.
+	  - Players on the AFK zone (HuzzServer/AfkService) sit out too, every game, for as long as they stand there.
 	  - Shown on everyone's screen: Workspace attribute "HuzzSkipVotes" (how many skip; nil while closed), and each
 	    player's "HuzzSkip" (true while they sit out). Read by Screens/LobbyHud's SKIP button.
 ]]
@@ -15,10 +16,16 @@ local SkipService = {}
 local open = false
 local sitting: { [number]: boolean } = {} -- UserId -> true
 
+-- Sitting out: chose SKIP, or standing on the AFK zone (HuzzServer/AfkService, attribute HuzzAfk) for as long as
+-- they stay there.
+local function sits(p: Player): boolean
+	return sitting[p.UserId] == true or p:GetAttribute("HuzzAfk") == true
+end
+
 local function count(): number
 	local n = 0
 	for _, p in Players:GetPlayers() do
-		if sitting[p.UserId] then n += 1 end
+		if sits(p) then n += 1 end
 	end
 	return n
 end
@@ -52,7 +59,8 @@ function SkipService.clear()
 end
 
 function SkipService.sitting(userId: number): boolean
-	return sitting[userId] == true
+	local p = Players:GetPlayerByUserId(userId)
+	return sitting[userId] == true or (p ~= nil and sits(p))
 end
 
 -- True when every player here skips (then there is no game).

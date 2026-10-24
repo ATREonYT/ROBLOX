@@ -487,4 +487,22 @@ function RoundRules.removePlayer(s, id)
 	return events
 end
 
+-- The huss cut-off (owner, Oct 24: "if you huss infront of someone they go from 1x-0.75x speed"): whether a huss
+-- from `from` along the flat unit `dir` for `dist` studs crosses in front of someone standing at `at` facing the flat
+-- unit `look`: some point of the path is between 0 and cut.Ahead studs ahead of them and at most cut.Side studs to
+-- their side. Anything with .X and .Z works (Vector3s in the game).
+function RoundRules.cutsOff(from: any, dir: any, dist: number, at: any, look: any, cut: { Ahead: number, Side: number }): boolean
+	local steps = math.max(1, math.ceil(dist / 1.5))
+	for i = 0, steps do
+		local k = dist * i / steps
+		local rx, rz = from.X + dir.X * k - at.X, from.Z + dir.Z * k - at.Z
+		local ahead = rx * look.X + rz * look.Z
+		local side = math.abs(rx * look.Z - rz * look.X)
+		if ahead > 0 and ahead <= cut.Ahead and side <= cut.Side then
+			return true
+		end
+	end
+	return false
+end
+
 return RoundRules

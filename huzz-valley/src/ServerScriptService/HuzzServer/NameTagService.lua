@@ -38,6 +38,7 @@ local TITLES = {
 local BADGES = {
 	HERO = Color3.fromRGB(91, 224, 122),
 	CHICKEN = Color3.fromRGB(255, 244, 222),
+	AFK = Color3.fromRGB(190, 176, 255), -- (on the AFK zone, HuzzServer/AfkService)
 }
 
 local function label(props)
@@ -117,7 +118,8 @@ local function layout(gui, down: boolean)
 	end
 end
 
--- look: "Runner" | "Catcher" | "Hero" | "Safe" | "Downed" | "Out" | nil (lobby: no title). badge: "HERO" | "CHICKEN" | nil.
+-- look: "Runner" | "Catcher" | "Hero" | "Safe" | "Downed" | "Out" | nil (lobby: no title). badge: "HERO" | "CHICKEN" |
+-- "AFK" | nil.
 -- rescue: 0..1 while someone is helping them up.
 function NameTags.set(player, look, badge, rescue)
 	local character = player.Character

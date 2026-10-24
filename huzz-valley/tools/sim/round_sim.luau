@@ -1109,8 +1109,11 @@ local function simulate(opts)
 				stats.botSpeeds = stats.botSpeeds or {}
 				stats.botSpeeds[h.WalkSpeed] = true
 				-- (times the round's speed-up, Config.SpeedUp: everyone in the game gets a tiny bit faster each round)
+				-- (its lunge, Config.Bot.Lunge, goes Boost x faster for a moment; a huss cut-off, Config.Cut, slows it)
 				local up = 1 + ((Config.SpeedUp and Config.SpeedUp.Max) or 0)
-				if h.WalkSpeed < Config.Bot.MinSpeed - 1e-6 or h.WalkSpeed > Config.Bot.MaxSpeed * up + 1e-6 then
+				local boost = if Config.Bot.Lunge then Config.Bot.Lunge.Boost else 1
+				local slow = if Config.Cut then Config.Cut.Slow else 1
+				if h.WalkSpeed < Config.Bot.MinSpeed * slow - 1e-6 or h.WalkSpeed > Config.Bot.MaxSpeed * up * boost + 1e-6 then
 					problem("the Practice Bot runs at " .. h.WalkSpeed)
 				end
 			end
@@ -1169,6 +1172,7 @@ local function simulate(opts)
 				problem(`catcher {p.Name}'s tag says {tag and tag.look}`)
 			end
 			-- The last runner out on the field runs at the catch-up speed (Speeds.LastRunner); nobody else does.
+			stats.noCatchUp = (Config.Speeds.LastRunner or 0) <= Config.Speeds.Runner
 			if st == "Running" and role == "Runner" and status == "Active" and Config.Speeds.LastRunner then
 				local others = 0
 				for q in bots do
@@ -1620,7 +1624,9 @@ report("4 players, 20 minutes", s, p, {
 s, p = simulate({ players = 6, seconds = 1500, seed = 7, config = function(c) c.Stab.Reach = 5.5 end })
 report("6 players, 25 minutes", s, p, {
 	{ "games finish", function(x) return x.wins >= 3 end },
-	{ "the last runner is called out and runs faster", function(x) return x.lastAlone >= 1 and (x.lastBoosted or 0) > 0 end },
+	-- (since Oct 24 runners already outrun catchers, LastRunner = Runner: then only the call-out)
+	{ "the last runner is called out (and runs faster when LastRunner is above Runner)", function(x)
+		return x.lastAlone >= 1 and ((x.lastBoosted or 0) > 0 or x.noCatchUp == true) end },
 	{ "runners rescue each other", function(x) return x.rescues >= 3 end },
 })
 s, p = simulate({ players = 2, seconds = 400, seed = 3 })

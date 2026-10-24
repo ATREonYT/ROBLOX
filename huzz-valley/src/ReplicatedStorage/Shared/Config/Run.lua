@@ -15,16 +15,19 @@ return {
 	-- The halt (owner, Oct 20 07:55: "after they randomly stop after fully running they move a little forward as a sort
 	-- of "hault" like in the game Huss valley"). Let go of every key while running at From of your top speed or more
 	-- and you carry on along the ground, slowing from your speed to 0 over Time seconds (Ease 2: quickest at first,
-	-- RunMotion.pushSpeed): ~2.3 studs at a runner's 28 (speed x Time / (Ease + 1)). Huss Valley's one full-speed stop
+	-- RunMotion.pushSpeed): ~2.5 studs at a runner's 35 (speed x Time / (Ease + 1); Time was 0.25 at 28, made 0.21 when
+	-- runners went to 35 on Oct 24, so the halt stays HV's length). Huss Valley's one full-speed stop
 	-- (f1c7bb86, 41.19 to 41.47 s, docs/notes/movement-and-camera.md): ~2.5 studs over its last ~0.28 s (Ease 3 put
 	-- 65% of it in the first 30 fps frame: a jolt, not a slide). Pressing any
 	-- direction, a huss, a dive, being downed or frozen, or leaving the floor ends it. Shared/Halt (the push),
 	-- Gameplay/Sprint (you; never the Practice Bot); the legs brace at once (LocomotionMix input.halt).
-	Halt = { From = 0.9, Time = 0.25, Ease = 2 },
+	Halt = { From = 0.9, Time = 0.21, Ease = 2 },
 	From = 14, -- below this speed: Roblox's own walk
 	Full = 20, -- from this speed on: the full run (runners go 24)
 	Stride = 12, -- studs per full stride (two steps): 28 studs/s / 12 = 4.7 steps a second, Huss Valley's ~4.6 (feel
 	-- study); the footsteps (Gameplay/Feel) use it too, so they land with the pack Sprint (0.483 s a stride at 25 studs/s)
+	MaxSteps = 4.7, -- steps a second at most: the pack run never steps quicker (Locomotion), so above 28 studs/s the
+	-- stride gets longer instead (RunMotion.stride; runners go 35 since Oct 24)
 	Lean = 30, -- hunched forward into the run
 	WaistLean = 8,
 	Crouch = 0.45, -- how much lower the body runs

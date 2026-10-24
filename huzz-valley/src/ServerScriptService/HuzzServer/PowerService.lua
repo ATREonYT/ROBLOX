@@ -16,7 +16,7 @@
 	before tagging (a Shield eats the stab) and stun() after a catcher's dive (Config/Round.Lunge.Stun).
 
 	For the cards each player gets attributes: PowerName1/PowerName2 (which power is in each slot this round),
-	PowerReady1/PowerReady2 (server time the slot is ready again; -1 = used up this round), ShieldUntil, DizzyUntil,
+	PowerReady1/PowerReady2 (server time the slot is ready again; -1 = used up for this game), ShieldUntil, DizzyUntil,
 	StunnedFrom/StunnedUntil (a dive's stun). The character gets InvisibleFrom/InvisibleUntil (every screen fades it),
 	StunnedFrom / StunnedUntil, SlipUntil (a catcher on a banana peel: stars over the head) and SpottedUntil (Radar:
 	a glowing outline through walls). Effects other players should see are parts made here (bubble, trail, traps,
@@ -54,6 +54,8 @@ local clouds = {} -- { owner, at, from, untilT, radius }
 local ropes = {} -- { owner, dir, t0, match }: lassos in flight
 local pulls = {} -- { runner, fromX, fromZ, towardX, towardZ, dist, checkAt, match, round }: lasso pulls the server checks
 local roundNo = 0 -- (+1 each clear(): a server pull still on its way when the round ends is dropped)
+-- Once-a-game powers (Shield) used in this game: [id] = { [name] = true }. A new game starts the list again.
+local usedGame, usedFor = {}, nil
 local lastSpeedCheck = {} -- UserId -> true while an effect changes their speed ("stunned" while a dive's stun holds them)
 
 local function now()
@@ -627,6 +629,10 @@ local function use(player, slot, look)
 	end
 	if ok then
 		setSlot(id, slot, AbilityRules.nextReady(name, t))
+		if def.OncePerGame then
+			usedGame[id] = usedGame[id] or {}
+			usedGame[id][name] = true
+		end
 		-- (every client draws the cast: Gameplay/PowerEffects; at = the trap's spot, radius = the wave's reach, ...)
 		local msg = { name = name, id = id }
 		for k, v in extra or {} do
@@ -661,14 +667,19 @@ end
 function PowerService.newRound()
 	PowerService.clear()
 	local match = ctx.match()
+	if usedFor ~= match then
+		usedGame, usedFor = {}, match
+	end
 	for id, role in match.roles do
 		local s = stateOf(id)
 		s.loadout = AbilityRules.loadout(saveOf(id)) -- (a change in the lobby plays from this round on)
 		if role == "Runner" then
 			s.pick = pickFor(id)
 		end
-		setSlot(id, 1, 0)
-		setSlot(id, 2, 0)
+		for slot = 1, 2 do
+			local used = usedGame[id] and usedGame[id][powerIn(id, slot) or ""]
+			setSlot(id, slot, if used then -1 else 0)
+		end
 		local p = ctx.playerOf(id)
 		if p then
 			p:SetAttribute("PowerName1", powerIn(id, 1))
@@ -723,6 +734,13 @@ function PowerService.clear(keepPowers: boolean?)
 end
 
 -- Speed with powers on top: slowed (Slow Wave, dizzy) and boosted (Speed Boost, a shield pop).
+-- Someone slowed to k of their speed for `seconds` (the huss cut-off, RoundService's Dash), with a badge.
+function PowerService.slowFor(id, k: number, seconds: number)
+	slowDown(stateOf(id), k, now() + seconds)
+	badge(id, "HuzzCutOff", "\u{1F4A8}", Color3.new(1, 1, 1), seconds)
+	ctx.sync(id)
+end
+
 function PowerService.speedOf(id, base)
 	local s = state[id]
 	if not s then
@@ -952,13 +970,14 @@ stepRopes = function(t, match)
 				local blocked = s.shieldUntil ~= nil and t < s.shieldUntil
 				local flat = Vector3.new(from.Position.X - bestRoot.Position.X, 0, from.Position.Z - bestRoot.Position.Z)
 				local dist = if blocked then 0 else math.clamp(flat.Magnitude - def.MinGap, 0, def.Pull)
+				local pullTime = AbilityRules.pullTime(dist, def)
 				Net.get("Round"):FireAllClients("Power", {
 					name = "LassoHit", id = rope.owner, target = best, at = bestRoot.Position, toward = from.Position,
-					dist = dist, time = def.PullTime, blocked = blocked,
+					dist = dist, time = pullTime, blocked = blocked,
 				})
 				if not blocked then
-					slowDown(s, def.Slow, t + def.PullTime + def.Hold)
-					badge(best, "HuzzLassoed", "YOINK!", def.Accent, def.PullTime + def.Hold)
+					slowDown(s, def.Slow, t + pullTime + def.Hold)
+					badge(best, "HuzzLassoed", "YOINK!", def.Accent, pullTime + def.Hold)
 					ctx.sync(best)
 					-- their own screen pulls them (PowerEffects pullMe); the server checks it did (stepPulls)
 					local p = ctx.playerOf(best)
@@ -968,7 +987,7 @@ stepRopes = function(t, match)
 							runner = best, fromX = bestRoot.Position.X, fromZ = bestRoot.Position.Z, towardX = from.Position.X,
 							towardZ = from.Position.Z, dist = dist, match = match, round = roundNo,
 							hitClock = os.clock(),
-							checkAt = t + AbilityRules.pullCheckAfter(def.PullTime, if ok then ping else nil),
+							checkAt = t + AbilityRules.pullCheckAfter(pullTime, if ok then ping else nil),
 						})
 					end
 				end

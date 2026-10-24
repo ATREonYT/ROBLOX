@@ -1155,7 +1155,8 @@ function M.start()
 		if typeof(toward) ~= "Vector3" or type(dist) ~= "number" or type(time) ~= "number" or dist <= 0 or time <= 0 then return end
 		local flat = Vector3.new(toward.X - root.Position.X, 0, toward.Z - root.Position.Z)
 		if flat.Magnitude < 0.5 then return end
-		local v = flat.Unit * (math.min(dist, Powers.Lasso.Pull) / math.min(time, 1))
+		local maxTime = Powers.Lasso.MaxPullTime
+		local v = flat.Unit * (math.min(dist, Powers.Lasso.Pull) / math.min(time, maxTime))
 		local attachment = Instance.new("Attachment")
 		attachment.Name = "HuzzLasso"
 		attachment.Parent = root
@@ -1169,7 +1170,7 @@ function M.start()
 		lv.MaxForce = 1e6
 		lv.PlaneVelocity = Vector2.new(v.X, v.Z)
 		lv.Parent = root
-		local stopAt = os.clock() + math.min(time, 1)
+		local stopAt = os.clock() + math.min(time, maxTime)
 		local conn
 		conn = RunService.Heartbeat:Connect(function()
 			if os.clock() >= stopAt or not lv.Parent or not pullHolds(me) then

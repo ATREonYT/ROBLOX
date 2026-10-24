@@ -46,6 +46,10 @@ local ProgressService = require(script.Parent.ProgressService)
 require(script.Parent.SafetyService).clean()
 MapService.init()
 GirlService.init()
+task.spawn(function() -- the AFK zone in the lobby (Config/Afk): never holds up the round loop
+	local ok, err = pcall(function() require(script.Parent.AfkService).start() end)
+	if not ok then warn("[HuzzAfk] " .. tostring(err)) end
+end)
 
 -- Round state lives in the Round remote's attributes; moments go through it as (kind, data).
 local RoundNet = Net.get("Round") :: RemoteEvent
@@ -1397,9 +1401,10 @@ function botStep()
 	end
 	local m = zones.Middle
 	local fallY = if m then m.Position.Y - m.Size.Y / 2 - 30 else nil
-	PracticeBot.step(targets, function(me)
+	PracticeBot.step(targets, function(me, target)
 		botTagging = true
-		local ok, hit = pcall(stabNear, nil, me, Config.Stab)
+		local along = if target then Vector3.new(target.Position.X - me.Position.X, 0, target.Position.Z - me.Position.Z) else nil
+		local ok, hit = pcall(stabNear, nil, me, Config.Stab, nil, if along and along.Magnitude > 0.1 then along.Unit else nil)
 		botTagging = false
 		-- everyone sees the bot's stab too (Gameplay/Actions plays it on the HuzzBot model): on a hit, and at
 		-- most once a stab cooldown while it keeps trying (a shield or the safe zone stopping it)
@@ -1581,6 +1586,32 @@ Net.get("Hero").OnServerEvent:Connect(function(player, isHero)
 	end
 end)
 
+-- The huss cut-off (Config.Cut): everyone on the other side whose way ahead this huss crosses runs slower for a moment
+-- (the Practice Bot too, when it's the catcher).
+local function cutOff(id, from: Vector3, dir: Vector3)
+	local cut = Config.Cut
+	local mine = match.roles[id]
+	local function flatLook(cf: CFrame)
+		local l = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+		return if l.Magnitude > 0.1 then l.Unit else nil
+	end
+	for other, role in match.roles do
+		if other ~= id and role ~= mine and (role ~= "Runner" or match.status[other] == "Active") then
+			local r = rootOf(other)
+			local look = r and flatLook(r.CFrame)
+			if look and Rules.cutsOff(from, dir, cut.Path, r.Position, look, cut) then
+				PowerService.slowFor(other, cut.Slow, cut.Time)
+			end
+		end
+	end
+	local bot = mine == "Runner" and botPlayed and PracticeBot.body()
+	local botRoot = bot and bot:FindFirstChild("HumanoidRootPart")
+	local look = botRoot and flatLook(botRoot.CFrame)
+	if look and Rules.cutsOff(from, dir, cut.Path, botRoot.Position, look, cut) then
+		PracticeBot.slow(cut.Slow, cut.Time)
+	end
+end
+
 -- The huss (owner's call, like Huss Valley): a dash to the left or right of the way you face, never forward or
 -- back. The client moves its own character at once (Gameplay/Dash) and tells us; we check it's allowed, turn the
 -- direction into pure left or right of the character's facing (anything that isn't clearly sideways is refused),
@@ -1637,6 +1668,9 @@ Net.get("Dash").OnServerEvent:Connect(function(player, dir, at, look)
 	player:SetAttribute("DashCooldown", Config.Dash.Cooldown) -- (how long this wait is: the HUD's dash bar fills over it)
 	c:SetAttribute("DashDir", flat.Unit)
 	c:SetAttribute("DashAt", start)
+	if playing and stage == "Running" then
+		cutOff(id, root.Position, flat.Unit)
+	end
 end)
 
 -- Players

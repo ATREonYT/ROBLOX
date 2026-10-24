@@ -23,7 +23,7 @@ for side, list in Powers.Shop do
 		check(name .. " has a name, card, text and colour", type(d.Name) == "string" and type(d.Card) == "string" and type(d.Text) == "string" and typeof(d.Accent) == "Color3")
 		check(name .. " has a picture or a glyph", type(d.Icon) == "string" or (type(d.Emoji) == "string" and d.Emoji ~= ""))
 		check(name .. " says how to beat it", type(d.Counter) == "string" and #d.Counter > 0)
-		check(name .. " has a cooldown (or once a round)", d.OncePerRound == true or (type(d.Cooldown) == "number" and d.Cooldown >= 8))
+		check(name .. " has a cooldown (or once a game)", d.OncePerGame == true or (type(d.Cooldown) == "number" and d.Cooldown >= 8))
 		check(name .. " has a wind-up and a sound", type(Powers.Fx[name]) == "table" and type(Powers.Fx[name].Sound) == "string")
 		if d.Starter then
 			check(name .. ": a starter costs nothing", d.Price == 0)
@@ -146,7 +146,7 @@ check("not before it's ready", not A.canUse(10, 9))
 check("a press a moment early still counts", A.canUse(10, 10 - A.GRACE + 0.01))
 check("used up for the round", not A.canUse(-1, 1e9) and A.left(-1, 0) == math.huge)
 check("next ready = cooldown later", A.nextReady("Radar", 100) == 100 + Powers.Radar.Cooldown)
-check("Shield: once a round", A.nextReady("Shield", 100) == -1)
+check("Shield: once a game", A.nextReady("Shield", 100) == -1)
 check("left counts down", A.left(110, 104) == 6 and A.left(100, 104) == 0)
 
 -- Old saves
@@ -181,7 +181,10 @@ x, z = A.pullSpot(2, 2, 2, 2, 7)
 check("no direction: stays put", x == 2 and z == 2)
 check("checked after the pull and a round trip", A.pullCheckAfter(L.PullTime, 0.1) > L.PullTime + 0.2 and A.pullCheckAfter(L.PullTime, nil) > L.PullTime)
 check("a slow connection waits at most 1 s more", A.pullCheckAfter(L.PullTime, 5) <= L.PullTime + 1.2)
-check("the pull is short enough to judge in a moment (PullTime)", L.PullTime <= 0.5 and L.Pull <= 10)
+check("a short pull is quick (PullTime)", L.PullTime <= 0.5 and A.pullTime(5, L) == L.PullTime)
+check("a long pull drags them all the way at PullSpeed (owner, Oct 24)", math.abs(A.pullTime(110, L) - 110 / L.PullSpeed) < 1e-6
+	and L.Pull >= L.Range and A.pullTime(L.Range, L) <= L.MaxPullTime and L.Range / A.pullTime(L.Range, L) <= 150)
+check("the lasso reaches near the end of the field (owner, Oct 24)", L.Range >= 200)
 check("a lasso pull moves only a runner still in play during a run", A.pullHolds("Active", "Running") and A.pullHolds("Active", "HeroRun"))
 check("never a safe, caught, downed or out runner (sim Oct 20: pulled back out of the safe zone)",
 	not A.pullHolds("Safe", "Running") and not A.pullHolds("Caught", "Running") and not A.pullHolds("Downed", "Running") and not A.pullHolds(nil, "Running"))

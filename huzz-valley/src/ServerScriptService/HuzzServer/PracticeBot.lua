@@ -3,7 +3,8 @@
 	no catcher (one player in the server, or the only catcher left), a plain blocky catcher named "Practice Bot"
 	(Config/Round.Bot) joins: it waits in the middle like a catcher, then chases the nearest runner it may tag and
 	stabs within Reach, with a short breather after each stab so a kid can get away (it is also a little slower than
-	a sprinting runner, so the huss and a straight run beat it). Round walls and props it follows a PathfindingService
+	a sprinting runner, so the huss and a straight run beat it). It aims where a runner is going and hauls at them
+	from close by (owner, Oct 24: "make the bots better"). Round walls and props it follows a PathfindingService
 	path (worked out off the round's clock, so the round never waits for it). It is plainly a bot: its name tag says so, it is not a
 	player, it never wins a girl and is never paid; if it downs every runner, nobody wins that game.
 	RoundService drives it: spawn() at the line-up, setFrozen() with the catchers, step() while play is live,
@@ -100,20 +101,24 @@ end
 -- The round's speed-up (Config/Round.SpeedUp, owner Oct 19: "speed goes up every round a very tiny bit"): the bot
 -- runs that much faster too, like every catcher. RoundService sets it at each round's start.
 local scale = 1
-function PracticeBot.setScale(k: number)
-	scale = if type(k) == "number" and k > 0 then k else 1
-	if humanoid and humanoid.WalkSpeed > 0 then
-		humanoid.WalkSpeed = walkSpeed()
-	end
-end
 
 local slowK, slowUntil = 1, 0 -- (a Smoke Bomb's cloud: PracticeBot.slow)
+local lungeUntil, nextLunge = 0, 0 -- (its haul at a runner: Config.Bot.Lunge)
 local function walkSpeed(): number
-	return speed * scale * (if os.clock() < slowUntil then slowK else 1)
+	local t = os.clock()
+	local lunge = B.Lunge and t < lungeUntil
+	return speed * scale * (if t < slowUntil then slowK else 1) * (if lunge then B.Lunge.Boost else 1)
 end
 local function setSpeed(on: boolean)
 	if humanoid then humanoid.WalkSpeed = if on then walkSpeed() else 0 end
 	if not on and humanoid and root then humanoid:MoveTo(root.Position) end
+end
+
+function PracticeBot.setScale(k: number)
+	scale = if type(k) == "number" and k > 0 then k else 1
+	if humanoid and humanoid.WalkSpeed > 0 then
+		humanoid.WalkSpeed = walkSpeed() -- (below walkSpeed: above it, the name wasn't known yet)
+	end
 end
 
 function PracticeBot.active(): boolean
@@ -241,6 +246,7 @@ function PracticeBot.remove()
 	table.clear(tracks)
 	frozen = true
 	route, routeAsk = nil, routeAsk + 1
+	lungeUntil, nextLunge = 0, 0
 end
 
 -- True when nothing solid stands between the bot and `to` (people don't count): then it just runs straight there.
@@ -280,9 +286,28 @@ local function findRoute(to: Vector3)
 	end)
 end
 
--- One frame of play. targets = the runners it may chase (roots); stab(botRoot) tries a stab and says if it hit
--- someone (or a Shield took it). fallY: below this it has fallen off the field and goes back home.
-function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fallY: number?)
+-- Seconds until it can meet a runner `rel` away moving at `v` (flat), running at `speed`: the soonest t with
+-- |rel + v t| = speed t; nil when it can't catch them up (they run away faster).
+local function meetIn(rel: Vector3, v: Vector3, speed: number): number?
+	local a = v:Dot(v) - speed * speed
+	local b = 2 * rel:Dot(v)
+	local c = rel:Dot(rel)
+	if math.abs(a) < 1e-6 then
+		return if b < 0 then -c / b else nil
+	end
+	local disc = b * b - 4 * a * c
+	if disc < 0 then return nil end
+	local r = math.sqrt(disc)
+	local t1, t2 = (-b - r) / (2 * a), (-b + r) / (2 * a)
+	local t = math.huge
+	if t1 > 0 then t = t1 end
+	if t2 > 0 and t2 < t then t = t2 end
+	return if t < math.huge then t else nil
+end
+
+-- One frame of play. targets = the runners it may chase (roots); stab(botRoot, targetRoot) tries a stab toward
+-- that runner and says if it hit someone (or a Shield took it). fallY: below this it has fallen off the field and goes back home.
+function PracticeBot.step(targets: { BasePart }, stab: (BasePart, BasePart?) -> boolean, fallY: number?)
 	if not PracticeBot.active() then return end
 	local now = os.clock()
 	if fallY and root.Position.Y < fallY and home then
@@ -291,7 +316,7 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 	local moving = humanoid.WalkSpeed > 0
 	local go = not frozen and now >= goAt and now >= pauseUntil
 	if go ~= moving then setSpeed(go) end
-	if go and moving and humanoid.WalkSpeed ~= walkSpeed() then humanoid.WalkSpeed = walkSpeed() end -- (into or out of smoke)
+	if go and moving and humanoid.WalkSpeed ~= walkSpeed() then humanoid.WalkSpeed = walkSpeed() end -- (smoke, a lunge)
 	-- the run plays while it moves (sped up with its speed), the idle while it stands
 	if tracks.run then
 		local v = root.AssemblyLinearVelocity
@@ -309,14 +334,29 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 		local d = (t.Position - root.Position).Magnitude
 		if d < bestD and not hidden(t) then best, bestD = t, d end
 	end
-	if best and bestD <= B.Reach * speed / B.Speed then -- (its reach grows and shrinks with its speed)
-		if stab(root) then
+	local lunging = B.Lunge ~= nil and now < lungeUntil
+	if best and bestD <= B.Reach * speed / B.Speed * (if lunging then 1.3 else 1) then -- (its reach grows and shrinks with its speed, and a lunge reaches further)
+		-- (it stabs toward them: it runs at where they're going, so its facing may point past them)
+		local to = Vector3.new(best.Position.X, root.Position.Y, best.Position.Z)
+		if (to - root.Position).Magnitude > 0.1 then root.CFrame = CFrame.lookAt(root.Position, to) end
+		if stab(root, best) then
 			pauseUntil = now + B.Pause -- (a breather after each stab: kids get a chance to run)
 			-- (no halt here, on purpose: it would slide the bot ~2 studs on toward the kid it just stabbed, during
 			-- the breather; critic, Oct 20. Shared/Halt is for players letting go of a full run.)
 			setSpeed(false)
 			return
 		end
+	end
+	-- close enough with nothing in the way: a haul at them (Config.Bot.Lunge), aimed where they're going
+	local L = B.Lunge
+	if best and L and now >= nextLunge and bestD >= L.From and bestD <= L.To and clearLine(best.Position) then
+		lungeUntil, nextLunge = now + L.Time, now + L.Time + L.Cooldown
+		humanoid.WalkSpeed = walkSpeed()
+		local v = best.AssemblyLinearVelocity
+		local lead = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z) * math.min(L.Time, bestD / walkSpeed()) else Vector3.zero
+		humanoid:MoveTo(best.Position + lead)
+		nextThink = now + L.Time
+		return
 	end
 	if now < nextThink then return end
 	nextThink = now + B.Think
@@ -353,10 +393,13 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 		route = nil
 	end
 	if best then
-		-- aim a little ahead of where they're running (not too far: the huss should still fool it)
+		-- aim at where they'll be by the time it gets there (at most Lead seconds ahead: the huss still fools it), so it
+		-- cuts across their way instead of trailing behind a faster runner
 		local v = best.AssemblyLinearVelocity
-		local lead = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z) * math.min(B.Lead, bestD / 40) else Vector3.zero
-		humanoid:MoveTo(best.Position + lead)
+		v = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z) else Vector3.zero
+		local rel = Vector3.new(best.Position.X - root.Position.X, 0, best.Position.Z - root.Position.Z)
+		local t = meetIn(rel, v, walkSpeed()) or B.Lead
+		humanoid:MoveTo(best.Position + v * math.min(t, B.Lead))
 	elseif home then
 		humanoid:MoveTo(home.Position) -- nobody to chase: back to the middle
 	end

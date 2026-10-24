@@ -32,9 +32,9 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   → the clock drops to 6 s ("Hurry! Run or you're out"; `hurry()` moves EndsAt too). A Hero still in the start
   zone after 6 s loses the solo run ("X didn't go. Everyone runs!"; counting starts 1 s in, "Go now!" to the Hero at
   3 s). Not counted while trapped or on the line; a catcher or the bot within 10 studs of the zone buys 10 s.
-- **Last runner** (`RoundRules.lastRunner`, `Speeds.LastRunner` 30): in a round that started with 2+ runners, the
-  only one still out is called out once ("X is the last runner!") and runs as fast as the real catcher (the bot's
-  speed when it catches; never under 28); with a Speed Boost capped at catcher + 4.
+- **Last runner** (`RoundRules.lastRunner`, `Speeds.LastRunner` 35): in a round that started with 2+ runners, the
+  only one still out is called out once ("X is the last runner!"). Since Oct 24 runners outrun catchers anyway, so
+  LastRunner = Runner (no extra speed; raise it above Runner to bring the catch-up back).
 - **Power cards survive the Hero run:** after a Hero run RoundService calls `PowerService.clear(true)` (traps and
   effects go, cards and cooldowns stay). The sim checks every runner/catcher still playing has PowerReady1 in
   Running/HeroRun.
@@ -49,7 +49,9 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
     runner's feet and holds Hold 1.6 s), E **Slow Wave**.
   - Every ability is refused while stunned or stuck (`PowerService.use` checks `stuck`).
   - Names, numbers and card text: `Config/Powers`. Their look: [effects.md](effects.md); the cards: [ui.md](ui.md).
-- **Speeds** (`Config/Round.Speeds`): lobby 22, runner 28, catcher 30, holder 27. `Gameplay/Sprint` sets off at 16
+- **Speeds** (`Config/Round.Speeds`; owner Oct 24: "Make hunters 1x speed and normal peopl 1,25x"): lobby 22, runner
+  35, catcher 28, holder 34, thief 28 (were runner 28, catcher 30, holder 27). Above 28 the run's stride gets longer
+  instead of quicker (`Run.MaxSteps` 4.7, `RunMotion.stride`), and the halt is 0.21 s so it stays ~2.5 studs. `Gameplay/Sprint` sets off at 16
   and reaches the cap in 1 s, and a let-go from a full run is a short halt ([movement-and-camera.md](movement-and-camera.md)). Run animation rate caps keep it calm.
   **Each round is a tiny bit faster:** +2% per round after the first, capped at +20% (`Config/Round.SpeedUp`,
   `RoundRules.speedScale`), for runners, catchers and the Practice Bot alike (`PracticeBot.setScale`), set on the
@@ -162,7 +164,11 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 ## Practice Bot (`HuzzServer/PracticeBot`, `Config/Round.Bot`)
 - Any round with runners and no catcher (alone, or the only catcher left) gets a server NPC catcher named "Practice
   Bot" (default blocky body from `CreateHumanoidModelFromDescription`, grey with a red shirt, tag CATCHER / BOT, a knife).
-- Starts at Speed 24 and adapts (`Bot.Step` 2 slower after it wins a game, faster after it loses, 18 to 28, times
+- Oct 24 ("make the bots better so if people join they have someone to vs"): it aims where it will meet the runner
+  (`meetIn`, up to `Lead` 2.5 s ahead), stabs toward them (not along its facing), and hauls at a runner 6 to 18
+  studs off (`Bot.Lunge`: 1.8x for 0.35 s, reach 1.3x, every 2.5 s). Sim: 2 wins in 9 solo games (was 0 of 9 once
+  runners went 35 without these).
+- Starts at Speed 30 and adapts (`Bot.Step` 2 slower after it wins a game, faster after it loses, 26 to 34, times
   the round's speed-up; it stabs with the knife's box like a player (it used to hit anything within Reach 5 all round); "is slower/faster this game" when its next game starts; back to 24 when the game's players change
   or the server empties; only games where it caught the last round count), stabs through `stabNear(nil, ...)`,
   1.2 s breather after each stab.
@@ -314,7 +320,7 @@ stand-in blocks for the girls). Not seen in Studio yet: how it sits next to her 
   with the odds and the girl rolled, so the owner can see it in Studio.
 - SKIP (HuzzServer/SkipService): a free vote during the wait (map vote or intermission). More than half the players
   and the wait ends. Workspace HuzzSkipVotes / HuzzSkipNeed, player HuzzSkip; the button is under NEXT ROUND (LobbyHud).
-- Lasso: Range 40, Speed 130, Pull 10, WindUp 0.18. Smoke Bomb: WindUp 0.18 and a new burst (PowerEffects).
+- Lasso: Range 40, Speed 130, Pull 10, WindUp 0.18 (Oct 24: Range 220, Speed 240, pulls all the way, below). Smoke Bomb: WindUp 0.18 and a new burst (PowerEffects).
 - Worn trails sit on the body's middle (CosmeticsService: attachments at z 0, +-0.8).
 - Oct 23 17:32: the luck ladder. Only the next step above the server's luck can be bought (Products.nextLuck,
   checked in LuckService.prompt), so x10 can't be bought first and each buy costs more. Screens/Luck: a row of steps
@@ -323,3 +329,16 @@ stand-in blocks for the girls). Not seen in Studio yet: how it sits next to her 
   x3), capped at Round.Luck.Max; nobody boosted = x1. The ladder is per player (your next step above YOUR boost), and
   nothing can be bought while the server is at the top. check_luck covers it.
 - Oct 23 17:48: Config/Group.Name = "Emergent Gaming"; Id still 0 until the owner sends the group number.
+
+## Oct 24 05:29 changes
+- Speeds, the bot and the lasso: see Speeds, Practice Bot and `Config/Powers` Lasso (Range 220, Speed 240, Width 5;
+  the pull drags them all the way to MinGap 4 studs at PullSpeed 110, 0.3 to 2.2 s, `AbilityRules.pullTime`).
+- Shield is once a GAME (`OncePerGame`): `PowerService` keeps `usedGame` per match, so a used Shield stays -1 in
+  every later round of that game; the card says ONCE A GAME.
+- The huss cut-off (`Config/Round.Cut`, `RoundRules.cutsOff`, RoundService `cutOff`): a huss whose 12-stud path
+  passes up to 12 studs in front of someone on the other side (4 to their side) slows them to 0.75x for 2 s
+  (`PowerService.slowFor`, a 💨 badge); the Practice Bot too.
+- AFK zone (`Config/Afk`, `HuzzServer/AfkService`): a 16-stud pad beside the spawn (or his own part named AfkZone).
+  Standing on it sets HuzzAfk; SkipService counts them as sitting out every game; the name tag says AFK. No reward.
+  Studio only: where it lands in his lobby (Output `[HuzzAfk] AFK zone at ...`).
+- Like window: "It helps more players find Huss Anime Girls!".

@@ -37,7 +37,7 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   adds a ground ring; Glitchy gets a short wind-up orb and a landing ring; Body Double ends in a puff of motes; the
   Invisible body fades back in with a small fizzle; the Bear Trap flies a touch slower (`Flight` 0.7) and fizzles when
   it runs out (TrapGone).
-- **Shield** (was Heart Shield, once per round): the pink bubble bursts out with a ring and 💖 hearts; a blocked stab
+- **Shield** (was Heart Shield, once per round; once a game since Oct 24): the pink bubble bursts out with a ring and 💖 hearts; a blocked stab
   pops it in a pink ring with 💖 hearts.
 - **Speed Boost** (was Rizz Rush; only while carrying her): a pink ring standing up behind you and white speed lines
   turning pink (the pink trail is the server's).

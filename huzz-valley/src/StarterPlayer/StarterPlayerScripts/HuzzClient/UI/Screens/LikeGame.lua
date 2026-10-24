@@ -32,7 +32,7 @@ function LikeGame.build(parent: Instance)
 	thumb:FindFirstChild("Outline"):Destroy()
 	Effects.breathe(thumb, { scale = 1.08, seconds = 1.2 })
 	line({ Name = "Ask", Text = "Having fun? Like the game!", FontFace = F.Heading, TextSize = 24, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = Color3.fromHex("8CF06A"), Position = UDim2.fromOffset(16, 47 + 92), Size = UDim2.fromOffset(W - 32, 30), ZIndex = 4, Parent = panel }, 2.5)
-	line({ Name = "How", Text = "Press the thumbs up on the game's page on Roblox. It helps more players find Huzz Valley!", FontFace = F.Name, TextSize = 16, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(28, 47 + 124), Size = UDim2.fromOffset(W - 56, 40), ZIndex = 4, Parent = panel })
+	line({ Name = "How", Text = "Press the thumbs up on the game's page on Roblox. It helps more players find Huss Anime Girls!", FontFace = F.Name, TextSize = 16, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(28, 47 + 124), Size = UDim2.fromOffset(W - 56, 40), ZIndex = 4, Parent = panel })
 	local ok = Kit.button({ Name = "Ok", Text = "OK!", Style = "Action", FontFace = F.Button, TextSize = 22, Corner = 9, RimThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.fromOffset(180, 42), ZIndex = 5, Parent = panel })
 	ok.onClick(function() ModalManager.close() end)
 	ModalManager.register("LikeGame", {
