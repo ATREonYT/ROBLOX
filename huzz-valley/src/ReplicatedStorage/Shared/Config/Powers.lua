@@ -80,7 +80,8 @@ return {
 		Name = "Invisible", Card = "INVISIBLE", Icon = "AbilityInvisible", Tile = Color3.fromRGB(81, 74, 147), Emoji = "👻", Text = "Fade out of sight",
 		Accent = Color3.fromRGB(200, 184, 255), Side = "Runner", Price = 500,
 		Counter = "Listen for footsteps, or use Radar",
-		Cooldown = 16, Lasts = 4, Seen = 1, Self = 1, -- (owner, Oct 22 12:26: "make the invisible actually 1.00 invisible": was 0.55 on your own screen)
+		Cooldown = 16, Lasts = 1, Seen = 1, Self = 1, -- (Lasts 4 until Oct 24 18:22: "make invis 1 second long";
+		-- owner, Oct 22 12:26: "make the invisible actually 1.00 invisible": was 0.55 on your own screen)
 	},
 	-- A short glitch-blink forward (Distance studs in Time seconds, the walls still stop you) with a glitch effect.
 	Glitchy = {

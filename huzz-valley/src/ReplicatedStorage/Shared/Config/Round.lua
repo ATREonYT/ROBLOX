@@ -166,21 +166,21 @@ return {
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 
 	-- The Practice Bot (HuzzServer/PracticeBot; owner picked "Yes, add bots" so a round works alone): a catcher that
-	-- joins any round with runners and no catcher. Slower than a sprinting runner (35) so the huss and a straight run
+	-- joins any round with runners and no catcher. Slower than a sprinting runner (28) so the huss and a straight run
 	-- beat it; it never wins a girl and is never paid.
 	Bot = {
 		Enabled = true,
 		Name = "Practice Bot",
 		-- Owner, Oct 24: "make the bots better so if people join they have someone to vs" (and runners now run 35):
 		-- was Speed 24 between 18 and 28, Reaction 0.6, aiming at most 0.35 s ahead and no lunge.
-		Speed = 30, -- studs a second (where it starts)
+		Speed = 25, -- studs a second (where it starts; 30 until runners went back to 28, Oct 24 18:22)
 		-- It adapts to the kids playing it (loop audit, Oct 17: how often a kid alone beat it swung from 14% to 82%
 		-- with how well they steer): Step slower after it wins a game, Step faster after it loses, between MinSpeed and
-		-- MaxSpeed (never as fast as a runner's 33.6). The message line says so.
-		MinSpeed = 26,
-		MaxSpeed = 32, -- (34 until runners went to 33.6, Oct 24)
+		-- MaxSpeed (never as fast as a runner's 28). The message line says so.
+		MinSpeed = 21,
+		MaxSpeed = 27, -- (32 while runners ran 33.6, Oct 24)
 		Step = 2,
-		Reach = 5, -- studs at Speed 30: it stabs a runner this close (no lag allowance); scales with its speed
+		Reach = 5, -- studs at its starting Speed: it stabs a runner this close (no lag allowance); scales with its speed
 		Pause = 1.0, -- seconds it stands still after each stab
 		Reaction = 0.4, -- seconds after GO before it moves
 		Think = 0.15, -- seconds between picking where to run
@@ -198,14 +198,16 @@ return {
 	-- Owner, Oct 24: "Make hunters 1x speed and normal peopl 1,25x": catchers keep the old runner top (28), runners
 	-- run 1.25x that (35). Was Runner 28, Catcher 30, Holder 27, LastRunner 30, Thief 30.
 	-- Owner, Oct 24 10:21: "make the speed of the runner 1.2x": runners 1.2 x 28 = 33.6 (carrying her 32.6).
+	-- Owner, Oct 24 18:22: "make catchers speed 1.12 and runners 1": runners back to 28, catchers 1.12 x 28 = 31.36
+	-- (the last runner out gets a catcher's speed again, as before Oct 24).
 	SpeedUp = { PerRound = 0.02, Max = 0.20 },
 	Speeds = {
 		Lobby = 22, -- everyone not in a game
-		Runner = 33.6,
-		Catcher = 28,
-		Holder = 32.6, -- a runner carrying the girl
-		LastRunner = 33.6, -- the only runner still out on the field (already faster than a catcher: no extra)
-		Thief = 28, -- a catcher she's following (she walks behind him, so no slowdown)
+		Runner = 28,
+		Catcher = 31.36,
+		Holder = 27, -- a runner carrying the girl
+		LastRunner = 31.36, -- the only runner still out on the field: as fast as a catcher
+		Thief = 31.36, -- a catcher she's following (she walks behind him, so no slowdown)
 	},
 
 	-- Map parts. Each map is a folder or model in Workspace holding ZoneA, ZoneB and
