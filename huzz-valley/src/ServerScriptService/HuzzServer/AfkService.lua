@@ -170,6 +170,13 @@ function AfkService.start()
 	end)
 	-- (a moment first: the leaderboards, stands and props go up as the game starts, and the search must see them)
 	task.wait(5)
+	-- With the pad off, any old one goes (owner, Oct 24 09:35, his Studio screenshot of the pad: "Remove this please":
+	-- a place saved while it was up kept it in Workspace)
+	if not Afk.Pad then
+		for _, d in Workspace:GetChildren() do
+			if d.Name == "HuzzAfkZone" then d:Destroy() end
+		end
+	end
 	local theirs = own()
 	local centre, radius
 	if theirs then
