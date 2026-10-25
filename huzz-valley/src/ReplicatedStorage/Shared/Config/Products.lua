@@ -51,11 +51,10 @@ Products.Passes = {
 	-- gives what Gives lists, once per save (HuzzServer/ShopService, PassGifts), and a knife already yours becomes its
 	-- coin price instead. 5,000 coins + 1,000 Aura alone cost about 500 Robux in the shop, so the pack is a real deal.
 	-- The knife is the Mythic Abyss Eclipse (owner's pick, Oct 25 12:51: every knife model sent so far was already in
-	-- the game). While Id = 0 the button shows the price and only says "coming soon": the owner creates the Game Pass
-	-- at 299 on the Creator Dashboard and puts its ID here.
+	-- the game). Its Game Pass (299 Robux) is the owner's, ID sent Oct 25 22:09.
 	{
 		Key = "StarterPack", Kind = "Pass", Name = "Starter Pack", Blurb = "A Mythic knife, a trail,\ncoins and Aura.",
-		Id = 0, Price = 299, OnSale = true, Icon = "GiftBenefit", Art = "KnifeAbyssEclipse",
+		Id = 2053740358, Price = 299, OnSale = true, Icon = "GiftBenefit", Art = "KnifeAbyssEclipse",
 		Accent = Color3.fromHex("FFC24A"), ButtonStyle = "PassViolet",
 		Gives = { Knife = "AbyssEclipse", Trail = "StarterTrail", Coins = 5000, Aura = 1000 },
 		Benefits = { { Icon = "TagFist", Text = "Abyss Eclipse (Mythic knife)" }, { Icon = "Sneaker", Text = "Starter Trail" }, { Icon = "CurrencyCoin", Text = "5,000 Coins + 1,000 Aura" } },
