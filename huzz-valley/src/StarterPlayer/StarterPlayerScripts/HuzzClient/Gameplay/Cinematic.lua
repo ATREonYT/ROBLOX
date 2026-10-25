@@ -320,6 +320,12 @@ function M.start()
 		-- A new shot: move over to it (up and over the runners); then the shot itself moves the camera.
 		if key ~= shotKey then
 			shotKey, fromEye, fromLook, moveStart = key, eye, look, os.clock()
+			-- Coming in from the lobby (or anywhere far off): cut straight to the line, no flight across the map
+			-- (owner, Oct 25: "make the teleporting ... to the start of the game better, make them be there and not
+			-- like fly over there").
+			if (eye - toEye).Magnitude > Shot.CutFrom then
+				moveStart = os.clock() - Shot.TransitionTime
+			end
 		end
 		local a = (os.clock() - moveStart) / Shot.TransitionTime
 		if a < 1 then

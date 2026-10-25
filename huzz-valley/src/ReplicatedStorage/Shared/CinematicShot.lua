@@ -103,6 +103,7 @@ function Shot.transition(fromEye, fromLook, toEye, toLook, a, clearY)
 	return Vector3.new(eye.X, y, eye.Z), look
 end
 Shot.TransitionTime = 0.25 -- seconds (HV 0.2 to 0.3; was 0.9, a slow drift)
+Shot.CutFrom = 40 -- studs: a shot starting further than this from the camera cuts there instead of flying (Gameplay/Cinematic)
 Shot.HandBackTime = 0.3 -- the swing back behind you
 
 -- Your own camera in a round, as Huss Valley frames it (gap 5: you're about a third of the screen tall, the horizon
