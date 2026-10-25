@@ -9,6 +9,9 @@
 --   4. the opening's motion on his crates: three hops, the lid open before the knife, the knife out by about 3.5 s
 --      facing you, his crates clear of the name on the screen, his knives' rings hidden, nothing moves when motion is reduced.
 -- lune run tests/CrateModels.spec.luau   (from huzz-valley/)
+-- Knives no longer given out (owners keep theirs): Shadow Cleaver (owner, Oct 25 15:49: it looked one to one like the
+-- Game Pass Hollow Eclipse).
+local RETIRED = { ShadowKnife = true }
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 local roblox = require("@lune/roblox")
@@ -73,7 +76,9 @@ for _, c in knifeCrates do
 			if name and knives[name] then matched += 1 end
 			if show then print(string.format("  %s: %s (%s, %s) -> %s", c.Id, it.Id, it.Name, it.Rarity, tostring(name))) end
 		end
-		check(`{c.Id}: the {n} knives beside his crate are its {#c.Items} items ({matched} matched)`, n == 10 and #c.Items == 10 and matched == 10)
+		local retired = if c.Id == "Beast" then 1 else 0 -- (Shadow Cleaver, retired Oct 25: it looked like a Game Pass knife)
+		check(`{c.Id}: the {n} knives beside his crate are its {#c.Items} items ({matched} matched, {retired} retired)`,
+			n == 10 and #c.Items == 10 - retired and matched == 10 - retired)
 		-- 2. it opens: split on his parts in the crate's own frame (front to -Z, as he built all three)
 		local rows, parts = {}, {}
 		local pivot = middle(crate)
@@ -181,7 +186,7 @@ for _, it in CoinShop.Items do
 		if rewardKnife[it.Key] then table.insert(ways, rewardKnife[it.Key]) end
 		if it.Unlock and not rewardKnife[it.Key] then table.insert(ways, "quest") end
 		if show then print(string.format("  %-20s %-10s %s", it.Key, it.Rarity or "", table.concat(ways, ", "))) end
-		local got = inCrates[it.Key] or coins or auraKnife[it.Key] or pass or robuxKnife[it.Key] or (it.Set == "Reward" and rewardKnife[it.Key] ~= nil)
+		local got = RETIRED[it.Key] or inCrates[it.Key] or coins or auraKnife[it.Key] or pass or robuxKnife[it.Key] or (it.Set == "Reward" and rewardKnife[it.Key] ~= nil)
 		check(it.Key .. ": can be got through a crate, coins, Aura, Robux or (his reward knives) its reward", got)
 		if not got then table.insert(without, it.Key) end
 	end

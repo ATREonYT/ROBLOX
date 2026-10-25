@@ -76,6 +76,8 @@ CoinShop.Items = {
 	-- 2,000 / 4,000 / 8,000. The quest knives (Unlock) and the Spin Knife (NotForSale) keep their keys and rules on the
 	-- model that fits: Rookie = Training Kunai, Hunter = Hunter's Hook, Moonlit = Hollow Moon, Spin = Celestial Edge.
 	-- Ice, Candy and Shadow Knife (sold before) are now Ice Shard, Sakura Blade and Shadow Cleaver, so saves keep them.
+	-- Shadow Cleaver is retired since Oct 25 (owner, 15:49: it looked one to one like the Game Pass Hollow Eclipse): no
+	-- crate gives it and it isn't sold; anyone who has it keeps it.
 	{ Key = "RustyShiv", Slot = "Knife", Name = "Rusty Shiv", Rarity = "Common", Price = 200, Model = "01_Common_Rusty_Shiv", Studs = 2.48, Wear = "Side", Art = "KnifeRustyShiv", Colors = { hex("8a7a6a"), hex("8a8a90") }, Order = 101 },
 	{ Key = "KitchenCleaver", Slot = "Knife", Name = "Kitchen Cleaver", Rarity = "Common", Price = 200, Model = "02_Common_Kitchen_Cleaver", Studs = 2.42, Wear = "Side", Art = "KnifeKitchenCleaver", Colors = { hex("a9adb3"), hex("8a8a90") }, Order = 102 },
 	{ Key = "RookieKnife", Slot = "Knife", Name = "Training Kunai", Rarity = "Common", Price = 0, Unlock = "Quest: Collect 15 Aura stars (chapter 2)", Model = "03_Common_Training_Kunai", Studs = 2.44, Wear = "Side", Art = "KnifeRookieKnife", Colors = { hex("5d636b"), hex("5d636b") }, Order = 103 },
@@ -98,7 +100,7 @@ CoinShop.Items = {
 	{ Key = "FrostFang", Slot = "Knife", Name = "Frost Fang", Rarity = "Rare", Price = 1000, Glow = hex("7fd4ff"), Model = "20_Rare_Frost_Fang", Studs = 2.73, Wear = "Side", Art = "KnifeFrostFang", Colors = { hex("cfeaff"), hex("d4a020") }, Order = 120 },
 	{ Key = "EmberEdge", Slot = "Knife", Name = "Ember Edge", Rarity = "Rare", Price = 1000, Glow = hex("ff6a1a"), Model = "21_Rare_Ember_Edge", Studs = 2.72, Wear = "Side", Art = "KnifeEmberEdge", Colors = { hex("2a2224"), hex("d4a020") }, Order = 121 },
 	{ Key = "MoonlitKnife", Slot = "Knife", Name = "Hollow Moon", Rarity = "Epic", Price = 0, Unlock = "Quest: Win 10 games (chapter 4)", Glow = hex("9a4fff"), Model = "22_Epic_Hollow_Moon", Studs = 2.89, Wear = "Side", Art = "KnifeMoonlitKnife", Colors = { hex("1a1a22"), hex("d4a020") }, Order = 122 },
-	{ Key = "ShadowKnife", Slot = "Knife", Name = "Shadow Cleaver", Rarity = "Epic", Price = 2000, Glow = hex("e8e8ff"), Model = "23_Epic_Shadow_Cleaver", Studs = 3.08, Wear = "Back", Art = "KnifeShadowKnife", Colors = { hex("141418"), hex("2a2a30") }, Order = 123 },
+	{ Key = "ShadowKnife", Slot = "Knife", Name = "Shadow Cleaver", Rarity = "Epic", Price = 0, NotForSale = true, Glow = hex("e8e8ff"), Model = "23_Epic_Shadow_Cleaver", Studs = 3.08, Wear = "Back", Art = "KnifeShadowKnife", Colors = { hex("141418"), hex("2a2a30") }, Order = 123 },
 	{ Key = "StormKunai", Slot = "Knife", Name = "Storm Kunai", Rarity = "Epic", Price = 2000, Glow = hex("6ad0ff"), Model = "24_Epic_Storm_Kunai", Studs = 2.82, Wear = "Side", Art = "KnifeStormKunai", Colors = { hex("2a3a6a"), hex("6ad0ff") }, Order = 124 },
 	{ Key = "BloodMoonTanto", Slot = "Knife", Name = "Blood Moon Tanto", Rarity = "Epic", Price = 2000, Glow = hex("ff2a3a"), Model = "25_Epic_Blood_Moon_Tanto", Studs = 2.98, Wear = "Side", Art = "KnifeBloodMoonTanto", Colors = { hex("e8e8e8"), hex("d4a020") }, Order = 125 },
 	{ Key = "TwinFang", Slot = "Knife", Name = "Twin Fang", Rarity = "Epic", Price = 2000, Glow = hex("3affb0"), Model = "26_Epic_Twin_Fang", Studs = 2.83, Wear = "Side", Art = "KnifeTwinFang", Colors = { hex("3a3a4a"), hex("d4a020") }, Order = 126 },

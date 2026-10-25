@@ -5,7 +5,7 @@
 	  - The text goes through Roblox's text filter first (TextService, as Roblox requires for anything a player
 	    writes that others see); a text the filter can't check isn't sent.
 	  - It reaches every server at once by MessagingService (topic HuzzBroadcast); each server shows it to everyone
-	    there on the "AdminMessage" remote (Screens/AdminMessage: a banner at the top of the screen for SHOW seconds).
+	    there on the "AdminMessage" remote (Screens/AdminMessage: one outlined "Name: message" line at the top of the screen for SHOW seconds).
 	    This server shows it straight away too; the copy coming back by MessagingService is skipped (same id).
 	  - Studio without API access: it only shows in this server, and the panel's answer says so.
 	  - At most MAX_LENGTH characters, and one message every GAP seconds per admin (MessagingService has limits).
@@ -49,19 +49,36 @@ function BroadcastService.send(admin: Player, text: string): (boolean, string)
 	local id = `{game.JobId}:{admin.UserId}:{os.clock()}`
 	local entry = { Id = id, Text = filtered, From = admin.DisplayName }
 	show(id, filtered, admin.DisplayName)
-	local sent = pcall(function() game:GetService("MessagingService"):PublishAsync(TOPIC, entry) end)
+	local sent = false
+	for _ = 1, 3 do -- (a busy moment: tried again, so every server gets it)
+		sent = pcall(function() game:GetService("MessagingService"):PublishAsync(TOPIC, entry) end)
+		if sent then break end
+		task.wait(1)
+	end
 	return true, if sent then "Sent to every server." else "Shown in this server (other servers couldn't be reached here)."
 end
 
 function BroadcastService.start()
 	Net.get("AdminMessage")
-	pcall(function()
-		game:GetService("MessagingService"):SubscribeAsync(TOPIC, function(message)
-			local e = message and message.Data
-			if type(e) == "table" and type(e.Id) == "string" and type(e.Text) == "string" and type(e.From) == "string" then
-				show(e.Id, string.sub(e.Text, 1, BroadcastService.MAX_LENGTH * 4), string.sub(e.From, 1, 40))
+	-- (listening can fail while Roblox's messaging is busy, and then this server never heard another one: tried again a
+	-- few times; owner, Oct 25 15:50: "make it work for all the servers active". Output says which.)
+	task.spawn(function()
+		for try = 1, 6 do
+			local ok, err = pcall(function()
+				game:GetService("MessagingService"):SubscribeAsync(TOPIC, function(message)
+					local e = message and message.Data
+					if type(e) == "table" and type(e.Id) == "string" and type(e.Text) == "string" and type(e.From) == "string" then
+						show(e.Id, string.sub(e.Text, 1, BroadcastService.MAX_LENGTH * 4), string.sub(e.From, 1, 40))
+					end
+				end)
+			end)
+			if ok then
+				print("[HuzzBroadcast] listening for admin messages from other servers")
+				return
 			end
-		end)
+			if try == 6 then warn("[HuzzBroadcast] couldn't listen for other servers' messages: " .. tostring(err)) end
+			task.wait(5 * try)
+		end
 	end)
 	Players.PlayerRemoving:Connect(function(p) lastAt[p.UserId] = nil end)
 end

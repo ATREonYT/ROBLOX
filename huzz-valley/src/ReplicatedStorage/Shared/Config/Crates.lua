@@ -117,7 +117,8 @@ Crates.List = {
 		Model = { Set = "beast_set", Crate = "Void_Beast_Chest", Body = "chest_body", Built = 15 }, -- (his jaw stands 15 deg open: shut, the upper teeth meet the lower ones)
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
-		Items = knivesNamed({ "RustyShiv", "BoneKnife", "SerratedFang", "HunterKnife", "VenomKris", "MoonlitKnife", "ShadowKnife",
+		-- (Shadow Cleaver out since Oct 25: owner, 15:49, "a gamepass knife ... looks one to one" (Hollow Eclipse); owners keep it)
+		Items = knivesNamed({ "RustyShiv", "BoneKnife", "SerratedFang", "HunterKnife", "VenomKris", "MoonlitKnife",
 			"TwinFang", "VoidFang", "AbyssEclipse" }, BEAST_WEIGHT),
 	},
 	-- His 18 Halloween knives (Pumpkin, Witch and Candy sets, Oct 19). Odds by rarity: Common 46%, Uncommon 27.6%,

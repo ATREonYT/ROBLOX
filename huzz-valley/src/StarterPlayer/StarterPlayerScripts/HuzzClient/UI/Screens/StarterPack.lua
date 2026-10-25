@@ -3,7 +3,8 @@
 -- that opens Roblox's own Game Pass prompt. The server gives everything (HuzzServer/ShopService, once per save).
 -- It opens by itself once per visit, after your first game of the visit (owner, Oct 25 13:30: "make the starter pack
 -- pop after one game is played by the user as there is a lot of things popping up on start up"): back in the lobby,
--- Config/Products.StarterPopupAfter seconds later, once the results and any other window are closed. Never for
+-- Config/Products.StarterPopupAfter seconds later, once the results and any other window but the map vote are closed
+-- (it shows over the vote, which comes back after). Never for
 -- someone who owns it, and never live while the pass has no ID (in Studio it still does, so you can see it):
 -- with no ID BUY only says "coming soon".
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -169,10 +170,26 @@ function StarterPack.build(parent: Instance)
 	local studio = game:GetService("RunService"):IsStudio()
 	local shown, due, timer = false, nil, false
 	local inGame, played = false, false -- (played: a game of yours ended this visit)
+	-- (the map vote counts as free: it opens straight after every game and stays up until the next one, so waiting for
+	-- it to shut meant the pack never showed; owner, Oct 25 15:46: "it doesnt pop up". The vote comes back when the
+	-- pack is closed, and the NEXT MAP panel takes votes meanwhile.)
+	local round = Net.get("Round")
+	local overVote = false
 	local function free(): boolean
 		local role = player:GetAttribute("HuzzRole")
-		return ModalManager.current() == nil and role ~= "Runner" and role ~= "Catcher" and not DailyLoginScreen.waiting()
+		local open = ModalManager.current()
+		return (open == nil or open == "MapVote") and role ~= "Runner" and role ~= "Catcher" and not DailyLoginScreen.waiting()
 	end
+	ModalManager.changed(function(name)
+		if overVote and name ~= "StarterPack" then
+			overVote = false
+			if name == nil and round:GetAttribute("Stage") == "Voting" then
+				task.defer(function()
+					if ModalManager.current() == nil then ModalManager.open("MapVote") end
+				end)
+			end
+		end
+	end)
 	local function maybeOpen()
 		local role = player:GetAttribute("HuzzRole")
 		if role == "Runner" or role == "Catcher" then inGame = true elseif inGame then inGame, played = false, true end
@@ -185,6 +202,7 @@ function StarterPack.build(parent: Instance)
 			if shown or State.owns(p.Key) then return end
 			if free() then -- (else the next lobby moment or closed window looks again)
 				shown = true
+				overVote = ModalManager.current() == "MapVote"
 				ModalManager.open("StarterPack")
 			end
 		end)

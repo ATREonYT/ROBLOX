@@ -126,7 +126,7 @@ end
 check("the quest reward says the knife's name", Progression.rewardText({ XP = 1, Reward = { Kind = "Knife", Id = "HunterKnife" } }) == "Hunter's Hook")
 local sold = 0
 for _, item in knives do if not item.Unlock and not item.NotForSale then sold += 1 end end
-check("26 knives for sale", sold == 26)
+check("25 knives for sale (Shadow Cleaver retired, Oct 25)", sold == 25)
 
 -- his 18 Halloween knives (design/knives/halloween/Halloween_Knives.glb): coin knives like the 30, one group of three
 -- sets of 6 in his rows, each set Common to Mythic in his order, priced on the same ladder, sold all year

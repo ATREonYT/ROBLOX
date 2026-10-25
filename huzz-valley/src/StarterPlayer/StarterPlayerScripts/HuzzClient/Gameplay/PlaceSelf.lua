@@ -15,7 +15,8 @@
 	Owner, Oct 25 15:06: "make the teleportation be right on point ... the players either dont appear for a few seconds
 	or look like they are being dragged there". Someone else's move reaches this screen too (drawAt): their body is
 	drawn at the spot at once (their root joint's C0, on this screen only, never sent) while Roblox's own copy of it
-	catches up, which it does late and by sliding across; once that copy is within ARRIVE studs the drawing eases off
+	catches up, which it does late and by sliding across; once that copy has stopped sliding near the spot (within
+	ARRIVE studs and moving less than SETTLED studs a frame, or within LANDED studs) the drawing eases off
 	in EASE seconds (at most HOLD_OTHERS seconds, then as Roblox has it).
 	Owner, Oct 25 15:11: "make the players positions locked in when its the selection of hero or chicken, so they are
 	perfectly lined up". While you wait in a game (HuzzFrozen: the line-up, the pick, the countdown) your body is held
@@ -81,7 +82,9 @@ function M.turnCamera(player, root, cf)
 end
 
 -- Someone else's body: drawn at `cf` on this screen until Roblox's copy gets there.
-M.ARRIVE = 8 -- studs: Roblox's copy this close to the spot, the drawing eases off
+M.ARRIVE = 8 -- studs: Roblox's copy this close to the spot and no longer sliding, the drawing eases off
+M.SETTLED = 0.4 -- studs a frame: slower than this, Roblox's copy has stopped sliding (it slides hundreds a second)
+M.LANDED = 1 -- studs: this close, it's there whatever it does
 M.EASE = 0.12 -- seconds it eases off in
 M.HOLD_OTHERS = 3 -- seconds at most
 local drawn = {} -- character -> { joint, base, cf, untilAt, fade } (a plain table, cleared as each one ends)
@@ -109,7 +112,7 @@ function M.drawAt(character, cf)
 	local ok, root = pcall(function() return character:FindFirstChild("HumanoidRootPart") end)
 	if not ok then return end
 	if not (root and root:IsA("BasePart")) or root.Anchored then return end
-	if (root.Position - cf.Position).Magnitude <= M.ARRIVE then return end -- (already about there)
+	if (root.Position - cf.Position).Magnitude <= M.LANDED then return end -- (already there)
 	local d = drawn[character]
 	if d and d.joint.Parent then
 		d.cf, d.untilAt, d.fade = cf, os.clock() + M.HOLD_OTHERS, nil -- (a newer move: the same joint, its own base)
@@ -128,7 +131,11 @@ function M.stepDrawn(dt: number)
 			release(character)
 			continue
 		end
-		if not d.fade and (root.Position - d.cf.Position).Magnitude <= M.ARRIVE then d.fade = 1 end
+		-- (eased off only once Roblox's copy is there: easing while it still slid the last few studs showed the slide)
+		local dist = (root.Position - d.cf.Position).Magnitude
+		local slid = if d.lastAt then (root.Position - d.lastAt).Magnitude else math.huge
+		d.lastAt = root.Position
+		if not d.fade and (dist <= M.LANDED or (dist <= M.ARRIVE and slid < M.SETTLED)) then d.fade = 1 end
 		if d.fade then
 			d.fade -= dt / M.EASE
 			if d.fade <= 0 then
