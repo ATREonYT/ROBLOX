@@ -23,6 +23,7 @@ DataService.Template = {
 	Pity = {}, -- [crateId] = opens since that crate's top prize (Config/Crates; shown to the player)
 	CrateKeys = {}, -- [crateId] = crate keys bought with Robux (the Halloween shop); an open uses one before Aura
 	PassKnives = {}, -- [pass key] = true: a Halloween knife pass gave its knife (ShopService)
+	PassGifts = {}, -- [pass key] = true: a bundle pass (the Starter Pack) gave its coins, Aura and items (ShopService, once)
 	PassRefunds = {}, -- [pass key] = true: its knife was yours already, so its crate keys were given instead (once)
 	Settings = table.clone(Settings.Defaults),
 	Receipts = {}, -- recent developer-product PurchaseIds, so a receipt is never granted twice

@@ -44,6 +44,8 @@ CoinShop.Items = {
 	{ Key = "MintTrail", Art = "ItemMintTrail", Slot = "Trail", Name = "Mint Trail", Price = 400, Colors = { rgb(140, 255, 210), rgb(60, 200, 160) }, Order = 1 },
 	{ Key = "OceanTrail", Art = "ItemOceanTrail", Slot = "Trail", Name = "Ocean Trail", Price = 750, Colors = { rgb(120, 220, 255), rgb(40, 110, 255) }, Order = 2 },
 	{ Key = "CandyTrail", Art = "ItemCandyTrail", Slot = "Trail", Name = "Candy Trail", Price = 1000, Colors = { rgb(255, 150, 210), rgb(170, 120, 255) }, Order = 3 },
+	-- the Starter Pack's own trail (Config/Products StarterPack; never sold for coins, shown once you own it)
+	{ Key = "StarterTrail", Slot = "Trail", Name = "Starter Trail", Price = 0, NotForSale = true, Pass = "StarterPack", Unlock = "Starter Pack", Colors = { rgb(255, 214, 90), rgb(255, 140, 60), rgb(255, 90, 160) }, Order = 4.5 },
 	{ Key = "GalaxyTrail", Art = "ItemGalaxyTrail", Slot = "Trail", Name = "Galaxy Trail", Price = 2500, Colors = { rgb(120, 90, 255), rgb(255, 90, 200), rgb(90, 220, 255) }, Rainbow = true, Order = 4 },
 	-- Name colours
 	{ Key = "TagPink", Art = "ItemPinkName", Slot = "Tag", Name = "Pink Name", Price = 300, Colors = { rgb(255, 130, 200), rgb(255, 130, 200) }, Order = 5 },

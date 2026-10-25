@@ -1182,6 +1182,10 @@ function Shop.build(parent: Instance)
 	mark("Passes")
 	block(head(bySection.Passes), HEAD.H)
 	mark("Passes@") -- (a jump lands here: its cards, the header just above)
+	-- the Starter Pack first (Config/Products Gives), then the knife passes, then VIP
+	for _, p in Products.Passes do
+		if p.Gives then passBanner(p) end
+	end
 	local passCards = {}
 	for i, p in Products.knifePasses() do
 		local c = bigCard(p.Key, NAVY, p.Name)
@@ -1204,7 +1208,7 @@ function Shop.build(parent: Instance)
 	if #passCards > 0 then grid(passCards, 3, BIG.W, BIG.H, BIG.Gap, BIG.Gap) end
 	-- VIP: a wide banner like the video's GAMEPASSES rows (the Dance Pack's is in DANCES)
 	for _, p in Products.Passes do
-		if not p.Knife and p.Key ~= "DancePack" then passBanner(p) end
+		if not p.Knife and not p.Gives and p.Key ~= "DancePack" then passBanner(p) end
 	end
 
 	-- AURA --------------------------------------------------------------------------------------------------------------

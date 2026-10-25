@@ -29,6 +29,7 @@ export type Product = {
 	Crate: string?, -- crate keys (Halloween page and Shop > CRATES): the Config/Crates crate it opens once
 	Card: any?, -- knife Game Passes: the card's colours
 	GamePass: boolean?, -- a Halloween knife sold as a Game Pass (Id is a Game Pass ID)
+	Gives: { Knife: string?, Trail: string?, Coins: number?, Aura: number? }?, -- a bundle pass (the Starter Pack): given once per save (ShopService)
 }
 
 local Products = {}
@@ -44,6 +45,20 @@ Products.Passes = {
 		Id = 2045504839, Price = 149, OnSale = true, Icon = "DancesNote", Art = "DancePack", Giftable = true, Accent = Color3.fromHex("E85BC4"), ButtonStyle = "PassPink",
 		Benefits = { { Icon = "MusicBenefit", Text = "4 Dances" }, { Icon = "GiftBenefit", Text = "Robux Only" } },
 		-- (on sale since Oct 21 17:25: its 4 dances are in HuzzAnimations, drawn by hand live until published)
+	},
+	-- The Starter Pack (owner, Oct 25 12:48: "make a starter pack with one knife that you arent using and make it worth
+	-- like 299 robux and add some essentials to the game, like a trail, a knife, coins, aura"). A Game Pass: owning it
+	-- gives what Gives lists, once per save (HuzzServer/ShopService, PassGifts), and a knife already yours becomes its
+	-- coin price instead. 5,000 coins + 1,000 Aura alone cost about 500 Robux in the shop, so the pack is a real deal.
+	-- The knife is the Mythic Abyss Eclipse (owner's pick, Oct 25 12:51: every knife model sent so far was already in
+	-- the game). While Id = 0 the button shows the price and only says "coming soon": the owner creates the Game Pass
+	-- at 299 on the Creator Dashboard and puts its ID here.
+	{
+		Key = "StarterPack", Kind = "Pass", Name = "Starter Pack", Blurb = "A Mythic knife, a trail,\ncoins and Aura.",
+		Id = 0, Price = 299, OnSale = true, Icon = "GiftBenefit", Art = "KnifeAbyssEclipse",
+		Accent = Color3.fromHex("FFC24A"), ButtonStyle = "PassViolet",
+		Gives = { Knife = "AbyssEclipse", Trail = "StarterTrail", Coins = 5000, Aura = 1000 },
+		Benefits = { { Icon = "TagFist", Text = "Abyss Eclipse (Mythic knife)" }, { Icon = "Sneaker", Text = "Starter Trail" }, { Icon = "CurrencyCoin", Text = "5,000 Coins + 1,000 Aura" } },
 	},
 	-- The 5 knife Game Passes (owner, Oct 18: "please add the knifes into the ui for the gamepass menu, these are going
 	-- to be the gamepasses users can buy"): each gives one knife from Gamepass_Knives.glb (Config/CoinShop Pass = this

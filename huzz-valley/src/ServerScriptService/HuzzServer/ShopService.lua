@@ -98,6 +98,47 @@ local function refreshPasses(player: Player, boughtId: number?)
 			player:SetAttribute("HuzzShopNotice", `{noticeCount}|You already had {r.name}, so you got {r.keys} crate keys instead.`)
 		end
 	end
+	-- a bundle pass (Config/Products Gives: the Starter Pack): its coins, Aura, knife and trail, once per save. The
+	-- knife and trail are worn straight away when just bought, else only in an empty slot; a knife already yours
+	-- becomes its coin price, so the pack never gives nothing.
+	local gifted = profile and profile.Data and profile.Data.PassGifts or {}
+	local bundles = {}
+	for _, p in Products.Passes do
+		if p.Gives and owned[p.Key] and not gifted[p.Key] then table.insert(bundles, p) end
+	end
+	if #bundles > 0 then
+		local lines = {}
+		DataService.update(player, function(d)
+			d.PassGifts = d.PassGifts or {}
+			d.Cosmetics = d.Cosmetics or {}
+			d.Wear = d.Wear or {}
+			for _, p in bundles do
+				if not d.PassGifts[p.Key] then
+					d.PassGifts[p.Key] = true
+					local g = p.Gives :: any
+					local coins = g.Coins or 0
+					for _, key in { g.Knife, g.Trail } do
+						local item = type(key) == "string" and key ~= "" and CoinShop.get(key)
+						if item then
+							if d.Cosmetics[key] and not item.Pass then
+								coins += item.Price or 0
+							else
+								d.Cosmetics[key] = true
+								if p.Id == boughtId or (CoinShop.worn(d, item.Slot) == nil and d.Wear[item.Slot] ~= "") then d.Wear[item.Slot] = key end
+							end
+						end
+					end
+					d.Coins = (d.Coins or 0) + coins
+					d.Aura = (d.Aura or 0) + (g.Aura or 0)
+					table.insert(lines, `{p.Name}: you got {coins} coins and {g.Aura or 0} Aura!`)
+				end
+			end
+		end)
+		for _, line in lines do
+			noticeCount += 1
+			player:SetAttribute("HuzzShopNotice", `{noticeCount}|{line}`)
+		end
+	end
 	if #new > 0 then
 		DataService.update(player, function(d)
 			d.Cosmetics = d.Cosmetics or {}
