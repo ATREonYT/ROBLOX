@@ -10,6 +10,8 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Products = require(Shared.Config.Products)
+local CoinShop = require(Shared.Config.CoinShop)
+local Net = require(Shared.Net)
 local Format = require(Shared.Format)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
@@ -39,17 +41,65 @@ function StarterPack.build(parent: Instance)
 	if not p then return nil end
 	local player = Players.LocalPlayer
 	local accent = p.Accent or Color3.fromHex("FFC24A")
-	local window = Kit.window({ Name = "StarterPack", Title = "STARTER PACK", Icon = "GiftAction", Width = W, Height = H, TitleX = 56, TitleWidth = 300, StudsTo = 0, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "StarterPack", Flat = true, Title = "STARTER PACK", Icon = "GiftAction", Width = W, Height = H, TitleX = 56, TitleWidth = 300, StudsTo = 0, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel = window.Panel
 
-	-- the knife's picture in a soft glow of the pack's colour, rocking a little
-	local artF = new("Frame", { Name = "Art", Position = UDim2.fromOffset(20, 47 + 14), Size = UDim2.fromOffset(200, 200), BackgroundColor3 = Color3.fromHex("1A1530"), BorderSizePixel = 0, ZIndex = 3, Parent = panel }, { Kit.corner(10) })
-	new("UIStroke", { Name = "Rim", Color = accent, Thickness = 2, Parent = artF })
-	local glow = new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(170, 170), BackgroundColor3 = accent, BorderSizePixel = 0, ZIndex = 3, Parent = artF }, { Kit.corner(85) })
-	new("UIGradient", { Name = "Soft", Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.6), NumberSequenceKeypoint.new(1, 1) }), Parent = glow })
-	Effects.breathe(glow, { scale = 1.12, seconds = 1.4 })
+	-- The knife, made to stand out (owner, Oct 25 14:52: "please make the picture of the knife look better right now it
+	-- looks too plain and doesnt look attractive"): a backdrop in the knife's own colour (its Glow, Config/CoinShop),
+	-- turning light rays and a breathing glow behind it, sparks rising round it, and the knife itself as its real 3D
+	-- model turning slowly (remote KnifeView puts a copy in ReplicatedStorage > HuzzKnifeViews, as the Shop's knife
+	-- cards do). Its flat picture shows until the model arrives (and in the offline preview, which can't draw 3D).
+	local knifeItem = p.Gives and p.Gives.Knife and CoinShop.get(p.Gives.Knife)
+	local glowColour = (knifeItem and knifeItem.Glow) or accent
+	local artF = new("Frame", { Name = "Art", Position = UDim2.fromOffset(20, 47 + 14), Size = UDim2.fromOffset(200, 200), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ClipsDescendants = true, ZIndex = 3, Parent = panel }, { Kit.corner(10) })
+	new("UIGradient", { Name = "Backdrop", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, glowColour:Lerp(Color3.new(0, 0, 0), 0.55)), ColorSequenceKeypoint.new(0.55, glowColour:Lerp(Color3.new(0, 0, 0), 0.8)), ColorSequenceKeypoint.new(1, Color3.fromHex("0A0610")) }), Parent = artF })
+	new("UIStroke", { Name = "Rim", Color = accent, Thickness = 2.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = artF })
+	Effects.rays(artF, UDim2.fromScale(0.5, 0.5), 300, { color = glowColour:Lerp(Color3.new(1, 1, 1), 0.25), transparency = 0.55, seconds = 16, z = 3, name = "Rays" })
+	-- a soft round glow: rings of the knife's colour, more see-through outwards
+	local glow = new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(180, 180), BackgroundTransparency = 1, ZIndex = 3, Parent = artF })
+	for i = 1, 8 do
+		local d = 184 - (i - 1) * 20
+		new("Frame", { Name = "Ring" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(d, d), BackgroundColor3 = glowColour:Lerp(Color3.new(1, 1, 1), 0.06 * (i - 1)), BackgroundTransparency = 0.9, BorderSizePixel = 0, ZIndex = 3, Parent = glow }, { Kit.corner(d // 2) })
+	end
+	Effects.breathe(glow, { scale = 1.15, seconds = 1.4 })
 	local pic = Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(188, 188), ScaleType = Enum.ScaleType.Fit, ZIndex = 4, Parent = artF })
 	Effects.rock(pic, { degrees = 3, seconds = 1.1 })
+	Effects.motes(artF, { colour = glowColour:Lerp(Color3.new(1, 1, 1), 0.3), shape = "dot", count = 9, area = Rect.new(16, 30, 184, 196), z = 6, seed = 7 })
+	Effects.shine(artF, { every = 3.5, corner = 10, z = 7 })
+	-- the real knife, turning (made at run time, never saved)
+	if knifeItem then
+		task.spawn(function()
+			local ok, model = pcall(function()
+				local okAsk = (Net.get("KnifeView") :: RemoteFunction):InvokeServer(knifeItem.Key)
+				local views = okAsk and game:GetService("ReplicatedStorage"):WaitForChild("HuzzKnifeViews", 8)
+				return views and views:WaitForChild(knifeItem.Key, 8)
+			end)
+			if not (ok and typeof(model) == "Instance") then return end
+			local copy = model:Clone()
+			local handle = copy:FindFirstChild("Handle", true)
+			if not (handle and handle:IsA("BasePart")) then copy:Destroy() return end
+			-- tip up (the Handle's +Y), tilted a little, turning round the upright
+			copy:PivotTo(handle.CFrame:Inverse() * copy:GetPivot())
+			local centre, size = copy:GetBoundingBox()
+			local length = math.max(size.X, size.Y, size.Z)
+			local base = copy:GetPivot()
+			local vf = new("ViewportFrame", { Name = "Knife3D", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 5, Ambient = Color3.fromRGB(190, 185, 195), LightColor = Color3.new(1, 1, 1), LightDirection = Vector3.new(-0.4, -1, -0.6), Parent = artF })
+			vf:SetAttribute("NoSave", true)
+			local cam = Instance.new("Camera")
+			cam.FieldOfView = 30
+			cam.CFrame = CFrame.lookAt(centre.Position + Vector3.new(0, 0, length * 2.1), centre.Position)
+			cam.Parent = vf
+			vf.CurrentCamera = cam
+			copy.Parent = vf
+			pic.Visible = false
+			local tilt = CFrame.Angles(0, 0, math.rad(-25))
+			game:GetService("RunService").RenderStepped:Connect(function()
+				if not (window.Holder.Visible and window.Group.Visible and vf.Parent) then return end
+				local yaw = (os.clock() * 0.9) % (math.pi * 2) -- (about one turn every 7 s)
+				copy:PivotTo(CFrame.new(centre.Position) * tilt * CFrame.Angles(0, yaw, 0) * CFrame.new(-centre.Position) * base)
+			end)
+		end)
+	end
 
 	-- what you get, one line each (the Shop banner's lines)
 	local x = 240

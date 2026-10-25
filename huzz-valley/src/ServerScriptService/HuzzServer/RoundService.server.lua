@@ -261,6 +261,7 @@ end
 -- (HuzzServer/PlaceService; the server only if it doesn't): a server PivotTo on a body the player's client simulates
 -- made it jump there, back and there again on the other screens (owner, Oct 20 15:13: "the peoples locations are off").
 local lineSpots = {}
+local placedOnce = {} -- [id] = true once they've had their first lobby spot this visit (the first is by a knife stand)
 local function place(id)
 	local p = byId[id]
 	local c = p and p.Character
@@ -272,7 +273,12 @@ local function place(id)
 	-- (every spot is open ground: MapService + Shared/SpawnSpots; the lobby's is its spawn pad)
 	if not role then
 		local zone = (match and not Skip.sitting(id) and zones.Bench) or zones.Lobby
-		local at = if zone == zones.Bench then MapService.benchSpot(middle) else MapService.lobbySpot()
+		local at = if zone == zones.Bench then MapService.benchSpot(middle) else nil
+		if zone ~= zones.Bench and not placedOnce[id] then -- (just joined: in front of a Game Pass knife stand)
+			at = MapService.standSpot()
+		end
+		if zone ~= zones.Bench then placedOnce[id] = true end
+		at = at or (if zone == zones.Bench then nil else MapService.lobbySpot())
 		if at or zone then
 			PlaceService.place(p, at or MapService.spot(zone, middle), "lobby")
 		end
@@ -1793,6 +1799,7 @@ for _, p in Players:GetPlayers() do
 end
 Players.PlayerRemoving:Connect(function(player)
 	lastStab[player.UserId] = nil
+	placedOnce[player.UserId] = nil
 	if #Players:GetPlayers() <= 1 then
 		botPlayers, botNews = nil, nil -- (the server empties: the Practice Bot starts again for the next kid)
 		PracticeBot.reset()

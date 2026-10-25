@@ -567,6 +567,33 @@ function MapService.lobbySpot(): CFrame?
 	return facing(s, pad.lookAt)
 end
 
+-- A spot in front of one of the lobby's Game Pass knife stands (tag HuzzAvatarStand, with a Knife: AvatarStandService),
+-- facing it, for a player's first spot of the visit (owner, Oct 25 14:47: "make the players spawn in different
+-- locations when they join the game, so that they can spawn infront of the knifes"). A random stand, STAND_GAP studs
+-- out towards the spawn pad (the stands face into the plaza), on open ground (Shared/SpawnSpots); nil when there is
+-- no stand or no open ground there (the spawn pad then, as before).
+local STAND_GAP = 10
+function MapService.standSpot(): CFrame?
+	local pad = MapService.lobbySpawn()
+	if not pad then return nil end
+	local stands = {}
+	for _, s in CollectionService:GetTagged("HuzzAvatarStand") do
+		if s:IsA("BasePart") and s:IsDescendantOf(Workspace) and s:GetAttribute("Knife") then table.insert(stands, s) end
+	end
+	while #stands > 0 do
+		local s = table.remove(stands, math.random(1, #stands))
+		local at = s.Position
+		local out = Vector3.new(pad.X - at.X, 0, pad.Z - at.Z)
+		if out.Magnitude > 1 then
+			local c = at + out.Unit * math.min(STAND_GAP, out.Magnitude)
+			local floorY = MapService.ground(Vector3.new(c.X, at.Y, c.Z), at.Y + 6) or at.Y
+			local spot = SpawnSpots.near(MapService.geometry, c.X, c.Z, floorY, 4, 1)
+			if spot then return facing(spot, at) end
+		end
+	end
+	return nil
+end
+
 -- The middle of the loaded field: halfway between the two safe lines, in the middle across; and the run's way.
 function MapService.fieldMiddle(): (Vector3?, Vector3?)
 	local a, b = MapService.zones.ZoneA, MapService.zones.ZoneB

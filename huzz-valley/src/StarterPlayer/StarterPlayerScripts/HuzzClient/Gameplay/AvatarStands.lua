@@ -410,6 +410,89 @@ function M.start()
 		rec.aura = { ring, column }
 	end
 
+	-- A big copy of the stand's knife floating high over it, turning slowly (owner, Oct 25 14:49: "make the knifes be
+	-- presented better ... so people see them more than the character, and maybe above the characters ... a big
+	-- floating knife that is being sold there, and make it turn slowly"): the ready model (HuzzStandKnives, with its
+	-- own particles) FLOAT.Scale times bigger, tip up, FLOAT.Up studs over the copy's feet (above the sign), bobbing
+	-- a little, one turn every FLOAT.Turn seconds; round it a glow in its colour (a light, rising sparkles and
+	-- twinkles). This screen only, like the copy.
+	local FLOAT = { Scale = 1.7, Up = 13, Turn = 8, Bob = 0.5 }
+	local function floatKnife(rec)
+		local key = rec.knifeKey
+		local folder = ReplicatedStorage:FindFirstChild("HuzzStandKnives")
+		local template = key and folder and folder:FindFirstChild(key)
+		if not template then
+			if key then
+				local copy = rec.copy
+				task.spawn(function()
+					local f = ReplicatedStorage:WaitForChild("HuzzStandKnives", 30)
+					local t = f and f:WaitForChild(key, 30)
+					if t and rec.copy == copy and not rec.float then pcall(floatKnife, rec) end
+				end)
+			end
+			return
+		end
+		local model = template:Clone()
+		model.Name = "FloatingKnife"
+		local handle = model:FindFirstChild("Handle", true)
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then d.Anchored, d.CanCollide, d.CanTouch, d.CanQuery, d.CastShadow = true, false, false, false, false end
+			if d:IsA("JointInstance") or d:IsA("WeldConstraint") then d:Destroy() end
+		end
+		if model:IsA("Model") then pcall(function() model:ScaleTo(model:GetScale() * FLOAT.Scale) end) end
+		-- tip up: the Handle's +Y points at the tip (Shared/KnifeLook)
+		if handle and handle:IsA("BasePart") and model:IsA("Model") then
+			model:PivotTo(handle.CFrame:Inverse() * model:GetPivot())
+		end
+		local centre = if model:IsA("Model") then (model:GetBoundingBox()).Position else Vector3.zero
+		rec.floatBase = if model:IsA("Model") then CFrame.new(-centre) * model:GetPivot() else CFrame.identity
+		rec.floatAt = rec.at + Vector3.new(0, FLOAT.Up, 0)
+		model.Parent = holder
+		rec.float = model
+		-- the glow round it
+		local colour = rec.glow or rec.accent or Color3.new(1, 1, 1)
+		local white = Color3.new(1, 1, 1)
+		local hold = Instance.new("Part")
+		hold.Name = "FloatingKnifeGlow"
+		hold.Anchored, hold.CanCollide, hold.CanTouch, hold.CanQuery, hold.CastShadow = true, false, false, false, false
+		hold.Transparency = 1
+		hold.Size = Vector3.new(4, 7, 4)
+		hold.CFrame = CFrame.new(rec.floatAt)
+		hold.Parent = holder
+		rec.floatGlow = hold
+		local light = Instance.new("PointLight")
+		light.Color, light.Brightness, light.Range, light.Shadows = colour:Lerp(white, 0.3), 2.5, 16, false
+		light.Parent = hold
+		local function emit(name: string, texture: string, rate: number, size: number, life: number, speed: number)
+			local e = Instance.new("ParticleEmitter")
+			e.Name = name
+			e.Color = ColorSequence.new(colour:Lerp(white, 0.5), colour)
+			e.LightEmission, e.LightInfluence = 1, 0
+			e.Rate = rate
+			e.Lifetime = NumberRange.new(life * 0.8, life * 1.2)
+			e.Speed = NumberRange.new(speed * 0.6, speed)
+			e.SpreadAngle = Vector2.new(180, 180)
+			e.Rotation = NumberRange.new(0, 360)
+			e.RotSpeed = NumberRange.new(-60, 60)
+			e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, size), NumberSequenceKeypoint.new(1, 0) })
+			e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.15), NumberSequenceKeypoint.new(1, 1) })
+			e.Acceleration = Vector3.new(0, 1.2, 0)
+			pcall(function() e.Shape = Enum.ParticleEmitterShape.Box; e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume end)
+			e.Parent = hold
+			return e
+		end
+		emit("FloatGlow", "Glow", 10, 0.9, 1.8, 0.8).Texture = FxTexture.get("Glow")
+		local stars = emit("FloatTwinkles", "Twinkle", 4, 1.2, 1.1, 0.3)
+		pcall(FxTexture.flipbook, stars, "Twinkle", "Random")
+	end
+	local function stepFloat(rec, clock: number)
+		local model = rec.float
+		if not (model and model.Parent and model:IsA("Model")) then return end
+		local yaw = (clock * 2 * math.pi / FLOAT.Turn) % (2 * math.pi)
+		local bob = math.sin(clock * 1.6 + (rec.number or 0)) * FLOAT.Bob
+		model:PivotTo(CFrame.new(rec.floatAt + Vector3.new(0, bob, 0)) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(0, 0, math.rad(-12)) * rec.floatBase)
+	end
+
 	-- The sign over the head and the price button just under it (BillboardGuis in PlayerGui, so the button clicks).
 	local function signs(rec)
 		local info, accent = rec.info, rec.accent
@@ -537,7 +620,7 @@ function M.start()
 	end
 
 	local function clear(rec)
-		for _, k in { "copy", "sign", "buttonGui", "prompt" } do
+		for _, k in { "copy", "sign", "buttonGui", "prompt", "float", "floatGlow" } do
 			if rec[k] then rec[k]:Destroy() rec[k] = nil end
 		end
 		for _, p in rec.aura or {} do p:Destroy() end
@@ -625,6 +708,7 @@ function M.start()
 		rec.glow = if el then el.light else rec.accent -- (the aura in the knife's own colours)
 		aura(rec, footY, cf.Position)
 		signs(rec)
+		pcall(floatKnife, rec)
 	end
 
 	local function tryBuild(stand: Instance)
@@ -673,7 +757,9 @@ function M.start()
 	RunService.RenderStepped:Connect(function(dt)
 		local char = player.Character
 		local me = char and char:FindFirstChild("HumanoidRootPart")
+		local clock = os.clock()
 		for _, rec in stands do
+			if rec.float then stepFloat(rec, clock) end
 			local root = rec.root
 			if root and root.Parent and me then
 				local at = me.CFrame.Position
