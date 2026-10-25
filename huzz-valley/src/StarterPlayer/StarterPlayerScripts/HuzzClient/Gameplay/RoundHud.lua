@@ -452,7 +452,21 @@ function M.start()
 			hideCount()
 		end
 	end
-	RunService.RenderStepped:Connect(refresh)
+	-- Every frame, protected: if anything in it fails, the clock at the top still ticks (it's put right from the
+	-- server's EndsAt below), and Output says what failed once a minute on a [HuzzUI] line (owner, Oct 25 16:07: "the
+	-- timer at the top during the game" was stuck on the same numbers; the cause still needs his Output).
+	local Report = require(UI.Report)
+	RunService.RenderStepped:Connect(function()
+		if Report.tick("RoundHud", refresh) then return end
+		pcall(function()
+			local stage = State:GetAttribute("Stage") or "Waiting"
+			if not TIMED[stage] then return end
+			local secs = math.ceil(math.max(0, (State:GetAttribute("EndsAt") or 0) - Workspace:GetServerTimeNow()))
+			local clock = string.format("%d:%02d", secs // 60, secs % 60)
+			local word = string.match(roleLine.Text, "^(.-)  ·  ") or roleLine.Text
+			roleLine.Text = `{word}  ·  {clock}`
+		end)
+	end)
 	M.refresh = refresh -- (the offline preview calls it)
 
 	-- Your own name tag: faded as in Huss Valley, gone while the round's camera shots play (the pick shot put it

@@ -1153,6 +1153,16 @@ local function showShowcase()
 	end
 end
 
+-- Has this player's screen loaded (Net "ClientReady", sent once by HuzzClient/StartGameplay) and is their body there?
+local function loadedIn(p): boolean
+	local c = p.Character
+	local root = c and c:FindFirstChild("HumanoidRootPart")
+	return p:GetAttribute("HuzzReady") == true and root ~= nil
+end
+Net.get("ClientReady").OnServerEvent:Connect(function(player)
+	player:SetAttribute("HuzzReady", true)
+end)
+
 local function runGame()
 	MapService.setBounds(true) -- (the field's invisible walls: only during a game)
 	MapService.holdCatchers(true) -- (and the safe zones' walls for catchers)
@@ -1196,6 +1206,10 @@ local function runGame()
 	local ids, all = {}, {}
 	for id, p in byId do
 		if Skip.sitting(id) then continue end -- (SKIP (skip game): they stay in the lobby this game)
+		-- (only players whose screen has loaded and whose body is there: owner, Oct 25 16:01, "if someone doesnt load in
+		-- and they are still in lobby, please make it so that he doesnt count into the active game". They play the next
+		-- one.)
+		if not loadedIn(p) then continue end
 		table.insert(all, id)
 		-- (only players whose save has loaded: pay, XP and a won girl go into the save; release check, Oct 22. A
 		-- slow load, e.g. a save handed over from another server, joins the next game)

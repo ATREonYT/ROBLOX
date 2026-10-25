@@ -15,7 +15,7 @@
 	  - Your own dance in the live game while it has no published ID (UI/DancePlayer.handBeat; owner, Oct 20 15:13:
 	    "inside the actual roblox game, not studio, make it so that dances are available"): drawn the same way on
 	    your own joints, on its beat (no track exists to play).
-	  - Sync dance: walk up to someone dancing (not in a round, not in a cutscene) and press E or tap "SYNC DANCE"
+	  - Sync dance: walk up to someone dancing (not in a round unless you're safe across, not in a cutscene) and press E or tap "SYNC DANCE"
 	    (also while you dance something else or the same dance off their beat; Oct 22 18:54): you start their dance on
 	    their beat. Only a dance you own: otherwise it says where to get it (nothing sold from here).
 	Gameplay/Frame order 9: after the walk pack (PlayerMoves 8, which steps aside while someone dances), before the
@@ -189,7 +189,10 @@ function M.start()
 	local function canJoin(): boolean
 		local me = Players.LocalPlayer
 		local role = me:GetAttribute("HuzzRole")
-		if role == "Runner" or role == "Catcher" or me:GetAttribute("HuzzCinematic") == true or me:GetAttribute("HuzzChoosing") == true then
+		-- (in a game only once you're safe across: owner, Oct 25 16:01, "make it also so that you can sync dances in the
+		-- safe zone"; catchers never get in there)
+		local safe = role == "Runner" and me:GetAttribute("HuzzStatus") == "Safe"
+		if ((role == "Runner" or role == "Catcher") and not safe) or me:GetAttribute("HuzzCinematic") == true or me:GetAttribute("HuzzChoosing") == true then
 			return false
 		end
 		return okPlayer and DancePlayer ~= nil

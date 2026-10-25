@@ -159,6 +159,7 @@ function M.start()
 		end
 	end
 
+	local LATE_PICKUP = 4 -- seconds: a carry this new when it reaches this screen still plays its whole pickup
 	local function startCarry(model)
 		local motor = model:WaitForChild("HuzzCarryMotor", 10)
 		if motor then whenWhole(model) end -- (her limbs' joints, read once below)
@@ -169,6 +170,15 @@ function M.start()
 		if not (humanoid and humanoid.RootPart and rig) or not model.Parent then
 			return
 		end
+		-- Her pickup starts when she reaches this screen, not when the server made her (owner, Oct 25 16:05: "make the
+		-- girl animations get better when you enter the safe zone first, so she doesnt just spawn into your hands but
+		-- like nicely goes into them like before"). A whole girl takes a moment to arrive (and her joints a few tenths
+		-- more, whenWhole), and the pickup is only Carry.PickupTime long, so it was often over before she showed: she
+		-- popped into his arms. Arriving within LATE_PICKUP seconds of it, the whole pickup plays from now; a carry
+		-- that started long ago (you joined, or she came into view) shows as it is.
+		local now = Workspace:GetServerTimeNow()
+		local start = model:GetAttribute("Start") or now
+		if now - start > 0.05 and now - start < LATE_PICKUP then start = now - 0.05 end
 		local c = {
 			model = model,
 			humanoid = humanoid,
@@ -177,7 +187,7 @@ function M.start()
 				rig = rig,
 				root = humanoid.RootPart,
 				girlMotors = motorsOf(model, motor),
-				start = model:GetAttribute("Start") or Workspace:GetServerTimeNow(),
+				start = start,
 				from = model:GetAttribute("From"),
 				seed = seedOf(model),
 				useArmAnimation = useArmAnimation,

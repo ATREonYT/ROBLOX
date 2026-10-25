@@ -65,6 +65,7 @@ local SPEC = {
 	KnifeBackup = "RemoteFunction",
 	HeadLook = "RemoteEvent",
 	Place = "RemoteEvent",
+	ClientReady = "RemoteEvent", -- client -> server, once: this screen has loaded (RoundService: only loaded players play)
 	Combine = "RemoteEvent",
 	Motion = "UnreliableRemoteEvent",
 	Away = "RemoteEvent",

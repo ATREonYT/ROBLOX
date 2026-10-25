@@ -8,3 +8,15 @@ for _, name in { "OthersAhead", "MotionSend", "AvatarAnimations", "PlayerMoves",
 		require(Gameplay:WaitForChild(name)).start()
 	end)
 end
+
+-- Tell the server this screen has loaded (the world and your body): only then are you put in a game (owner, Oct 25
+-- 16:01: "if someone doesnt load in and they are still in lobby, please make it so that he doesnt count into the
+-- active game"; HuzzServer/RoundService loadedIn).
+task.spawn(Report.run, "Ready", function()
+	if not game:IsLoaded() then game.Loaded:Wait() end
+	local player = game:GetService("Players").LocalPlayer
+	local character = player.Character or player.CharacterAdded:Wait()
+	character:WaitForChild("HumanoidRootPart", 60)
+	local Net = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Net"))
+	Net.get("ClientReady"):FireServer()
+end)

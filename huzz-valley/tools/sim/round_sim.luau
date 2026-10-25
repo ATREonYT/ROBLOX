@@ -780,6 +780,7 @@ local function simulate(opts)
 		p.Parent = Players
 		bots[p] = { kind = kind or "normal", lastStab = -99, seed = rng:NextNumber() }
 		Players.PlayerAdded:Fire(p)
+		p:SetAttribute("HuzzReady", true) -- (its screen has loaded: Net ClientReady, as RoundService sets it)
 		return p
 	end
 	local function removePlayer(p)
