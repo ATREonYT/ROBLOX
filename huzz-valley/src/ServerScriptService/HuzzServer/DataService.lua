@@ -35,6 +35,7 @@ DataService.Template = {
 	Combines = 0, -- merges made (the Combine machine waits for the save holding this before showing the result)
 	Prestige = {}, -- [id] = her prestige level 0..3 (cooler effects)
 	FriendReward = false, -- the friend knife (or its coins) was given (Shared/FriendRules)
+	FavAsked = 0, -- times Roblox's "add to favourites?" was shown (Gameplay/FavouritePrompt; Config/Group.FavouriteTimes)
 	GroupReward = false, -- the "join our group" spins were given (Config/Group, ProgressService.claimGroup)
 	Login = {}, -- daily login rewards: { Count = claimed so far, Last = day number of the last } (Shared/LoginRules)
 	FavChars = {}, -- [id] = true
@@ -93,6 +94,7 @@ function DataService.snapshot(player: Player)
 		end)() },
 		Spins = d.Spins or 0,
 		GroupReward = d.GroupReward == true,
+		FavAsked = d.FavAsked or 0,
 		Login = table.clone(d.Login or {}),
 		FreeSpinAt = d.FreeSpinAt or 0,
 		SpinPity = d.SpinPity or 0,

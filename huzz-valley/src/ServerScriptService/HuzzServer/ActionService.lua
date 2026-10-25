@@ -289,6 +289,14 @@ function VERBS.ClaimDaily(player, key) return ProgressService.claimDaily(player,
 function VERBS.ClaimGroup(player) return ProgressService.claimGroup(player) end
 function VERBS.ClaimLogin(player) return ProgressService.claimLogin(player) end
 
+-- The favourites pop-up was shown once more (Gameplay/FavouritePrompt counts it so it stops after Config/Group.FavouriteTimes).
+function VERBS.FavAsked(player)
+	DataService.update(player, function(data)
+		data.FavAsked = math.min((tonumber(data.FavAsked) or 0) + 1, 99)
+	end)
+	return true
+end
+
 function ActionService.start()
 	(Net.get("Action") :: RemoteFunction).OnServerInvoke = function(player, verb, ...)
 		local now = os.clock()

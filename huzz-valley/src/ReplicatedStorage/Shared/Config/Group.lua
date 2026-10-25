@@ -15,4 +15,6 @@ return {
 	-- if you want to add the game to your favourites randomly"; Gameplay/FavouritePrompt): once per visit, at a random
 	-- moment this many seconds in, in the lobby with nothing open; never if it's already a favourite.
 	FavouriteAfter = { 240, 540 },
+	-- (owner, Oct 25 12:30: "make the favourite game only pop up once or twice": at most this many times ever, saved)
+	FavouriteTimes = 2,
 }

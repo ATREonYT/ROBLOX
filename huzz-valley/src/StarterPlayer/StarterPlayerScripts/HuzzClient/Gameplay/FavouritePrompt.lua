@@ -3,7 +3,8 @@
 	asking you if you want to add the game to your favourites randomly"): AvatarEditorService:PromptSetFavorite on this
 	game's place. Once per visit, at a random moment Config/Group.FavouriteAfter seconds in, only in the lobby with no
 	window open (like the group window: never over a round), and never when it's already one of your favourites.
-	Saying no is fine: it doesn't ask again this visit and gives or takes nothing. In Studio Roblox has no real
+	Saying no is fine: it doesn't ask again this visit and gives or takes nothing. At most Config/Group.FavouriteTimes
+	times ever (owner, Oct 25: "only pop up once or twice"): the save counts each one (ActionService FavAsked). In Studio Roblox has no real
 	game to favourite: it only prints a [Huzz] line. Every call is in a pcall.
 ]]
 local M = {}
@@ -16,6 +17,8 @@ function M.start()
 	if not okAES then return end
 	local Group = require(ReplicatedStorage:WaitForChild("Shared").Config.Group)
 	local ModalManager = require(script.Parent.Parent.UI.ModalManager)
+	local State = require(script.Parent.Parent.UI.State)
+	local Net = require(ReplicatedStorage.Shared.Net)
 	local player = Players.LocalPlayer
 	local range = Group.FavouriteAfter or { 240, 540 }
 
@@ -37,6 +40,9 @@ function M.start()
 			return
 		end
 		if already() then return end
+		while not State.data.Loaded do task.wait(1) end
+		if (tonumber(State.data.FavAsked) or 0) >= (Group.FavouriteTimes or 2) then return end
+		pcall(function() (Net.get("Action") :: RemoteFunction):InvokeServer("FavAsked") end)
 		pcall(function()
 			AvatarEditorService:PromptSetFavorite(game.PlaceId, Enum.AvatarItemType.Asset, true)
 		end)
