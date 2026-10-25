@@ -1,9 +1,10 @@
 -- The Starter Pack window (owner, Oct 25 13:18: "can you make the starter pack pop up in the start"). What the pack
 -- gives (Config/Products StarterPack: its knife's picture, its Benefits lines), its price and one green BUY button
 -- that opens Roblox's own Game Pass prompt. The server gives everything (HuzzServer/ShopService, once per save).
--- It opens by itself once per visit, Config/Products.StarterPopupAfter seconds after the save loads, in the lobby with
--- nothing else open and after the daily reward's turn (like the group window, which then waits for this one). Never
--- for someone who owns it, and never live while the pass has no ID (in Studio it still does, so you can see it):
+-- It opens by itself once per visit, after your first game of the visit (owner, Oct 25 13:30: "make the starter pack
+-- pop after one game is played by the user as there is a lot of things popping up on start up"): back in the lobby,
+-- Config/Products.StarterPopupAfter seconds later, once the results and any other window are closed. Never for
+-- someone who owns it, and never live while the pass has no ID (in Studio it still does, so you can see it):
 -- with no ID BUY only says "coming soon".
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -114,15 +115,18 @@ function StarterPack.build(parent: Instance)
 	State.changed(refresh)
 	refresh()
 
-	-- By itself: once per visit, after the daily reward's turn, in the lobby with nothing open.
+	-- By itself: once per visit, after your first game, in the lobby with nothing open.
 	local studio = game:GetService("RunService"):IsStudio()
 	local shown, due, timer = false, nil, false
+	local inGame, played = false, false -- (played: a game of yours ended this visit)
 	local function free(): boolean
 		local role = player:GetAttribute("HuzzRole")
 		return ModalManager.current() == nil and role ~= "Runner" and role ~= "Catcher" and not DailyLoginScreen.waiting()
 	end
 	local function maybeOpen()
-		if shown or timer or not State.data.Loaded or State.owns(p.Key) then return end
+		local role = player:GetAttribute("HuzzRole")
+		if role == "Runner" or role == "Catcher" then inGame = true elseif inGame then inGame, played = false, true end
+		if not played or shown or timer or not State.data.Loaded or State.owns(p.Key) then return end
 		if not ((p.OnSale and p.Id ~= 0) or studio) then return end
 		due = due or os.clock() + (Products.StarterPopupAfter or 8)
 		timer = true

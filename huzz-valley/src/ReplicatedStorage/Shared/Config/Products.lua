@@ -158,9 +158,9 @@ Products.Luck = {
 	{ Key = "Luck10", Kind = "Luck", Name = "x10 Server Luck", Blurb = "x10 server luck\nwhile you're here.", Id = 3721642791, Price = 219, Amount = 10, OnSale = true, Icon = "", Art = "" },
 } :: { Product }
 
--- The Starter Pack window (Screens/StarterPack) opens by itself this many seconds after the save loads, once per visit
--- (owner, Oct 25 13:18: "make the starter pack pop up in the start"): after the daily reward, before the group window.
-Products.StarterPopupAfter = 8
+-- The Starter Pack window (Screens/StarterPack) opens by itself once per visit, this many seconds after your first game
+-- ends (owner, Oct 25 13:30: "make the starter pack pop after one game is played"), once nothing else is open.
+Products.StarterPopupAfter = 4
 
 Products.Tabs = { "Passes", "Cosmetics", "Items", "Crates", "Coins", "Aura" } -- (Items: the coin shop, Config/CoinShop)
 
