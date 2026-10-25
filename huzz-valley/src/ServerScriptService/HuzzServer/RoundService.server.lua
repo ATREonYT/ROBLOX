@@ -627,7 +627,9 @@ local function keepSafe()
 		local root = status == "Safe" and rootOf(id)
 		if root then
 			local back = MapService.keepIn(goal, root.Position)
-			if back and (back - root.Position).Magnitude > 2 and not PlaceService.pending(byId[id]) then
+			-- (only well outside: the zone's walls hold them in now, and this copy is behind their own screen by half
+			-- their ping, so a runner pressed on the wall used to be pulled back over and over: owner's 12:07 clip)
+			if back and (back - root.Position).Magnitude > 6 and not PlaceService.pending(byId[id]) then
 				PlaceService.place(byId[id], CFrame.new(back) * root.CFrame.Rotation, "back in the safe zone")
 			end
 		end

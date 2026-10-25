@@ -1389,6 +1389,24 @@ function MapService.holdGoal(goalName, on)
 		CanCollide = true, Transparency = 1, Parent = gate,
 	})
 	block.CollisionGroup = SAFE_WALL
+	-- and on its other three sides, just past the edge (owner, Oct 25 12:07, live: a safe runner with the girl kept
+	-- shaking at the side of the zone: only the front had a wall, so stepping off a side got them teleported back in
+	-- by RoundService.keepSafe, again and again). Now the zone holds them in by itself, like the front.
+	local zc, half = zone.CFrame, zone.Size * 0.5
+	for _, dir in { Vector3.xAxis, -Vector3.xAxis, Vector3.zAxis, -Vector3.zAxis } do
+		local world = zc:VectorToWorldSpace(dir)
+		if world:Dot(out) < 0.5 then -- (not the front: the gate above)
+			local alongX = dir.X == 0
+			local len = (if alongX then zone.Size.X else zone.Size.Z) + 4
+			local at = zc:PointToWorldSpace(dir * ((if alongX then half.Z else half.X) + 1))
+			local side = markPart({
+				Name = "Side", Size = Vector3.new(len, h, 2),
+				CFrame = CFrame.lookAt(Vector3.new(at.X, centre.Y + h / 2, at.Z), Vector3.new(at.X, centre.Y + h / 2, at.Z) + world),
+				CanCollide = true, Transparency = 1, Parent = gate,
+			})
+			side.CollisionGroup = SAFE_WALL
+		end
+	end
 	-- Nothing to see (owner, Oct 18: "get rid of laser wall"): the white safe line on the floor is the finish.
 	gate.Parent = loaded or Workspace
 end

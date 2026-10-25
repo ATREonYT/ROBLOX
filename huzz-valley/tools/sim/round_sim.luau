@@ -1334,7 +1334,9 @@ local function simulate(opts)
 				local out = MapService.keepIn(zones[goalName], root.Position)
 				-- (8 studs: the correction now goes through the runner's own screen, a round trip away (0.12 s here, at
 				-- up to ~30 studs a second); in the game the goal's gate stops them first, this is only for anyone round it)
-				if out and (out - root.Position).Magnitude > 8 then
+				-- (12 since Oct 25: the server now only pulls back past 6 studs, as the zone has walls on every side,
+				-- which this sim doesn't simulate: its bots walk through them)
+				if out and (out - root.Position).Magnitude > 12 then
 					stats.safeOutside += 1
 					problem(`{p.Name} got back out of the safe zone`)
 				end
