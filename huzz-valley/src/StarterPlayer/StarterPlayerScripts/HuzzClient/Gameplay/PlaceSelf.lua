@@ -12,6 +12,14 @@
 	move straight after lying caught can never tip it over; a body still in a trip, a stand-up or a free fall is put
 	back to standing. Where the floor hasn't loaded yet (streaming), it is held in the air until it has
 	(holdUntilFloor), then set down on it the same way.
+	Owner, Oct 25 15:06: "make the teleportation be right on point ... the players either dont appear for a few seconds
+	or look like they are being dragged there". Someone else's move reaches this screen too (drawAt): their body is
+	drawn at the spot at once (their root joint's C0, on this screen only, never sent) while Roblox's own copy of it
+	catches up, which it does late and by sliding across; once that copy is within ARRIVE studs the drawing eases off
+	in EASE seconds (at most HOLD_OTHERS seconds, then as Roblox has it).
+	Owner, Oct 25 15:11: "make the players positions locked in when its the selection of hero or chicken, so they are
+	perfectly lined up". While you wait in a game (HuzzFrozen: the line-up, the pick, the countdown) your body is held
+	on the spot the server put you (holdSpot): same place, same facing, nothing pushes it off.
 ]]
 local M = {}
 
@@ -41,11 +49,131 @@ function M.apply(player, character, cf): boolean
 			d.AssemblyAngularVelocity = Vector3.zero
 		end
 	end
+	M.lastFrom = root.Position
 	character:PivotTo(cf)
 	if not pcall(M.setDown, character, root) then
 		M.holdUntilFloor(character, root)
 	end
+	M.spot = { character = character, cf = cf }
+	pcall(M.turnCamera, player, root, cf)
 	return true
+end
+
+-- After a long move in a game, your camera turns to look the way the spot faces (owner, Oct 25 15:17: "make the
+-- catcher spawn facing the opponents"): Roblox's camera keeps its old direction across a move, and shift lock then
+-- turned the body round to it. Not during the round's own camera shots (Gameplay/Cinematic hands back itself), and
+-- not for a short push (a safe-zone wall, the line).
+M.TURN_FROM = 20 -- studs: a move at least this long turns the camera
+function M.turnCamera(player, root, cf)
+	local role = player:GetAttribute("HuzzRole")
+	if (role ~= "Runner" and role ~= "Catcher") or player:GetAttribute("HuzzCinematic") == true then return end
+	if M.lastFrom and (M.lastFrom - cf.Position).Magnitude < M.TURN_FROM then return end
+	local cam = workspace.CurrentCamera
+	if not cam or cam.CameraType ~= Enum.CameraType.Custom then return end
+	local look = cf.LookVector
+	local flat = Vector3.new(look.X, 0, look.Z)
+	if flat.Magnitude < 0.1 then return end
+	flat = flat.Unit
+	local dist = math.clamp((cam.CFrame.Position - cam.Focus.Position).Magnitude, 8, 24)
+	local head = root.Position + Vector3.new(0, 1.5, 0)
+	local eye = head - flat * dist * 0.97 + Vector3.new(0, dist * 0.25, 0)
+	cam.CFrame = CFrame.lookAt(eye, head)
+end
+
+-- Someone else's body: drawn at `cf` on this screen until Roblox's copy gets there.
+M.ARRIVE = 8 -- studs: Roblox's copy this close to the spot, the drawing eases off
+M.EASE = 0.12 -- seconds it eases off in
+M.HOLD_OTHERS = 3 -- seconds at most
+local drawn = {} -- character -> { joint, base, cf, untilAt, fade } (a plain table, cleared as each one ends)
+
+local function rootJointOf(character): Motor6D?
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not (root and root:IsA("BasePart")) then return nil end
+	for _, j in root:GetChildren() do -- R6: RootJoint in the root
+		if j:IsA("Motor6D") and j.Part0 == root and j.Part1 then return j end
+	end
+	local lower = character:FindFirstChild("LowerTorso") -- R15: Root in the LowerTorso
+	local j = lower and lower:FindFirstChild("Root")
+	if j and j:IsA("Motor6D") and j.Part0 == root then return j end
+	return nil
+end
+
+local function release(character)
+	local d = drawn[character]
+	drawn[character] = nil
+	if d and d.joint.Parent then pcall(function() d.joint.C0 = d.base end) end
+end
+
+function M.drawAt(character, cf)
+	if typeof(cf) ~= "CFrame" or not character then return end
+	local ok, root = pcall(function() return character:FindFirstChild("HumanoidRootPart") end)
+	if not ok then return end
+	if not (root and root:IsA("BasePart")) or root.Anchored then return end
+	if (root.Position - cf.Position).Magnitude <= M.ARRIVE then return end -- (already about there)
+	local d = drawn[character]
+	if d and d.joint.Parent then
+		d.cf, d.untilAt, d.fade = cf, os.clock() + M.HOLD_OTHERS, nil -- (a newer move: the same joint, its own base)
+		return
+	end
+	local joint = rootJointOf(character)
+	if not joint then return end
+	drawn[character] = { joint = joint, base = joint.C0, cf = cf, untilAt = os.clock() + M.HOLD_OTHERS }
+end
+
+function M.stepDrawn(dt: number)
+	for character, d in drawn do
+		local root = d.joint.Part0
+		if not (d.joint.Parent and root and root.Parent == character and character.Parent) or root.Anchored
+			or os.clock() > d.untilAt then
+			release(character)
+			continue
+		end
+		if not d.fade and (root.Position - d.cf.Position).Magnitude <= M.ARRIVE then d.fade = 1 end
+		if d.fade then
+			d.fade -= dt / M.EASE
+			if d.fade <= 0 then
+				release(character)
+				continue
+			end
+		end
+		-- (the body where it would be with its root at the spot; fading: part way back to its own root)
+		local rel = root.CFrame:ToObjectSpace(d.cf)
+		if d.fade then
+			local w = d.fade * d.fade * (3 - 2 * d.fade)
+			rel = CFrame.identity:Lerp(rel, w)
+		end
+		d.joint.C0 = rel * d.base
+	end
+end
+
+-- Your own body while you wait for the pick: held on the spot the server put you (flat, and facing), so the line
+-- stays straight. Only in the pick's stages: from the countdown on, shift lock turns you to the camera, and the two
+-- would fight. Not when it's far from there (a move still on its way: the server sends the next one).
+M.HOLD_NEAR = 6 -- studs
+M.HOLD_STAGES = { Lineup = true, Picking = true, Chosen = true }
+function M.holdSpot(player, stage: string?)
+	local spot = M.spot
+	local character = player.Character
+	if not (spot and character and spot.character == character and M.HOLD_STAGES[stage or ""]) then return end
+	if player:GetAttribute("HuzzFrozen") ~= true or character:GetAttribute("DownedAt") ~= nil then return end
+	local role = player:GetAttribute("HuzzRole")
+	if role ~= "Runner" and role ~= "Catcher" then return end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not (root and root:IsA("BasePart")) or root.Anchored then return end
+	local at = spot.cf.Position
+	local here = root.Position
+	local off = Vector3.new(here.X - at.X, 0, here.Z - at.Z)
+	if off.Magnitude > M.HOLD_NEAR then return end
+	local look = spot.cf.LookVector
+	local flat = Vector3.new(look.X, 0, look.Z)
+	if flat.Magnitude < 0.1 then return end
+	local want = CFrame.new(at.X, here.Y, at.Z) * CFrame.Angles(0, math.atan2(-flat.X, -flat.Z), 0) -- (upright, its facing)
+	if off.Magnitude > 0.02 or root.CFrame.LookVector:Dot(flat.Unit) < 0.9995 then
+		character:PivotTo(want * root.CFrame:ToObjectSpace(character:GetPivot()))
+	end
+	local v = root.AssemblyLinearVelocity
+	root.AssemblyLinearVelocity = Vector3.new(0, math.min(v.Y, 0), 0)
+	root.AssemblyAngularVelocity = Vector3.zero
 end
 
 -- How high a standing root sits over the floor: R6 its legs plus half the root, R15 its HipHeight plus half.
@@ -158,7 +286,17 @@ function M.start()
 	if player.Character then task.spawn(added, player.Character) end
 	player.CharacterAdded:Connect(added)
 	Net.get("Place").OnClientEvent:Connect(function(character, cf)
-		M.apply(player, character, cf)
+		if character == player.Character then
+			M.apply(player, character, cf)
+		else
+			M.drawAt(character, cf)
+		end
+	end)
+	-- (first in the frame: the others drawn where they are, your own body back on its spot before anything poses it)
+	local round = Net.get("Round")
+	require(script.Parent.Frame).on(0, function(dt)
+		M.stepDrawn(dt)
+		M.holdSpot(player, round:GetAttribute("Stage"))
 	end)
 end
 

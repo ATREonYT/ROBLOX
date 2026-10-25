@@ -42,16 +42,16 @@ local function player(character)
 end
 
 -- PlaceService with a recording remote (a fresh copy per test: its own counters and waits).
-local function loadPlaceService()
+local function loadPlaceService(everyone, place)
 	local fired = {}
 	local NET, CONFIG = {}, {}
 	local mods = {
 		[NET] = { get = function() return { FireClient = function(_, p, c, cf) table.insert(fired, { p = p, c = c, cf = cf }) end } end },
-		[CONFIG] = { Place = { Grace = 0.1, Near = 4, StreamWait = 0 } },
+		[CONFIG] = { Place = place or { Grace = 0.1, Near = 4, StreamWait = 0 } },
 	}
 	local services = {
 		ReplicatedStorage = { Shared = { Net = NET, Config = { Round = CONFIG } } },
-		Players = { PlayerRemoving = { Connect = function() end } },
+		Players = { PlayerRemoving = { Connect = function() end }, GetPlayers = function() return everyone or {} end },
 	}
 	local env = {
 		game = { GetService = function(_, n) return services[n] end },
@@ -79,6 +79,29 @@ do
 	check("pending clears once the server's copy has arrived", not PS.pending(p))
 	task.wait(WAIT)
 	check("no server fallback when the screen moved it", PS.fallbacks == 0 and root.Position == SPOT.Position)
+end
+
+-- Oct 25 (owner, 15:06: "make the teleportation be right on point"): every other screen is told at the same moment
+-- (to draw the body there at once), and a short move doesn't wait for the spot to load.
+do
+	local c, root = body(HERE)
+	local p = player(c)
+	local streamed = 0
+	function p.RequestStreamAroundAsync() streamed += 1 end
+	local q, r = player(body(HERE)), player(body(HERE))
+	local PS, fired = loadPlaceService({ p, q, r }, { Grace = 0.1, Near = 4, StreamWait = 1, LoadedStuds = 120 })
+	PS.place(p, SPOT, "line")
+	task.wait(0.02)
+	local others = 0
+	for _, f in fired do
+		if f.p ~= p and f.c == c and f.cf == SPOT then others += 1 end
+	end
+	check("the other screens are told where the body goes, at the same moment", #fired == 3 and others == 2)
+	check("a short move (112 studs) doesn't wait for the spot to load", streamed == 0)
+	PS.place(p, CFrame.new(400, 3, 0), "lobby")
+	task.wait(0.02)
+	check("a long move loads the spot first", streamed == 1)
+	c:PivotTo(CFrame.new(400, 3, 0))
 end
 
 -- Arrived, then ran on: not pulled back to the spot (the first version checked only at the end and did).
@@ -158,6 +181,58 @@ do
 		and root.AssemblyLinearVelocity == Vector3.zero and root.AssemblyAngularVelocity == Vector3.zero)
 	local held, heldRoot = body(HERE, true)
 	check("PlaceSelf leaves an anchored body to the server", PlaceSelf.apply(player(held), held, SPOT) == false and heldRoot.Position == HERE)
+end
+
+-- Someone else's move on this screen (PlaceSelf.drawAt): drawn at the spot at once, eased back once Roblox's copy is
+-- there; and your own body held on its spot while you wait on the line (holdSpot).
+do
+	local PlaceSelf = luau.load(fs.readFile(SRC .. "StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/PlaceSelf.lua"), { debugName = "PlaceSelf", environment = { typeof = roblox.typeof or typeof, Vector3 = Vector3, CFrame = CFrame } })()
+	local root = { Position = HERE, CFrame = CFrame.new(HERE), Anchored = false }
+	function root.IsA(_, c) return c == "BasePart" end
+	local character = { Parent = true }
+	root.Parent = character
+	local joint = { C0 = CFrame.new(0, 0, 0), Part0 = root, Part1 = {}, Parent = root }
+	function joint.IsA(_, c) return c == "Motor6D" end
+	function root.GetChildren() return { joint } end
+	function character.IsA(_, c) return c == "Model" end
+	function character.FindFirstChild(_, n) return if n == "HumanoidRootPart" then root else nil end
+	local function torsoAt() return (root.CFrame * joint.C0).Position end
+	PlaceSelf.drawAt(character, SPOT)
+	PlaceSelf.stepDrawn(1 / 60)
+	check("someone else's body is drawn at the spot straight away", (torsoAt() - SPOT.Position).Magnitude < 1e-3)
+	root.Position = Vector3.new(50, 3, 25) root.CFrame = CFrame.new(root.Position) -- (Roblox's copy sliding across)
+	PlaceSelf.stepDrawn(1 / 60)
+	check("it stays at the spot while Roblox's copy slides across", (torsoAt() - SPOT.Position).Magnitude < 1e-3)
+	root.Position = SPOT.Position + Vector3.new(2, 0, 0) root.CFrame = CFrame.new(root.Position)
+	for _ = 1, 20 do PlaceSelf.stepDrawn(1 / 60) end
+	check("once Roblox's copy is there, the body is drawn where Roblox has it again", joint.C0 == CFrame.new(0, 0, 0))
+
+	local mine = { Parent = true }
+	local mroot = { Position = SPOT.Position, CFrame = SPOT, Anchored = false, AssemblyLinearVelocity = Vector3.new(5, -1, 3), AssemblyAngularVelocity = Vector3.new(0, 2, 0) }
+	function mroot.IsA(_, c) return c == "BasePart" end
+	function mine.FindFirstChild(_, n) return if n == "HumanoidRootPart" then mroot else nil end
+	function mine.GetAttribute() return nil end
+	function mine.GetPivot() return mroot.CFrame end
+	function mine.PivotTo(_, cf) mroot.CFrame = cf mroot.Position = cf.Position end
+	local attrs = { HuzzFrozen = true, HuzzRole = "Runner" }
+	local me = { Character = mine }
+	function me.GetAttribute(_, n) return attrs[n] end
+	PlaceSelf.spot = { character = mine, cf = SPOT }
+	mine:PivotTo(SPOT * CFrame.new(1.5, 0, 0) * CFrame.Angles(0, 0.4, 0)) -- (bumped by the next runner and turned)
+	PlaceSelf.holdSpot(me, "Picking")
+	local flat = Vector3.new(mroot.Position.X - SPOT.Position.X, 0, mroot.Position.Z - SPOT.Position.Z)
+	check("waiting on the line, your body is held on its spot, facing the same way", flat.Magnitude < 1e-3
+		and mroot.CFrame.LookVector:Dot(SPOT.LookVector) > 0.9999 and mroot.AssemblyLinearVelocity.X == 0)
+	mine:PivotTo(SPOT * CFrame.new(3, 0, 0))
+	PlaceSelf.holdSpot(me, "Countdown")
+	check("not held from the countdown on (shift lock turns you to the camera then)", (mroot.Position - SPOT.Position).Magnitude > 2)
+	attrs.HuzzFrozen = false
+	PlaceSelf.holdSpot(me, "Picking")
+	check("not held once the game is on", (mroot.Position - SPOT.Position).Magnitude > 2)
+	attrs.HuzzFrozen = true
+	mine:PivotTo(SPOT * CFrame.new(30, 0, 0))
+	PlaceSelf.holdSpot(me, "Picking")
+	check("never pulled from far away (a move still on its way)", (mroot.Position - SPOT.Position).Magnitude > 20)
 end
 
 -- The source: every move of a live player goes through PlaceService (the old code set CFrames here directly).

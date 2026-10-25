@@ -8,6 +8,7 @@
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local DailyLogin = require(Shared.Config.DailyLogin)
+local Report = require(script.Parent.Parent.Report)
 local LoginRules = require(Shared.LoginRules)
 local DailyRules = require(Shared.DailyRules)
 local CoinShop = require(Shared.Config.CoinShop)
@@ -144,7 +145,7 @@ function DailyLoginScreen.build(parent: Instance)
 			task.spawn(function()
 				while open do
 					task.wait(1)
-					if open then refresh() end
+					if open then Report.tick("DailyLogin", refresh) end
 				end
 			end)
 		end,

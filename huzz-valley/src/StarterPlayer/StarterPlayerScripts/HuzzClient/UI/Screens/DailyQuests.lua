@@ -8,6 +8,7 @@
 -- checks a claim with (ActionService "ClaimDaily"). Accent colours: green and the Spin wheel's purple, no gold.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local DailyRules = require(Shared.DailyRules)
+local Report = require(script.Parent.Parent.Report)
 local DailyQuests = require(Shared.Config.DailyQuests)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
@@ -125,7 +126,7 @@ function DailyQuestsScreen.build(parent: Instance)
 			task.spawn(function()
 				while open do
 					task.wait(1)
-					if open then refresh() end
+					if open then Report.tick("DailyQuests", refresh) end
 				end
 			end)
 		end,

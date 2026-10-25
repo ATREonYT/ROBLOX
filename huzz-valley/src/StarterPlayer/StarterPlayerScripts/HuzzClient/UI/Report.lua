@@ -56,4 +56,18 @@ function Report.run(name: string, fn: (...any) -> any, ...: any)
 	return ok, result
 end
 
+-- For a clock that ticks in a loop (owner, Oct 25 15:09: "all of the timers dont work, they are just stuck on the
+-- same numbers"): an error in one tick used to end the loop, and the clock froze on its last number for good. Now each
+-- tick runs protected (Report.tick(name, fn, ...) -> true when it ran), and a failing one says so in Output once a
+-- minute ([HuzzUI] lines) while the clock keeps going.
+local tickTold = {} -- name -> os.clock() last said
+function Report.tick(name: string, fn: (...any) -> any, ...: any): boolean
+	local ok, err = pcall(fn, ...)
+	if not ok and os.clock() - (tickTold[name] or -math.huge) > 60 then
+		tickTold[name] = os.clock()
+		warn("[HuzzUI] " .. name .. " clock tick failed (it keeps ticking): " .. tostring(err))
+	end
+	return ok
+end
+
 return Report

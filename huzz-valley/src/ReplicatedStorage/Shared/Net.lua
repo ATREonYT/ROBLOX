@@ -27,7 +27,8 @@
 --   HeadLook       RemoteEvent     client -> server: (turn, tilt) where your head looks, whole degrees, ~5 a second
 --                                  (Gameplay/HeadAim); HuzzServer/HeadLookService puts it on your character (HuzzLook)
 --   Place          RemoteEvent     server -> client: (character, CFrame) move your own body there (HuzzServer/PlaceService,
---                                  Gameplay/PlaceSelf: the owner of a body moves it, so every screen agrees)
+--                                  Gameplay/PlaceSelf: the owner of a body moves it, so every screen agrees); someone
+--                                  else's: draw it there at once (PlaceSelf.drawAt) until Roblox's copy arrives
 --   Combine        RemoteEvent     server -> client: (userId, girlKey, fromGrade, toGrade, startAt) someone merged two
 --                                  girls at the Combine machine: every screen plays it there (Gameplay/CombineMachine).
 --                                  The merge itself is the Action "Combine" (HuzzServer/CombineService)

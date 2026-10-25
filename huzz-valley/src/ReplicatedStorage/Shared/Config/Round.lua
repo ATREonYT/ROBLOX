@@ -146,7 +146,7 @@ return {
 	-- only if its copy isn't within Near studs by then. StreamWait: seconds at most to load the spot around them first.
 	-- (Grace 0.4 until Oct 24: under lag a screen took longer, the server moved the body itself and the two fought:
 	-- owner, 07:04 "moving very glitchy")
-	Place = { Grace = 1.2, Near = 4, StreamWait = 1 },
+	Place = { Grace = 1.2, Near = 4, StreamWait = 1, LoadedStuds = 120 }, -- (LoadedStuds: a move shorter than this skips the stream wait)
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).
 	Knockdown = {

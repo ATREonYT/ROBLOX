@@ -9,6 +9,7 @@ local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
+local Report = require(script.Parent.Parent.Report)
 local SpinRules = require(Shared.SpinRules)
 local DailyRules = require(Shared.DailyRules)
 local LoginRules = require(Shared.LoginRules)
@@ -462,36 +463,40 @@ function LobbyHud.build(parent: Instance)
 	workspace:GetAttributeChangedSignal("HuzzServerLuck"):Connect(showLuck)
 	showLuck()
 
+	-- (each tick protected: one error used to stop this loop and freeze every clock here on its last number)
+	local function tick()
+		local at = workspace:GetAttribute("NextRoundAt")
+		if type(at) == "number" then
+			banner.Visible = true
+			bannerText.Text = Format.clock(at - workspace:GetServerTimeNow())
+		else
+			banner.Visible = false
+		end
+		local left = ((State.data.Boosts or {}).Coins or 0) - workspace:GetServerTimeNow()
+		boost.Visible = left > 0
+		if left > 0 then boostText.Text = "x2 COINS  " .. Format.clock(left) end
+		-- the friend tag stacks over the x2 tag when both show, the playtime tag over those
+		local me = game:GetService("Players").LocalPlayer
+		friendTag.Visible = me:GetAttribute("HuzzFriendBoost") == true
+		local stacks, nextAt = me:GetAttribute("HuzzPlayStacks"), me:GetAttribute("HuzzPlayNextAt")
+		playTag.Visible = type(stacks) == "number"
+		if type(stacks) == "number" then
+			local clock = if type(nextAt) == "number" then "  " .. Format.clock(math.max(0, nextAt - workspace:GetServerTimeNow())) else ""
+			local afk = me:GetAttribute("HuzzAfk") == true and stacks < Playtime.Max
+			-- (no steps yet: what the first one gives and when; AFK: the clock waits)
+			playText.Text = if stacks == 0 then (if afk then "AFK: BOOST PAUSED" else "NEXT " .. Playtime.tag(1) .. clock)
+				else Playtime.tag(stacks) .. (if afk then "  AFK" else clock)
+		end
+		local step = if touch then 26 else -24
+		local y = if touch then 43 else -18
+		local n = if boost.Visible then 1 else 0
+		friendTag.Position = UDim2.fromOffset(23, y + n * step)
+		if friendTag.Visible then n += 1 end
+		playTag.Position = UDim2.fromOffset(23, y + n * step)
+	end
 	task.spawn(function()
 		while root.Parent do
-			local at = workspace:GetAttribute("NextRoundAt")
-			if type(at) == "number" then
-				banner.Visible = true
-				bannerText.Text = Format.clock(at - workspace:GetServerTimeNow())
-			else
-				banner.Visible = false
-			end
-			local left = ((State.data.Boosts or {}).Coins or 0) - workspace:GetServerTimeNow()
-			boost.Visible = left > 0
-			if left > 0 then boostText.Text = "x2 COINS  " .. Format.clock(left) end
-			-- the friend tag stacks over the x2 tag when both show, the playtime tag over those
-			local me = game:GetService("Players").LocalPlayer
-			friendTag.Visible = me:GetAttribute("HuzzFriendBoost") == true
-			local stacks, nextAt = me:GetAttribute("HuzzPlayStacks"), me:GetAttribute("HuzzPlayNextAt")
-			playTag.Visible = type(stacks) == "number"
-			if type(stacks) == "number" then
-				local clock = if type(nextAt) == "number" then "  " .. Format.clock(math.max(0, nextAt - workspace:GetServerTimeNow())) else ""
-				local afk = me:GetAttribute("HuzzAfk") == true and stacks < Playtime.Max
-				-- (no steps yet: what the first one gives and when; AFK: the clock waits)
-				playText.Text = if stacks == 0 then (if afk then "AFK: BOOST PAUSED" else "NEXT " .. Playtime.tag(1) .. clock)
-					else Playtime.tag(stacks) .. (if afk then "  AFK" else clock)
-			end
-			local step = if touch then 26 else -24
-			local y = if touch then 43 else -18
-			local n = if boost.Visible then 1 else 0
-			friendTag.Position = UDim2.fromOffset(23, y + n * step)
-			if friendTag.Visible then n += 1 end
-			playTag.Position = UDim2.fromOffset(23, y + n * step)
+			Report.tick("LobbyHud", tick)
 			task.wait(0.25)
 		end
 	end)

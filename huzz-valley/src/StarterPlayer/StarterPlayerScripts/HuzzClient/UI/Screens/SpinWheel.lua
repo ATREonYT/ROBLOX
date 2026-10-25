@@ -14,6 +14,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Wheel = require(Shared.Config.SpinWheel)
+local Report = require(script.Parent.Parent.Report)
 local Products = require(Shared.Config.Products)
 local CoinShop = require(Shared.Config.CoinShop)
 local SpinRules = require(Shared.SpinRules)
@@ -499,7 +500,7 @@ function SpinWheel.build(parent: Instance)
 		local mine = openToken
 		task.spawn(function()
 			while mine == openToken and holder.Visible do
-				refresh()
+				Report.tick("SpinWheel", refresh)
 				task.wait(0.25)
 			end
 		end)

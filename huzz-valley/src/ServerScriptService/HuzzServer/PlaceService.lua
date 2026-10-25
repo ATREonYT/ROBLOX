@@ -24,8 +24,12 @@
 	  - a body whose root is anchored (lying caught, KnockdownService: the server owns it) is moved by the server.
 	His place streams with StreamingIntegrityMode PauseOutsideLoadedArea: a body moved where nothing has loaded yet
 	stands frozen until it has. So the spot is streamed in around the player first (RequestStreamAroundAsync, at most
-	Place.StreamWait seconds) before the move.
+	Place.StreamWait seconds) before a long move (over Place.LoadedStuds); a short one goes at once.
+	Owner, Oct 25 15:06 ("the players either dont appear for a few seconds or look like they are being dragged there
+	not teleported"): every other screen is told too, and draws the body at the spot straight away until Roblox's own
+	copy of it gets there (Gameplay/PlaceSelf.drawAt).
 ]]
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Net = require(ReplicatedStorage.Shared.Net)
@@ -89,7 +93,10 @@ function PlaceService.place(player, cf: CFrame, why: string?, still: (() -> bool
 	waiting[player] = { cf = cf, token = mine }
 	task.spawn(function()
 		-- (the spot loaded around them first, or their body stands frozen there: PauseOutsideLoadedArea)
-		if P.StreamWait and P.StreamWait > 0 then
+		-- (only for a long move: a short one lands where their screen has already loaded, so it goes at once; owner,
+		-- Oct 25 15:06: "make the teleportation be right on point and not be slow")
+		local far = (root.Position - cf.Position).Magnitude > (P.LoadedStuds or 120)
+		if far and P.StreamWait and P.StreamWait > 0 then
 			pcall(function() player:RequestStreamAroundAsync(cf.Position, P.StreamWait) end)
 		end
 		if waiting[player] == nil or waiting[player].token ~= mine or player.Character ~= character then
@@ -101,6 +108,11 @@ function PlaceService.place(player, cf: CFrame, why: string?, still: (() -> bool
 		end
 		waiting[player].sent = true
 		remote:FireClient(player, character, cf)
+		-- every other screen draws the body at the spot at once (Gameplay/PlaceSelf.drawAt), instead of Roblox sliding
+		-- it across from the old one or showing it late
+		for _, other in Players:GetPlayers() do
+			if other ~= player then remote:FireClient(other, character, cf) end
+		end
 		local ok, ping = pcall(function() return player:GetNetworkPing() end)
 		local rtt = if ok and type(ping) == "number" then math.clamp(ping * 2, 0, 1) else 0.3
 		-- (watched every step, not only at the end: once there, the player runs on, and a check at the end alone
@@ -132,7 +144,7 @@ function PlaceService.place(player, cf: CFrame, why: string?, still: (() -> bool
 	end)
 end
 
-game:GetService("Players").PlayerRemoving:Connect(function(player)
+Players.PlayerRemoving:Connect(function(player)
 	waiting[player] = nil
 	movedAt[player] = nil
 end)

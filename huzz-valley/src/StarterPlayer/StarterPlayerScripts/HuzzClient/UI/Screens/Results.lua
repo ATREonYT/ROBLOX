@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
+local Report = require(script.Parent.Parent.Report)
 local Kit = require(UI.Kit)
 local State = require(UI.State)
 local ModalManager = require(UI.ModalManager)
@@ -241,7 +242,7 @@ function Results.build(parent: Instance)
 			task.spawn(function()
 				while open do
 					task.wait(0.5)
-					if open then showNextMatch() end
+					if open then Report.tick("Results", showNextMatch) end
 				end
 			end)
 		end,
@@ -276,7 +277,7 @@ function Results.build(parent: Instance)
 	task.spawn(function()
 		while window.Holder.Parent do
 			task.wait(1)
-			tryOpen()
+			Report.tick("Results open", tryOpen)
 		end
 	end)
 	return window
