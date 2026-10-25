@@ -311,7 +311,8 @@ function ActionService.start()
 		local character = player.Character
 		if not character then return end
 		local now0 = os.clock()
-		if lastDance[player] and now0 - lastDance[player] < 0.1 then return end
+		-- (a stop always goes through: dropping one left you dancing on every other screen while you ran)
+		if id ~= nil and lastDance[player] and now0 - lastDance[player] < 0.1 then return end
 		lastDance[player] = now0
 		-- (stopped, or a dance that can't be yours: clear it, so nobody syncs to an old dance)
 		if id == nil or type(id) ~= "string" or not Dances.get(id) or not DataService.ownedDances(player)[id] then

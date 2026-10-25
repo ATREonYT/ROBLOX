@@ -188,7 +188,10 @@ if player then
 		if not playing or os.clock() - startedAt < 0.4 then return end
 		local character = player.Character
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		if humanoid and humanoid.MoveDirection.Magnitude > 0.2 then
+		-- (moving at all, by the keys or by a huss, dash or push: owner, Oct 25: "make them not be dancing when running")
+		local root = humanoid and humanoid.RootPart
+		local v = if root then root.AssemblyLinearVelocity else Vector3.zero
+		if humanoid and (humanoid.MoveDirection.Magnitude > 0.2 or Vector3.new(v.X, 0, v.Z).Magnitude > 4) then
 			DancePlayer.stop()
 			return
 		end

@@ -68,9 +68,18 @@ function M.start()
 
 	local recs = {} -- character -> { motors, k, weight, written, base, track, scanAt, prompt }
 
+	-- A body on the move never dances here, whatever its attributes still say (owner, Oct 25: "make them not be
+	-- dancing when running"; a stop that hadn't reached this screen yet left a runner dancing across the field).
+	local function moving(character: Model): boolean
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not (root and root:IsA("BasePart")) then return false end
+		local v = root.AssemblyLinearVelocity
+		return Vector3.new(v.X, 0, v.Z).Magnitude > 6
+	end
+
 	local function danceOf(character: Model): (string?, number?)
 		local id, at = character:GetAttribute("HuzzDance"), character:GetAttribute("HuzzDanceAt")
-		if type(id) == "string" and type(at) == "number" and Dances.get(id) then
+		if type(id) == "string" and type(at) == "number" and Dances.get(id) and not moving(character) then
 			return id, at
 		end
 		return nil, nil
