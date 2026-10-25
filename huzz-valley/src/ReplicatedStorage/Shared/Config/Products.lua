@@ -161,6 +161,9 @@ Products.Luck = {
 -- The Starter Pack window (Screens/StarterPack) opens by itself once per visit, this many seconds after your first game
 -- ends (owner, Oct 25 13:30: "make the starter pack pop after one game is played"), once nothing else is open.
 Products.StarterPopupAfter = 4
+-- It stops opening by itself from the level after this one (owner, Oct 25 21:40: "make the starter pack stop showing up
+-- after the users reach around level 7-8"): players at level 8 or higher only find it in the Shop.
+Products.StarterPopupMaxLevel = 7
 
 Products.Tabs = { "Passes", "Cosmetics", "Items", "Crates", "Coins", "Aura" } -- (Items: the coin shop, Config/CoinShop)
 

@@ -5,13 +5,15 @@
 -- pop after one game is played by the user as there is a lot of things popping up on start up"): back in the lobby,
 -- Config/Products.StarterPopupAfter seconds later, once the results and any other window but the map vote are closed
 -- (it shows over the vote, which comes back after). Never for
--- someone who owns it, and never live while the pass has no ID (in Studio it still does, so you can see it):
+-- someone past Config/Products.StarterPopupMaxLevel (owner, Oct 25 21:40: "make the starter pack stop showing up after
+-- the users reach around level 7-8"; the Shop's Passes tab still has it), never for someone who owns it, and never live while the pass has no ID (in Studio it still does, so you can see it):
 -- with no ID BUY only says "coming soon".
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Products = require(Shared.Config.Products)
 local CoinShop = require(Shared.Config.CoinShop)
+local Progression = require(Shared.Config.Progression)
 local Net = require(Shared.Net)
 local Format = require(Shared.Format)
 local UI = script.Parent.Parent
@@ -194,12 +196,14 @@ function StarterPack.build(parent: Instance)
 		local role = player:GetAttribute("HuzzRole")
 		if role == "Runner" or role == "Catcher" then inGame = true elseif inGame then inGame, played = false, true end
 		if not played or shown or timer or not State.data.Loaded or State.owns(p.Key) then return end
+		if Progression.level(State.data.XP or 0) > (Products.StarterPopupMaxLevel or math.huge) then return end
 		if not ((p.OnSale and p.Id ~= 0) or studio) then return end
 		due = due or os.clock() + (Products.StarterPopupAfter or 8)
 		timer = true
 		task.delay(math.max(due - os.clock(), 0) + 0.05, function()
 			timer = false
 			if shown or State.owns(p.Key) then return end
+			if Progression.level(State.data.XP or 0) > (Products.StarterPopupMaxLevel or math.huge) then return end
 			if free() then -- (else the next lobby moment or closed window looks again)
 				shown = true
 				overVote = ModalManager.current() == "MapVote"
