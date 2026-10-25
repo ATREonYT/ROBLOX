@@ -202,6 +202,7 @@ function OthersAhead.step(dt: number)
 end
 
 function OthersAhead.start()
+	if Round.Ahead.On ~= true then return end -- (off: every body drawn where Roblox has it; Config/Round Ahead.On)
 	require(Shared.Net).get("Motion").OnClientEvent:Connect(OthersAhead.stamps)
 	-- (before the physics step, so the body is drawn and hit-tested where it's shifted to this frame)
 	require(script.Parent.Frame).on(1, OthersAhead.step)

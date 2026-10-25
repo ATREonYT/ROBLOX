@@ -14,6 +14,7 @@ function M.start()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Workspace = game:GetService("Workspace")
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	if require(Shared.Config.Round).Ahead.On ~= true then return end -- (off: nothing sent; Config/Round Ahead.On)
 	local MotionStamps = require(Shared.MotionStamps)
 	local remote = require(Shared.Net).get("Motion")
 	local C = MotionStamps.Config

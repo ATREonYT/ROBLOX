@@ -97,6 +97,7 @@ end
 
 function MotionRelay.start()
 	local remote = require(Shared.Net).get("Motion")
+	if require(Shared.Config.Round).Ahead.On ~= true then return end -- (off: no stamps; Config/Round Ahead.On)
 	remote.OnServerEvent:Connect(function(player, t, p, v, g, push)
 		if not allow(player, os.clock()) then return end
 		local role = player:GetAttribute("HuzzRole") -- (only bodies in a game: Oct 24, lag with a full lobby)

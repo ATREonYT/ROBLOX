@@ -98,10 +98,16 @@ function M.start()
 		return own.WindUp or FX.WindUp, FX.Flash, own.Burst or FX.Burst, FX.Fade
 	end
 
+	-- The body every effect sits on: the R6 torso (its centre is the root's), not the root itself. Other players'
+	-- bodies are drawn a little ahead of their root on this screen (Gameplay/OthersAhead moves the torso), so effects
+	-- on the root sat off to the side of the body you saw (owner, Oct 25: "the abilities arent centered").
 	local function rootOf(id: number?): BasePart?
 		local p = id and Players:GetPlayerByUserId(id)
-		local root = p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-		return if root and root:IsA("BasePart") then root else nil
+		local c = p and p.Character
+		local root = c and c:FindFirstChild("HumanoidRootPart")
+		if not (root and root:IsA("BasePart")) then return nil end
+		local torso = c:FindFirstChild("Torso")
+		return if torso and torso:IsA("BasePart") then torso else root
 	end
 
 	local function near(at: Vector3): boolean

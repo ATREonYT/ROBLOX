@@ -231,10 +231,16 @@ local function apply(player: Player)
 	if not character or not root or not profile then return end
 	local data = profile.Data
 
+	-- The trail hangs on the torso, not the root (owner, Oct 25: "all the trails and abilities arent centered"):
+	-- other screens draw a body a little ahead of its root (Gameplay/OthersAhead moves the torso, not the root), so
+	-- a trail on the root trailed off to the side of the body you saw. R6 torso centre = root centre.
+	local body = (character:FindFirstChild("Torso") or root) :: BasePart
 	local trailKey = CoinShop.worn(data, "Trail")
-	local current = root:FindFirstChild("WornTrail") and root.WornTrail:GetAttribute("Item")
-	if current ~= trailKey then
+	local current = body:FindFirstChild("WornTrail") and body.WornTrail:GetAttribute("Item")
+	if current ~= trailKey or root:FindFirstChild("WornTrail") and body ~= root then
 		clearTrail(root)
+		clearTrail(body)
+		root = body
 		local item = trailKey and CoinShop.get(trailKey)
 		local robux = trailKey and ROBUX_TRAILS[trailKey]
 		if robux then
@@ -273,7 +279,8 @@ function CosmeticsService.start()
 			local humanoid = character:FindFirstChildOfClass("Humanoid")
 			if humanoid and root then
 				humanoid.Running:Connect(function(speed)
-					local e = root:FindFirstChild("WornTrailTwinkles") :: ParticleEmitter?
+					local torso = character:FindFirstChild("Torso")
+					local e = (torso and torso:FindFirstChild("WornTrailTwinkles") or root:FindFirstChild("WornTrailTwinkles")) :: ParticleEmitter?
 					if e then e.Enabled = speed > 3 end
 				end)
 			end

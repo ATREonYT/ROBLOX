@@ -97,7 +97,11 @@ return {
 	-- follows (per s); a body faster than MaxSpeed studs/s is a teleport (drawn where it is).
 	-- StampSmooth (Oct 23): the same easing when the body's own stamps say where it is (Shared/MotionStamps): quicker,
 	-- since a stamp already knows where it's heading (12 would trail a turn by ~0.08 s).
-	Ahead = { Interp = 0.1, MaxLead = 0.3, MaxStuds = 8, Smooth = 12, MaxSpeed = 150, StampSmooth = 25 },
+	-- On = false (owner, Oct 25 12:02, live game: "its still very laggy ... sink into the ground"): the whole
+	-- draw-ahead system is off: no body stamps sent or relayed (they were ~25 a second per player, passed on to every
+	-- other screen: the heaviest network traffic in a full server), and every body is drawn where Roblox has it, so
+	-- trails and effects on it line up. true brings it all back (Gameplay/OthersAhead, MotionSend, HuzzServer/MotionRelay).
+	Ahead = { On = false, Interp = 0.1, MaxLead = 0.3, MaxStuds = 8, Smooth = 12, MaxSpeed = 150, StampSmooth = 25 },
 
 
 	-- The huss (owner's call): Space throws you left or right on your screen. Jumping is off. The push eases every
