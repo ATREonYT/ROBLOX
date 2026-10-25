@@ -1799,6 +1799,18 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 	if match then
 		apply(Rules.removePlayer(match, player.UserId))
+		-- the only catcher left: another player catches from now on (Rules.replaceCatcher), placed in the middle;
+		-- only with one runner left does the Practice Bot step in (below)
+		local promoted = Rules.replaceCatcher(match)
+		for _, e in promoted do
+			frozen[e.id] = nil
+			local stage = State:GetAttribute("Stage")
+			if stage == "Running" or stage == "HeroRun" or stage == "Countdown" or stage == "Lineup" or stage == "Picking" or stage == "Chosen" then
+				if stage ~= "Running" and stage ~= "HeroRun" then frozen[e.id] = true end -- (catchers wait too, until the Hero runs)
+				place(e.id)
+			end
+		end
+		apply(promoted)
 		-- The only catcher left mid-run (release check, Oct 22: the rest of the round was a free walk across): the
 		-- Practice Bot steps in from the middle, as it does when a round starts with nobody catching.
 		local stage = State:GetAttribute("Stage")

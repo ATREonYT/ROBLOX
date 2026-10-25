@@ -695,6 +695,26 @@ test("a huss across in front of someone cuts them off (owner, Oct 24)", function
 	eq(Rules.cutsOff(v(14, 6), v(-1, 0), 12, v(0, 0), v(0, 1), cut), true, "ends right in front of them")
 end)
 
+test("the only catcher leaves in round 1: a runner catches from now on (owner, Oct 25)", function()
+	local s = game(4) -- (1 catches, 2-4 run)
+	Rules.pickRunner(s)
+	Rules.choose(s, 2, true)
+	Rules.reachSafe(s, 2) -- 2 is across with her
+	Rules.removePlayer(s, 1)
+	local e = Rules.replaceCatcher(s)
+	local who = has(e, "NewCatcher")
+	eq(who ~= nil, true, "someone takes over")
+	eq(who.id ~= 2, true, "never her carrier (or the safe one while others are out)")
+	eq(s.roles[who.id], "Catcher")
+	eq(s.status[who.id], nil)
+	eq(s.over, false, "the game goes on")
+	eq(#Rules.replaceCatcher(s), 0, "only once: there is a catcher now")
+	-- one runner left: nobody to turn (the Practice Bot steps in instead)
+	local t = game(2)
+	Rules.removePlayer(t, 1)
+	eq(#Rules.replaceCatcher(t), 0)
+end)
+
 print(`RoundRules: {passed} passed, {failed} failed`)
 if failed > 0 then
 	error("RoundRules tests failed")

@@ -503,6 +503,43 @@ function RoundRules.removePlayer(s, id)
 	return events
 end
 
+-- The last catcher left mid-game (owner, Oct 25: "if the first catcher leaves the game on first round, make someone
+-- else the catcher so the game conitnues"): with 2+ runners left, one becomes the catcher at once (never her carrier;
+-- a runner still out on the field before a safe one, and not the HERO/CHICKEN pick while another will do). Returns
+-- the NewCatcher event (RoundService puts them in the middle), or nothing (1 runner: the Practice Bot steps in).
+function RoundRules.replaceCatcher(s)
+	local events = {}
+	if s.over or #idsWithRole(s, "Catcher") > 0 then
+		return events
+	end
+	local runners = idsWithRole(s, "Runner")
+	if #runners < 2 then
+		return events
+	end
+	local best, rank = {}, math.huge
+	for _, id in runners do
+		if id ~= s.holder then
+			local r = (if s.status[id] == "Active" then 0 else 2) + (if id == s.picked or id == s.hero then 1 else 0)
+			if r < rank then
+				best, rank = { id }, r
+			elseif r == rank then
+				table.insert(best, id)
+			end
+		end
+	end
+	local id = pick(s, best)
+	if not id then
+		return events
+	end
+	s.roles[id] = "Catcher"
+	s.status[id] = nil
+	if s.picked == id then s.picked, s.choice = nil, nil end
+	if s.hero == id then s.hero = nil end
+	s.lead = s.lead or id
+	table.insert(events, { type = "NewCatcher", id = id, midRound = true })
+	return events
+end
+
 -- The huss cut-off (owner, Oct 24: "if you huss infront of someone they go from 1x-0.75x speed"): whether a huss
 -- from `from` along the flat unit `dir` for `dist` studs crosses in front of someone standing at `at` facing the flat
 -- unit `look`: some point of the path is between 0 and cut.Ahead studs ahead of them and at most cut.Side studs to
