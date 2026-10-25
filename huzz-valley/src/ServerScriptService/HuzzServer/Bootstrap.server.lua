@@ -142,6 +142,7 @@ DataService.start()
 SettingsService.start()
 ShopService.start()
 require(HuzzServer.ProgressService).watchGroup() -- the group spins, given by themselves to members
+require(HuzzServer.BroadcastService).start() -- the Admin panel's messages to every server
 require(HuzzServer.LuckService).start() -- server luck from the Luck boosts, while each buyer is here
 require(HuzzServer.SkipService).start() -- the SKIP vote during the wait before a game
 CosmeticsService.start()

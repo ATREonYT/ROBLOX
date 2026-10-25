@@ -9,6 +9,7 @@
 -- knife, any gamepass, so we can gift gamepasses, coins, aura, everything"): a bar along the top: FOR (a player's
 -- name in this server; empty = you: every gift below goes to them), COINS and AURA (a number, then GIVE), and ALL
 -- KNIVES; the KNIVES list starts with the game passes (GIVE = what the pass gives).
+-- Oct 25 13:20: MESSAGE ALL SERVERS (a message at the top of everyone's screen in every server; tap SEND twice).
 -- The buttons only ask the server ("Admin" remote); it checks again who you are, and its answer shows as a message.
 -- The window and the button are saved parts like every screen; the rows are made the first time it opens (the girls
 -- are whatever the place has).
@@ -31,12 +32,13 @@ local new = Kit.new
 
 local Admin = {}
 
-local W, H = 701, 412
+local W, H = 701, 456
 local COL = { { X = 16, Title = "KNIVES & PASSES" }, { X = 357, Title = "GIRLS" } }
 local BAR_Y, BAR_H = 52, 36
 local BAR2_Y = 96 -- (the every-server luck row)
-local TITLE_Y = 144
-local LIST_Y, LIST_W, LIST_H, ROW_H = 174, 328, 226, 34
+local BAR3_Y = 140 -- (the message to every server)
+local TITLE_Y = 188
+local LIST_Y, LIST_W, LIST_H, ROW_H = 218, 328, 226, 34
 
 local rarityColor: { [string]: Color3 } = {}
 local rarityOrder: { [string]: number } = {}
@@ -112,6 +114,28 @@ function Admin.build(parent: Instance)
 	local minutesBox = box("Minutes", 306, 96, "Minutes", bar2)
 	barButton("AllServersLuck", "GIVE ALL SERVERS", 410, 150, function() send("AllServersLuck", `{luckBox.Text} {minutesBox.Text}`) end, bar2)
 	barButton("EndAllServersLuck", "END IT", 568, W - 32 - 568, function() send("AllServersLuck", "0 0") end, bar2)
+	-- A message at the top of everyone's screen in every server (owner, Oct 25 13:20; HuzzServer/BroadcastService:
+	-- Roblox's text filter first). SEND asks once more before it goes out: tap twice.
+	local bar3 = new("Frame", { Name = "Message", Position = UDim2.fromOffset(16, BAR3_Y), Size = UDim2.fromOffset(W - 32, BAR_H), BackgroundTransparency = 1, Parent = panel })
+	Kit.text({ Name = "Label", Text = "MESSAGE ALL SERVERS", FontFace = Theme.Fonts.Button, TextSize = 14, TextWrapped = false, Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(190, BAR_H), Parent = bar3 })
+	local messageBox = box("Text", 202, 358, "Type a message for everyone", bar3)
+	local sendAskedAt = 0
+	local sendBtn: any
+	sendBtn = Kit.button({ Name = "Broadcast", Text = "SEND", TextSize = 12, Style = "Action", Position = UDim2.fromOffset(568, 4), Size = UDim2.fromOffset(W - 32 - 568, BAR_H - 8), Corner = 3, Parent = bar3 })
+	sendBtn.Instance:SetAttribute("ShopStyleKeep", true)
+	sendBtn.onClick(function()
+		if not string.find(messageBox.Text, "%S") then Toast.show("Type a message first.") return end
+		if os.clock() - sendAskedAt > 3 then
+			sendAskedAt = os.clock()
+			sendBtn.setText("SEND TO ALL?")
+			task.delay(3, function() if os.clock() - sendAskedAt >= 3 then sendBtn.setText("SEND") end end)
+			return
+		end
+		sendAskedAt = 0
+		sendBtn.setText("SEND")
+		remote:FireServer("Broadcast", messageBox.Text, "")
+		messageBox.Text = ""
+	end)
 	task.spawn(function()
 		while window.Holder.Parent do
 			local g = tonumber(workspace:GetAttribute("HuzzGlobalLuck")) or 1

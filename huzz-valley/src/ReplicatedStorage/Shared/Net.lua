@@ -15,6 +15,7 @@
 --   SpinOpen       RemoteEvent     server -> client: open the Spin the Wheel screen (you used the wheel in the lobby)
 --   Admin          RemoteEvent     client -> server: (verb, key) the owner's admin panel (GiveKnife / SpawnGirl / NextGirl);
 --                                  server -> client: (ok, message, verb, key). Owner only, checked by AdminService
+--   AdminMessage   RemoteEvent     server -> client: ({ text, from, seconds }) an admin's message to every server (BroadcastService)
 --   KnifeGlb       RemoteFunction  client -> server: (key, n) -> the n-th baked .glb mesh of a knife, nil when none,
 --                                  false to ask again later (HuzzServer/KnifeGlbService, Gameplay/KnifeDress)
 --   KnifeView      RemoteFunction  client -> server: (knife key) -> true when a copy of that knife's model is in
@@ -57,6 +58,7 @@ local SPEC = {
 	Spin = "RemoteFunction",
 	SpinOpen = "RemoteEvent",
 	Admin = "RemoteEvent",
+	AdminMessage = "RemoteEvent",
 	KnifeGlb = "RemoteFunction",
 	KnifeView = "RemoteFunction",
 	KnifeBackup = "RemoteFunction",

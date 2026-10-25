@@ -55,7 +55,9 @@ end
 --               no winner, nobody gets the girl, everyone back to the lobby
 --   Kick        "now": the player named in For leaves this server (owner, Oct 24 07:14: "make the admin command be
 --               able to kick players"); never yourself, never another admin
-AdminRules.VERBS = { GiveKnife = true, AllKnives = true, SpawnGirl = true, NextGirl = true, GivePass = true, GiveCoins = true, GiveAura = true, AllServersLuck = true, EndGame = true, Kick = true }
+--   Broadcast   the message (owner, Oct 25 13:20: "an admin message button ... sends it out to all active server
+--               appearing on the top of the screen"): HuzzServer/BroadcastService filters it and shows it everywhere
+AdminRules.VERBS = { GiveKnife = true, AllKnives = true, SpawnGirl = true, NextGirl = true, GivePass = true, GiveCoins = true, GiveAura = true, AllServersLuck = true, EndGame = true, Kick = true, Broadcast = true }
 AdminRules.LUCK_MAX, AdminRules.MINUTES_MAX = 10, 1440
 
 -- "<luck> <minutes>" -> luck, minutes (0, 0 = end it), or nil and why.
@@ -74,6 +76,11 @@ AdminRules.MAX = 1000000
 function AdminRules.check(admin: boolean, verb: any, arg: any, getKnife: (string) -> any, getGirl: (string) -> any, getPass: ((string) -> any)?): (boolean, string?)
 	if not admin then return false, "Only the game's owner can use this." end
 	if type(verb) ~= "string" or not AdminRules.VERBS[verb] then return false, "Unknown command." end
+	if verb == "Broadcast" then
+		if type(arg) ~= "string" or not string.find(arg, "%S") then return false, "Type a message first." end
+		if #arg > 480 then return false, "That message is too long." end
+		return true, nil
+	end
 	if type(arg) ~= "string" or arg == "" or #arg > 64 then return false, "Pick one from the list." end
 	if verb == "GiveCoins" or verb == "GiveAura" then
 		local n = tonumber(arg)
