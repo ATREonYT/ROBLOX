@@ -139,13 +139,36 @@ for _, s in spots do
 			end
 			local feetY = rec.root.CFrame.Position.Y - h
 			local under = groundAt(rec.root.CFrame.Position, leader.Position.Y) or floor
+			-- (Oct 25: past an edge, a floor more than 10 studs under the catcher's feet doesn't count: she stays level
+			-- with his feet instead of dropping off the map: Shared/FollowMotion MAX_DROP)
+			if under < s.at.Y - 10 then under = s.at.Y end
 			local off = math.abs(feetY - under)
 			worstFeet = math.max(worstFeet, off)
 			if off > 0.1 then bad += 1 end
 		end
 	end
 end
-check(string.format("after the win, every girl's feet on the floor at every spot (worst %.3f studs, %d off)", worstFeet, bad), bad == 0 and worstFeet <= 0.1)
+check(string.format("after the win, every girl's feet on the floor (or level with his, past an edge) at every spot (worst %.3f studs, %d off)", worstFeet, bad), bad == 0 and worstFeet <= 0.1)
+
+-- 5) off the map's edge (owner, Oct 25 13:03: "make the anime girls not fall off the map"): the only floor under her
+-- is far below (the map under the lobby), or none at all. She stays level with the catcher's feet.
+do
+	local leader = CFrame.new(0, 103, 0) -- (his feet at 100)
+	local worst = 0
+	for _, under in { 0, 50, 88 } do
+		local rec = FollowMotion.new({ root = { CFrame = CFrame.identity }, motors = {}, from = Vector3.new(0, 104, 0), rootHeight = 2, seed = 3 })
+		for _ = 1, 180 do
+			FollowMotion.step(rec, 1 / 60, 0, leader, function() return under end, nil)
+		end
+		worst = math.max(worst, math.abs(rec.root.CFrame.Position.Y - 2 - 100))
+	end
+	local rec = FollowMotion.new({ root = { CFrame = CFrame.identity }, motors = {}, from = Vector3.new(0, 104, 0), rootHeight = 2, seed = 3 })
+	for _ = 1, 180 do
+		FollowMotion.step(rec, 1 / 60, 0, leader, function() return nil end, nil)
+	end
+	worst = math.max(worst, math.abs(rec.root.CFrame.Position.Y - 2 - 100))
+	check(string.format("past an edge (floor 12+ studs down, or none) she stays level with his feet (worst %.3f studs)", worst), worst <= 0.1)
+end
 
 print(string.format("GirlFloor: %d passed, %d failed", passed, failed))
 if failed > 0 then error("GirlFloor spec failed") end

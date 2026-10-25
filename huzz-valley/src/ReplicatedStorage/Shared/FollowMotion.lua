@@ -56,6 +56,17 @@ end
 
 -- leaderCF: the catcher's root CFrame. groundAt(position) -> ground height there (or nil).
 -- watch: the head position she looks at when standing (or nil).
+local MAX_DROP = 10 -- studs below the leader's feet she may step down to (a stage's edge is 9; more = off the map: she stays level)
+
+-- The floor under `at`. (owner, Oct 25 13:03: "make the anime girls not fall off the map": past an edge her ray found
+-- the ground far below, or nothing, and she dropped off. Ground lower than MAX_DROP under the leader's feet doesn't
+-- count now: she stays level with their feet instead, as if on the same floor.)
+local function floorAt(groundAt, at: Vector3, feet: number): number
+	local ground = groundAt(at)
+	if not ground or ground < feet - MAX_DROP then return feet end
+	return ground
+end
+
 function FollowMotion.step(rec, dt, t, leaderCF, groundAt, watch)
 	local F = rec.config or Carry.Follow
 	local offset = if (rec.cheer or rec.beside) and F.CheerOffset then F.CheerOffset else F.Offset
@@ -65,7 +76,7 @@ function FollowMotion.step(rec, dt, t, leaderCF, groundAt, watch)
 		rec.pos, rec.vel = spot + Vector3.new(0, rec.rootHeight, 0), Vector3.zero
 		rec.leaderAt, rec.leaderVel = nil, Vector3.zero
 		if F.StartOnGround then -- (the companion appears standing, never dropping in)
-			rec.pos = Vector3.new(spot.X, (groundAt(spot) or (spot.Y - 3)) + rec.rootHeight, spot.Z)
+			rec.pos = Vector3.new(spot.X, floorAt(groundAt, spot, spot.Y - 3) + rec.rootHeight, spot.Z)
 		end
 	end
 
@@ -103,7 +114,7 @@ function FollowMotion.step(rec, dt, t, leaderCF, groundAt, watch)
 	end
 
 	-- Feet on the ground: falls if she's above it (stolen off a runner's head), steps up and down otherwise.
-	local ground = groundAt(pos) or (spot.Y - 3)
+	local ground = floorAt(groundAt, pos, spot.Y - 3)
 	local standY = ground + rec.rootHeight
 	if pos.Y > standY + 0.05 then
 		rec.fall += 160 * dt
