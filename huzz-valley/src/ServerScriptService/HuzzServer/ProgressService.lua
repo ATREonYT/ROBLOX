@@ -54,9 +54,10 @@ function ProgressService.claimGroup(player: Player): (boolean, string?)
 	local Group = require(game:GetService("ReplicatedStorage").Shared.Config.Group)
 	local id = tonumber(Group.Id) or 0
 	if id <= 0 then return false, "The group is coming soon." end
-	local data = DataService.get(player)
-	if not data then return false, "Your save is still loading." end
-	if data.GroupReward then return false, "You already got your group spins." end
+	local profile = DataService.get(player) -- (the save's profile: its Data holds GroupReward; Oct 25 check: this read
+	-- the profile itself, so "already got" never showed and every player was asked about again every 20 s forever)
+	if not profile then return false, "Your save is still loading." end
+	if profile.Data.GroupReward then return false, "You already got your group spins." end
 	local member = false
 	local ok, groups = pcall(function() return game:GetService("GroupService"):GetGroupsAsync(player.UserId) end)
 	if ok and type(groups) == "table" then
@@ -91,9 +92,9 @@ function ProgressService.watchGroup()
 		task.spawn(function()
 			pcall(DataService.waitFor, player, 30)
 			while player.Parent do
-				local data = DataService.get(player)
-				if data and data.GroupReward then return end
-				if data and (tonumber(Group.Id) or 0) > 0 then pcall(ProgressService.claimGroup, player) end
+				local profile = DataService.get(player)
+				if profile and profile.Data.GroupReward then return end
+				if profile and (tonumber(Group.Id) or 0) > 0 then pcall(ProgressService.claimGroup, player) end
 				local t0 = os.clock() -- (in short steps, so a changed CheckEvery takes at once)
 				repeat task.wait(math.min(1, Group.CheckEvery or 20)) until os.clock() - t0 >= (Group.CheckEvery or 20) or not player.Parent
 			end
