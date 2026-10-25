@@ -43,10 +43,15 @@ end
 
 -- On the middle of the body, top to bottom the same either side of the waist (owner, Oct 23 16:52: "make trails be
 -- on the center of body"; they used to sit behind the back and low).
+-- The trail starts on the body's centre line, just behind it (the root's +Z is its back), and its newest bit is
+-- see-through (FADE_IN of its life), so it never draws over the runner (owner, Oct 25: "fix the trail being on the
+-- person": it used to start inside the body and sweep across it on every turn).
+local BACK = 0.6
+local FADE_IN = 0.14
 local function attachment(root: BasePart, name: string, y: number): Attachment
 	local a = Instance.new("Attachment")
 	a.Name = name
-	a.Position = Vector3.new(0, y, 0)
+	a.Position = Vector3.new(0, y, BACK)
 	a.Parent = root
 	return a
 end
@@ -77,7 +82,7 @@ local function trail(root: BasePart, key: string, colors: { Color3 }, rich: bool
 		t.TextureMode = Enum.TextureMode.Stretch
 	end
 	t.Color = seq(colors, rich)
-	t.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(0.6, 0.4), NumberSequenceKeypoint.new(1, 1) })
+	t.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(FADE_IN, 0.1), NumberSequenceKeypoint.new(0.6, 0.4), NumberSequenceKeypoint.new(1, 1) })
 	t.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.25) })
 	t.Lifetime = if rich then 0.55 else 0.45
 	t.MinLength = 0.1
@@ -94,7 +99,7 @@ local function trail(root: BasePart, key: string, colors: { Color3 }, rich: bool
 			core.TextureMode = Enum.TextureMode.Stretch
 		end
 		core.Color = ColorSequence.new(WHITE, colors[1]:Lerp(WHITE, 0.5))
-		core.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 1) })
+		core.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(FADE_IN * 1.8, 0.15), NumberSequenceKeypoint.new(1, 1) })
 		core.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) })
 		core.Lifetime = 0.25
 		core.MinLength = 0.1

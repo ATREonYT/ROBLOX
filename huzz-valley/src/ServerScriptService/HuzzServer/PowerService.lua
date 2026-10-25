@@ -196,18 +196,18 @@ local function boost(id, amount, seconds, color)
 	if root and not root:FindFirstChild("HuzzRushTrail") then
 		local a0 = Instance.new("Attachment")
 		a0.Name = "HuzzRushA"
-		a0.Position = Vector3.new(0, 1.2, 0)
+		a0.Position = Vector3.new(0, 1.2, 0.6) -- (just behind the body, on its centre line: never drawn over it)
 		a0.Parent = root
 		local a1 = Instance.new("Attachment")
 		a1.Name = "HuzzRushB"
-		a1.Position = Vector3.new(0, -1.6, 0)
+		a1.Position = Vector3.new(0, -1.6, 0.6)
 		a1.Parent = root
 		local trail = Instance.new("Trail")
 		trail.Name = "HuzzRushTrail"
 		trail.Attachment0, trail.Attachment1 = a0, a1
 		trail.Lifetime = 0.35
 		trail.Color = ColorSequence.new(color or PINK, Color3.new(1, 1, 1))
-		trail.Transparency = NumberSequence.new(0.35, 1)
+		trail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.15, 0.35), NumberSequenceKeypoint.new(1, 1) })
 		trail.LightEmission = 0.5
 		trail.Parent = root
 		-- Gone when the last boost ends (a second boost can stretch it).

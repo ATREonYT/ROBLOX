@@ -699,7 +699,7 @@ local function simulate(opts)
 		Instance = { new = function(c) return new(c) end },
 		Enum = roblox.Enum, UDim2 = roblox.UDim2, UDim = roblox.UDim,
 		Font = { new = function() return {} end },
-		ColorSequence = { new = function() return {} end }, NumberSequence = { new = function() return {} end },
+		ColorSequence = { new = function() return {} end }, NumberSequence = { new = function() return {} end }, NumberSequenceKeypoint = { new = function() return {} end },
 		os = setmetatable({ clock = function() return clock end }, { __index = os }),
 		warn = function(...)
 			local msg = table.concat(table.pack(...), " ")

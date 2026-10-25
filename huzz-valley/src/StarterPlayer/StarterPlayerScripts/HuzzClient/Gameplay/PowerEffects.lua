@@ -115,12 +115,12 @@ function M.start()
 		return if flat.Magnitude > 0.01 then flat.Unit else Vector3.new(0, 0, -1)
 	end
 
-	-- The free (left) hand, for throws.
+	-- Where a power gathers and leaves from: the middle of the body, just in front of the chest (owner, Oct 25: "all
+	-- of the abilities being attached to the center of the user so it doesnt look off"; it was the left hand, and on
+	-- R6, which has no LeftHand, a spot hanging off the left shoulder).
 	local function handOf(root: BasePart): () -> Vector3
 		return function()
-			local c = root.Parent
-			local h = c and c:FindFirstChild("LeftHand")
-			return if h and h:IsA("BasePart") then h.Position else root.Position + UP * 1.2 - root.CFrame.RightVector * 1.2
+			return root.Position + UP * 0.5 + flatLook(root) * 0.9
 		end
 	end
 
