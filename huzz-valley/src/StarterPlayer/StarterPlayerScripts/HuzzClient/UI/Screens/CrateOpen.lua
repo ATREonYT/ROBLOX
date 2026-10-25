@@ -2,7 +2,9 @@
 -- Halloween shop's OPEN (its crates' Home; BACK returns there). A Robux crate key is used before Aura: USE KEY (n).
 -- The server decides everything first (ActionService "OpenCrate": takes the Aura once, rolls with the shown odds and
 -- the pity counter, gives the prize, and builds the reel from honest draws); this screen only animates to its answer:
---   1. the crate rattles harder and harder (faster wooden ticks), its lid pops off (0.85 s);
+--   1. his crate's picture (its Shop card render) makes three small hops, each a little higher, winds up and opens
+--      softly into the reel (1.35 s; owner, Oct 25 16:58: the real crate, "a good animation, but not too crazy"); a
+--      crate without a picture: the drawn crate rattles harder and harder and its lid pops off;
 --   2. a reel of item cards (their real pictures, rims in the rarity colour) opens between two green light rails and
 --      spins past the centre marker, fast at first and easing out for ~4.6 s; light streaks run along the rails with
 --      its speed and each passing card ticks (a little higher as it slows). It runs a few pixels past its stop and
@@ -73,8 +75,8 @@ local CARD = { W = 150, H = 196, Pitch = 162, Top = 15 }
 local START_CARD = 4 -- the card under the marker before the spin (three honest cards show to its left)
 -- the timeline (seconds from the server's answer)
 local T = {
-	ShakeEnd = 0.6, PopEnd = 0.85, ReelIn = 0.62, ReelInLen = 0.3,
-	Spin = 0.8, SpinLen = 4.6, SettleLen = 0.4, LandLen = 0.45, RevealLen = 0.45, GlintLen = 0.6,
+	ShakeEnd = 1.05, PopEnd = 1.35, ReelIn = 1.12, ReelInLen = 0.3,
+	Spin = 1.3, SpinLen = 4.6, SettleLen = 0.4, LandLen = 0.45, RevealLen = 0.45, GlintLen = 0.6,
 }
 T.Stop = T.Spin + T.SpinLen -- furthest point (OVERSHOOT past the stop)
 T.SpinEnd = T.Stop + T.SettleLen -- settled on the prize
@@ -129,6 +131,38 @@ function CrateOpen.build(parent: Instance)
 	crate.ZIndex = 3
 	local cratePop = crate:FindFirstChild("Pop") :: UIScale
 	local lidHome = lid.Position
+	-- His own crate picture (the render on its Shop card, Config/Crates Picture) for a crate with no 3D model (owner,
+	-- Oct 25 16:58: "when you open crates, the actual render of the crate shows, not the mock up you made, and make the
+	-- actual crate have a good animation, but not too crazy"): three small hops, each a little higher, a squash as it
+	-- lands, a short wind-up, then it swells softly and fades as the reel opens. No glow, rays or shake. The drawn
+	-- crate above stays only as the stand-in for a crate without a picture.
+	local PIC = { Side = 300, Y = 350 }
+	local cratePic = Kit.art("CrateCardCutHalloween", { Name = "CratePicture", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, PIC.Y), Size = UDim2.fromOffset(PIC.Side, PIC.Side), ScaleType = Enum.ScaleType.Fit, ZIndex = 3, Visible = false, Parent = group })
+	local picScale = new("UIScale", { Name = "Pop", Parent = cratePic })
+	local picShadow = new("Frame", { Name = "PictureShadow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, PIC.Y + 132), Size = UDim2.fromOffset(200, 22), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.65, BorderSizePixel = 0, ZIndex = 2, Visible = false, Parent = group }, { Kit.corner(11) })
+	local HOPS = { { At = 0.1, Len = 0.26, Up = 10 }, { At = 0.4, Len = 0.28, Up = 16 }, { At = 0.71, Len = 0.3, Up = 24 } }
+	-- The picture at time t: its lift (px up), its squash (x, y), its tilt (degrees), its size and see-through.
+	local function picAt(t: number): (number, number, number, number, number, number)
+		local up, sx, sy, tilt = 0, 1, 1, 0
+		for i, h in HOPS do
+			local u = (t - h.At) / h.Len
+			if u >= 0 and u < 1 then
+				up = h.Up * math.sin(math.pi * u)
+				tilt = (if i % 2 == 0 then -1 else 1) * 3 * math.sin(math.pi * u)
+				local s = 0.05 * math.sin(math.pi * u) -- (stretched in the air)
+				sx, sy = 1 - s, 1 + s
+			elseif u >= 1 and u < 1.35 then -- (a little squash as it lands)
+				local k = math.sin(math.pi * (u - 1) / 0.35) * 0.06 * (i / #HOPS)
+				sx, sy = 1 + k, 1 - k
+			end
+		end
+		-- the wind-up: it sinks a touch, then swells and fades as it opens (the reel comes out of it)
+		local w = clamp01((t - 1.05) / 0.12)
+		local o = clamp01((t - T.ShakeEnd - 0.05) / (T.PopEnd - T.ShakeEnd))
+		sx, sy = sx * (1 + 0.04 * w), sy * (1 - 0.05 * w)
+		local size = 1 + 0.18 * easeOut(o, 2)
+		return up, sx, sy, tilt, size, o
+	end
 	-- the 3D opening (his crates): a calm dark backdrop over the whole screen (3x the window, so no bands at the sides),
 	-- the rarity colour behind the knife (Pool: many faint layers, so it fades smoothly instead of in bands), his 3D
 	-- crate (UI/Crate3D builds its ViewportFrames in Stage3D at run time), the knife's name and its rarity tag
@@ -252,6 +286,7 @@ function CrateOpen.build(parent: Instance)
 	local landOffset = 0
 	local conn: RBXScriptConnection? = nil
 	local view3d: any = nil -- his crate (UI/Crate3D) when this crate has his model, else nil: the plain crate and the reel
+	local usePic = false -- no 3D model: his crate picture (cratePic) stands in for the drawn crate
 	local function revealAt(): number return if view3d then T3.Reveal else T.Reveal end
 
 	local function setAura()
@@ -496,9 +531,33 @@ function CrateOpen.build(parent: Instance)
 		-- 0. the title sits just over the crate and reel, and rises to the top for the prize
 		local tu = clamp01((t - T.Reveal) / 0.3)
 		title.Position = UDim2.fromOffset(240, math.round(TITLE_Y.Spin + (TITLE_Y.Prize - TITLE_Y.Spin) * easeOut(tu, 3)))
+		-- 1. his crate picture: three hops, a wind-up, then it opens into the reel (see cratePic)
+		if usePic then
+			crate.Visible = false
+			local on = t < T.PopEnd
+			cratePic.Visible, picShadow.Visible = on, on
+			if on then
+				local up, sx, sy, tilt, size, o = picAt(if calm then math.max(t, T.ShakeEnd) else t)
+				cratePic.Position = UDim2.fromOffset(CX, math.round(PIC.Y - up))
+				cratePic.Size = UDim2.fromOffset(math.round(PIC.Side * sx), math.round(PIC.Side * sy))
+				cratePic.Rotation = tilt
+				picScale.Scale = size
+				cratePic.ImageTransparency = o
+				picShadow.Size = UDim2.fromOffset(math.round(200 * (1 - up / 60)), 22)
+				picShadow.BackgroundTransparency = 0.65 + 0.35 * math.max(up / 40, o)
+			end
+			for k, h in HOPS do -- (a soft thud as each hop lands)
+				if t >= h.At + h.Len and not fired["hop" .. k] and not skipped then
+					fired["hop" .. k] = true
+					Sfx.play("roulette_tick", { volume = 0.45 + 0.1 * k, pitch = 0.7 + 0.05 * k })
+				end
+			end
+		end
 		-- 1. the crate: rattles harder (a wooden tick on each knock, closer and closer), then the lid pops off
 		local shake = clamp01(t / T.ShakeEnd)
-		if t < T.PopEnd then
+		if usePic then
+			-- (drawn above)
+		elseif t < T.PopEnd then
 			crate.Visible = true
 			local amp = if calm then 0 else (2 + 8 * shake * shake)
 			crate.Rotation = math.sin(t * 2 * math.pi * 8) * amp
@@ -516,8 +575,8 @@ function CrateOpen.build(parent: Instance)
 		else
 			crate.Visible = false
 		end
-		for k, at in { 0.12, 0.26, 0.37, 0.45, 0.51, 0.56 } do
-			if t >= at and t < T.ShakeEnd and not fired["rattle" .. k] and not skipped then
+		for k, at in { 0.2, 0.45, 0.65, 0.8, 0.9, 0.98 } do
+			if not usePic and t >= at and t < T.ShakeEnd and not fired["rattle" .. k] and not skipped then
 				fired["rattle" .. k] = true
 				Sfx.play("roulette_tick", { volume = 0.5 + 0.08 * k, pitch = 0.85 + 0.05 * k })
 			end
@@ -678,6 +737,14 @@ function CrateOpen.build(parent: Instance)
 		rimGlint.Offset = Vector2.new(-1, 0)
 		title.Text, title.FontFace, title.TextColor3 = string.upper(crateDef.Name), F.Heading, C.Text
 		CrateArt.paint(crate, crateDef) -- (each crate in its own colour)
+		usePic = type(crateDef.Picture) == "string" and crateDef.Picture ~= ""
+		if usePic then
+			Kit.setArt(cratePic, crateDef.Picture)
+			crate.Visible = false
+		end
+		cratePic.Visible, picShadow.Visible = usePic, usePic
+		cratePic.ImageTransparency, cratePic.Rotation, picScale.Scale = 0, 0, 1
+		cratePic.Position, cratePic.Size = UDim2.fromOffset(CX, PIC.Y), UDim2.fromOffset(PIC.Side, PIC.Side)
 		title.Position = UDim2.fromOffset(240, TITLE_Y.Spin)
 		-- his 3D crate when this crate has his model (else the plain crate and the reel)
 		if view3d then view3d.destroy(); view3d = nil end
@@ -693,6 +760,7 @@ function CrateOpen.build(parent: Instance)
 		view3d = if okView then v else nil
 		if view3d then
 			crate.Visible, stage.Visible = false, true
+			cratePic.Visible, picShadow.Visible = false, false
 			title.Position = UDim2.fromOffset(240, TITLE_Y.Prize)
 			status.Position = UDim2.fromOffset(CX, WORDS3.Status)
 			sub.Position = UDim2.fromOffset(240, WORDS3.Sub)

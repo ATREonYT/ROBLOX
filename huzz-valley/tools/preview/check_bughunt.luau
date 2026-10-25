@@ -129,7 +129,7 @@ MM.open("CrateOpen", "Sweets")
 task.wait(0.3)
 Action.OnServerInvoke = realInvoke
 check("the crate was opened once (Aura taken)", data.Aura < aura0)
-check("the window stays closed", MM.current() == nil)
+check("the window stays closed (the daily login may pop up by itself meanwhile)", MM.current() ~= "CrateOpen")
 local saidPrize = false
 for _, t in toasts do
 	if string.find(t, "You got") or string.find(t, "again:") then saidPrize = true end

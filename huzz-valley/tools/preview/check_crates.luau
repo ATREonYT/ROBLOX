@@ -124,12 +124,12 @@ check("the featured banner is his Halloween Crate", body ~= nil and body:FindFir
 local inKnifeCrates = {}
 for _, id in { "Dojo", "Storm", "Beast" } do
 	local kc = Crates.get(id)
-	check(`the {id} crate holds ten knives ({kc and #kc.Items})`, kc ~= nil and #kc.Items == 10)
+	check(`the {id} crate holds ten knives ({kc and #kc.Items}; Beast nine since Shadow Cleaver retired)`, kc ~= nil and #kc.Items == (if id == "Beast" then 9 else 10))
 	for _, it in (kc and kc.Items or {}) do inKnifeCrates[it.Id] = true end
 end
 local nKnives = 0
 for _ in inKnifeCrates do nKnives += 1 end
-check(`his three crates hold all 30 of his knives ({nKnives})`, nKnives == 30)
+check(`his three crates hold all 29 of his knives still given out ({nKnives})`, nKnives == 29)
 local halloweenCrate = Crates.get("Halloween")
 check(`the Halloween Crate holds his 18 Halloween knives ({halloweenCrate and #halloweenCrate.Items})`, halloweenCrate ~= nil and #halloweenCrate.Items == 18)
 
@@ -241,7 +241,7 @@ local function frames(n)
 		if g and g:IsA("UIGradient") and g.Offset.X > -0.99 then glintMoves += 1; glintMax = math.max(glintMax, g.Offset.X) end
 	end
 end
-frames(40) -- 1.3 s: shake, pop, the reel opens and starts
+frames(55) -- 1.8 s: his crate's hops, it opens, the reel opens and starts (Oct 25: 0.5 s longer)
 check("the crate popped and the reel is spinning", screen.Group.Crate.Visible == false and screen.Group.Reel.Visible == true)
 check("TAP TO SKIP shows while it spins", hintSeen)
 check("the odds by rarity show under the reel while it spins", screen.Group.Odds.Visible and screen.Group.Odds.Chip1.Visible and string.sub(screen.Group.Odds.Chip1.Label.Text, 1, 6) == "COMMON")
@@ -249,7 +249,7 @@ check("the odds by rarity show under the reel while it spins", screen.Group.Odds
 DataService.update(me, function(d) d.Coins += 5 end)
 task.wait(0.1)
 check(`the HUD's coins are held while it spins ({State.shown("Coins")} = {coinsBefore})`, State.shown("Coins") == coinsBefore and (State.data.Coins or 0) ~= coinsBefore)
-frames(153) -- to 6.43 s: the prize has just come up (6.25 s)
+frames(153) -- to 6.93 s: the prize has just come up (6.75 s)
 local pname = screen.Group.Prize.Card.PrizeName
 check(string.format("the prize's name fades in, not at once (%.2f)", pname.TextTransparency), screen.Group.Prize.Visible and pname.TextTransparency > 0.3)
 frames(37) -- to 7.67 s: the buttons come back
