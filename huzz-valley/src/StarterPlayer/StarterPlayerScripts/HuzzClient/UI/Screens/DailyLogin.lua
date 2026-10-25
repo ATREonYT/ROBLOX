@@ -27,6 +27,10 @@ local MYTHIC = Color3.fromHex("FF4FB8")
 
 local DailyLoginScreen = {}
 
+-- Is today's reward still to pop up this visit? (GroupReward holds its own popup back till this one's had its turn)
+local waiting: () -> boolean = function() return false end
+function DailyLoginScreen.waiting(): boolean return waiting() end
+
 local W, H = 560, 392
 local CARD = { X = 16, Y = 84, W = 112, H = 112, Gap = 10 }
 local BIG = { X = 16 + 3 * (112 + 10), W = W - 16 - (16 + 3 * (112 + 10)) }
@@ -131,6 +135,7 @@ function DailyLoginScreen.build(parent: Instance)
 	end)
 
 	local open = false
+	local shown, due, timer = false, nil, false
 	ModalManager.register("DailyLogin", {
 		window = window,
 		onOpen = function()
@@ -143,15 +148,26 @@ function DailyLoginScreen.build(parent: Instance)
 				end
 			end)
 		end,
-		onClose = function() open = false end,
+		onClose = function()
+			open = false
+			-- (a round that pulled you in closed it before you looked: it comes back next time you're in the lobby)
+			local role = player:GetAttribute("HuzzRole")
+			if (role == "Runner" or role == "Catcher") and select(2, LoginRules.next(State.data.Login, now())) then
+				shown = false
+			end
+		end,
 		firstSelect = function() return claim.Instance end,
 	})
 	State.changed(function() if open then refresh() end end)
 	refresh()
 
 	-- By itself: once per visit, PopupAfter seconds after the save loaded, while today's is ready, in the lobby with
-	-- nothing else open (else the next lobby moment or closed window looks again).
-	local shown, due, timer = false, nil, false
+	-- nothing else open (else the next lobby moment or closed window looks again). A new player's How to Play comes
+	-- first, then this right after it (owner, Oct 25: "pops up automatically when you join the game after the
+	-- tutorial"), then the group reward (GroupReward waits while DailyLoginScreen.waiting()).
+	waiting = function()
+		return not shown and State.data.Loaded == true and select(2, LoginRules.next(State.data.Login, now())) == true
+	end
 	local function free(): boolean
 		local role = player:GetAttribute("HuzzRole")
 		return ModalManager.current() == nil and role ~= "Runner" and role ~= "Catcher"
@@ -161,7 +177,7 @@ function DailyLoginScreen.build(parent: Instance)
 		if not select(2, LoginRules.next(State.data.Login, now())) then return end
 		due = due or os.clock() + DailyLogin.PopupAfter
 		timer = true
-		task.delay(math.max(due - os.clock(), 0) + 0.05, function()
+		task.delay(math.max(due - os.clock(), 0) + DailyLogin.AfterWindow, function()
 			timer = false
 			if shown or not select(2, LoginRules.next(State.data.Login, now())) then return end
 			if free() then

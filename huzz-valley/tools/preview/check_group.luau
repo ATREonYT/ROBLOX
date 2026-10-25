@@ -16,6 +16,8 @@ check("the owner's group number (Emergent Gaming, his link Oct 23 20:05)", Group
 Group.Id = 0 -- (first without a group, as before he sent it)
 check("the reward is 5 spins", Group.Spins == 5)
 Group.PopupAfter = 0.4 -- (quick, for the check)
+local DailyLogin = require(RS.Shared.Config.DailyLogin)
+DailyLogin.PopupAfter, DailyLogin.AfterWindow = 0.2, 0.1
 
 local me = Instance.new("Player"); me.Name = "Tester"; me.UserId = 79; me.Parent = Players
 Players.LocalPlayer = me
@@ -36,7 +38,10 @@ local Action = RS.Remotes.Action
 local function spins() return DataService.get(me).Data.Spins or 0 end
 local function click(btn) __fireOn(btn, "Activated"); task.wait(0.2) end
 
--- by itself, in Studio with no group set
+-- by itself, in Studio with no group set: today's daily reward first (owner, Oct 25), then this once that's closed
+task.wait(0.8)
+check("the daily reward pops up first", MM.current() == "DailyLogin")
+MM.close()
 task.wait(0.8)
 check("it pops up by itself in the lobby (Studio)", MM.current() == "GroupReward")
 local win = gui:FindFirstChild("GroupReward")

@@ -18,5 +18,8 @@ return {
 		{ Kind = "Knife", Id = "StormfangChokuto", Name = "Stormfang Chokuto", Owned = 1500 },
 	},
 	DayLength = 24 * 60 * 60,
-	PopupAfter = 6, -- seconds in the lobby before the window opens by itself, once per visit, while today's is ready
+	-- Seconds in the lobby before the window opens by itself, once per visit, while today's is ready (6 until Oct 25:
+	-- the owner wants it up as soon as you join). Above How to Play's 1.2 s, so a new player sees that first.
+	PopupAfter = 2.5,
+	AfterWindow = 0.6, -- and this long after the window in the way (How to Play) closes
 }

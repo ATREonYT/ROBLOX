@@ -26,6 +26,7 @@ local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
 local Effects = require(UI.Effects)
+local DailyLoginScreen = require(script.Parent.DailyLogin)
 
 local new = Kit.new
 local C, F = Theme.Colors, Theme.Fonts
@@ -201,7 +202,7 @@ function GroupRewardScreen.build(parent: Instance)
 	local shown, due, timer = false, nil, false
 	local function free(): boolean
 		local role = player:GetAttribute("HuzzRole")
-		return ModalManager.current() == nil and role ~= "Runner" and role ~= "Catcher"
+		return ModalManager.current() == nil and role ~= "Runner" and role ~= "Catcher" and not DailyLoginScreen.waiting()
 	end
 	local function maybeOpen()
 		if shown or timer or not State.data.Loaded or State.data.GroupReward == true then return end

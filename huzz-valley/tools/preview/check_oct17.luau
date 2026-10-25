@@ -71,6 +71,12 @@ check("How to Play opens by itself on the first join", MM.current() == "HowToPla
 MM.close()
 task.wait(0.4)
 check("closing it saves that it was seen", profile.Data.Settings.TutorialDone == true)
+-- then today's daily reward, by itself, right after the tutorial (owner, Oct 25: "pops up automatically when you join
+-- the game after the tutorial")
+task.wait(1.6)
+check("the daily reward opens by itself after How to Play", MM.current() == "DailyLogin")
+MM.close()
+task.wait(0.4)
 local menu = gui:FindFirstChild("Menu")
 local entry = menu and menu:FindFirstChild("HowToPlay", true)
 check("the Menu has a How to Play entry", entry ~= nil)
