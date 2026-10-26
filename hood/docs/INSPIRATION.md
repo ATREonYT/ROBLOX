@@ -8,7 +8,9 @@ The preview can't draw MeshParts with their real textures, so Huss's meshes show
 
 ## The owner's Huss game ("turned out quite good")
 
-The full project is on branch `HUZZ-VALLEY` (`huzz-valley/`). Its lessons are in `GAME-FEEL.md` and `huzz-valley/docs/notes/` on that branch. The owner's verdict is that this game turned out well, so it's the model for how the hood game should feel.
+The full project is on branch `HUZZ-VALLEY` (`huzz-valley/`). Its lessons are in `GAME-FEEL.md` and `huzz-valley/docs/notes/` on that branch. The owner built it with the same `CLAUDE.md` way of working, and it turned out well.
+
+Take general lessons from it. **Don't copy it one to one** (owner, Oct 26). The hood game keeps its own look: the soldier-game style, the warehouse, and the hood theme.
 
 **The lobby** (`StartingPoint`: a ~124×136 plaza, about 560 parts):
 1. **One hero centrepiece.** The character showcase sits on a wooden-railed stand lit by 4 lanterns, and every view lands on it. A lobby needs one clear focal point, with nothing competing.
