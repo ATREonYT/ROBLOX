@@ -50,8 +50,8 @@ DivineReveal.ASCEND = 7.6 -- the wings beat once
 DivineReveal.SWELL = 8.1 -- a small burst
 DivineReveal.RISE = 8.2
 DivineReveal.TWINKLE = 9.7 -- she twinkles over the map
-DivineReveal.CLOSE = 8.6 -- the night starts to lift (the day is back by CLOSE + BACK)
-DivineReveal.BACK = 1.6
+DivineReveal.CLOSE = 9.0 -- the night starts to lift (the day is back by CLOSE + BACK = RETURN: no jump to daylight)
+DivineReveal.BACK = 1.4
 DivineReveal.RETURN = 10.4
 DivineReveal.DIP = Color3.fromRGB(255, 240, 205) -- the hand-back fades through warm cream, not black
 DivineReveal.DIP_DOWN = 0.3
@@ -145,17 +145,23 @@ function DivineReveal.cracks(t: number): (number, number)
 	return grow, math.min(1, glow) * (1 - smooth((t - DivineReveal.RISE) / 0.8))
 end
 
--- The whirlwind: how tall (0..1 of its full height), its radius (studs, before scaling), how far round it has spun
--- (radians: it winds faster and faster up to the burst), how strong (0..1) and how far it has flown apart (0..1, after
--- the burst). After RISE the same crescents spiral up round her as she ascends (`spiral` 0..1).
-function DivineReveal.vortex(t: number): (number, number, number, number, number, number)
+-- The crescents (owner, Oct 26 19:06: "give it more flow please, add more connecting elements"): ONE set of crescents
+-- carries the whole cutscene, never vanishing between beats. They rise out of the crater as a whirlwind, winding
+-- tighter and faster; fly out at the burst; settle into a slow circle round her while her name shows; spiral up with
+-- her as she rises; and fold into her as she twinkles at the end.
+-- Returns: how tall the whirlwind is (0..1), its radius (studs, before scaling), how far round they have spun
+-- (radians), how strong (0..1), how far they have flown out (0..1), how settled round her (0..1), how far into the
+-- spiral (0..1) and how far folded into her (0..1).
+function DivineReveal.vortex(t: number): (number, number, number, number, number, number, number, number)
 	local tall = easeOut((t - DivineReveal.VORTEX) / 0.9)
 	local tight = smooth((t - DivineReveal.VORTEX) / (DivineReveal.BURST - DivineReveal.VORTEX))
 	local radius = DivineReveal.VORTEX_WIDE + (DivineReveal.VORTEX_TIGHT - DivineReveal.VORTEX_WIDE) * tight
 	local function speed(x: number): number
 		if x < DivineReveal.BURST then return 3 + 9 * smooth((x - DivineReveal.VORTEX) / (DivineReveal.BURST - DivineReveal.VORTEX)) end
-		if x < DivineReveal.RISE - 0.3 then return 4 end
-		return 7
+		-- (easing down from the whirlwind's speed to a slow circle, and up again for the spiral: never a jump)
+		local calmDown = smooth((x - DivineReveal.BURST) / 1.2)
+		local spinUp = smooth((x - DivineReveal.RISE + 0.6) / 0.8)
+		return 12 + (1.4 - 12) * calmDown + (6 - 1.4) * spinUp
 	end
 	local turn, x = 0, DivineReveal.VORTEX
 	while x < t do
@@ -163,10 +169,12 @@ function DivineReveal.vortex(t: number): (number, number, number, number, number
 		turn += speed(x + dx / 2) * dx
 		x += dx
 	end
-	local out = easeOut((t - DivineReveal.BURST) / 0.45)
-	local alpha = smooth((t - DivineReveal.VORTEX) / 0.3) * (1 - smooth((t - DivineReveal.BURST) / 0.4))
-	local spiral = smooth((t - DivineReveal.RISE + 0.2) / 0.4) * (1 - smooth((t - DivineReveal.RETURN + 0.7) / 0.6))
-	return tall, radius, turn, alpha, out, spiral
+	local out = pop(t, DivineReveal.BURST, 0.3, 0.9)
+	local settle = smooth((t - DivineReveal.BURST - 0.15) / 0.9)
+	local spiral = smooth((t - DivineReveal.RISE + 0.4) / 0.8)
+	local fold = smooth((t - DivineReveal.TWINKLE + 0.35) / 0.4)
+	local alpha = smooth((t - DivineReveal.VORTEX) / 0.3) * (1 - 0.55 * settle * (1 - spiral)) * (1 - fold)
+	return tall, radius, turn, alpha, out, settle, spiral, fold
 end
 
 -- The lightning jumping from the whirlwind to the cracks (on or off).

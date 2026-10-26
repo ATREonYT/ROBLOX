@@ -78,6 +78,10 @@ Owner: "for the divine ... make it completely different from the secret animatio
   spins out with real-shaped wings (feathers along a leading edge, curved and pointed), crown halo, name card, push in
   to her face, she rises in a spiral of the same crescents and twinkles like the star. Avoid: perfect neon rings as a
   main shape, straight stick beams, flat rectangle streaks, smoke/ForceField glow, wide faint beams (all read "AI").
+- Flow (owner 19:06 "more flow ... more connecting elements"): ONE set of crescents carries the whole thing
+  (Shared/DivineReveal.vortex: whirlwind -> flung out -> loose circle round her -> spiral up -> folded into the
+  twinkle, each shape blended into the next); beads of light run in along the cracks into the crater; the star's trail
+  hangs after the crash; every crescent sheds sparks. Keep new beats connected the same way.
 - Known gaps (critic, Oct 26): the crescents still read a bit flat; frames sparser than the reference; the camera
   never tilts; the ground glow goes whitish on grass.
 - Timeline, camera, flashes: `Shared/DivineReveal` (one camera move, NO cut; the angle only ever grows).

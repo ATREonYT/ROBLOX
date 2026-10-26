@@ -286,9 +286,10 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 	-- branch, racing out from a glowing crater. Laid out once (studs from the spot, scaled).
 	local crackRnd = Random.new(23)
 	local segs, crackEnds = {}, {}
+	local mains = {}
 	local function addCrack(from: Vector3, heading: number, lens, startAt: number, w: number)
 		local p, at = from, startAt
-		local pts = {}
+		local pts, own = {}, {}
 		for j, L in lens do
 			heading += math.rad(crackRnd:NextNumber(-Reveal.CRACK_WANDER, Reveal.CRACK_WANDER))
 			local step = Vector3.new(math.cos(heading), 0, math.sin(heading)) * L * k
@@ -296,21 +297,31 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			table.insert(segs, { from = p, unit = step.Unit, len = step.Magnitude, at = at, w = width,
 				core = part({ Name = "Crack", Material = Enum.Material.Neon, Color = CREAM, Size = Vector3.one * 0.05, Transparency = 1 }, folder),
 				glow = part({ Name = "CrackGlow", Material = Enum.Material.Neon, Color = rgb(255, 214, 120), Size = Vector3.one * 0.05, Transparency = 1 }, folder) })
+			table.insert(own, segs[#segs])
 			pts[j] = p
 			p += step
 			at += L
 		end
 		table.insert(crackEnds, p)
-		return pts, at
+		return pts, at, own
 	end
 	local crackLen = 0
 	for i = 1, Reveal.CRACKS do
 		local a = (i - 1) / Reveal.CRACKS * math.pi * 2 + crackRnd:NextNumber(-0.25, 0.25)
-		local pts, total = addCrack(Vector3.new(math.cos(a), 0, math.sin(a)) * 1.6 * k, a, Reveal.CRACK_SEGMENTS, 0, 0.9)
+		local pts, total, own = addCrack(Vector3.new(math.cos(a), 0, math.sin(a)) * 1.6 * k, a, Reveal.CRACK_SEGMENTS, 0, 0.9)
+		table.insert(mains, { segs = own, len = total })
 		crackLen = math.max(crackLen, total)
 		local fork = pts[3]
 		local _, total2 = addCrack(fork, a + math.rad(if i % 2 == 0 then 40 else -40), { 2.2, 1.8, 1.4 }, 6.8, 0.55)
 		crackLen = math.max(crackLen, total2)
+	end
+	-- beads of light running in along the cracks to the crater, feeding the whirlwind (a connecting thread between
+	-- the crash and the burst: owner, Oct 26 19:06 "add more connecting elements")
+	local beadRnd = Random.new(5)
+	local beads = {}
+	for i = 1, 27 do
+		beads[i] = { main = (i - 1) % Reveal.CRACKS + 1, phase = beadRnd:NextNumber(), speed = beadRnd:NextNumber(0.9, 1.5),
+			p = part({ Name = "Bead", Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = if i % 3 == 0 then WHITE else SUN, Size = Vector3.one * 1.2 * k, Transparency = 1 }, folder) }
 	end
 	local crater = part({ Name = "Crater", Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = PALE,
 		Size = Vector3.new(0.1, 1, 1), CFrame = CFrame.new(floorAt) * CFrame.Angles(0, 0, math.pi / 2), Transparency = 1 }, folder)
@@ -326,6 +337,11 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			w = arcRnd:NextNumber(0.8, 1.3), span = math.rad(arcRnd:NextNumber(100, 140)),
 			glow = beam(a0, a1, seq(AMBER, SUN, WHITE), { Transparency = ARC_FADE, Segments = 12 }),
 			core = beam(a0, a1, seq(SUN, WHITE), { Transparency = ARC_FADE, Segments = 12 }) }
+		-- (sparks shed from its head as it flies, so each crescent leaves a glittering wake, not a clean line)
+		arcs[i].head = part({ Name = "ArcHead", Transparency = 1, Size = Vector3.one * 0.3, CFrame = CFrame.new(ground) }, folder)
+		arcs[i].sparks = emitter(arcs[i].head, { Picture = { "Spark" }, Color = seq(WHITE, SUN, AMBER), LightEmission = 1, Brightness = 2,
+			Size = sizeSeq({ { 0, 0.45 * k }, { 1, 0 } }), Transparency = nseq({ { 0, 0 }, { 1, 0.5 } }), Lifetime = NumberRange.new(0.35, 0.7),
+			Speed = NumberRange.new(0.5 * k, 2 * k), SpreadAngle = Vector2.new(180, 180), Drag = 2, Acceleration = Vector3.new(0, 2 * k, 0) })
 	end
 	local function setArc(arc, centre: Vector3, side: Vector3, R: number, th0: number, span: number, w: number, alpha: number)
 		if alpha <= 0.01 or R <= 0.01 then
@@ -345,6 +361,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		local t0, t1 = -u * math.sin(th0) + v * math.cos(th0), -u * math.sin(th1) + v * math.cos(th1)
 		arc.a0.WorldCFrame = CFrame.fromMatrix(p0, t0, axis)
 		arc.a1.WorldCFrame = CFrame.fromMatrix(p1, t1, axis)
+		arc.headAt = p1
 		local handle = 4 / 3 * math.tan(span / 4) * R -- (a cubic's handles for a circular arc)
 		for _, b in { arc.glow, arc.core } do b.CurveSize0, b.CurveSize1 = handle, handle end
 		arc.glow.Width0, arc.glow.Width1 = 0, 1.1 * k * w * alpha -- (thinner: wider read as flat paper tape, critic Oct 26)
@@ -654,6 +671,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			starFrom = ground + right * F[1] * k + up * F[2] * k + back * F[3] * k
 		end
 		local from = starFrom :: Vector3
+		local linger = if t >= Reveal.CRASH then 1 - Reveal.smooth((t - Reveal.CRASH) / 2.2) else 0 -- (long enough to lead into the whirlwind)
 		local function path(x: number): Vector3
 			return from:Lerp(floorAt, x) + up * math.sin(x * math.pi) * 6 * k
 		end
@@ -670,6 +688,15 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			tailGlow.Width0, tailGlow.Width1 = 5 * k * tail, 0.5 * k * tail
 			tailCore.Width0, tailCore.Width1 = 1.8 * k * tail, 0
 			starSparks.Rate = 70 * tail
+		elseif linger > 0 then -- (its trail hangs in the sky after the crash, burning away from the top down, so the eye
+			-- follows it down into the whirlwind)
+			starCore.Transparency = 1
+			setFlare(flares[4], floorAt, 0.05, 0, camR, camU)
+			local behind = (path(0.98) - floorAt).Unit
+			tailA0.WorldPosition, tailA1.WorldPosition = floorAt, floorAt + behind * 40 * k * linger
+			tailGlow.Width0, tailGlow.Width1 = 3 * k * linger, 0.3 * k * linger
+			tailCore.Width0, tailCore.Width1 = 1 * k * linger, 0
+			starSparks.Rate = 0
 		else
 			starCore.Transparency = 1
 			setFlare(flares[4], floorAt, 0.05, 0, camR, camU)
@@ -709,7 +736,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		local cd = 3.2 * k * crackGrow
 		crater.Size = Vector3.new(0.1, math.max(cd, 0.05), math.max(cd, 0.05))
 		crater.Transparency = 1 - 0.75 * cg
-		local tall, R, turn, va, out, spiral = Reveal.vortex(t)
+		local tall, R, turn, va, out, settle, spiral, fold = Reveal.vortex(t)
 		craterLight.Brightness = 0.6 * cg + 0.8 * va
 
 		-- her: hidden until she bursts out, then spinning to a stop as she settles, standing, rising to her place
@@ -746,21 +773,65 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			hl.OutlineTransparency = math.min(1, 0.1 + 0.45 * (1 - white) + 0.45 * rimOut)
 		end
 
-		-- the whirlwind: rising out of the crater, winding tighter and faster; flying apart at the burst; after RISE the
-		-- same crescents spiral up round her
+		-- the crescents: one set carrying the whole cutscene (Shared/DivineReveal.vortex). Each beat's shape is blended
+		-- into the next, never switched: the whirlwind over the crater -> flung out at the burst -> a slow loose circle
+		-- round her -> a spiral rising with her -> folded into her as she twinkles
 		local H = 2.6 * mid * tall
+		local twinkleAt = herMid + up * mid * 0.4
 		for _, arc in arcs do
-			if va > 0.01 then
-				local y = arc.hf * H * (1 + 0.5 * out)
-				local r = R * k * (0.7 + 0.6 * arc.hf) * (1 + 3 * out)
-				setArc(arc, floorAt + up * y, side, r, turn * (1 + 0.3 * arc.hf) + arc.phase, arc.span, arc.w, va)
-			elseif spiral > 0.01 then
-				local y = (arc.hf - 0.5) * mid * 2.6
-				local r = (3.2 + 1.2 * math.sin(arc.phase + t * 2)) * k
-				setArc(arc, herMid + up * y, side, r, turn * 1.4 + arc.phase, math.rad(160), arc.w * 0.8, spiral * 0.85)
-			else
+			if va <= 0.01 then
 				setArc(arc, herMid, side, 0, 0, 0, 0, 0)
+				arc.sparks.Rate = 0
+				continue
 			end
+			-- the whirlwind (flung outwards and upwards by the burst)
+			local c = floorAt + up * arc.hf * H * (1 + 0.6 * out)
+			local r = R * k * (0.7 + 0.6 * arc.hf) * (1 + 2.5 * out)
+			local th = turn * (1 + 0.3 * arc.hf) + arc.phase
+			local span, w = arc.span, arc.w
+			-- settling into a loose circle round her (each at its own height and distance, breathing in and out)
+			if settle > 0 then
+				local cO = herMid + up * (arc.hf - 0.5) * mid * 2
+				local rO = (5.5 + 1.5 * math.sin(arc.phase + t * 1.3)) * k
+				c, r = c:Lerp(cO, settle), r + (rO - r) * settle
+				span = span + (math.rad(80) - span) * settle
+				w = w * (1 - 0.3 * settle)
+			end
+			-- tightening into a spiral rising with her
+			if spiral > 0 then
+				local cS = herMid + up * (arc.hf - 0.5) * mid * 2.6
+				local rS = (3.2 + 1.2 * math.sin(arc.phase + t * 2)) * k
+				c, r = c:Lerp(cS, spiral), r + (rS - r) * spiral
+				span = span + (math.rad(160) - span) * spiral
+			end
+			-- folding into her twinkle
+			if fold > 0 then
+				c, r = c:Lerp(twinkleAt, fold), r * (1 - fold)
+			end
+			setArc(arc, c, side, r, th, span, w, va)
+			arc.head.CFrame = CFrame.new(arc.headAt or herMid)
+			arc.sparks.Rate = 22 * va
+		end
+		-- the beads of light running in along the cracks to the crater while the whirlwind winds up
+		local beadOn = if t >= Reveal.VORTEX and t < Reveal.BURST then math.min(1, (t - Reveal.VORTEX) / 0.3, (Reveal.BURST - t) / 0.2) else 0
+		for _, bd in beads do
+			if beadOn <= 0 then
+				if bd.shown then bd.p.Transparency, bd.shown = 1, false end
+				continue
+			end
+			bd.shown = true
+			local m = mains[bd.main]
+			local d = (1 - ((t * bd.speed + bd.phase) % 1)) * m.len * k -- (from the crack's end in to the crater)
+			local where = floorAt
+			for _, sg in m.segs do
+				local into = d - (sg.at * k)
+				if into <= sg.len then
+					where = floorAt + sg.from + sg.unit * math.max(into, 0)
+					break
+				end
+			end
+			bd.p.CFrame = CFrame.new(where + up * 0.3 * k)
+			bd.p.Transparency = 1 - beadOn
 		end
 		swirlBase.Size = Vector3.new(math.max(2 * R * k, 0.1), 0.5, math.max(2 * R * k, 0.1))
 		swirl.Rate = if va > 0.3 and t < Reveal.BURST then 110 * va else 0
@@ -794,11 +865,14 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		end
 
 		-- the slashes: snapping across the picture over the whirlwind, drifting sideways as they thin out
+		local len0 = 30 * k
 		for _, sl in slashes do
 			local v = Reveal.slash(t, sl.at)
 			local flip = if sl.i % 2 == 0 then -1 else 1
-			local c = ground + up * (mid * 1.1 + ({ 3, -2, 6 })[sl.i] * k) + camR * math.max(0, t - sl.at) * 30 * k * flip
-			local len, tilt = 30 * k, 7 * k
+			-- (each one flicks off a crescent's head, so it comes out of the whirlwind instead of from nowhere)
+			local tipArc = arcs[({ 10, 6, 12 })[sl.i]]
+			local c = (tipArc.headAt or ground + up * mid * 1.1) + camR * (len0 + math.max(0, t - sl.at) * 30 * k) * flip
+			local len, tilt = len0, 7 * k
 			sl.a0.WorldPosition = c - camR * len + camU * tilt * flip
 			sl.a1.WorldPosition = c + camR * len - camU * tilt * flip
 			sl.glow.Width0, sl.glow.Width1 = sl.gw * k * v, sl.gw * k * v
