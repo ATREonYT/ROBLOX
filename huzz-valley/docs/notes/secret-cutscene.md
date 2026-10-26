@@ -69,16 +69,17 @@ beat's time and the comparison with his reference (`design/vfx/ref3`): `docs/sec
   "Which code ran?").
 
 ## The Divine cutscene (Oct 26)
-Owner: "for the divine ... make it completely different from the secret animation ... way smoother". "Heaven's Gate":
-the sky opens in a gold portal, spears of light strike, a three-ring halo gate comes down, a sigil draws itself on the
-ground, one pillar of light slams down, she rides it down, wings of light fan open, the halo becomes her crown, DIVINE
-name card with a shine, she ascends.
-- **Style (owner, Oct 26 17:42: v1 "looks too ai made", follow the references):** v1 was golden dusk with soft god
-  rays, cloud smoke, ForceField shells and a mist bed; all of that read as soft "AI" glow. v2 copies the reference's
-  execution in gold/white: deep blue night with stars, hard neon (white core, gold band, amber edge), lightning
-  crackling on the spears, gold slashes, a manga impact frame (black ink claws on white; 0.12 s), speed streaks
-  (diagonal) down then up, crescent swings, flying gold shards, a radial ray burst, star flares, a vignette and a
-  push in to her face. Never bring back smoke, ForceField glow or wide faint beams here.
+Owner: "for the divine ... make it completely different from the secret animation ... way smoother".
+- v1 "Heaven's Gate" (golden dusk, god rays, cloud smoke, ForceField glow): owner 17:42 "looks too ai made".
+- v2, the same in the reference's style (night, hard neon, spears, portal and halo rings, sigil, pillar): owner 18:34
+  "remove the very basic ai looking effects of the start, and continuation, make it different".
+- v3 "Fallen Star" (now): a star falls and crashes (black-ink impact frame), jagged cracks of light race over the
+  ground, a whirlwind of curved gold crescents rises with lightning to the cracks, slashes, it bursts open and she
+  spins out with real-shaped wings (feathers along a leading edge, curved and pointed), crown halo, name card, push in
+  to her face, she rises in a spiral of the same crescents and twinkles like the star. Avoid: perfect neon rings as a
+  main shape, straight stick beams, flat rectangle streaks, smoke/ForceField glow, wide faint beams (all read "AI").
+- Known gaps (critic, Oct 26): the crescents still read a bit flat; frames sparser than the reference; the camera
+  never tilts; the ground glow goes whitish on grass.
 - Timeline, camera, flashes: `Shared/DivineReveal` (one camera move, NO cut; the angle only ever grows).
 - Effects: `HuzzClient/Gameplay/DivineReveal`. `Gameplay/SecretReveal`'s play() runs it when the showcase's
   `RevealKind` is "Divine" (RoundService sets it), sharing the camera planning and hand-back; the hand-back fades

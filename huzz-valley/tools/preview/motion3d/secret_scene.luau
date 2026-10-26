@@ -547,7 +547,7 @@ local baseGrade = { b = B.Brightness, c = B.Contrast, s = B.Saturation, tint = h
 local boxes = {}
 local stills = {}
 -- the contact-sheet beats (tools/preview/secret_vs_ref.py pairs them with the reference)
-local STILL_AT = if DIVINE then { 0.2, 0.8, 1.4, 2.0, 2.5, 2.9, 3.2, 3.6, 4.1, 4.6, 5.0, 5.3, 5.9, 6.6, 7.3, 7.9, 8.3, 9.0, 9.8, 10.5 }
+local STILL_AT = if DIVINE then { 0.3, 0.7, 1.0, 1.25, 1.45, 1.6, 1.9, 2.3, 2.7, 3.0, 3.35, 3.65, 3.85, 4.4, 5.4, 6.6, 7.2, 8.15, 9.0, 9.8 }
 	else { 0.3, 0.7, 1.15, 1.6, 1.95, 2.45, 2.75, 3.1, 3.46, 3.6, 4.1, 4.75, 5.6, 6.2, 6.55, 7.2, 7.65, 7.95, 8.8 }
 local total = math.floor((Reveal.LENGTH + PRE + POST) * FPS)
 player.Character = character

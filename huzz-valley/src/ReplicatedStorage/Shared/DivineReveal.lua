@@ -1,99 +1,87 @@
 --[[
 	The Divine girl's arrival (owner, Oct 26: "for the divine, can you please make an animation that isnt the same as a
-	secret, and make it even more crazy ... make it completely different from the secret animation, check other games
-	animations for the divine ones ... make this way smoother and more fitting and better looking than the secret
-	animation"). "Heaven's Gate": the sky opens, a halo gate comes down, she rides a pillar of light down, wings open,
-	one orbit round her, and she ascends to her place (ideas from other games' top-rarity reveals: Pet Simulator 99's
-	Titanic hatch, Sol's RNG's global cutscenes, gacha games' top-tier pulls). ONE camera move with no cut.
-	Drawn in the reference's anime style (owner, Oct 26 17:42: "follow the animation styles as references given before,
-	right now it looks too ai made"; design/vfx/ref3 and design/vfx/vysvex-green-reference.mp4): a dark night so the
-	gold reads, hard neon shapes instead of soft haze, spears of light striking with lightning crackling round them,
-	slashes, a manga impact frame, speed streaks, crescent swings, flying shards, a radial burst, a vignette and a push in
-	to her face. Gold and white where the Secret one is violet and pink.
+	secret, and make it even more crazy ... make it completely different from the secret animation ... make this way
+	smoother and more fitting and better looking than the secret animation"). Drawn in the reference's anime style
+	(17:42: "follow the animation styles as references given before, right now it looks too ai made"; design/vfx/ref3
+	and design/vfx/vysvex-green-reference.mp4): a dark night so the gold reads, hard shapes, fast in and snapping out.
+	"Fallen Star" (18:34: "remove the very basic ai looking effects of the start, and continuation, make it different,
+	try it differently"): the perfect neon rings, the portal, the stick-straight spears and the flat streaks of the
+	"Heaven's Gate" version are gone. A star falls out of the night and crashes on the spot, the ground cracks open
+	with light, a whirlwind of golden crescents rises out of the crater and winds tighter and faster round the spot
+	until a slash cuts it open and she bursts out of it, spinning, curved wings of light snapping open. She ascends in
+	a spiral of gold and ends as a star twinkling over the map. ONE camera move with no cut.
 	Pure numbers (no Roblox instances), as Shared/SecretReveal: HuzzClient/Gameplay/DivineReveal builds the effects
 	and tools/preview/motion3d/secret_scene.luau (DIVINE=1) films the same.
-	  0.0  NIGHT       the world falls to a deep blue night; gold sparks rise; the camera low, looking up
-	  0.3  SKY OPENS   a gold portal draws itself in the sky: rings, sun spikes, a white-hot core
-	  0.9  SPEARS      seven spears of light strike down round the spot one after another, lightning crackling on them
-	  1.2  HALO GATE   three golden rings with gems, tilted, turning against each other, come down out of the portal
-	  2.0  SIGIL       a golden circle draws itself round on the ground (rings, spokes, rune marks)
-	  2.7  SPIN UP     the halo turns faster and faster; 2.75 three gold slashes cross the picture
-	  3.1  PILLAR      one pillar of light slams down through the halo: the impact frame (0.12 s, black ink on white),
-	                   gold shards fly up, a shockwave, rungs climb the pillar; the spears are swallowed into it
-	  3.5  DESCENT     she appears in the halo, lit white, and rides the pillar down, speed streaks rushing past
-	  4.7  WINGS       wings of light snap open behind her, three crescent swings round her
-	  5.2  TOUCHDOWN   she lands: star flares, shards, three golden ripples; the halo has shrunk into her crown
-	  5.5  NAME        DIVINE and 8 stars in gold with a shine sweeping over, her name; the camera circles in to her face
-	  7.7  ASCENSION   the wings beat once; 8.2 a radial burst of gold rays from behind her
-	  8.3  RISE        she rises to her place over the map, streaks rushing up, the wings fade into sparkles, the night
-	                   lifts; 10.4 a soft golden fade hands the camera back to you (not black)
-	Flashes (kid-safe, at most one a second): the impact frame at 3.1, a small swell at 5.2, the burst at 8.2, the warm
-	fade at 10.4.
-	Reduced Motion: the same shot without shake, kicks, swells or the impact frame.
+	  0.0  NIGHT       the world falls to a deep blue night; gold embers drift up; the camera low, looking up
+	  0.15 STAR        a star twinkles on high, growing
+	  0.55 FALL        it falls, faster and faster, a long gold tail behind it, the camera tilting down with it
+	  1.4  CRASH       it hits: the impact frame (0.12 s, black ink on white), a shockwave, gold shards fly, cracks of
+	                   light race out over the ground
+	  1.55 WHIRLWIND   golden crescents rise out of the crater and whirl round the spot, lightning jumping from them
+	                   to the cracks; tighter, taller and faster; 2.85 three slashes cross the picture
+	  3.6  BURST       a crescent slash cuts it open and she bursts out, spinning to a stop, lit white, wings snapping
+	                   open, a crown halo; star flares, feathers, a ring of light
+	  4.4  SETTLE      she settles from her hover to the ground
+	  4.9  NAME        DIVINE and 8 stars in gold with a shine sweeping over, her name; the camera circles in to her face
+	  7.6  ASCENSION   the wings beat once; 8.1 a small burst
+	  8.2  RISE        she rises to her place over the map in a spiral of gold, the wings fade into sparkles, the night
+	                   lifts; 9.7 she twinkles like the star she came as; 10.4 a soft golden fade hands the camera back
+	Flashes (kid-safe, at most one a second): the impact frame at 1.4, the burst at 3.6, a small swell at 8.1, the warm
+	fade at 10.4. Reduced Motion: the same shot without shake, kicks, swells or the impact frame.
 ]]
 local DivineReveal = {}
 
 DivineReveal.LENGTH = 11.0
-DivineReveal.OPEN = 0.3 -- the clouds start to part
-DivineReveal.RAYS = 0.9 -- the god rays fan down (one after another, every RAY_GAP s)
-DivineReveal.RAY_GAP = 0.08
-DivineReveal.HALO = 1.2 -- the halo gate comes down out of the light
-DivineReveal.SIGIL = 2.0 -- the circle draws itself on the ground (over SIGIL_DRAW s)
-DivineReveal.SIGIL_DRAW = 0.9
-DivineReveal.SPIN = 2.7 -- the halo spins up
-DivineReveal.PILLAR = 3.1 -- the pillar of light falls through it
-DivineReveal.APPEAR = 3.5 -- she appears in the halo and floats down
-DivineReveal.WINGS = 4.7 -- her wings unfold
-DivineReveal.TOUCH = 5.2 -- she touches down
-DivineReveal.RIPPLES = { 5.2, 5.45, 5.7 }
-DivineReveal.NAME = 5.5
-DivineReveal.NAME_OUT = 7.6
-DivineReveal.ASCEND = 7.7 -- the wings beat once
-DivineReveal.SWELL = 8.2 -- the second soft swell, a burst of light
-DivineReveal.RISE = 8.3
-DivineReveal.CLOSE = 8.6 -- the sky starts to close and the colours come back (by CLOSE + BACK)
+DivineReveal.STAR = 0.15 -- the star twinkles on high
+DivineReveal.FALL = 0.55 -- it falls (over FALL_TIME s)
+DivineReveal.FALL_TIME = 0.85
+DivineReveal.CRASH = 1.4 -- it hits the spot
+DivineReveal.CRACK_TIME = 0.35 -- the cracks race out
+DivineReveal.VORTEX = 1.55 -- the whirlwind rises out of the crater
+DivineReveal.SLASHES = { 2.85, 3.0, 3.15 } -- gold slashes across the picture as it winds up
+DivineReveal.BURST = 3.6 -- it bursts open and she is there
+DivineReveal.APPEAR = DivineReveal.BURST
+DivineReveal.WINGS = DivineReveal.BURST
+DivineReveal.SWINGS = { 3.6, 3.74, 3.88 } -- the crescent slashes round her as it bursts
+DivineReveal.TOUCH = 4.4 -- she settles on the ground
+DivineReveal.NAME = 4.9
+DivineReveal.NAME_OUT = 7.3
+DivineReveal.ASCEND = 7.6 -- the wings beat once
+DivineReveal.SWELL = 8.1 -- a small burst
+DivineReveal.RISE = 8.2
+DivineReveal.TWINKLE = 9.7 -- she twinkles over the map
+DivineReveal.CLOSE = 8.6 -- the night starts to lift (the day is back by CLOSE + BACK)
 DivineReveal.BACK = 1.6
 DivineReveal.RETURN = 10.4
 DivineReveal.DIP = Color3.fromRGB(255, 240, 205) -- the hand-back fades through warm cream, not black
-DivineReveal.DIP_DOWN = 0.3 -- seconds into the fade (gentler than the Secret one's 0.2 to black)
-DivineReveal.SPEAR_GAP = 0.16 -- the spears strike one after another from RAYS
-DivineReveal.SLASHES = { 2.75, 2.9, 3.0 } -- gold slashes across the picture as the halo spins up
-DivineReveal.FRAME = 0.12 -- the impact frame at PILLAR (seconds on screen)
-DivineReveal.DESCENT_STREAKS = { 3.55, 4.75 } -- speed streaks rushing down past her as she rides the pillar
-DivineReveal.RISE_STREAKS = { 8.35, 9.5 } -- and up as she rises
-DivineReveal.SWINGS = { 4.72, 4.92, 5.1 } -- crescent swings round her as the wings open
-DivineReveal.NIGHT = 0 -- midnight (the gold needs the dark: the golden-dusk version read as soft "AI" glow)
+DivineReveal.DIP_DOWN = 0.3
+DivineReveal.FRAME = 0.12 -- the impact frame (seconds on screen)
+DivineReveal.NIGHT = 0 -- midnight
 
--- Heights in studs over the floor, before scaling with her (x Config/Round.Showcase.Scale / 3).
-DivineReveal.SKY = 72 -- the hole in the clouds
-DivineReveal.HALO_FROM = 56 -- where the halo gate comes out of the light
-DivineReveal.APPEAR_HEIGHT = 20 -- her feet when she appears in the halo
-DivineReveal.GATE_RADIUS = 10 -- the halo gate's inner ring (its other two are 1.3x and 1.6x)
-DivineReveal.CROWN_RADIUS = 1.9 -- the same ring as her crown halo
-DivineReveal.SKY_RADIUS = 30 -- the hole in the clouds when fully open
+-- Sizes in studs, before scaling with her (x Config/Round.Showcase.Scale / 3).
+DivineReveal.APPEAR_HEIGHT = 3 -- her feet over the floor as she bursts out (she settles from there)
+DivineReveal.STAR_FROM = { 20, 62, 30 } -- where the star falls from: studs to the right, up, and behind the spot (seen from the camera)
+DivineReveal.CROWN_RADIUS = 1.9
 
--- The god rays: the angle round the spot (degrees, 0 = towards you), how far out their feet land (studs), their width
--- at the sky and at the ground (studs).
-DivineReveal.RAY_FEET = {
-	{ ang = -150, out = 26, w0 = 5, w1 = 13 }, { ang = -95, out = 20, w0 = 6, w1 = 15 }, { ang = -40, out = 24, w0 = 4, w1 = 11 },
-	{ ang = 10, out = 18, w0 = 6, w1 = 16 }, { ang = 60, out = 25, w0 = 5, w1 = 12 }, { ang = 115, out = 21, w0 = 6, w1 = 14 },
-	{ ang = 170, out = 27, w0 = 4, w1 = 12 },
-}
+-- The cracks of light: how many, and each one's segments (studs) and how far its turns wander (degrees).
+DivineReveal.CRACKS = 9
+DivineReveal.CRACK_SEGMENTS = { 3.2, 3.6, 3.4, 3, 2.6 }
+DivineReveal.CRACK_WANDER = 28
 
--- The pillar's layers, outside in: width (studs) and how strong. Hard, as the reference's beams: a white core in a
--- saturated gold band with a darker amber edge (the first version's wide faint layers read as soft haze).
-DivineReveal.PILLAR_LAYERS = {
-	{ w = 6.5, alpha = 0.3 }, { w = 4.2, alpha = 0.55 }, { w = 2.4, alpha = 0.85 }, { w = 1, alpha = 1 },
-}
+-- The whirlwind: how many crescents, each one's arc (degrees); its radius (studs) as it rises and when it's tight.
+DivineReveal.ARCS = 12
+DivineReveal.ARC_SPAN = 120
+DivineReveal.VORTEX_WIDE = 9
+DivineReveal.VORTEX_TIGHT = 3.4
 
--- Her wings: each feather's angle when open (degrees out from straight up: 0 = up, 90 = straight out to her side),
--- its length (x her half height) and width (studs).
+-- Her wings: one entry per feather from her shoulder to the wing tip (HuzzClient/Gameplay/DivineReveal lays them
+-- along the wing's leading edge); its width (studs). (ang and len: the old fan layout, kept for reference.)
 DivineReveal.FEATHERS = {
 	{ ang = 18, len = 0.95, w = 1.2 }, { ang = 33, len = 1.25, w = 1.4 }, { ang = 48, len = 1.45, w = 1.5 },
 	{ ang = 63, len = 1.5, w = 1.5 }, { ang = 78, len = 1.4, w = 1.4 }, { ang = 94, len = 1.22, w = 1.3 },
 	{ ang = 110, len = 1.0, w = 1.15 }, { ang = 126, len = 0.75, w = 1.0 },
 }
-DivineReveal.FOLDED = 8 -- every feather's angle when folded (close together, up behind her)
+DivineReveal.FOLDED = 8 -- every feather's angle when folded
 
 local function clamp01(x: number): number
 	return math.clamp(x, 0, 1)
@@ -118,8 +106,7 @@ local function pop(t: number, at: number, rise: number, fall: number): number
 end
 DivineReveal.pop = pop
 
--- How much of the night look is on (0..1): the dark blue sky, the haze, the stronger bloom and the grade. A quick fall
--- to dark on the opening cut (never a flash), lifting from CLOSE.
+-- How much of the night look is on (0..1): a quick fall to dark on the opening cut (never a flash), lifting from CLOSE.
 function DivineReveal.heaven(t: number): number
 	if t < 0 then return 0 end
 	if t < DivineReveal.CLOSE then return smooth(t / 0.15) end
@@ -127,8 +114,8 @@ function DivineReveal.heaven(t: number): number
 end
 DivineReveal.dusk = DivineReveal.heaven
 
--- The time of day on your screen: midnight from the first frame (the camera cut hides the switch), back to the game's
--- own `day` from CLOSE through a short dawn (as Shared/SecretReveal.clock: spread out, so it never reads as a flash).
+-- The time of day on your screen: midnight, back to the game's own `day` from CLOSE through a short dawn (as
+-- Shared/SecretReveal.clock: spread out, so it never reads as a flash).
 function DivineReveal.clock(t: number, day: number): number
 	local back = DivineReveal.CLOSE + DivineReveal.BACK
 	if t < 0 or t >= back then return day end
@@ -140,28 +127,56 @@ function DivineReveal.clock(t: number, day: number): number
 	return (7.2 + (target - 7.2) * smooth((x - 0.62) / 0.38)) % 24
 end
 
--- How far the clouds have parted (0..1): opening from OPEN, closing again from CLOSE.
-function DivineReveal.skyOpen(t: number): number
-	if t < DivineReveal.OPEN then return 0 end
-	local open = easeOut((t - DivineReveal.OPEN) / 1.4)
-	return open * (1 - smooth((t - DivineReveal.CLOSE) / 1.4))
+-- The falling star: how far along its fall (0..1, speeding up all the way), how bright (0..1: it twinkles in from
+-- STAR, gone at CRASH) and how long its tail is (0..1).
+function DivineReveal.star(t: number): (number, number, number)
+	if t < DivineReveal.STAR or t >= DivineReveal.CRASH then return 0, 0, 0 end
+	local s = clamp01((t - DivineReveal.FALL) / DivineReveal.FALL_TIME) ^ 2.2
+	return s, smooth((t - DivineReveal.STAR) / 0.3), smooth((t - DivineReveal.FALL) / 0.3)
 end
 
--- One spear of light (i from 1): how far it has struck down from the portal (0..1: the strike takes 0.08 s), how
--- strong (0..1: it snaps on bright, settles, and is swallowed into the pillar), and how far its foot has been pulled
--- in to the pillar (0..1).
-function DivineReveal.spear(t: number, i: number): (number, number, number)
-	local at = DivineReveal.RAYS + (i - 1) * DivineReveal.SPEAR_GAP
-	if t < at then return 0, 0, 0 end
-	local reach = easeOut((t - at) / 0.08)
-	local pull = smooth((t - DivineReveal.PILLAR) / 0.25)
-	local power = (0.65 + 0.35 * pop(t, at, 0.03, 0.3)) * (1 - pull)
-	return reach, power, pull
+-- The cracks of light: how far they have run out (0..1) and how bright (0..1: flaring with the crash, breathing with
+-- the whirlwind, flaring again with the burst, gone as she rises).
+function DivineReveal.cracks(t: number): (number, number)
+	if t < DivineReveal.CRASH then return 0, 0 end
+	local grow = easeOut((t - DivineReveal.CRASH) / DivineReveal.CRACK_TIME)
+	local glow = 0.6 + 0.4 * pop(t, DivineReveal.CRASH, 0.03, 0.5) + 0.3 * pop(t, DivineReveal.BURST, 0.03, 0.5)
+	glow += 0.15 * smooth((t - DivineReveal.VORTEX) / (DivineReveal.BURST - DivineReveal.VORTEX)) * (1 - smooth((t - DivineReveal.BURST) / 0.4))
+	return grow, math.min(1, glow) * (1 - smooth((t - DivineReveal.RISE) / 0.8))
 end
 
--- The impact frame (black ink claws on white paper) as the pillar slams down. Reduced Motion: none.
+-- The whirlwind: how tall (0..1 of its full height), its radius (studs, before scaling), how far round it has spun
+-- (radians: it winds faster and faster up to the burst), how strong (0..1) and how far it has flown apart (0..1, after
+-- the burst). After RISE the same crescents spiral up round her as she ascends (`spiral` 0..1).
+function DivineReveal.vortex(t: number): (number, number, number, number, number, number)
+	local tall = easeOut((t - DivineReveal.VORTEX) / 0.9)
+	local tight = smooth((t - DivineReveal.VORTEX) / (DivineReveal.BURST - DivineReveal.VORTEX))
+	local radius = DivineReveal.VORTEX_WIDE + (DivineReveal.VORTEX_TIGHT - DivineReveal.VORTEX_WIDE) * tight
+	local function speed(x: number): number
+		if x < DivineReveal.BURST then return 3 + 9 * smooth((x - DivineReveal.VORTEX) / (DivineReveal.BURST - DivineReveal.VORTEX)) end
+		if x < DivineReveal.RISE - 0.3 then return 4 end
+		return 7
+	end
+	local turn, x = 0, DivineReveal.VORTEX
+	while x < t do
+		local dx = math.min(0.05, t - x)
+		turn += speed(x + dx / 2) * dx
+		x += dx
+	end
+	local out = easeOut((t - DivineReveal.BURST) / 0.45)
+	local alpha = smooth((t - DivineReveal.VORTEX) / 0.3) * (1 - smooth((t - DivineReveal.BURST) / 0.4))
+	local spiral = smooth((t - DivineReveal.RISE + 0.2) / 0.4) * (1 - smooth((t - DivineReveal.RETURN + 0.7) / 0.6))
+	return tall, radius, turn, alpha, out, spiral
+end
+
+-- The lightning jumping from the whirlwind to the cracks (on or off).
+function DivineReveal.bolts(t: number): boolean
+	return t >= DivineReveal.VORTEX + 0.35 and t < DivineReveal.BURST
+end
+
+-- The impact frame (black ink claws on white paper) as the star hits. Reduced Motion: none.
 function DivineReveal.impactFrame(t: number, calm: boolean): boolean
-	return not calm and t >= DivineReveal.PILLAR and t < DivineReveal.PILLAR + DivineReveal.FRAME
+	return not calm and t >= DivineReveal.CRASH and t < DivineReveal.CRASH + DivineReveal.FRAME
 end
 
 -- One slash, a crescent swing or a star flare (0..1): snaps on, then thins out.
@@ -169,105 +184,38 @@ function DivineReveal.slash(t: number, at: number): number
 	return pop(t, at, 0.04, 0.36)
 end
 function DivineReveal.swing(t: number, at: number): number
-	return pop(t, at, 0.06, 0.32)
+	return pop(t, at, 0.05, 0.35)
 end
 
--- The speed streaks (0..1) and which way they rush (-1 down as she rides the pillar, 1 up as she rises).
-function DivineReveal.streaks(t: number): (number, number)
-	for _, span in { { DivineReveal.DESCENT_STREAKS, -1 }, { DivineReveal.RISE_STREAKS, 1 } } do
-		local s0, s1 = span[1][1], span[1][2]
-		if t >= s0 and t < s1 then return math.min(1, (t - s0) / 0.2, (s1 - t) / 0.25), span[2] end
-	end
-	return 0, 1
-end
-
--- The radial burst of gold rays (0..1): small on the touchdown, big from behind her at SWELL.
-function DivineReveal.rays(t: number): (number, number)
-	local touch, swell = 0.55 * pop(t, DivineReveal.TOUCH, 0.05, 0.5), pop(t, DivineReveal.SWELL, 0.06, 0.7)
-	if swell >= touch then return swell, 1.6 end
-	return touch, 1
-end
-
--- The halo gate: its centre's height (studs over the floor, scaled), its inner radius (studs, scaled), how far it
--- turns (radians: it spins up from SPIN to the pillar, then slows), how bright (0..1), and how much it is a crown
--- (0 = the gate of three rings, 1 = one small ring over her head). `k` is her scale, `mid` her half height (studs),
--- `h` her height over the floor (unscaled studs, nil before she appears).
-function DivineReveal.halo(t: number, k: number, mid: number, h: number?): (number, number, number, number, number)
-	local gate = DivineReveal.APPEAR_HEIGHT * k + mid
-	local y = DivineReveal.HALO_FROM * k + (gate - DivineReveal.HALO_FROM * k) * smooth((t - DivineReveal.HALO) / (DivineReveal.APPEAR - DivineReveal.HALO))
-	local crown = smooth((t - DivineReveal.APPEAR) / (DivineReveal.TOUCH + 0.3 - DivineReveal.APPEAR))
-	local headTop = (h or DivineReveal.APPEAR_HEIGHT) * k + 2 * mid + 1.1 * k
-	if t >= DivineReveal.APPEAR then y = gate + (headTop - gate) * crown end
-	local r = (DivineReveal.GATE_RADIUS + (DivineReveal.CROWN_RADIUS - DivineReveal.GATE_RADIUS) * crown) * k
-	-- the spin: the integral of a speed that rises 0.6 -> 3.2 rad/s from SPIN to PILLAR and falls back to 0.9 by TOUCH
-	local function speed(x: number): number
-		if x < DivineReveal.SPIN then return 0.6 end
-		if x < DivineReveal.PILLAR then return 0.6 + 2.6 * smooth((x - DivineReveal.SPIN) / (DivineReveal.PILLAR - DivineReveal.SPIN)) end
-		return 0.9 + 2.3 * (1 - smooth((x - DivineReveal.PILLAR) / (DivineReveal.TOUCH - DivineReveal.PILLAR)))
-	end
-	local turn, step = 0, 0.05
-	local x = DivineReveal.HALO
-	while x < t do
-		local dx = math.min(step, t - x)
-		turn += speed(x + dx / 2) * dx
-		x += dx
-	end
-	local alpha = smooth((t - DivineReveal.HALO) / 0.5) * (1 - smooth((t - DivineReveal.RISE - 0.8) / 0.9))
-	return y, r, turn, alpha, crown
-end
-
--- The circle on the ground: how much of it is drawn (0..1, clockwise from the front) and how bright (0..1).
-function DivineReveal.sigil(t: number): (number, number)
-	local drawn = smooth((t - DivineReveal.SIGIL) / DivineReveal.SIGIL_DRAW)
-	local glow = smooth((t - DivineReveal.SIGIL) / 0.3) * (1 - smooth((t - DivineReveal.RISE) / 1.0))
-	-- (it flares with the pillar, and breathes softly after: never blinks)
-	return drawn, glow * (0.8 + 0.2 * pop(t, DivineReveal.PILLAR, 0.15, 0.8))
-end
-
--- The pillar of light: how strong (0..1) and its width (x its layers' widths). It falls through the halo at PILLAR
--- (the drop takes 0.25 s: `reach` 0..1 from the sky down), narrows once she has landed and comes back softly to lift
--- her at RISE.
-function DivineReveal.pillar(t: number): (number, number, number)
-	local reach = easeOut((t - DivineReveal.PILLAR) / 0.25)
-	local first = smooth((t - DivineReveal.PILLAR) / 0.12) * (1 - smooth((t - DivineReveal.TOUCH - 0.2) / 0.9))
-	local lift = smooth((t - DivineReveal.RISE + 0.2) / 0.5) * (1 - smooth((t - DivineReveal.RETURN + 0.9) / 0.8))
-	local power = math.max(first, 0.55 * lift)
-	local width = if first >= 0.55 * lift then 0.55 + 0.45 * (1 - smooth((t - DivineReveal.TOUCH) / 0.8)) + 0.15 * pop(t, DivineReveal.PILLAR, 0.1, 0.5) else 0.5
-	return power, width, reach
-end
-
--- Her wings: how open (0..1, 1 = fully spread; a little overshoot as they snap open, one beat at ASCEND) and how
--- visible (0..1, gone into sparkles as she rises).
-function DivineReveal.wings(t: number): (number, number)
-	if t < DivineReveal.WINGS then return 0, 0 end
-	local x = (t - DivineReveal.WINGS) / 0.6
-	local open = easeOut(x) + 0.07 * math.sin(math.clamp(x, 0, 2) * math.pi) * (1 - clamp01(x - 1))
-	open -= 0.42 * pop(t, DivineReveal.ASCEND, 0.18, 0.32) -- (one beat: in, then back out)
-	local seen = smooth((t - DivineReveal.WINGS) / 0.25) * (1 - smooth((t - DivineReveal.RISE - 0.5) / 0.8))
-	return math.max(open, 0), seen
-end
-
--- Her height over the floor (studs, before scaling), or nil before she appears. She appears already drifting down
--- (never hanging still), slows the whole way and touches down softly; then rises to `top` (Config/Round
--- Showcase.Height).
+-- Her height over the floor (studs, before scaling), or nil before she bursts out. She settles from her hover to the
+-- ground, then rises to `top` (Config/Round Showcase.Height).
 function DivineReveal.height(t: number, top: number): number?
 	if t < DivineReveal.APPEAR then return nil end
 	if t < DivineReveal.TOUCH then
-		local s = (t - DivineReveal.APPEAR) / (DivineReveal.TOUCH - DivineReveal.APPEAR)
-		return DivineReveal.APPEAR_HEIGHT * (1 - s) ^ 2 * (1 + 0.6 * s)
+		return DivineReveal.APPEAR_HEIGHT * (1 - smooth((t - DivineReveal.APPEAR) / (DivineReveal.TOUCH - DivineReveal.APPEAR)))
 	end
 	if t < DivineReveal.RISE then return 0 end
 	return top * smooth((t - DivineReveal.RISE) / (DivineReveal.RETURN - DivineReveal.RISE))
 end
 
--- How much she is lit white (0..1): fully as she appears, settling to a warm golden rim by the touchdown.
+-- How much she is lit white (0..1): fully as she bursts out, settling to a gold rim.
 function DivineReveal.glow(t: number): number
 	if t < DivineReveal.APPEAR then return 0 end
 	return 1 - smooth((t - DivineReveal.APPEAR - 0.1) / 0.9)
 end
 
--- Her name card (0..1): rises in over 0.35 s at NAME, fades by NAME_OUT. `shine` (-1..2): where the sweep of light
--- over the title is (it crosses twice).
+-- Her wings: how open (0..1, snapping open with a little overshoot as she bursts out; one beat at ASCEND) and how
+-- visible (0..1, gone into sparkles as she rises).
+function DivineReveal.wings(t: number): (number, number)
+	if t < DivineReveal.WINGS then return 0, 0 end
+	local x = (t - DivineReveal.WINGS) / 0.45
+	local open = easeOut(x) + 0.08 * math.sin(math.clamp(x, 0, 2) * math.pi) * (1 - clamp01(x - 1))
+	open -= 0.42 * pop(t, DivineReveal.ASCEND, 0.18, 0.32)
+	local seen = smooth((t - DivineReveal.WINGS) / 0.12) * (1 - smooth((t - DivineReveal.RISE - 0.5) / 0.8))
+	return math.max(open, 0), seen
+end
+
+-- Her name card (0..1) and the shine over it (-1..2: crosses twice).
 function DivineReveal.name(t: number): number
 	if t < DivineReveal.NAME or t > DivineReveal.NAME_OUT then return 0 end
 	return math.min(easeOut((t - DivineReveal.NAME) / 0.35), smooth((DivineReveal.NAME_OUT - t) / 0.35))
@@ -281,9 +229,9 @@ function DivineReveal.shine(t: number): number
 	return if x < 0.9 then -1 + 2.4 * smooth(x / 0.9) else 2
 end
 
--- The soft brightness swells (0..1): the pillar, the touchdown (small) and the ascension. Never two within a second.
+-- The brightness swells (0..1): the crash, the burst and the small one at SWELL. Never two within a second.
 function DivineReveal.pulse(t: number): number
-	return math.max(0.6 * pop(t, DivineReveal.PILLAR, 0.05, 0.5), 0.35 * pop(t, DivineReveal.TOUCH, 0.05, 0.5), 0.45 * pop(t, DivineReveal.SWELL, 0.06, 0.6)) -- (softer: the full white bloom read as "AI glow")
+	return math.max(0.6 * pop(t, DivineReveal.CRASH, 0.05, 0.5), 0.5 * pop(t, DivineReveal.BURST, 0.05, 0.6), 0.3 * pop(t, DivineReveal.SWELL, 0.06, 0.6))
 end
 
 -- The world's grade: brightness, saturation, tint amount (0..1, towards cool moonlight, so the gold stands out), the
@@ -293,30 +241,28 @@ function DivineReveal.grade(t: number): (number, number, number, number, number)
 	return -0.05 * on, 0.15 * on, 0.5 * on, DivineReveal.pulse(t), 0.28 * on
 end
 
--- The camera: ONE smooth move with no cut (smoother than the Secret one's cut: owner, Oct 26). It starts low,
--- looking up at the sky opening, tilts down with the halo, rides her descent, and keeps circling her the same way
--- the whole time (the angle only ever grows: no stop and turn back), in to her face for her name, then cranes up
--- after her as she ascends. Each key: time, angle round her (degrees from your side, + = to her left on screen),
--- flat distance (studs x k), eye height (studs x k over the floor), look height (studs x k), follow (0 = the look
--- height is over the floor, 1 = over her middle), field of view.
+-- The camera: ONE smooth move with no cut. It starts low, looking up at the star, tilts down with its fall, pulls in
+-- as the whirlwind winds up, takes her as she bursts out and keeps circling her the same way (the angle only ever
+-- grows), in to her face for her name, then cranes up after her. Each key: time, angle round her (degrees from your
+-- side), flat distance (studs x k), eye height (studs x k over the floor), look height (studs x k), follow (0 = the
+-- look height is over the floor, 1 = over her middle), field of view.
 --   t      ang   dist  eye   look  fol  fov
 DivineReveal.CUTS = {}
 DivineReveal.KEYS = {
 	{
-		{ 0.0, -40, 50, 2.5, 26, 0, 74 }, -- low and wide, looking up at the sky over the spot: the warm light comes in
-		{ 0.9, -34, 47, 3, 31, 0, 73 }, -- the sky opens, the rays fan down
-		{ 1.7, -28, 45, 5, 30, 0, 70 }, -- the halo gate comes down out of the light
-		{ 2.5, -22, 45, 10, 18, 0, 68 }, -- tilting down with it: the circle draws itself on the ground
-		{ 3.1, -16, 47, 9, 24, 0, 72 }, -- wide for the pillar falling through the halo
-		{ 3.5, -12, 39, 13, 2, 1, 64 }, -- she appears in the halo: the look takes her up and rides her down
-		{ 4.2, -4, 33, 11, 1, 1, 60 }, -- floating down, turning round to you
-		{ 4.9, 6, 31, 8, 1.5, 1, 63 }, -- her wings unfold (wide enough for both)
-		{ 5.3, 14, 28, 4, 1.5, 1, 60 }, -- touchdown, low
-		{ 6.3, 40, 22, 7, 2.8, 1, 50 }, -- circling her while her name holds
-		{ 7.4, 64, 12, 12, 4.6, 1, 40 }, -- pushed in to her face (the reference's close-up)
-		{ 8.3, 78, 27, 4, 4, 1, 58 }, -- back and low as the wings beat: she will rise above
+		{ 0.0, -40, 52, 3, 26, 0, 72 }, -- low and wide, looking up into the night: a star twinkles
+		{ 0.6, -37, 50, 3, 27, 0, 72 }, -- it starts to fall
+		{ 1.2, -31, 46, 4, 8, 0, 70 }, -- tilting down with it
+		{ 1.45, -28, 44, 5, 4, 0, 72 }, -- the crash
+		{ 2.3, -19, 36, 6, 8, 0, 66 }, -- the whirlwind rising out of the crater
+		{ 3.2, -8, 27, 7, 9, 0, 60 }, -- pulling in as it winds tighter
+		{ 3.6, -2, 25, 6, 0.6, 1, 62 }, -- it bursts: her
+		{ 4.4, 12, 25, 5, 1, 1, 60 }, -- she settles
+		{ 5.6, 34, 22, 7, 2.8, 1, 50 }, -- circling her while her name holds
+		{ 7.2, 60, 12, 12, 4.6, 1, 40 }, -- pushed in to her face (the reference's close-up)
+		{ 8.2, 76, 27, 4, 4, 1, 58 }, -- back and low as the wings beat: she will rise above
 		{ 9.4, 90, 40, 17, 0, 1, 64 }, -- craning up after her
-		{ 10.4, 100, 44, 30, 0, 1, 60 }, -- up with her over the map (close enough that she still fills the picture)
+		{ 10.4, 100, 44, 30, 0, 1, 60 }, -- up with her over the map
 		{ 11.0, 104, 45, 31, 0, 1, 60 }, -- (still drifting under the fade)
 	},
 }
@@ -353,10 +299,10 @@ function DivineReveal.angle(t: number): number
 	return curve(DivineReveal.KEYS[1], 2, t)
 end
 
--- Which way she faces, in radians round from facing you: her back to you as she appears, turning round to you on the
--- way down; after the touchdown she turns half of the camera's circling, so you always see her from the front.
+-- Which way she faces, in radians round from facing you: she bursts out of the whirlwind spinning, one full turn
+-- slowing to a stop facing you; after she settles she turns half of the camera's circling, so you always see her face.
 function DivineReveal.facing(t: number): number
-	local turn = math.pi * (1 - smooth((t - DivineReveal.APPEAR) / (DivineReveal.WINGS + 0.25 - DivineReveal.APPEAR)))
+	local turn = 2 * math.pi * (1 - easeOut((t - DivineReveal.APPEAR) / 0.9))
 	-- (turning by -a about her up axis faces her towards a camera at angle a: Shared/DivineReveal.camera)
 	local follow = 0.5 * smooth((t - DivineReveal.TOUCH) / 0.8)
 	return turn - follow * math.rad(DivineReveal.angle(t))
@@ -366,24 +312,23 @@ local function kick(t: number, at: number, rise: number, fall: number): number
 	return pop(t, at, rise, fall)
 end
 
--- The field of view: from the keys, with soft widening kicks on the pillar and the ascension.
+-- The field of view: from the keys, with widening kicks on the crash, the burst and the small swell.
 function DivineReveal.fov(t: number, calm: boolean): number
 	local base = curve(DivineReveal.KEYS[1], 7, t)
 	if not calm then
-		base += 6 * kick(t, DivineReveal.PILLAR, 0.2, 0.8) + 4 * kick(t, DivineReveal.SWELL, 0.25, 0.8)
+		base += 6 * kick(t, DivineReveal.CRASH, 0.15, 0.8) + 5 * kick(t, DivineReveal.BURST, 0.15, 0.8) + 3 * kick(t, DivineReveal.SWELL, 0.25, 0.8)
 	end
 	return base
 end
 
--- How hard the camera shakes: much softer than the Secret one (heavenly, not violent): a hum as the halo spins up,
--- the pillar's hit, the touchdown and the wing beat.
+-- How hard the camera shakes: a hum as the whirlwind winds up, the crash, the burst, settling and the wing beat.
 function DivineReveal.shake(t: number): number
 	local s = 0
-	if t >= DivineReveal.SPIN and t < DivineReveal.PILLAR + 0.4 then
-		s += 0.06 * smooth((t - DivineReveal.SPIN) / 0.4) * (1 - smooth((t - DivineReveal.PILLAR) / 0.4))
+	if t >= DivineReveal.VORTEX and t < DivineReveal.BURST + 0.3 then
+		s += 0.08 * smooth((t - DivineReveal.VORTEX) / (DivineReveal.BURST - DivineReveal.VORTEX)) * (1 - smooth((t - DivineReveal.BURST) / 0.3))
 	end
-	s += 0.28 * pop(t, DivineReveal.PILLAR, 0.05, 0.8) + 0.12 * pop(t, DivineReveal.TOUCH, 0.05, 0.4)
-	s += 0.1 * pop(t, DivineReveal.ASCEND + 0.15, 0.05, 0.4) + 0.14 * pop(t, DivineReveal.SWELL, 0.05, 0.6)
+	s += 0.32 * pop(t, DivineReveal.CRASH, 0.04, 0.8) + 0.24 * pop(t, DivineReveal.BURST, 0.04, 0.7) + 0.06 * pop(t, DivineReveal.TOUCH, 0.05, 0.4)
+	s += 0.1 * pop(t, DivineReveal.ASCEND + 0.15, 0.05, 0.4) + 0.1 * pop(t, DivineReveal.SWELL, 0.05, 0.6)
 	return s
 end
 
