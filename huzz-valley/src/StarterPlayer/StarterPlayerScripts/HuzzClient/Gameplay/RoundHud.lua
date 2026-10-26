@@ -9,6 +9,7 @@
 	    lower down so it clears the lobby's NEXT ROUND plate;
 	  - under that "Runner · 0:21" small, and a help line only in the player's very first round. The whole cluster
 	    ends at 8.6% of the screen (HV 8.8%).
+	  - someone only watching a game sees none of these top lines (the lobby's SERVER LUCK sign is there instead);
 	  - top left the prize card (her picture, name, who has her), never while people run.
 	  - Centre words only for the big moments (3-2-1, GO!, SAFE!, YOU'RE DOWN / OUT, BACK UP!, the win), 27% from
 	    the top so they never print on your own character or name tag. Everything else is the message line.
@@ -352,14 +353,19 @@ function M.start()
 		local now = Workspace:GetServerTimeNow()
 		local left = math.max(0, (State:GetAttribute("EndsAt") or 0) - now)
 		local inGame = (State:GetAttribute("Round") or 0) > 0 and stage ~= "Waiting" and stage ~= "Voting" and stage ~= "Intermission" and stage ~= "Rolling"
-		top.Visible = inGame
+		-- Watching (not a runner or catcher in this game): the round's lines at the top step aside, so the lobby's
+		-- SERVER LUCK sign shows clearly instead (owner, Oct 26 09:40: "when you arent in the round, make the server luck
+		-- be seen and remove the last runners and things like that ... so they are more likely to boost it").
+		local role = player:GetAttribute("HuzzRole")
+		local watching = inGame and role ~= "Runner" and role ~= "Catcher"
+		top.Visible = inGame and not watching
 		-- the message: under the round line in a game; outside one, below the lobby's NEXT ROUND plate for a while
 		local lobbyY = math.ceil((insetY() + 64 * Scale.hud(347)) / math.max(fit.Scale, 0.01)) + 6 -- (the plate is under the top bar)
 		message.Position = UDim2.fromOffset(640, if inGame then MSG_Y_GAME else lobbyY)
 		if not inGame and message.Text ~= "" and os.clock() - messageAt >= LOBBY_MESSAGE_TIME then
 			message.Text = "" -- (so the next game doesn't open on the last game's news)
 		end
-		message.Visible = message.Text ~= ""
+		message.Visible = message.Text ~= "" and not watching
 		if inGame then
 			local goal = State:GetAttribute("Crossings") or Config.Crossings
 			local streak = State:GetAttribute("Streak") or 0
