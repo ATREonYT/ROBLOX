@@ -1069,9 +1069,12 @@ function M.start()
 			local fade = 0 -- how hidden this body is on this screen
 			if c and type(untilT) == "number" and t < untilT then
 				if not faded[c] then faded[c] = { mine = p == me } end
-				local start = if type(fromT) == "number" then fromT else untilT - def.Lasts
-				local fadeIn = math.clamp((t - start) / 0.25, 0, 1)
-				local fadeOut = math.clamp((untilT - t) / 0.4, 0, 1)
+				-- (fully gone from the end of the wind-up for Lasts: it fades in over FadeIn just before, and out over
+				-- FadeOut after; Config/Powers.Invisible)
+				local inT, outT = def.FadeIn or 0.15, def.FadeOut or 0.3
+				local start = if type(fromT) == "number" then fromT else untilT - def.Lasts - outT
+				local fadeIn = math.clamp((t - (start - inT)) / inT, 0, 1)
+				local fadeOut = math.clamp((untilT - t) / outT, 0, 1)
 				fade = (if p == me then def.Self else def.Seen) * math.min(fadeIn, fadeOut)
 			elseif c and faded[c] then
 				-- the clean end: it shimmers back in with a soft ring and motes

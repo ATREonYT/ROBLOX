@@ -82,6 +82,11 @@ return {
 		Counter = "Listen for footsteps, or use Radar",
 		Cooldown = 16, Lasts = 1, Seen = 1, Self = 1, -- (Lasts 4 until Oct 24 18:22: "make invis 1 second long";
 		-- owner, Oct 22 12:26: "make the invisible actually 1.00 invisible": was 0.55 on your own screen)
+		-- Lasts is time fully gone (owner, Oct 26 09:53: "fix the invisibility power, right now its bugged and doesnt
+		-- work correctly"): its 0.25 s fade in and 0.4 s fade out used to eat into the 1 s, so you were fully gone for
+		-- about 0.35 s, a flicker. Now it fades in over FadeIn (the end of the wind-up), stays gone for Lasts and
+		-- shimmers back over FadeOut after it (InvisibleUntil = the end of the wind-up + Lasts + FadeOut).
+		FadeIn = 0.15, FadeOut = 0.3,
 	},
 	-- A short glitch-blink forward (Distance studs in Time seconds, the walls still stop you) with a glitch effect.
 	Glitchy = {

@@ -329,7 +329,7 @@ function USE.Invisible(id, def)
 	-- every screen fades this character (Gameplay/PowerEffects) from the end of the wind-up, still catchable
 	local from = now() + wind("Invisible")
 	c:SetAttribute("InvisibleFrom", from)
-	c:SetAttribute("InvisibleUntil", from + def.Lasts)
+	c:SetAttribute("InvisibleUntil", from + def.Lasts + (def.FadeOut or 0)) -- (fully gone for Lasts, then shimmers back)
 	return true, nil, { lasts = def.Lasts }
 end
 

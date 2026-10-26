@@ -142,6 +142,19 @@ check("after Invisible the body is back", ehi <= 0.001)
 check("after Invisible the tag, outline, trail and effects are back", allOn(them.switch))
 check("after Invisible the girl and bubble are back", read(girlPart) <= 0.001 and read(bubble) <= 0.001)
 check("after Invisible your own body is back", select(2, ltm(mine.c)) <= 0.001)
+-- its whole second fully gone (owner, Oct 26 09:53: "bugged and doesnt work": the fades ate the 1 s, a flicker)
+local Inv = require(game.ReplicatedStorage.Shared.Config.Powers).Invisible
+local function goneAt(sinceFrom)
+	local t0 = Workspace:GetServerTimeNow()
+	them.c:SetAttribute("InvisibleFrom", t0 - sinceFrom); them.c:SetAttribute("InvisibleUntil", t0 - sinceFrom + Inv.Lasts + Inv.FadeOut)
+	frames(2)
+	return select(1, ltm(them.c))
+end
+check(`fully gone right as the wind-up ends ({goneAt(0.02)})`, goneAt(0.02) >= 0.99)
+check(`still fully gone near the end of its second ({goneAt(Inv.Lasts - 0.2)})`, goneAt(Inv.Lasts - 0.2) >= 0.99) -- (0.2 s spare: the harness clock runs on while frames draw)
+check(`then it shimmers back in ({goneAt(Inv.Lasts + Inv.FadeOut * 0.6)})`, goneAt(Inv.Lasts + Inv.FadeOut * 0.6) < 0.6)
+them.c:SetAttribute("InvisibleUntil", Workspace:GetServerTimeNow() - 0.01)
+frames(2)
 
 -- 4. a runner standing in a smoke cloud is hidden the same way; a catcher in it is not
 local Net = require(game:GetService("ReplicatedStorage").Shared.Net)
