@@ -1,0 +1,92 @@
+--[[
+	Plays a Roblox KeyframeSequence by hand: the pose of every part at any time, as Roblox's Animator would (each
+	Pose's CFrame is its joint's Transform; between keyframes eased by the pose's EasingStyle). Pure, so the
+	offline preview (tools/preview/motion3d/kfs.luau) uses this same code, and the game uses it to put a dance on
+	a rig that can't play it directly (Shared/DanceRetarget: your companion girl is R6, the dances are R15), the
+	movement pack on the girls (Shared/GirlMoves) and on every other player (Gameplay/PlayerMoves: nothing to upload,
+	so everyone walks the same in Studio and live). Keyframes are found by binary search (cheap for many players).
+	  KeyframeSampler.load(keyframeSequence) -> anim { length, loop, tracks = { [partName] = {{t, cf, style, dir}} } }
+	  KeyframeSampler.sample(anim, t) -> { [partName] = CFrame }
+]]
+local KeyframeSampler = {}
+
+function KeyframeSampler.load(seq)
+	local tracks, length = {}, 0
+	for _, k in seq:GetChildren() do
+		if k.ClassName == "Keyframe" then
+			length = math.max(length, k.Time)
+			for _, p in k:GetDescendants() do
+				if p.ClassName == "Pose" then
+					local ok, w = pcall(function() return p.Weight end)
+					if not ok or w > 0 then
+						local list = tracks[p.Name] or {}
+						tracks[p.Name] = list
+						local s1, style = pcall(function() return p.EasingStyle.Name end)
+						local s2, dir = pcall(function() return p.EasingDirection.Name end)
+						table.insert(list, { t = k.Time, cf = p.CFrame, style = s1 and style or "Linear", dir = s2 and dir or "In" })
+					end
+				end
+			end
+		end
+	end
+	for _, list in tracks do
+		table.sort(list, function(a, b) return a.t < b.t end)
+	end
+	local ok, loop = pcall(function() return seq.Loop end)
+	return { length = length, loop = ok and loop, tracks = tracks, name = seq.Name }
+end
+
+local function ease(style, dir, a)
+	if style == "Constant" then return 0 end
+	if style == "Linear" then return a end
+	local function inn(x)
+		if style == "Cubic" then return x * x * x end
+		if style == "Elastic" then return x == 0 and 0 or -(2 ^ (10 * (x - 1))) * math.sin((x - 1.075) * (2 * math.pi) / 0.3) end
+		if style == "Bounce" then
+			local y = 1 - x
+			local b
+			if y < 1 / 2.75 then b = 7.5625 * y * y
+			elseif y < 2 / 2.75 then y -= 1.5 / 2.75; b = 7.5625 * y * y + 0.75
+			elseif y < 2.5 / 2.75 then y -= 2.25 / 2.75; b = 7.5625 * y * y + 0.9375
+			else y -= 2.625 / 2.75; b = 7.5625 * y * y + 0.984375 end
+			return 1 - b
+		end
+		return x
+	end
+	if dir == "In" then return inn(a) end
+	if dir == "Out" then return 1 - inn(1 - a) end
+	return if a < 0.5 then inn(a * 2) / 2 else 1 - inn((1 - a) * 2) / 2
+end
+
+function KeyframeSampler.sample(anim, t)
+	if anim.loop and anim.length > 0 then
+		t = t % anim.length
+	else
+		t = math.clamp(t, 0, anim.length)
+	end
+	local out = {}
+	for name, list in anim.tracks do
+		-- the first keyframe at or after t (a binary search: Gameplay/PlayerMoves samples every player each frame)
+		local lo, hi = 2, #list
+		while lo < hi do
+			local mid = (lo + hi) // 2
+			if list[mid].t >= t then
+				hi = mid
+			else
+				lo = mid + 1
+			end
+		end
+		local a, b = list[math.max(lo - 1, 1)], list[lo] or list[1]
+		if t <= list[1].t then
+			out[name] = list[1].cf
+		elseif t >= list[#list].t then
+			out[name] = list[#list].cf
+		else
+			local f = if b.t > a.t then (t - a.t) / (b.t - a.t) else 0
+			out[name] = a.cf:Lerp(b.cf, ease(a.style, a.dir, f))
+		end
+	end
+	return out
+end
+
+return KeyframeSampler

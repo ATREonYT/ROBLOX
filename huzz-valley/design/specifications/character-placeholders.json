@@ -1,0 +1,964 @@
+{
+  "status": "All listed UI/world placeholder bindings defined. Matching real models and animations not supplied.",
+  "shared_models": [
+    "aiko",
+    "ren",
+    "sora",
+    "hina"
+  ],
+  "slots": [
+    {
+      "id": "vip-promotion-character",
+      "page": "01-shop-passes",
+      "data_binding": "equippedCharacterId",
+      "kind": "cosmetic_promotion",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.115,
+        0.3,
+        0.19,
+        0.31
+      ],
+      "reference_xywh": [
+        113,
+        130,
+        134,
+        97
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "dance-pack-promotion-character",
+      "page": "01-shop-passes",
+      "data_binding": "equippedCharacterId",
+      "kind": "cosmetic_promotion",
+      "pose": "dance_pack_preview",
+      "window_normalized_xywh": [
+        0.035,
+        0.64,
+        0.24,
+        0.34
+      ],
+      "reference_xywh": [
+        57,
+        236,
+        169,
+        106
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "card-aiko",
+      "page": "02-character-index",
+      "data_binding": "catalogue:aiko",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.025,
+        0.27,
+        0.21,
+        0.33
+      ],
+      "reference_xywh": [
+        48,
+        121,
+        150,
+        104
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "card-ren",
+      "page": "02-character-index",
+      "data_binding": "catalogue:ren",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.26,
+        0.27,
+        0.21,
+        0.33
+      ],
+      "reference_xywh": [
+        215,
+        121,
+        150,
+        104
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "card-sora",
+      "page": "02-character-index",
+      "data_binding": "catalogue:sora",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.025,
+        0.66,
+        0.21,
+        0.29
+      ],
+      "reference_xywh": [
+        48,
+        244,
+        150,
+        91
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "card-hina",
+      "page": "02-character-index",
+      "data_binding": "catalogue:hina",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.26,
+        0.66,
+        0.21,
+        0.29
+      ],
+      "reference_xywh": [
+        215,
+        244,
+        150,
+        91
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": true,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "selected-character-model",
+      "page": "02-character-index",
+      "data_binding": "selectedCharacterId",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.49,
+        0.235,
+        0.28,
+        0.72
+      ],
+      "reference_xywh": [
+        379,
+        110,
+        199,
+        227
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "dance-card-step",
+      "page": "03-dances",
+      "data_binding": "localPlayerAvatar",
+      "kind": "player_avatar_preview",
+      "pose": "step",
+      "window_normalized_xywh": [
+        0.025,
+        0.31,
+        0.235,
+        0.28
+      ],
+      "reference_xywh": [
+        50,
+        132,
+        165,
+        85
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "dance-card-shuffle",
+      "page": "03-dances",
+      "data_binding": "localPlayerAvatar",
+      "kind": "player_avatar_preview",
+      "pose": "shuffle",
+      "window_normalized_xywh": [
+        0.285,
+        0.31,
+        0.235,
+        0.28
+      ],
+      "reference_xywh": [
+        233,
+        132,
+        165,
+        85
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "dance-card-spin",
+      "page": "03-dances",
+      "data_binding": "localPlayerAvatar",
+      "kind": "player_avatar_preview",
+      "pose": "spin",
+      "window_normalized_xywh": [
+        0.025,
+        0.655,
+        0.235,
+        0.29
+      ],
+      "reference_xywh": [
+        50,
+        236,
+        165,
+        88
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": true,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "dance-card-wave",
+      "page": "03-dances",
+      "data_binding": "localPlayerAvatar",
+      "kind": "player_avatar_preview",
+      "pose": "wave",
+      "window_normalized_xywh": [
+        0.285,
+        0.655,
+        0.235,
+        0.29
+      ],
+      "reference_xywh": [
+        233,
+        236,
+        165,
+        88
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "selected-dance-preview",
+      "page": "03-dances",
+      "data_binding": "localPlayerAvatar",
+      "kind": "player_avatar_preview",
+      "pose": "selectedDanceId",
+      "window_normalized_xywh": [
+        0.54,
+        0.23,
+        0.29,
+        0.62
+      ],
+      "reference_xywh": [
+        412,
+        108,
+        204,
+        188
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "wave-dance-reward",
+      "page": "04-progression-rewards",
+      "data_binding": "localPlayerAvatar",
+      "kind": "reward_preview",
+      "pose": "wave",
+      "window_normalized_xywh": [
+        0.5,
+        0.24,
+        0.12,
+        0.17
+      ],
+      "reference_xywh": [
+        386,
+        110,
+        86,
+        52
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "aiko-outfit-reward",
+      "page": "04-progression-rewards",
+      "data_binding": "reward:outfit_aiko",
+      "kind": "outfit_mesh_no_person",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.745,
+        0.24,
+        0.12,
+        0.17
+      ],
+      "reference_xywh": [
+        560,
+        110,
+        86,
+        52
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "bonus-ren_outfit",
+      "page": "04-progression-rewards",
+      "data_binding": "reward:ren_outfit",
+      "kind": "outfit_mesh_no_person",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.07,
+        0.64,
+        0.11,
+        0.17
+      ],
+      "reference_xywh": [
+        79,
+        232,
+        78,
+        52
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": true,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "bonus-sora_character",
+      "page": "04-progression-rewards",
+      "data_binding": "reward:sora_character",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.30000000000000004,
+        0.64,
+        0.11,
+        0.17
+      ],
+      "reference_xywh": [
+        243,
+        232,
+        78,
+        52
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": true,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "bonus-silver_hair",
+      "page": "04-progression-rewards",
+      "data_binding": "reward:silver_hair",
+      "kind": "accessory_mesh_no_person",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.53,
+        0.64,
+        0.11,
+        0.17
+      ],
+      "reference_xywh": [
+        407,
+        232,
+        78,
+        52
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": true,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "bonus-aiko_outfit",
+      "page": "04-progression-rewards",
+      "data_binding": "reward:aiko_outfit",
+      "kind": "outfit_mesh_no_person",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.76,
+        0.64,
+        0.11,
+        0.17
+      ],
+      "reference_xywh": [
+        571,
+        232,
+        78,
+        52
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": true,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "next-reward-04-progression-rewards",
+      "page": "04-progression-rewards",
+      "data_binding": "nextReward.modelId",
+      "kind": "reward_preview",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.72,
+        0.86,
+        0.07,
+        0.13
+      ],
+      "reference_xywh": [
+        542,
+        299,
+        50,
+        40
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "next-reward-05-progression-quests",
+      "page": "05-progression-quests",
+      "data_binding": "nextReward.modelId",
+      "kind": "reward_preview",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.72,
+        0.86,
+        0.07,
+        0.13
+      ],
+      "reference_xywh": [
+        539,
+        263,
+        49,
+        34
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "sunset-trail-demonstration",
+      "page": "07-shop-cosmetics",
+      "data_binding": "localPlayerAvatar",
+      "kind": "effect_on_player_avatar",
+      "pose": "run",
+      "window_normalized_xywh": [
+        0.06,
+        0.29,
+        0.16,
+        0.22
+      ],
+      "reference_xywh": [
+        94,
+        115,
+        107,
+        71
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "blossom-aura-demonstration",
+      "page": "07-shop-cosmetics",
+      "data_binding": "localPlayerAvatar",
+      "kind": "effect_on_player_avatar",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.54,
+        0.29,
+        0.16,
+        0.22
+      ],
+      "reference_xywh": [
+        415,
+        115,
+        107,
+        71
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "crown-pose-demonstration",
+      "page": "07-shop-cosmetics",
+      "data_binding": "localPlayerAvatar",
+      "kind": "player_avatar_preview",
+      "pose": "victory",
+      "window_normalized_xywh": [
+        0.055,
+        0.6,
+        0.19,
+        0.25
+      ],
+      "reference_xywh": [
+        91,
+        215,
+        127,
+        80
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "midnight-outfit-mesh",
+      "page": "07-shop-cosmetics",
+      "data_binding": "product:midnight_outfit",
+      "kind": "outfit_mesh_no_person",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.56,
+        0.6,
+        0.18,
+        0.25
+      ],
+      "reference_xywh": [
+        428,
+        215,
+        120,
+        80
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "highest-tier-character-preview",
+      "page": "11-tier-index",
+      "data_binding": "highestOwnedTierCharacterId",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.56,
+        0.18,
+        0.26,
+        0.78
+      ],
+      "reference_xywh": [
+        428,
+        72,
+        174,
+        226
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "world-player",
+      "page": "12-main-menu",
+      "data_binding": "localPlayerAvatar",
+      "kind": "live_world_player",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        1.25,
+        0.18,
+        1.4,
+        0.78
+      ],
+      "reference_xywh": [
+        390,
+        75,
+        377,
+        213
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "world-player-lobby",
+      "page": "13-lobby-hud",
+      "data_binding": "localPlayerAvatar",
+      "kind": "live_world_player",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.37,
+        0.33,
+        0.22,
+        0.6
+      ],
+      "reference_xywh": [
+        284,
+        115,
+        169,
+        208
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "world-companion-lobby",
+      "page": "13-lobby-hud",
+      "data_binding": "equippedCharacterId",
+      "kind": "live_world_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.57,
+        0.4,
+        0.15,
+        0.52
+      ],
+      "reference_xywh": [
+        438,
+        139,
+        115,
+        180
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "world-local-player-match",
+      "page": "14-match-hud",
+      "data_binding": "localPlayerAvatar",
+      "kind": "live_world_player",
+      "pose": "run",
+      "window_normalized_xywh": [
+        0.37,
+        0.4,
+        0.22,
+        0.5
+      ],
+      "reference_xywh": [
+        284,
+        139,
+        169,
+        174
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "world-current-leader",
+      "page": "14-match-hud",
+      "data_binding": "round.leaderUserId",
+      "kind": "live_world_player",
+      "pose": "run",
+      "window_normalized_xywh": [
+        0.52,
+        0.29,
+        0.15,
+        0.45
+      ],
+      "reference_xywh": [
+        399,
+        101,
+        115,
+        156
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "round-featured-companion",
+      "page": "14-match-hud",
+      "data_binding": "round.featuredCharacterId",
+      "kind": "live_world_npc",
+      "renderer": "World model follows leader; not a GUI child",
+      "pose": "run",
+      "world_offset_rule": "Follow leader slightly behind/alongside, no collision. Position comes from game camera/world, not fixed screen coordinates.",
+      "model_asset": "required_not_supplied"
+    },
+    {
+      "id": "recruit-aiko",
+      "page": "16-recruitment",
+      "data_binding": "catalogue:aiko",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.04,
+        0.23,
+        0.25,
+        0.35
+      ],
+      "reference_xywh": [
+        81,
+        86,
+        167,
+        101
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "recruit-ren",
+      "page": "16-recruitment",
+      "data_binding": "catalogue:ren",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.36,
+        0.23,
+        0.25,
+        0.35
+      ],
+      "reference_xywh": [
+        294,
+        86,
+        167,
+        101
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "recruit-sora",
+      "page": "16-recruitment",
+      "data_binding": "catalogue:sora",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.68,
+        0.23,
+        0.25,
+        0.35
+      ],
+      "reference_xywh": [
+        508,
+        86,
+        167,
+        101
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "results-second",
+      "page": "17-round-results",
+      "data_binding": "round.podium.second.userId",
+      "kind": "remote_player_avatar",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.05,
+        0.2,
+        0.26,
+        0.31
+      ],
+      "reference_xywh": [
+        87,
+        80,
+        174,
+        92
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "results-winner",
+      "page": "17-round-results",
+      "data_binding": "round.podium.winner.userId",
+      "kind": "remote_player_avatar",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.36,
+        0.2,
+        0.26,
+        0.31
+      ],
+      "reference_xywh": [
+        294,
+        80,
+        174,
+        92
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "results-third",
+      "page": "17-round-results",
+      "data_binding": "round.podium.third.userId",
+      "kind": "remote_player_avatar",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.67,
+        0.2,
+        0.26,
+        0.31
+      ],
+      "reference_xywh": [
+        502,
+        80,
+        174,
+        92
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "recruitment-result-portrait",
+      "page": "17-round-results",
+      "data_binding": "round.featuredCharacterId",
+      "kind": "collectible_npc",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.05,
+        0.8,
+        0.12,
+        0.15
+      ],
+      "reference_xywh": [
+        87,
+        258,
+        80,
+        45
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "recipient-alex",
+      "page": "18-gift-picker",
+      "data_binding": "serverPlayers[i].UserId",
+      "kind": "remote_player_avatar",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.05,
+        0.22,
+        0.09,
+        0.12
+      ],
+      "reference_xywh": [
+        87,
+        86,
+        60,
+        36
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "recipient-jade",
+      "page": "18-gift-picker",
+      "data_binding": "serverPlayers[i].UserId",
+      "kind": "remote_player_avatar",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.05,
+        0.39,
+        0.09,
+        0.12
+      ],
+      "reference_xywh": [
+        87,
+        136,
+        60,
+        36
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "recipient-sam",
+      "page": "18-gift-picker",
+      "data_binding": "serverPlayers[i].UserId",
+      "kind": "remote_player_avatar",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.05,
+        0.56,
+        0.09,
+        0.12
+      ],
+      "reference_xywh": [
+        87,
+        187,
+        60,
+        36
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    },
+    {
+      "id": "selected-recipient-thumbnail",
+      "page": "18-gift-picker",
+      "data_binding": "gift.selectedUserId",
+      "kind": "remote_player_avatar",
+      "pose": "idle",
+      "window_normalized_xywh": [
+        0.05,
+        0.8,
+        0.09,
+        0.12
+      ],
+      "reference_xywh": [
+        87,
+        258,
+        60,
+        36
+      ],
+      "renderer": "ViewportFrame from shared CharacterRenderer; player portraits may use player thumbnail service",
+      "locked_silhouette": false,
+      "model_asset": "required_not_supplied",
+      "replace_rule": "Replace bound model once in shared catalogue; every dependent portrait/preview refreshes. Do not replace with unrelated image or emoji."
+    }
+  ]
+}

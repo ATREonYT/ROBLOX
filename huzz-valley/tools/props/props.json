@@ -1,0 +1,7 @@
+[
+{"key": "Shop_Stall", "size": [3.9, 4.588, 1.943], "glow": "ff3a6a", "meshes": 69, "standIn": 62, "leftOut": 2, "glowParts": 5, "pictures": ["shop_sign_27"]},
+{"key": "Like_Reward_Gift", "size": [1.828, 2.161, 1.789], "glow": "fff6a0", "meshes": 32, "standIn": 25, "leftOut": 2, "glowParts": 7, "pictures": ["like_tag_26"]},
+{"key": "Pumpkin_Patch_Chest", "size": [2.46, 1.68, 1.503], "glow": "ffb030", "meshes": 105, "standIn": 100, "leftOut": 5, "glowParts": 13, "pictures": []},
+{"key": "Witch_Brew_Cauldron", "size": [1.688, 1.665, 1.62], "glow": "ff8a1e", "meshes": 65, "standIn": 62, "leftOut": 2, "glowParts": 36, "pictures": []},
+{"key": "Sweets_Treats_Coffin", "size": [1.745, 1.94, 1.056], "glow": "ffcf3a", "meshes": 56, "standIn": 53, "leftOut": 1, "glowParts": 11, "pictures": ["candy_cane_cross_5", "candy_cane_cross_6", "lollipop_47", "lollipop_47"]}
+]

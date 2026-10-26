@@ -1,0 +1,74 @@
+--[[
+	Your avatar's walk, run, idle, jump, fall and climb become the owner's animations (the movement pack in
+	ReplicatedStorage.HuzzAnimations, or their published IDs: Shared/AnimationLibrary).
+	  - When Idle, Walk and Run can all play: Gameplay/Locomotion plays them itself (Roblox's Animate switched
+	    off), cross-faded smoothly by your speed (owner: "make it more smooth just like in Huss Valley").
+	  - Otherwise whatever there is gets swapped into Roblox's Animate script.
+	Published tracks replicate, so everyone sees them. With nothing to play (live game, not published yet) Roblox's
+	Animate stays underneath and Gameplay/PlayerMoves draws the pack's Idle/Walk/Run over it by hand, on every
+	screen (yours too); Studio's temporary copies play only on your screen, so PlayerMoves draws you on the others.
+	Whatever fails, your body is never stiff (owner Oct 20: "also the user animations isnt there"): Roblox's Animate
+	stays on unless Locomotion really plays the pack (it checks itself and lets go), and Output says which on one
+	`[HuzzAnim]` line.
+]]
+local M = {}
+
+function M.start()
+	local Players = game:GetService("Players")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+	local Library = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationLibrary"))
+	if game:GetService("RunService"):IsStudio() then
+		ReplicatedStorage:WaitForChild("HuzzAnimations", 5) -- (Bootstrap copies the raw ones over in Studio)
+	end
+
+	local okLoco, Locomotion = pcall(require, script.Parent.Locomotion)
+	if not okLoco then
+		warn("[HuzzAnim] the walk controller didn't load (" .. tostring(Locomotion) .. "): Roblox's own walk")
+	elseif Locomotion.available() then
+		Locomotion.start()
+		return
+	else
+		Locomotion.say((if game:GetService("RunService"):IsStudio()
+			then "the pack's Studio copies didn't become animations (ReplicatedStorage.HuzzAnimations missing, or KeyframeSequenceProvider refused them)"
+			else "the pack isn't published yet (Config/Animations)")
+			.. ": Roblox's own walk, the pack drawn on top by hand")
+	end
+
+	local SLOTS = {
+		{ "walk", "WalkAnim", "Walk" },
+		{ "run", "RunAnim", "Run" },
+		{ "idle", "Animation1", "Idle" },
+		{ "idle", "Animation2", "Idle" },
+		{ "jump", "JumpAnim", "Jump" },
+		{ "fall", "FallAnim", "Fall" },
+		{ "climb", "ClimbAnim", "Climb" },
+	}
+
+	local function apply(character)
+		local animate = character:WaitForChild("Animate", 10)
+		if not animate then
+			return
+		end
+		local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 5)
+		local r6 = humanoid ~= nil and (humanoid :: Humanoid).RigType == Enum.HumanoidRigType.R6
+		for _, slot in SLOTS do
+			local id = Library.id(if r6 then "R6" .. slot[3] else slot[3]) -- (R6: his BZ1 pack, Oct 22)
+			if id ~= "" then
+				local group = animate:WaitForChild(slot[1], 5)
+				local animation = group and group:FindFirstChild(slot[2])
+				if animation then
+					animation.AnimationId = id
+				end
+			end
+		end
+	end
+
+	local player = Players.LocalPlayer
+	player.CharacterAdded:Connect(apply)
+	if player.Character then
+		task.spawn(apply, player.Character)
+	end
+end
+
+return M
