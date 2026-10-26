@@ -16,6 +16,7 @@
 --   Admin          RemoteEvent     client -> server: (verb, key) the owner's admin panel (GiveKnife / SpawnGirl / NextGirl);
 --                                  server -> client: (ok, message, verb, key). Owner only, checked by AdminService
 --   AdminMessage   RemoteEvent     server -> client: ({ text, from, seconds }) an admin's message to every server (BroadcastService)
+--   LuckBoost      RemoteEvent     server -> client: ({ name, luck }) someone bought luck and the server's went up to x`luck` (LuckService)
 --   KnifeGlb       RemoteFunction  client -> server: (key, n) -> the n-th baked .glb mesh of a knife, nil when none,
 --                                  false to ask again later (HuzzServer/KnifeGlbService, Gameplay/KnifeDress)
 --   KnifeView      RemoteFunction  client -> server: (knife key) -> true when a copy of that knife's model is in
@@ -60,6 +61,7 @@ local SPEC = {
 	SpinOpen = "RemoteEvent",
 	Admin = "RemoteEvent",
 	AdminMessage = "RemoteEvent",
+	LuckBoost = "RemoteEvent",
 	KnifeGlb = "RemoteFunction",
 	KnifeView = "RemoteFunction",
 	KnifeBackup = "RemoteFunction",

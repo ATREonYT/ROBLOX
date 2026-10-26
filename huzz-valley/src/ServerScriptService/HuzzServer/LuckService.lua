@@ -22,6 +22,9 @@
 	    the other servers at once by MessagingService and is kept in a DataStore so servers that start later get it
 	    too (both in pcall: Studio without API access just keeps it in this server). Shown as the Workspace
 	    attributes "HuzzGlobalLuck" and "HuzzGlobalLuckEnds" (os.time).
+	  - Told to everyone in the server when a buy raises its luck (owner, Oct 26 09:42: "make it say when someone buys a
+	    luck multiplier for the server like: ATRE_playzYT BOOSTED THE SERVER LUCK: x8"): the "LuckBoost" remote with the
+	    buyer's name and the server's new luck (Screens/AdminMessage shows it as its outlined line).
 	Granted only in ShopService's ProcessReceipt, once per PurchaseId.
 ]]
 local Players = game:GetService("Players")
@@ -30,6 +33,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Products = require(Shared.Config.Products)
 local Round = require(Shared.Config.Round)
+local Net = require(Shared.Net)
 
 local LuckService = {}
 local MAX = (Round.Luck and Round.Luck.Max) or 10
@@ -73,8 +77,13 @@ end
 -- was paid for is given.
 function LuckService.add(player: Player, luck: number?): boolean
 	local m = math.clamp(tonumber(luck) or 1, 1, MAX)
+	local before = LuckService.server()
 	mine[player.UserId] = math.max(mine[player.UserId] or 1, m)
 	publish()
+	local after = LuckService.server()
+	if after > before then
+		pcall(function() (Net.get("LuckBoost") :: RemoteEvent):FireAllClients({ name = player.Name, luck = after }) end)
+	end
 	return true
 end
 
@@ -104,7 +113,7 @@ end
 
 -- The Admin panel's every-server luck: luck (2 to Max) for minutes; luck 0 ends it. Returns ok, message.
 function LuckService.everywhere(luck: number, minutes: number): (boolean, string)
-	local entry = { Luck = if luck >= 2 then luck else 1, Ends = if luck >= 2 then os.time() + math.floor(minutes * 60) else 0, At = os.time() + os.clock() % 1 }
+	local entry = { Luck = if luck >= 2 then luck else 1, Ends = if luck >= 2 then os.time() + math.floor(minutes * 60) else 0, At = math.max(os.time() + os.clock() % 1, (global.at or 0) + 0.001) } -- (always newer than the one running: END IT pressed within the same second was taken as an older message)
 	take(entry.Luck, entry.Ends, entry.At)
 	local sent = pcall(function() game:GetService("MessagingService"):PublishAsync(TOPIC, entry) end)
 	local kept = pcall(function() game:GetService("DataStoreService"):GetDataStore(TOPIC):SetAsync(STORE_KEY, entry) end)

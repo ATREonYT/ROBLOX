@@ -314,6 +314,8 @@ end
 if cfg.CRATE_T then
 	for _ = 1, math.round(tonumber(cfg.CRATE_T) * 30) do __fireOn(game:GetService("RunService"), "RenderStepped", 1 / 30) end
 end
+-- BOOST=<luck>: someone just boosted the server's luck to that (the "NAME BOOSTED THE SERVER LUCK: x8" line, Oct 26)
+if cfg.BOOST then require(game.ServerScriptService.HuzzServer.LuckService).add(game.Players.LocalPlayer, tonumber(cfg.BOOST)) task.wait(0.1) end
 for _ = 1, 40 do __stepTweens(0.05) end
 task.wait(0.6) -- staggered slide-ins start on real-time delays; let them start, then finish them
 for _ = 1, 40 do __stepTweens(0.05) end
