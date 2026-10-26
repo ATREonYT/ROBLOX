@@ -91,6 +91,13 @@ beside: [lobby.md](lobby.md).
   and a whole merge, the one-flash rule, the 3 s wait and the round letting go, the calm glint timer).
 
 ## Grades on a girl (`Shared/GirlGrade`, `Config/Combine.Grades`)
+- **Oct 26 15:42 (owner, his picture of a white-painted and a gold-painted girl): "make it not look like that, but
+  just have a different aura, have more silver or gold".** `Config/Combine.Recolour = false`: she keeps her own
+  hair, clothes and colours; the grade is her aura only. World copies: the Highlight as an outline only (Fill 1,
+  rim 0.35 / 0.25 / 0.15), motes 4 / 6 / 8 a second, glints every 2.5 / 2 / 1.6 s (never under 1.5), a soft light
+  (Silver now has motes and a light too). Pictures (`UI/GirlPicture`, a ViewportFrame draws no particles): a
+  `GradeAura` frame behind her (run time only): the dance glow picture in the grade's colour, a ring, 4 / 6 / 8
+  breathing sparkles. The bullets below are the Oct 20 recolour, kept behind `Recolour = true`.
 - Her hair and accessories (not her face) take the grade's colour and material, their picture taken off so the
   colour reads. On his girls the grade is mostly the hair, so it must read at a glance next to Normal (critic, Oct
   20): Silver E6EEF9 bright cool polish, Gold FFC531 warm polish (both SmoothPlastic, Reflectance 0.38 / 0.3:

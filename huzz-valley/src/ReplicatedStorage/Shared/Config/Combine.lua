@@ -41,6 +41,11 @@ Combine.Sign = { Text = "COMBINE", Sub = "2 SAME GIRLS MAKE 1 BETTER", Width = 1
 --            timer, one every Glint.Every seconds (kid-safe: never two within 1.5 s, the knives' rule,
 --            Shared/KnifeMotes), soft motes (smoke_main, Rate per second), one soft light. Sizes are for a 5-stud
 --            girl and scale with her.
+-- Recolour = false (owner, Oct 26 15:42, his picture of a white and a gold-painted girl: "make it not look like that,
+-- but just have a different aura, have more silver or gold"): she keeps her own hair, clothes and colours; the grade
+-- is her aura only: Sheen as an outline (no fill), more motes and glints growing Silver > Gold > Diamond, and in
+-- pictures a glow behind her (UI/GirlPicture). true paints her Hair / Cloth again (the Oct 20 look).
+Combine.Recolour = false
 -- Owner (UI): "no gold anywhere" was about the windows' tone. The Gold grade is his own ask, so it is gold, but only
 -- on the girl and her badge.
 Combine.Grades = {
@@ -49,29 +54,33 @@ Combine.Grades = {
 		Name = "Silver", Badge = hex("D3DCEB"),
 		Hair = hex("E6EEF9"), Material = Enum.Material.SmoothPlastic, Reflectance = 0.38, Transparency = 0,
 		Cloth = Color3.new(0.8, 0.86, 0.98),
-		Sheen = { Color = hex("CFE0FF"), Fill = 0.86, Rim = 0.55 },
-		Fx = { Glint = { Color = hex("FFFFFF"), Every = 3, Size = 0.55 }, Motes = nil, Light = nil },
+		Sheen = { Color = hex("DDE8FF"), Fill = 1, Rim = 0.35 },
+		Fx = {
+			Glint = { Color = hex("FFFFFF"), Every = 2.5, Size = 0.7 },
+			Motes = { Color = hex("E3ECFF"), Rate = 4, Size = 0.3 },
+			Light = { Color = hex("DDE8FF"), Brightness = 0.5, Range = 6 },
+		},
 	},
 	Gold = {
 		Name = "Gold", Badge = hex("FFD34D"),
 		Hair = hex("FFC531"), Material = Enum.Material.SmoothPlastic, Reflectance = 0.3, Transparency = 0,
 		Cloth = Color3.new(1, 0.86, 0.5),
-		Sheen = { Color = hex("FFC94A"), Fill = 0.86, Rim = 0.5 },
+		Sheen = { Color = hex("FFC94A"), Fill = 1, Rim = 0.25 },
 		Fx = {
-			Glint = { Color = hex("FFE07A"), Every = 2.5, Size = 0.6 },
-			Motes = { Color = hex("FFC23A"), Rate = 2, Size = 0.3 },
-			Light = { Color = hex("FFC870"), Brightness = 0.6, Range = 6 },
+			Glint = { Color = hex("FFE07A"), Every = 2, Size = 0.8 },
+			Motes = { Color = hex("FFC23A"), Rate = 6, Size = 0.32 },
+			Light = { Color = hex("FFC870"), Brightness = 0.8, Range = 7 },
 		},
 	},
 	Diamond = {
 		Name = "Diamond", Badge = hex("8FE6FF"),
 		Hair = hex("BDF3FF"), Material = Enum.Material.Glass, Reflectance = 0.35, Transparency = 0.22,
 		Cloth = Color3.new(0.78, 0.93, 1),
-		Sheen = { Color = hex("9EEBFF"), Fill = 0.84, Rim = 0.45 },
+		Sheen = { Color = hex("9EEBFF"), Fill = 1, Rim = 0.15 },
 		Fx = {
-			Glint = { Color = hex("E6FBFF"), Every = 2, Size = 0.75 },
-			Motes = { Color = hex("8FE6FF"), Rate = 3, Size = 0.26 },
-			Light = { Color = hex("9EE7FF"), Brightness = 0.8, Range = 7 },
+			Glint = { Color = hex("E6FBFF"), Every = 1.6, Size = 0.9 },
+			Motes = { Color = hex("8FE6FF"), Rate = 8, Size = 0.3 },
+			Light = { Color = hex("9EE7FF"), Brightness = 1, Range = 8 },
 		},
 	},
 }

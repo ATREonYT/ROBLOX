@@ -189,7 +189,7 @@ function GirlGrade.apply(model: Model, grade: string?, opts: any?)
 	local look = grade and Config.Grades[grade]
 	if not (look and look.Hair) then return nil end
 	model:SetAttribute("HuzzGrade", grade)
-	for _, d in model:GetDescendants() do
+	for _, d in (if Config.Recolour then model:GetDescendants() else {}) do -- (off: her own look, the aura only)
 		if d:IsA("BasePart") then
 			local acc = d:FindFirstAncestorOfClass("Accessory")
 			if acc and GirlGrade.dresses(acc) then dress(d, look) end
