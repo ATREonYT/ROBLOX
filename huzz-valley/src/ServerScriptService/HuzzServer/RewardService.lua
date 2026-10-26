@@ -12,7 +12,7 @@ local DataService = require(script.Parent.DataService)
 
 local RewardService = {}
 
-local RANK = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Secret = 7 }
+local RANK = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Secret = 7, Divine = 8 }
 
 -- Whether a save has earned an item (its Earn rule). A rarer girl doesn't unlock the lower rewards: each rarity's
 -- rewards are their own.

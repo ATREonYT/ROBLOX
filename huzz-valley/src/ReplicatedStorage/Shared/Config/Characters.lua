@@ -28,7 +28,7 @@ local byId: { [string]: Character } = {}
 for _, c in Characters.List do byId[c.Id] = c end
 
 -- Each roller rarity sits in the kit's tier of the same rank, so the Tier filter and sorts work for girls too.
-Characters.RarityTier = { Common = "Sub1", Uncommon = "Sub3", Rare = "Sub5", Epic = "MTB", Legendary = "HTB", Mythic = "Stacy", Secret = "TrueEve" }
+Characters.RarityTier = { Common = "Sub1", Uncommon = "Sub3", Rare = "Sub5", Epic = "MTB", Legendary = "HTB", Mythic = "Stacy", Secret = "TrueEve", Divine = "TrueEve" }
 
 -- Adds the anime girls from ReplicatedStorage.HuzzGirls (GirlService.publish puts Id, Name and Rarity on each
 -- copy). Safe to call again: only new girls are added. Returns true when the list changed.

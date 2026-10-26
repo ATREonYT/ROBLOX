@@ -31,7 +31,7 @@ return {
 	-- (owner, Oct 21 17:34: "pop it down a bit" so coin packs are worth buying: 25/50 was ~1,800 coins an hour, 15/30 is ~1,100)
 	Pay = { Played = 15, Won = 30, WonAura = 3 },
 	-- Winning a girl you already own pays coins by her rarity instead (Results says so)
-	DupeCoins = { Common = 25, Uncommon = 50, Rare = 75, Epic = 150, Legendary = 400, Mythic = 700, Secret = 1500 },
+	DupeCoins = { Common = 25, Uncommon = 50, Rare = 75, Epic = 150, Legendary = 400, Mythic = 700, Secret = 1500, Divine = 3000 },
 	CountdownTime = 3, -- 3, 2, 1, GO (everyone on the line)
 	RoundTime = 60, -- runners still out when it ends count as caught (owner, Oct 18: a bit longer, was 45)
 	RoundEndPause = 2.5, -- (was 3.5: pure waiting)
@@ -270,6 +270,9 @@ return {
 		{ Name = "Legendary", Weight = 2.4, Color = Color3.fromRGB(255, 190, 60) },
 		{ Name = "Mythic", Weight = 1.2, Color = Color3.fromRGB(255, 84, 120) },
 		{ Name = "Secret", Weight = 0.4, Color = Color3.fromRGB(30, 30, 30) },
+		-- Divine (owner, Oct 26): above Secret, with her own cutscene (Shared/DivineReveal). Counts only once the
+		-- place has a Divine folder with girls in it; its odds show in the roller and the luck window like the rest.
+		{ Name = "Divine", Weight = 0.15, Color = Color3.fromRGB(255, 232, 140) },
 	},
 	-- Server luck (owner, Oct 23: "add a x2 luck, x4 luck, x8 luck dev products ... if someone bought server luck, it
 	-- stays with the person while he is in the game, and then when he leaves it resets"; "they can go up to like 10x").

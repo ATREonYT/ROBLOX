@@ -43,7 +43,7 @@
 ]]
 local AuraLook = {}
 
-AuraLook.RANK = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Secret = 7 }
+AuraLook.RANK = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Secret = 7, Divine = 8 }
 
 -- Particle pictures: our own (assets/fx, uploaded with the other pictures into Config/ImageIds as "Fx/<Name>"),
 -- or Roblox's built-in particle textures until they're uploaded.
@@ -327,7 +327,7 @@ end
 	nil, scale }. Every rarity shows something (Common: a few faint motes).
 ]]
 function AuraLook.build(look, rarity, kind)
-	local rank = AuraLook.RANK[rarity or ""] or 1
+	local rank = math.min(AuraLook.RANK[rarity or ""] or 1, 7) -- (Divine: the top step, as Secret)
 	local out = { emitters = {}, slashes = nil, light = nil, scale = 1 }
 	local function add(list)
 		for _, e in list do
@@ -494,7 +494,8 @@ local LADDER = {
 AuraLook.LADDER = LADDER
 
 function AuraLook.girl(look, rarity, kind)
-	local rank = AuraLook.RANK[rarity or ""] or 1
+	-- (Divine wears the top step of the ladder, with a gold second tone instead of the Secret's cyan or pink)
+	local rank = math.min(AuraLook.RANK[rarity or ""] or 1, #LADDER)
 	if kind == "Showcase" then
 		rank = math.max(rank, 3) -- (the prize over the map always reads as a prize)
 	end
@@ -506,6 +507,7 @@ function AuraLook.girl(look, rarity, kind)
 	if rank >= 7 then -- Secret: two tones (cyan or pink, whichever is further from her own colour)
 		local function dist(a, b) return math.abs(a.R - b.R) + math.abs(a.G - b.G) + math.abs(a.B - b.B) end
 		accent = if dist(main, SECRET_ACCENT_A) > dist(main, SECRET_ACCENT_B) then SECRET_ACCENT_A else SECRET_ACCENT_B
+		if rarity == "Divine" then accent = Color3.fromRGB(255, 214, 110) end
 	end
 	local out = { emitters = {}, scale = if kind == "Showcase" then 3 else 1, rank = rank }
 	local function add(x) table.insert(out.emitters, x) end

@@ -5,7 +5,7 @@
 -- odds (no pity, nothing planted next to the stop), with the server's prize at one spot. The Spin Wheel uses roll too.
 local CrateRoll = {}
 
-local RANK = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Secret = 7 }
+local RANK = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Secret = 7, Divine = 8 }
 CrateRoll.RANK = RANK
 
 local function rank(r: string): number

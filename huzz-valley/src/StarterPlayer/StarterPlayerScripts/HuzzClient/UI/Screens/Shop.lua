@@ -356,7 +356,7 @@ local rarityColor = {}
 for _, r in RoundConfig.Rarities do rarityColor[r.Name] = r.Color end
 rarityColor.Secret = Color3.fromRGB(150, 110, 255) -- (near-black in the roller; violet reads on the dark window)
 rarityColor.Exclusive = Color3.fromRGB(255, 170, 230) -- the Game Pass knives, once owned
-local RARITY_ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Exclusive" }
+local RARITY_ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Divine", "Exclusive" }
 
 -- a drawn picture for a coin item without one (titles, name colours, knives; trails and auras: UI/LookPicture)
 local function swatch(parent: Instance, item: CoinShop.Item, size: number)

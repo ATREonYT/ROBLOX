@@ -80,7 +80,7 @@ local rarityColor = {}
 for _, r in RoundConfig.Rarities do rarityColor[r.Name] = r.Color end
 rarityColor.Secret = Color3.fromRGB(150, 110, 255)
 rarityColor.Exclusive = Color3.fromRGB(255, 170, 230)
-local RARITY_ORDER = { "Exclusive", "Secret", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common" } -- (best first)
+local RARITY_ORDER = { "Exclusive", "Divine", "Secret", "Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common" } -- (best first)
 local function rank(r: string?): number
 	return table.find(RARITY_ORDER, r or "Common") or #RARITY_ORDER
 end

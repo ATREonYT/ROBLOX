@@ -543,6 +543,86 @@ do
 	end
 end
 
+-- The Divine girl's arrival (Gameplay/DivineReveal, owner Oct 26): builds, plays the whole timeline, puts every
+-- Lighting value back, keeps the swells kid-safe, hands her over to her float without a snap, and its camera is one
+-- smooth move with no cut (eye and look at most 2.5 studs a frame, the lens 2.5 degrees, never under the floor).
+do
+	local Divine = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay.DivineReveal)
+	local T = require(RS.Shared.DivineReveal)
+	local m = rig()
+	m.PrimaryPart = m.HumanoidRootPart
+	local base = CFrame.new(0, 40, 0)
+	m:PivotTo(base)
+	local L = game.Lighting
+	L.Brightness, L.Ambient = 1.4, Color3.fromRGB(150, 150, 160)
+	for _, c in L:GetChildren() do c:Destroy() end
+	local atmo = Instance.new("Atmosphere")
+	atmo.Density, atmo.Haze, atmo.Color = 0.2, 0.5, Color3.fromRGB(214, 236, 255)
+	atmo.Parent = L
+	local before = { L.Brightness, L.Ambient, atmo.Density, atmo.Haze, atmo.Color, #L:GetChildren(), #workspace.Terrain:GetChildren() }
+	local okBuild, step, cleanup = pcall(Divine.build, m, base, 1000)
+	check("divine reveal builds: " .. tostring(step), okBuild)
+	if okBuild then
+		local hidden, lastH, warm = true, nil, false
+		local okRun, err = pcall(function()
+			for t = 0, T.LENGTH, 1 / 30 do
+				local _, h = step(t, Vector3.new(0, 0, 1))
+				if t < T.APPEAR and m:GetPivot().Position.Y > -1000 then hidden = false end
+				if t > 2 and t < 3 and atmo.Haze > 1 then warm = true end
+				lastH = h
+			end
+		end)
+		check("divine reveal plays: " .. tostring(err), okRun)
+		check("divine: she's hidden until she appears in the halo", hidden)
+		check("divine: the golden light is on during it", warm)
+		check("divine: she ends at her height over the map", lastH ~= nil and math.abs(lastH - T.height(T.LENGTH, 34)) < 0.01)
+		local S = require(RS.Shared.Config.Round).Showcase
+		local now = 1000 + T.LENGTH
+		local float = base * CFrame.new(0, math.sin(now * 1.1) * S.Bob, 0) * CFrame.Angles(0, (now * S.Spin) % (2 * math.pi), 0)
+		check("divine: she hands over to the float without a snap", (m:GetPivot().Position - float.Position).Magnitude < 0.01 and (m:GetPivot().LookVector - float.LookVector).Magnitude < 0.01)
+		cleanup()
+		local after = { L.Brightness, L.Ambient, atmo.Density, atmo.Haze, atmo.Color, #L:GetChildren(), #workspace.Terrain:GetChildren() }
+		local same = true
+		for i, v in before do if after[i] ~= v then same = false; print("  divine: not restored #" .. i .. " " .. tostring(v) .. " -> " .. tostring(after[i])) end end
+		check("divine: Lighting restored exactly and everything cleaned up", same and workspace:FindFirstChild("HuzzDivineReveal") == nil)
+	end
+	check("divine: swells at most once a second (kid-safe)", (function()
+		local starts, was = {}, false
+		for t = 0, T.LENGTH, 1 / 60 do
+			local _, _, _, p = T.grade(t)
+			local on = p > 0.05
+			if on and not was then table.insert(starts, t) end
+			was = on
+		end
+		for i = 2, #starts do if starts[i] - starts[i - 1] < 1 then return false end end
+		return #starts >= 1 and #starts <= 3 and T.RETURN - starts[#starts] >= 1
+	end)())
+	check("divine: one smooth camera move, never under the floor", (function()
+		local dir, at, k, mid = Vector3.new(0, 0, 1), Vector3.zero, 1, 7.5
+		local lastEye, lastLook, lastFov, lastAng
+		for t = 0, T.LENGTH, 1 / 30 do
+			local h = T.height(t, 34) or 34
+			local eye, look = T.camera(t, at, dir, h, k, mid)
+			local fov = T.fov(t, false)
+			local ang = T.angle(t)
+			if eye.Y < 1 then print("  divine camera under the floor at " .. t); return false end
+			if lastEye then
+				if (eye - lastEye).Magnitude > 2.5 or (look - lastLook).Magnitude > 2.5 or math.abs(fov - lastFov) > 2.5 then
+					print(string.format("  divine camera jumps at %.2f: eye %.2f look %.2f fov %.2f", t, (eye - lastEye).Magnitude, (look - lastLook).Magnitude, math.abs(fov - lastFov)))
+					return false
+				end
+				if ang < lastAng - 1e-6 then print("  divine camera turns back at " .. t); return false end
+			end
+			lastEye, lastLook, lastFov, lastAng = eye, look, fov, ang
+		end
+		return #T.CUTS == 0
+	end)())
+	Divine.failForTest = true
+	local okF = pcall(Divine.build, m, base)
+	Divine.failForTest = nil
+	check("divine: a failed build cleans up after itself", not okF and workspace:FindFirstChild("HuzzDivineReveal") == nil)
+end
+
 -- The Secret cutscene's camera is one smooth move (owner, Oct 18: "a bit chopy still and the camera is still not
 -- very logical"): sampled at 30 fps, outside the listed deliberate cuts the eye and the look point move at most 2.5
 -- studs a frame (at the 3x scale), the view turns at most 4 degrees and the field of view at most 2.5 degrees a

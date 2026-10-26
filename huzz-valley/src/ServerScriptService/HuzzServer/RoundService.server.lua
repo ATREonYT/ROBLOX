@@ -33,6 +33,7 @@ local KnifeService = require(script.Parent.KnifeService)
 local PowerService = require(script.Parent.PowerService)
 local NameTags = require(script.Parent.NameTagService)
 local SecretReveal = require(ReplicatedStorage.Shared.SecretReveal)
+local DivineReveal = require(ReplicatedStorage.Shared.DivineReveal)
 local PracticeBot = require(script.Parent.PracticeBot)
 local HitHistory = require(script.Parent.HitHistory)
 local PlaceService = require(script.Parent.PlaceService) -- (a player's own screen moves their body: the owner moves it)
@@ -1172,8 +1173,10 @@ local function runGame()
 	end
 	showShowcase()
 	-- A Secret girl arrives with a cutscene on every screen (HuzzClient/Gameplay/SecretReveal): she bursts out of an
-	-- orb of light, lands in the middle of the map and floats up to her place, then the game goes on.
-	if girl.rarity == "Secret" and showcase then
+	-- orb of light, lands in the middle of the map and floats up to her place, then the game goes on. A Divine girl
+	-- gets her own, different one (Shared/DivineReveal: the sky opens, she floats down a pillar of light with wings).
+	if (girl.rarity == "Secret" or girl.rarity == "Divine") and showcase then
+		local Cut = if girl.rarity == "Divine" then DivineReveal else SecretReveal
 		-- (the owner's place streams the world in around each player: the cutscene's spot over the map can be too
 		-- far from the lobby, so its floor and props were missing in Studio. Load them around everyone first, for
 		-- at most 3 s, and keep them loaded until the cutscene ends)
@@ -1192,16 +1195,22 @@ local function runGame()
 		while waiting > 0 and os.clock() < deadline do
 			task.wait(0.1)
 		end
-		task.delay(SecretReveal.LENGTH, function()
+		task.delay(Cut.LENGTH, function()
 			for _, p in Players:GetPlayers() do
 				pcall(function() if p.ReplicationFocus == focus then p.ReplicationFocus = nil end end)
 			end
 		end)
+		showcase:SetAttribute("RevealKind", girl.rarity) -- (which cutscene: Gameplay/SecretReveal picks it)
 		showcase:SetAttribute("RevealAt", Workspace:GetServerTimeNow())
-		setStage("Reveal", SecretReveal.LENGTH)
-		announce("Something rare is coming...", Color3.fromRGB(190, 170, 255))
-		task.delay(SecretReveal.NAME, announce, `SECRET: {girl.name}!`, Color3.fromRGB(150, 110, 255)) -- (with her name card)
-		task.wait(SecretReveal.LENGTH)
+		setStage("Reveal", Cut.LENGTH)
+		if girl.rarity == "Divine" then
+			announce("The sky is opening...", Color3.fromRGB(255, 214, 120))
+			task.delay(Cut.NAME, announce, `DIVINE: {girl.name}!`, Color3.fromRGB(255, 200, 70))
+		else
+			announce("Something rare is coming...", Color3.fromRGB(190, 170, 255))
+			task.delay(Cut.NAME, announce, `SECRET: {girl.name}!`, Color3.fromRGB(150, 110, 255)) -- (with her name card)
+		end
+		task.wait(Cut.LENGTH)
 	end
 	local ids, all = {}, {}
 	for id, p in byId do

@@ -72,11 +72,20 @@ local SORTS = {
 }
 
 -- Screen state (kept while the window is closed, so reopening shows the same view).
-local view = { Tab = "All", Search = "", Tier = "All", Sort = "NameAZ" }
+-- Grade: "All" is the normal index; "Silver" / "Gold" / "Diamond" turns it into that grade's collection (owner, Oct
+-- 26: "make the golden, silver, diamond collections"): only the girls, each lit if you have her at that grade or
+-- better (combining her up still counts), drawn at that grade, with how many you have on the field.
+local view = { Tab = "All", Search = "", Tier = "All", Sort = "NameAZ", Grade = "All" }
 local selected: string? = nil
 local busy = false
 
-local function owned(id: string): boolean return State.data.Characters[id] ~= nil end
+local function ownsAny(id: string): boolean return State.data.Characters[id] ~= nil end
+local function owned(id: string): boolean
+	if not ownsAny(id) then return false end
+	if view.Grade == "All" then return true end
+	local best = CombineRules.best(State.data, id)
+	return best ~= nil and CombineRules.rank(best) >= CombineRules.rank(view.Grade)
+end
 local function equipped(id: string): boolean return State.data.Equipped == id end
 local function favourite(id: string): boolean return State.data.FavChars[id] == true end
 local function tierName(tier: string): string return Characters.TierNames[tier] or tier end
@@ -89,7 +98,10 @@ local function badgeText(c): string return if c.Rarity then string.upper(c.Rarit
 local function badgeColor(c): Color3 return if c.Rarity then (RARITY_COLOR[c.Rarity] or C.Slate) else tierColor(c.Tier) end
 
 -- A girl's picture: her still model in a ViewportFrame (UI/GirlPicture).
-local function gradeOf(c): string? return if c.Model and owned(c.Id) then CombineRules.best(State.data, c.Id) else nil end
+local function gradeOf(c): string?
+	if not (c.Model and owned(c.Id)) then return nil end
+	return if view.Grade ~= "All" then view.Grade else CombineRules.best(State.data, c.Id)
+end
 local function girlPicture(parent: Instance, c, isOwned: boolean, whole: boolean): ViewportFrame?
 	return GirlPicture.draw(parent, c.Model, isOwned, whole, if isOwned then gradeOf(c) else nil)
 end
@@ -100,6 +112,7 @@ local function visibleList(): { any }
 	local needle = string.lower(view.Search)
 	for _, c in Characters.List do
 		local keep = (view.Tab == "All") or (view.Tab == "Owned" and owned(c.Id)) or (view.Tab == "Favourites" and favourite(c.Id))
+		if keep and view.Grade ~= "All" and not c.Rarity then keep = false end -- (only the girls have grades)
 		if keep and view.Tier ~= "All" and c.Tier ~= view.Tier then keep = false end
 		if keep and needle ~= "" and not string.find(string.lower(c.Name), needle, 1, true) then keep = false end
 		if keep then table.insert(list, c) end
@@ -298,6 +311,9 @@ function Index.build(parent: Instance)
 	chevron(tierDrop.Instance:FindFirstChild("Content"), 3)
 	local sortDrop = Kit.button({ Name = "Sort", Style = "IndexDrop", Text = "Sort: Name A - Z", FontFace = F.Label, TextSize = 11, Gap = 5, Corner = 4, Position = UDim2.fromOffset(544, 9), Size = UDim2.fromOffset(111, 30), ZIndex = 2, Parent = panel })
 	chevron(sortDrop.Instance:FindFirstChild("Content"), 3)
+	-- the grade collections: right of the tabs, clear of the favourite square
+	local gradeDrop = Kit.button({ Name = "GradeCollection", Style = "IndexDrop", Text = "Grades: All", FontFace = F.Label, TextSize = 12, Gap = 6, Corner = 4, Position = UDim2.fromOffset(505, 48), Size = UDim2.fromOffset(124, 28), ZIndex = 2, Parent = panel })
+	chevron(gradeDrop.Instance:FindFirstChild("Content"), 3)
 
 	-- Card grid (left). Cards sit Pad px inside the scrolling frame so the selected card's yellow rim isn't clipped.
 	local grid = new("ScrollingFrame", { Name = "Grid", Position = UDim2.fromOffset(GRID.X, GRID.Y), Size = UDim2.fromOffset(GRID.W, GRID.H), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.RowBorder, CanvasSize = UDim2.new(), ScrollingDirection = Enum.ScrollingDirection.Y, Selectable = false, Parent = panel })
@@ -348,6 +364,7 @@ function Index.build(parent: Instance)
 		copiesLine.Visible, hintLine.Visible, combineBtn.Instance.Visible = false, false, false
 		if not c then return end
 		local isOwned, isEq, isFav = owned(c.Id), equipped(c.Id), favourite(c.Id)
+		local hasBase = ownsAny(c.Id) -- (equipping goes by owning her at all, whatever collection is showing)
 		if isOwned then
 			local counts = CombineRules.counts(State.data, c.Id)
 			local parts, ready = {}, false
@@ -408,12 +425,13 @@ function Index.build(parent: Instance)
 		statusIcon = Kit.icon(isOwned and "CheckEquipped" or "Lock", { Name = "Icon", Size = UDim2.fromOffset(isOwned and 25 or 20, isOwned and 25 or 23), LayoutOrder = 1, ZIndex = 3, Parent = statusRow })
 		statusText.Text = isEq and "Equipped" or isOwned and "Owned" or "Locked"
 		statusText.TextColor3 = isOwned and COL.Equipped or COL.LockedText
-		line1.Text = isEq and "Selected companion." or isOwned and "In your collection." or "Not collected yet."
+		line1.Text = isEq and "Selected companion." or isOwned and "In your collection."
+			or (view.Grade ~= "All" and hasBase and `No {view.Grade} copy yet.`) or "Not collected yet."
 		source.Text = c.Source
 		if favIcon then favIcon:Destroy() end
 		favIcon = Kit.icon(isFav and "FavouriteFilled" or "FavouriteOutline", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(isFav and 31 or 26, isFav and 30 or 26), ZIndex = 3, Parent = favBig.Instance })
 		-- one action: UNEQUIP (equipped), EQUIP (owned) or LOCKED (can't be equipped)
-		local newKey = isEq and "Unequip" or isOwned and "Equip" or "Locked"
+		local newKey = isEq and "Unequip" or hasBase and "Equip" or "Locked"
 		if newKey ~= actionKey then
 			actionKey = newKey
 			action.setText(string.upper(newKey))
@@ -476,7 +494,10 @@ function Index.build(parent: Instance)
 		grid.Visible = #list > 0
 		if #list == 0 then
 			local filtered = view.Search ~= "" or view.Tier ~= "All"
-			if view.Tab == "Favourites" and not filtered then
+			if view.Grade ~= "All" and not filtered then
+				emptyTitle.Text = `No {view.Grade} girls yet`
+				emptyHint.Text = "Combine 2 matching girls at the machine to grade one up."
+			elseif view.Tab == "Favourites" and not filtered then
 				emptyTitle.Text = "No favourites yet"
 				emptyHint.Text = "Tap a star on a character to add it here."
 			elseif view.Tab == "Owned" and not filtered then
@@ -495,6 +516,18 @@ function Index.build(parent: Instance)
 		local tierText = view.Tier == "All" and "All" or tierName(view.Tier)
 		tierDrop.setText(#tierText > 3 and tierText or ("Tier: " .. tierText)) -- longer names drop "Tier:" to fit the field
 		for _, s in SORTS do if s.Key == view.Sort then sortDrop.setText("Sort: " .. s.Short) end end
+		if view.Grade == "All" then
+			gradeDrop.setText("Grades: All")
+		else -- (how much of this collection you have, of every girl in the game)
+			local have, all = 0, 0
+			for _, c in Characters.List do
+				if c.Rarity then
+					all += 1
+					if owned(c.Id) then have += 1 end
+				end
+			end
+			gradeDrop.setText(`{view.Grade} {have}/{all}`)
+		end
 		refreshPreview()
 	end
 
@@ -540,9 +573,11 @@ function Index.build(parent: Instance)
 		openMenu = name
 		local rowH, pad = 24, 4
 		local w = math.max(math.round(anchor.Size.X.Offset), 128)
-		-- Kit buttons are positioned by their centre (Kit.place): line the menu's right edge up with the field's
+		-- Kit buttons are positioned by their centre (Kit.place): line the menu's right edge up with the field's, just
+		-- under it (42 under the header's fields)
 		local right = math.round(anchor.Position.X.Offset + anchor.Size.X.Offset / 2)
-		menu.Position = UDim2.fromOffset(math.min(right, W - 8) - w, 42)
+		local below = math.round(anchor.Position.Y.Offset + anchor.Size.Y.Offset / 2) + 3
+		menu.Position = UDim2.fromOffset(math.min(right, W - 8) - w, below)
 		menu.Size = UDim2.fromOffset(w, #options * rowH + 2 * pad)
 		for i, o in options do
 			local b = Kit.button({ Name = o.Key, Text = o.Text, Style = o.Key == current and "Selected" or "IndexItem", FontFace = F.Label, TextSize = 13, Corner = 3, Position = UDim2.fromOffset(pad, pad + (i - 1) * rowH), Size = UDim2.fromOffset(w - 2 * pad, rowH - 2), ZIndex = 31, Parent = menu })
@@ -565,6 +600,17 @@ function Index.build(parent: Instance)
 			refresh(true)
 		end)
 	end)
+	gradeDrop.onClick(function()
+		local options = { { Key = "All", Text = "All (normal index)" } }
+		for _, g in CombineRules.Grades do
+			if g ~= "Normal" then table.insert(options, { Key = g, Text = g .. " collection" }) end
+		end
+		showMenu("Grade", gradeDrop.Instance, options, view.Grade, function(key)
+			view.Grade = key
+			lastKey = nil
+			refresh(true)
+		end)
+	end)
 	sortDrop.onClick(function()
 		showMenu("Sort", sortDrop.Instance, SORTS, view.Sort, function(key)
 			view.Sort = key
@@ -573,7 +619,7 @@ function Index.build(parent: Instance)
 	end)
 
 	clearBtn.onClick(function()
-		view.Search, view.Tier, view.Tab = "", "All", "All"
+		view.Search, view.Tier, view.Tab, view.Grade = "", "All", "All", "All"
 		box.Text = ""
 		tabs.select("All")
 		refresh(true)

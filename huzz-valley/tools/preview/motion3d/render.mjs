@@ -522,9 +522,15 @@ window.draw = (f) => {
       const x = (q.x + q.w / 2) * k, y = (q.y + q.h / 2) * k;
       ctx.font = style + (px * k) + 'px Montserrat, Arial Black, Helvetica, sans-serif';
       if (q.o) { ctx.strokeStyle = rgba(q.o, q.a); ctx.lineWidth = (q.ow || 2) * 2 * k; ctx.strokeText(q.text, x, y); }
-      ctx.fillStyle = rgba(q.c, q.a); ctx.fillText(q.text, x, y);
+      if (q.g) { // (a UIGradient on the text: its colours times the text's, left to right across its box)
+        const gr = ctx.createLinearGradient(q.x * k, 0, (q.x + q.w) * k, 0);
+        const tc = new THREE.Color(q.c);
+        for (const [pos, c] of q.g) { if (pos < 0 || pos > 1) continue; const cc = new THREE.Color(c); gr.addColorStop(pos, 'rgba(' + [cc.r * tc.r, cc.g * tc.g, cc.b * tc.b].map((v) => Math.round(v * 255)).join(',') + ',' + q.a + ')'); }
+        ctx.fillStyle = gr;
+      } else ctx.fillStyle = rgba(q.c, q.a);
+      ctx.fillText(q.text, x, y);
     }
-    if (o.dim) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(0,0,0,' + o.dim + ')'; ctx.fillRect(0, 0, ${W}, ${H}); }
+    if (o.dim) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = o.dimc ? rgba(o.dimc, o.dim) : 'rgba(0,0,0,' + o.dim + ')'; ctx.fillRect(0, 0, ${W}, ${H}); }
   }
   camera.position.set(cx, cy, cz);
   camera.lookAt(lx, ly, lz);

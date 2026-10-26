@@ -67,3 +67,18 @@ beat's time and the comparison with his reference (`design/vfx/ref3`): `docs/sec
   cutscene, camera under the floor.
 - The owner's Oct 18 recordings showed the OLD cutscene because Rojo put old scripts back (core `CLAUDE.md` section 7,
   "Which code ran?").
+
+## The Divine cutscene (Oct 26)
+Owner: "for the divine ... make it completely different from the secret animation ... way smoother". "Heaven's Gate":
+golden dusk instead of night, the sky opens in a cloud ring, god rays, a three-ring halo gate comes down, a sigil draws
+itself on the ground over a bed of cloud, one pillar of light, she floats down turning to face you, wings of light
+fan open feather by feather, touchdown ripples, the halo becomes her crown, DIVINE name card with a shine, she ascends.
+- Timeline, camera, flashes: `Shared/DivineReveal` (one camera move, NO cut; the angle only ever grows).
+- Effects: `HuzzClient/Gameplay/DivineReveal`. `Gameplay/SecretReveal`'s play() runs it when the showcase's
+  `RevealKind` is "Divine" (RoundService sets it), sharing the camera planning and hand-back; the hand-back fades
+  through warm cream (`DivineReveal.DIP`), not black.
+- Built only from neon parts, plain beams and Roblox's built-in sparkle/smoke (nothing to upload).
+- Film: `DIVINE=1 SECRET_NOTEX=1 sh tools/preview/motion3d/video.sh secret_scene.luau out.mp4`. The film's os.clock
+  now runs on film time (a heavy frame used to skip the cutscene ahead).
+- Checks: check_girl_fx.luau "divine:" lines (plays, cleans up, Lighting restored, swells a second apart, smooth camera).
+- Sounds: reuses the Secret beats for now (Build riser to the pillar, Burst, Reveal, secret_impact at the swell).

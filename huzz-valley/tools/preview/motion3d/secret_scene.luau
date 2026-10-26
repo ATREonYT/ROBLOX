@@ -10,12 +10,18 @@
 -- "you" stand 80 studs away (the camera eases back to your own view at the end). ~1 s before and after.
 -- sh video.sh secret_scene.luau out.mp4   (MOTION3D_KEEP=<dir> keeps the contact-sheet beats; SECRET_NOTEX=1 films
 -- today's Studio look with nothing uploaded; her name card and the dip to black are drawn too)
+-- DIVINE=1 films the Divine girl's cutscene instead (HuzzClient/Gameplay/DivineReveal, picked by the same play()):
+-- DIVINE=1 SECRET_NOTEX=1 sh video.sh secret_scene.luau divine.mp4
 local roblox = require("@lune/roblox")
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local task = require("@lune/task")
 local process = require("@lune/process")
 local CFrame, Vector3, Color3, Instance = roblox.CFrame, roblox.Vector3, roblox.Color3, roblox.Instance
+local DIVINE = process.env.DIVINE == "1"
+local FOLDER = if DIVINE then "HuzzDivineReveal" else "HuzzSecretReveal"
+local NAME_GUI = if DIVINE then "HuzzDivineName" else "HuzzSecretName"
+local GRADE = if DIVINE then "HuzzDivineGrade" else "HuzzSecretGrade"
 local Rig = require("./rig")
 local Scene = require("./scene")
 local Env = require("./env")
@@ -82,7 +88,8 @@ local S = Round.Showcase
 pivot = CFrame.new(Vector3.new(0, S.Height + bodySize.Y / 2, 0) - centreOff)
 model:SetAttribute("Base", pivot)
 model:SetAttribute("RevealAt", AT)
-model:SetAttribute("GirlName", "C.C.") -- (GirlService.showcase sets her name; C.C. is one of the two Secret girls)
+model:SetAttribute("GirlName", if DIVINE then "Celeste" else "C.C.") -- (GirlService.showcase sets her name; C.C. is one of the two Secret girls; Celeste a stand-in name)
+if DIVINE then model:SetAttribute("RevealKind", "Divine") end
 
 -- "you": 80 studs from the spot, your camera behind you looking at the middle of the map
 local DIR = Vector3.new(0.35, 0, 1).Unit
@@ -106,11 +113,15 @@ root.Position = root.CFrame.Position -- (Lune keeps Position apart from CFrame)
 local character = Instance.new("Model")
 root.Parent = character
 local bound -- the RenderStepped callback the game binds
+-- The module's own steady clock (os.clock) runs on the film's time, not this computer's: otherwise a heavy frame
+-- here would skip the cutscene ahead (the Divine one ran 1.4x fast). It ticks with the waits before the cutscene
+-- starts, then frame by frame from the moment the game binds its camera.
+local simClock, simAtBind = 0, 0
 local services = {
 	Players = { LocalPlayer = player },
 	RunService = {
 		RenderStepped = signal(),
-		BindToRenderStep = function(_, _, _, fn) bound = fn end,
+		BindToRenderStep = function(_, _, _, fn) bound = fn; simAtBind = simClock end,
 		UnbindFromRenderStep = function() bound = nil end,
 	},
 	CollectionService = {
@@ -143,6 +154,7 @@ local env = {
 	require = req, typeof = typeof, task = task, math = math, table = table, string = string, warn = print,
 	print = print, pcall = pcall, type = type, tostring = tostring, tonumber = tonumber, pairs = pairs, ipairs = ipairs,
 	setmetatable = setmetatable, error = error, select = select, Random = Random,
+	os = setmetatable({ clock = function() return simClock end }, { __index = os }),
 }
 local guis = {} -- (every ScreenGui the module makes, by name: the impact frame, her name card, the dip to black)
 env.Instance = { new = function(cls, ...)
@@ -172,7 +184,7 @@ local ImageIds = setmetatable({}, { __index = function(_, key)
 end })
 local SHARED = SRC .. "/ReplicatedStorage/Shared/"
 local Shared = {
-	SecretReveal = token(SHARED .. "SecretReveal.lua"), FxTexture = token(SHARED .. "FxTexture.lua"),
+	SecretReveal = token(SHARED .. "SecretReveal.lua"), DivineReveal = token(SHARED .. "DivineReveal.lua"), FxTexture = token(SHARED .. "FxTexture.lua"),
 	Config = { Round = token(SHARED .. "Config/Round.lua"), ImageIds = { __value = ImageIds } },
 }
 Shared.WaitForChild = function(self, n) return self[n] end
@@ -180,7 +192,8 @@ services.ReplicatedStorage = { WaitForChild = function(_, n) return if n == "Sha
 local Motion = { reduced = process.env.SECRET_CALM == "1" }
 local client = {
 	UI = { Motion = { __value = Motion } },
-	Gameplay = { Sfx = { __value = { play = function() end, beat = function() end } } },
+	Gameplay = { Sfx = { __value = { play = function() end, beat = function() end } },
+		DivineReveal = token(SRC .. "/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/DivineReveal.lua") },
 }
 client.UI.WaitForChild = function(self, n) return self[n] end
 client.WaitForChild = function(self, n) return self[n] end
@@ -188,12 +201,12 @@ client.Gameplay.Parent = client
 function load(path)
 	if loaded[path] then return loaded[path] end
 	local e = table.clone(env)
-	e.script = if string.find(path, "Gameplay/SecretReveal") then { Parent = client.Gameplay } else { Parent = Shared }
+	e.script = if string.find(path, "Gameplay/") then { Parent = client.Gameplay } else { Parent = Shared }
 	local result = luau.load(fs.readFile(path), { debugName = path, environment = e })()
 	loaded[path] = result
 	return result
 end
-local Reveal = load(SHARED .. "SecretReveal.lua")
+local Reveal = load(SHARED .. (if DIVINE then "DivineReveal.lua" else "SecretReveal.lua"))
 local Look = load(SHARED .. "Config/Look.lua")
 -- the game's Lighting as HuzzServer/LookService leaves it (the cutscene changes it and must put it back)
 for key, v in Look.Lighting do pcall(function() (Lighting :: any)[key] = v end) end
@@ -239,7 +252,7 @@ local function worldCF(a)
 	local ok2, p = pcall(function() return a.WorldPosition end)
 	return if ok2 and p then CFrame.new(p) else CFrame.identity
 end
-local function folderOf() return Workspace:FindFirstChild("HuzzSecretReveal") end
+local function folderOf() return Workspace:FindFirstChild(FOLDER) end
 
 -- Beam: cubic Bezier from Attachment0 along its X axis by CurveSize0 to Attachment1 (against its X axis)
 local function drawBeam(b, now, ribbons)
@@ -454,7 +467,7 @@ local function overlayOf()
 		out.bg, out.lines, out.fade = hex(paper.BackgroundColor3), lines, fade
 		any = true
 	end
-	local nameGui = guiNamed("HuzzSecretName")
+	local nameGui = guiNamed(NAME_GUI)
 	if nameGui and nameGui.Enabled then
 		local card = nameGui:FindFirstChild("Card")
 		local SW, SH = 1280, 720
@@ -476,7 +489,13 @@ local function overlayOf()
 				local stroke = g:FindFirstChildOfClass("UIStroke")
 				local okF, italic = pcall(function() return g.FontFace.Style == roblox.Enum.FontStyle.Italic end)
 				local okW, weight = pcall(function() return g.FontFace.Weight.Value end)
-				table.insert(out.texts, { text = g.Text, x = r3(x), y = r3(y), w = r3(w), h = r3(h), c = hex(g.TextColor3), a = r3(1 - g.TextTransparency),
+				local gg = g:FindFirstChildOfClass("UIGradient") -- (a gold gradient across the text, slid by its Offset)
+				local stops
+				if gg then
+					stops = {}
+					for i = 0, 24 do table.insert(stops, { r3(i / 24), hex(csample(gg.Color, math.clamp(i / 24 - gg.Offset.X, 0, 1))) }) end
+				end
+				table.insert(out.texts, { g = stops, text = g.Text, x = r3(x), y = r3(y), w = r3(w), h = r3(h), c = hex(g.TextColor3), a = r3(1 - g.TextTransparency),
 					max = if limit then limit.MaxTextSize * sc else nil, o = if stroke then hex(stroke.Color) else nil,
 					ow = if stroke then stroke.Thickness * sc else nil, italic = okF and italic or nil, weight = if okW then weight else 700 })
 				any = true
@@ -498,6 +517,7 @@ local function overlayOf()
 		local black = dip:FindFirstChildOfClass("Frame")
 		if black and black.BackgroundTransparency < 0.99 then
 			out.dim = r3(1 - black.BackgroundTransparency)
+			out.dimc = hex(black.BackgroundColor3)
 			any = true
 		end
 	end
@@ -513,20 +533,22 @@ local baseGrade = { b = B.Brightness, c = B.Contrast, s = B.Saturation, tint = h
 local boxes = {}
 local stills = {}
 -- the contact-sheet beats (tools/preview/secret_vs_ref.py pairs them with the reference)
-local STILL_AT = { 0.3, 0.7, 1.15, 1.6, 1.95, 2.45, 2.75, 3.1, 3.46, 3.6, 4.1, 4.75, 5.6, 6.2, 6.55, 7.2, 7.65, 7.95, 8.8 }
+local STILL_AT = if DIVINE then { 0.2, 0.8, 1.4, 2.0, 2.5, 2.9, 3.2, 3.6, 4.1, 4.6, 5.0, 5.3, 5.9, 6.6, 7.3, 7.9, 8.3, 9.0, 9.8, 10.5 }
+	else { 0.3, 0.7, 1.15, 1.6, 1.95, 2.45, 2.75, 3.1, 3.46, 3.6, 4.1, 4.75, 5.6, 6.2, 6.55, 7.2, 7.65, 7.95, 8.8 }
 local total = math.floor((Reveal.LENGTH + PRE + POST) * FPS)
 player.Character = character
 M.start()
 -- (lets the deferred play() run: it builds the effects and binds the camera; our model has no parts, so play()
 -- first waits its 2 s for them to stream in)
 local waitFrom = os.clock()
-repeat task.wait(0.05) until bound or os.clock() - waitFrom > 4
-assert(bound and guiNamed("HuzzImpactFrame"), "the cutscene didn't start")
+repeat task.wait(0.05); simClock += 0.05 until bound or os.clock() - waitFrom > 4
+assert(bound and guiNamed(if DIVINE then NAME_GUI else "HuzzImpactFrame"), "the cutscene didn't start")
 local lastOverlayErr
 
 for f = 0, total - 1 do
 	local t = f * DT - PRE
 	clock = AT + t
+	simClock = simAtBind + t + PRE
 	if t >= 0 and bound then bound() end
 	if t < 0 then
 		model:PivotTo(model:GetAttribute("Base") * CFrame.new(0, -2000, 0)) -- (hidden until the cutscene's first frame)
@@ -556,7 +578,7 @@ for f = 0, total - 1 do
 		if b:IsA("Beam") then drawBeam(b, t, ribbons) end
 	end
 	local grades = { baseGrade }
-	local cc = Lighting:FindFirstChild("HuzzSecretGrade") -- (Look's own grade is baseGrade)
+	local cc = Lighting:FindFirstChild(GRADE) -- (Look's own grade is baseGrade)
 	if cc then table.insert(grades, { b = cc.Brightness, c = cc.Contrast, s = cc.Saturation, tint = hex(cc.TintColor) }) end
 	local okO, overlay = pcall(overlayOf) -- (gone after the cleanup)
 	if not okO then

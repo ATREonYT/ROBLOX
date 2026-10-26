@@ -16,7 +16,7 @@ local PrestigeRules = {}
 
 PrestigeRules.Max = 3
 PrestigeRules.Cost = 1 -- copies per level
-local ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret" }
+local ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Divine" }
 local RANK = {}
 for i, r in ORDER do RANK[r] = i end
 local TOP = RANK.Mythic
@@ -57,7 +57,7 @@ end
 -- The tier whose effects she shows at this prestige level (one up per level, capped at Mythic; Secret stays Secret).
 function PrestigeRules.effectRarity(rarity: string, level: number?): string
 	local r = RANK[rarity]
-	if not r or rarity == "Secret" then return rarity end
+	if not r or rarity == "Secret" or rarity == "Divine" then return rarity end
 	local lv = math.clamp(math.floor(tonumber(level) or 0), 0, PrestigeRules.Max)
 	return ORDER[math.min(math.max(r, math.min(r + lv, TOP)), #ORDER)]
 end

@@ -45,6 +45,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Round)
 local Reveal = require(Shared.SecretReveal)
+local Divine = require(Shared.DivineReveal) -- (the Divine girl's own cutscene: Gameplay/DivineReveal)
 local FxTexture = require(Shared.FxTexture)
 local Motion = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("Motion"))
 local Sfx = require(script.Parent.Sfx)
@@ -1234,6 +1235,10 @@ function M.start()
 	local playing = false
 	local function play(model: Model)
 		if playing then return end
+		-- which cutscene: the Divine girl's (its own timeline, effects and camera) or the Secret one
+		local divine = model:GetAttribute("RevealKind") == "Divine"
+		local Reveal = if divine then Divine else Reveal
+		local build = if divine then require(script.Parent.DivineReveal).build else M.build
 		local at = model:GetAttribute("RevealAt")
 		local base = model:GetAttribute("Base")
 		if type(at) ~= "number" or typeof(base) ~= "CFrame" then return end
@@ -1246,7 +1251,7 @@ function M.start()
 		end
 		model:SetAttribute("HuzzRevealing", true) -- (Gameplay/CarryAnimator leaves her to us meanwhile)
 		pcall(function() require(script.Parent.Music).quiet(Reveal.LENGTH) end) -- (the songs fade out under it)
-		local ok, step, cleanup, ground, k, mid = pcall(M.build, model, base, at)
+		local ok, step, cleanup, ground, k, mid = pcall(build, model, base, at)
 		if not ok then
 			warn("[Huzz] Secret reveal couldn't start: " .. tostring(step))
 			model:SetAttribute("HuzzRevealing", nil)
@@ -1272,7 +1277,7 @@ function M.start()
 		-- (the map's zone boxes, invisible walls) and every character (players walking past made it jump).
 		local ignore: { Instance } = { model }
 		pcall(function()
-			for _, name in { "HuzzSecretReveal", "HuzzAuraFX", "HuzzCarried", "HuzzFollowers", "HuzzCompanions" } do
+			for _, name in { "HuzzSecretReveal", "HuzzDivineReveal", "HuzzAuraFX", "HuzzCarried", "HuzzFollowers", "HuzzCompanions" } do
 				local f = Workspace:FindFirstChild(name)
 				if f then table.insert(ignore, f) end
 			end
@@ -1342,12 +1347,12 @@ function M.start()
 		dip.DisplayOrder = 100
 		local black = Instance.new("Frame")
 		black.Size = UDim2.fromScale(1, 1)
-		black.BackgroundColor3 = Color3.new(0, 0, 0)
+		black.BackgroundColor3 = Reveal.DIP or Color3.new(0, 0, 0) -- (the Divine one fades through warm cream)
 		black.BackgroundTransparency = 1
 		black.BorderSizePixel = 0
 		black.Parent = dip
 		dip.Parent = player:FindFirstChildOfClass("PlayerGui")
-		local DOWN = 0.2 -- seconds to black after RETURN; the camera is handed back under it, then it lifts
+		local DOWN = Reveal.DIP_DOWN or 0.2 -- seconds to black after RETURN; the camera is handed back under it, then it lifts
 		local LIFT = Reveal.LENGTH - Reveal.RETURN - DOWN -- (0.3 s)
 		local HOLD_FRAMES = 2 -- frames of full black after the hand-back, so Roblox's camera has settled before we lift
 		local done = false
