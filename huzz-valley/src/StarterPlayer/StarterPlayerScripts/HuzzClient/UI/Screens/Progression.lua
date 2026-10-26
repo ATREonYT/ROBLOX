@@ -137,7 +137,9 @@ local function buildRewards(page: Frame, refreshers: { () -> () })
 		local pic = Kit.art(rewardArt(r), { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(PIC_W, 64), ScaleType = if r.Kind == "Knife" then Enum.ScaleType.Fit else nil, Parent = card })
 		Kit.attach(Kit.corner(3), pic)
 		dancer(card, r, pic, UDim2.fromOffset(1, 1), UDim2.fromOffset(PIC_W, 64))
-		Kit.name({ Name = "Name", Text = r.Name, TextSize = if CARD_W < 155 then 12 else 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(PIC_W - 1, 6), Size = UDim2.fromOffset(CARD_W - PIC_W - 1, 22), Parent = card })
+		local nameSize = if CARD_W < 155 then 12 else 13
+		local nameLine = Kit.name({ Name = "Name", Text = r.Name, TextSize = nameSize, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(PIC_W - 1, 6), Size = UDim2.fromOffset(CARD_W - PIC_W - 1, 22), Parent = card })
+		Kit.fitLine(nameLine, CARD_W - PIC_W - 3, nameSize, 9, true) -- (a long name like "Broken Wrath" ran 4 px past the card)
 		local holder = new("Frame", { Name = "State", BackgroundTransparency = 1, Position = UDim2.fromOffset(PIC_W + 4, 33), Size = UDim2.fromOffset(CARD_W - PIC_W - 10, 25), Parent = card })
 		local shown = ""
 		table.insert(refreshers, function()
@@ -151,7 +153,8 @@ local function buildRewards(page: Frame, refreshers: { () -> () })
 			if kind == "Claimed" then
 				chip(holder, { Name = "Claimed", Text = "CLAIMED", Font = Theme.Fonts.Button, TextSize = 13, Icon = "CheckOwned", IconSize = Vector2.new(15, 16), Size = full, Color = COL.Claimed, Rim = COL.ClaimedRim })
 			elseif kind == "Locked" then
-				chip(holder, { Name = "Locked", Text = "Locked", TextSize = 14, Icon = "Lock", IconSize = Vector2.new(15, 18), Size = full, Color = COL.LockedBox, Rim = COL.LockedRim, OnClick = function()
+				local narrow = CARD_W - PIC_W - 10 < 72 -- (lock, gap and word were 3 px wider than a narrow card's chip)
+				chip(holder, { Name = "Locked", Text = "Locked", TextSize = if narrow then 13 else 14, Gap = if narrow then 3 else nil, Icon = "Lock", IconSize = if narrow then Vector2.new(12, 15) else Vector2.new(15, 18), Size = full, Color = COL.LockedBox, Rim = COL.LockedRim, OnClick = function()
 					Toast.show(if r.Unavailable then r.Name .. " is coming soon." else "Reach Level " .. r.Level .. " to claim " .. r.Name .. ".")
 				end })
 			else

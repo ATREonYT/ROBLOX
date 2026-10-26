@@ -227,7 +227,12 @@ if #list >= 4 then
 	check("three cards to a row", p1.Y.Offset == p2.Y.Offset and p2.Y.Offset == p3.Y.Offset and p4.Y.Offset > p1.Y.Offset and p4.X.Offset == p1.X.Offset and p3.X.Offset > p2.X.Offset)
 	local c1 = list[1]
 	check("a card has the glow, notes, figure and name", c1:FindFirstChild("Glow") and c1.Glow:FindFirstChild("FxGlow") and c1.Glow:FindFirstChild("FxCore") and c1:FindFirstChild("Figure") and c1.Figure:GetAttribute("Art") == "DanceStill" .. c1.Name and (c1.Band:FindFirstChild("Name") :: any).Text == Dances.get(c1.Name).Name)
-	check("the card glows in its dance's colour", c1.Glow.FxGlow.ImageColor3 == Dances.Colors[Dances.get(c1.Name).Color])
+	do -- (yours bright in its colour, locked ones dimmed toward the card floor: Screens/Dances glow(), owner Oct 23 20:51)
+		local col = Dances.Colors[Dances.get(c1.Name).Color] or Dances.Colors.Violet
+		local h1 = col:ToHSV()
+		local h2 = c1.Glow.FxGlow.ImageColor3:ToHSV()
+		check("the card glows in its dance's colour", math.abs(h1 - h2) < 0.04 or math.abs(h1 - h2) > 0.96)
+	end
 end
 local selectedCount = 0
 for _, c in list do if c.Halo.Visible then selectedCount += 1 end end

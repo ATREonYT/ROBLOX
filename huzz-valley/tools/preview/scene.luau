@@ -138,6 +138,9 @@ if cfg.NEXTMAP then
 	MM.close()
 	task.wait(0.1)
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.NextMap).refresh()
+	-- (the harness fires no property signals by itself: the ADMIN button steps down below the shown card)
+	local panel = game.Players.LocalPlayer.PlayerGui:FindFirstChild("NextMap", true)
+	if panel then __fireOn(panel, "Prop_Visible") end
 end
 -- POWERS="Runner"|"Catcher": the ability cards and dash bar as in the owner's pictures (design/owner-oct19):
 -- Runner = pic c (this round's Shield, waiting on the line: WAIT FOR ROUND, DASH PAUSED); Catcher = pic b (Bear Trap
@@ -237,6 +240,7 @@ if cfg.ROUNDHUD then
 	round:SetAttribute("GirlName", cfg.GIRL or "Sakura Hoshino")
 	round:SetAttribute("GirlRarity", "Legendary")
 	player:SetAttribute("HuzzRole", if cfg.ROUNDHUD == "Catcher" then "Catcher" else "Runner")
+	__fireOn(player, "Attr_HuzzRole") -- (the harness fires no attribute signals itself: the lobby HUD steps aside)
 	player:SetAttribute("HuzzStatus", if cfg.ROUNDHUD == "Catcher" then "" else "Active")
 	player:SetAttribute("HuzzHero", cfg.ROUNDHUD == "Hero")
 	player:SetAttribute("PowerReady1", 0)

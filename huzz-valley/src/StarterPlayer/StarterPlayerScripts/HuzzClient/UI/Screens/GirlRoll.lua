@@ -284,8 +284,16 @@ function GirlRoll.build(parent: Instance)
 		end
 	end
 
+	-- the HUD's luck button (top right) sits under the roller: it steps out while the roller is up (the overflow check,
+	-- Oct 26: "MAX Luck" peeked out under the reel), and comes back when it goes
+	local function luckBuy(on: boolean)
+		local b = parent:FindFirstChild("LuckBuy", true)
+		if b and b:IsA("GuiObject") then b.Visible = on end
+	end
+
 	function GirlRoll.show(roll)
 		current, landed = roll, false
+		luckBuy(false)
 		clear()
 		slotRim.Color = GOLD
 		local chances = {}
@@ -304,13 +312,18 @@ function GirlRoll.build(parent: Instance)
 	end
 
 	function GirlRoll.hide()
-		if not holder.Visible then return end
+		if not holder.Visible then -- (stepped aside for a window: done, so it doesn't come back when the window closes)
+			current = nil
+			luckBuy(true)
+			return
+		end
 		current = nil
 		local t = TweenService:Create(holder, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = hidden() })
 		t.Completed:Connect(function()
 			if current == nil then
 				holder.Visible = false
 				clear()
+				luckBuy(true)
 			end
 		end)
 		t:Play()

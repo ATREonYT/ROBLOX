@@ -43,7 +43,8 @@ for _, d in gui:GetDescendants() do
 	if d:IsA("ImageLabel") or d:IsA("ImageButton") then
 		local icon, art = d:GetAttribute("Icon"), d:GetAttribute("Art")
 		local name = icon or art
-		if name and name ~= "Avatar" and d.Image == "" then
+		-- (the dance figures are blank on purpose, owner Oct 23 17:32: your avatar stands or dances there: Kit.art Placeholder)
+		if name and name ~= "Avatar" and d.Image == "" and not d:GetAttribute("Placeholder") then
 			spots += 1
 			local kind = if icon then "Icons" else "Art"
 			local folder = Images:FindFirstChild(kind)
@@ -70,7 +71,7 @@ check(`stand-ins were made ({glyphs} of {spots} spots)`, glyphs > 50)
 local noGlyph = {}
 for _, kind in { "Icons", "Art" } do
 	for _, m in Images[kind]:GetChildren() do
-		if ImageLoader.glyph(kind, m.Name) == nil and not ({ LightRays = 1, SpinWedge = 1, DanceFxCore = 1, DanceFxGlow = 1, StudPattern = 1, StudTile = 1, BoardStud = 1, BoardWeb = 1 })[m.Name] then
+		if ImageLoader.glyph(kind, m.Name) == nil and not ({ GroupBackdrop = 1, LightRays = 1, SpinWedge = 1, DanceFxCore = 1, DanceFxGlow = 1, StudPattern = 1, StudTile = 1, BoardStud = 1, BoardWeb = 1 })[m.Name] then
 			table.insert(noGlyph, kind .. "/" .. m.Name)
 		end
 	end

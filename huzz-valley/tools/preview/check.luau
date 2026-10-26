@@ -44,12 +44,12 @@ if reusing then
 		local standIn = false -- (a stand-in and everything in it: a glyph, or a knife's 3D view)
 		local node = d
 		while node and node ~= g do
-			if node:GetAttribute("NoPicture") ~= nil or node.Name == "PopScale" then standIn = true break end -- (and a card's pop-in scale, UI/ShopStyle)
+			if node:GetAttribute("NoPicture") ~= nil or node:GetAttribute("RuntimeOnly") or node.Name == "PopScale" then standIn = true break end -- (and a card's pop-in scale, UI/ShopStyle; and run-time-only parts: the error box, 3D views)
 			node = node.Parent
 		end
 		if not standIn then live += 1 end
 	end
-	check("the StarterGui UI is reused, not doubled", live == #savedUI:GetDescendants() + 2 + (if g:FindFirstChild("HuzzBuildStamp") then 1 else 0)) -- + the error box and its padding (+ the Studio build stamp)
+	check("the StarterGui UI is reused, not doubled", live == #savedUI:GetDescendants() + (if g:FindFirstChild("HuzzBuildStamp") then 1 else 0)) -- (+ the Studio build stamp)
 	check("a Studio edit to a saved part stays in the game", g.LobbyHud.Left.Index.Label.TextSize == 20)
 end
 
@@ -193,7 +193,7 @@ local spinRemote = game.ReplicatedStorage.Remotes.Spin
 local function spinNow(n) task.wait(0.85); local a, b = spinRemote:InvokeServer(n); task.wait(0.1); return a, b end
 local d0 = profile.Data
 check("spin: a new save has its free spin", d0.FreeSpinAt == 0 and d0.Spins == 0 and SpinRules.available(State.data, os.time()) == 1)
-local worth = function() return d0.Coins + d0.Aura * 10 + (d0.Boosts.Coins or 0) + (if d0.Cosmetics.SpinKnife then 1 else 0) end
+local worth = function() return d0.Coins + d0.Aura * 10 + (d0.Boosts.Coins or 0) + (if d0.Cosmetics.SpinKnife or d0.Cosmetics.InvertedHex then 1 else 0) end -- (the wheel's knife is Inverted Hex since Oct 24)
 local w0 = worth()
 local okS, res = spinNow(1)
 check("spin: the free spin works and gives a prize", okS == true and res.usedFree == true and #res.rolls == 1 and worth() > w0)

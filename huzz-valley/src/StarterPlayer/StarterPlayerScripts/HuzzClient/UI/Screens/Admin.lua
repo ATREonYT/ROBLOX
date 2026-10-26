@@ -26,6 +26,7 @@ local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
+local Scale = require(UI.Scale)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -83,6 +84,16 @@ function Admin.build(parent: Instance)
 	end
 	showToggle()
 	if player then player:GetAttributeChangedSignal("HuzzAdmin"):Connect(showToggle) end
+	-- the NEXT MAP card (top-left too, between rounds) would sit under it: the button steps down below the card then
+	local nextMap = parent:FindFirstChild("NextMap") :: GuiObject?
+	if nextMap then
+		local function place()
+			local y = if nextMap.Visible then 10 + math.ceil(122 * Scale.hud(347)) + 6 else 8
+			Kit.place(toggle.Instance, UDim2.fromOffset(12, y), UDim2.fromOffset(84, 30)) -- (buttons are centre-anchored)
+		end
+		place()
+		nextMap:GetPropertyChangedSignal("Visible"):Connect(place)
+	end
 	toggle.onClick(function()
 		if player and player:GetAttribute("HuzzAdmin") == true then ModalManager.open("Admin") end
 	end)

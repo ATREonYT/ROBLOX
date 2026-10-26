@@ -70,6 +70,7 @@ local Effects = require(UI.Effects)
 local CoinFx = require(UI.CoinFx)
 local ShopStyle = require(UI.ShopStyle)
 local DancePose = require(UI.DancePose)
+local LookPicture = require(UI.LookPicture)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -357,7 +358,7 @@ rarityColor.Secret = Color3.fromRGB(150, 110, 255) -- (near-black in the roller;
 rarityColor.Exclusive = Color3.fromRGB(255, 170, 230) -- the Game Pass knives, once owned
 local RARITY_ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Exclusive" }
 
--- a drawn picture for a coin item without one (trails, auras, titles, name colours, knives)
+-- a drawn picture for a coin item without one (titles, name colours, knives; trails and auras: UI/LookPicture)
 local function swatch(parent: Instance, item: CoinShop.Item, size: number)
 	local f = new("Frame", { Name = "Drawn", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(SMALL.W // 2, SMALL.PicY + SMALL.PicH // 2), Size = UDim2.fromOffset(size, size), BackgroundTransparency = 1, ZIndex = 2, Parent = parent })
 	if item.Slot == "Trail" then
@@ -1079,7 +1080,9 @@ function Shop.build(parent: Instance)
 		end
 		local t = chunky({ Name = "Title", Text = item.Name, TextSize = SMALL.TitleSize, Position = UDim2.fromOffset(5, SMALL.TitleY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.TitleH), ZIndex = 3, Parent = c }, 2)
 		Kit.fitLine(t, SMALL.W - 10, SMALL.TitleSize, 10, true)
-		if item.Art then
+		if LookPicture.is(item) then -- (your own avatar in the trail or aura: owner, Oct 26 10:47)
+			LookPicture.draw(c, item, { Position = UDim2.fromOffset(4, SMALL.PicY), Size = UDim2.fromOffset(SMALL.W - 8, SMALL.PicH), ZIndex = 2 })
+		elseif item.Art then
 			Kit.art(item.Art :: string, { Name = "Picture", Position = UDim2.fromOffset(4, SMALL.PicY), Size = UDim2.fromOffset(SMALL.W - 8, SMALL.PicH), ScaleType = Enum.ScaleType.Fit, ZIndex = 2, Parent = c })
 		else
 			swatch(c, item, 96)

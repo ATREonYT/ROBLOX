@@ -62,8 +62,7 @@ function DailyLoginScreen.build(parent: Instance)
 		local y = if big then CARD.Y else CARD.Y + ((i - 1) // 3) * (CARD.H + CARD.Gap)
 		local w, h = if big then BIG.W else CARD.W, if big then CARD.H * 2 + CARD.Gap else CARD.H
 		local card = new("Frame", { Name = "Day" .. i, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, ZIndex = 2, Parent = panel }, { Kit.corner(8) })
-		local rim = Kit.stroke(if big then MYTHIC else C.RowBorder, 2)
-		rim.Parent = card
+		local rim = Kit.attach(Kit.stroke(if big then MYTHIC else C.RowBorder, 2), card) :: UIStroke -- (the saved one when there is one)
 		line({ Name = "Day", Text = "DAY " .. i, FontFace = F.Heading, TextSize = if big then 20 else 15, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 5), Size = UDim2.new(1, 0, 0, 22), ZIndex = 4, Parent = card }, 1.6)
 		local pic
 		if r.Kind == "Knife" then

@@ -267,6 +267,29 @@ local function frame(vp: ViewportFrame, model: Model, room: number)
 	vp.CurrentCamera = cam
 end
 
+-- Your avatar standing still in a picture while its dance's moves are on the way, so a card is never blank (owner,
+-- Oct 26 10:47: "make the dances use the user characters also because some of them have blank spaces": in a long list
+-- the moves can take a while, and a picture whose ask timed out was left empty for good). Returns the copy, or nil.
+local function camOf(vp: ViewportFrame): Camera? -- (an unset CurrentCamera can't be read offline)
+	local ok, cam = pcall(function() return vp.CurrentCamera end)
+	return if ok then cam else nil
+end
+local function standing(vp: ViewportFrame, room: number): Model?
+	local character = Players.LocalPlayer and Players.LocalPlayer.Character
+	local copy = character and stillCopy(character)
+	if not copy then return nil end
+	copy.Name = "Standing"
+	for _, part in copy:GetDescendants() do
+		if part:IsA("BasePart") then part.Anchored = true end
+	end
+	copy.Parent = vp
+	if not camOf(vp) then frame(vp, copy, room) end
+	return copy
+end
+-- An ask that came back empty (refused, or no answer in time) is asked again a little later, a few times, instead of
+-- leaving the picture without its dancer.
+local RETRY_AFTER, RETRIES = 4, 4
+
 -- The live dancers: each placed FPS times a second while it's on (a card in view in an open window).
 local FPS = 30 -- (owner, Oct 22: "they don't dance well": 15 looked choppy next to the real dance)
 -- (auto: on whenever it's in view, else the caller's setOn decides)
@@ -434,6 +457,14 @@ end
 
 function DancePose.picture(parent: Instance, id: string, props: { [string]: any }, dark: boolean?, onFail: (() -> ())?, onReady: (() -> ())?): ViewportFrame?
 	local vp: ViewportFrame? = nil
+	local retries = 0
+	local readyCalled = false
+	local ready0 = onReady
+	onReady = function() -- (once: the standing avatar and then the dancer both count as ready)
+		if readyCalled then return end
+		readyCalled = true
+		if ready0 then pcall(ready0) end -- (its card may be gone by now: a window rebuilt meanwhile)
+	end
 	local function make(): ViewportFrame
 		local v = Instance.new("ViewportFrame")
 		v.Name = "Dancer"
@@ -453,10 +484,27 @@ function DancePose.picture(parent: Instance, id: string, props: { [string]: any 
 		if not (v and v.Parent) then return end
 		local template = ok and posedModel(id)
 		if not template then
-			if onFail then onFail() end
-			v:Destroy()
+			local still = v:FindFirstChild("Standing")
+			if not still then
+				if onFail then onFail() end
+				v:Destroy()
+				return
+			end
+			-- (your avatar keeps standing there; its moves are asked for again in a moment)
+			retries += 1
+			if retries <= RETRIES then
+				task.delay(RETRY_AFTER * retries, function()
+					if not v.Parent then return end
+					asked[id], tries[id] = nil, 0
+					whenSeen(v, function() askFor(id, fill) end)
+				end)
+			end
 			return
 		end
+		local old = v:FindFirstChild("Standing")
+		if old then old:Destroy() end
+		local cam = camOf(v)
+		if cam then cam:Destroy() end
 		local model = template:Clone()
 		model.Parent = v
 		frame(v, model, 1.25) -- (a little room: the arms and legs swing out as it dances)
@@ -471,6 +519,7 @@ function DancePose.picture(parent: Instance, id: string, props: { [string]: any 
 	end
 	local function go()
 		vp = make()
+		if not DancePose.anim(id) and standing(vp :: ViewportFrame, 1.25) and onReady then onReady() end
 		whenLoaded(id, function(ok)
 			if ok then fill(true) return end
 			whenSeen(vp :: ViewportFrame, function() askFor(id, fill) end) -- (live, unpublished: its moves from the server)
@@ -504,19 +553,36 @@ function DancePose.live(parent: Instance, id: string, props: { [string]: any }, 
 		vp.Parent = parent
 		local live: Live = { vp = vp, on = true, apply = nil, anim = nil, t0 = os.clock() }
 		l = live
-		local function build(ok: boolean)
+		local retries = 0
+		local shown = false
+		if not DancePose.anim(id) and standing(vp, 1.3) and onReady then shown = true; onReady() end
+		local build
+		function build(ok: boolean)
 			local character = Players.LocalPlayer and Players.LocalPlayer.Character
 			local anim = ok and DancePose.anim(id)
+			if not anim and vp.Parent and retries < RETRIES then -- (no moves yet: ask again in a moment)
+				retries += 1
+				task.delay(RETRY_AFTER * retries, function()
+					if not vp.Parent then return end
+					asked[id], tries[id] = nil, 0
+					askFor(id, build)
+				end)
+				return
+			end
 			if not (anim and character and vp.Parent) then return end
 			local copy = stillCopy(character)
 			local apply = copy and rig(copy)
 			if not (copy and apply) then return end
 			local okP = pcall(apply, Sampler.sample(anim, math.min(DancePoses[id] or 0, math.max(anim.length - 0.01, 0))))
 			if not okP then copy:Destroy() return end
+			local old = vp:FindFirstChild("Standing")
+			if old then old:Destroy() end
+			local cam = camOf(vp)
+			if cam then cam:Destroy() end
 			copy.Parent = vp
 			frame(vp, copy, 1.3) -- (a little more room: arms and legs swing out)
 			live.apply, live.anim = apply, anim
-			if onReady then onReady() end
+			if onReady and not shown then onReady() end
 		end
 		whenLoaded(id, function(ok)
 			if ok then build(true) else askFor(id, build) end
@@ -533,6 +599,35 @@ function DancePose.live(parent: Instance, id: string, props: { [string]: any }, 
 			end
 		end,
 	}
+end
+
+-- Your avatar standing in a picture, for the trail and aura cards (owner, Oct 26 10:47: "for the trails and effects
+-- please remove the placeholders and make it actual user characters"). A copy of your character, lit like the dance
+-- pictures, drawn over the card's trail streak or aura ring (Roblox doesn't draw trails or particles inside a
+-- ViewportFrame, so the effect itself stays drawn behind you). dark = a locked silhouette. Made once your character
+-- is there; nothing in the saved UI.
+function DancePose.avatar(parent: Instance, props: { [string]: any }, dark: boolean?)
+	local function go()
+		local v = Instance.new("ViewportFrame")
+		v.Name = "Avatar"
+		v.BackgroundTransparency = 1
+		v:SetAttribute("RuntimeOnly", true)
+		if dark then
+			v.Ambient, v.LightColor, v.ImageColor3 = Color3.new(0, 0, 0), Color3.new(0, 0, 0), Color3.fromHex("0B1426")
+		else
+			v.Ambient, v.LightColor, v.LightDirection = Color3.fromRGB(225, 225, 232), Color3.fromRGB(255, 252, 245), Vector3.new(0.35, -0.75, 0.55)
+		end
+		for k, x in props do (v :: any)[k] = x end
+		v.Parent = parent
+		if not standing(v, 1.12) then v:Destroy() end
+	end
+	local me = Players.LocalPlayer
+	if me and me.Character then go() return end
+	task.spawn(function()
+		local t0 = os.clock()
+		while me and not me.Character and parent.Parent and os.clock() - t0 < 60 do task.wait(0.25) end
+		if me and me.Character and parent.Parent then go() end
+	end)
 end
 
 return DancePose

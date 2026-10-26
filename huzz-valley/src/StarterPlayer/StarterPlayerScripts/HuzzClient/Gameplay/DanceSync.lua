@@ -73,8 +73,8 @@ function M.start()
 	local function moving(character: Model): boolean
 		local root = character:FindFirstChild("HumanoidRootPart")
 		if not (root and root:IsA("BasePart")) then return false end
-		local v = root.AssemblyLinearVelocity
-		return Vector3.new(v.X, 0, v.Z).Magnitude > 6
+		local ok, v = pcall(function() return root.AssemblyLinearVelocity end) -- (offline an unset one can't be read)
+		return ok and Vector3.new(v.X, 0, v.Z).Magnitude > 6
 	end
 
 	local function danceOf(character: Model): (string?, number?)

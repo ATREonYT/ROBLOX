@@ -160,7 +160,7 @@ function AvatarStandService.start()
 	if not ok then warn("[Huzz] avatar stand knives: " .. tostring(err)) end
 	-- every pass knife is ready, so a stand changed while playing (or one added later) has its knife too
 	for _, item in CoinShop.Items do
-		if item.Pass then publish(item.Key) end
+		if item.Pass and item.Slot == "Knife" then publish(item.Key) end -- (knives only: the Starter Pack's trail has a Pass too)
 	end
 	print(string.format("[Huzz] Avatar stands: %d (%s)", #stands, how))
 end

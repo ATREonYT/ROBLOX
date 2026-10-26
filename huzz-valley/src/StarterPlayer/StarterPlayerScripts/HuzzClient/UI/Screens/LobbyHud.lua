@@ -517,7 +517,8 @@ function LobbyHud.build(parent: Instance)
 	}
 	local home = {}
 	for g in away do home[g] = g.Position end
-	-- A full window moves the whole HUD away; the Menu side panel only replaces the side buttons.
+	-- A full window moves the whole HUD away; the Menu side panel only replaces the side buttons (and, on a computer,
+	-- the balances under it: its How to Play row sat on the coin boost line, the overflow check, Oct 26).
 	-- In a round the side buttons and the coin pills slide away too (owner: the in-game screen felt cluttered;
 	-- Huss Valley shows only the round), and slide back in the lobby.
 	local player = game:GetService("Players").LocalPlayer
@@ -545,7 +546,7 @@ function LobbyHud.build(parent: Instance)
 			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 		end)
 		for g, off in away do
-			local hide = (current ~= nil and (not side or g == left)) or (playing and (g == left or g == right or g == bottom)) or (busy and g == topRight)
+			local hide = (current ~= nil and (not side or g == left or (g == bottom and not touch))) or (playing and (g == left or g == right or g == bottom)) or (busy and g == topRight)
 			Motion.tween(g, "hud", Theme.Motion.Hud, { Position = hide and home[g] + off or home[g] }, hide and Enum.EasingStyle.Quad or Enum.EasingStyle.Quint)
 		end
 	end

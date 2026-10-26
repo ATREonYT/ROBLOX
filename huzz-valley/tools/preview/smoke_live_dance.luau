@@ -194,4 +194,41 @@ local c0 = cardArms()
 beats(12)
 local still3 = changed(c0, cardArms())
 check(string.format("closed: they stop (%d still moving)", still3), still3 == 0)
+-- a dance picture is never blank (owner, Oct 26 10:47: "some of them have blank spaces"): your avatar stands there
+-- while the moves are on the way, and stays if they can't come yet (asked again later)
+local DancePose = require(UI.DancePose)
+local holder = Instance.new("Frame"); holder.Parent = me.PlayerGui:FindFirstChild("HuzzUI") or me.PlayerGui
+local vp = DancePose.picture(holder, "NotADance", { Size = UDim2.fromOffset(100, 100) }, false)
+check("a dance picture shows your avatar standing at once", vp ~= nil and vp:FindFirstChild("Standing") ~= nil)
+task.wait(1.5)
+check("... and keeps it when the moves can't come yet", vp ~= nil and vp.Parent ~= nil and vp:FindFirstChild("Standing") ~= nil)
+-- the trail and aura cards show your own avatar in the trail or aura (owner, Oct 26 10:47: "remove the placeholders and
+-- make it actual user characters")
+local MM = require(UI.ModalManager)
+MM.open("Inventory", "Trail")
+task.wait(0.6)
+local inv = me.PlayerGui:FindFirstChild("Inventory", true)
+local avatars, drawn = 0, 0
+for _, d in (inv and inv:GetDescendants() or {}) do
+	if d.Name == "Look" then
+		drawn += 1
+		local a = d:FindFirstChild("Avatar")
+		if a and a:FindFirstChild("Standing") then avatars += 1 end
+	end
+end
+check(`every trail card in the Inventory has your avatar ({avatars} of {drawn})`, drawn > 0 and avatars == drawn)
+MM.close()
+MM.open("Shop")
+task.wait(0.6)
+local shop = me.PlayerGui:FindFirstChild("Shop", true)
+avatars, drawn = 0, 0
+for _, d in (shop and shop:GetDescendants() or {}) do
+	if d.Name == "Look" then
+		drawn += 1
+		local a = d:FindFirstChild("Avatar")
+		if a and a:FindFirstChild("Standing") then avatars += 1 end
+	end
+end
+check(`every trail and aura card in the Shop has your avatar ({avatars} of {drawn})`, drawn > 0 and avatars == drawn)
+MM.close()
 print(string.format("live dance smoke: %d ok, %d failed", ok, fails))

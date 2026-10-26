@@ -441,8 +441,9 @@ local ART_GLYPH = { -- (first match wins)
 	{ "RewardGems", "💎" }, { "Map", "🗺" }, { "HowToPlay", "❓" }, { "Pass", "🎟" }, { "Char", "👧" }, { "Bonus", "🎁" },
 	{ "CrateCard", "📦" }, { "TierCrown", "👑" }, { "Vip", "👑" }, { "CrownPose", "👑" }, { "Outfit", "👗" }, { "MidnightOutfit", "👗" },
 	{ "ItemMint", "💫" }, { "Item", "💫" }, { "SunsetTrail", "💫" }, { "BlossomAura", "🌸" },
+	{ "GroupPair", "👥" }, { "GroupFighter", "👧" }, { "LuckClover", "🍀" },
 }
-local DECOR = { LightRays = true, SpinWedge = true, DanceFxCore = true, DanceFxGlow = true, StudPattern = true, StudTile = true, BoardStud = true, BoardWeb = true }
+local DECOR = { GroupBackdrop = true, LightRays = true, SpinWedge = true, DanceFxCore = true, DanceFxGlow = true, StudPattern = true, StudTile = true, BoardStud = true, BoardWeb = true }
 
 function ImageLoader.glyph(kind: string, name: string): string?
 	if DECOR[name] then return nil end

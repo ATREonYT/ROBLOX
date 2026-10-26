@@ -33,6 +33,7 @@ local ShopStyle = require(UI.ShopStyle)
 local Effects = require(UI.Effects)
 local GirlPicture = require(UI.GirlPicture)
 local DancePose = require(UI.DancePose)
+local LookPicture = require(UI.LookPicture)
 local DancePlayer = require(UI.DancePlayer)
 
 local C = Theme.Colors
@@ -336,7 +337,9 @@ function Inventory.build(parent: Instance)
 			local line = if item.Rarity then string.upper(item.Rarity) .. " " .. slotName else slotName
 			if not isMine then line = item.Unlock or (string.format("%d COINS IN THE SHOP", item.Price or 0)) end
 			local c, b = card(item.Key, item.Name, string.upper(line), if isMine then (tint or hex("BFE8C8")) else hex("FFC27A"), tint and tint:Lerp(Color3.new(0, 0, 0), 0.35), not isMine)
-			if item.Art then
+			if LookPicture.is(item) then -- (your own avatar in the trail or aura: owner, Oct 26 10:47)
+				LookPicture.draw(c, item, { Position = UDim2.fromOffset(4, CARD.PicY), Size = UDim2.fromOffset(CARD.W - 8, CARD.PicH), ZIndex = 2 }, not isMine)
+			elseif item.Art then
 				local art = Kit.art(item.Art :: string, { Name = "Picture", Position = UDim2.fromOffset(4, CARD.PicY), Size = UDim2.fromOffset(CARD.W - 8, CARD.PicH), ScaleType = Enum.ScaleType.Fit, ZIndex = 2, Parent = c })
 				if not isMine then art.ImageColor3, art.ImageTransparency = hex("5A6480"), 0.25 end
 			else

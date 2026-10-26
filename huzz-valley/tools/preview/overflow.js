@@ -15,7 +15,8 @@ const path = require('path');
 
 // Meant to hang over an edge or sit on top of something (checked by eye; keep each with its reason).
 const ALLOW = [
-  [/LobbyHud\.Right\.Spin\.FreeTag "FREE" spills \d+px out of Spin$/, 'the FREE sticker sits on the Spin button\'s corner'],
+  [/LobbyHud\.(Right\.Spin\.FreeTag|Left\.Menu\.ClaimTag) "[^"]*" spills \d+px out of (Spin|Menu)$/, 'the FREE / +N sticker sits on its button\'s corner'],
+  [/Luck\.Group\.Panel\.Buy\.Clover\.Step "[^"]*" spills \d+px out of Buy$/, 'the clover badge with its step sits on the BUY button\'s left corner'],
   [/PowerBar\.Card\d\.Key\.Text "[^"]*" sticks \d+px out of its window \(PowerBar\)$/, 'the key pills sit on the tiles\' top corners'],
   [/PowerBar\.Card\d\.Icon "[^"]*" overlaps PowerBar\.Card\d\.Count/, 'USED / the seconds print over the dimmed icon'],
   [/Shop\.Group\.Panel\.Products\..* overlaps Shop\.Group\.Panel\.Side\.Panel\./, 'a crate\'s or a dance\'s panel slides in over the page (solid, the page dimmed behind it)'],
