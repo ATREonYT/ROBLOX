@@ -729,9 +729,22 @@ end)
 ---------------------------------------------------------------------------------------------- refresh
 local lastPower
 local pulse
+-- (B35) The special-sale spots' third line: Shared/Config/Limiteds fills it. PLACEHOLDER until the real global stock and
+-- sale-end timer exist: a static sample only in Studio with its flag on; in a live server the line stays hidden and empty.
+local okLimiteds, Limiteds = pcall(require, RS.Shared.Config.Limiteds)
+if not okLimiteds or type(Limiteds) ~= 'table' then Limiteds = nil end
+local limitedsDone = false
+local function watchLimiteds()
+	if limitedsDone or not Limiteds or not active.Root then return end
+	local spots = active.Root:FindFirstChild('SaleSpots', true)
+	if not spots then return end
+	Limiteds.applyPlaceholders(spots)
+	limitedsDone = true
+end
 local function refresh()
 	pcall(watchBoxLabels)
 	pcall(watchBoards)
+	pcall(watchLimiteds)
 	local n = player:GetAttribute('Power')
 	if n == nil then return end
 	local rebirths = RebirthRules.count(player:GetAttribute('Rebirths'))

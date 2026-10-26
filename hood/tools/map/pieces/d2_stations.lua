@@ -71,6 +71,13 @@ Stations.LABEL = V(0, 12.6, 4.4) -- the label stack, over the dummy (B30: about 
 Stations.Style = 'themed' -- (B31) 'themed': the old themed bays without side walls; 'soldier': B30's soldier pads
 Stations.THEMED_LABEL = V(0, 14.4, 3.6) -- the themed bays' label stack, over their gear (as before 39b16b0)
 Stations.StampId = '' -- set from HoodVFX.Textures.stamp at build time ('' until the PNG is uploaded)
+-- (B35, the owner: "make the layout of the shooting ranges better ... way more optimal") the compact bay: each themed lane
+-- is built at its full 20 and then pulled together along its length (Stations.compact) to what shooting needs, 13 deep:
+-- the shooter's box shrinks to 3 studs at the bench, and the empty strip between the bench and the targets goes. Pieces
+-- in front of `Front1` move back by Front, the bench and its marks (up to `Cut`) by Bench, everything past it forward by
+-- Back; a straight piece that spans a cut (the rim, the mat, the box, the effects field) is stretched between its ends.
+Stations.Compact = { Front = 3.5, Back = 3.5, Bench = -0.3, Cut = -1.5, Front1 = -7 }
+Stations.LaneHalf = Stations.HALF_Z - Stations.Compact.Back -- the built lane's half length (6.5); the lobby lays out on it
 
 ---------------------------------------------------------------------------------------------- stamp and X
 -- The groove colour on a face: the theme's own, or the face colour darkened (critic: grooves keep the face's
@@ -1450,5 +1457,60 @@ function Stations.build(ctx, stationId, opts)
 			VFX.station(field, tier, t.glow, V(2 * MX, 10, z1 - z0), { parent = model })
 		end
 	end
+	if Stations.Compact and Stations.Style ~= 'soldier' then Stations.compact(model, st:world(CFrame.new())) end
 	return model
+end
+
+-- Pull a built lane together along its length (Stations.Compact): `frame` is the lane's frame in the world. Moves every
+-- part, the models' pivots (the bobbing bunting, the crown) and the world points the client reads (Aim, HitPoint).
+function Stations.compact(model, frame)
+	local K = Stations.Compact
+	local function f(z)
+		if z < K.Front1 then return z + K.Front end
+		if z < K.Cut then return z + K.Bench end
+		return z - K.Back
+	end
+	local function shiftOf(z) return f(z) - z end
+	for _, p in model:GetDescendants() do
+		if p:IsA('BasePart') then
+			local rel = frame:ToObjectSpace(p.CFrame)
+			local _, _, _, r00, r01, r02, r10, r11, r12, r20, r21, r22 = rel:GetComponents()
+			local s = p.Size
+			local hz = (math.abs(r20) * s.X + math.abs(r21) * s.Y + math.abs(r22) * s.Z) / 2
+			local z0, z1 = rel.Z - hz, rel.Z + hz
+			-- which of the part's own axes runs along the lane (only a straight piece is stretched)
+			local axis = (math.abs(r20) > 0.999 and 'X') or (math.abs(r21) > 0.999 and 'Y') or (math.abs(r22) > 0.999 and 'Z') or nil
+			local spans = axis and z1 - z0 > 2.5 and ((z0 < K.Cut and z1 > K.Cut) or (z0 < K.Front1 and z1 > K.Front1))
+			if spans then
+				local a, b = f(z0), f(z1)
+				if b - a > 0.2 then
+					local len = b - a
+					p.Size = axis == 'X' and V(len, s.Y, s.Z) or (axis == 'Y' and V(s.X, len, s.Z) or V(s.X, s.Y, len))
+					p.CFrame = frame * (CFrame.new(rel.X, rel.Y, (a + b) / 2) * rel.Rotation)
+				else
+					p.CFrame = frame * CFrame.new(0, 0, shiftOf(rel.Z)) * rel
+				end
+			else
+				p.CFrame = frame * CFrame.new(0, 0, shiftOf(rel.Z)) * rel
+			end
+		end
+	end
+	for _, m in model:GetDescendants() do
+		if m:IsA('Model') then
+			local ok, pivot = pcall(function() return m.WorldPivot end)
+			if ok and pivot and not m.PrimaryPart then
+				local rel = frame:ToObjectSpace(pivot)
+				pcall(function() m.WorldPivot = frame * CFrame.new(0, 0, shiftOf(rel.Z)) * rel end)
+			end
+		end
+	end
+	for _, inst in { model, table.unpack(model:GetDescendants()) } do
+		for _, name in { 'Aim', 'HitPoint' } do
+			local v = inst:GetAttribute(name)
+			if typeof(v) == 'Vector3' then
+				local rel = frame:PointToObjectSpace(v)
+				inst:SetAttribute(name, frame:PointToWorldSpace(V(rel.X, rel.Y, f(rel.Z))))
+			end
+		end
+	end
 end

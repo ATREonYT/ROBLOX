@@ -912,7 +912,9 @@ Lobby.Stand = {
 -- A row place's lane centre x (0 = by the mouth), each row's z, and the head lane's centre x (Lobby.HeadFront: its front).
 function Lobby.rowX(k) return Lobby.Plaza.x1 - 1.2 - 1.0 - 4.5 - Lobby.Stand.Pitch * k end
 Lobby.RowZ = { N = Lobby.CrossZ - 16, S = Lobby.CrossZ + 16 } -- (the aisle's half width + the lanes' half length)
-function Lobby.endX() return Lobby.HeadFront - (Stations and Stations.HALF_Z or 10) end
+-- (B35) the built lane's half length: the compact bay's (Stations.LaneHalf), else the full 10
+function Lobby.laneHalf() return Stations and (Stations.LaneHalf or Stations.HALF_Z) or 10 end
+function Lobby.endX() return Lobby.HeadFront - Lobby.laneHalf() end
 function Lobby.standLayout()
 	local St = Lobby.Stand
 	table.clear(St.Lanes)
@@ -1024,9 +1026,9 @@ function Lobby.headStage(t, K)
 	local Pz, H = Lobby.Plaza, Lobby.Stand.Head
 	local h, hz = Pz.deck, H.HalfZ
 	local zc = Lobby.CrossZ
-	local x0 = Lobby.endX() - (Stations and Stations.HALF_Z or 10) - 1.0 -- (its back, a stud past the lane's, in the alcove)
+	local x0 = Lobby.endX() - Lobby.laneHalf() - 1.0 -- (its back, a stud past the lane's, in the alcove)
 	-- (the head lane faces east, +x: its front, the shooter's end, is at endX + HALF_Z)
-	local xf = Lobby.endX() + (Stations and Stations.HALF_Z or 10) + 0.6 -- the stage's front edge, 0.6 past the lane's rim
+	local xf = Lobby.endX() + Lobby.laneHalf() + 0.6 -- the stage's front edge, 0.6 past the lane's rim
 	local top = h + H.Rise
 	local gold, goldDeep, goldPale = K.gold, K.goldDark, C(255, 236, 150)
 	-- (from the floor: its back half stands in the alcove, past the plaza's deck)
@@ -1106,7 +1108,7 @@ function Lobby.stand(L, skins)
 	slab('Aisle', V(ax, h, a0), V(x1 - kw, h + 0.04, a1), K.aisle)
 	for _, z in { a0, a1 - 0.35 } do flat('AisleEdge', V(ax, h + 0.04, z), V(x1 - kw, h + 0.07, z + 0.35), K.aisleEdge) end
 	local rz0, rz1 = (a0 + a1) / 2 - 3, (a0 + a1) / 2 + 3
-	local rx = Lobby.endX() + (Stations and Stations.HALF_Z or 10) + 0.6 + (St.Head.Steps - 1) * St.Head.Tread -- (the steps' foot)
+	local rx = Lobby.endX() + Lobby.laneHalf() + 0.6 + (St.Head.Steps - 1) * St.Head.Tread -- (the steps' foot)
 	slab('AisleRunner', V(rx, h + 0.04, rz0 + 0.6), V(x1, h + 0.16, rz1 - 0.6), K.runner or K.carpet)
 	for _, z in { rz0, rz1 - 0.6 } do slab('AisleRunnerEdge', V(rx, h + 0.04, z), V(x1, h + 0.16, z + 0.6), K.runnerEdge or K.carpetDark) end
 
@@ -1151,7 +1153,7 @@ function Lobby.stand(L, skins)
 			local step = spot[1] == 'End' and 7 or (2 * spot[2] + (spot[1] == 'S' and 1 or 0))
 			local alt = (spot[1] ~= 'End' and spot[2] % 2 == 1) and St.AltLift or 0
 			local lift = step * St.LabelStep + alt + (s.Pass and St.PaidLift or 0)
-			Lobby.place(L, training, 'Range_' .. id, St.Slots[k], { X = 9, Y = 12, Z0 = -10, Z1 = 10 }, string.upper(s.Name or id), C(90, 200, 120),
+			Lobby.place(L, training, 'Range_' .. id, St.Slots[k], { X = 9, Y = 12, Z0 = -Lobby.laneHalf(), Z1 = Lobby.laneHalf() }, string.upper(s.Name or id), C(90, 200, 120),
 				Stations and function(c) Stations.build(c, id, { labelLift = lift }) end)
 		end
 	end

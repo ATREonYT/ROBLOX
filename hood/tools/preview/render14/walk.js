@@ -44,8 +44,11 @@ function avatar(x, z, yaw, k) {
   fs.mkdirSync(outDir, { recursive: true });
   const data = JSON.parse(fs.readFileSync(sceneFile, 'utf8'));
   const base = data.parts.length;
+  // START / END (env): render only frames START..END-1 (the camera's smoothing still runs from frame 0), so a long walk
+  // can go in chunks, each with a fresh browser
+  const START = +(process.env.START || 0), END = Math.min(N, +(process.env.END || N));
   let cam = null, yawS = null; const t0 = Date.now();
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < END; i++) {
     const d = total * (i / (N - 1)) ** 1;
     const [x, z, yaw] = at(d);
     if (yawS === null) yawS = yaw; else { let dy = yaw - yawS; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; yawS += dy * 0.22; }
@@ -53,6 +56,7 @@ function avatar(x, z, yaw, k) {
     const want = [2400 + x - Math.sin(yawS) * 12, 9.2, z - Math.cos(yawS) * 12];
     cam = cam ? cam.map((v, k) => v + (want[k] - v) * 0.5) : want;
     const look = [2400 + x + Math.sin(yawS) * 1, 3.4, z + Math.cos(yawS) * 1];
+    if (i < START) continue;
     const out = path.join(outDir, 'f_' + String(i).padStart(4, '0') + '.png');
     await page.evaluate(([dd, o]) => window.loadScene(dd, o), [data, { time: 3 + i / FPS, bloom: true, lighting: 'HoodToy', lights: 24 }]);
     const url = await page.evaluate(c => window.shoot(c), { name: 'f' + i, pos: cam, look, fov: 70 });

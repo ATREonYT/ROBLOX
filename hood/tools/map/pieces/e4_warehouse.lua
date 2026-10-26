@@ -11,20 +11,20 @@
 --   Roof     open trusses (chords, posts and braces) and purlins, 31-37 up: no sheeting, so the HoodToy sun throws
 --            stripes of shadow on the floor; the camera never meets it. The shell itself casts no shade.
 --   Outside  the cliffs, trees and hood blocks, 12 studs past the walls (a grass yard between), seen through the doors.
-Lobby.WH = { x0 = -92, x1 = 68, z0 = 6, z1 = 92, -- (B34: on the 4-stud grid but z0, which hugs the gate's wings)
+Lobby.WH = { x0 = -70, x1 = 54, z0 = 6, z1 = 82, -- (B35: the compact plan, ref_STILL_lobby_topdown; z0 hugs the gate's wings)
 	 t = 2, eave = 30, truss = 6, off = 12, bay = 16,
 	win = { 17, 25 }, skirt = 3,
 	-- open doors: { wall, u0, u1, height } (u along the wall: z for west/east, x for north/south)
 	-- (B34 fix round: the north door 28 high, so the Stage 1 gate's whole frame shows through it from the spawn)
-	open = { { 'N', -24, 24, 28 }, { 'S', -66, -50, 16 }, { 'S', 36, 52, 16 }, { 'W', 66, 82, 16 } },
-	shut = { { 'N', -62, -48, 14 }, { 'W', 8, 20, 14 } },
+	open = { { 'N', -24, 24, 28 }, { 'S', -50, -36, 16 }, { 'S', 30, 44, 16 }, { 'W', 56, 70, 16 } },
+	shut = { { 'N', -60, -46, 14 }, { 'W', 10, 22, 14 } },
 	-- one painted field per wall: { wall, u0, u1, y0, y1, colour key }
 	-- (B34 fix round: one muted warm brick, no painted fields, stripes or posters: the walls stay quieter than the
 	-- things you can use)
 	fields = {},
 }
 Lobby.WHColors = { -- (B34: one muted warm brick family, warm steel; the floor a mid tone under classic studs)
-	floorA = C(174, 148, 120), floorB = C(170, 144, 116), grass = C(122, 204, 82), -- (warm mid-tone concrete: the grey walks read lighter on it)
+	floorA = C(198, 150, 106), floorB = C(194, 146, 102), grass = C(122, 204, 82), -- (B35: a warmer, more saturated concrete: the grey walks read lighter on it)
 	brick = C(180, 108, 82), brickLight = C(190, 118, 90), skirt = C(146, 84, 64), trim = C(196, 128, 98),
 	steel = C(98, 88, 84), steelLight = C(128, 116, 108), slat = C(186, 178, 168), slatDark = C(164, 156, 146),
 	drum = C(92, 84, 80), lamp = C(255, 236, 170),
@@ -271,13 +271,13 @@ Lobby.Scenery = (function()
 	local list = {}
 	local function add(id, x, z, yaw, k) table.insert(list, { id, x, z, yaw or 0, k or 1 }) end
 	local Wh = Lobby.WH
-	add('Scn_Hoop', Wh.x0 + 4, 63, -90) -- (by the west door)
+	add('Scn_Hoop', Wh.x0 + 4, 50, -90) -- (by the west door)
 	add('Scn_Crate', Wh.x0 + 3.4, Wh.z1 - 3.4, 0) add('Scn_Crate', Wh.x0 + 6.4, Wh.z1 - 3, 12) add('Scn_Barrel', Wh.x0 + 3.6, Wh.z1 - 7.4, 0)
 	add('Scn_Crate', Wh.x1 - 3.4, Wh.z1 - 3.4, 0) add('Scn_Barrel', Wh.x1 - 3.6, Wh.z1 - 7.4, 0) add('Scn_Barrel', Wh.x1 - 6.2, Wh.z1 - 3.2, 20)
 	for _, d in Wh.open do
 		if d[1] == 'S' then add('Scn_Cone', d[2] + 2, Wh.z1 - 2.2, 0) add('Scn_Cone', d[3] - 2, Wh.z1 - 2.2, 0) end
 	end
-	add('Scn_Hydrant', -48, Wh.z1 - 2.4, 180) add('Scn_TrashCan', 54, Wh.z1 - 2.4, 180)
+	add('Scn_Hydrant', -48, Wh.z1 - 2.4, 180) add('Scn_TrashCan', 28, Wh.z1 - 2.4, 180)
 	-- out in the yard (framed by the doors and the clerestory)
 	add('Scn_Tree_1', -58, Wh.z1 + 10, 0) add('Scn_Tree_2', 44, Wh.z1 + 10, 0) add('Scn_Tree_2', Wh.x1 + 12, 15, 0) add('Scn_Tree_1', Wh.x0 - 12, 74, 0)
 	for _, x in { -70, -46, 32, 56 } do add('Scn_Bush_1', x, Wh.z1 + 5.6, 0) end

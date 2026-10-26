@@ -37,13 +37,13 @@ export const LIGHTING_PRESETS = {
     { SunAngularSize: 14 }),
   // HoodToy (B31 LOOK): ShadowMap sun (copied from HoodLighting.lua; technology drives index.html's shadow softness).
   HoodToy: P(
-    { technology: 'ShadowMap', LightingStyle: 'Soft', ClockTime: 13, GeographicLatitude: 23, Brightness: 1.3, ExposureCompensation: 0.05,
-      Ambient: [150, 150, 160], OutdoorAmbient: [210, 210, 218], ColorShift_Top: [255, 240, 220], ColorShift_Bottom: [150, 165, 200],
-      EnvironmentDiffuseScale: 1, EnvironmentSpecularScale: 0.4, ShadowSoftness: 0.6, GlobalShadows: true },
-    { Density: 0.1, Offset: 0.25, Haze: 0.1, Glare: 0, Color: [178, 214, 255], Decay: [85, 165, 245] },
-    { Brightness: 0, Contrast: 0.05, Saturation: 0.3, TintColor: [255, 255, 255] },
+    { technology: 'ShadowMap', LightingStyle: 'Soft', ClockTime: 13, GeographicLatitude: 23, Brightness: 1.6, ExposureCompensation: 0.1,
+      Ambient: [140, 140, 152], OutdoorAmbient: [196, 200, 214], ColorShift_Top: [255, 238, 214], ColorShift_Bottom: [150, 165, 200],
+      EnvironmentDiffuseScale: 0.7, EnvironmentSpecularScale: 0.25, ShadowSoftness: 0.25, GlobalShadows: true },
+    { Density: 0.08, Offset: 0.5, Haze: 0, Glare: 0, Color: [160, 205, 255], Decay: [80, 160, 245] },
+    { Brightness: 0, Contrast: 0.15, Saturation: 0.5, TintColor: [255, 255, 255] },
     { Intensity: 0.4, Size: 24, Threshold: 1.6 },
-    { Cover: 0.4, Density: 0.75, Color: [255, 255, 255] },
+    { Cover: 0.3, Density: 0.7, Color: [255, 255, 255] },
     { SunAngularSize: 14 }),
   // HoodSun20: LIGHT2's HoodSun (BRIEF20-22), what the user's Studio showed on 2026-10-10 (brief/ref23/ours_studio_spawn.png): the same sun direction and ColorShift_Top, a little more sun
   // (0.36), a high neutral-warm ambient so shade stays light, little blue sky fill, +0.3 exposure, saturation +0.45 and a

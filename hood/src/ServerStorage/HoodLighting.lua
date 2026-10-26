@@ -119,20 +119,23 @@ L.Presets = {
 	-- studded concrete floor stays mid-tone. Lamps stay faint (TheBlockV2's look pass caps every PointLight in the lobby).
 	HoodToy = {
 		technology = 'ShadowMap',
+		-- (B35, the owner: "make the lighting block better to fix the lighting look"; it read pale and hazy) the soldier
+		-- refs' look again: vivid, bright, crisp sun shadows under a clear blue sky (LOOK_RECIPE §0). The strong sky fill
+		-- stays (shade keeps its colour, never black); the sun a touch stronger and its shadows crisper; no haze, a thin
+		-- clear Atmosphere; the grade's saturation and contrast back up; fewer clouds.
 		lighting = {
 			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
-			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.3, ExposureCompensation = 0.05,
-			Ambient = C(150, 150, 160), OutdoorAmbient = C(210, 210, 218),
-			ColorShift_Top = C(255, 240, 220), ColorShift_Bottom = C(150, 165, 200),
-			EnvironmentDiffuseScale = 1, EnvironmentSpecularScale = 0.4, ShadowSoftness = 0.6, GlobalShadows = true,
+			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.6, ExposureCompensation = 0.1,
+			Ambient = C(140, 140, 152), OutdoorAmbient = C(196, 200, 214),
+			ColorShift_Top = C(255, 238, 214), ColorShift_Bottom = C(150, 165, 200),
+			EnvironmentDiffuseScale = 0.7, EnvironmentSpecularScale = 0.25, ShadowSoftness = 0.25, GlobalShadows = true,
 		},
-		-- (B34 fix round: thinner, so the overview isn't fogged; the Huss sky's colours)
-		atmosphere = { Density = 0.1, Offset = 0.25, Haze = 0.1, Glare = 0, Color = C(178, 214, 255), Decay = C(85, 165, 245) },
-		grade = { Brightness = 0, Contrast = 0.05, Saturation = 0.3, TintColor = C(255, 255, 255) },
+		atmosphere = { Density = 0.08, Offset = 0.5, Haze = 0, Glare = 0, Color = C(160, 205, 255), Decay = C(80, 160, 245) },
+		grade = { Brightness = 0, Contrast = 0.15, Saturation = 0.5, TintColor = C(255, 255, 255) },
 		bloom = { Intensity = 0.4, Size = 24, Threshold = 1.6 },
-		rays = { Intensity = 0.03, Spread = 0.15 },
+		rays = { Intensity = 0.02, Spread = 0.15 },
 		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
-		clouds = { Cover = 0.4, Density = 0.75, Color = C(255, 255, 255) },
+		clouds = { Cover = 0.3, Density = 0.7, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),
 	},
 	-- LIGHT2's HoodSun (BRIEF20-22): what the user saw in Studio on 2026-10-10 (brief/ref23/ours_studio_spawn.png,

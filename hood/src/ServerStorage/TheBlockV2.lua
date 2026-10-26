@@ -277,7 +277,7 @@ local STAGES = 15
 local SPAWN_W, SPAWN_TOP = 74, 123 -- the lobby's old hall extents (x -74..74, z 5..123): today only the grass round it (f_areas) and e2's legacy builders read them; the compact warehouse's walls are e4's Lobby.WH (x -93..68, z 6..92)
 local BOSS_TOP = -STAGES * SLEN -- -960
 local BOSS_END = BOSS_TOP - 96 -- the boss yard runs to -1056
-local SPAWN = V(0, 0, 33) -- the hall's crossing, where the spine meets the cross arm (on the floor); you land 5 south of it (Lobby.SpawnAt), facing north to the gate (B34 compact warehouse: 38 studs from the gate)
+local SPAWN = V(0, 0, 36) -- the hall's crossing, where the spine meets the cross arm (on the floor); you land 3 south of it (Lobby.SpawnAt), facing north to the gate (B35: 39 studs from the gate)
 local function stageTop(i) return -(i - 1) * SLEN end
 local function lookOf(i) return (i - 1) // 3 + 1 end -- 1..5: three stages share a look
 local function trioOf(i) return (i - 1) % 3 + 1 end -- 1..3: place within the look
@@ -939,6 +939,13 @@ Stations.LABEL = V(0, 12.6, 4.4) -- the label stack, over the dummy (B30: about 
 Stations.Style = 'themed' -- (B31) 'themed': the old themed bays without side walls; 'soldier': B30's soldier pads
 Stations.THEMED_LABEL = V(0, 14.4, 3.6) -- the themed bays' label stack, over their gear (as before 39b16b0)
 Stations.StampId = '' -- set from HoodVFX.Textures.stamp at build time ('' until the PNG is uploaded)
+-- (B35, the owner: "make the layout of the shooting ranges better ... way more optimal") the compact bay: each themed lane
+-- is built at its full 20 and then pulled together along its length (Stations.compact) to what shooting needs, 13 deep:
+-- the shooter's box shrinks to 3 studs at the bench, and the empty strip between the bench and the targets goes. Pieces
+-- in front of `Front1` move back by Front, the bench and its marks (up to `Cut`) by Bench, everything past it forward by
+-- Back; a straight piece that spans a cut (the rim, the mat, the box, the effects field) is stretched between its ends.
+Stations.Compact = { Front = 3.5, Back = 3.5, Bench = -0.3, Cut = -1.5, Front1 = -7 }
+Stations.LaneHalf = Stations.HALF_Z - Stations.Compact.Back -- the built lane's half length (6.5); the lobby lays out on it
 
 ---------------------------------------------------------------------------------------------- stamp and X
 -- The groove colour on a face: the theme's own, or the face colour darkened (critic: grooves keep the face's
@@ -2318,7 +2325,62 @@ function Stations.build(ctx, stationId, opts)
 			VFX.station(field, tier, t.glow, V(2 * MX, 10, z1 - z0), { parent = model })
 		end
 	end
+	if Stations.Compact and Stations.Style ~= 'soldier' then Stations.compact(model, st:world(CFrame.new())) end
 	return model
+end
+
+-- Pull a built lane together along its length (Stations.Compact): `frame` is the lane's frame in the world. Moves every
+-- part, the models' pivots (the bobbing bunting, the crown) and the world points the client reads (Aim, HitPoint).
+function Stations.compact(model, frame)
+	local K = Stations.Compact
+	local function f(z)
+		if z < K.Front1 then return z + K.Front end
+		if z < K.Cut then return z + K.Bench end
+		return z - K.Back
+	end
+	local function shiftOf(z) return f(z) - z end
+	for _, p in model:GetDescendants() do
+		if p:IsA('BasePart') then
+			local rel = frame:ToObjectSpace(p.CFrame)
+			local _, _, _, r00, r01, r02, r10, r11, r12, r20, r21, r22 = rel:GetComponents()
+			local s = p.Size
+			local hz = (math.abs(r20) * s.X + math.abs(r21) * s.Y + math.abs(r22) * s.Z) / 2
+			local z0, z1 = rel.Z - hz, rel.Z + hz
+			-- which of the part's own axes runs along the lane (only a straight piece is stretched)
+			local axis = (math.abs(r20) > 0.999 and 'X') or (math.abs(r21) > 0.999 and 'Y') or (math.abs(r22) > 0.999 and 'Z') or nil
+			local spans = axis and z1 - z0 > 2.5 and ((z0 < K.Cut and z1 > K.Cut) or (z0 < K.Front1 and z1 > K.Front1))
+			if spans then
+				local a, b = f(z0), f(z1)
+				if b - a > 0.2 then
+					local len = b - a
+					p.Size = axis == 'X' and V(len, s.Y, s.Z) or (axis == 'Y' and V(s.X, len, s.Z) or V(s.X, s.Y, len))
+					p.CFrame = frame * (CFrame.new(rel.X, rel.Y, (a + b) / 2) * rel.Rotation)
+				else
+					p.CFrame = frame * CFrame.new(0, 0, shiftOf(rel.Z)) * rel
+				end
+			else
+				p.CFrame = frame * CFrame.new(0, 0, shiftOf(rel.Z)) * rel
+			end
+		end
+	end
+	for _, m in model:GetDescendants() do
+		if m:IsA('Model') then
+			local ok, pivot = pcall(function() return m.WorldPivot end)
+			if ok and pivot and not m.PrimaryPart then
+				local rel = frame:ToObjectSpace(pivot)
+				pcall(function() m.WorldPivot = frame * CFrame.new(0, 0, shiftOf(rel.Z)) * rel end)
+			end
+		end
+	end
+	for _, inst in { model, table.unpack(model:GetDescendants()) } do
+		for _, name in { 'Aim', 'HitPoint' } do
+			local v = inst:GetAttribute(name)
+			if typeof(v) == 'Vector3' then
+				local rel = frame:PointToObjectSpace(v)
+				inst:SetAttribute(name, frame:PointToWorldSpace(V(rel.X, rel.Y, f(rel.Z))))
+			end
+		end
+	end
 end
 ---------------------------------------------------------------------------------------------- armory
 -- The ARMORY, LOBBY5 (BRIEF23: "the armory, we need to make it like in the superhero game. It looks way better
@@ -4235,7 +4297,9 @@ Lobby.Stand = {
 -- A row place's lane centre x (0 = by the mouth), each row's z, and the head lane's centre x (Lobby.HeadFront: its front).
 function Lobby.rowX(k) return Lobby.Plaza.x1 - 1.2 - 1.0 - 4.5 - Lobby.Stand.Pitch * k end
 Lobby.RowZ = { N = Lobby.CrossZ - 16, S = Lobby.CrossZ + 16 } -- (the aisle's half width + the lanes' half length)
-function Lobby.endX() return Lobby.HeadFront - (Stations and Stations.HALF_Z or 10) end
+-- (B35) the built lane's half length: the compact bay's (Stations.LaneHalf), else the full 10
+function Lobby.laneHalf() return Stations and (Stations.LaneHalf or Stations.HALF_Z) or 10 end
+function Lobby.endX() return Lobby.HeadFront - Lobby.laneHalf() end
 function Lobby.standLayout()
 	local St = Lobby.Stand
 	table.clear(St.Lanes)
@@ -4347,9 +4411,9 @@ function Lobby.headStage(t, K)
 	local Pz, H = Lobby.Plaza, Lobby.Stand.Head
 	local h, hz = Pz.deck, H.HalfZ
 	local zc = Lobby.CrossZ
-	local x0 = Lobby.endX() - (Stations and Stations.HALF_Z or 10) - 1.0 -- (its back, a stud past the lane's, in the alcove)
+	local x0 = Lobby.endX() - Lobby.laneHalf() - 1.0 -- (its back, a stud past the lane's, in the alcove)
 	-- (the head lane faces east, +x: its front, the shooter's end, is at endX + HALF_Z)
-	local xf = Lobby.endX() + (Stations and Stations.HALF_Z or 10) + 0.6 -- the stage's front edge, 0.6 past the lane's rim
+	local xf = Lobby.endX() + Lobby.laneHalf() + 0.6 -- the stage's front edge, 0.6 past the lane's rim
 	local top = h + H.Rise
 	local gold, goldDeep, goldPale = K.gold, K.goldDark, C(255, 236, 150)
 	-- (from the floor: its back half stands in the alcove, past the plaza's deck)
@@ -4429,7 +4493,7 @@ function Lobby.stand(L, skins)
 	slab('Aisle', V(ax, h, a0), V(x1 - kw, h + 0.04, a1), K.aisle)
 	for _, z in { a0, a1 - 0.35 } do flat('AisleEdge', V(ax, h + 0.04, z), V(x1 - kw, h + 0.07, z + 0.35), K.aisleEdge) end
 	local rz0, rz1 = (a0 + a1) / 2 - 3, (a0 + a1) / 2 + 3
-	local rx = Lobby.endX() + (Stations and Stations.HALF_Z or 10) + 0.6 + (St.Head.Steps - 1) * St.Head.Tread -- (the steps' foot)
+	local rx = Lobby.endX() + Lobby.laneHalf() + 0.6 + (St.Head.Steps - 1) * St.Head.Tread -- (the steps' foot)
 	slab('AisleRunner', V(rx, h + 0.04, rz0 + 0.6), V(x1, h + 0.16, rz1 - 0.6), K.runner or K.carpet)
 	for _, z in { rz0, rz1 - 0.6 } do slab('AisleRunnerEdge', V(rx, h + 0.04, z), V(x1, h + 0.16, z + 0.6), K.runnerEdge or K.carpetDark) end
 
@@ -4474,7 +4538,7 @@ function Lobby.stand(L, skins)
 			local step = spot[1] == 'End' and 7 or (2 * spot[2] + (spot[1] == 'S' and 1 or 0))
 			local alt = (spot[1] ~= 'End' and spot[2] % 2 == 1) and St.AltLift or 0
 			local lift = step * St.LabelStep + alt + (s.Pass and St.PaidLift or 0)
-			Lobby.place(L, training, 'Range_' .. id, St.Slots[k], { X = 9, Y = 12, Z0 = -10, Z1 = 10 }, string.upper(s.Name or id), C(90, 200, 120),
+			Lobby.place(L, training, 'Range_' .. id, St.Slots[k], { X = 9, Y = 12, Z0 = -Lobby.laneHalf(), Z1 = Lobby.laneHalf() }, string.upper(s.Name or id), C(90, 200, 120),
 				Stations and function(c) Stations.build(c, id, { labelLift = lift }) end)
 		end
 	end
@@ -6207,37 +6271,38 @@ end
 -- Gameplay contracts (slots, prompts, tags, names) are the builders' own (Stations, Armory, productStand,
 -- boxPadStand, shoeDais, worldBossStand, leaderboard); only where they stand changes. Map frame, north = -Z.
 Lobby.Open = true
--- B34 COMPACT WAREHOUSE (the user: "redo the lobby layout completely ... make it feel nice to play"; their pick: a
--- compact warehouse, everything a few steps from the spawn). One plus of walks from the crossing (z 33): north to the
--- Stage 1 door (the gate stands just outside it, z 0), west into the training aisle, east to the gun stand, south to the
--- box row. Five zones round it, calm concrete between them (about half the floor stays empty):
---   W   the training block: rows of 4 either side of a 10-wide aisle (the west arm runs on into it), the head lane on
---       its gold stage closing the aisle; the deck's kerb stands at the north wall
---   E   the gun stand (ARMORY) at the east arm's end, the owner's gun shop behind it
---   S   the box dais just south of the spawn (you see it when you turn round), the box passes at its two ends
---   NW  the WORLD 2 portal on the spine's west side by the door, facing the spine; NE the World Boss board by the door
---   SW  the group chest and CODES; SE the spin wheel and the leaderboards in one straight row along the east wall
--- Products: two pads each side of the spine by the spawn, one by the training aisle's mouth (2x Power), the rest at the
--- box dais's ends. Distances from where you land (z 38): gate 38, nearest lane ~25, gun stand ~25, box row ~31.
-Lobby.PlazaGap = 21 -- the training deck's mouth (x -21): the west arm runs 16 studs from the spine to it
-Lobby.Aisle = 5 -- the training aisle's half width (10: the walks' own width)
-Lobby.RowZ = { N = Lobby.CrossZ - 15, S = Lobby.CrossZ + 15 } -- (the aisle's half width + the lanes' half length)
-Lobby.HeadFront = -69 -- the head lane's shooter end, 3.8 past the deepest lanes; its gold stage reaches x -89
-Lobby.Plaza = { x0 = -67.5, x1 = -Lobby.PlazaGap, z0 = Lobby.CrossZ - 26.4, z1 = Lobby.CrossZ + 26.4, aisle = { Lobby.CrossZ - 5, Lobby.CrossZ + 5 }, deck = 0.36 }
-Lobby.HeadDeck = { x0 = -91.5, z0 = Lobby.CrossZ - 12, z1 = Lobby.CrossZ + 12 } -- the deck's extension under the head lane
--- the warehouse's inner wall faces (e4's Lobby.WH; f_areas puts its keep-in walls on them): x -92..68, z 6..92, the
+-- B35 LAYOUT (the owner: "make it more based on the other references ... way way more optimal"; THE plan is
+-- ref_STILL_lobby_topdown_superhero.png). One plus of walks from the crossing (z 36): north to the Stage 1 door (the gate
+-- just outside it, z 0), west into the training aisle, east to the gun stand, south to the box row. Round it:
+--   W   the training block: two rows of 4 compact bays (13 deep, Stations.Compact) facing an 8-wide aisle that the west
+--       arm runs on into, on one sand plinth whose mouth meets the arm 2.5 studs past the spine; the head lane on its
+--       gold stage on a small extension closing the aisle (the reference's lone lane at the training block's end)
+--   E   the gun stand (ARMORY) on the east arm's end, the owner's gun shop behind it (the reference's evolutions stand)
+--   S   the box row on its stepped plinth at the spine's south end (the reference's eggs)
+--   N   two special-sale spots flanking the spine before the door (ref_W01's "MOST OP!" showcase), the CODES chest and
+--       the group chest in the two north corners beside the door, the spin wheel by the group chest
+--   SW  the WORLD 2 portal; SE the World Boss board and the three leaderboards in an angled row toward the east wall.
+--       The portal and every board face the crossing (the owner: "make the portal and leaderboards face the main center").
+-- No game-pass pads in the world (the owner: passes live in the Store). Calm floor fields between the zones.
+Lobby.PlazaGap = 6.5 -- the training deck's mouth (x -6.5): 2.5 studs past the spine's edge
+Lobby.Aisle = 4 -- the training aisle's half width (8: the walks' own width)
+Lobby.Stand.Pitch = 10 -- lane centre to lane centre (9-wide bays, a stud between)
+Lobby.RowZ = { N = Lobby.CrossZ - Lobby.Aisle - Lobby.laneHalf(), S = Lobby.CrossZ + Lobby.Aisle + Lobby.laneHalf() } -- (the aisle's half width + the bays' half length)
+Lobby.HeadFront = -51 -- the head lane's shooter end; its stage's red steps end 3 past the deepest bays
+Lobby.Plaza = { x0 = -50, x1 = -Lobby.PlazaGap, z0 = Lobby.CrossZ - 19.2, z1 = Lobby.CrossZ + 19.2, aisle = { Lobby.CrossZ - 4, Lobby.CrossZ + 4 }, deck = 0.36 }
+Lobby.HeadDeck = { x0 = -67, z0 = Lobby.CrossZ - 8, z1 = Lobby.CrossZ + 8 } -- the deck's extension under the head lane
+-- the warehouse's inner wall faces (e4's Lobby.WH; f_areas puts its keep-in walls on them): x -70..54, z 6..82, the
 -- north door's mouth |x| < 24
-Lobby.Bounds = { x = 92, xw = 92, xe = 68, n = 6, s = 92, mouth = 24 }
+Lobby.Bounds = { x = 70, xw = 70, xe = 54, n = 6, s = 82, mouth = 24 }
 function Lobby.edgeX(sx) return sx < 0 and Lobby.Bounds.xw or Lobby.Bounds.xe end
--- where you land: on the spawn pad just south of the crossing, facing north over it to the gate (ref_W01.0: the
--- crossing and its arms lie just ahead of the avatar)
-Lobby.SpawnAt = SPAWN + V(0, 0, 5)
--- the gun stand: its front on the east arm's end, 6 studs south of the arm's axis (room for the World Boss board north
--- of it by the door)
-Lobby.ArmoryX, Lobby.ArmoryZ = 25, Lobby.CrossZ + 6
+-- where you land: on the spine 3 south of the crossing, facing north over it to the gate (ref_W01.0)
+Lobby.SpawnAt = SPAWN + V(0, 0, 3)
+-- the gun stand: its front on the east arm's end (x 12), its centre line 2 north of the arm's axis
+Lobby.ArmoryX, Lobby.ArmoryZ = 12, Lobby.CrossZ - 2
 Lobby.ArmoryAt = CFrame.lookAt(V(Lobby.ArmoryX, 0, Lobby.ArmoryZ), V(0, 0, Lobby.ArmoryZ))
--- the box dais: its front step on the south walk's end, 6.4 studs clear of the training deck's corner
-Lobby.DaisAt = CFrame.new(0, 0, Lobby.Plaza.z1 + 2.2)
+-- the box row: a narrower plinth (4 boxes 10 apart), its front step 2 studs past the training plinth's south kerb
+Lobby.Dais.X, Lobby.Dais.StairW, Lobby.Dais.Slots = 20, 2.5, { 15, 5, -5, -15 }
+Lobby.DaisAt = CFrame.new(0, 0, Lobby.Plaza.z1 + 2)
 -- (B31) colours as Color3 (HoodToy's grade adds saturation; the renders land on the reference's measured fields)
 Lobby.PlazaColors = {
 	grass = C(122, 204, 82), -- (renders ~#5ACB2E, ref W01 lit grass)
@@ -6259,34 +6324,24 @@ Lobby.Stand.Colors.carpet, Lobby.Stand.Colors.carpetDark = C(196, 70, 70), C(140
 Lobby.Stand.Colors.runner, Lobby.Stand.Colors.runnerEdge = Lobby.PlazaColors.pathB, Lobby.PlazaColors.curb -- (calmer: a big field)
 Lobby.BoardTilt = 0 -- (critic 9: no leaning slabs; ref_V2-07.0 boards stand upright on the grass)
 
--- Where everything stands (map frame). Each stand: { Products key, x, z, the point it turns to, pad half size, label lift }
--- (a pad's 6th field lifts its words: in a column along a walk the pad nearer the spawn floats its words 4.4 higher, so
--- seen down the walk the two stacks never meet; side columns alternate 0 / 2.4)
+-- Where everything stands (map frame). The centre every board turns to: the crossing.
+Lobby.Centre = V(0, 0, Lobby.CrossZ)
 Lobby.Plan = (function()
-local Z, DZ = Lobby.CrossZ, Lobby.Plaza.z1 + 2.2 -- (the crossing; the dais's front step)
-local RZ = DZ + 10.4 -- (B34 fix round) the south band's row of pads either side of the dais, facing north
 return {
-	Stands = {
-		-- the spine: two pairs ahead of the spawn, facing the walk (the nearer pair floats its words higher)
-		{ 'VIP', 12, Z - 8.5, V(0, 0, Z - 8.5), nil, 4.4 }, { 'Speed2x', -12, Z - 8.5, V(0, 0, Z - 8.5), nil, 4.4 },
-		{ 'AutoCollect', 12, Z - 18.5, V(0, 0, Z - 18.5) }, { 'DoubleCash', -12, Z - 18.5, V(0, 0, Z - 18.5) },
-		-- the shooting passes: 2x Power by the training block's corner, Auto Fight by the gun stand's (behind the spawn)
-		{ 'DoubleRep', -12.5, Z + 17, V(0, 0, Z + 17) }, { 'AutoShoot', 12.5, Z + 17, V(0, 0, Z + 17) },
-		-- the box passes in one row west of the box dais
-		{ 'Lucky', -33, RZ, V(-33, 0, RZ - 10) }, { 'TripleOpen', -43, RZ, V(-43, 0, RZ - 10), nil, 2.4 },
-		{ 'AutoOpen', -53, RZ, V(-53, 0, RZ - 10) }, { 'ExtraEquip', -63, RZ, V(-63, 0, RZ - 10), nil, 2.4 },
+	Stands = {}, -- (B35, the owner: no game-pass pads in the world; every pass is in the Store's Gamepasses)
+	BoxPads = {},
+	-- the special-sale spots, one each side of the spine before the door (ref_W01's "MOST OP!" showcase), turned to where
+	-- you land. Filled for now with the Robux shoe offers (Lobby.saleSpot); the owner's renders will dress them later.
+	Sales = {
+		{ Name = 'West', Box = 'Grail', Key = 'ShoeBoxGrail', x = -12, z = 12, Tone = C(236, 90, 200), Tag = 'NEW' },
+		{ Name = 'East', Box = 'GrailBundle', Key = 'GrailBundle', x = 12, z = 12, Tone = C(176, 96, 255), Special = '3 PAIRS' },
 	},
-	BoxPads = { -- the Robux boxes in one row east of the box dais
-		{ 'Grail', 'ShoeBoxGrail', 32, RZ, V(32, 0, RZ - 10), 'NEW', C(236, 90, 200) },
-		{ 'Exclusive', 'ShoeBoxExclusive', 42, RZ, V(42, 0, RZ - 10), 'NEW', C(90, 150, 255), nil, 2.4 },
-		{ 'GrailBundle', 'GrailBundle', 52, RZ, V(52, 0, RZ - 10), '3 PAIRS', C(176, 96, 255) },
-	},
-	-- the rewards in the SW: the spin wheel, then the group chest and the CODES terminal on one small plinth, ~4 wide each
-	Group = { chest = { -46, 86 }, codes = { -54, 86 }, scale = 0.62, plinth = { -58, -42, 82, 90 } },
-	World2 = { x = -80, z = 11, look = V(-80, 0, 60), scale = 0.85 }, -- (the NW corner, facing south: away from the gate)
-	Boards = { x = 63.5, z = 76 }, -- (SE: a straight row along the east wall, facing the hall)
-	WorldBoss = { x = 65.4, z = 18.5, look = V(0, 0, 18.5) }, -- (the NE side wall, facing west: off the gate's line)
-	BoardPlinth = { 60, 68, 60, 92 },
+	-- the north corners beside the door: the CODES chest (west), the group chest and the spin wheel (east)
+	Group = { codes = { -25, 11 }, chest = { 24, 11 }, scale = 0.62 },
+	World2 = { x = -33, z = 64, look = Lobby.Centre, scale = 0.85 }, -- (SW, facing the crossing)
+	WorldBoss = { x = 32, z = 59, look = Lobby.Centre }, -- (SE, facing the crossing)
+	-- (SE) the three boards in an angled row toward the east wall, each facing the crossing
+	Boards = { { 46, 51.5 }, { 44.5, 61 }, { 40.5, 70.5 } },
 }
 end)()
 
@@ -6638,15 +6693,16 @@ function Lobby.signs(L)
 	-- (B34 fix round: the walls and the air stay quiet; only TRAIN and the dais's BOXES sign float)
 	return s
 end
--- The group chest and the CODES terminal side by side in the SW corner (B34, the owner's plan), on a low plinth.
+-- (B35) the CODES chest and the group chest in the north corners beside the door, each on its own small plinth (the
+-- training deck's slab in its dark kerb), turned to where you land.
 function Lobby.northBays(L)
 	local b = L:group('NorthBays')
 	local g = Lobby.Plan.Group
-	local y = Lobby.Plaza.deck + 0.06 -- (on the group corner's plinth, Lobby.corners)
-	-- (B34 fix round) side by side in one row facing north (toward the spawn's side), each ~4 studs wide
-	for _, it in { { g.chest, Lobby.rewardChest }, { g.codes, Lobby.codeTerminal } } do
-		local cf = CFrame.lookAt(V(it[1][1], y, it[1][2]), V(it[1][1], y, it[1][2] - 1))
-		local model = it[2](b:at(cf))
+	for _, it in { { 'CodesPlinth', g.codes, Lobby.codeTerminal }, { 'GroupPlinth', g.chest, Lobby.rewardChest } } do
+		local x, z = it[2][1], it[2][2]
+		local y = Lobby.plinth(L, it[1], x - 3.6, x + 3.6, z - 3.4, z + 3.4) + 0.06
+		local cf = CFrame.lookAt(V(x, y, z), V(Lobby.SpawnAt.X, y, Lobby.SpawnAt.Z))
+		local model = it[3](b:at(cf))
 		if model then Lobby.scaleAbout(model, cf, g.scale or 1) end
 	end
 	return b
@@ -6671,7 +6727,7 @@ end
 -- (rule 29) The user's Stand_SpinWheel on the grass north of the gun stand, by the spine's east row, turned to where you
 -- land: a hold opens the Spin Wheel window (HoodClient/Wheel: the prompt's OpenSpin attribute). Our Part wheel when the
 -- design isn't imported: a studded base, a post, an eight-wedge wheel with a pointer. One line of words over it.
-Lobby.SpinAt = { x = -36, z = 86 } -- (B34 fix round: the SW rewards row, beside the chest and the codes)
+Lobby.SpinAt = { x = 33, z = 12 } -- (B35: the NE corner beside the group chest)
 function Lobby.spinStand(L)
 	local at = V(Lobby.SpinAt.x, 0.06, Lobby.SpinAt.z)
 	local c, model = L:group('SpinWheelStand')
@@ -6838,10 +6894,18 @@ function Lobby.extras(L)
 	-- spine (warm glows on the lamps, no light pools: the look pass keeps every lobby light faint)
 	local fl = L:group('FloorFields')
 	local dz = Lobby.DaisAt.Position.Z
-	studs(fl:box('FloorField', V(-27, 0, dz - 1.6), V(27, 0.06, Lobby.WH and Lobby.WH.z1 - 6 or dz + 22), C(236, 190, 84), M.Plastic)).CastShadow = false
-	-- (B34 fix round) the east quadrant's muted green field under the gun stand's zone (the west one is the training
-	-- deck's sand, Lobby.Stand.Colors.deck)
-	studs(fl:box('FloorField', V(21, 0, 14), V(60, 0.06, 62), C(112, 186, 84), M.Plastic)).CastShadow = false
+	local Wh = Lobby.WH or { x0 = -70, x1 = 54, z1 = 82 }
+	studs(fl:box('FloorField', V(-25.5, 0, dz - 1.6), V(25.5, 0.06, Wh.z1), C(236, 190, 84), M.Plastic)).CastShadow = false
+	-- (B35) the east quadrant's green field under the gun stand's zone, the SE corner's warm coral under the World Boss
+	-- board and the leaderboards, the SW's soft violet under the portal (the west one is the training deck's sand)
+	studs(fl:box('FloorField', V(4, 0, Wh.z0), V(Wh.x1, 0.06, 51), C(112, 186, 84), M.Plastic)).CastShadow = false
+	-- the north-west and the west margin round the training plinth in a warm sand a shade deeper than the deck
+	local sand = C(226, 164, 96)
+	studs(fl:box('FloorField', V(Wh.x0, 0, Wh.z0), V(-4, 0.06, Lobby.Plaza.z0), sand, M.Plastic)).CastShadow = false
+	studs(fl:box('FloorField', V(Wh.x0, 0, Lobby.Plaza.z0), V(Lobby.Plaza.x0, 0.06, Lobby.Plaza.z1), sand, M.Plastic)).CastShadow = false
+	studs(fl:box('FloorField', V(Lobby.Plaza.x1, 0, Lobby.Plaza.z0), V(-4, 0.06, Lobby.Plaza.z1), sand, M.Plastic)).CastShadow = false
+	studs(fl:box('FloorField', V(25.5, 0, 51), V(Wh.x1, 0.06, Wh.z1), C(232, 128, 96), M.Plastic)).CastShadow = false
+	studs(fl:box('FloorField', V(Wh.x0, 0, Lobby.Plaza.z1), V(-25.5, 0.06, Wh.z1), C(178, 132, 226), M.Plastic)).CastShadow = false
 	local ln = L:group('DoorLamps')
 	for _, sx in { -1, 1 } do
 		local c = ln:at(CFrame.new(sx * 7, 0.06, Lobby.N + 2.6) * CFrame.Angles(0, sx < 0 and 0 or math.pi, 0))
@@ -6889,8 +6953,8 @@ function Lobby.scaleAbout(model, cf, k)
 end
 function Lobby.corners(L)
 	local Pl = Lobby.Plan
-	-- WORLD 2 (NW): the portal on the spine's west side by the door, facing the spine; 0.85 of its size, so its front
-	-- walk stays clear of the door and the 2x Power pad
+	local centre = Lobby.Centre
+	-- WORLD 2 (SW): the portal turned to the crossing; 0.85 of its size
 	local w2 = Pl.World2
 	local g = L:group('World2Corner')
 	local at = V(w2.x, 0.06, w2.z)
@@ -6905,13 +6969,74 @@ function Lobby.corners(L)
 	}, 120)
 	words.WorldLabel:SetAttribute('FadeNear', 30)
 	words.WorldLabel:SetAttribute('FadeFar', 48)
-	-- the leaderboards (SE) on their plinth along the east wall
-	local b = Pl.BoardPlinth
-	local h = Lobby.plinth(L, 'BoardPlinth', b[1], b[2], b[3], b[4]) + 0.06
-	Lobby.leaderboards(L:group('BoardCorner'), V(Pl.Boards.x, h, Pl.Boards.z))
-	-- the group corner (SW): a plinth under the chest and the CODES terminal
-	local gp = Pl.Group
-	Lobby.plinth(L, 'GroupPlinth', gp.plinth[1], gp.plinth[2], gp.plinth[3], gp.plinth[4])
+	-- the leaderboards (SE): an angled row toward the east wall, each board's face turned to the crossing
+	local bg = L:group('BoardCorner'):group('Leaderboards')
+	for k, b in Lobby.Boards do
+		local p = Pl.Boards[k]
+		local bcf = CFrame.lookAt(V(p[1], 0.06, p[2]), V(centre.X, 0.06, centre.Z))
+		Lobby.Slots['Leaderboard' .. k] = bcf
+		Lobby.leaderboard(bg, bcf, b)
+	end
+end
+
+---------------------------------------------------------------------------------------------- special-sale spots (B35)
+-- (the owner: "not even game passes we need there, we need the special sales for shoes or in general the special sales")
+-- Two spots beside the spine before the door, the place of ref_W01's "MOST OP!" showcase. Each spot is a frame (its
+-- centre on the floor, turned to where you land) and one builder: today Lobby.saleOffer, the Robux shoe offer on its
+-- showcase pad (boxPadStand: the box turning over the pad, its name and its price with the Robux sign, the Buy prompt
+-- that opens the Store at its card). Honest words only: no stock, no timer, no "limited". The owner's renders will
+-- replace the look in Lobby.saleOffer; the spots (Lobby.Plan.Sales) stay.
+function Lobby.saleOffer(c, sale)
+	local model = Lobby.boxPadStand(c, sale.Box, sale.Key, sale.Tone, sale.Tag, sale.Special, sale.Lift)
+	Lobby.limitedLine(model)
+	return model
+end
+-- The sale's third line under the price, for the limiteds system to come (stock left, time left on the sale): the
+-- words stack grows 1.2 studs upward (the name and the price keep their size, nothing moves down onto the box) and gets
+-- a hidden, EMPTY row (TextLabels LimitedStock in red and LimitedTimer in white, chunky outlined; the billboard's
+-- LimitedLine attribute marks it). The map never writes
+-- words into it: Shared/Config/Limiteds fills it (a static placeholder only in Studio, see there; later the real stock
+-- and timer).
+Lobby.LimitedRowH = 1.2
+function Lobby.limitedLine(model)
+	local anchor = model and model:FindFirstChild('WordsAnchor', true)
+	local g = anchor and anchor:FindFirstChild('WorldLabel')
+	if not g then return nil end
+	local w, h0 = g.Size.X.Scale, g.Size.Y.Scale
+	local h = h0 + Lobby.LimitedRowH
+	local k = h0 / h
+	for _, t in g:GetChildren() do
+		if t:IsA('GuiObject') then
+			t.Position = UDim2.new(t.Position.X.Scale, t.Position.X.Offset, t.Position.Y.Scale * k, t.Position.Y.Offset)
+			t.Size = UDim2.new(t.Size.X.Scale, t.Size.X.Offset, t.Size.Y.Scale * k, t.Size.Y.Offset)
+		end
+	end
+	g.Size = UDim2.fromScale(w, h)
+	anchor.CFrame += V(0, Lobby.LimitedRowH / 2, 0)
+	-- (two labels straight in the billboard, each hidden until Limiteds fills it; LimitedLine marks the billboard)
+	g:SetAttribute('LimitedLine', true)
+	local stock = line(g, 'LimitedStock', '', P.white, FONT.title, k, 1 - k, Lobby.Ink, 3)
+	stock.Position, stock.Size, stock.TextXAlignment = UDim2.fromScale(0.02, k), UDim2.fromScale(0.54, 1 - k), Enum.TextXAlignment.Right
+	Lobby.fill(stock, Lobby.Grad.red)
+	local timer = line(g, 'LimitedTimer', '', P.white, FONT.title, k, 1 - k, Lobby.Ink, 3)
+	timer.Position, timer.Size, timer.TextXAlignment = UDim2.fromScale(0.6, k), UDim2.fromScale(0.38, 1 - k), Enum.TextXAlignment.Left
+	Lobby.fill(timer, Lobby.Grad.white)
+	stock.Visible, timer.Visible = false, false
+	return g
+end
+function Lobby.saleSpot(g, sale)
+	local at = V(sale.x, 0.06, sale.z)
+	local cf = CFrame.lookAt(at, V(Lobby.SpawnAt.X, 0.06, Lobby.SpawnAt.Z))
+	Lobby.Slots['Sale_' .. sale.Name] = cf
+	Lobby.Slots['BoxPad_' .. sale.Box] = cf
+	local model = Lobby.saleOffer(g:at(cf), sale)
+	if model then model:SetAttribute('SaleSpot', sale.Name) end
+	return model
+end
+function Lobby.stands(L)
+	local g = L:group('SaleSpots')
+	for _, sale in Lobby.Plan.Sales do Lobby.saleSpot(g, sale) end
+	return g
 end
 ---------------------------------------------------------------------------------------------- the warehouse (B33, B34)
 -- B33 WAREHOUSE (the user: "bring back the warehouse ... it gives the game more personality"; rules 16, 19, 33), made
@@ -6926,20 +7051,20 @@ end
 --   Roof     open trusses (chords, posts and braces) and purlins, 31-37 up: no sheeting, so the HoodToy sun throws
 --            stripes of shadow on the floor; the camera never meets it. The shell itself casts no shade.
 --   Outside  the cliffs, trees and hood blocks, 12 studs past the walls (a grass yard between), seen through the doors.
-Lobby.WH = { x0 = -92, x1 = 68, z0 = 6, z1 = 92, -- (B34: on the 4-stud grid but z0, which hugs the gate's wings)
+Lobby.WH = { x0 = -70, x1 = 54, z0 = 6, z1 = 82, -- (B35: the compact plan, ref_STILL_lobby_topdown; z0 hugs the gate's wings)
 	 t = 2, eave = 30, truss = 6, off = 12, bay = 16,
 	win = { 17, 25 }, skirt = 3,
 	-- open doors: { wall, u0, u1, height } (u along the wall: z for west/east, x for north/south)
 	-- (B34 fix round: the north door 28 high, so the Stage 1 gate's whole frame shows through it from the spawn)
-	open = { { 'N', -24, 24, 28 }, { 'S', -66, -50, 16 }, { 'S', 36, 52, 16 }, { 'W', 66, 82, 16 } },
-	shut = { { 'N', -62, -48, 14 }, { 'W', 8, 20, 14 } },
+	open = { { 'N', -24, 24, 28 }, { 'S', -50, -36, 16 }, { 'S', 30, 44, 16 }, { 'W', 56, 70, 16 } },
+	shut = { { 'N', -60, -46, 14 }, { 'W', 10, 22, 14 } },
 	-- one painted field per wall: { wall, u0, u1, y0, y1, colour key }
 	-- (B34 fix round: one muted warm brick, no painted fields, stripes or posters: the walls stay quieter than the
 	-- things you can use)
 	fields = {},
 }
 Lobby.WHColors = { -- (B34: one muted warm brick family, warm steel; the floor a mid tone under classic studs)
-	floorA = C(174, 148, 120), floorB = C(170, 144, 116), grass = C(122, 204, 82), -- (warm mid-tone concrete: the grey walks read lighter on it)
+	floorA = C(198, 150, 106), floorB = C(194, 146, 102), grass = C(122, 204, 82), -- (B35: a warmer, more saturated concrete: the grey walks read lighter on it)
 	brick = C(180, 108, 82), brickLight = C(190, 118, 90), skirt = C(146, 84, 64), trim = C(196, 128, 98),
 	steel = C(98, 88, 84), steelLight = C(128, 116, 108), slat = C(186, 178, 168), slatDark = C(164, 156, 146),
 	drum = C(92, 84, 80), lamp = C(255, 236, 170),
@@ -7186,13 +7311,13 @@ Lobby.Scenery = (function()
 	local list = {}
 	local function add(id, x, z, yaw, k) table.insert(list, { id, x, z, yaw or 0, k or 1 }) end
 	local Wh = Lobby.WH
-	add('Scn_Hoop', Wh.x0 + 4, 63, -90) -- (by the west door)
+	add('Scn_Hoop', Wh.x0 + 4, 50, -90) -- (by the west door)
 	add('Scn_Crate', Wh.x0 + 3.4, Wh.z1 - 3.4, 0) add('Scn_Crate', Wh.x0 + 6.4, Wh.z1 - 3, 12) add('Scn_Barrel', Wh.x0 + 3.6, Wh.z1 - 7.4, 0)
 	add('Scn_Crate', Wh.x1 - 3.4, Wh.z1 - 3.4, 0) add('Scn_Barrel', Wh.x1 - 3.6, Wh.z1 - 7.4, 0) add('Scn_Barrel', Wh.x1 - 6.2, Wh.z1 - 3.2, 20)
 	for _, d in Wh.open do
 		if d[1] == 'S' then add('Scn_Cone', d[2] + 2, Wh.z1 - 2.2, 0) add('Scn_Cone', d[3] - 2, Wh.z1 - 2.2, 0) end
 	end
-	add('Scn_Hydrant', -48, Wh.z1 - 2.4, 180) add('Scn_TrashCan', 54, Wh.z1 - 2.4, 180)
+	add('Scn_Hydrant', -48, Wh.z1 - 2.4, 180) add('Scn_TrashCan', 28, Wh.z1 - 2.4, 180)
 	-- out in the yard (framed by the doors and the clerestory)
 	add('Scn_Tree_1', -58, Wh.z1 + 10, 0) add('Scn_Tree_2', 44, Wh.z1 + 10, 0) add('Scn_Tree_2', Wh.x1 + 12, 15, 0) add('Scn_Tree_1', Wh.x0 - 12, 74, 0)
 	for _, x in { -70, -46, 32, 56 } do add('Scn_Bush_1', x, Wh.z1 + 5.6, 0) end
