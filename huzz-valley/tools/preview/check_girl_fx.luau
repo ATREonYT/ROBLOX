@@ -574,7 +574,7 @@ do
 		end)
 		check("divine reveal plays: " .. tostring(err), okRun)
 		check("divine: she's hidden until she appears in the halo", hidden)
-		check("divine: the golden light is on during it", warm)
+		check("divine: the night look is on during it", warm)
 		check("divine: she ends at her height over the map", lastH ~= nil and math.abs(lastH - T.height(T.LENGTH, 34)) < 0.01)
 		local S = require(RS.Shared.Config.Round).Showcase
 		local now = 1000 + T.LENGTH

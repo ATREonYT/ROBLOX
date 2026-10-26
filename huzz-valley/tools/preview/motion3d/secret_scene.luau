@@ -467,6 +467,20 @@ local function overlayOf()
 		out.bg, out.lines, out.fade = hex(paper.BackgroundColor3), lines, fade
 		any = true
 	end
+	-- the Divine one's vignette: full-screen frames, each a black fading inwards (a UIGradient at Rotation 0 or 90)
+	local vig = guiNamed("HuzzDivineVignette")
+	if vig and vig.Enabled then
+		for _, f in vig:GetChildren() do
+			if f:IsA("Frame") and f.BackgroundTransparency < 0.99 then
+				local gr = f:FindFirstChildOfClass("UIGradient")
+				local fade = {}
+				for _, k in gr.Transparency.Keypoints do table.insert(fade, { k.Time, k.Value }) end
+				table.insert(out.rects, { x = r3(f.Position.X.Scale * 1280), y = r3(f.Position.Y.Scale * 720), w = r3(f.Size.X.Scale * 1280), h = r3(f.Size.Y.Scale * 720),
+					c = hex(f.BackgroundColor3), a = r3(1 - f.BackgroundTransparency), fade = fade, vfade = gr.Rotation == 90 or nil })
+				any = true
+			end
+		end
+	end
 	local nameGui = guiNamed(NAME_GUI)
 	if nameGui and nameGui.Enabled then
 		local card = nameGui:FindFirstChild("Card")

@@ -1,26 +1,29 @@
 --[[
 	The Divine girl's arrival cutscene, "Heaven's Gate" (the timing, the shot and the camera: Shared/DivineReveal;
-	owner, Oct 26: "make it completely different from the secret animation ... way smoother and more fitting and
-	better looking"). Gameplay/SecretReveal plays it (its play() picks this one when the showcase's RevealKind is
-	"Divine": the same camera planning, steady clock and hand-back), and this builds the effects and poses her:
-	  the light   your Lighting, on this screen only: warm golden light, a gold haze, a little more bloom and sun rays,
-	              warm clouds and a warm grade; all put back exactly afterwards
-	  the sky     a ring of cloud parts high over the spot (Roblox's own smoke picture), a disc of heaven's light
-	              grows in it (Neon, a ForceField shimmer round it); seven soft god rays fan down out of it and sway
-	  halo gate   three golden rings of neon pieces, tilted and turning against each other, gems on one, sun spikes
-	              on another; it comes down out of the light, spins up, and as she floats down it closes in round her
+	owner, Oct 26: "make it completely different from the secret animation"; 17:42: "follow the animation styles as
+	references given before, right now it looks too ai made"). Gameplay/SecretReveal plays it (its play() picks this one
+	when the showcase's RevealKind is "Divine": the same camera planning, steady clock and hand-back), and this builds
+	the effects and poses her. Drawn as the reference anime VFX are: a dark night, hard neon shapes with a white-hot
+	core and a gold band (no soft haze, no smoke, no ForceField glow), fast in and snapping out:
+	  the light   your Lighting, on this screen only: a deep blue night with stars, a dark haze, more bloom, a cool
+	              hard grade and a vignette; all put back exactly afterwards
+	  the sky     a gold portal draws itself over the spot: two huge rings, sun spikes and a white-hot core
+	  spears      seven spears of light strike down round the spot, lightning crackling on each, a ring where it hits;
+	              swallowed into the pillar when it falls
+	  halo gate   three golden rings of neon pieces, gems and sun spikes; it comes down, spins up, closes in round her
 	              and shrinks into her crown halo
 	  sigil       a golden circle draws itself on the ground: three rings, a six-point star, spokes and rune marks
-	  pillar      one pillar of light (five layers of plain Beams, white in the middle, gold outside, and a shimmering
-	              ForceField shell) falls through the halo; a ring races out on the ground, another climbs the pillar
-	  her         lit white as she appears, floating down turning round to you, settling to a warm gold rim; wings of
-	              light (16 feathers, each a white core and a gold glow) unfold behind her, beat once, and fade into
-	              sparkles as she rises
-	  the air     gold motes rising, flakes of light drifting down, sparks up the pillar, bursts of light
+	  slashes     three gold slashes across the picture as the halo spins up
+	  pillar      a hard pillar of light (four plain Beams, white in the middle, gold outside) slams down: the impact
+	              frame, gold shards fly, a shockwave, rungs climb it
+	  her         lit white as she appears, riding the pillar down with speed streaks rushing past, settling to a gold
+	              rim; wings of light (16 feathers) snap open with three crescent swings round her, beat once, and fade
+	              into sparkles as she rises
+	  bursts      star flares and shards on the touchdown, a radial burst of gold blades from behind her at the ascension
 	  her name    DIVINE and 8 stars in gold, her name with a shine sweeping over it, gold lines drawing out
-	Flashes: soft swells only at the pillar, the touchdown (small) and the ascension (kid-safe: over a second apart).
-	Reduced Motion (Settings): no swells. Nothing here needs an uploaded picture: every particle uses Roblox's
-	built-in sparkle and smoke (Shared/FxTexture's stand-ins); the shapes are neon parts and plain beams.
+	Flashes: the impact frame, a small swell on the touchdown and the burst (kid-safe: over a second apart).
+	Reduced Motion (Settings): no swells and no impact frame. Nothing here needs an uploaded picture: every particle
+	uses Roblox's built-in sparkle (Shared/FxTexture's stand-ins); the shapes are neon parts, plain beams and UI.
 	Filmed offline: tools/preview/motion3d/secret_scene.luau with DIVINE=1.
 ]]
 local M = {}
@@ -41,17 +44,20 @@ local player = Players.LocalPlayer
 local rgb = Color3.fromRGB
 local WHITE = Color3.new(1, 1, 1)
 local CREAM, PALE, GOLD, AMBER = rgb(255, 248, 228), rgb(255, 234, 170), rgb(255, 198, 72), rgb(255, 160, 50)
+local INK = rgb(12, 9, 4) -- the impact frame's ink
+local SUN = rgb(255, 200, 48) -- saturated gold (critic, Oct 26: the paler mixes read as beige)
 
--- The heavenly look (Lighting, on this screen only), blended in by Shared/DivineReveal.heaven. Daylight, warmer and
--- brighter: never night (that is the Secret one's).
+-- The night look (Lighting, on this screen only), blended in by Shared/DivineReveal.heaven: a deep blue night, not
+-- the Secret one's violet, so the gold reads hard against it (the golden-dusk version washed into soft glow).
 local HEAVEN_LOOK = {
-	-- (dimmer than the day, so the gold glows against it: critic, Oct 26)
-	Lighting = { Ambient = rgb(96, 78, 62), OutdoorAmbient = rgb(140, 112, 86), Brightness = 1.3 },
-	Atmosphere = { Density = 0.3, Offset = 0.25, Color = rgb(255, 226, 176), Decay = rgb(255, 194, 128), Glare = 0.5, Haze = 1.6 },
-	BloomEffect = { Intensity = 0.5, Size = 30, Threshold = 0.95 }, -- (gentle: the light here is already bright)
-	SunRaysEffect = { Intensity = 0.12, Spread = 0.7 },
-	Clouds = { Cover = 0.5, Density = 0.55, Color = rgb(255, 236, 210) },
+	Lighting = { Ambient = rgb(30, 32, 58), OutdoorAmbient = rgb(44, 48, 88), Brightness = 1.1, EnvironmentDiffuseScale = 0.25 },
+	Atmosphere = { Density = 0.4, Offset = 0.2, Color = rgb(36, 42, 96), Decay = rgb(12, 14, 46), Glare = 0, Haze = 2.4 },
+	BloomEffect = { Intensity = 0.8, Size = 32, Threshold = 0.95 },
+	SunRaysEffect = { Intensity = 0 },
+	Sky = { StarCount = 5000, SunAngularSize = 0 },
+	Clouds = { Cover = 0.3, Density = 0.5, Color = rgb(40, 46, 100) },
 }
+local TAPER = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.7, 0.2), NumberSequenceKeypoint.new(1, 1) })
 
 local function seq(...)
 	local list = { ... }
@@ -155,7 +161,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 	end
 	local keyPart, keyLight = lamp("KeyLight", rgb(255, 242, 220), 1.5, 24 * k)
 	local rimPart, rimLight = lamp("RimLight", rgb(255, 204, 120), 1.6, 20 * k)
-	local pillarPart, pillarLight = lamp("PillarLight", rgb(255, 222, 150), 0, 50 * k)
+	local pillarPart, pillarLight = lamp("PillarLight", rgb(255, 240, 215), 0, 50 * k)
 	pillarPart.CFrame = CFrame.new(ground + up * 4 * k)
 	pillarLight.Enabled = true
 
@@ -168,6 +174,8 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		end
 	end
 	keep(Lighting, HEAVEN_LOOK.Lighting)
+	local sky0 = Lighting:FindFirstChildOfClass("Sky")
+	if sky0 then keep(sky0, HEAVEN_LOOK.Sky) end
 	for _, cls in { "Atmosphere", "BloomEffect", "SunRaysEffect" } do
 		local inst = Lighting:FindFirstChildOfClass(cls)
 		if not inst then
@@ -222,35 +230,37 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		b.Transparency = along(q / 60, head, tail, top)
 	end
 
-	-- the sky: a disc of heaven's light in a ring of cloud
-	local disc = part({ Name = "HeavenDisc", Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = CREAM,
+	-- the sky: a white-hot core in a gold portal (the rings and spikes are drawn in the step)
+	local disc = part({ Name = "PortalCore", Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = CREAM,
 		Size = Vector3.new(0.4, 1, 1), CFrame = CFrame.new(skyAt) * CFrame.Angles(0, 0, math.pi / 2), Transparency = 1 }, folder)
-	local discGlow = part({ Name = "HeavenGlow", Shape = Enum.PartType.Cylinder, Material = Enum.Material.ForceField, Color = PALE,
-		Size = Vector3.new(0.6, 1, 1), CFrame = CFrame.new(skyAt - up * 0.6) * CFrame.Angles(0, 0, math.pi / 2), Transparency = 1 }, folder)
-	local cloudRing = part({ Name = "CloudRing", Transparency = 1, Size = Vector3.new(8, 1, 8), CFrame = CFrame.new(skyAt - up * 2 * k) }, folder)
-	local cloudProps = {
-		Picture = { "Wisp" }, Color = seq(rgb(255, 248, 236), rgb(236, 214, 190)), LightEmission = 0.15, Brightness = 1.3,
-		Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface, ShapePartial = 1,
-		EmissionDirection = Enum.NormalId.Bottom, Size = sizeSeq({ { 0, 18 * k }, { 1, 28 * k } }),
-		Transparency = nseq({ { 0, 1 }, { 0.25, 0.3 }, { 0.75, 0.35 }, { 1, 1 } }), Lifetime = NumberRange.new(1.8, 2.6),
-		Speed = NumberRange.new(1 * k, 2.5 * k), SpreadAngle = Vector2.new(40, 40), Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-12, 12),
-	}
-	local cloudsIn = emitter(cloudRing, cloudProps)
-	local cloudOuter = part({ Name = "CloudOuter", Transparency = 1, Size = Vector3.new(8, 1, 8), CFrame = CFrame.new(skyAt + up * 2 * k) }, folder)
-	cloudProps.Size = sizeSeq({ { 0, 26 * k }, { 1, 38 * k } })
-	cloudProps.Color = seq(rgb(250, 238, 222), rgb(226, 200, 176))
-	local cloudsOut = emitter(cloudOuter, cloudProps)
+	local portalSpikes = {}
+	for i = 1, 16 do
+		portalSpikes[i] = part({ Name = "PortalSpike", Material = Enum.Material.Neon, Color = if i % 2 == 0 then PALE else GOLD, Size = Vector3.one * 0.05, Transparency = 1 }, folder)
+	end
 
-	-- the god rays: each a soft core and a wide faint glow, from inside the disc to a foot on the ground
-	local rays = {}
+	-- the spears: each a white core in a hard gold band, a jagged lightning thread round it (each bend jumps to a new
+	-- place every 0.07 s: a crackle, not a screen flash), sparks where it hits
+	local spears = {}
+	local spearRnd = Random.new(31)
 	for i, def in Reveal.RAY_FEET do
 		local a0, a1 = anchor(), anchor()
-		table.insert(rays, {
-			def = def, a0 = a0, a1 = a1,
-			glow = beam(a0, a1, seq(CREAM, PALE, GOLD), { Segments = 6 }),
-			core = beam(a0, a1, seq(WHITE, CREAM, PALE), { Segments = 6 }),
-		})
+		local sp = {
+			def = def, a0 = a0, a1 = a1, at = -1, n = 9, atts = {}, bolts = {}, off = {},
+			glow = beam(a0, a1, seq(SUN, GOLD, AMBER), { Segments = 2 }),
+			core = beam(a0, a1, seq(WHITE, CREAM), { Segments = 2 }),
+		}
+		for q = 0, sp.n do
+			sp.atts[q] = anchor()
+			sp.off[q] = spearRnd:NextNumber(-1, 1)
+		end
+		for q = 0, sp.n - 1 do sp.bolts[q] = beam(sp.atts[q], sp.atts[q + 1], seq(WHITE, PALE), { Segments = 1 }) end
+		sp.hit = part({ Name = "SpearFoot", Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(ground) }, folder)
+		sp.sparks = emitter(sp.hit, { Picture = { "Spark" }, Color = seq(WHITE, PALE, GOLD), LightEmission = 1, Brightness = 2,
+			Orientation = Enum.ParticleOrientation.VelocityParallel, Size = sizeSeq({ { 0, 0.6 * k }, { 1, 0.15 * k } }),
+			Squash = sizeSeq({ { 0, 1 }, { 0.3, 2.5 }, { 1, 3 } }), Transparency = nseq({ { 0, 0 }, { 0.7, 0.1 }, { 1, 1 } }),
+			Lifetime = NumberRange.new(0.35, 0.6), Speed = NumberRange.new(20 * k, 36 * k), Drag = 5, SpreadAngle = Vector2.new(70, 70),
+			EmissionDirection = Enum.NormalId.Top })
+		spears[i] = sp
 	end
 
 	-- rings of short neon pieces (as Gameplay/SecretReveal), drawn round from the front: `upto` (0..1) of it showing
@@ -315,16 +325,21 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		shock = newRing(rgb(255, 240, 200), 48), climb = newRing(rgb(255, 230, 170), 32), gust = newRing(rgb(255, 244, 214), 40),
 		ripple1 = newRing(rgb(255, 222, 140), 44), ripple2 = newRing(rgb(255, 230, 160), 44), ripple3 = newRing(rgb(255, 238, 190), 44),
 	}
+	for _, sp in spears do sp.ring = newRing(PALE, 24) end
 
-	-- the pillar: layered beams from the sky to the ground, a shimmering shell round them
+	-- the pillar: hard layered beams from the sky to the ground
 	local pTop, pFoot = anchor(), anchor()
-	local PILLAR_COLORS = { rgb(255, 186, 84), rgb(255, 212, 128), rgb(255, 234, 178), rgb(255, 248, 224), WHITE }
+	local PILLAR_COLORS = { AMBER, GOLD, PALE, WHITE }
 	local pillar = {}
 	for i, L in Reveal.PILLAR_LAYERS do
-		pillar[i] = { b = beam(pTop, pFoot, PILLAR_COLORS[i], { Segments = 4 }), def = L }
+		pillar[i] = { b = beam(pTop, pFoot, PILLAR_COLORS[i], { Segments = 2 }), def = L }
 	end
-	local shell = part({ Name = "PillarShell", Shape = Enum.PartType.Cylinder, Material = Enum.Material.ForceField, Color = PALE,
-		Size = Vector3.new(1, 1, 1), Transparency = 1 }, folder)
+	-- rungs climbing the pillar (the reference's ladder beam), each a white core over a gold band
+	local rungs = {}
+	for i = 1, 8 do
+		local a0, a1 = anchor(), anchor()
+		rungs[i] = { i = i, a0 = a0, a1 = a1, glow = beam(a0, a1, GOLD, { Segments = 1 }), core = beam(a0, a1, WHITE, { Segments = 1 }) }
+	end
 	local pillarBase = part({ Name = "PillarBase", Transparency = 1, Size = Vector3.new(7 * k, 0.5, 7 * k), CFrame = CFrame.new(floorAt) }, folder)
 	local upSparks = emitter(pillarBase, { Picture = { "Spark" }, Color = seq(WHITE, PALE, GOLD), LightEmission = 1, Brightness = 2,
 		Orientation = Enum.ParticleOrientation.VelocityParallel, Size = sizeSeq({ { 0, 0.5 * k }, { 1, 0.15 * k } }),
@@ -333,10 +348,11 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 
 	-- the air: gold motes rising round the spot, flakes of light drifting down from the halo
 	local air = part({ Name = "Air", Transparency = 1, Size = Vector3.new(70 * k, 2, 70 * k), CFrame = CFrame.new(ground + up * 2 * k) }, folder)
-	local motes = emitter(air, { Picture = { "Bokeh" }, Color = seq(rgb(255, 236, 170), rgb(255, 196, 90)), LightEmission = 1, Brightness = 2,
-		Size = sizeSeq({ { 0, 0 }, { 0.15, 0.7 * k }, { 0.85, 0.6 * k }, { 1, 0 } }), Transparency = nseq({ { 0, 0.15 }, { 1, 0.5 } }),
-		Lifetime = NumberRange.new(4, 6), Speed = NumberRange.new(1 * k, 2 * k), SpreadAngle = Vector2.new(30, 30),
-		Acceleration = Vector3.new(0, 1.2 * k, 0), Drag = 0.4 })
+	local motes = emitter(air, { Picture = { "Spark" }, Color = seq(rgb(255, 236, 170), rgb(255, 196, 90)), LightEmission = 1, Brightness = 2,
+		Orientation = Enum.ParticleOrientation.VelocityParallel, Size = sizeSeq({ { 0, 0 }, { 0.15, 0.45 * k }, { 0.85, 0.35 * k }, { 1, 0 } }),
+		Squash = sizeSeq({ { 0, 2 }, { 1, 2 } }), Transparency = nseq({ { 0, 0.1 }, { 1, 0.4 } }),
+		Lifetime = NumberRange.new(2.5, 4), Speed = NumberRange.new(3 * k, 6 * k), SpreadAngle = Vector2.new(15, 15),
+		Acceleration = Vector3.new(0, 1.5 * k, 0) })
 	local sky = part({ Name = "FlakeSky", Transparency = 1, Size = Vector3.new(46 * k, 2, 46 * k), CFrame = CFrame.new(ground + up * 46 * k) }, folder)
 	local flakes = emitter(sky, { Picture = { "Feather" }, Color = seq(CREAM, PALE), LightEmission = 0.7, Brightness = 1.6,
 		Size = sizeSeq({ { 0, 0 }, { 0.1, 1.1 * k }, { 0.9, 0.9 * k }, { 1, 0 } }), Transparency = nseq({ { 0, 0.1 }, { 1, 0.4 } }),
@@ -357,21 +373,28 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 				Size = sizeSeq({ { 0, 0 }, { 0.2, 1.6 * k * s }, { 1, 0 } }), Transparency = nseq({ { 0, 0 }, { 1, 0.2 } }),
 				Lifetime = NumberRange.new(0.6, 1), Speed = NumberRange.new(6 * k * s, 16 * k * s), Drag = 3, SpreadAngle = Vector2.new(180, 180),
 				Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-90, 90) }),
+			shards = emitter(parent, { Picture = { "Crystal" }, Color = seq(WHITE, PALE, GOLD), LightEmission = 1, Brightness = 1.6,
+				Size = sizeSeq({ { 0, 1.2 * k * s }, { 1, 0.4 * k } }), Transparency = nseq({ { 0, 0 }, { 0.8, 0.1 }, { 1, 1 } }),
+				Lifetime = NumberRange.new(0.8, 1.3), Speed = NumberRange.new(18 * k * s, 34 * k * s), Drag = 3, SpreadAngle = Vector2.new(70, 70),
+				EmissionDirection = Enum.NormalId.Top, Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-300, 300),
+				Acceleration = Vector3.new(0, -30 * k, 0) }),
 		}
 	end
 	local footBurst, backBurst, heartBurst = burst(foot, 1.2), burst(back, 1), burst(heart, 1.3)
-	-- a bed of soft cloud on the ground round her (covers the grass: she lands on clouds)
-	local mistBed = part({ Name = "MistBed", Transparency = 1, Size = Vector3.new(34 * k, 0.4, 34 * k), CFrame = CFrame.new(floorAt + up * 0.4) }, folder)
-	local mist = emitter(mistBed, { Picture = { "Wisp" }, Color = seq(rgb(255, 250, 238), rgb(244, 226, 200)), LightEmission = 0.2, Brightness = 1.2,
-		Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume, ShapePartial = 1,
-		EmissionDirection = Enum.NormalId.Top, Size = sizeSeq({ { 0, 7 * k }, { 1, 12 * k } }), Transparency = nseq({ { 0, 1 }, { 0.3, 0.45 }, { 0.75, 0.5 }, { 1, 1 } }),
-		Lifetime = NumberRange.new(2.5, 3.5), Speed = NumberRange.new(0.3 * k, 0.8 * k), SpreadAngle = Vector2.new(70, 70),
-		Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-10, 10) })
-	local dust = emitter(foot, { Picture = { "Wisp" }, Color = seq(rgb(255, 246, 226), rgb(236, 206, 160)), LightEmission = 0.2,
-		Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface, ShapePartial = 1,
-		EmissionDirection = Enum.NormalId.Top, Size = sizeSeq({ { 0, 2 * k }, { 1, 6 * k } }),
-		Transparency = nseq({ { 0, 0.45 }, { 1, 1 } }), Lifetime = NumberRange.new(0.7, 1.1), Speed = NumberRange.new(2 * k, 5 * k),
-		SpreadAngle = Vector2.new(60, 60), Drag = 2, Rotation = NumberRange.new(0, 360) })
+	-- gold shards torn out of the ground where the pillar hits and where she lands (the green reference's debris), flying up
+	-- and falling back, turning; drawn by the step
+	local rocks = {}
+	local rockRnd = Random.new(57)
+	for i = 1, 30 do
+		local sz = rockRnd:NextNumber(0.5, 1.5) * k
+		local a = rockRnd:NextNumber(0, math.pi * 2)
+		rocks[i] = {
+			p = part({ Name = "Shard", Material = Enum.Material.Neon, Color = if i % 3 == 0 then WHITE else SUN, Size = Vector3.new(sz * 0.3, sz * 1.3, sz * 0.15), Transparency = 1 }, folder),
+			at = if i <= 18 then Reveal.PILLAR else Reveal.TOUCH, a = a, r = rockRnd:NextNumber(2, 5) * k,
+			out = rockRnd:NextNumber(8, 18) * k, upv = rockRnd:NextNumber(22, 38) * k, spin = Vector3.new(rockRnd:NextNumber(-1, 1), rockRnd:NextNumber(-1, 1), rockRnd:NextNumber(0.2, 1)).Unit * rockRnd:NextNumber(4, 10),
+			size = Vector3.new(sz * 0.3, sz * 1.3, sz * 0.15), -- (gold shards: brown rock read as dirt)
+		}
+	end
 	local wingDust = emitter(back, { Picture = { "Feather" }, Color = seq(WHITE, PALE), LightEmission = 0.8, Brightness = 1.8,
 		Size = sizeSeq({ { 0, 0.9 * k }, { 1, 0 } }), Transparency = nseq({ { 0, 0.1 }, { 1, 0.6 } }),
 		Lifetime = NumberRange.new(1.2, 2), Speed = NumberRange.new(1 * k, 3 * k), SpreadAngle = Vector2.new(180, 180),
@@ -384,7 +407,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			local a0, a1 = anchor(), anchor()
 			table.insert(wings, {
 				s = s, i = i, def = def, a0 = a0, a1 = a1,
-				glow = beam(a0, a1, seq(GOLD, AMBER, rgb(255, 130, 40)), { Segments = 2, LightEmission = 0.6 }), -- (gold edges: white alone vanished on bright sky)
+				glow = beam(a0, a1, seq(SUN, GOLD, AMBER), { Segments = 2 }), -- (gold edges: white alone vanished on bright sky)
 				core = beam(a0, a1, seq(WHITE, CREAM, PALE), { Segments = 2 }),
 			})
 		end
@@ -470,6 +493,115 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 	end
 	table.insert(junk, nameGui)
 
+	-- slashes across the picture, crescent swings round her, speed streaks, the radial burst and star flares
+	-- (all laid out from the camera, so they read the same from any angle)
+	local function pair(color, glowW)
+		local a0, a1 = anchor(), anchor()
+		return { a0 = a0, a1 = a1, glow = beam(a0, a1, color, { Transparency = TAPER, Segments = 2 }), core = beam(a0, a1, WHITE, { Transparency = TAPER, Segments = 2 }), gw = glowW }
+	end
+	local slashes = {}
+	for i, at in Reveal.SLASHES do
+		local sl = pair(seq(PALE, GOLD), 3)
+		sl.at, sl.i = at, i
+		local fade = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0), NumberSequenceKeypoint.new(0.8, 0), NumberSequenceKeypoint.new(1, 1) })
+		sl.glow.Transparency, sl.core.Transparency = fade, fade
+		slashes[i] = sl
+	end
+	local swings = {}
+	for i, at in Reveal.SWINGS do
+		local sw = pair(seq(PALE, GOLD, AMBER), 2.2)
+		local fade = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.6, 0), NumberSequenceKeypoint.new(1, 0) })
+		sw.glow.Transparency, sw.core.Transparency = fade, fade
+		sw.glow.Segments, sw.core.Segments = 12, 12
+		sw.at, sw.i, sw.tilt, sw.start, sw.lift = at, i, ({ 20, -25, 8 })[i], ({ -70, 110, 200 })[i], ({ 1, 3, -1 })[i]
+		swings[i] = sw
+	end
+	local streakRnd = Random.new(11)
+	local streakLines = {}
+	for i = 1, 60 do
+		local a0, a1 = anchor(), anchor()
+		streakLines[i] = { a0 = a0, a1 = a1, phase = streakRnd:NextNumber(), x = streakRnd:NextNumber(-1, 1), depth = streakRnd:NextNumber(0.6, 1.3),
+			len = streakRnd:NextNumber(0.5, 1.3), w = streakRnd:NextNumber(0.08, 0.3), speed = streakRnd:NextNumber(1.1, 1.9),
+			b = beam(a0, a1, seq(WHITE, SUN, AMBER), { Transparency = TAPER, Segments = 1 }) }
+	end
+	local rays = {}
+	for i = 1, 9 do -- (few blades of uneven length: twenty even bars read as clip-art)
+		local a0, a1 = anchor(), anchor()
+		rays[i] = { ang = (i - 1) / 9 * math.pi * 2 + streakRnd:NextNumber(-0.25, 0.25), len = if i % 2 == 0 then streakRnd:NextNumber(0.4, 0.6) else streakRnd:NextNumber(0.85, 1.15),
+			w = streakRnd:NextNumber(0.8, 1.3), a0 = a0, a1 = a1, b = beam(a0, a1, seq(WHITE, SUN, AMBER), { Transparency = TAPER, Segments = 1 }) }
+	end
+	local function newFlare()
+		local f = { spikes = {} }
+		f.core = part({ Name = "Flare", Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = CREAM, Size = Vector3.one, Transparency = 1 }, folder)
+		for j = 1, 8 do
+			local a0, a1 = anchor(), anchor()
+			f.spikes[j] = { a0 = a0, a1 = a1, b = beam(a0, a1, seq(WHITE, GOLD), { Transparency = TAPER, Segments = 1 }) }
+		end
+		return f
+	end
+	local flares = { newFlare(), newFlare(), newFlare() }
+	local function setFlare(f, at, s, alpha, camR, camU)
+		f.core.CFrame = CFrame.new(at)
+		f.core.Size = Vector3.one * math.max(1.4 * s, 0.05)
+		f.core.Transparency = 1 - alpha
+		for j, sp in f.spikes do
+			local ang = (j - 1) * math.pi / 2 + (if j > 4 then math.pi / 4 else 0)
+			local dirv = camR * math.cos(ang) + camU * math.sin(ang)
+			local len = (if j > 4 then 4 elseif j % 2 == 1 then 15 else 10) * s
+			sp.a0.WorldPosition = at
+			sp.a1.WorldPosition = at + dirv * len
+			sp.b.Width0, sp.b.Width1 = (if j > 4 then 0.35 else 0.7) * s * alpha, 0
+		end
+	end
+
+	-- the impact frame: black ink claws bursting in from the edges on white paper (the reference's manga frame; one
+	-- frame of 0.12 s, so one flash). Reduced Motion: none.
+	local frameGui = Instance.new("ScreenGui")
+	frameGui.Name, frameGui.IgnoreGuiInset, frameGui.DisplayOrder, frameGui.Enabled, frameGui.ResetOnSpawn = "HuzzImpactFrame", true, 60, false, false
+	local paper = Instance.new("Frame")
+	paper.Size, paper.BackgroundColor3, paper.BorderSizePixel = UDim2.fromScale(1, 1), rgb(250, 247, 238), 0
+	paper.Parent = frameGui
+	local burstGui = Instance.new("Frame")
+	burstGui.AnchorPoint, burstGui.Position, burstGui.Size, burstGui.BackgroundTransparency = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(2400, 2400), 1
+	burstGui.Parent = paper
+	local lineRnd = Random.new(9)
+	local function inkLine(a, w, len, r, color, inward)
+		local line = Instance.new("Frame")
+		line.AnchorPoint = Vector2.new(0.5, 0.5)
+		line.Size = UDim2.fromOffset(w, len)
+		line.Rotation = if inward then a + 180 else a -- (its solid end: at the screen's edge, or in the middle)
+		line.Position = UDim2.fromOffset(math.round(1200 + math.sin(math.rad(a)) * r), math.round(1200 - math.cos(math.rad(a)) * r))
+		line.BackgroundColor3, line.BorderSizePixel = color, 0
+		local fade = Instance.new("UIGradient")
+		fade.Rotation = 90
+		fade.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.7, 0.05), NumberSequenceKeypoint.new(1, 1) }) -- (solid ink, a short taper)
+		fade.Parent = line
+		line.Parent = burstGui
+	end
+	for i = 1, 14 do -- (black ink claws of uneven width and length on white, as the reference's frame)
+		local len = lineRnd:NextInteger(700, 1150)
+		inkLine((i - 1) / 14 * 360 + lineRnd:NextNumber(-10, 10), lineRnd:NextInteger(30, 110), len, 1200 - len / 2, INK)
+	end
+	table.insert(junk, frameGui)
+
+	-- the vignette: the picture's edges sink into the night (as the reference's)
+	local vignette = Instance.new("ScreenGui")
+	vignette.Name, vignette.IgnoreGuiInset, vignette.DisplayOrder, vignette.Enabled, vignette.ResetOnSpawn = "HuzzDivineVignette", true, 40, false, false
+	local edges = {}
+	for _, e in { { 0, 0, 0.3, 1, 0, false }, { 0.7, 0, 0.3, 1, 0, true }, { 0, 0, 1, 0.28, 90, false }, { 0, 0.72, 1, 0.28, 90, true } } do
+		local f = Instance.new("Frame")
+		f.Position, f.Size = UDim2.fromScale(e[1], e[2]), UDim2.fromScale(e[3], e[4])
+		f.BackgroundColor3, f.BorderSizePixel, f.BackgroundTransparency = rgb(4, 4, 14), 0, 1
+		local g = Instance.new("UIGradient")
+		g.Rotation = e[5]
+		g.Transparency = if e[6] then NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) })
+			else NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) })
+		g.Parent = f
+		f.Parent = vignette
+		table.insert(edges, f)
+	end
+	table.insert(junk, vignette)
+
 	local grade = Instance.new("ColorCorrectionEffect")
 	grade.Name = "HuzzDivineGrade"
 	table.insert(junk, grade)
@@ -484,6 +616,9 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		local side = dir:Cross(up)
 		side = if side.Magnitude > 0.1 then side.Unit else Vector3.new(1, 0, 0)
 		local h = Reveal.height(t, Config.Showcase.Height)
+		local camR = if cam then cam.RightVector else side
+		local camU = if cam then cam.UpVector else up
+		local camPos = if cam then cam.Position else ground + dir * 40 * k + up * 10 * k
 
 		-- the light
 		local on = Reveal.heaven(t)
@@ -497,44 +632,72 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		end)
 		motes.Rate = if on > 0.3 and t < Reveal.CLOSE then 14 else 0
 		flakes.Rate = if t >= Reveal.SPIN and t < Reveal.RISE + 0.5 then 9 else 0
-		mist.Rate = if t >= Reveal.SIGIL - 0.6 and t < Reveal.RISE + 0.3 then 14 else 0
-		if t >= Reveal.SIGIL - 0.6 then once("mistIn", function() mist:Emit(20) end) end
 
-		-- the sky opening: the cloud ring widens, heaven's light grows inside it; both close again at the end
+		-- the portal drawing itself in the sky: two huge rings (drawn round from the front), sun spikes, a white-hot core;
+		-- all closing again at the end
 		local open = Reveal.skyOpen(t)
 		local hole = (12 + (Reveal.SKY_RADIUS - 12) * open) * k
-		cloudRing.Size = Vector3.new(hole * 2, 1, hole * 2)
-		cloudOuter.Size = Vector3.new(hole * 3, 1, hole * 3)
-		local cloudy = t < Reveal.CLOSE + 1.2
-		cloudsIn.Rate = if cloudy then 40 else 0
-		cloudsOut.Rate = if cloudy then 24 else 0
-		once("clouds", function() cloudsIn:Emit(50); cloudsOut:Emit(30) end)
-		local d = math.max(hole * 1.7 * open, 0.1)
+		local d = math.max(hole * 0.4 * open, 0.1) -- (small: bigger read as a grey moon on the first film)
 		disc.Size = Vector3.new(0.4, d, d)
-		disc.Transparency = 1 - 0.85 * open
-		discGlow.Size = Vector3.new(0.6, d * 1.4, d * 1.4)
-		discGlow.Transparency = 1 - 0.7 * open
-
-		local skyA = open * (1 - Reveal.smooth((t - Reveal.CLOSE) / 0.8))
+		disc.Transparency = 1 - open
+		local skyA = math.min(1, open * 1.5) * (1 - Reveal.smooth((t - Reveal.CLOSE) / 0.8))
 		local tiltSky = CFrame.fromAxisAngle(side, math.rad(10)):VectorToWorldSpace(dir)
-		setRing(skyRings[1], skyAt - up * 4 * k, side, tiltSky, (Reveal.SKY_RADIUS + 12) * k, 0.9 * k, 0.55 * skyA, t * 0.12)
-		setRing(skyRings[2], skyAt - up * 9 * k, side, dir, (Reveal.SKY_RADIUS + 3) * k, 0.6 * k, 0.45 * skyA, -t * 0.18)
+		setRing(skyRings[1], skyAt - up * 2 * k, side, tiltSky, hole, 1.1 * k, skyA, t * 0.12, open)
+		setRing(skyRings[2], skyAt - up * 5 * k, side, dir, hole * 0.72, 0.7 * k, skyA, -t * 0.18, open)
+		for i, sp in portalSpikes do
+			local a = (i - 1) / #portalSpikes * math.pi * 2 - t * 0.25
+			local out = side * math.cos(a) + dir * math.sin(a)
+			local len = (if i % 2 == 0 then 7 else 13) * k * open
+			sp.CFrame = CFrame.fromMatrix(skyAt - up * 2 * k + out * (hole + len / 2 + 1 * k), out, up)
+			sp.Size = Vector3.new(math.max(len, 0.05), 0.5 * k, 0.9 * k * (1 - 0.4 * (i % 2)))
+			sp.Transparency = 1 - skyA
+		end
 
-		-- the god rays sway slowly over the ground
-		for i, r in rays do
-			local power, sway = Reveal.ray(t, i)
-			power *= open
-			local a = math.rad(r.def.ang + sway)
+		-- the spears striking round the spot, lightning crackling on them; swallowed into the pillar
+		local toCamFlat = Vector3.new(camPos.X - ground.X, 0, camPos.Z - ground.Z)
+		toCamFlat = if toCamFlat.Magnitude > 0.1 then toCamFlat.Unit else dir
+		for i, sp in spears do
+			local reach, power, pull = Reveal.spear(t, i)
+			if power <= 0.01 then
+				if sp.on then
+					sp.on = false
+					sp.glow.Width0, sp.glow.Width1, sp.core.Width0, sp.core.Width1 = 0, 0, 0, 0
+					for _, b in sp.bolts do b.Width0, b.Width1 = 0, 0 end
+				end
+				setRing(sp.ring, floorAt, side, dir, 1, 0.1, 0)
+				continue
+			end
+			sp.on = true
+			local a = math.rad(sp.def.ang + 4 * t)
 			local out = dir * math.cos(a) + side * math.sin(a)
-			r.a0.WorldPosition = skyAt + out * hole * 0.45
-			r.a1.WorldPosition = floorAt + out * r.def.out * k
-			local reach = Reveal.easeOut((t - Reveal.RAYS - (i - 1) * Reveal.RAY_GAP) / 0.5) -- (its light comes down out of the sky)
-			if reach < 1 then r.a1.WorldPosition = r.a0.WorldPosition:Lerp(r.a1.WorldPosition, reach) end
-			r.core.Width0, r.core.Width1 = r.def.w0 * k * 0.35, r.def.w1 * k * 0.35
-			r.glow.Width0, r.glow.Width1 = r.def.w0 * k * 0.8, r.def.w1 * k * 0.8
-			-- (faint: seven of them overlap, and they add light; the first film was washed out)
-			setAlpha(r.core, 0.22 * power, 0.12, 0.3, 0.6)
-			setAlpha(r.glow, 0.07 * power, 0.12, 0.25, 0.6)
+			local footAt = (floorAt + out * sp.def.out * k):Lerp(floorAt, pull)
+			local top = skyAt - up * 2 * k + out * hole * 0.6
+			local low = top:Lerp(footAt, reach)
+			sp.a0.WorldPosition, sp.a1.WorldPosition = top, low
+			local w = sp.def.w0 * 0.25 * k
+			sp.core.Width0, sp.core.Width1 = w * 0.6, w * 0.75 -- (critic: hairlines read as wireframe)
+			sp.glow.Width0, sp.glow.Width1 = w * 1.7, w * 2.1
+			setAlpha(sp.core, power, 0.02, 0.03)
+			setAlpha(sp.glow, 0.75 * power, 0.02, 0.03)
+			-- the lightning thread
+			if not calm and t - sp.at > 0.07 then
+				sp.at = t
+				for q = 1, sp.n - 1 do sp.off[q] = spearRnd:NextNumber(-1, 1) end
+			end
+			local along = low - top
+			local nv = along:Cross(camPos - (top + low) / 2)
+			nv = if nv.Magnitude > 1e-3 then nv.Unit else side
+			for q = 0, sp.n do
+				local jit = if q == 0 or q == sp.n then 0 else sp.off[q] * w * 1.6
+				sp.atts[q].WorldPosition = top + along * (q / sp.n) + nv * jit
+			end
+			for _, b in sp.bolts do b.Width0, b.Width1 = 0.32 * k * power, 0.32 * k * power end
+			sp.hit.CFrame = CFrame.new(footAt)
+			if reach >= 1 then
+				once("spear" .. i, function() sp.sparks:Emit(14) end)
+			end
+			local at = Reveal.RAYS + (i - 1) * Reveal.SPEAR_GAP + 0.08
+			ringAt(sp.ring, at, 0.45, t, footAt + up * 0.1, side, dir, 0.5 * k, 6 * k, 0.3 * k)
 		end
 
 		-- the halo gate coming down, spinning up, closing in round her and becoming her crown
@@ -566,7 +729,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		-- the circle drawing itself on the ground
 		local drawn, glow = Reveal.sigil(t)
 		local st = t * 0.15
-		glow *= 0.75 -- (gold on green adds up to a hot yellow: kept softer)
+		glow *= 0.55 -- (gold on green adds up to lime: kept softer)
 		setRing(sigil.outer, floorAt, side, dir, 14 * k, 0.36 * k, glow, st, drawn)
 		setRing(sigil.inner, floorAt, side, dir, 10.5 * k, 0.3 * k, glow * 0.9, -st + math.pi, drawn)
 		setRing(sigil.centre, floorAt, side, dir, 4 * k, 0.26 * k, glow * 0.85, st * 2, drawn)
@@ -613,15 +776,24 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 			L.b.Width0, L.b.Width1 = L.def.w * k * width * 0.8, L.def.w * k * width
 			setAlpha(L.b, L.def.alpha * power, 0.08, 0.04, 0.4)
 		end
+		-- the rungs climbing it while it's at its strongest
 		local tall = Reveal.SKY * k * reach
-		shell.CFrame = CFrame.new(skyAt - up * tall / 2) * CFrame.Angles(0, 0, math.pi / 2)
-		shell.Size = Vector3.new(math.max(tall, 0.1), 9 * k * width, 9 * k * width)
-		shell.Transparency = 1 - 0.2 * power
+		local ladder = math.clamp(power * 1.4 - 0.4, 0, 1) * (1 - Reveal.smooth((t - Reveal.TOUCH) / 0.5))
+		local half = 2.6 * k * width
+		for _, r in rungs do
+			local u = (t * 0.7 + r.i / #rungs) % 1
+			local y = tall * u * 0.6
+			local fade = math.sin(u * math.pi) * ladder
+			local c = ground + up * y
+			r.a0.WorldPosition, r.a1.WorldPosition = c - camR * half, c + camR * half
+			r.glow.Width0, r.glow.Width1 = 1.6 * k * fade, 1.6 * k * fade
+			r.core.Width0, r.core.Width1 = 0.5 * k * fade, 0.5 * k * fade
+		end
 		upSparks.Rate = if power > 0.2 then 45 * power else 0
-		pillarLight.Brightness = 3 * power
+		pillarLight.Brightness = 0.8 * power -- (gold light on green grass went lime on the first film)
 		if t >= Reveal.PILLAR then
 			once("pillar", function()
-				footBurst.sparks:Emit(40); footBurst.glints:Emit(14); dust:Emit(18)
+				footBurst.sparks:Emit(40); footBurst.glints:Emit(14); footBurst.shards:Emit(18)
 				Sfx.beat("Burst")
 			end)
 		end
@@ -704,7 +876,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 
 		-- the touchdown: three ripples, warm dust
 		if t >= Reveal.TOUCH then
-			once("touch", function() dust:Emit(16); footBurst.glints:Emit(8) end)
+			once("touch", function() footBurst.shards:Emit(14); footBurst.glints:Emit(8) end)
 		end
 		ringAt(rings.ripple1, Reveal.RIPPLES[1], 1.0, t, floorAt + up * 0.12, side, dir, 2 * k, 18 * k, 0.45 * k)
 		ringAt(rings.ripple2, Reveal.RIPPLES[2], 1.0, t, floorAt + up * 0.14, side, dir, 2 * k, 15 * k, 0.38 * k)
@@ -717,6 +889,107 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 				Sfx.play("secret_impact")
 			end)
 		end
+
+		-- the shards flying up and falling back
+		for _, rk in rocks do
+			local x = t - rk.at
+			if x < 0 or x > 1.3 then
+				if rk.shown then rk.p.Transparency = 1; rk.shown = false end
+				continue
+			end
+			local out = side * math.cos(rk.a) + dir * math.sin(rk.a)
+			local y = rk.upv * x - 30 * k * x * x
+			if y < 0 and x > 0.2 then
+				if rk.shown then rk.p.Transparency = 1; rk.shown = false end
+				continue
+			end
+			rk.shown = true
+			local p = floorAt + out * (rk.r + rk.out * x / (1 + 2 * x)) + up * math.max(y, 0)
+			rk.p.CFrame = CFrame.new(p) * CFrame.fromAxisAngle(rk.spin.Unit, rk.spin.Magnitude * x)
+			rk.p.Size = rk.size * (1 - 0.5 * Reveal.smooth((x - 0.9) / 0.4))
+			rk.p.Transparency = 0
+		end
+
+		-- the slashes: snapping across the picture by the halo, drifting sideways as they thin out
+		local hy0 = Reveal.halo(t, k, mid, h)
+		for _, sl in slashes do
+			local v = Reveal.slash(t, sl.at)
+			local flip = if sl.i % 2 == 0 then -1 else 1
+			local c = ground + up * (hy0 + ({ 2, -4, 5 })[sl.i] * k) + camR * math.max(0, t - sl.at) * 30 * k * flip
+			local len, tilt = 34 * k, 6 * k
+			sl.a0.WorldPosition = c - camR * len + camU * tilt * flip
+			sl.a1.WorldPosition = c + camR * len - camU * tilt * flip
+			sl.glow.Width0, sl.glow.Width1 = sl.gw * k * v, sl.gw * k * v
+			sl.core.Width0, sl.core.Width1 = 0.7 * k * v, 0.7 * k * v
+		end
+
+		-- the crescent swings round her as the wings open
+		for _, sw in swings do
+			local v = Reveal.swing(t, sw.at)
+			if v <= 0 then sw.glow.Width0, sw.glow.Width1, sw.core.Width0, sw.core.Width1 = 0, 0, 0, 0; continue end
+			local tilt = math.rad(sw.tilt)
+			local axis = (up * math.cos(tilt) + dir * math.sin(tilt)).Unit
+			local u = (dir - axis * dir:Dot(axis)).Unit
+			local w = axis:Cross(u)
+			local th0 = math.rad(sw.start) + (t - sw.at) * 3
+			local th1 = th0 + math.rad(150)
+			local R = 8 * k
+			local c = herMid + up * sw.lift * k
+			local p0, p1 = c + (u * math.cos(th0) + w * math.sin(th0)) * R, c + (u * math.cos(th1) + w * math.sin(th1)) * R
+			local t0, t1 = -u * math.sin(th0) + w * math.cos(th0), -u * math.sin(th1) + w * math.cos(th1)
+			sw.a0.WorldCFrame = CFrame.fromMatrix(p0, t0, axis)
+			sw.a1.WorldCFrame = CFrame.fromMatrix(p1, t1, axis)
+			for _, b in { sw.glow, sw.core } do b.CurveSize0, b.CurveSize1 = R * 1.02, R * 1.02 end
+			sw.glow.Width0, sw.glow.Width1 = 0, sw.gw * k * v
+			sw.core.Width0, sw.core.Width1 = 0, 0.5 * k * v
+		end
+
+		-- the speed streaks: rushing down past her as she rides the pillar, up as she rises (laid out in front of the
+		-- camera, so they fill the picture whatever the shot)
+		local sv, sdir = Reveal.streaks(t)
+		local camF = if cam then cam.LookVector else -dir
+		local flow = (camU * sdir + camR * 0.55).Unit -- (diagonal, as the reference's)
+		for _, sl in streakLines do
+			if sv <= 0 then
+				if sl.shown then sl.b.Width0 = 0; sl.shown = false end
+				continue
+			end
+			sl.shown = true
+			local D = 22 * k * sl.depth
+			local half = D * 0.62
+			local s = (t * sl.speed + sl.phase) % 1
+			local head = camPos + camF * D + camR * sl.x * half * 1.2 + flow * (-1.4 + 2.8 * s) * half * 0.6
+			sl.a0.WorldPosition = head
+			sl.a1.WorldPosition = head - flow * sl.len * half * 0.9
+			sl.b.Width0, sl.b.Width1 = sl.w * D * 0.05 * sv * 1.8, 0 -- (critic: dense and thick, so they read as speed, not rain)
+		end
+
+		-- the radial burst of gold rays: round her feet on the touchdown, from behind her head at the ascension
+		local rv, rs = Reveal.rays(t)
+		local behindHead = herMid + up * mid * 0.6 - (camPos - herMid).Unit * 3 * k
+		local rc = if rs > 1 then behindHead else feet + up * 1 * k
+		for _, r in rays do
+			if rv <= 0 then
+				if r.shown then r.b.Width0 = 0; r.shown = false end
+				continue
+			end
+			r.shown = true
+			local dirv = camR * math.cos(r.ang) + camU * math.sin(r.ang)
+			local len = (14 + 36 * math.min(1, rv * 1.6)) * r.len * k * rs
+			r.a0.WorldPosition = rc + dirv * 2 * k
+			r.a1.WorldPosition = rc + dirv * len
+			r.b.Width0, r.b.Width1 = 1.6 * r.w * k * rv * rs, 0
+		end
+		-- star flares: either side of her on the touchdown, a big one behind her head at the ascension
+		local tf = Reveal.slash(t, Reveal.TOUCH)
+		setFlare(flares[1], herMid - camR * 9 * k + camU * 3 * k, 1.1 * k, tf, camR, camU)
+		setFlare(flares[2], herMid + camR * 10 * k - camU * 2 * k, 0.9 * k, tf, camR, camU)
+		setFlare(flares[3], behindHead, 1.1 * k, Reveal.pop(t, Reveal.SWELL, 0.05, 0.6), camR, camU)
+
+		-- the impact frame and the vignette
+		frameGui.Enabled = Reveal.impactFrame(t, calm)
+		vignette.Enabled = on > 0.01
+		for _, e in edges do e.BackgroundTransparency = 1 - 0.85 * on end
 
 		-- her name on screen: rises in, gold lines draw out, the shine crosses twice; gone before she rises
 		local nv = Reveal.name(t)
@@ -743,7 +1016,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		grade.Brightness = b + (if calm then 0 else 0.1 * pulse)
 		grade.Saturation = s
 		grade.Contrast = contrast
-		grade.TintColor = WHITE:Lerp(rgb(255, 222, 172), tint) -- (golden hour)
+		grade.TintColor = WHITE:Lerp(rgb(206, 218, 255), tint) -- (cool moonlight: the gold stands out against it)
 		return herMid, h
 	end
 
@@ -757,12 +1030,15 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		folder:Destroy()
 		grade:Destroy()
 		nameGui:Destroy()
+		frameGui:Destroy()
+		vignette:Destroy()
 		if ratingWas ~= nil then pcall(function() (rating :: BillboardGui).Enabled = ratingWas end) end
 		for _, b in beams do b:Destroy() end
 		for _, a in anchors do a:Destroy() end
 	end
 	if M.failForTest then error("test: build failed on purpose") end
 	nameGui.Parent = if player then player:WaitForChild("PlayerGui") else nil
+	frameGui.Parent, vignette.Parent = nameGui.Parent, nameGui.Parent
 	for _, inst in made do inst.Parent = Lighting end
 	grade.Parent = Lighting
 	return step, cleanup, ground, k, mid

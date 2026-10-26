@@ -70,9 +70,15 @@ beat's time and the comparison with his reference (`design/vfx/ref3`): `docs/sec
 
 ## The Divine cutscene (Oct 26)
 Owner: "for the divine ... make it completely different from the secret animation ... way smoother". "Heaven's Gate":
-golden dusk instead of night, the sky opens in a cloud ring, god rays, a three-ring halo gate comes down, a sigil draws
-itself on the ground over a bed of cloud, one pillar of light, she floats down turning to face you, wings of light
-fan open feather by feather, touchdown ripples, the halo becomes her crown, DIVINE name card with a shine, she ascends.
+the sky opens in a gold portal, spears of light strike, a three-ring halo gate comes down, a sigil draws itself on the
+ground, one pillar of light slams down, she rides it down, wings of light fan open, the halo becomes her crown, DIVINE
+name card with a shine, she ascends.
+- **Style (owner, Oct 26 17:42: v1 "looks too ai made", follow the references):** v1 was golden dusk with soft god
+  rays, cloud smoke, ForceField shells and a mist bed; all of that read as soft "AI" glow. v2 copies the reference's
+  execution in gold/white: deep blue night with stars, hard neon (white core, gold band, amber edge), lightning
+  crackling on the spears, gold slashes, a manga impact frame (black ink claws on white; 0.12 s), speed streaks
+  (diagonal) down then up, crescent swings, flying gold shards, a radial ray burst, star flares, a vignette and a
+  push in to her face. Never bring back smoke, ForceField glow or wide faint beams here.
 - Timeline, camera, flashes: `Shared/DivineReveal` (one camera move, NO cut; the angle only ever grows).
 - Effects: `HuzzClient/Gameplay/DivineReveal`. `Gameplay/SecretReveal`'s play() runs it when the showcase's
   `RevealKind` is "Divine" (RoundService sets it), sharing the camera planning and hand-back; the hand-back fades
