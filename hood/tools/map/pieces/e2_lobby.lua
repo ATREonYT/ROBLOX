@@ -1074,11 +1074,12 @@ function Lobby.stand(L, skins)
 		return p
 	end
 
-	-- The deck, the kerb round it (0.25 proud, studded, a paler top band) and studded corner blocks; the kerb is open
+	-- The deck, the kerb round it (a hair proud, studded, a paler top band) and studded corner blocks; the kerb is open
 	-- across the aisle mouth on the east edge, where a pale nosing finishes the step up from the hall floor.
+	-- (B34: nothing to trip on: the kerb's top band stands 0.5 over the floor, the corner blocks too)
 	local kw = 1.2
 	slab('PlazaDeck', V(x0 + kw, 0, z0 + kw), V(x1 - kw, h, z1 - kw), K.deck)
-	local ky = h + 0.25
+	local ky = math.min(h + 0.25, 0.46)
 	-- (B30: open at both ends of the aisle: the mouth by the spine and the west end, where the aisle runs on into the
 	-- head lane's alcove)
 	local kerbs = {
@@ -1095,8 +1096,8 @@ function Lobby.stand(L, skins)
 	flat('PlazaNosing', V(x1 - 0.06, h - 0.14, a0), V(x1 + 0.3, h + 0.03, a1), K.nose)
 	for _, c in { { x0, z0 }, { x0, z1 }, { x1, z0 }, { x1, z1 } } do
 		local cx, cz = c[1] + (c[1] == x0 and 0.9 or -0.9), c[2] + (c[2] == z0 and 0.9 or -0.9)
-		slab('PlazaCorner', V(cx - 1.1, 0, cz - 1.1), V(cx + 1.1, 0.95, cz + 1.1), K.kerb, true)
-		flat('PlazaCornerCap', V(cx - 1.2, 0.95, cz - 1.2), V(cx + 1.2, 1.12, cz + 1.2), K.cap)
+		slab('PlazaCorner', V(cx - 1.1, 0, cz - 1.1), V(cx + 1.1, ky, cz + 1.1), K.kerb, true)
+		flat('PlazaCornerCap', V(cx - 1.2, ky, cz - 1.2), V(cx + 1.2, ky + 0.04, cz + 1.2), K.cap)
 	end
 
 	-- The aisle: the walkway's lavender from the mouth to the west kerb, darker edge lines, a red runner down its middle

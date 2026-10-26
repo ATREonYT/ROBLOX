@@ -4,10 +4,10 @@ local DEPTH = 28 -- buildings run back to x = ±64
 local WALL_X = 124 -- the low boundary wall (round the lobby hall, x +-74, and the stage districts, which reach x +-92..111)
 local SLEN = 64 -- one stage
 local STAGES = 15
-local SPAWN_W, SPAWN_TOP = 74, 123 -- the lobby hall's outside walls: x -74..74, z 5..123 (Lobby, e2_lobby: interior 146 x 116)
+local SPAWN_W, SPAWN_TOP = 74, 123 -- the lobby's old hall extents (x -74..74, z 5..123): today only the grass round it (f_areas) and e2's legacy builders read them; the compact warehouse's walls are e4's Lobby.WH (x -93..68, z 6..92)
 local BOSS_TOP = -STAGES * SLEN -- -960
 local BOSS_END = BOSS_TOP - 96 -- the boss yard runs to -1056
-local SPAWN = V(0, 0, 55) -- the spawn on the hall's cross, where the spine meets the cross arm (on the floor), facing north
+local SPAWN = V(0, 0, 33) -- the hall's crossing, where the spine meets the cross arm (on the floor); you land 5 south of it (Lobby.SpawnAt), facing north to the gate (B34 compact warehouse: 38 studs from the gate)
 local function stageTop(i) return -(i - 1) * SLEN end
 local function lookOf(i) return (i - 1) // 3 + 1 end -- 1..5: three stages share a look
 local function trioOf(i) return (i - 1) % 3 + 1 end -- 1..3: place within the look

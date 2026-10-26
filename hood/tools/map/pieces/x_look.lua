@@ -97,6 +97,33 @@ function Look.openRoof(lobby)
 	end
 end
 
+-- (B34, the owner: "Classic studs everywhere", like their "Alien" place: Plastic with all six faces SurfaceType.Studs
+-- on the lobby's built blocks) the floor slabs, walks and curbs, the decks, kerbs and plinths, the dais and the armory's
+-- apron, the walls, the roof's steel and the cliffs and terraces outside. Smooth stay: Neon glows, glass, anything see-
+-- through, anything carrying words (a SurfaceGui), signs, boards, screens and lamps, every lane, pad, item and prop, and
+-- the owner's designed meshes (MeshParts). The faint stud texture goes wherever real studs replace it.
+Look.Classic = true
+Look.ClassicNames = { '^Concrete$', '^Threshold$', '^Grass$', '^Wall', '^Roof', '^Path', '^SpawnSquare$', '^Plaza', '^Dais',
+	'^Apron', '^Cliff', '^Floor$', '^FloorField$' }
+Look.ClassicKeep = { 'Sign', 'Board', 'Glow', 'Lamp', 'Screen', 'Label', 'Text', 'Neon', 'Nosing', 'Hazard' }
+function Look.classicStuds(lobby)
+	local n = 0
+	for _, p in lobby:GetDescendants() do
+		if p:IsA('Part') and p.Shape == Enum.PartType.Block and p.Material ~= M.Neon and p.Material ~= M.Glass
+			and p.Transparency < 0.05 and not p:FindFirstChildOfClass('SurfaceGui') then
+			local hit = false
+			for _, pat in Look.ClassicNames do if p.Name:find(pat) then hit = true break end end
+			if hit then for _, k in Look.ClassicKeep do if p.Name:find(k) then hit = false break end end end
+			if hit then
+				for _, t in p:GetChildren() do if t:IsA('Texture') and t.Name == 'LookStuds' then t:Destroy() end end
+				p.Material = M.Plastic
+				for _, f in FACES do p[f] = S.Studs end
+				n += 1
+			end
+		end
+	end
+	lobby:SetAttribute('ClassicStudParts', n)
+end
 -- Items over product pads and box pads: a soft halo on the pad under the item and a few big star glints on it.
 function Look.itemFX(lobby)
 	for _, m in lobby:GetDescendants() do
@@ -183,6 +210,14 @@ function Look.apply(root)
 	if v == 'B' then
 		for _, p in lobby:GetDescendants() do
 			if p:IsA('BasePart') and p.Name == 'Floor' and p.Parent and p.Parent.Name == 'Hall' then p.Color = Look.Grass end
+		end
+	end
+	if Look.Classic then Look.classicStuds(lobby) end
+	-- (B34, the Huss look: "objects don't have light only around them") every lamp in the lobby stays faint: a glow on
+	-- its object, no pool on the floor, no shadows of its own
+	for _, l in lobby:GetDescendants() do
+		if l:IsA('PointLight') or l:IsA('SpotLight') or l:IsA('SurfaceLight') then
+			l.Brightness, l.Range, l.Shadows = math.min(l.Brightness, 0.5), math.min(l.Range, 8), false
 		end
 	end
 	Look.itemFX(lobby)

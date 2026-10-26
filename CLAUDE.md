@@ -5,8 +5,10 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## The owner's standing rules (short version; full list in `hood/docs/RULES.md`)
 - **Match the soldier game in style, not one to one.** Vibrant, clean, chunky, readable; calm space, loud interactables; smooth eased motion; nothing "AI slop".
 - **Objects are the owner's blocky designs** (LEGO-like blocks, studs on tops are fine), placed through `Shared/ItemMeshes` with a Part build as the fallback. They live in `hood/art/models/items/`, as 4 GLBs plus a manifest. New objects come from the owner via Claude Design (`hood/art/CLAUDE_DESIGN_PROMPT.md`), not from us.
-- **The lobby is a warehouse around the open plaza layout** (commit 4a04b59).
-  - Keep this layout.
+- **The lobby is a compact warehouse** (Oct 26 relayout, the plan the owner picked):
+  - the Stage 1 gate straight ahead of spawn, as the one focal point; ranges west, gun shop east, shoe boxes south behind you;
+  - 2 Robux pads by spawn, the other products beside the station they belong to;
+  - calm open floor; props only along the walls.
   - Keep our themed shooting-range bays, without side walls.
   - No grass inside; clay cliffs and hood buildings outside.
   - No spawn symbol.
@@ -47,7 +49,7 @@ Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio
 - **3D:** `hood/tools/preview` (harness + three.js renderer; draws Montserrat and the Robux sign).
 - **Reference frames for comparing:** `hood/docs/refs/`.
 - **Look rules with numbers:** `hood/docs/LOOK_RECIPE.md`. The critic's checklist is `hood/docs/CRITIC_POINTS.md`.
-- **Renderer version caveat:** the renderer that draws the owner's GLB designs (r14) lived only in a past session. If it's needed, extend `hood/tools/preview/render` with three.js GLTFLoader for ids in `hood/art/models/items/manifest.json`.
+- **Renderer that draws the owner's designs:** `hood/tools/preview/render14` (r14: the GLBs in `hood/art/models/items`, faked into the build by `tools/fake_items.luau`; export, render, side-by-side, walk video and lobby metrics; see its README, `npm install` there first).
 
 ## Lessons learned building this with the owner (read these; they cost a lot to learn)
 1. **The owner judges by eye, against the reference.**
@@ -56,7 +58,7 @@ Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio
    - Motion (animations, effects) is judged on a 30 fps MP4, not on stills.
 2. **Prove it small before scaling.** Build a "golden slice" (spawn + 2 lanes + one pad) first, get a yes, then roll it out. Full rebuilds that miss waste days.
 3. **What made it look "dead" or "AI slop":**
-   - `SurfaceType.Studs` everywhere (hard black and white noise). Use faint, tone-on-tone studs on walkable ground only.
+   - Studs everywhere in harsh contrast. **Oct 26 the owner chose classic studs everywhere** (Plastic, all six faces `SurfaceType.Studs`, like their Alien inspiration map; see `hood/docs/INSPIRATION.md`). Keep the colours mid-tone and warm, so the studs don't read as black and white noise. Text boards, Neon, glass and the owner's meshes stay smooth.
    - A grey or cold palette ("calm" was misread as grey). Big warm, saturated fields with loud items work; neon doesn't.
    - Flat light with no shadows. Use the `HoodToy` sun.
    - Too many labels, tiny items, and stray props.
@@ -77,10 +79,13 @@ Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio
     - Short status lines; one deliverable per change.
     - Anything worth keeping goes in the repo, not the session's temp folder (it vanishes).
 11. **Talking with the owner.**
-    - Use plain words and no code jargon. The owner writes short messages and changes direction (warehouse → plaza → warehouse around the plaza layout).
+    - Use plain words and no code jargon. The owner writes short messages and changes direction (warehouse → plaza → warehouse around the plaza layout → compact warehouse).
     - For a direction change, ask ONE quick multiple-choice question, with the recommended option first. Otherwise act and report.
     - Always state honestly what is still worse than the reference.
 12. **The place file:** `build_place.sh` makes a fresh `.rbxl`, so anything the owner imported in Studio (the design meshes) is lost unless it's saved to the repo as an `.rbxm` and included in the build. If the owner sends `hood/art/models/items/HoodItemMeshes.rbxm`, make `build_place` include it.
+
+## Inspiration from the owner's other games
+`hood/docs/INSPIRATION.md`: lessons from the owner's own Huss game (branch `HUZZ-VALLEY`, built with this same way of working; take lessons, don't copy it) and an Alien map they liked (one 8-stud grid, terraces, grass drips, classic studs). The lighting preset `HoodToy` follows Huss's even, cartoony light (strong sky fill, soft sun).
 
 ## Release
 `hood/RELEASE.md` is the owner's step-by-step checklist: import, icons, Robux items, tests, publish.

@@ -111,21 +111,28 @@ L.Presets = {
 	-- against darker sides), a warm morning sun from behind-right of a player walking north (60 degrees up, from the south-east: shadows fall away to the left like ref_product_pads), a lower neutral ambient so
 	-- the shade has depth (HoodSun's ambient carried ~70% of the light: flat), a little blue sky fill in the shade, a
 	-- saturated grade. Variant A and B of the B31 lobby use it.
+	-- (B34, the owner: the hood game takes the look of their Huss game, huzz-valley/docs/notes/look-and-lighting.md: "even,
+	-- nice, cartoony lighting over the map, objects don't have light only around them") a softer early-afternoon sun over a
+	-- STRONG sky fill: Huss's tuned numbers (a cast shadow keeps ~0.53 of the sunlit floor, a block's shaded side ~0.82 of
+	-- its lit top, the shade a little blue), a bluer sky (Atmosphere) and real Terrain clouds. The grade keeps more
+	-- saturation than Huss's 0.12 (our map's colours lean on it) and Brightness stays under Huss's 1.4 a touch, so the
+	-- studded concrete floor stays mid-tone. Lamps stay faint (TheBlockV2's look pass caps every PointLight in the lobby).
 	HoodToy = {
 		technology = 'ShadowMap',
 		lighting = {
 			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
-			ClockTime = 10.5, GeographicLatitude = 44, Brightness = 0.9, ExposureCompensation = 0,
-			Ambient = C(140, 136, 142), OutdoorAmbient = C(140, 136, 142),
-			ColorShift_Top = C(255, 232, 200), ColorShift_Bottom = C(150, 165, 200),
-			EnvironmentDiffuseScale = 0.3, EnvironmentSpecularScale = 0.2, ShadowSoftness = 0.3, GlobalShadows = true,
+			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.3, ExposureCompensation = 0.05,
+			Ambient = C(150, 150, 160), OutdoorAmbient = C(210, 210, 218),
+			ColorShift_Top = C(255, 240, 220), ColorShift_Bottom = C(150, 165, 200),
+			EnvironmentDiffuseScale = 1, EnvironmentSpecularScale = 0.4, ShadowSoftness = 0.6, GlobalShadows = true,
 		},
-		atmosphere = { Density = 0.2, Offset = 0.3, Haze = 0.15, Glare = 0, Color = C(205, 228, 250), Decay = C(180, 205, 240) },
-		grade = { Brightness = 0, Contrast = 0.12, Saturation = 0.6, TintColor = C(255, 252, 246) },
-		bloom = { Intensity = 0.5, Size = 24, Threshold = 1.35 }, -- (B31 PLAZA, critic 10: pads keep their colour)
-		rays = { Intensity = 0.01, Spread = 0.15 },
+		-- (B34 fix round: thinner, so the overview isn't fogged; the Huss sky's colours)
+		atmosphere = { Density = 0.1, Offset = 0.25, Haze = 0.1, Glare = 0, Color = C(178, 214, 255), Decay = C(85, 165, 245) },
+		grade = { Brightness = 0, Contrast = 0.05, Saturation = 0.3, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.4, Size = 24, Threshold = 1.6 },
+		rays = { Intensity = 0.03, Spread = 0.15 },
 		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
-		clouds = { Cover = 0.5, Density = 0.35, Color = C(255, 255, 255) },
+		clouds = { Cover = 0.4, Density = 0.75, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),
 	},
 	-- LIGHT2's HoodSun (BRIEF20-22): what the user saw in Studio on 2026-10-10 (brief/ref23/ours_studio_spawn.png,

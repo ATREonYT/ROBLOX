@@ -78,7 +78,7 @@
     - The warehouse is ONE building in the plaza, the armory (gun shop). It has a wide open front so the guns read from the plaza, and inside it's concrete with no grass.
     - Boxes, ranges, pads and the gate stay outdoors, as in the reference.
 23. **The look recipe is binding:** $S/brief/B31/LOOK_RECIPE.md.
-    - Never use SurfaceType.Studs.
+    - Classic studs everywhere (owner, Oct 26; this replaces "never SurfaceType.Studs"): Plastic, all six faces Studs, on floors, walls, plinths and cliffs. Boards, Neon, glass and designed meshes stay smooth.
     - Faint top-face studs on walkable ground only.
     - Flat SmoothPlastic everywhere else.
     - Saturated warm fields, the HoodToy sun, and at most 3 label lines per thing.

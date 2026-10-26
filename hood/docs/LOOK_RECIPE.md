@@ -23,7 +23,7 @@ Ours are Roblox's `SurfaceType.Studs`, which the real client draws as a high-con
 
 ## 1. Studs (the biggest single gain)
 
-1. **Never use `SurfaceType.Studs`** on anything. In the real client it is a hard white-and-black stroke per stud
+1. **SUPERSEDED Oct 26:** the owner chose classic studs everywhere (see RULES.md, INSPIRATION.md). The note below is history only. **Never use `SurfaceType.Studs`** on anything. In the real client it is a hard white-and-black stroke per stud
    (ours_studio_spawn.png); at 57 % coverage it is the noise people call "AI slop".
 2. **Ground gets faint studs**: one `Texture` on the Top face, `Texture = UIKit.StudBevel` (already uploaded: one
    stud per tile, white highlight + black shade in its alpha), `Color3 = white`, `StudsPerTileU/V = 1`,
