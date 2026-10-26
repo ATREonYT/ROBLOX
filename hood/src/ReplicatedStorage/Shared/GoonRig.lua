@@ -136,8 +136,9 @@ function GoonRig.build(kind, crew, variant, parent)
 	return rig
 end
 
+local InstanceMap = require(script.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
 -- Every segment's frame for a pose, then every part; one BulkMoveTo.
-local lists = setmetatable({}, { __mode = 'k' })
+local lists = InstanceMap.new()
 function GoonRig.pose(rig, root, p)
 	p = p or {}
 	local s = rig.Scale

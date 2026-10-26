@@ -136,20 +136,25 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 local lastStamp = 0
+local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
 while true do
-	task.wait(1)
-	local stamp = os.clock() - lastStamp >= 30
-	if stamp then lastStamp = os.clock() end
-	for _, player in Players:GetPlayers() do
-		local profile = Data.get(player)
-		if profile then
-			if not joined[player] then
-				join(player, profile)
-			elseif stamp then
-				Retention.touch(profile, os.time())
+	local ok, err = pcall(function()
+		task.wait(1)
+		local stamp = os.clock() - lastStamp >= 30
+		if stamp then lastStamp = os.clock() end
+		for _, player in Players:GetPlayers() do
+			local profile = Data.get(player)
+			if profile then
+				if not joined[player] then
+					join(player, profile)
+				elseif stamp then
+					Retention.touch(profile, os.time())
+				end
+				if stamp or not friends[player] then checkPairs(player) end
+				refresh(player)
 			end
-			if stamp or not friends[player] then checkPairs(player) end
-			refresh(player)
 		end
-	end
+	end)
+	if not ok and err ~= lastTickError then warn('[RetentionService] tick failed, carrying on: ' .. tostring(err)) end
+	lastTickError = if ok then nil else err
 end

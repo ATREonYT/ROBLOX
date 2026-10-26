@@ -364,30 +364,35 @@ end)
 -- The goons' clock: 10 steps a second for every player whose goons are up and about; where everyone stands and the
 -- attributes 4 times a second.
 local since = 0
+local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
 while true do
-	local dt = task.wait(EnemyRules.Tick)
-	dt = math.min(dt, 0.5)
-	since += dt
-	local beat = since >= 0.25
-	if beat then since = 0 end
-	countdowns()
-	for _, player in Players:GetPlayers() do
-		local profile = Data.get(player)
-		if profile then
-			local s = sessionOf(player)
-			local _, root = living(player)
-			if beat and not downed[player] then place(player, s, root) end
-			local you = root and s.Stage ~= 0 and not downed[player] and mapPos(root) or nil
-			local events, moved = s:tick(dt, you)
-			for _, ev in events do
-				if ev.Kind == 'punch' or ev.Kind == 'blast' then punch(player, s, ev)
-				elseif ev.Kind == 'tele' then tele(player, ev) end
+	local ok, err = pcall(function()
+		local dt = task.wait(EnemyRules.Tick)
+		dt = math.min(dt, 0.5)
+		since += dt
+		local beat = since >= 0.25
+		if beat then since = 0 end
+		countdowns()
+		for _, player in Players:GetPlayers() do
+			local profile = Data.get(player)
+			if profile then
+				local s = sessionOf(player)
+				local _, root = living(player)
+				if beat and not downed[player] then place(player, s, root) end
+				local you = root and s.Stage ~= 0 and not downed[player] and mapPos(root) or nil
+				local events, moved = s:tick(dt, you)
+				for _, ev in events do
+					if ev.Kind == 'punch' or ev.Kind == 'blast' then punch(player, s, ev)
+					elseif ev.Kind == 'tele' then tele(player, ev) end
+				end
+				for stage in moved do
+					local w = s.Waves[stage]
+					if w then stateRemote:FireClient(player, { Kind = 'Moves', Stage = stage, D = WaveRules.pack(w) }) end
+				end
+				if beat then publish(player, profile, s) end
 			end
-			for stage in moved do
-				local w = s.Waves[stage]
-				if w then stateRemote:FireClient(player, { Kind = 'Moves', Stage = stage, D = WaveRules.pack(w) }) end
-			end
-			if beat then publish(player, profile, s) end
 		end
-	end
+	end)
+	if not ok and err ~= lastTickError then warn('[WaveService] tick failed, carrying on: ' .. tostring(err)) end
+	lastTickError = if ok then nil else err
 end

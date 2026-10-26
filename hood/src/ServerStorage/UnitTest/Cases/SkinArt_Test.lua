@@ -149,7 +149,7 @@ return function(t)
   Art.forget(m);t.expect.falsy(Art._stash(m))
   m:Destroy()
   local weak=setmetatable({},{__mode='v'})
-  do local c=rig(true);Art.equip(c,S.ById.Kingpin);Art.equip(c,S.ById.TheDon);weak[1]=c;c:Destroy() end
+  do local c=rig(true);Art.equip(c,S.ById.Kingpin);Art.equip(c,S.ById.TheDon);weak[1]=c;c:Destroy();Art.forget(c) end -- (in Roblox, Destroying calls forget; the offline harness has no signals)
   for j=1,2000000 do local _={j} end
   t.expect.falsy(weak[1])
  end)

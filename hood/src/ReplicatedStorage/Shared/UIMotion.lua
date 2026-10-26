@@ -8,7 +8,8 @@ local TweenService = game:GetService('TweenService')
 local Motion = {}
 Motion.Time = { hover = 0.13, press = 0.07, release = 0.2, open = 0.26, close = 0.15, pop = 0.15 }
 
-local running = setmetatable({}, { __mode = 'k' })
+local InstanceMap = require(script.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
+local running = InstanceMap.new()
 -- Tween inst's props, replacing any tween this module started on the same instance.
 local function tween(inst, time, style, dir, props)
 	local old = running[inst]
@@ -121,7 +122,7 @@ function Motion.bump(gui, amount, time)
 end
 
 -- Tick a label's number from one value to another; format(n) builds the text (UIKit.short by default).
-local counters = setmetatable({}, { __mode = 'k' })
+local counters = InstanceMap.new()
 function Motion.countTo(label, from, to, duration, format)
 	format = format or function(n) return tostring(math.floor(n + 0.5)) end
 	local v = counters[label]
@@ -204,7 +205,7 @@ end
 -- (brief 24) Steps a few screen pieces aside and back (the HUD while the unboxing moment plays): items = { { gui,
 -- offset UDim2 }, ... }; on = true slides each out by its offset (a little wind-up first), false slides it back. A piece
 -- that a layout pass moved meanwhile stays where the layout put it.
-local asides = setmetatable({}, { __mode = 'k' })
+local asides = InstanceMap.new()
 function Motion.aside(items, on, time)
 	for _, it in items do
 		local gui, offset = it[1], it[2]

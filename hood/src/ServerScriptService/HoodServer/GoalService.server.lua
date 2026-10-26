@@ -89,32 +89,37 @@ local TICK, GRACE, EVERY, HOLD = 0.25, 3, 0.5, 2.2 -- (brief 29: EVERY 1 -> 0.5,
 local HOLD_ON = { 'CashOuts', 'OwnedGuns' }
 local since, holdUntil, seen = {}, {}, {} -- [player] = seconds since their profile loaded / os.clock() until which checks
 -- wait / { [attribute] = value } as this loop last saw them (a change, seen before the check in the same pass, holds)
+local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
 while task.wait(TICK) do
-	for _, player in Players:GetPlayers() do
-		local profile = Data.get(player)
-		if profile then
-			local was = since[player]
-			local now = (was or -TICK) + TICK
-			since[player] = now
-			local last = seen[player]
-			local values = {}
-			for _, name in HOLD_ON do
-				values[name] = player:GetAttribute(name)
-				if last and values[name] ~= last[name] and last[name] ~= nil then holdUntil[player] = os.clock() + HOLD end
+	local ok, err = pcall(function()
+		for _, player in Players:GetPlayers() do
+			local profile = Data.get(player)
+			if profile then
+				local was = since[player]
+				local now = (was or -TICK) + TICK
+				since[player] = now
+				local last = seen[player]
+				local values = {}
+				for _, name in HOLD_ON do
+					values[name] = player:GetAttribute(name)
+					if last and values[name] ~= last[name] and last[name] ~= nil then holdUntil[player] = os.clock() + HOLD end
+				end
+				seen[player] = values
+				if was == nil then
+					local ok, err = pcall(publish, player, profile.Data.Goals.Step)
+					if not ok then warn('[GoalService] ' .. tostring(err)) end
+				elseif now >= GRACE and os.clock() >= (holdUntil[player] or 0) and math.floor(now / EVERY) ~= math.floor(was / EVERY) then
+					local ok, err = pcall(check, player)
+					if not ok then warn('[GoalService] ' .. tostring(err)) end
+				end
+			else
+				since[player] = nil
 			end
-			seen[player] = values
-			if was == nil then
-				local ok, err = pcall(publish, player, profile.Data.Goals.Step)
-				if not ok then warn('[GoalService] ' .. tostring(err)) end
-			elseif now >= GRACE and os.clock() >= (holdUntil[player] or 0) and math.floor(now / EVERY) ~= math.floor(was / EVERY) then
-				local ok, err = pcall(check, player)
-				if not ok then warn('[GoalService] ' .. tostring(err)) end
-			end
-		else
-			since[player] = nil
 		end
-	end
-	for player in since do
-		if player.Parent ~= Players then since[player], holdUntil[player], seen[player] = nil, nil, nil end
-	end
+		for player in since do
+			if player.Parent ~= Players then since[player], holdUntil[player], seen[player] = nil, nil, nil end
+		end
+	end)
+	if not ok and err ~= lastTickError then warn('[GoalService] tick failed, carrying on: ' .. tostring(err)) end
+	lastTickError = if ok then nil else err
 end

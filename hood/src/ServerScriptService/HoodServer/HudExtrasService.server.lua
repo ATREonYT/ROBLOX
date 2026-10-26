@@ -275,29 +275,34 @@ end)
 
 ---------------------------------------------------------------------------------------------- the clock
 local last = os.clock()
+local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
 while true do
-	task.wait(1)
-	local dt = math.clamp(os.clock() - last, 0, 5)
-	last = os.clock()
-	for _, player in Players:GetPlayers() do
-		local profile = Data.get(player)
-		if profile then
-			if not joined[player] then
-				local ok, err = pcall(setup, player, profile)
-				if not ok then warn('[HudExtrasService] ' .. tostring(err)) end
-			else
-				HudExtras.playtimeTick(profile, dt, os.time())
-				-- the range's auto-fire: AutoRate shots a second in an open lane
-				local station = player:GetAttribute('TrainingStation')
-				if ShotRules and type(station) == 'string' and station ~= '' and not station:find('^Locked:') then
-					local c = (carry[player] or 0) + dt * (ShotRules.AutoRate or 2)
-					local n = math.floor(c)
-					carry[player] = c - n
-					if n > 0 then count(player, 'Shots', n) end
+	local ok, err = pcall(function()
+		task.wait(1)
+		local dt = math.clamp(os.clock() - last, 0, 5)
+		last = os.clock()
+		for _, player in Players:GetPlayers() do
+			local profile = Data.get(player)
+			if profile then
+				if not joined[player] then
+					local ok, err = pcall(setup, player, profile)
+					if not ok then warn('[HudExtrasService] ' .. tostring(err)) end
+				else
+					HudExtras.playtimeTick(profile, dt, os.time())
+					-- the range's auto-fire: AutoRate shots a second in an open lane
+					local station = player:GetAttribute('TrainingStation')
+					if ShotRules and type(station) == 'string' and station ~= '' and not station:find('^Locked:') then
+						local c = (carry[player] or 0) + dt * (ShotRules.AutoRate or 2)
+						local n = math.floor(c)
+						carry[player] = c - n
+						if n > 0 then count(player, 'Shots', n) end
+					end
+					-- (the prize of a spin still turning stays hidden: no publish of Cash or the spin state until it stops)
+					if os.clock() >= (revealAt[player] or 0) then publish(player, profile) end
 				end
-				-- (the prize of a spin still turning stays hidden: no publish of Cash or the spin state until it stops)
-				if os.clock() >= (revealAt[player] or 0) then publish(player, profile) end
 			end
 		end
-	end
+	end)
+	if not ok and err ~= lastTickError then warn('[HudExtrasService] tick failed, carrying on: ' .. tostring(err)) end
+	lastTickError = if ok then nil else err
 end

@@ -2046,6 +2046,8 @@ function Lobby.productStand(c, key, opts)
 	local g, model = c:group('PassBoard_' .. key)
 	model:SetAttribute('Pass', key)
 	model:AddTag('HoodPassBoard')
+	-- Streams in as one piece, so a client that sees the board also sees its prompt and price (HoodClient/Lobby).
+	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end)
 	local half = opts.half or Lobby.StandFoot
 	-- (rule 29) the user's Pad_Base when imported (8 wide, its glowing rim), else our studded pad in the pass's colour
 	local top

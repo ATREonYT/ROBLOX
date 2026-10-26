@@ -203,8 +203,9 @@ end
 -- labels that are moving or sitting inside a band (the rest cost nothing per frame).
 local Fader = {}
 Fader.__index = Fader
-local builderMax = setmetatable({}, { __mode = 'k' }) -- each label's MaxDistance and Size as the map built them (we change both)
-local builderSize = setmetatable({}, { __mode = 'k' })
+local InstanceMap = require(script.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
+local builderMax = InstanceMap.new() -- each label's MaxDistance and Size as the map built them (we change both)
+local builderSize = InstanceMap.new()
 
 function LabelFade.new()
 	return setmetatable({ entries = {}, awake = {}, count = 0, ticks = 0 }, Fader)

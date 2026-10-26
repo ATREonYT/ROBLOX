@@ -710,7 +710,8 @@ Kit.Place = {
 	-- centre 1.4 digit heights in from the left edge): the picture 0.95 h wide and 0.85 h tall, centred 0.88 h in
 	counter = { W = 0.95, H = 0.85, X = 0, XH = 0.88, Y = 0.5 },
 }
-local placed = setmetatable({}, { __mode = 'k' })
+local InstanceMap = require(script.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
+local placed = InstanceMap.new()
 -- The drawn content of a picture, as { x0, y0, x1, y1 } of its square.
 local function glyphBounds(kind)
 	local parts = Kit.Glyphs[kind]
@@ -1077,11 +1078,11 @@ do
 	end
 
 	---------------------------------------------------------------- the shared driver
-	local registry = setmetatable({}, { __mode = 'k' }) -- holder -> entry
+	local registry = InstanceMap.new() -- holder -> entry
 	local order, driverConn = 0, nil
 	local acc, dirty, clock = 0, true, 0
 	local stats = { Live = 0, Built = 0, Cap = Kit.Model3DCap.PC, Parts = 0 }
-	local scrolls = setmetatable({}, { __mode = 'k' }) -- ScrollingFrame -> its CanvasPosition connection
+	local scrolls = InstanceMap.new() -- ScrollingFrame -> its CanvasPosition connection
 	-- (a list that scrolls re-checks at once, so a cell coming into view shows on that frame, not up to 0.15 s later)
 	local function watchScroll(h)
 		local a = h.Parent
@@ -1348,7 +1349,7 @@ do
 		end
 	end
 	local failedPasses = 0
-	local moving = setmetatable({}, { __mode = 'k' }) -- holder -> true while it spins or eases back
+	local moving = InstanceMap.new() -- holder -> true while it spins or eases back
 	local function step(dt)
 		dt = math.min(tonumber(dt) or 0, 0.1)
 		clock += dt

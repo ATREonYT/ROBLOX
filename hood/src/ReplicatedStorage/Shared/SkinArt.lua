@@ -1324,12 +1324,12 @@ local function headBox(head)
 	return head.Size
 end
 
+local InstanceMap = require(script.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
 -- What a character wore before its first look, so Art.unequip can give it back: removed instances and the
 -- NAME of what held them ('' = the character), body part colours and MeshPart textures by part name.
--- Nothing in an entry may point back at the character or its parts: Luau weak tables are not ephemerons,
--- so a value that reaches its own key would keep every equipped character alive for the life of the server.
--- Entries also go as soon as the character is destroyed or leaves the game (Art.forget).
-local stashes = setmetatable({}, { __mode = 'k' })
+-- Nothing in an entry may point back at the character or its parts, so a forgotten entry frees the character.
+-- Entries go as soon as the character is destroyed or leaves the game (Art.forget, and InstanceMap on Destroying).
+local stashes = InstanceMap.new()
 function Art.forget(character)
 	local st = stashes[character]
 	if not st then return end

@@ -165,8 +165,13 @@ end
 Players.PlayerAdded:Connect(joined)
 for _, p in Players:GetPlayers() do task.spawn(joined, p) end
 task.spawn(function()
+	local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
 	while true do
-		task.wait(1)
-		for _, p in Players:GetPlayers() do publishBoost(p) end
+		local ok, err = pcall(function()
+			task.wait(1)
+			for _, p in Players:GetPlayers() do publishBoost(p) end
+		end)
+		if not ok and err ~= lastTickError then warn('[StoreService] tick failed, carrying on: ' .. tostring(err)) end
+		lastTickError = if ok then nil else err
 	end
 end)

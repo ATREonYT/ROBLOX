@@ -12,7 +12,7 @@ Do these in order. Each step says where the details are. Tick them off as you go
    - Paste `hood/tools/blender/studio_item_meshes.lua` into the **Command Bar**.
    - Check: `ReplicatedStorage → HoodItemMeshes` has 57 models. Press Play and the plaza shows your designs.
 4. **Icons:** upload the UI pictures with `python3 hood/tools/upload_assets.py`, using your Open Cloud API key (`hood/art/README_upload.md`). Without this, menus show stand-ins.
-5. **Saving:** Game Settings → Security → turn on **Enable Studio Access to API Services**, so DataStores save in Studio tests.
+5. **Saving:** Game Settings → Security → turn on **Enable Studio Access to API Services**. In Studio, progress is on purpose a throwaway copy that resets when you press Stop, so your real saves are never touched by tests (Output says "MOCK DATA").
 
 ## C. Robux items (this is the money)
 6. **Passes and products:** create every game pass and developer product listed in `hood/MONETIZATION.md`, at the prices given. Paste each id into `hood/src/ReplicatedStorage/Shared/Config/Products.lua`.
@@ -25,7 +25,7 @@ Do these in order. Each step says where the details are. Tick them off as you go
    - the tutorial hint and arrows lead you to the range, the gun shop, Stage 1 and a box;
    - nothing is stuck, no error in Output.
 10. **Purchases:** Studio test purchases are free. Buy one pass, one box and one Cash pack; check each gives what it says.
-11. **Save:** play, earn Cash, stop, play again; the Cash must still be there.
+11. **Save:** this one is tested in the published game (step 16), not in Studio, because Studio progress resets on Stop. There: play, earn Cash, leave, join again; the Cash must still be there.
 12. **Phone:** Test → Device → an iPhone. Every button must be reachable, and no text cut off.
 13. **Two players:** Test → Clients and Servers → 2 players. Check the World Boss, the leaderboards and gifting.
 
@@ -38,6 +38,7 @@ Do these in order. Each step says where the details are. Tick them off as you go
 16. **Private first:**
     - Publish, keep it **Private** or friends-only;
     - play it on a real phone and a computer with 2-3 friends;
+    - do the save test from step 11 (earn Cash, leave, join again);
     - fix what they find.
 17. **Public:** make it Public. Watch the first day's **Analytics** (Retention, Monetization) and send Claude what you see.
 

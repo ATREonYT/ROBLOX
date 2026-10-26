@@ -5431,6 +5431,8 @@ function Lobby.productStand(c, key, opts)
 	local g, model = c:group('PassBoard_' .. key)
 	model:SetAttribute('Pass', key)
 	model:AddTag('HoodPassBoard')
+	-- Streams in as one piece, so a client that sees the board also sees its prompt and price (HoodClient/Lobby).
+	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end)
 	local half = opts.half or Lobby.StandFoot
 	-- (rule 29) the user's Pad_Base when imported (8 wide, its glowing rim), else our studded pad in the pass's colour
 	local top
@@ -9533,6 +9535,7 @@ function Finale.board(ctx, at)
 	local cf = at or slots and slots.WorldBossBoard or CFrame.new(-30, 9, 4.4)
 	local c, model = ctx:at(cf):group('WorldBossBoard')
 	model:AddTag('HoodWorldBossBoard')
+	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end) -- (its lines stream in with it)
 	c:box('BoardFrame', V(-9, -5, -0.6), V(9, 5, 0), Finale.Dark, M.Metal)
 	local head = c:box('BoardHeader', V(-9, 3, -0.8), V(9, 5.6, -0.4), C(216, 72, 40), M.SmoothPlastic)
 	local face = c:box('Board', V(-8.4, -4.4, -0.7), V(8.4, 2.8, -0.5), C(20, 22, 34), M.SmoothPlastic)

@@ -34,7 +34,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (394 at 4a04b59+);
+- unit: all pass (399 since the Oct 26 lessons pass);
 - integ_waves: no issues;
 - integ_lobby: walk cleared;
 - play_run: 82 checks / 0 failed;
@@ -86,6 +86,13 @@ Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio
 
 ## Inspiration from the owner's other games
 `hood/docs/INSPIRATION.md`: lessons from the owner's own Huss game (branch `HUZZ-VALLEY`, built with this same way of working; take lessons, don't copy it) and an Alien map they liked (one 8-stud grid, terraces, grass drips, classic studs). The lighting preset `HoodToy` follows Huss's even, cartoony light (strong sky fill, soft sun).
+
+## Lessons from the owner's other games (read before building)
+`hood/docs/LESSONS_FROM_OTHER_GAMES.md`: the scripting, feel and working mistakes from Huzz Valley and the early games, and where Hood stands on each. The scripting rules in short:
+- per-instance memory uses `Shared/InstanceMap`, never a weak table (`{ __mode = 'k' }`) keyed by instances;
+- a model the client reads streams in whole (`ModelStreamingMode.Atomic`), or the client looks again until its parts are there;
+- every forever loop and every queue pcalls each tick or job, and reports an error once;
+- Studio Play's top-right tag shows the scripts' build stamp: check it on any recording that shows old behaviour.
 
 ## Release
 `hood/RELEASE.md` is the owner's step-by-step checklist: import, icons, Robux items, tests, publish.

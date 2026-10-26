@@ -180,9 +180,10 @@ function Juice.burst(position, color, power)
 	slot.ring:Emit(1)
 end
 
+local InstanceMap = require(script.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
 -- White flash over a model for one beat. One Highlight per model, made on first use and switched off
 -- between hits: only enabled Highlights count toward the 255 limit, and nothing is created per punch.
-local flashes = setmetatable({}, { __mode = 'k' })
+local flashes = InstanceMap.new()
 function Juice.flash(model)
 	local f = flashes[model]
 	if not f or not f.h.Parent then
@@ -286,7 +287,7 @@ local function comboStep(dt)
 		comboConn = nil
 	end
 end
-local comboRigs = setmetatable({}, { __mode = 'k' })
+local comboRigs = InstanceMap.new()
 function Juice.combo(key, at, gain, opts)
 	opts = opts or {}
 	local color = opts.color or Color3.fromRGB(255, 194, 26)

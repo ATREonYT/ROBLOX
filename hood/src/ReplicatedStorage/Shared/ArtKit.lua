@@ -409,7 +409,7 @@ end
 -- label. props: Text, Tone, X, Y, W, H, Anchor, TextSize, IconSize, Name, Z, Radius, Studs (false: flat), OnClick,
 -- TextColor, Align ('Center'), Gap (px between icon and text).
 -- States (ArtKit.setState): normal | hover / pressed (UIMotion.button) | disabled | selected | loading | claimed.
-local BUTTONS = setmetatable({}, { __mode = 'k' })
+local BUTTONS = require(Shared.InstanceMap).new() -- (not a weak table: see InstanceMap)
 function ArtKit.button(parent, props)
 	local w, h = props.W or 200, props.H or 64
 	local z = props.Z or 1

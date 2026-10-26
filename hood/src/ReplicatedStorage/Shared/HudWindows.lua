@@ -53,9 +53,10 @@ function HudWindows.root()
 end
 HudWindows.relayout = relayout
 
+local InstanceMap = require(script.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
 -- The window's own parts rise and fade in one after another (the reference's stagger-in). (bases: where each part rests,
 -- kept while its stagger runs, so a second open mid-stagger never moves it for good)
-local bases = setmetatable({}, { __mode = 'k' })
+local bases = InstanceMap.new()
 local function staggerIn(win)
 	local i = 0
 	for _, c in win.Well:GetChildren() do

@@ -247,27 +247,32 @@ local function writeBoard(lobby,spec,rows)
  label.Text=table.concat(names,'\n');values.Text=table.concat(mains,'\n');extra.Text=table.concat(extras,'\n')
 end
 local beat=0
+local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
 while true do
- local dt=task.wait(0.25)
- beat+=1
- local rows={}
- for _,player in Players:GetPlayers() do
-  local profile=Data.get(player)
-  if profile then
-   local n=RebirthRules.count(profile.Data.Rebirths)
-   local lane,station=standing(player,n)
-   sync(player,profile,lane,station)
-   offer(player,Rules.pass(station))
-   autoFire(player,profile,lane,station,dt)
-   walk(player,n)
-   Levels.publish(player,profile.Data) -- (brief 29: Level, BestLevel and Rank, and the rank-up when a rank is crossed)
-   if beat%4==0 then overheadTag(player,profile.Data.Rep,n,profile.Data.BestLevel) end
-   local waves=profile.Data.Waves
-   table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep,Cash=profile.Data.Cash,Rebirths=n,Stage=type(waves)=='table' and tonumber(waves.Cleared) or 0})
+ local ok, err = pcall(function()
+  local dt=task.wait(0.25)
+  beat+=1
+  local rows={}
+  for _,player in Players:GetPlayers() do
+   local profile=Data.get(player)
+   if profile then
+    local n=RebirthRules.count(profile.Data.Rebirths)
+    local lane,station=standing(player,n)
+    sync(player,profile,lane,station)
+    offer(player,Rules.pass(station))
+    autoFire(player,profile,lane,station,dt)
+    walk(player,n)
+    Levels.publish(player,profile.Data) -- (brief 29: Level, BestLevel and Rank, and the rank-up when a rank is crossed)
+    if beat%4==0 then overheadTag(player,profile.Data.Rep,n,profile.Data.BestLevel) end
+    local waves=profile.Data.Waves
+    table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep,Cash=profile.Data.Cash,Rebirths=n,Stage=type(waves)=='table' and tonumber(waves.Cleared) or 0})
+   end
   end
- end
- if beat%20==0 then
-  -- The lobby boards: TOP POWER, TOP REBIRTHS (rebirths, then Power), TOP CASH (when the map has them).
-  for _,spec in BOARDS do writeBoard(lobby,spec,rows) end
- end
+  if beat%20==0 then
+   -- The lobby boards: TOP POWER, TOP REBIRTHS (rebirths, then Power), TOP CASH (when the map has them).
+   for _,spec in BOARDS do writeBoard(lobby,spec,rows) end
+  end
+ end)
+ if not ok and err ~= lastTickError then warn('[LobbyService] tick failed, carrying on: ' .. tostring(err)) end
+ lastTickError = if ok then nil else err
 end

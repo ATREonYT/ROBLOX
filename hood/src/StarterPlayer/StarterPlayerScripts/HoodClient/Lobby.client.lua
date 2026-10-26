@@ -700,6 +700,8 @@ local function watchBoards()
 		local key = m:GetAttribute('Pass')
 		if boards[m] or type(key) ~= 'string' or not m:IsDescendantOf(active.Root) then continue end
 		local prompt = m:FindFirstChild('PassPrompt', true)
+		-- (streaming: the board can arrive before its parts; try again on the next refresh until its prompt is here)
+		if not prompt then continue end
 		local b = { Key = key, Prompt = prompt, Price = m:FindFirstChild('Price', true) }
 		boards[m] = b
 		if prompt and prompt:IsA('ProximityPrompt') then

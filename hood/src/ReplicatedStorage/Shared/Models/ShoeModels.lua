@@ -1558,7 +1558,8 @@ local function hideCostumeShoes(costume, hidden)
 	end
 end
 
-local wornState = setmetatable({}, { __mode = 'k' })
+local InstanceMap = require(script.Parent.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
+local wornState = InstanceMap.new()
 
 -- Weld the pair onto a character. R15: shoe body to Left/RightFoot, the shaft (collar, tongue, ankle panel) to
 -- Left/RightLowerLeg. R6: everything to the bottom of Left/Right Leg. Scaled per axis to the real parts.

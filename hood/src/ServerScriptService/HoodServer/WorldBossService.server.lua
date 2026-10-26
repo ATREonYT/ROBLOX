@@ -200,71 +200,76 @@ do
 	fn.Parent = script
 end
 local beat, lastSent = 0, nil
+local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
 while true do
-	local dt = math.min(task.wait(fight and WB.Tick or 0.5), 0.5)
-	local now = serverNow()
-	if not fight and now >= due then
-		start(due)
-		due = WB.nextAt(due + 1) -- (the next landing: one a slot, however this one ends)
-	end
-	local f = fight
-	if f and now >= f.From + WB.FightTime then
-		finish(false)
-		f = nil
-	end
-	if not f and now >= due then due = WB.nextAt(now + 1) end
-	local list = f and present() or nil
-	if f then
-		-- the nearest player on the pier is the one it goes for; its big moves hit everyone inside them
-		local g = f.G
-		local best, target = math.huge, nil
-		for _, e in list do
-			local d = (e.Pos - g.Pos).Magnitude
-			if d < best then best, target = d, e end
+	local ok, err = pcall(function()
+		local dt = math.min(task.wait(fight and WB.Tick or 0.5), 0.5)
+		local now = serverNow()
+		if not fight and now >= due then
+			start(due)
+			due = WB.nextAt(due + 1) -- (the next landing: one a slot, however this one ends)
 		end
-		if g.State == S.Idle and target then S.alert(g, 0) end
-		local ev, landed = S.step(g, dt, target and target.Pos or nil, os.clock(), nil, arena, nil)
-		if ev == 'tele' and g.Atk then
-			WB.grow(g.Atk)
-			local a = g.Atk
-			local points = {}
-			for k, p in a.P or {} do points[k] = xz(p) end
-			toPier(list, { Kind = 'Tele', Move = a.Move, Shape = a.Shape, O = xz(a.O), D = xz(a.D), L = a.L, W = a.W, R = a.R, A = a.A, Ri = a.Ri, P = points, T = a.Tele, Flight = a.Flight, Jump = a.Jump })
-		elseif ev == 'blast' and g.Atk then
+		local f = fight
+		if f and now >= f.From + WB.FightTime then
+			finish(false)
+			f = nil
+		end
+		if not f and now >= due then due = WB.nextAt(now + 1) end
+		local list = f and present() or nil
+		if f then
+			-- the nearest player on the pier is the one it goes for; its big moves hit everyone inside them
+			local g = f.G
+			local best, target = math.huge, nil
 			for _, e in list do
-				local hit = S.inAttack(g.Atk, e.Pos) and hurt(e, g.Atk.Damage)
-				remote:FireClient(e.Player, { Kind = 'Blast', Move = g.Atk.Move, Landed = hit == true })
+				local d = (e.Pos - g.Pos).Magnitude
+				if d < best then best, target = d, e end
 			end
-		elseif ev == 'punch' then
-			local hit = landed and target and hurt(target, S.punch('Boss') * 1.5)
-			toPier(list, { Kind = 'Punch', Landed = hit == true })
+			if g.State == S.Idle and target then S.alert(g, 0) end
+			local ev, landed = S.step(g, dt, target and target.Pos or nil, os.clock(), nil, arena, nil)
+			if ev == 'tele' and g.Atk then
+				WB.grow(g.Atk)
+				local a = g.Atk
+				local points = {}
+				for k, p in a.P or {} do points[k] = xz(p) end
+				toPier(list, { Kind = 'Tele', Move = a.Move, Shape = a.Shape, O = xz(a.O), D = xz(a.D), L = a.L, W = a.W, R = a.R, A = a.A, Ri = a.Ri, P = points, T = a.Tele, Flight = a.Flight, Jump = a.Jump })
+			elseif ev == 'blast' and g.Atk then
+				for _, e in list do
+					local hit = S.inAttack(g.Atk, e.Pos) and hurt(e, g.Atk.Damage)
+					remote:FireClient(e.Player, { Kind = 'Blast', Move = g.Atk.Move, Landed = hit == true })
+				end
+			elseif ev == 'punch' then
+				local hit = landed and target and hurt(target, S.punch('Boss') * 1.5)
+				toPier(list, { Kind = 'Punch', Landed = hit == true })
+			end
+			local d = { math.floor(g.Pos.X * 100 + 0.5) / 100, math.floor(g.Pos.Z * 100 + 0.5) / 100, g.State }
+			local key = table.concat(d, ',')
+			if key ~= lastSent then
+				lastSent = key
+				toPier(list, { Kind = 'Moves', D = d })
+			end
 		end
-		local d = { math.floor(g.Pos.X * 100 + 0.5) / 100, math.floor(g.Pos.Z * 100 + 0.5) / 100, g.State }
-		local key = table.concat(d, ',')
-		if key ~= lastSent then
-			lastSent = key
-			toPier(list, { Kind = 'Moves', D = d })
+		beat += dt
+		if beat >= 0.25 then
+			beat = 0
+			if fight then
+				setAttr('WorldBossPhase', 'Fight')
+				setAttr('WorldBossAt', math.floor(fight.From + WB.FightTime))
+				setAttr('WorldBossHp', math.max(0, fight.Hp))
+				setAttr('WorldBossMax', fight.Max)
+			else
+				setAttr('WorldBossPhase', due - now <= WB.Warn and 'Invite' or 'Wait')
+				setAttr('WorldBossAt', due)
+				setAttr('WorldBossLook', WB.lookFor(WB.slotOf(due)))
+				setAttr('WorldBossTitle', WB.titleOf(WB.lookFor(WB.slotOf(due))))
+			end
+			local on = {}
+			for _, e in (fight and (list or present())) or {} do on[e.Player] = true end
+			for _, player in Players:GetPlayers() do
+				local want = on[player] == true
+				if player:GetAttribute('WorldBossFight') ~= want then player:SetAttribute('WorldBossFight', want) end
+			end
 		end
-	end
-	beat += dt
-	if beat >= 0.25 then
-		beat = 0
-		if fight then
-			setAttr('WorldBossPhase', 'Fight')
-			setAttr('WorldBossAt', math.floor(fight.From + WB.FightTime))
-			setAttr('WorldBossHp', math.max(0, fight.Hp))
-			setAttr('WorldBossMax', fight.Max)
-		else
-			setAttr('WorldBossPhase', due - now <= WB.Warn and 'Invite' or 'Wait')
-			setAttr('WorldBossAt', due)
-			setAttr('WorldBossLook', WB.lookFor(WB.slotOf(due)))
-			setAttr('WorldBossTitle', WB.titleOf(WB.lookFor(WB.slotOf(due))))
-		end
-		local on = {}
-		for _, e in (fight and (list or present())) or {} do on[e.Player] = true end
-		for _, player in Players:GetPlayers() do
-			local want = on[player] == true
-			if player:GetAttribute('WorldBossFight') ~= want then player:SetAttribute('WorldBossFight', want) end
-		end
-	end
+	end)
+	if not ok and err ~= lastTickError then warn('[WorldBossService] tick failed, carrying on: ' .. tostring(err)) end
+	lastTickError = if ok then nil else err
 end
