@@ -3,7 +3,7 @@
 -- COMPACT in B34 (the user: "redo the lobby layout completely ... make it feel nice to play"; their pick: a smaller,
 -- tidier warehouse, everything a few steps from the spawn). Runs after e3_plaza, which lays the zones out.
 --   Floor    warm light concrete slabs (two tones, 16 x 16, faint studs), no grass inside; the walks lie on it.
---   Walls    chunky brick round x -92..68, z 6..92 (the training block's kerb at the north wall, the head lane's stage at
+--   Walls    chunky brick round x -86..86, z 6..94 (Oct 27; the training block and the head lane's stage clear of
 --            the west wall), a dark brick skirting, cream pilasters every 16 studs, an open clerestory band showing the
 --            cliffs and the hood blocks outside, one painted field per wall (west red behind the head lane, north blue
 --            either side of the door, east teal behind the gun shop, south yellow behind the box dais), roller doors:
@@ -11,13 +11,15 @@
 --   Roof     open trusses (chords, posts and braces) and purlins, 31-37 up: no sheeting, so the HoodToy sun throws
 --            stripes of shadow on the floor; the camera never meets it. The shell itself casts no shade.
 --   Outside  the cliffs, trees and hood blocks, 12 studs past the walls (a grass yard between), seen through the doors.
-Lobby.WH = { x0 = -70, x1 = 54, z0 = 6, z1 = 82, -- (B35: the compact plan, ref_STILL_lobby_topdown; z0 hugs the gate's wings)
+-- (Oct 27, the owner: "keep the warehouse ... dont make it so cramped": 172 x 88, was 124 x 76; the spine on its middle
+-- line like the reference's path, the zones a walk's width off it, calm floor round them; z0 still hugs the gate's wings)
+Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 94,
 	 t = 2, eave = 30, truss = 6, off = 12, bay = 16,
 	win = { 17, 25 }, skirt = 3,
 	-- open doors: { wall, u0, u1, height } (u along the wall: z for west/east, x for north/south)
 	-- (B34 fix round: the north door 28 high, so the Stage 1 gate's whole frame shows through it from the spawn)
-	open = { { 'N', -24, 24, 28 }, { 'S', -50, -36, 16 }, { 'S', 30, 44, 16 }, { 'W', 56, 70, 16 } },
-	shut = { { 'N', -60, -46, 14 }, { 'W', 10, 22, 14 } },
+	open = { { 'N', -24, 24, 28 }, { 'S', -46, -32, 16 }, { 'S', 32, 46, 16 }, { 'W', 58, 72, 16 } },
+	shut = { { 'N', -66, -52, 14 }, { 'W', 12, 24, 14 }, { 'E', 64, 76, 14 } },
 	-- one painted field per wall: { wall, u0, u1, y0, y1, colour key }
 	-- (B34 fix round: one muted warm brick, no painted fields, stripes or posters: the walls stay quieter than the
 	-- things you can use)
@@ -197,7 +199,7 @@ function Lobby.warehouse(L, h)
 	-- hanging lamps under the trusses either side of the spine (chunky shade, a warm glowing underside)
 	local lamps = L:group('HallLamps')
 	for z = Wh.z0 + 10, Wh.z1 - 6, 18 do
-		for _, x in { -36, 36 } do
+		for _, x in { -46, 46 } do
 			lamps:box('LampRod', V(x - 0.2, 24.6, z - 0.2), V(x + 0.2, y0, z + 0.2), K.drum, M.SmoothPlastic)
 			lamps:box('LampShade', V(x - 1.6, 23.4, z - 1.6), V(x + 1.6, 24.6, z + 1.6), K.steel, M.SmoothPlastic)
 			local g = lamps:box('LampGlow', V(x - 1.2, 23.1, z - 1.2), V(x + 1.2, 23.4, z + 1.2), K.lamp, M.Neon)
@@ -271,16 +273,16 @@ Lobby.Scenery = (function()
 	local list = {}
 	local function add(id, x, z, yaw, k) table.insert(list, { id, x, z, yaw or 0, k or 1 }) end
 	local Wh = Lobby.WH
-	add('Scn_Hoop', Wh.x0 + 4, 50, -90) -- (by the west door)
+	add('Scn_Hoop', Wh.x0 + 4, 54, -90) -- (by the west door)
 	add('Scn_Crate', Wh.x0 + 3.4, Wh.z1 - 3.4, 0) add('Scn_Crate', Wh.x0 + 6.4, Wh.z1 - 3, 12) add('Scn_Barrel', Wh.x0 + 3.6, Wh.z1 - 7.4, 0)
 	add('Scn_Crate', Wh.x1 - 3.4, Wh.z1 - 3.4, 0) add('Scn_Barrel', Wh.x1 - 3.6, Wh.z1 - 7.4, 0) add('Scn_Barrel', Wh.x1 - 6.2, Wh.z1 - 3.2, 20)
 	for _, d in Wh.open do
 		if d[1] == 'S' then add('Scn_Cone', d[2] + 2, Wh.z1 - 2.2, 0) add('Scn_Cone', d[3] - 2, Wh.z1 - 2.2, 0) end
 	end
-	add('Scn_Hydrant', -48, Wh.z1 - 2.4, 180) add('Scn_TrashCan', 28, Wh.z1 - 2.4, 180)
+	add('Scn_Hydrant', -50, Wh.z1 - 2.4, 180) add('Scn_TrashCan', 28, Wh.z1 - 2.4, 180)
 	-- out in the yard (framed by the doors and the clerestory)
-	add('Scn_Tree_1', -58, Wh.z1 + 10, 0) add('Scn_Tree_2', 44, Wh.z1 + 10, 0) add('Scn_Tree_2', Wh.x1 + 12, 15, 0) add('Scn_Tree_1', Wh.x0 - 12, 74, 0)
-	for _, x in { -70, -46, 32, 56 } do add('Scn_Bush_1', x, Wh.z1 + 5.6, 0) end
-	add('Scn_Bush_1', Wh.x1 + 6, 4, -90) add('Scn_Bush_1', Wh.x1 + 6, 26, -90) add('Scn_Bush_1', Wh.x0 - 6, 62, 90) add('Scn_Bush_1', Wh.x0 - 6, 86, 90)
+	add('Scn_Tree_1', -56, Wh.z1 + 10, 0) add('Scn_Tree_2', 42, Wh.z1 + 10, 0) add('Scn_Tree_2', Wh.x1 + 12, 15, 0) add('Scn_Tree_1', Wh.x0 - 12, 78, 0)
+	for _, x in { -70, -44, 34, 58 } do add('Scn_Bush_1', x, Wh.z1 + 5.6, 0) end
+	add('Scn_Bush_1', Wh.x1 + 6, 4, -90) add('Scn_Bush_1', Wh.x1 + 6, 26, -90) add('Scn_Bush_1', Wh.x0 - 6, 64, 90) add('Scn_Bush_1', Wh.x0 - 6, 88, 90)
 	return list
 end)()
