@@ -13,7 +13,7 @@
 --   Outside  the cliffs, trees and hood blocks, 12 studs past the walls (a grass yard between), seen through the doors.
 -- (Oct 27, the owner: "keep the warehouse ... dont make it so cramped": 172 x 88, was 124 x 76; the spine on its middle
 -- line like the reference's path, the zones a walk's width off it, calm floor round them; z0 still hugs the gate's wings)
-Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 94,
+Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 100,
 	 t = 2, eave = 30, truss = 6, off = 12, bay = 16,
 	win = { 17.6, 28.2 }, skirt = 3, -- (Oct 27 round 2: taller clerestory windows, more sky and cliffs over the walls)
 	-- open doors: { wall, u0, u1, height } (u along the wall: z for west/east, x for north/south)

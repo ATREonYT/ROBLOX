@@ -161,7 +161,9 @@ end
 
 -- (B31 PLAZA) Saturation over this on a lane's surfaces comes down to it (critic 7: big fields S 0.55-0.75; the pad tops,
 -- prices and items keep theirs). Measured in the colour the part is built with; HoodToy's grade adds ~0.1 on screen.
-Look.BigS = 0.38 -- (B31 PLAZA, lead: the lanes' view toward the reference's median S ~0.5)
+-- (Oct 27, the owner: "make the colors the same also as the references ... more cartoony": the reference's bays are
+-- full-strength hues, red ~(240, 40, 40); was 0.38, B31's "tone down", which left them pastel)
+Look.BigS = 0.85
 -- (stud layers on the plaza's ground, by part name; Oct 27 round 2, the owner: "make the studs not stand out as much,
 -- make it like the reference": the faint tone-on-tone studs on the floor, the walks and every platform instead of
 -- Roblox's classic Studs surface, tuned to the reference's stud contrast: a flat lit patch's luminance spread (p10..p90)

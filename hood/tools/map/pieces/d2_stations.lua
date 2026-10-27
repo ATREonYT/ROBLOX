@@ -33,24 +33,25 @@ local Stations = {}
 -- the stamped X's colour (nil = a darker shade of the face); text: the "xN Power" colour; glow: hit sparks;
 -- edge: a thin neon line inside the rim (shadow); labelLift: the label stack sits this much higher (gold's crown). Colours from the bag stations the critics signed off.
 -- Tiers 5-7 follow the reference's right row: shadow (x8), frost (x12), toxic (x18).
+-- (Oct 27, the owner: "make the colors the same also as the references ... make it feel more cartoony";
+-- ref_STILL_training_lanes_superhero.png) every bay is ONE bright hue: the mat in it, the gantry and stands in it, a
+-- darker cut of it as the outline rim, a lighter one on the lip. Eight hues like the reference's (grey, red, orange,
+-- purple, blue, cyan, green, yellow), each the one its theme's props and effects already suit (the name picks them),
+-- so the colour alone tells the bays apart from across the hall.
+local function hue(name, base, text)
+	return { name = name, rim = base:Lerp(C(0, 0, 0), 0.45), rimTop = base:Lerp(C(255, 255, 255), 0.35), mat = base,
+		frame = base:Lerp(C(0, 0, 0), 0.12), groove = base:Lerp(C(0, 0, 0), 0.22), trim = base:Lerp(C(0, 0, 0), 0.45),
+		wallCap = base:Lerp(C(255, 255, 255), 0.5), text = text or base:Lerp(C(255, 255, 255), 0.2), glow = base:Lerp(C(255, 255, 255), 0.3) }
+end
 Stations.Themes = {
-	{ name = 'stone', rim = C(62, 78, 118), rimTop = C(82, 104, 150), mat = C(115, 132, 172), frame = C(165, 95, 78),
-		text = C(255, 255, 255), glow = C(255, 236, 200) },
-	{ name = 'red', rim = C(26, 30, 70), rimTop = C(40, 46, 92), mat = C(250, 45, 85), frame = C(36, 42, 86), trim = C(240, 40, 70),
-		text = C(255, 70, 100), glow = C(255, 70, 100) },
-	{ name = 'lava', rim = C(225, 100, 35), rimTop = C(255, 150, 50), mat = C(255, 140, 20), frame = C(250, 140, 36), groove = C(215, 90, 10),
-		text = C(255, 170, 48), glow = C(255, 150, 40) },
-	{ name = 'arcane', rim = C(150, 40, 130), rimTop = C(240, 80, 190), mat = C(190, 70, 208), frame = C(170, 80, 220),
-		text = C(214, 120, 255), glow = C(230, 120, 255) },
-	{ name = 'shadow', rim = C(70, 40, 110), rimTop = C(92, 56, 140), mat = C(44, 24, 70), frame = C(22, 18, 32),
-		text = C(198, 164, 255), glow = C(176, 120, 255), edge = C(150, 70, 255) },
-	{ name = 'frost', rim = C(30, 110, 210), rimTop = C(160, 244, 255), mat = C(132, 246, 248), matMat = M.SmoothPlastic, frame = C(30, 110, 210),
-		groove = C(60, 190, 235), text = C(120, 236, 255), glow = C(150, 236, 255) },
-	-- (B30: PRO BAY's lane, in its own teal (Skins), not green: "its a warehouse ... and the green floor"; no glowing lip)
-	{ name = 'toxic', rim = C(18, 140, 150), rimTop = C(70, 214, 220), mat = C(0, 60, 66), frame = C(20, 132, 142), wallCap = C(255, 214, 30),
-		groove = C(10, 112, 122), text = C(90, 232, 236), glow = C(120, 240, 240) },
-	{ name = 'gold', rim = C(230, 180, 0), rimTop = C(255, 236, 60), mat = C(252, 242, 88), frame = C(245, 192, 0), groove = C(205, 140, 0),
-		trim = C(175, 18, 48), wallCap = C(255, 244, 200), text = C(255, 222, 50), glow = C(255, 222, 80), labelLift = 0.3 },
+	(function() local t = hue('stone', C(150, 158, 178), C(255, 255, 255)) t.glow = C(255, 236, 200) return t end)(), -- BAY 1 x1: grey
+	hue('red', C(240, 40, 44), C(255, 80, 80)), -- BAY 2 x4: red (red rain)
+	hue('lava', C(255, 134, 22)), -- BAY 3 x10: orange (fire)
+	hue('arcane', C(160, 64, 240), C(200, 130, 255)), -- BAY 4 x20: purple
+	hue('shadow', C(40, 112, 250), C(110, 170, 255)), -- BAY 5 x35: blue
+	hue('frost', C(36, 206, 250)), -- BAY 6 x50: cyan (snow)
+	hue('toxic', C(56, 214, 64), C(110, 255, 100)), -- PRO BAY x100: green
+	(function() local t = hue('gold', C(255, 214, 24), C(255, 222, 50)) t.trim = C(175, 18, 48) t.labelLift = 0.3 return t end)(), -- GOLD BAY x250: yellow
 	-- (B30) 9: the HEAD LANE, the gold lane's kit in a richer cut (a crimson rim under a gold lip, a pale-gold mat) and its
 	-- label in the reference's 250x cyan (#2EC8E0, ref_W06.5_train_aisle_endcap_250x.jpg)
 	{ name = 'gold', rim = C(178, 22, 52), rimTop = C(255, 222, 60), mat = C(255, 240, 150), frame = C(245, 192, 0), groove = C(214, 160, 30),
@@ -77,7 +78,11 @@ Stations.StampId = '' -- set from HoodVFX.Textures.stamp at build time ('' until
 -- in front of `Front1` move back by Front, the bench and its marks (up to `Cut`) by Bench, everything past it forward by
 -- Back; a straight piece that spans a cut (the rim, the mat, the box, the effects field) is stretched between its ends.
 Stations.Compact = { Front = 3.5, Back = 3.5, Bench = -0.3, Cut = -1.5, Front1 = -7 }
-Stations.LaneHalf = Stations.HALF_Z - Stations.Compact.Back -- the built lane's half length (6.5); the lobby lays out on it
+-- (Oct 27, the owner: "make the shooting ranges longer") the bays in the rows keep their full 20; only the head lane,
+-- which closes the aisle against the west wall, is still pulled together (CompactOnly).
+Stations.CompactOnly = { Head = true }
+Stations.LaneHalf = Stations.HALF_Z -- a row bay's half length (10); the lobby lays out on it
+Stations.HeadHalf = Stations.HALF_Z - Stations.Compact.Back -- the compact head lane's half length (6.5)
 
 ---------------------------------------------------------------------------------------------- stamp and X
 -- The groove colour on a face: the theme's own, or the face colour darkened (critic: grooves keep the face's
@@ -1457,7 +1462,7 @@ function Stations.build(ctx, stationId, opts)
 			VFX.station(field, tier, t.glow, V(2 * MX, 10, z1 - z0), { parent = model })
 		end
 	end
-	if Stations.Compact and Stations.Style ~= 'soldier' then Stations.compact(model, st:world(CFrame.new())) end
+	if Stations.Compact and Stations.Style ~= 'soldier' and (not Stations.CompactOnly or Stations.CompactOnly[stationId]) then Stations.compact(model, st:world(CFrame.new())) end
 	return model
 end
 

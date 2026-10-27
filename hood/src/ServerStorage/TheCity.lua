@@ -951,24 +951,25 @@ local Stations = {}
 -- the stamped X's colour (nil = a darker shade of the face); text: the "xN Power" colour; glow: hit sparks;
 -- edge: a thin neon line inside the rim (shadow); labelLift: the label stack sits this much higher (gold's crown). Colours from the bag stations the critics signed off.
 -- Tiers 5-7 follow the reference's right row: shadow (x8), frost (x12), toxic (x18).
+-- (Oct 27, the owner: "make the colors the same also as the references ... make it feel more cartoony";
+-- ref_STILL_training_lanes_superhero.png) every bay is ONE bright hue: the mat in it, the gantry and stands in it, a
+-- darker cut of it as the outline rim, a lighter one on the lip. Eight hues like the reference's (grey, red, orange,
+-- purple, blue, cyan, green, yellow), each the one its theme's props and effects already suit (the name picks them),
+-- so the colour alone tells the bays apart from across the hall.
+local function hue(name, base, text)
+	return { name = name, rim = base:Lerp(C(0, 0, 0), 0.45), rimTop = base:Lerp(C(255, 255, 255), 0.35), mat = base,
+		frame = base:Lerp(C(0, 0, 0), 0.12), groove = base:Lerp(C(0, 0, 0), 0.22), trim = base:Lerp(C(0, 0, 0), 0.45),
+		wallCap = base:Lerp(C(255, 255, 255), 0.5), text = text or base:Lerp(C(255, 255, 255), 0.2), glow = base:Lerp(C(255, 255, 255), 0.3) }
+end
 Stations.Themes = {
-	{ name = 'stone', rim = C(62, 78, 118), rimTop = C(82, 104, 150), mat = C(115, 132, 172), frame = C(165, 95, 78),
-		text = C(255, 255, 255), glow = C(255, 236, 200) },
-	{ name = 'red', rim = C(26, 30, 70), rimTop = C(40, 46, 92), mat = C(250, 45, 85), frame = C(36, 42, 86), trim = C(240, 40, 70),
-		text = C(255, 70, 100), glow = C(255, 70, 100) },
-	{ name = 'lava', rim = C(225, 100, 35), rimTop = C(255, 150, 50), mat = C(255, 140, 20), frame = C(250, 140, 36), groove = C(215, 90, 10),
-		text = C(255, 170, 48), glow = C(255, 150, 40) },
-	{ name = 'arcane', rim = C(150, 40, 130), rimTop = C(240, 80, 190), mat = C(190, 70, 208), frame = C(170, 80, 220),
-		text = C(214, 120, 255), glow = C(230, 120, 255) },
-	{ name = 'shadow', rim = C(70, 40, 110), rimTop = C(92, 56, 140), mat = C(44, 24, 70), frame = C(22, 18, 32),
-		text = C(198, 164, 255), glow = C(176, 120, 255), edge = C(150, 70, 255) },
-	{ name = 'frost', rim = C(30, 110, 210), rimTop = C(160, 244, 255), mat = C(132, 246, 248), matMat = M.SmoothPlastic, frame = C(30, 110, 210),
-		groove = C(60, 190, 235), text = C(120, 236, 255), glow = C(150, 236, 255) },
-	-- (B30: PRO BAY's lane, in its own teal (Skins), not green: "its a warehouse ... and the green floor"; no glowing lip)
-	{ name = 'toxic', rim = C(18, 140, 150), rimTop = C(70, 214, 220), mat = C(0, 60, 66), frame = C(20, 132, 142), wallCap = C(255, 214, 30),
-		groove = C(10, 112, 122), text = C(90, 232, 236), glow = C(120, 240, 240) },
-	{ name = 'gold', rim = C(230, 180, 0), rimTop = C(255, 236, 60), mat = C(252, 242, 88), frame = C(245, 192, 0), groove = C(205, 140, 0),
-		trim = C(175, 18, 48), wallCap = C(255, 244, 200), text = C(255, 222, 50), glow = C(255, 222, 80), labelLift = 0.3 },
+	(function() local t = hue('stone', C(150, 158, 178), C(255, 255, 255)) t.glow = C(255, 236, 200) return t end)(), -- BAY 1 x1: grey
+	hue('red', C(240, 40, 44), C(255, 80, 80)), -- BAY 2 x4: red (red rain)
+	hue('lava', C(255, 134, 22)), -- BAY 3 x10: orange (fire)
+	hue('arcane', C(160, 64, 240), C(200, 130, 255)), -- BAY 4 x20: purple
+	hue('shadow', C(40, 112, 250), C(110, 170, 255)), -- BAY 5 x35: blue
+	hue('frost', C(36, 206, 250)), -- BAY 6 x50: cyan (snow)
+	hue('toxic', C(56, 214, 64), C(110, 255, 100)), -- PRO BAY x100: green
+	(function() local t = hue('gold', C(255, 214, 24), C(255, 222, 50)) t.trim = C(175, 18, 48) t.labelLift = 0.3 return t end)(), -- GOLD BAY x250: yellow
 	-- (B30) 9: the HEAD LANE, the gold lane's kit in a richer cut (a crimson rim under a gold lip, a pale-gold mat) and its
 	-- label in the reference's 250x cyan (#2EC8E0, ref_W06.5_train_aisle_endcap_250x.jpg)
 	{ name = 'gold', rim = C(178, 22, 52), rimTop = C(255, 222, 60), mat = C(255, 240, 150), frame = C(245, 192, 0), groove = C(214, 160, 30),
@@ -995,7 +996,11 @@ Stations.StampId = '' -- set from HoodVFX.Textures.stamp at build time ('' until
 -- in front of `Front1` move back by Front, the bench and its marks (up to `Cut`) by Bench, everything past it forward by
 -- Back; a straight piece that spans a cut (the rim, the mat, the box, the effects field) is stretched between its ends.
 Stations.Compact = { Front = 3.5, Back = 3.5, Bench = -0.3, Cut = -1.5, Front1 = -7 }
-Stations.LaneHalf = Stations.HALF_Z - Stations.Compact.Back -- the built lane's half length (6.5); the lobby lays out on it
+-- (Oct 27, the owner: "make the shooting ranges longer") the bays in the rows keep their full 20; only the head lane,
+-- which closes the aisle against the west wall, is still pulled together (CompactOnly).
+Stations.CompactOnly = { Head = true }
+Stations.LaneHalf = Stations.HALF_Z -- a row bay's half length (10); the lobby lays out on it
+Stations.HeadHalf = Stations.HALF_Z - Stations.Compact.Back -- the compact head lane's half length (6.5)
 
 ---------------------------------------------------------------------------------------------- stamp and X
 -- The groove colour on a face: the theme's own, or the face colour darkened (critic: grooves keep the face's
@@ -2375,7 +2380,7 @@ function Stations.build(ctx, stationId, opts)
 			VFX.station(field, tier, t.glow, V(2 * MX, 10, z1 - z0), { parent = model })
 		end
 	end
-	if Stations.Compact and Stations.Style ~= 'soldier' then Stations.compact(model, st:world(CFrame.new())) end
+	if Stations.Compact and Stations.Style ~= 'soldier' and (not Stations.CompactOnly or Stations.CompactOnly[stationId]) then Stations.compact(model, st:world(CFrame.new())) end
 	return model
 end
 
@@ -4349,7 +4354,8 @@ function Lobby.rowX(k) return Lobby.Plaza.x1 - 1.2 - 1.0 - 4.5 - Lobby.Stand.Pit
 Lobby.RowZ = { N = Lobby.CrossZ - 16, S = Lobby.CrossZ + 16 } -- (the aisle's half width + the lanes' half length)
 -- (B35) the built lane's half length: the compact bay's (Stations.LaneHalf), else the full 10
 function Lobby.laneHalf() return Stations and (Stations.LaneHalf or Stations.HALF_Z) or 10 end
-function Lobby.endX() return Lobby.HeadFront - Lobby.laneHalf() end
+function Lobby.headHalf() return Stations and (Stations.HeadHalf or Stations.LaneHalf or Stations.HALF_Z) or 10 end
+function Lobby.endX() return Lobby.HeadFront - Lobby.headHalf() end
 function Lobby.standLayout()
 	local St = Lobby.Stand
 	table.clear(St.Lanes)
@@ -4461,9 +4467,9 @@ function Lobby.headStage(t, K)
 	local Pz, H = Lobby.Plaza, Lobby.Stand.Head
 	local h, hz = Pz.deck, H.HalfZ
 	local zc = Lobby.CrossZ
-	local x0 = Lobby.endX() - Lobby.laneHalf() - 1.0 -- (its back, a stud past the lane's, in the alcove)
+	local x0 = Lobby.endX() - Lobby.headHalf() - 1.0 -- (its back, a stud past the lane's, in the alcove)
 	-- (the head lane faces east, +x: its front, the shooter's end, is at endX + HALF_Z)
-	local xf = Lobby.endX() + Lobby.laneHalf() + 0.6 -- the stage's front edge, 0.6 past the lane's rim
+	local xf = Lobby.endX() + Lobby.headHalf() + 0.6 -- the stage's front edge, 0.6 past the lane's rim
 	local top = h + H.Rise
 	local gold, goldDeep, goldPale = K.gold, K.goldDark, C(255, 236, 150)
 	-- (from the floor: its back half stands in the alcove, past the plaza's deck)
@@ -4543,7 +4549,7 @@ function Lobby.stand(L, skins)
 	slab('Aisle', V(ax, h, a0), V(x1 - kw, h + 0.04, a1), K.aisle)
 	for _, z in { a0, a1 - 0.35 } do flat('AisleEdge', V(ax, h + 0.04, z), V(x1 - kw, h + 0.07, z + 0.35), K.aisleEdge) end
 	local rz0, rz1 = (a0 + a1) / 2 - 3, (a0 + a1) / 2 + 3
-	local rx = Lobby.endX() + Lobby.laneHalf() + 0.6 + (St.Head.Steps - 1) * St.Head.Tread -- (the steps' foot)
+	local rx = Lobby.endX() + Lobby.headHalf() + 0.6 + (St.Head.Steps - 1) * St.Head.Tread -- (the steps' foot)
 	slab('AisleRunner', V(rx, h + 0.04, rz0 + 0.6), V(x1, h + 0.16, rz1 - 0.6), K.runner or K.carpet)
 	for _, z in { rz0, rz1 - 0.6 } do slab('AisleRunnerEdge', V(rx, h + 0.04, z), V(x1, h + 0.16, z + 0.6), K.runnerEdge or K.carpetDark) end
 
@@ -4588,7 +4594,7 @@ function Lobby.stand(L, skins)
 			local step = spot[1] == 'End' and 7 or (2 * spot[2] + (spot[1] == 'S' and 1 or 0))
 			local alt = (spot[1] ~= 'End' and spot[2] % 2 == 1) and St.AltLift or 0
 			local lift = step * St.LabelStep + alt + (s.Pass and St.PaidLift or 0)
-			Lobby.place(L, training, 'Range_' .. id, St.Slots[k], { X = 9, Y = 12, Z0 = -Lobby.laneHalf(), Z1 = Lobby.laneHalf() }, string.upper(s.Name or id), C(90, 200, 120),
+			Lobby.place(L, training, 'Range_' .. id, St.Slots[k], (id == 'Head' and { X = 9, Y = 12, Z0 = -Lobby.headHalf(), Z1 = Lobby.headHalf() } or { X = 9, Y = 12, Z0 = -Lobby.laneHalf(), Z1 = Lobby.laneHalf() }), string.upper(s.Name or id), C(90, 200, 120),
 				Stations and function(c) Stations.build(c, id, { labelLift = lift }) end)
 		end
 	end
@@ -6358,7 +6364,8 @@ do
 end
 -- the warehouse's inner wall faces (e4's Lobby.WH; f_areas puts its keep-in walls on them): x -86..86, z 6..94, the
 -- north door's mouth |x| < 24
-Lobby.Bounds = { x = 86, xw = 86, xe = 86, n = 6, s = 94, mouth = 24 }
+-- (Oct 27: 6 deeper, 172 x 94, for the full-length range bays: the box dais keeps its walk-wide gap to the wall)
+Lobby.Bounds = { x = 86, xw = 86, xe = 86, n = 6, s = 100, mouth = 24 }
 function Lobby.edgeX(sx) return sx < 0 and Lobby.Bounds.xw or Lobby.Bounds.xe end
 -- where you land: on the spine 3 south of the crossing, facing north over it to the gate (ref_W01.0)
 Lobby.SpawnAt = SPAWN + V(0, 0, 3)
@@ -6377,6 +6384,8 @@ Lobby.ArmoryScale = 1.1
 Lobby.Dais.X, Lobby.Dais.StairW, Lobby.Dais.Slots = 20, 4, { 15, 5, -5, -15 }
 Lobby.Dais.Low, Lobby.Dais.Front = 2.4, 2.4
 Lobby.DaisAt = CFrame.new(0, 0, Lobby.Plaza.z1 + 12)
+-- the portal's path: off the south walk, west in the band between the training plinth's kerb and the dais's front
+Lobby.PortalPath = { x0 = -30, z0 = Lobby.Plaza.z1 + 1.4, z1 = Lobby.Plaza.z1 + 10.2 }
 -- OCT 27 BRIGHT (the owner: "make the colors more bright for our game like the reference"): one calm light green floor,
 -- light clean grey platforms with a blue-grey kerb, walks lighter still. Measured off ref_STILL_lobby_topdown (lit,
 -- medians): floor (164, 234, 76), platforms (206, 214, 232), walks (210, 218, 235), kerbs (125, 138, 172), the darkest
@@ -6428,7 +6437,7 @@ return {
 	-- the open band before the door, over the zones' north edges (the reference's chests before the exit): the CODES
 	-- chest (west), the group chest and the spin wheel (east)
 	Group = { codes = { -36, 13 }, chest = { 37, 12 }, scale = 0.62 },
-	World2 = { x = -31, z = 80, look = Lobby.Centre, scale = 0.85 }, -- (SW, facing the crossing; Oct 27 round 2, the owner: "put the second world portal closer ... easy for the players to see": just off the south walk under the training block, like the reference's)
+	World2 = { x = -36, z = 80, look = Lobby.Centre, scale = 0.85 }, -- (Oct 27: past the dais's west end, its own path) -- (SW, facing the crossing; Oct 27 round 2, the owner: "put the second world portal closer ... easy for the players to see": just off the south walk under the training block, like the reference's)
 	WorldBoss = { x = 40, z = 80, look = Lobby.Centre }, -- (SE, facing the crossing; off for now)
 	-- (SE) the three boards in a staggered row off the south walk, under the gun stand's platform, each facing the crossing (the
 	-- reference's: close to the path, angled to the centre)
@@ -6672,6 +6681,9 @@ function Lobby.paths()
 		{ -Lobby.PlazaGap, -a, Z - a, Z + a, 'West' },
 		{ a, Lobby.PlazaGap, Z - a, Z + a, 'East' },
 		{ -a, a, Z + a, sz, 'South' },
+		-- (Oct 27, the owner: "make a pathway to the portal") off the south walk, west between the training block and
+		-- the box dais, onto the portal's front
+		Lobby.PortalPath and { Lobby.PortalPath.x0, -a, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Portal' } or nil,
 	}
 end
 -- One path rectangle: two-tone 4 x 4 studded tiles on a grid from the spawn, a dark 1-stud curb along every stretch of
@@ -7168,7 +7180,7 @@ end
 --   Outside  the cliffs, trees and hood blocks, 12 studs past the walls (a grass yard between), seen through the doors.
 -- (Oct 27, the owner: "keep the warehouse ... dont make it so cramped": 172 x 88, was 124 x 76; the spine on its middle
 -- line like the reference's path, the zones a walk's width off it, calm floor round them; z0 still hugs the gate's wings)
-Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 94,
+Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 100,
 	 t = 2, eave = 30, truss = 6, off = 12, bay = 16,
 	win = { 17.6, 28.2 }, skirt = 3, -- (Oct 27 round 2: taller clerestory windows, more sky and cliffs over the walls)
 	-- open doors: { wall, u0, u1, height } (u along the wall: z for west/east, x for north/south)
@@ -9776,7 +9788,9 @@ end
 
 -- (B31 PLAZA) Saturation over this on a lane's surfaces comes down to it (critic 7: big fields S 0.55-0.75; the pad tops,
 -- prices and items keep theirs). Measured in the colour the part is built with; HoodToy's grade adds ~0.1 on screen.
-Look.BigS = 0.38 -- (B31 PLAZA, lead: the lanes' view toward the reference's median S ~0.5)
+-- (Oct 27, the owner: "make the colors the same also as the references ... more cartoony": the reference's bays are
+-- full-strength hues, red ~(240, 40, 40); was 0.38, B31's "tone down", which left them pastel)
+Look.BigS = 0.85
 -- (stud layers on the plaza's ground, by part name; Oct 27 round 2, the owner: "make the studs not stand out as much,
 -- make it like the reference": the faint tone-on-tone studs on the floor, the walks and every platform instead of
 -- Roblox's classic Studs surface, tuned to the reference's stud contrast: a flat lit patch's luminance spread (p10..p90)

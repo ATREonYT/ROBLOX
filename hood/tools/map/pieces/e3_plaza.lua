@@ -49,7 +49,8 @@ do
 end
 -- the warehouse's inner wall faces (e4's Lobby.WH; f_areas puts its keep-in walls on them): x -86..86, z 6..94, the
 -- north door's mouth |x| < 24
-Lobby.Bounds = { x = 86, xw = 86, xe = 86, n = 6, s = 94, mouth = 24 }
+-- (Oct 27: 6 deeper, 172 x 94, for the full-length range bays: the box dais keeps its walk-wide gap to the wall)
+Lobby.Bounds = { x = 86, xw = 86, xe = 86, n = 6, s = 100, mouth = 24 }
 function Lobby.edgeX(sx) return sx < 0 and Lobby.Bounds.xw or Lobby.Bounds.xe end
 -- where you land: on the spine 3 south of the crossing, facing north over it to the gate (ref_W01.0)
 Lobby.SpawnAt = SPAWN + V(0, 0, 3)
@@ -68,6 +69,8 @@ Lobby.ArmoryScale = 1.1
 Lobby.Dais.X, Lobby.Dais.StairW, Lobby.Dais.Slots = 20, 4, { 15, 5, -5, -15 }
 Lobby.Dais.Low, Lobby.Dais.Front = 2.4, 2.4
 Lobby.DaisAt = CFrame.new(0, 0, Lobby.Plaza.z1 + 12)
+-- the portal's path: off the south walk, west in the band between the training plinth's kerb and the dais's front
+Lobby.PortalPath = { x0 = -30, z0 = Lobby.Plaza.z1 + 1.4, z1 = Lobby.Plaza.z1 + 10.2 }
 -- OCT 27 BRIGHT (the owner: "make the colors more bright for our game like the reference"): one calm light green floor,
 -- light clean grey platforms with a blue-grey kerb, walks lighter still. Measured off ref_STILL_lobby_topdown (lit,
 -- medians): floor (164, 234, 76), platforms (206, 214, 232), walks (210, 218, 235), kerbs (125, 138, 172), the darkest
@@ -119,7 +122,7 @@ return {
 	-- the open band before the door, over the zones' north edges (the reference's chests before the exit): the CODES
 	-- chest (west), the group chest and the spin wheel (east)
 	Group = { codes = { -36, 13 }, chest = { 37, 12 }, scale = 0.62 },
-	World2 = { x = -31, z = 80, look = Lobby.Centre, scale = 0.85 }, -- (SW, facing the crossing; Oct 27 round 2, the owner: "put the second world portal closer ... easy for the players to see": just off the south walk under the training block, like the reference's)
+	World2 = { x = -36, z = 80, look = Lobby.Centre, scale = 0.85 }, -- (Oct 27: past the dais's west end, its own path) -- (SW, facing the crossing; Oct 27 round 2, the owner: "put the second world portal closer ... easy for the players to see": just off the south walk under the training block, like the reference's)
 	WorldBoss = { x = 40, z = 80, look = Lobby.Centre }, -- (SE, facing the crossing; off for now)
 	-- (SE) the three boards in a staggered row off the south walk, under the gun stand's platform, each facing the crossing (the
 	-- reference's: close to the path, angled to the centre)
@@ -363,6 +366,9 @@ function Lobby.paths()
 		{ -Lobby.PlazaGap, -a, Z - a, Z + a, 'West' },
 		{ a, Lobby.PlazaGap, Z - a, Z + a, 'East' },
 		{ -a, a, Z + a, sz, 'South' },
+		-- (Oct 27, the owner: "make a pathway to the portal") off the south walk, west between the training block and
+		-- the box dais, onto the portal's front
+		Lobby.PortalPath and { Lobby.PortalPath.x0, -a, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Portal' } or nil,
 	}
 end
 -- One path rectangle: two-tone 4 x 4 studded tiles on a grid from the spawn, a dark 1-stud curb along every stretch of
