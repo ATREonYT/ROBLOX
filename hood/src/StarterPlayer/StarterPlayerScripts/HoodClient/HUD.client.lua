@@ -589,7 +589,7 @@ do
 	local fromTitle = label({ Name = 'From', Text = 'Rebirth 0', FontFace = RB_FONT, TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(FROM_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
 	local toTitle = label({ Name = 'To', Text = 'Rebirth 1', FontFace = RB_FONT, TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
 	local function multiplierBox(name, x)
-		local box = Kit.block({ Name = name, Tone = 'aqua', Width = BOX_W, Height = BOX_H, Position = px(x, BOX_Y), Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker', ZIndex = 25 })
+		local box = Kit.block({ Name = name, Tone = 'navyRow', Width = BOX_W, Height = BOX_H, Position = px(x, BOX_Y), Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 12, Studs = false, ZIndex = 25 })
 		box.Parent = rw
 		Kit.icon3d(POWER, 78, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), ZIndex = 28 }).Parent = box.Body
 		return label({ Name = 'Value', Text = 'x1', FontFace = RB_FONT, TextSize = 38, StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(98, -1), Size = UDim2.new(1, -102, 1, 0), ZIndex = 28, Parent = box.Body })
@@ -606,7 +606,7 @@ do
 	label({ Name = 'Warning', Text = 'Rebirth resets your power', FontFace = RB_FONT, TextSize = 32, TextColor3 = hex('F00606'), StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(452, 228), Size = px(860, 46), ZIndex = 26, Parent = rw })
 	local RBAR_X, RBAR_Y, RBAR_W, RBAR_H = 138, 265, 656, 84
 	local barHolder = Kit.new('Frame', { Name = 'ProgressHolder', BackgroundTransparency = 1, Position = px(RBAR_X - 80, RBAR_Y - 20), Size = px(RBAR_W + 100, RBAR_H + 40), ZIndex = 25, Parent = rw })
-	local rebirthBar, rebirthFill, rebirthBarText = Kit.bar({ Name = 'Progress', Width = RBAR_W, Height = RBAR_H, Tone = 'aqua', Value = 0, Text = '0 / 0 Power', TextSize = 36, Position = px(80, 20), Outline = 5, Studs = 20, ZIndex = 25 })
+	local rebirthBar, rebirthFill, rebirthBarText = Kit.bar({ Name = 'Progress', Width = RBAR_W, Height = RBAR_H, Tone = 'buyGreen', Track = 'dark', TrackColor = Kit.Skin.well, TrackTransparency = 0, Radius = 10, Value = 0, Text = '0 / 0 Power', TextSize = 36, Position = px(80, 20), Outline = 5, Studs = 20, ZIndex = 25 })
 	rebirthBar.Parent = barHolder
 	if rebirthBarText and rebirthBarText.Text then rebirthBarText.Text.FontFace = RB_FONT end
 	do
@@ -664,8 +664,8 @@ do
 		end
 		if stopShine then stopShine() stopShine = nil end
 		rebirthAction = actionIn(rebirthAction, {
-			Name = 'Action', Tone = 'aqua', Disabled = maxed, Text = text, FontFace = RB_FONT, TextSize = ready and 51 or 40,
-			Icon = 'Rebirth', IconSize = 64, IconInset = 22, Width = ACTION_W, Height = ACTION_H, Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker',
+			Name = 'Action', Tone = ready and 'buyGreen' or 'slate', Disabled = maxed, Text = text, FontFace = RB_FONT, TextSize = ready and 51 or 40,
+			Icon = 'Rebirth', IconSize = 64, IconInset = 22, Width = ACTION_W, Height = ACTION_H, Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 12, Studs = false,
 			Position = skip and px(105, ACTION_Y) or px(452 - ACTION_W / 2, ACTION_Y),
 		}, function()
 			local nowPower, nowNeed = num('Power', 0), rebirthNeed()
@@ -685,8 +685,8 @@ do
 		if skip then
 			local entry = Products.ByKey.SkipRebirth
 			skipAction = actionIn(nil, {
-				Name = 'Skip', Tone = 'aqua', Text = 'Skip Rebirth', FontFace = RB_FONT, TextSize = 33, Icon = Kit.iconImage('RebirthSkip') ~= '' and 'RebirthSkip' or 'Rebirth', IconSize = 60, IconInset = 18, Width = ACTION_W, Height = ACTION_H,
-				Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker', Position = px(480, ACTION_Y),
+				Name = 'Skip', Tone = 'cardPurple', Text = 'Skip Rebirth', FontFace = RB_FONT, TextSize = 33, Icon = Kit.iconImage('RebirthSkip') ~= '' and 'RebirthSkip' or 'Rebirth', IconSize = 60, IconInset = 18, Width = ACTION_W, Height = ACTION_H,
+				Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 12, Studs = false, Position = px(480, ACTION_Y),
 			}, function() buy('SkipRebirth') end)
 			Kit.only(entry.Price, 46, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 34, 0, 2), ZIndex = 32, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('E8FF4A'), hex('8AE82A')) }).Parent = skipAction
 		end
@@ -706,8 +706,8 @@ do
 	Kit.new('UIListLayout', { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = questList })
 	Kit.new('UIPadding', { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 12), Parent = questList })
 	local function questRow(goal, state)
-		local tone = state == 'done' and 'lime' or state == 'now' and 'gold' or 'dark'
-		local row = Kit.block({ Name = goal.Id or 'Goal', Tone = tone, Width = 860, Height = 74, Outline = 4, RimWidth = 3, Studs = Kit.studsAreCheap() and 34 or false, ZIndex = 25 })
+		local tone = state == 'done' and 'lime' or state == 'now' and 'gold' or 'navyRow'
+		local row = Kit.block({ Name = goal.Id or 'Goal', Tone = tone, Width = 860, Height = 74, Outline = 4, OutlineColor = Kit.Skin.outline, Radius = 10, RimWidth = 3, Studs = Kit.studsAreCheap() and 34 or false, ZIndex = 25 })
 		row.LayoutOrder = goal.Step or 0
 		if state == 'done' then
 			for i, b in { { 16, 30, 46, 40 }, { 34, 25, -48, 22 } } do
@@ -760,7 +760,7 @@ do
 		local mine = LevelRules.rankIndex(num('BestLevel', 1))
 		for i, r in LevelRules.Ranks do
 			local state = i < mine and 'done' or i == mine and 'now' or 'next'
-			local row = Kit.block({ Name = r.Id, Tone = state == 'now' and 'gold' or 'dark', Width = 680, Height = 50, Outline = 3.5, RimWidth = 2, Studs = false, Position = px(18, (i - 1) * 56), ZIndex = 25 })
+			local row = Kit.block({ Name = r.Id, Tone = state == 'now' and 'gold' or 'navyRow', Width = 680, Height = 50, Outline = 3.5, OutlineColor = Kit.Skin.outline, Radius = 8, RimWidth = 2, Studs = false, Position = px(18, (i - 1) * 56), ZIndex = 25 })
 			row.Parent = list
 			Kit.icon3d(iconOr('Rank', 'Shield'), 40, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), ZIndex = 28 }).Parent = row.Body
 			local name = label({ Name = 'Name', Text = r.Name, TextSize = 26, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(58, 0), Size = px(260, 50), ZIndex = 28, Parent = row.Body })

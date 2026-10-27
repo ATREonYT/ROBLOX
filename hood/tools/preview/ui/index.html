@@ -1,0 +1,293 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Hood UI preview</title>
+<style>
+  /* Montserrat (the game's font, Shared/Fonts) and the one-glyph RbxIcon font that draws U+E002, the Robux sign */
+  @font-face { font-family: 'Montserrat'; src: url('../render14/fonts/Montserrat-Variable.ttf') format('truetype'); font-weight: 100 900; }
+  @font-face { font-family: 'RbxIcon'; src: url('../render14/fonts/RbxIcon.ttf') format('truetype'); }
+  @font-face { font-family: 'FredokaOne'; src: url('../render14/fonts/FredokaOne-Regular.woff2') format('woff2'); }
+  @font-face { font-family: 'LuckiestGuy'; src: url('../render14/fonts/LuckiestGuy-Regular.woff2') format('woff2'); }
+  @font-face { font-family: 'PressStart2P'; src: url('../render14/fonts/PressStart2P-Regular.woff2') format('woff2'); }
+  html, body { margin: 0; padding: 0; }
+  body { width: 1280px; height: 720px; overflow: hidden; position: relative; background: #000; }
+  /* a plain, dimmed, game-ish backdrop (the world behind a window: sky, the hood's buildings, the green lobby floor) */
+  #bg { position: absolute; inset: 0; overflow: hidden; }
+  #bg.on { background: linear-gradient(180deg, #7cc4f2 0%, #a9dcf7 46%, #6bbf4a 46%, #4e9e35 100%); }
+  #bg.on .b { position: absolute; bottom: 54%; border-radius: 4px; }
+  #bg.on::after { content: ''; position: absolute; inset: 0; background: rgba(10, 14, 30, 0.42); }
+  .g { box-sizing: border-box; }
+  .own { position: absolute; inset: 0; z-index: -2147483000; pointer-events: none; }
+  .txt { position: absolute; display: flex; box-sizing: border-box; z-index: -2147482000; }
+  .txt .layer { grid-area: 1 / 1; }
+  .txt .stack { display: grid; }
+  .stroke, .stroke * { color: inherit !important; background: none !important; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="ui"></div>
+<script>
+'use strict';
+// Draws a ScreenGui tree dumped by dump.luau (see README.md): one absolutely placed <div> per GuiObject, children inside
+// their parent, so Scale sizes and positions resolve against the parent like Roblox's (calc(scale * 100% + offset px)),
+// AnchorPoint as a translate, UIScale as a scale about the anchor, ZIndex as z-index (Roblox's Sibling behaviour:
+// children always over their parent). UIListLayout / UIGridLayout become flex / grid.
+const ICONS = '../../../art/icons3d/', UI = '../../../art/ui/';
+const LOW = -2147483000;
+const missing = { images: new Set(), viewports: 0, notes: new Set() };
+const rgba = (c, t = 0) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${Math.max(0, Math.min(1, 1 - t)).toFixed(3)})`;
+const calc = (s, o) => `calc(${(s * 100).toFixed(4)}% + ${o}px)`;
+function fontCss(f) {
+  let fam = 'Montserrat', weight = 400, style = 'normal';
+  if (f && f.family) {
+    const m = /families\/(\w+)\.json/.exec(f.family); const name = m ? m[1] : '';
+    if (/Fredoka/i.test(name)) fam = 'FredokaOne';
+    else if (/Luckiest/i.test(name)) fam = 'LuckiestGuy';
+    else if (/PressStart/i.test(name)) fam = 'PressStart2P';
+    else if (!/Montserrat|Gotham/i.test(name)) missing.notes.add('font family ' + name + ' drawn as Montserrat');
+    weight = { Thin: 100, ExtraLight: 200, Light: 300, Regular: 400, Medium: 500, SemiBold: 600, Bold: 700, ExtraBold: 800, Heavy: 900 }[f.weight] || 400;
+    style = f.style === 'Italic' ? 'italic' : 'normal';
+  } else if (f && f.enum) {
+    const e = f.enum;
+    if (/GothamBlack|GothamBold/.test(e)) weight = /Black/.test(e) ? 900 : 700;
+    else if (/Gotham|Montserrat/.test(e)) weight = /Medium/.test(e) ? 500 : 400;
+    else if (/Fredoka/.test(e)) fam = 'FredokaOne';
+    else if (/Luckiest/.test(e)) fam = 'LuckiestGuy';
+    else { missing.notes.add('font ' + e + ' drawn as Montserrat'); weight = /Bold|Black|Heavy/.test(e) ? 800 : 500; }
+  }
+  return { family: `'${fam}', 'RbxIcon', sans-serif`, weight, style };
+}
+// A gradient's colours (times the base colour) and transparencies, as CSS stops at its rotation.
+function gradCss(g, base, baseT) {
+  const times = new Set([0, 1]); (g.c || []).forEach(k => times.add(k[0])); (g.tr || []).forEach(k => times.add(k[0]));
+  const at = (keys, t, n) => {
+    if (!keys || !keys.length) return null;
+    let a = keys[0], b = keys[keys.length - 1];
+    for (let i = 0; i < keys.length - 1; i++) if (t >= keys[i][0] && t <= keys[i + 1][0]) { a = keys[i]; b = keys[i + 1]; break; }
+    const f = b[0] === a[0] ? 0 : (t - a[0]) / (b[0] - a[0]);
+    return a.slice(1, 1 + n).map((v, i) => v + (b[1 + i] - v) * f);
+  };
+  const stops = [...times].sort((x, y) => x - y).map(t => {
+    const c = at(g.c, t, 3) || [1, 1, 1];
+    const tr = (at(g.tr, t, 1) || [0])[0];
+    const col = [c[0] * base[0], c[1] * base[1], c[2] * base[2]];
+    const alpha = (1 - baseT) * (1 - tr);
+    return `${rgba(col, 1 - alpha)} ${(t * 100).toFixed(2)}%`;
+  });
+  return `linear-gradient(${(g.rot || 0) + 90}deg, ${stops.join(', ')})`;
+}
+// Rich text: <font color>, <b>, <i>, <br/> kept; every other tag dropped.
+function richHtml(s) {
+  const esc = x => x.replace(/&(?!(amp|lt|gt|quot|apos);)/g, '&amp;');
+  s = esc(s);
+  return s.replace(/<font\s+color\s*=\s*["']?(#[0-9a-fA-F]{6}|rgb\([^)]*\))["']?\s*>/g, '<span style="color:$1">')
+    .replace(/<\/font>/g, '</span>').replace(/<br\s*\/?>/g, '<br>')
+    .replace(/<(?!\/?(span|b|i|br)\b)[^>]*>/g, '');
+}
+const plain = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const ALIGN = { Left: 'flex-start', Top: 'flex-start', Center: 'center', Right: 'flex-end', Bottom: 'flex-end' };
+const post = { aspect: [], corner: [], scaled: [] };
+
+function textLayer(n, host) {
+  const t = n.text; if (!t) return;
+  let str = t.t; let color = t.color, tT = t.tT;
+  if ((!str || !str.length) && t.ph) { str = t.ph; color = t.phColor; }
+  if (!str || !str.length || tT >= 1) return;
+  const box = document.createElement('div'); box.className = 'txt';
+  box.style.inset = '0';
+  box.style.justifyContent = ALIGN[t.xa] || 'center'; box.style.alignItems = ALIGN[t.ya] || 'center';
+  box.style.textAlign = t.xa === 'Left' ? 'left' : t.xa === 'Right' ? 'right' : 'center';
+  const f = fontCss(t.font);
+  box.style.fontFamily = f.family; box.style.fontWeight = f.weight; box.style.fontStyle = f.style;
+  box.style.fontSize = t.size + 'px'; box.style.lineHeight = (1.18 * (t.lh || 1)).toFixed(3);
+  box.style.whiteSpace = t.wrap || t.scaled ? 'pre-wrap' : 'pre';
+  if (t.wrap || t.scaled) box.style.overflowWrap = 'break-word';
+  const html = t.rich ? richHtml(str) : plain(str);
+  const stack = document.createElement('div'); stack.className = 'stack';
+  if (t.wrap || t.scaled) stack.style.maxWidth = '100%';
+  const s = n.mods.stroke;
+  const contextual = s && s.on !== false && s.mode !== 'Border';
+  if (contextual && s.t < 1 && s.th > 0) {
+    const st = document.createElement('div'); st.className = 'layer stroke'; st.innerHTML = html;
+    const c = s.grad && s.grad.c && s.grad.c.length ? [s.grad.c[0][1] * s.c[0], s.grad.c[0][2] * s.c[1], s.grad.c[0][3] * s.c[2]] : s.c;
+    st.style.color = rgba(c, Math.max(s.t, tT));
+    const r = s.th, sh = [];
+    for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; sh.push(`${(Math.cos(a) * r).toFixed(2)}px ${(Math.sin(a) * r).toFixed(2)}px 0 ${st.style.color}`); }
+    for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; sh.push(`${(Math.cos(a) * r * 0.55).toFixed(2)}px ${(Math.sin(a) * r * 0.55).toFixed(2)}px 0 ${st.style.color}`); }
+    st.style.textShadow = sh.join(',');
+    stack.appendChild(st);
+  } else if (t.sT < 1) {
+    const st = document.createElement('div'); st.className = 'layer stroke'; st.innerHTML = html;
+    st.style.color = rgba(t.sC, t.sT);
+    st.style.textShadow = ['1px 0', '-1px 0', '0 1px', '0 -1px'].map(o => `${o} 0 ${rgba(t.sC, t.sT)}`).join(',');
+    stack.appendChild(st);
+  }
+  const fill = document.createElement('div'); fill.className = 'layer'; fill.innerHTML = html;
+  if (n.mods.grad && n.mods.grad.on !== false) {
+    fill.style.backgroundImage = gradCss(n.mods.grad, color, tT);
+    fill.style.webkitBackgroundClip = 'text'; fill.style.backgroundClip = 'text'; fill.style.color = 'transparent';
+  } else fill.style.color = rgba(color, tT);
+  stack.appendChild(fill);
+  box.appendChild(stack); host.appendChild(box);
+  if (t.scaled) post.scaled.push({ box, stack, max: n.mods.textLimit ? n.mods.textLimit[1] : 100, min: n.mods.textLimit ? n.mods.textLimit[0] : 1 });
+}
+
+function imageLayer(n, el) {
+  const im = n.img; if (!im || im.t >= 1) return;
+  let url = null;
+  const pv = (n.attrs && n.attrs.PreviewImage) || '';
+  if (pv.startsWith('icon3d:')) url = ICONS + pv.slice(7) + '.png';
+  else if (pv.startsWith('ui:')) url = UI + pv.slice(3) + '.png';
+  if (!url) { if (im.id) missing.images.add(n.n + ' (' + im.id.replace(/\d{6,}/, 'id') + ')'); return; }
+  const d = document.createElement('div'); d.className = 'own'; d.dataset.src = url;
+  let size = '100% 100%', rep = 'no-repeat', pos = 'center';
+  if (im.scale === 'Fit') size = 'contain'; else if (im.scale === 'Crop') size = 'cover';
+  else if (im.scale === 'Tile') { size = `${im.tile[1] || 32}px ${im.tile[3] || 32}px`; rep = 'repeat'; pos = '0 0'; }
+  const white = im.color.every(v => v > 0.98);
+  if (white) {
+    d.style.backgroundImage = `url('${url}')`;
+  } else {
+    // ImageColor3 multiplies the picture: the colour blended over it, kept to its alpha with a mask
+    d.style.backgroundImage = `url('${url}')`; d.style.backgroundColor = rgba(im.color);
+    d.style.backgroundBlendMode = 'multiply';
+    d.style.webkitMaskImage = `url('${url}')`; d.style.webkitMaskSize = size; d.style.webkitMaskRepeat = rep; d.style.webkitMaskPosition = pos;
+  }
+  d.style.backgroundSize = size; d.style.backgroundRepeat = rep; d.style.backgroundPosition = pos;
+  d.style.opacity = (1 - im.t).toFixed(3);
+  el.appendChild(d);
+}
+
+function build(n, host, layout) {
+  if (n.vis === false) return;
+  // an empty Luau table encodes as [] or {}: kids always a list, mods always an object
+  n.kids = Array.isArray(n.kids) ? n.kids : Object.values(n.kids || {});
+  if (!n.mods || Array.isArray(n.mods)) n.mods = {};
+  const el = document.createElement('div'); el.className = 'g'; el.dataset.name = n.n;
+  const [xs, xo, ys, yo] = n.pos, [ws, wo, hs, ho] = n.size;
+  const ax = n.anchor[0], ay = n.anchor[1];
+  if (layout === 'grid') { el.style.position = 'relative'; el.style.width = '100%'; el.style.height = '100%'; }
+  else if (layout === 'list') {
+    el.style.position = 'relative'; el.style.flex = 'none';
+    el.style.width = calc(ws, wo); el.style.height = calc(hs, ho);
+  } else {
+    el.style.position = 'absolute'; el.style.left = calc(xs, xo); el.style.top = calc(ys, yo);
+    el.style.width = calc(ws, wo); el.style.height = calc(hs, ho);
+  }
+  if (n.auto === 'Y' || n.auto === 'XY') { el.style.minHeight = el.style.height; el.style.height = 'auto'; }
+  if (n.auto === 'X' || n.auto === 'XY') { el.style.minWidth = el.style.width; el.style.width = 'max-content'; }
+  el.style.zIndex = n.z;
+  el.style.order = n.order || 0;
+  const tf = [];
+  if (!layout && (ax || ay)) tf.push(`translate(${-ax * 100}%, ${-ay * 100}%)`);
+  if (n.rot) tf.push(`rotate(${n.rot}deg)`);
+  if (n.mods.scale !== undefined && n.mods.scale !== 1) tf.push(`scale(${n.mods.scale})`);
+  if (tf.length) { el.style.transform = tf.join(' '); el.style.transformOrigin = `${ax * 100}% ${ay * 100}%`; }
+  if (n.groupT) el.style.opacity = 1 - n.groupT;
+  if (n.mods.sizeLimit) { const L = n.mods.sizeLimit; el.style.minWidth = L[0] + 'px'; el.style.minHeight = L[1] + 'px'; if (L[2] < 1e8) el.style.maxWidth = L[2] + 'px'; if (L[3] < 1e8) el.style.maxHeight = L[3] + 'px'; }
+  // the background (times a UIGradient), corners and a Border-mode UIStroke
+  const isText = !!n.text;
+  if (n.bgT < 1) {
+    if (n.mods.grad && n.mods.grad.on !== false && !isText) el.style.backgroundImage = gradCss(n.mods.grad, n.bg, n.bgT);
+    else el.style.backgroundColor = rgba(n.bg, n.bgT);
+  }
+  if (n.mods.corner) {
+    const [cs, co] = n.mods.corner;
+    if (cs > 0) post.corner.push({ el, cs, co }); else el.style.borderRadius = co + 'px';
+  }
+  const s = n.mods.stroke;
+  if (s && s.on !== false && s.th > 0 && s.t < 1 && (s.mode === 'Border' || !isText)) {
+    let c = s.c;
+    if (s.grad && s.grad.c && s.grad.c.length) { const g = s.grad.c[0]; c = [g[1] * c[0], g[2] * c[1], g[3] * c[2]]; missing.notes.add('a gradient on a UIStroke is drawn in its first colour'); }
+    el.style.boxShadow = `0 0 0 ${s.th}px ${rgba(c, s.t)}`;
+  }
+  if (n.clip) el.style.overflow = 'hidden';
+  if (n.c === 'ViewportFrame') { missing.viewports++; el.style.outline = '2px dashed rgba(255,255,255,0.35)'; }
+  imageLayer(n, el);
+  // the content box: UIPadding, the ScrollingFrame's canvas, the layouts
+  let inner = el;
+  if (n.mods.pad) {
+    const p = n.mods.pad; inner = document.createElement('div');
+    inner.style.position = 'absolute'; inner.style.left = calc(p[0][0], p[0][1]); inner.style.right = calc(p[1][0], p[1][1]);
+    inner.style.top = calc(p[2][0], p[2][1]); inner.style.bottom = calc(p[3][0], p[3][1]);
+    el.appendChild(inner);
+  }
+  if (n.canvas && (n.canvas[0] || n.canvas[1])) {
+    const c = document.createElement('div'); c.style.position = 'absolute'; c.style.left = -n.canvas[0] + 'px'; c.style.top = -n.canvas[1] + 'px';
+    c.style.width = '100%'; c.style.height = '100%'; inner.appendChild(c); inner = c;
+  }
+  textLayer(n, inner);
+  let kidLayout = null, box = inner;
+  if (n.mods.list) {
+    const L = n.mods.list; kidLayout = 'list';
+    box = document.createElement('div'); box.style.position = 'absolute'; box.style.inset = '0'; box.style.display = 'flex';
+    const vert = L.dir === 'Vertical';
+    box.style.flexDirection = vert ? 'column' : 'row';
+    if (L.wraps) box.style.flexWrap = 'wrap';
+    box.style.gap = L.pad[0] ? `${(L.pad[0] * 100).toFixed(2)}%` : L.pad[1] + 'px';
+    const main = vert ? L.v : L.h, cross = vert ? L.h : L.v;
+    box.style.justifyContent = ALIGN[main] || 'flex-start'; box.style.alignItems = ALIGN[cross] || 'flex-start';
+    inner.appendChild(box);
+    if (L.sort === 'Name') { const names = n.kids.map(k => k.n).sort(); n.kids.forEach(k => { k.order = names.indexOf(k.n); }); }
+  } else if (n.mods.grid) {
+    const G = n.mods.grid; kidLayout = 'grid';
+    box = document.createElement('div'); box.style.position = 'absolute'; box.style.inset = '0'; box.style.display = 'grid';
+    const cw = calc(G.cell[0], G.cell[1]), ch = calc(G.cell[2], G.cell[3]);
+    const cols = G.dir === 'Horizontal' && G.max > 0 ? G.max : 'auto-fill';
+    box.style.gridTemplateColumns = `repeat(${cols}, ${cw})`; box.style.gridAutoRows = ch;
+    box.style.columnGap = calc(G.pad[0], G.pad[1]); box.style.rowGap = calc(G.pad[2], G.pad[3]);
+    box.style.justifyContent = ALIGN[G.h] || 'flex-start'; box.style.alignContent = ALIGN[G.v] || 'flex-start';
+    if (G.dir === 'Vertical') missing.notes.add('a vertical UIGridLayout is drawn row by row');
+    inner.appendChild(box);
+    if (G.sort === 'Name') { const names = n.kids.map(k => k.n).sort(); n.kids.forEach(k => { k.order = names.indexOf(k.n); }); }
+  }
+  if (n.mods.aspect) post.aspect.push({ el, a: n.mods.aspect });
+  for (const k of n.kids) build(k, box, kidLayout);
+  host.appendChild(el);
+}
+
+window.renderUI = function (tree, opts) {
+  opts = opts || {};
+  document.getElementById('bg').className = opts.bg === false ? '' : 'on';
+  if (opts.bg !== false) {
+    const bg = document.getElementById('bg');
+    const blocks = [[40, 150, 220, '#c0704f'], [230, 120, 160, '#8e9db0'], [380, 170, 260, '#d9a441'], [660, 140, 200, '#b05a7a'], [860, 180, 240, '#6c8fb8'], [1080, 130, 220, '#c47a3a']];
+    for (const b of blocks) { const d = document.createElement('div'); d.className = 'b'; d.style.left = b[0] + 'px'; d.style.width = b[2] + 'px'; d.style.height = b[1] + 'px'; d.style.background = b[3]; bg.appendChild(d); }
+  }
+  const ui = document.getElementById('ui');
+  const trees = Array.isArray(tree) ? tree : [tree];
+  for (const t of trees) {
+    if (t.enabled === false) continue;
+    const g = document.createElement('div'); g.className = 'g';
+    const full = t.ignoreInset || t.insets === 'None' || t.insets === 'DeviceSafeInsets';
+    g.style.position = 'absolute'; g.style.left = '0'; g.style.width = '1280px';
+    g.style.top = full ? '0' : '58px'; g.style.height = full ? '720px' : '662px';
+    g.style.zIndex = t.order || 0;
+    for (const k of (Array.isArray(t.kids) ? t.kids : Object.values(t.kids || {}))) build(k, g, null);
+    ui.appendChild(g);
+  }
+  // after layout: aspect ratios, scale corners, scaled text
+  for (const { el, a } of post.aspect) {
+    const w = el.offsetWidth, h = el.offsetHeight; if (!w || !h) continue;
+    let nw = w, nh = h;
+    if (a.type === 'FitWithinMaxSize') { if (w / h > a.r) nw = h * a.r; else nh = w / a.r; }
+    else if (a.dom === 'Width') nh = w / a.r; else nw = h * a.r;
+    el.style.width = nw + 'px'; el.style.height = nh + 'px';
+  }
+  for (const { el, cs, co } of post.corner) el.style.borderRadius = (cs * Math.min(el.offsetWidth, el.offsetHeight) + co) + 'px';
+  for (const s of post.scaled) {
+    const W = s.box.clientWidth, H = s.box.clientHeight; if (!W || !H) continue;
+    let lo = s.min, hi = s.max;
+    while (hi - lo > 0.5) { const m = (lo + hi) / 2; s.box.style.fontSize = m + 'px'; if (s.stack.scrollWidth <= W + 0.5 && s.stack.scrollHeight <= H + 0.5) lo = m; else hi = m; }
+    s.box.style.fontSize = lo + 'px';
+  }
+  const srcs = [...document.querySelectorAll('[data-src]')].map(d => d.dataset.src);
+  return Promise.all([...new Set(srcs)].map(u => new Promise(res => { const i = new Image(); i.onload = () => res(null); i.onerror = () => res(u); i.src = u; })))
+    .then(bad => document.fonts.ready.then(() => ({
+      missingFiles: bad.filter(Boolean), unknownImages: [...missing.images], viewports: missing.viewports, notes: [...missing.notes],
+    })));
+};
+</script>
+</body>
+</html>

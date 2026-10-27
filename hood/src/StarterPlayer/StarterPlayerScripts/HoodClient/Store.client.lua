@@ -93,12 +93,11 @@ local function gradient(t, top, bottom)
 end
 
 ---------------------------------------------------------------------------------------------- window
-local WIN = { W = 800, Head = 66, Body = 468, Pad = 12 }
+local WIN = { W = 800, Head = 66, Body = 516, Pad = 12, Tabs = 42 } -- (Oct 27: Tabs, the tab row under the header)
 local LIST_W = WIN.W - 2 * WIN.Pad
 -- Tones that are not in Kit.Tone: the reference's lime cards and price buttons, the OWNED button, the gift's blue.
 local LIME = { top = hex('DEF52A'), base = hex('5ED614'), lip = hex('3FA00A'), stroke = hex('1B4A00'), rim = hex('C8F55E') }
 local LIMEBTN = { top = hex('E8F94A'), base = hex('9CDD22'), lip = hex('7CB814'), stroke = hex('24510A'), rim = hex('F2FC9A') }
-local HEADER = { top = hex('FFE24A'), base = hex('F4B814'), lip = hex('D49A00'), stroke = hex('5A3C08'), rim = hex('FFF39A') } -- (the reference's bar: light yellow at the top, orange-yellow at the bottom)
 local OWNEDBTN = { top = hex('FFF45A'), base = hex('E8C812'), lip = hex('C8A000'), stroke = hex('4A3600'), rim = hex('FFFAA8') }
 
 -- A little drawn gift (a red box, a gold ribbon and bow), centred at `pos`.
@@ -120,24 +119,23 @@ end
 
 local function buildWindow()
 	local w, head, bodyH, pad = WIN.W, WIN.Head, WIN.Body, WIN.Pad
+	local tabsY = head + 8 -- (Oct 27) the tab row under the header
+	local listY = tabsY + WIN.Tabs + 6
 	local overlay = Kit.new('Frame', { Name = NAME .. 'Overlay', BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = root })
 	local fitter = Kit.new('Frame', { Name = 'Fit', BackgroundTransparency = 1, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = px(w, head + bodyH), ZIndex = 21, Parent = overlay })
 	Kit.new('UIScale', { Name = 'FitScale', Parent = fitter })
 	local panel = Kit.new('Frame', { Name = NAME, BackgroundTransparency = 1, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = fitter })
-	-- the body: a dark slate at 85%, the black line round it, a light line inside (the header sits over its top)
-	local frame = Kit.new('Frame', { Name = 'Frame', BackgroundTransparency = 0.12, BackgroundColor3 = hex('322D3E'), BorderSizePixel = 0, Position = px(0, head - 12), Size = px(w, bodyH + 12), ZIndex = 21, Parent = panel })
-	Kit.corner(14).Parent = frame
-	Kit.stroke(BLACK, 3, true).Parent = frame
-	local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(4, 4), Size = UDim2.new(1, -8, 1, -8), ZIndex = 21, Parent = frame })
-	Kit.corner(10).Parent = rim
-	Kit.stroke(hex('DCE0EC'), 3, true, 0.55).Parent = rim
+	-- the body (Oct 27, the owner's UI mockup): opaque navy, the faint blue square tile, a thick dark outline, rounded
+	-- corners (Kit.windowBody); the header sits over its top
+	local frame = Kit.new('Frame', { Name = 'Frame', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(0, head - 12), Size = px(w, bodyH + 12), ZIndex = 21, Parent = panel })
+	Kit.windowBody(frame, w, bodyH + 12, { Outline = 4 })
 	local list = Kit.new('ScrollingFrame', {
-		Name = 'Items', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(pad, head + 4), Size = px(w - 2 * pad, bodyH - pad - 4), ZIndex = 24,
+		Name = 'Items', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(pad, listY), Size = px(w - 2 * pad, head + bodyH - listY - pad), ZIndex = 24,
 		ScrollBarThickness = WIN.Pad - 5, ScrollBarImageColor3 = Color.white, ScrollBarImageTransparency = 1, ScrollingDirection = Enum.ScrollingDirection.Y,
 		VerticalScrollBarInset = Enum.ScrollBarInset.None, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), Parent = panel,
 	})
-	local trackH = bodyH - pad - 24
-	local track = Kit.new('Frame', { Name = 'ScrollTrack', BackgroundTransparency = 0.6, BackgroundColor3 = BLACK, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = px(w - pad + 2, head + 12), Size = px(7, trackH), ZIndex = 30, Parent = panel })
+	local trackH = head + bodyH - listY - pad - 16
+	local track = Kit.new('Frame', { Name = 'ScrollTrack', BackgroundTransparency = 0.6, BackgroundColor3 = BLACK, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = px(w - pad + 2, listY + 8), Size = px(7, trackH), ZIndex = 30, Parent = panel })
 	Kit.corner(UDim.new(0.5, 0)).Parent = track
 	local thumb = Kit.new('Frame', { Name = 'Thumb', BackgroundTransparency = 0.08, BackgroundColor3 = hex('E8ECF4'), BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 40), ZIndex = 31, Parent = track })
 	Kit.corner(UDim.new(0.5, 0)).Parent = thumb
@@ -151,16 +149,21 @@ local function buildWindow()
 		track.Visible = contentH > view + 1
 	end
 	list:GetPropertyChangedSignal('CanvasPosition'):Connect(placeThumb)
-	-- the header bar: yellow, studded, thick black line; the title, the blue Gift A Player button, the red X
-	local header = Kit.block({ Name = 'Header', Tone = HEADER, Width = w, Height = head, Studs = 26, StudSparse = true, StudShade = 0.45, Outline = 3.5, RimWidth = 3, Radius = 8, Position = px(0, 0), ZIndex = 26 })
+	-- the header bar (Oct 27): the mockup's yellow, lighter on top, a faint tile, a thick dark line; the basket breaking
+	-- out over its left end, "Shop", the blue Gift A Player button, the red square X
+	local header = Kit.block({ Name = 'Header', Tone = 'headerYellow', Width = w, Height = head, Studs = 26, StudShade = 0.22, Outline = 4, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = Kit.Skin.headerCorner, Position = px(0, 0), ZIndex = 26 })
 	header.Parent = panel
-	local titleText = 'EXCLUSIVE SHOP'
-	local title = label({ Name = 'Title', Text = titleText, TextSize = 38, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(22, head / 2 - 1), Size = px(330, 48), ZIndex = 34, Parent = panel })
+	Kit.headerBand(header, 'headerYellow')
+	local basket = Kit.icon3d(iconOr('Shop', 'Basket'), nil, { ZIndex = 33, Place = { Rule = 'breakout', W = w, H = head } })
+	basket.Parent = header
+	local titleX = math.floor(Kit.contentRight(basket) + 6)
+	local titleText = 'Shop'
+	local title = label({ Name = 'Title', Text = titleText, TextSize = 44, Stroke = Kit.Skin.outline, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(titleX, head / 2 - 2), Size = px(260, 52), ZIndex = 34, Parent = panel })
 	local xs = 52
-	local close = Kit.blockButton({ Name = 'Close', Tone = 'cardRed', Width = xs, Height = xs, Text = 'X', TextSize = 34, Studs = false, Outline = 3.5, RimWidth = 3, Radius = 4, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 12, head / 2 - 1), ZIndex = 32 })
+	local close = Kit.blockButton({ Name = 'Close', Tone = 'closeRed', Width = xs, Height = xs, Text = 'X', TextSize = 32, Studs = false, Outline = 4, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 7, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 10, head / 2 - 1), ZIndex = 32 })
 	close.Parent = panel
 	local gw, gh = 200, 46
-	local gift = Kit.blockButton({ Name = 'GiftButton', Tone = 'cardBlue', Width = gw, Height = gh, Studs = false, Outline = 3, RimWidth = 2, Radius = 7, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 12 - xs - 14, head / 2 - 1), ZIndex = 32 })
+	local gift = Kit.blockButton({ Name = 'GiftButton', Tone = 'tabBlue', Width = gw, Height = gh, Studs = false, Outline = 3, OutlineColor = Kit.Skin.outline, RimWidth = 2, Radius = 8, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 10 - xs - 14, head / 2 - 1), ZIndex = 32 })
 	gift.Parent = panel
 	label({ Name = 'Text', Text = 'Gift A Player', TextSize = 20, Stroke = hex('0B2A55'), Position = px(60, 0), Size = UDim2.new(1, -64, 1, -1), ZIndex = 36, Parent = gift.Body })
 	-- (the AI picture Gift.png when it is uploaded, else the drawn glyph)
@@ -169,10 +172,12 @@ local function buildWindow()
 	else
 		giftGlyph(gift.Body, 54, 36, px(24, gh / 2 - 6))
 	end
+	-- (Oct 27) the tab row: one dark pill a section, the one in view blue (filled by build(): only sections with cards)
+	local tabs = Kit.new('Frame', { Name = 'TabRow', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(pad + 2, tabsY), Size = px(w - 2 * pad - 4, WIN.Tabs), ZIndex = 30, Parent = panel })
 	panel:SetAttribute('DesignW', w)
 	panel:SetAttribute('DesignH', head + bodyH)
 	return {
-		Overlay = overlay, Fit = fitter, Panel = panel, Frame = frame, List = list, ListW = w - 2 * pad, CloseButton = close, GiftButton = gift, Title = title, Top = head,
+		Overlay = overlay, Fit = fitter, Panel = panel, Frame = frame, List = list, ListW = w - 2 * pad, CloseButton = close, GiftButton = gift, Title = title, Top = head, Tabs = tabs,
 		SetContent = function(height) contentH = height; placeThumb() end,
 		SetBar = function(width) track.Size = px(width, trackH); list.ScrollBarThickness = width end,
 	}
@@ -1123,6 +1128,7 @@ pcall(function()
 end)
 -- MOCKUP30 END
 
+local buildTabs -- (Oct 27: the tab row; below, after scrollTo)
 local function build()
 	built = true
 	table.clear(priceLabels)
@@ -1229,6 +1235,7 @@ local function build()
 		if child:IsA('GuiObject') then total += child.Size.Y.Offset end
 	end
 	Win.SetContent(total)
+	if buildTabs then buildTabs() end
 	fetchPrices()
 end
 rebuild = build
@@ -1259,6 +1266,37 @@ local function scrollTo(at)
 		list.CanvasPosition = Vector2.new(0, math.max(0, y))
 	end)
 end
+-- (Oct 27, the owner's UI mockup) The tab row under the header: a dark pill for each section on show (in the list's
+-- order), a tap scrolls to that section, and the pill of the section in view is the blue one as you scroll.
+local TABS = {
+	{ Id = 'Featured', Text = 'Featured' }, { Id = 'Gamepass', Text = 'Gamepasses' }, { Id = 'Cash', Text = 'Cash' }, { Id = 'Power', Text = 'Power' },
+	{ Id = 'Boost', Text = 'Boosts' }, { Id = 'Box', Text = 'Boxes' }, { Id = 'Codes', Text = 'Codes' },
+}
+local setTab, shownTabs
+buildTabs = function()
+	for _, c in Win.Tabs:GetChildren() do c:Destroy() end
+	shownTabs = {}
+	for _, t in TABS do
+		if headers[t.Id] then table.insert(shownTabs, t) end
+	end
+	local _, set = Kit.tabs(Win.Tabs, { Name = 'Tabs', Items = shownTabs, Width = Win.Tabs.Size.X.Offset, Height = WIN.Tabs, TextSize = 19, ZIndex = 30, Wire = Motion.button, OnSelect = function(id) scrollTo(id) end })
+	setTab = set
+end
+list:GetPropertyChangedSignal('CanvasPosition'):Connect(function()
+	if not setTab or not shownTabs or #shownTabs == 0 then return end
+	local cur = shownTabs[1].Id
+	local bottom = list.AbsoluteCanvasSize.Y - list.AbsoluteSize.Y
+	if bottom > 0 and list.CanvasPosition.Y >= bottom - 2 then
+		cur = shownTabs[#shownTabs].Id -- (at the very end: the last section, however short)
+	else
+		local top = list.AbsolutePosition.Y
+		for _, t in shownTabs do
+			local h = headers[t.Id]
+			if h and h.Parent and h.AbsolutePosition.Y - top <= 40 then cur = t.Id end
+		end
+	end
+	setTab(cur)
+end)
 ---------------------------------------------------------------------------------------------- Gift A Player + the clock
 local pickerFrame
 closePicker = function()

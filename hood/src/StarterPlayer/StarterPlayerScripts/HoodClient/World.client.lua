@@ -1,10 +1,10 @@
 -- The World window (brief 22, UI4): the HUD's World square opens it (PlayerGui.HoodWorld.Open, a BindableEvent; a
--- second tap closes it). The inventory's look (Shared/InventoryKit: a studded header with the globe, the title and the
--- red X over the dark see-through studded body), smaller:
---   World 1   "The Block": two trips, StageRules.Trips (brief 23): Lobby (the hall's spawn) and Stage 1 (just inside the
---             Stage 1 gate: start a run). Both end the run you are on. The server checks every trip
---             (HoodServer/TravelService -> StageService's teleport, StageRules.travelTarget).
---   Worlds 2-5  locked cards, "Coming soon".
+-- second tap closes it). (Oct 27) The owner's UI mockup look (Shared/InventoryKit: the yellow header bar with the globe
+-- breaking out, the title and the red square X over the dark navy body), smaller:
+--   This world (World 1 The Hood or World 2 Downtown, Config/Worlds): two trips, StageRules.Trips (brief 23): Lobby
+--             (the hall's spawn) and Stage 1 (just inside the Stage 1 gate: start a run). Both end the run you are on.
+--             The server checks every trip (HoodServer/TravelService -> StageService's teleport, StageRules.travelTarget).
+--   Other Worlds  the other world's card: what opens it, or "Coming soon" until its place is in the experience.
 -- Sets PlayerGui `HoodWindow` = 'World' while open (one window at a time).
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
@@ -15,6 +15,7 @@ local Motion = require(Shared.UIMotion)
 local Net = require(Shared.Net)
 local IK = require(Shared.InventoryKit)
 local StageRules = require(Shared.StageRules)
+local WorldInfo = require(Shared.WorldInfo)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild('PlayerGui')
@@ -24,6 +25,7 @@ local label = IK.label
 local blank = IK.blank
 
 local WW, WH = 760, 478
+local HERE = WorldInfo.current() -- (Oct 27: the world this server is; its card is the top one)
 local gui, root, fitRoot = Kit.screen('HoodWorld', nil, 8)
 IK.fullScreen(gui)
 local openEvent = Instance.new('BindableEvent')
@@ -57,16 +59,16 @@ local function close()
 	if playerGui:GetAttribute('HoodWindow') == 'World' then playerGui:SetAttribute('HoodWindow', '') end
 end
 
----------------------------------------------------------------------------------------------- World 1
+---------------------------------------------------------------------------------------------- this world
 local CARD = { X = 24, Y = 104, W = WW - 48, H = 150 }
-local card = IK.block({ Name = 'World1', Tone = 'tabOn', Width = CARD.W, Height = CARD.H, Outline = 4.5, RimWidth = 3, StudShade = 0.7, Position = px(CARD.X, CARD.Y), ZIndex = 26 })
+local card = IK.block({ Name = 'Here', Tone = 'tabOn', Width = CARD.W, Height = CARD.H, Outline = 4.5, OutlineColor = Kit.Skin.outline, Radius = 12, RimWidth = 3, Studs = false, Position = px(CARD.X, CARD.Y), ZIndex = 26 })
 card.Parent = content
 local globe = IK.icon({ 'World', 'Rewards' }, 132, { ZIndex = 30 })
 globe.AnchorPoint = Vector2.new(0, 0.5)
 globe.Position = px(-14, CARD.H / 2 - 6)
 globe.Parent = card.Body
-label({ Name = 'Title', Text = 'World 1', TextSize = 40, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(126, 22), Size = px(240, 46), ZIndex = 31, Parent = card.Body })
-local sub = label({ Name = 'Name', Text = IK.WorldNames[1], TextSize = 24, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, Position = px(128, 70), Size = px(240, 30), ZIndex = 31, Parent = card.Body })
+label({ Name = 'Title', Text = 'World ' .. HERE, TextSize = 40, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(126, 22), Size = px(240, 46), ZIndex = 31, Parent = card.Body })
+local sub = label({ Name = 'Name', Text = IK.WorldNames[HERE] or '', TextSize = 24, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, Position = px(128, 70), Size = px(240, 30), ZIndex = 31, Parent = card.Body })
 Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFA81A')), Parent = sub })
 label({ Name = 'You', Text = "You're here", TextSize = 18, StrokeThickness = 2.5, TextColor3 = hex('7CFF4F'), TextXAlignment = Enum.TextXAlignment.Left, Position = px(128, 102), Size = px(240, 24), ZIndex = 31, Parent = card.Body })
 
@@ -85,37 +87,60 @@ for i, trip in StageRules.Trips do
 	end)
 end
 
----------------------------------------------------------------------------------------------- worlds 2-5
-IK.titleLine(content, 'More Worlds', 296, { Width = WW, ZIndex = 26, TextSize = 26 })
-local LOCK = { W = 164, H = 150, Y = 318 }
-local gap = (CARD.W - 4 * LOCK.W) / 3
--- A padlock: a grey shackle (a ring's top) over a gold body with a keyhole, black-outlined like everything else.
+---------------------------------------------------------------------------------------------- the other worlds
+-- (Oct 27) The game's other worlds (Config/Worlds through IK.worlds: World 2 Downtown from World 1, World 1 The Hood from
+-- Downtown) as the mockup's world tiles: the name on a bar across the top, then what opens it. Travel is the lobby's
+-- door (HoodServer/WorldPortalService, which checks it); this card only says how, honestly: "Coming soon" until the
+-- world's place is in the experience, a padlock and "Beat the final boss" while it is locked.
+IK.titleLine(content, 'Other Worlds', 296, { Width = WW, ZIndex = 26, TextSize = 26 })
+local OTHER = { Y = 318, H = 150, Gap = 16 }
+-- A padlock: a grey shackle (a ring's top) over a gold body with a keyhole, outlined like everything else.
 local function padlock(parent, x, y)
 	local shackle = blank({ Name = 'Shackle', AnchorPoint = Vector2.new(0.5, 0.5), Position = px(x, y - 14), Size = px(30, 34), ZIndex = 32, Parent = parent })
 	Kit.corner(UDim.new(0.5, 0)).Parent = shackle
 	Kit.stroke(hex('D9D4CC'), 7, true).Parent = shackle
 	local lockBody = blank({ Name = 'Lock', BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(x, y + 6), Size = px(46, 36), ZIndex = 33, Parent = parent })
 	Kit.corner(6).Parent = lockBody
-	Kit.stroke(Kit.Color.black, 3, true).Parent = lockBody
+	Kit.stroke(Kit.Skin.outline, 3, true).Parent = lockBody
 	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFE76A'), hex('FFA20C')), Parent = lockBody })
-	blank({ Name = 'Hole', BackgroundTransparency = 0, BackgroundColor3 = Kit.Color.black, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = px(6, 14), ZIndex = 34, Parent = lockBody })
+	blank({ Name = 'Hole', BackgroundTransparency = 0, BackgroundColor3 = Kit.Skin.outline, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = px(6, 14), ZIndex = 34, Parent = lockBody })
 end
-for _, w in IK.worlds(0) do
-	if w.World >= 2 then
-		local i = w.World - 1
-		local c = IK.block({ Name = 'World' .. w.World, Tone = 'locked', Width = LOCK.W, Height = LOCK.H, Outline = 4.5, RimWidth = 3, StudShade = 0.5, Position = px(CARD.X + (i - 1) * (LOCK.W + gap), LOCK.Y), ZIndex = 26 })
-		c.Parent = content
-		padlock(c.Body, LOCK.W / 2 - 4.5, 38)
-		label({ Name = 'Title', Text = 'World ' .. w.World, TextSize = 26, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = px(LOCK.W, 30), ZIndex = 31, Parent = c.Body })
-		label({ Name = 'Name', Text = w.Name, TextSize = 18, StrokeThickness = 2.5, TextColor3 = hex('C8D0DC'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 98), Size = px(LOCK.W - 10, 22), ZIndex = 31, Parent = c.Body })
-		local soon = label({ Name = 'Soon', Text = 'Coming soon', TextSize = 18, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 118), Size = px(LOCK.W, 22), ZIndex = 31, Parent = c.Body })
-		Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFA81A')), Parent = soon })
-		local hit = Kit.new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 36, Parent = c })
-		hit.Activated:Connect(function()
-			Motion.pop(c, 0.06)
-			say('Coming soon!')
-		end)
+local others = {}
+for _, w in IK.worlds() do
+	if w.World ~= HERE then table.insert(others, w) end
+end
+local OW = math.floor((CARD.W - math.max(0, #others - 1) * OTHER.Gap) / math.max(1, #others))
+for k, w in others do
+	local locked = not w.Open and w.Need ~= nil and w.Need.World == HERE
+	local c = IK.block({ Name = 'World' .. w.World, Tone = locked and 'locked' or 'lobby', Width = OW, Height = OTHER.H, Outline = 4.5, OutlineColor = Kit.Skin.outline, Radius = 12, RimWidth = 3, Studs = false, Position = px(CARD.X + (k - 1) * (OW + OTHER.Gap), OTHER.Y), ZIndex = 26 })
+	c.Parent = content
+	-- the name bar across the top (the mockup's world tiles)
+	local bar = blank({ Name = 'NameBar', BackgroundTransparency = 0.35, BackgroundColor3 = Kit.Skin.well, Size = UDim2.new(1, 0, 0, 44), ZIndex = 29, Parent = c.Body })
+	Kit.corner(9).Parent = bar
+	label({ Name = 'Title', Text = 'World ' .. w.World .. ': ' .. w.Name, TextSize = 28, StrokeThickness = 3.5, Size = UDim2.fromScale(1, 1), ZIndex = 31, Parent = bar })
+	local line
+	if not w.Live then
+		line = 'Coming soon'
+	elseif locked then
+		line = 'Beat the final boss to open it'
+	else
+		line = 'Take the door in the lobby'
 	end
+	local x0 = 20
+	if locked or not w.Live then
+		padlock(c.Body, 48, 92)
+		x0 = 92
+	end
+	local say1 = label({ Name = 'Soon', Text = line, TextSize = 24, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, Position = px(x0, 64), Size = UDim2.new(1, -x0 - 12, 0, 30), ZIndex = 31, Parent = c.Body })
+	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFA81A')), Parent = say1 })
+	if locked and w.Need then
+		label({ Name = 'Need', Text = 'Opens after World ' .. w.Need.World .. ', Stage ' .. w.Need.Stage, TextSize = 19, StrokeThickness = 2.5, TextColor3 = hex('C8D0E8'), TextXAlignment = Enum.TextXAlignment.Left, Position = px(x0, 98), Size = UDim2.new(1, -x0 - 12, 0, 24), ZIndex = 31, Parent = c.Body })
+	end
+	local hit = Kit.new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 36, Parent = c })
+	hit.Activated:Connect(function()
+		Motion.pop(c, 0.06)
+		say(line .. '!')
+	end)
 end
 
 ---------------------------------------------------------------------------------------------- open / close

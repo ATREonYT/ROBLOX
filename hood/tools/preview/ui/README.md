@@ -1,0 +1,46 @@
+# UI preview: pictures of the game's windows, offline
+
+Draws our real windows (built by the real client scripts) at 1280x720, without Studio.
+
+```
+LUNE=<path to lune> sh hood/tools/preview/ui/shoot.sh [out dir]          # default out dir: hood/tools/preview/ui/out
+python3 -I hood/tools/preview/ui/compose.py <mockup.png> <out.jpg> shop.png rebirth.png shoes.png worlds.png
+```
+
+Chromium comes with Playwright (`npm install playwright` if `require('playwright')` fails; the session machines
+have it under `/opt/node22/lib/node_modules`). A slot in `compose.py` can be `note:line 1|line 2` instead of a PNG.
+
+## How it works
+1. **shoot.sh** joins a scenario and runs it in the Lune harness (`tools/checks/harness_live.luau`):
+   `dump.luau` + `prelude.luau` + `tools/checks/feel_base.luau`'s set-up (the screen changed to 1280x720) + `windows.luau`.
+2. **prelude.luau** makes every icon count as loaded, so windows keep their pictures instead of the flat stand-ins.
+3. **windows.luau** gives the player some progress and a rack of shoes, then opens each window the way the game does:
+   the Store's `Open`, the HUD's Rebirth square, the inventory's `Open('Shoes')` (drawn in the `HoodArt` gui), the World
+   window's `Open`. It dumps each ScreenGui to `<out>/<name>.json` once the open motion has finished.
+4. **dump.luau** (`__uiDump(gui, path)`) writes each GuiObject's class, Position / Size, AnchorPoint, ZIndex, Visible,
+   background, LayoutOrder, Rotation, clipping, AutomaticSize, text (string, colour, size, scaled, wrap, rich, alignment,
+   stroke, font), image (`PreviewImage` attribute, colour, transparency, scale type) and its modifiers: UICorner,
+   UIStroke (with its gradient), UIGradient, UIPadding, UIListLayout, UIGridLayout, UIAspectRatioConstraint, UIScale,
+   UISizeConstraint, UITextSizeConstraint.
+5. **index.html** lays the tree out with CSS:
+   - positions and sizes as `calc(scale * 100% + offset px)`, AnchorPoint as a translate;
+   - ZIndex as z-index (Sibling behaviour);
+   - UIListLayout as flex, UIGridLayout as grid, UIPadding as an inset box;
+   - UIStroke on a frame as a ring outside the box, on text as a ring of text shadows;
+   - UIGradient as a linear gradient times the colour (`background-clip: text` on text);
+   - Montserrat (Heavy = 900) for the game's fonts, and `RbxIcon.ttf` for the Robux sign (U+E002); both are from `../render14/fonts`;
+   - icons from `hood/art/icons3d/<id>.png` (`icon3d:` attributes) and stud tiles from `hood/art/ui/<file>.png` (`ui:` attributes);
+   - behind the window, a plain, dimmed "sky, buildings, green floor" backdrop (`--no-bg` for black).
+6. **shoot.js** screenshots each JSON to a PNG in Chromium and prints what it could not draw.
+
+## What it can't draw (it is a sketch of the layout, not Roblox)
+- **Blur** behind open windows (Lighting BlurEffect) and anything in the 3D world: the backdrop is a flat stand-in.
+- **ViewportFrames** (3D models in the UI): drawn as an empty dashed box. The shop's bundle art uses some.
+- **Images without a local PNG** (uploaded decals with no `PreviewImage` attribute): left out; shoot.js lists them.
+- **Gradients on a UIStroke**: drawn in their first colour. Gradient Offset is ignored.
+- **Text**: Roblox's own line breaking, line height and glyph metrics differ a little. The text stroke is a ring of
+  shadows, so its corners are rounder than Roblox's. Rich text keeps only `font color`, `b`, `i` and `br`.
+- **UICorner in Scale**: measured once after layout; **AutomaticSize** is approximate (min size plus content).
+- **Vertical UIGridLayout** fills row by row.
+- **Motion**: only the state after the open animation. Tweens, pulses and particles need Studio or a video.
+- **Phone sizes**: only 1280x720. To check a phone, change the four sizes in `shoot.sh`, the same way.

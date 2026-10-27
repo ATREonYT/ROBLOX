@@ -14,7 +14,7 @@
 --   timeText(seconds)                       "9:07", "1:02:03"
 --   passes(attributes)                      the Store's game passes with whether you own each
 --   guns(ownedText, equipped)               every gun with its state (Equipped / Owned / Locked)
---   worlds(stagesCleared)                   the World window's cards: World 1 (Lobby, your furthest stage), 2..5 soon
+--   worlds()                                the World window's cards: Config/Worlds (The Hood open; Downtown and what opens it)
 -- Client (Instances):
 --   open(tab) / openWorld()                 fire PlayerGui.HoodInventory.Open / HoodWorld.Open (the HUD's squares do)
 --   Layout, Tone                            the measured sizes (design px; 1 design px = 1.8 reference px) and colours
@@ -195,13 +195,18 @@ function InventoryKit.guns(ownedText, equipped)
 	return list
 end
 
--- The World window's cards: World 1 is open, worlds 2-5 are coming. (brief 23: World 1's trips, Lobby and "Start a
--- run", are StageRules.Trips, the rule the server checks; World.client reads them there.)
-InventoryKit.WorldNames = { 'The Block', 'The Suburbs', 'Uptown', 'The Hills', 'Downtown' }
+-- The World window's cards (Oct 27): the game's worlds, Config/Worlds (World 1 The Hood, World 2 Downtown). World 1 is
+-- always open; a later world says what opens it (Need = its UnlockedBy: beat that world's crew stage, the final boss)
+-- and whether its place is in the experience yet (Live: a PlaceId; the lobby's door says "coming soon" until then).
+-- (brief 23: the trips, Lobby and "Start a run", are StageRules.Trips, the rule the server checks; World.client reads
+-- them there.)
+local Worlds = require(Shared.Config.Worlds)
+InventoryKit.WorldNames = {}
+for i, w in Worlds do InventoryKit.WorldNames[i] = w.Name end
 function InventoryKit.worlds()
 	local list = {}
-	for i, name in InventoryKit.WorldNames do
-		table.insert(list, { World = i, Name = name, Open = i == 1 })
+	for i, w in Worlds do
+		table.insert(list, { World = i, Name = w.Name, Open = w.UnlockedBy == nil, Need = w.UnlockedBy, Live = type(w.PlaceId) == 'number' and w.PlaceId > 0 })
 	end
 	return list
 end
@@ -254,29 +259,28 @@ InventoryKit.Layout = {
 }
 local L = InventoryKit.Layout
 
--- Colours sampled from the reference (top of a fill -> bottom; rim = the light band inside the outline).
+-- Colours (top of a fill -> bottom; rim = the light band inside the outline). (Oct 27) Re-toned to the owner's UI mockup
+-- (hood/docs/refs/ui/owner_ui_windows_oct27.png): the yellow header bar, the side menu's dark rows with the open one
+-- blue, a dark navy body (UIKit Kit.Skin), the red square X.
 InventoryKit.Tone = {
-	-- (header: its bottom rim is a mid cyan, `rimLow`, and a dark band runs over its bottom outline, as the reference's)
-	header = { top = hex('52D5FF'), base = hex('007CFC'), lip = hex('0A78D0'), stroke = hex('062C48'), rim = hex('7CFCFA'), rimLow = hex('2FB4FF'), rot = 90 },
-	tabOn = { top = hex('4FD2FF'), base = hex('0A8EFE'), lip = hex('0A78D0'), stroke = hex('062C48'), rim = hex('86F9F8'), rimLow = hex('39BDFF'), rot = 90 },
-	tabOff = { top = hex('2B7E9C'), base = hex('07579A'), lip = hex('0A3F6A'), stroke = hex('062C48'), rim = hex('4E9A9C'), rimLow = hex('1D729A'), rot = 90 },
-	index = { top = hex('B4E2FA'), base = hex('3F93CF'), lip = hex('2A78B4'), stroke = hex('00344E'), rim = hex('C8FDFF'), rimLow = hex('3DADED'), rot = 90 },
-	bar = { top = hex('0A97C0'), base = hex('0A84BA'), lip = hex('0A4C80'), stroke = hex('062C48'), rim = hex('70B4DA'), rot = 90 },
-	world = { top = hex('9AE85A'), base = hex('3FAE0C'), lip = hex('2A8000'), stroke = hex('123F17'), rim = hex('C8F8A0'), rot = 90 },
+	-- (header: `rimLow` is the light line along its bottom edge)
+	header = Kit.Tone.headerYellow,
+	tabOn = { top = hex('5EC4FF'), base = hex('1A7CF2'), lip = hex('1258B8'), stroke = hex('06204A'), rim = hex('AEE0FF'), rimLow = hex('49A8FF'), rot = 90 },
+	tabOff = { top = hex('2F3B68'), base = hex('212B50'), lip = hex('18203C'), stroke = hex('0B0E1C'), rim = hex('48598F'), rimLow = hex('34436E'), rot = 90 },
+	index = { top = hex('5EC4FF'), base = hex('1A7CF2'), lip = hex('1258B8'), stroke = hex('06204A'), rim = hex('AEE0FF'), rimLow = hex('49A8FF'), rot = 90 },
+	bar = { top = hex('2F3B68'), base = hex('212B50'), lip = hex('18203C'), stroke = hex('0B0E1C'), rim = hex('48598F'), rot = 90 },
+	world = Kit.Tone.headerYellow,
 	lobby = { top = hex('7CD8FF'), base = hex('1E86E8'), lip = hex('1460B0'), stroke = hex('0B2A55'), rim = hex('B4ECFF'), rot = 90 },
 	stage = { top = hex('FF7CF4'), base = hex('C81AD0'), lip = hex('8A0E96'), stroke = hex('3A0640'), rim = hex('FFB4FA'), rot = 90 },
-	locked = { top = hex('5A6172'), base = hex('2E3344'), lip = hex('1F2335'), stroke = hex('0E1020'), rim = hex('7C8498'), rot = 90 },
-	-- the red X: magenta at the top going red, no light rim, a dark red lip along the bottom
-	close = {
-		top = hex('FF00FF'), base = hex('FF0016'), lip = hex('760006'), stroke = hex('4A0010'), rot = 62, -- (magenta from the top-left corner)
-		seq = { { 0, hex('FF00F8') }, { 0.1, hex('FF00B4') }, { 0.42, hex('FF0040') }, { 1, hex('FF0016') } },
-	},
+	locked = { top = hex('4A5476'), base = hex('2A3252'), lip = hex('1F2335'), stroke = hex('0E1020'), rim = hex('6C789E'), rot = 90 },
+	-- the red square X, a dark red lip along its bottom
+	close = { top = hex('FF5C5C'), base = hex('E3101E'), lip = hex('8A0810'), stroke = hex('3A0008'), rim = hex('FFA0A0'), rot = 90 },
 }
 InventoryKit.Color = {
-	body = hex('0B1522'), bodyT = 0.38, -- the body: a near-black navy at 62% over the blurred world (UICRITIC2 r1: the ref's #284B5D over water)
-	bodyRim = hex('FFFFFF'), bodyRimT = 0.77, -- (the reference's rim: the body lightened by about a quarter)
+	body = Kit.Skin.bodyBase, bodyT = 0, -- the body: the mockup's opaque navy (Kit.windowBody paints it)
+	bodyRim = Kit.Skin.rim, bodyRimT = 0.25,
 	line = hex('FFFFFF'), lineT = 0.85, -- the faint light lines round "Equipped"
-	search = hex('03284A'), searchT = 0.5, searchEdge = hex('124452'), searchInner = hex('3A4248'), placeholder = hex('808080'),
+	search = hex('10152C'), searchT = 0.1, searchEdge = hex('0B0E1C'), searchInner = hex('3C4C86'), placeholder = hex('8C96B4'),
 	navy = hex('00344E'),
 	black = hex('000000'),
 	plus = hex('121218'),
@@ -333,6 +337,32 @@ function InventoryKit.splat(size, color, props)
 		})
 		Kit.corner(UDim.new(0.5, 0)).Parent = blob
 	end
+	return holder
+end
+
+-- (Oct 27) The owner's UI mockup puts every item of a grid on a solid rounded tile in its rarity colour (lighter at the
+-- top, a thick dark outline, a light rim) instead of a paint splat: IK.slot draws one while SlotTile is on. Same
+-- arguments as InventoryKit.splat: `size` square, `color`; props.Kind 'rainbow' (Secret) / 'black' (the "+n" slot),
+-- Position, AnchorPoint, ZIndex, Transparency (a dimmed, empty slot).
+InventoryKit.SlotTile = true
+function InventoryKit.tile(size, color, props)
+	props = props or {}
+	local z = props.ZIndex or 1
+	local holder = blank({ Name = 'Splat', Size = px(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
+	local c = props.Kind == 'black' and Kit.Skin.well or color or Kit.Color.white
+	local face = blank({ Name = 'TileFace', BackgroundTransparency = props.Transparency or 0, BackgroundColor3 = Kit.Color.white, Position = px(2, 2), Size = UDim2.new(1, -4, 1, -4), ZIndex = z, Parent = holder })
+	Kit.corner(12).Parent = face
+	Kit.stroke(Kit.Skin.outline, 3.5, true, 0, Enum.LineJoinMode.Round).Parent = face
+	if props.Kind == 'rainbow' then
+		local keys = {}
+		for i, col in RAINBOW do table.insert(keys, ColorSequenceKeypoint.new((i - 1) / (#RAINBOW - 1), col)) end
+		Kit.new('UIGradient', { Rotation = 35, Color = ColorSequence.new(keys), Parent = face })
+	else
+		Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(c:Lerp(Kit.Color.white, 0.28), c:Lerp(Color3.new(0, 0, 0), 0.12)), Parent = face })
+	end
+	local rim = blank({ Name = 'Rim', Position = px(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = z, Parent = face })
+	Kit.corner(9).Parent = rim
+	Kit.stroke(Kit.Color.white, 2, true, props.Transparency and 0.85 or 0.55, Enum.LineJoinMode.Round).Parent = rim
 	return holder
 end
 
@@ -419,7 +449,13 @@ function InventoryKit.slot(props)
 	-- only its turn changes slot to slot
 	local size = props.SplatSize or S.Splat
 	if props.Splat ~= false then
-		local splat = InventoryKit.splat(size, props.Color, { Kind = props.Kind, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(S.W / 2 - 0.02 * size, S.CY + 0.04 * size), ZIndex = z, Transparency = props.Dim and 0.7 or nil, Rotation = props.SplatRotation or (((j * 71) % 50) - 25) })
+		local splat
+		if InventoryKit.SlotTile then
+			-- (Oct 27) the owner's UI mockup: the item on a solid rounded tile in its rarity colour
+			splat = InventoryKit.tile(S.W - 14, props.Color, { Kind = props.Kind, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(S.W / 2, S.CY + 8), ZIndex = z, Transparency = props.Dim and 0.7 or nil })
+		else
+			splat = InventoryKit.splat(size, props.Color, { Kind = props.Kind, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(S.W / 2 - 0.02 * size, S.CY + 0.04 * size), ZIndex = z, Transparency = props.Dim and 0.7 or nil, Rotation = props.SplatRotation or (((j * 71) % 50) - 25) })
+		end
 		-- (brief 27) props.Under: a layer under the row of 3D items that sits over the slots (Kit.model3dRow): the splat goes
 		-- there, at this slot's place, so it stays under the item while the slot's labels stay over it
 		if props.Under and props.Position then
@@ -458,6 +494,10 @@ function InventoryKit.dim(holder, on)
 			if d:GetAttribute('BaseT') == nil then d:SetAttribute('BaseT', d.ImageTransparency) end
 			d.ImageTransparency = on and 0.75 or d:GetAttribute('BaseT')
 			if d:IsA('ViewportFrame') then d:SetAttribute('PreviewT', on and 0.75 or nil) end
+		elseif d:IsA('Frame') and d.Name == 'TileFace' then
+			-- (Oct 27) a slot's rarity tile
+			if d:GetAttribute('BaseT') == nil then d:SetAttribute('BaseT', d.BackgroundTransparency) end
+			d.BackgroundTransparency = on and math.max(0.7, d:GetAttribute('BaseT')) or d:GetAttribute('BaseT')
 		elseif d:IsA('Frame') and d:FindFirstAncestor('Flat') then
 			-- (brief 24) a flat stand-in's shapes and their outlines
 			if d:GetAttribute('BaseT') == nil then d:SetAttribute('BaseT', d.BackgroundTransparency) end
@@ -547,41 +587,27 @@ function InventoryKit.frame(root, props)
 	-- (Pop: what UIMotion.open springs; the whole composition, so the tabs and buttons come with the window)
 	local pop = blank({ Name = props.Name or 'Window', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = fit })
 	local panel = blank({ Name = 'Panel', Position = px(props.FitX or L.Fit.X, 0), Size = px(W, H), ZIndex = 22, Parent = pop })
-	-- the body: black at 70% over the world, a light band inside its black outline, faint recessed studs
+	-- the body (Oct 27, the owner's UI mockup): opaque navy, the faint blue square tile, a thick dark outline, rounded
+	-- corners (Kit.windowBody); its top runs up under the header
 	local bodyTop = L.BodyTop
-	local body = blank({ Name = 'Body', BackgroundTransparency = InventoryKit.Color.bodyT, BackgroundColor3 = InventoryKit.Color.body, Position = px(O, bodyTop + O), Size = px(W - 2 * O, H - bodyTop - 2 * O), ZIndex = 22, Parent = panel })
-	Kit.stroke(Kit.Color.black, O, true, 0, Enum.LineJoinMode.Miter).Parent = body
-	-- (a UIStroke draws outside its frame: the rim's frame is inset by its width so the band lies inside the face, and
-	-- its top edge is pushed up under the header: the reference has no light band there)
-	local R, up = L.Rim, L.Rim + 8
-	local rim = blank({ Name = 'Rim', Position = px(R, R - up), Size = UDim2.new(1, -2 * R, 1, -2 * R + up), ZIndex = 22, Parent = body })
-	Kit.stroke(InventoryKit.Color.bodyRim, R, true, InventoryKit.Color.bodyRimT, Enum.LineJoinMode.Miter).Parent = rim
-	if props.BodyStuds ~= false then
-		Kit.studs(body, { Width = W - 2 * O, Height = H - bodyTop - 2 * O, Pitch = L.StudPitch, Size = 15, Color = Kit.Color.white, Transparency = 0.8, Shade = 0.32, Inset = 6, Filled = true, ZIndex = 22 })
-	end
+	local body = blank({ Name = 'Body', Position = px(O, bodyTop + O - 10), Size = px(W - 2 * O, H - bodyTop - 2 * O + 10), ZIndex = 22, Parent = panel })
+	Kit.windowBody(body, W - 2 * O, H - bodyTop - 2 * O + 10, { Outline = O, Tile = props.BodyStuds ~= false })
 	local content = blank({ Name = 'Content', Size = px(W, H), ZIndex = 24, Parent = panel })
-	-- the header: cyan studded, the backpack overflowing at the left, the title, the search box, the red X
-	local headerTone = InventoryKit.Tone[props.Tone or 'header'] or InventoryKit.Tone.header
-	local header = InventoryKit.block({ Name = 'Header', Tone = headerTone, Width = W, Height = L.Header, Outline = O, RimWidth = 4, Studs = L.StudPitch, StudShade = 0.75, Gloss = true, ZIndex = 26 })
+	-- the header: the mockup's yellow bar (lighter on top, a faint tile; the red one for a delete window), the picture
+	-- breaking out at the left, the title, the search box, the red X
+	local headerTone = props.Tone == 'danger' and Kit.Tone.headerRed or InventoryKit.Tone.header
+	local header = InventoryKit.block({ Name = 'Header', Tone = headerTone, Width = W, Height = L.Header, Outline = O, OutlineColor = Kit.Skin.outline, Radius = Kit.Skin.headerCorner, RimWidth = 3, Studs = L.StudPitch, StudPattern = 'plain', StudShade = 0.22, ZIndex = 26 })
 	header.Parent = panel
-	-- the reference's header bottom: a mid-cyan rim over a dark band that joins the outline (13 reference px of dark in all)
-	InventoryKit.bottomEdge(header, { Rim = 4, RimColor = headerTone.rimLow, Dark = 1.6, ZIndex = 28 })
-	-- (its diagonal shine is a faint wide band: the kit's gloss at a little over half strength)
-	local gloss = header.Body:FindFirstChild('Gloss')
-	if gloss and gloss:IsA('ImageLabel') then
-		gloss.ImageTransparency = 1 - (1 - gloss.ImageTransparency) * 0.55
-	elseif gloss then
-		gloss.BackgroundTransparency = 0.45
-	end
-	-- (brief 25) the header's picture where ref22_pets_window's backpack is: Kit.Place.header, on the header block
+	Kit.headerBand(header, headerTone)
+	-- (Oct 27) the header's picture breaks out of the bar's left end and over its top edge: Kit.Place.breakout
 	local iconHolder = blank({ Name = 'IconSpot', Size = UDim2.fromScale(1, 1), ZIndex = 30, Parent = header })
 	local function setIcon(ids)
 		for _, c in iconHolder:GetChildren() do c:Destroy() end
-		local icon = InventoryKit.icon(ids, nil, { ZIndex = 30, Place = { Rule = 'header', W = W, H = L.Header } })
+		local icon = InventoryKit.icon(ids, nil, { ZIndex = 30, Place = { Rule = 'breakout', W = W, H = L.Header } })
 		icon.Parent = iconHolder
 	end
 	setIcon(props.Icon or { 'Backpack', 'Sneaker' })
-	local title = label({ Name = 'Title', Text = props.Title or '', FontFace = Kit.Font.heading, TextSize = L.HeaderTitleSize, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(L.TitleX, 2), Size = px(310, L.Header - 2), ZIndex = 30, Parent = header })
+	local title = label({ Name = 'Title', Text = props.Title or '', FontFace = Kit.Font.display, TextSize = L.HeaderTitleSize, Stroke = Kit.Skin.outline, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(L.TitleX, 0), Size = px(310, L.Header - 2), ZIndex = 30, Parent = header })
 	local out = { Overlay = overlay, Fit = fit, Pop = pop, Panel = panel, Header = header, Title = title, Body = body, Content = content, SetIcon = setIcon }
 	if props.Search ~= false then
 		local S = L.Search

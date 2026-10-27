@@ -2,9 +2,9 @@
 -- B33 WAREHOUSE (the user: "bring back the warehouse ... it gives the game more personality"; rules 16, 19, 33), made
 -- COMPACT in B34 (the user: "redo the lobby layout completely ... make it feel nice to play"; their pick: a smaller,
 -- tidier warehouse, everything a few steps from the spawn). Runs after e3_plaza, which lays the zones out.
---   Floor    warm light concrete slabs (two tones, 16 x 16, faint studs), no grass inside; the walks lie on it.
---   Walls    chunky brick round x -86..86, z 6..94 (Oct 27; the training block and the head lane's stage clear of
---            the west wall), a dark brick skirting, cream pilasters every 16 studs, an open clerestory band showing the
+--   Floor    mid-grey concrete slabs (two tones, 16 x 16, faint studs), no grass inside; the walks lie on it.
+--   Walls    chunky light-grey courses round x -86..86, z 6..100 (Oct 27; the training block and the head lane's stage
+--            clear of the west wall; grey again in round 3, as the owner asked), a darker grey skirting, pale pilasters every 16 studs, an open clerestory band showing the
 --            cliffs and the hood blocks outside, one painted field per wall (west red behind the head lane, north blue
 --            either side of the door, east teal behind the gun shop, south yellow behind the box dais), roller doors:
 --            open ones onto the yard (the north one onto the Stage 1 gate, 6 studs out), shut slatted ones as detail.
@@ -27,9 +27,12 @@ Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 100,
 }
 Lobby.WHColors = { -- (Oct 27 round 2, the owner: "make the colors more bright ... like the reference": the reference's light green
 	-- floor (e3's Lobby.Bright), warm vivid terracotta walls and cream trim instead of the dark brick, lighter steel)
-	floorA = Lobby.Bright.floor, floorB = Lobby.Bright.floorB, grass = Lobby.Bright.floor,
-	brick = C(238, 146, 92), brickLight = C(246, 162, 106), skirt = C(212, 116, 74), trim = C(255, 218, 168),
-	steel = C(124, 132, 156), steelLight = C(158, 166, 188), slat = C(232, 228, 222), slatDark = C(212, 206, 198),
+	-- (Oct 27 round 3, the owner: "please use the grey warehouse that was originally used": the Oct 8 hall's clean
+	-- neutral greys for the shell (walls, pilasters, steel, the concrete floor), a shade deeper than then so the light
+	-- walks and platforms read on the floor and the walls don't glare; the colour comes from what stands in the hall)
+	floorA = C(150, 154, 164), floorB = C(144, 148, 158), grass = Lobby.Bright.floor,
+	brick = C(186, 189, 196), brickLight = C(196, 199, 205), skirt = C(140, 143, 151), trim = C(226, 228, 232),
+	steel = C(98, 102, 112), steelLight = C(130, 134, 144), slat = C(214, 216, 220), slatDark = C(190, 192, 198),
 	drum = C(110, 118, 140), lamp = C(255, 236, 170),
 	red = C(214, 70, 60), blue = C(60, 128, 214), teal = C(40, 172, 160), yellow = C(250, 196, 50),
 }

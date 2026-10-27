@@ -52,8 +52,11 @@ scaled down.
   finish one.
 
 ## 2. Windows (open from the buttons)
-Every window: a rounded panel with a thick dark outline, a coloured header bar with the title and an icon, and a red
-round **X** to close at the top-right. Only one window is open at a time; the game behind it blurs a little.
+Every window (Oct 27, the owner's mockup `refs/ui/owner_ui_windows_oct27.png`, built in `Shared/UIKit` Kit.window /
+Kit.windowBody / Kit.tabs, `InventoryKit.frame` and `ArtKit.panel`): a dark navy body with a faint blue square tile, a thick
+dark outline and rounded corners; a bright yellow header bar with the icon breaking out at its left, the title in white
+Montserrat Black and a red square **X**; dark pill tabs with the open one blue; items on solid rarity-coloured tiles.
+Only one window is open at a time; the game behind it blurs a little.
 
 | Window | Opens from | What's inside |
 |---|---|---|

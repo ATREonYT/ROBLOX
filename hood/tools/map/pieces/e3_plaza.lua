@@ -129,7 +129,7 @@ return {
 	-- (SE) the three boards side by side in one row past the dais's east end, 15 apart, each facing the crossing, at the
 	-- end of their own path off the south walk (Oct 27, the owner: "so people can actually see and reach them, not just
 	-- being one another": the old staggered row hid each board behind the next from the spawn)
-	Boards = { { 33, 86 }, { 48, 86 }, { 63, 86 } },
+	Boards = { { 26, 86 }, { 48, 86 }, { 70, 86 } }, -- 22 apart: from anywhere in the hall none hides another (Oct 27)
 }
 end)()
 
@@ -373,7 +373,7 @@ function Lobby.paths()
 		-- the box dais, onto the portal's front
 		Lobby.PortalPath and { Lobby.PortalPath.x0, -a, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Portal' } or nil,
 		-- and its mirror east, along the front of the three leaderboards
-		Lobby.PortalPath and { a, Lobby.BoardsPathX or 70, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Boards' } or nil,
+		Lobby.PortalPath and { a, Lobby.BoardsPathX or 76, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Boards' } or nil,
 	}
 end
 -- One path rectangle: two-tone 4 x 4 studded tiles on a grid from the spawn, a dark 1-stud curb along every stretch of
@@ -751,7 +751,7 @@ function Lobby.plinth(L, name, x0, x1, z0, z1)
 	end
 	return h
 end
--- the three boards in one straight row along the east wall, facing the hall (west): 10 apart
+-- the three boards (Plan.Boards places them: one row, each turned to the crossing)
 Lobby.Boards = {
 	{ x = 0, z = -10, yaw = 90, lift = 0, name = 'POWER', title = 'Top Power', color = C(255, 166, 40), live = 'PowerLeaderboard', main = 'POWER', extra = 'REBIRTHS' },
 	{ x = 0, z = 0, yaw = 90, lift = 0, name = 'REBIRTHS', title = 'Top Rebirth', color = C(255, 70, 70), live = 'ServerLeaderboard', main = 'REBIRTHS', extra = 'POWER' },

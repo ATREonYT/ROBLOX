@@ -577,7 +577,7 @@ function S.collection(parent, ctx)
 	local footNote = A.text(P.Foot, '', { Name = 'Note', Size = 18, X = 0, Y = 0, W = W, H = 34, Color = hex('8FB4D8'), Font = A.Font.Body, StrokeW = 2, Z = z })
 	local H = { P = P }
 	A.tabs(P.Content, { Name = 'Families', X = 17, Y = 13, W = 943, H = 52, Gap = 8, Items = { { Id = 'All', Text = 'All' }, { Id = 'Street', Text = 'Street' }, { Id = 'Graffiti', Text = 'Graffiti' }, { Id = 'Chrome', Text = 'Chrome' }, { Id = 'Crown', Text = 'Crown' } },
-		Selected = 'All', SelectedTone = 'green', IdleTone = 'dark', IdleBorder = hex('2EA8D8'), TextSize = 28, Radius = 10, Studs = false, Z = z, OnSelect = function(id)
+		Selected = 'All', SelectedTone = 'blue', IdleTone = 'dark', IdleBorder = hex('2EA8D8'), TextSize = 28, Radius = 10, Studs = false, Z = z, OnSelect = function(id)
 			family = id ~= 'All' and id or nil
 			H.refresh()
 		end })
@@ -787,7 +787,7 @@ end
 -- the delete review: what goes, what is kept, the Cash back. ctx: yes(), no()
 function S.deleteReview(parent, rv, ctx)
 	local W, Hh = 730, 415
-	local P = A.panel(parent, { Name = 'DeleteReview', W = W, H = Hh, Head = 70, Foot = 0, Title = 'DELETE PAIRS?', TitleSize = 40, TitleX = 110, TitleW = 520, IconNode = function(h, x, y, s, zz) A.trash(h, x, y, s * 0.8, zz) end, IconBox = { 20, 0, 76, 70 }, Close = function() call(ctx.no) end, CloseBox = { 658, 9, 62, 54 }, MinText = 16 })
+	local P = A.panel(parent, { Name = 'DeleteReview', W = W, H = Hh, Head = 70, Foot = 0, HeadTone = 'red', Title = 'DELETE PAIRS?', TitleSize = 40, TitleX = 110, TitleW = 520, IconNode = function(h, x, y, s, zz) A.trash(h, x, y, s * 0.8, zz) end, IconBox = { 20, 0, 76, 70 }, Close = function() call(ctx.no) end, CloseBox = { 658, 9, 62, 54 }, MinText = 16 })
 	local z = P.Z + 3
 	local strip = Kit.new('ScrollingFrame', { Name = 'Pairs', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(16, 12), Size = px(W - 32, 150), CanvasSize = px(math.max(1, #rv.Delete) * 138, 0), ScrollBarThickness = 6, ScrollingDirection = Enum.ScrollingDirection.X, ZIndex = z, Parent = P.Content })
 	for i, id in rv.Delete do
@@ -922,7 +922,7 @@ end
 function S.shopPanel(parent, ctx)
 	local P = A.panel(parent, { Name = 'Shop', W = 898, H = 840, Head = 85, Foot = 0, Title = 'SHOP', TitleSize = 52, TitleX = 128, TitleW = 640, Icon = 'Basket', IconBox = { 8, -12, 112, 100 }, Close = function() call(ctx.close) end, CloseBox = { 804, 13, 84, 68 }, MinText = 20 })
 	local z = P.Z + 3
-	A.tabs(P.Content, { Name = 'Tabs', X = 16, Y = 12, W = 866, H = 60, Gap = 8, Items = { { Id = 'Featured', Text = 'Featured' }, { Id = 'Boxes', Text = 'Boxes', Tone = 'blue' }, { Id = 'Boosts', Text = 'Boosts', Tone = 'blue' } }, Selected = 'Featured', SelectedTone = 'yellow', IdleTone = 'blue', TextSize = 38, Radius = 10, Z = z, OnSelect = function(id) call(ctx.tab, id) end })
+	A.tabs(P.Content, { Name = 'Tabs', X = 16, Y = 12, W = 866, H = 60, Gap = 8, Items = { { Id = 'Featured', Text = 'Featured' }, { Id = 'Boxes', Text = 'Boxes' }, { Id = 'Boosts', Text = 'Boosts' } }, Selected = 'Featured', SelectedTone = 'blue', IdleTone = 'dark', TextSize = 38, Radius = 10, Z = z, OnSelect = function(id) call(ctx.tab, id) end })
 	local hero = S.bundleHero(P.Content, ctx, 16, 88, z)
 	return { P = P, Hero = hero }
 end

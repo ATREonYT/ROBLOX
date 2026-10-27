@@ -5,12 +5,12 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## The owner's standing rules (short version; full list in `hood/docs/RULES.md`)
 - **Match the soldier game in style, not one to one.** Vibrant, clean, chunky, readable; calm space, loud interactables; smooth eased motion; nothing "AI slop".
 - **Objects are the owner's blocky designs** (LEGO-like blocks, studs on tops are fine), placed through `Shared/ItemMeshes` with a Part build as the fallback. They live in `hood/art/models/items/`, as 4 GLBs plus a manifest. New objects come from the owner via Claude Design (`hood/art/CLAUDE_DESIGN_PROMPT.md`), not from us.
-- **The lobby is a roomy warehouse** (Oct 27: "dont make it so cramped", laid out like `docs/refs/ref_STILL_lobby_topdown_superhero.png`; 172 x 94 studs, one bright green floor, each zone on a raised light-grey platform, soft studs):
+- **The lobby is a roomy warehouse** (Oct 27: "dont make it so cramped", laid out like `docs/refs/ref_STILL_lobby_topdown_superhero.png`; 172 x 100 studs; Oct 27 round 3: the grey warehouse again, as the owner asked: neutral grey walls, steel and a mid-grey concrete floor, each zone on a raised light platform, soft studs; the colour comes from what stands in the hall):
   - the Stage 1 gate straight ahead of spawn, as the one focal point; ranges west, gun shop east, shoe boxes south behind you;
   - 2 Robux pads by spawn, the other products beside the station they belong to;
   - calm open floor; props only along the walls.
   - Keep our themed shooting-range bays, without side walls: full length (20), 4 studs apart, each one bright hue like `docs/refs/ref_STILL_training_lanes_superhero.png` (Oct 27).
-  - No grass parts inside (the green floor is painted plastic, like the reference); clay cliffs and hood buildings outside.
+  - No grass inside (a grey concrete floor); clay cliffs, green grass and hood buildings outside.
   - No spawn symbol.
 - **Text:** Montserrat Black (GothamBlack) with a thick dark outline and gradient fills (`Shared/TextStyle`). Robux prices show the Robux sign (`Shared/RobuxText.fmt`).
 - **Kid-safe and honest:**
@@ -36,7 +36,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (408 since the Oct 27 worlds);
+- unit: all pass (413 since the Oct 27 footsteps);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - city_contracts: 42 checks / 0 failed;

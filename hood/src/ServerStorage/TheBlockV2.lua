@@ -6473,7 +6473,7 @@ return {
 	-- (SE) the three boards side by side in one row past the dais's east end, 15 apart, each facing the crossing, at the
 	-- end of their own path off the south walk (Oct 27, the owner: "so people can actually see and reach them, not just
 	-- being one another": the old staggered row hid each board behind the next from the spawn)
-	Boards = { { 33, 86 }, { 48, 86 }, { 63, 86 } },
+	Boards = { { 26, 86 }, { 48, 86 }, { 70, 86 } }, -- 22 apart: from anywhere in the hall none hides another (Oct 27)
 }
 end)()
 
@@ -6717,7 +6717,7 @@ function Lobby.paths()
 		-- the box dais, onto the portal's front
 		Lobby.PortalPath and { Lobby.PortalPath.x0, -a, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Portal' } or nil,
 		-- and its mirror east, along the front of the three leaderboards
-		Lobby.PortalPath and { a, Lobby.BoardsPathX or 70, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Boards' } or nil,
+		Lobby.PortalPath and { a, Lobby.BoardsPathX or 76, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Boards' } or nil,
 	}
 end
 -- One path rectangle: two-tone 4 x 4 studded tiles on a grid from the spawn, a dark 1-stud curb along every stretch of
@@ -7095,7 +7095,7 @@ function Lobby.plinth(L, name, x0, x1, z0, z1)
 	end
 	return h
 end
--- the three boards in one straight row along the east wall, facing the hall (west): 10 apart
+-- the three boards (Plan.Boards places them: one row, each turned to the crossing)
 Lobby.Boards = {
 	{ x = 0, z = -10, yaw = 90, lift = 0, name = 'POWER', title = 'Top Power', color = C(255, 166, 40), live = 'PowerLeaderboard', main = 'POWER', extra = 'REBIRTHS' },
 	{ x = 0, z = 0, yaw = 90, lift = 0, name = 'REBIRTHS', title = 'Top Rebirth', color = C(255, 70, 70), live = 'ServerLeaderboard', main = 'REBIRTHS', extra = 'POWER' },
@@ -7203,9 +7203,9 @@ end
 -- B33 WAREHOUSE (the user: "bring back the warehouse ... it gives the game more personality"; rules 16, 19, 33), made
 -- COMPACT in B34 (the user: "redo the lobby layout completely ... make it feel nice to play"; their pick: a smaller,
 -- tidier warehouse, everything a few steps from the spawn). Runs after e3_plaza, which lays the zones out.
---   Floor    warm light concrete slabs (two tones, 16 x 16, faint studs), no grass inside; the walks lie on it.
---   Walls    chunky brick round x -86..86, z 6..94 (Oct 27; the training block and the head lane's stage clear of
---            the west wall), a dark brick skirting, cream pilasters every 16 studs, an open clerestory band showing the
+--   Floor    mid-grey concrete slabs (two tones, 16 x 16, faint studs), no grass inside; the walks lie on it.
+--   Walls    chunky light-grey courses round x -86..86, z 6..100 (Oct 27; the training block and the head lane's stage
+--            clear of the west wall; grey again in round 3, as the owner asked), a darker grey skirting, pale pilasters every 16 studs, an open clerestory band showing the
 --            cliffs and the hood blocks outside, one painted field per wall (west red behind the head lane, north blue
 --            either side of the door, east teal behind the gun shop, south yellow behind the box dais), roller doors:
 --            open ones onto the yard (the north one onto the Stage 1 gate, 6 studs out), shut slatted ones as detail.
@@ -7228,9 +7228,12 @@ Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 100,
 }
 Lobby.WHColors = { -- (Oct 27 round 2, the owner: "make the colors more bright ... like the reference": the reference's light green
 	-- floor (e3's Lobby.Bright), warm vivid terracotta walls and cream trim instead of the dark brick, lighter steel)
-	floorA = Lobby.Bright.floor, floorB = Lobby.Bright.floorB, grass = Lobby.Bright.floor,
-	brick = C(238, 146, 92), brickLight = C(246, 162, 106), skirt = C(212, 116, 74), trim = C(255, 218, 168),
-	steel = C(124, 132, 156), steelLight = C(158, 166, 188), slat = C(232, 228, 222), slatDark = C(212, 206, 198),
+	-- (Oct 27 round 3, the owner: "please use the grey warehouse that was originally used": the Oct 8 hall's clean
+	-- neutral greys for the shell (walls, pilasters, steel, the concrete floor), a shade deeper than then so the light
+	-- walks and platforms read on the floor and the walls don't glare; the colour comes from what stands in the hall)
+	floorA = C(150, 154, 164), floorB = C(144, 148, 158), grass = Lobby.Bright.floor,
+	brick = C(186, 189, 196), brickLight = C(196, 199, 205), skirt = C(140, 143, 151), trim = C(226, 228, 232),
+	steel = C(98, 102, 112), steelLight = C(130, 134, 144), slat = C(214, 216, 220), slatDark = C(190, 192, 198),
 	drum = C(110, 118, 140), lamp = C(255, 236, 170),
 	red = C(214, 70, 60), blue = C(60, 128, 214), teal = C(40, 172, 160), yellow = C(250, 196, 50),
 }

@@ -45,10 +45,10 @@ ArtKit.Tone = {
 	blue = { top = hex('34ACFF'), base = hex('0064EC'), rim = hex('A8DCFF') },
 	red = { top = hex('FF4255'), base = hex('DC0820'), rim = hex('FFA4AE') },
 	orange = { top = hex('FFAA30'), base = hex('F0520A'), rim = hex('FFD89A') },
-	yellow = { top = hex('FFE24A'), base = hex('F0A206'), rim = hex('FFF4AE') },
+	yellow = { top = hex('FFEA5C'), base = hex('F7B400'), rim = hex('FFF7B8') }, -- (Oct 27: the mockup's header bar)
 	grey = { top = hex('DCE0E6'), base = hex('9AA2B0'), rim = hex('F6F8FA') },
 	disabled = { top = hex('8C95A4'), base = hex('6B7484'), rim = hex('AEB6C2'), text = hex('C2C8D2') },
-	dark = { top = hex('20304A'), base = hex('142236'), rim = hex('34506E') },
+	dark = { top = hex('2F3B68'), base = hex('212B50'), rim = hex('48598F') }, -- (Oct 27: the mockup's idle tabs and rows)
 	purple = { top = hex('C866FF'), base = hex('7A1AD8'), rim = hex('E6B8FF') },
 	magenta = { top = hex('FF5AD6'), base = hex('BE10A0'), rim = hex('FFB8F0') },
 	pink = { top = hex('FF6CC8'), base = hex('E4168C'), rim = hex('FFC0E6') },
@@ -583,7 +583,7 @@ function ArtKit.tabs(parent, props)
 			local on = it.Id == id
 			local info = BUTTONS[b]
 			if info then
-				info.Tone = on and (props.SelectedTone or 'green') or (it.Tone or props.IdleTone or 'navy')
+				info.Tone = on and (props.SelectedTone or 'blue') or (it.Tone or props.IdleTone or 'navy')
 				ArtKit.setState(b, 'normal')
 				local rim = info.Body:FindFirstChild('Rim')
 				local o = info.Body:FindFirstChildOfClass('UIStroke')
@@ -660,7 +660,7 @@ end
 --   Head                         header height (the header block spans 0..Head)
 --   Foot                         footer height (pinned at the bottom; 0 = none)
 --   Title, TitleSize, TitleX, TitleW, TitleGradient    the header's title
---   HeadTone                     'cyan' (default) | 'purple' | a tone table
+--   HeadTone                     (Oct 27) the yellow bar on every panel; 'red' for a delete / are-you-sure panel
 --   Body                         the body's fill (Color3, default the dark navy) and BodyStuds (pitch)
 --   Icon / IconBox {x, y, w, h}  the header picture (icon3d id) and where it sits (it may pop over the top edge)
 --   IconNode                     function(parent, x, y, w, h, z) drawing the header picture instead
@@ -675,15 +675,24 @@ function ArtKit.panel(parent, props)
 	new('UIScale', { Name = 'FitScale', Parent = fit })
 	local panel = ArtKit.frame(fit, { Name = props.Name or 'Art', Box = UDim2.fromScale(1, 1), Z = props.Z or 30 })
 	local z = props.Z or 30
-	-- the shell: the dark studded body inside the thick outline
-	local shell = ArtKit.block(panel, { Name = 'Shell', X = 0, Y = 0, W = W, H = H, Fill = props.Body or ArtKit.Tone.navy.base, Gradient = props.BodyGradient, GradientRot = props.BodyRot, Radius = 16, Outline = 5, Z = z })
-	local studs = Kit.studs(shell, { Pitch = props.BodyStuds or 26, Width = W, Height = H, Shade = props.BodyShade or 0.9, ZIndex = z })
-	if studs and studs:IsA('ImageLabel') then corner(studs, 16) end
+	-- the shell: the dark body inside the thick outline. (Oct 27, the owner's UI mockup) the navy top -> bottom with the
+	-- faint blue square tile (UIKit Kit.Skin), unless the screen asks for its own body colour (props.Body / BodyGradient)
+	local S = Kit.Skin
+	local own = props.Body ~= nil or props.BodyGradient ~= nil
+	local shell = ArtKit.block(panel, { Name = 'Shell', X = 0, Y = 0, W = W, H = H, Fill = props.Body or S.bodyBase, Gradient = props.BodyGradient or (not own and { S.bodyTop, S.bodyBase } or nil), GradientRot = props.BodyRot, Radius = 16, Outline = 5, OutlineColor = S.outline, Z = z })
+	if own then
+		local studs = Kit.studs(shell, { Pitch = props.BodyStuds or 26, Width = W, Height = H, Shade = props.BodyShade or 0.9, ZIndex = z })
+		if studs and studs:IsA('ImageLabel') then corner(studs, 16) end
+	else
+		local tile = Kit.studs(shell, { Pitch = props.BodyStuds or 28, Width = W, Height = H, Tint = S.tile, Color = S.tile, Transparency = 0.9, Shade = S.tileShade, MinAlpha = 0.84, Filled = true, ZIndex = z })
+		if tile and tile:IsA('ImageLabel') then corner(tile, 16) end
+	end
 	local rim = ArtKit.frame(shell, { Name = 'Rim', X = 4, Y = 4, W = W - 8, H = H - 8, Radius = 13, Z = z })
-	stroke(rim, props.RimColor or hex('1E5A78'), 3, true, 0.25)
-	-- the header
-	local tone = toneOf(props.HeadTone or 'cyan')
-	local header = ArtKit.block(panel, { Name = 'Header', X = 0, Y = 0, W = W, H = head, Tone = tone, Radius = 14, Outline = 5, Studs = 22, StudShade = 0.84, Z = z + 1 })
+	stroke(rim, props.RimColor or S.rim, 2, true, 0.25)
+	-- the header: (Oct 27) the mockup's bright yellow bar on every window, the red one for a delete / are-you-sure panel
+	-- (HeadTone = 'red'); a faint tile, lighter on top
+	local tone = toneOf(props.HeadTone == 'red' and 'red' or 'yellow')
+	local header = ArtKit.block(panel, { Name = 'Header', X = 0, Y = 0, W = W, H = head, Tone = tone, Radius = 12, Outline = 5, OutlineColor = S.outline, Studs = 26, StudShade = 0.24, Z = z + 1 })
 	local tx = props.TitleX or 150
 	local title = ArtKit.text(header, props.Title or '', { Name = 'Title', Size = props.TitleSize or 52, X = tx, Y = props.TitleY or 0, W = props.TitleW or (W - tx - 110), H = head, Align = props.TitleAlign or 'Left', Gradient = props.TitleGradient, Z = z + 1, Fit = true, StrokeW = math.floor((props.TitleSize or 52) * 0.13) })
 	local content = new('ScrollingFrame', {
