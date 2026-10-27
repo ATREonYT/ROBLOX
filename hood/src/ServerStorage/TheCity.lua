@@ -2830,11 +2830,13 @@ function Armory.label(c, pos, gun, state, colors)
 	local g = Instance.new('BillboardGui')
 	g.Name = 'GunLabel'
 	g.Size = UDim2.fromScale(Armory.LabelW, Armory.LabelH)
-	g.MaxDistance = 46
+	g.MaxDistance = 24
 	-- (LOBBY5 r3, CRITIC3: the whole price ladder reads from the walkway, the back tiers too; B31 PLAZA, critic 3: up close
-	-- only, whole to 34 studs, gone by 46, so the plaza's other views stay clear of the stand's ten plates)
-	g:SetAttribute('FadeNear', 34)
-	g:SetAttribute('FadeFar', 46)
+	-- only. Lobby round 2, the critic: "about 10 labels in one view, back rows over front rows": only the guns you stand by,
+	-- whole to 16 studs from the camera, gone by 24, and a nearer plate hides one it covers, like ref_V2-02.0's 3 per view)
+	g:SetAttribute('FadeNear', 16)
+	g:SetAttribute('FadeFar', 24)
+	g:SetAttribute('FadeGroup', 'Guns')
 	g.LightInfluence = 0
 	g.Parent = anchor
 	local ink = C(24, 22, 40)
@@ -2867,7 +2869,7 @@ function Armory.label(c, pos, gun, state, colors)
 	end
 	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' Power', P.white, 0, 0.6, 3)
 	local price = row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), look.Word or C(255, 228, 92), 0.62, 0.38, 2)
-	if state == 'Equipped' or state == 'Owned' then price.Text = string.upper(state) end
+	if state == 'Equipped' or state == 'Owned' then price.Text = '' end -- (lobby round 2: the state word is the plate's)
 	shadowAll(g)
 	return anchor
 end
@@ -2935,6 +2937,7 @@ function Armory.slot(c, gun, x, z, y, colors)
 	end
 	local sg = surface(strip, Enum.NormalId.Front, 60)
 	sg.Name = 'StateGui'
+	sg.MaxDistance = 26 -- (lobby round 2: the state tag reads at the stand, not across the hall)
 	line(sg, 'State', string.upper(state), P.white, FONT.title, 0.06, 0.88, look.Strip:Lerp(P.black, 0.45), 2)
 	-- The gun floating over the pad in profile to the hall (muzzle to the viewer's right), tilted up a little,
 	-- bobbing; never turning, so it is never seen end-on.
@@ -7342,7 +7345,9 @@ Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 116,
 Lobby.WHColors = { -- (Oct 27 round 3, the owner picked the Oct 13 warehouse, "E", the one with blue highlights: its
 	-- palette is back: warm light concrete, orange brick with a dark brick skirting and cream pilasters, blue steel trusses
 	-- and lamp shades; the layout stays today's)
-	floorA = C(224, 210, 190), floorB = C(212, 198, 178), grass = Lobby.Bright.floor,
+	floorA = C(238, 202, 152), floorB = C(226, 190, 142), -- (lobby round 2, the critic: the pale beige read lavender under the
+	-- blue sky fill and grey from above; S ~0.35 so it lands warm)
+	 grass = Lobby.Bright.floor,
 	brick = C(206, 112, 72), brickLight = C(218, 128, 84), skirt = C(142, 64, 48), trim = C(240, 216, 176),
 	steel = C(66, 82, 132), steelLight = C(98, 116, 170), slat = C(176, 184, 198), slatDark = C(146, 154, 170),
 	drum = C(84, 92, 112), lamp = C(255, 236, 170),
@@ -8743,7 +8748,9 @@ local GATE = {
 	-- from there, see HoodClient/Stages: GrowFrom studs, GrowPow, GrowMax, never past the openings in front of it), and
 	-- its lines: name, top and height (0-1 of the sign) and outline thickness as a share of the line's height (UI2's:
 	-- ~7% on titles, ~11% on small lines).
-	signW = 34, signH = 11.6, signY = 6.8, signZ = 2.9, signPPS = 30, -- (the board: studs, foot height, distance in front of the wall, px per stud)
+	-- (lobby round 2, the critic: "the gate sign sits at camera height and fills the screen on approach"; ref W01 and
+	-- LOOK_RECIPE 24: small and high) 0.62x, its foot at 14.2 so it ends at the beam's top, over the camera's eye line
+	signW = 21, signH = 7.2, signY = 14.2, signZ = 2.9, signPPS = 40, -- (the board: studs, foot height, distance in front of the wall, px per stud)
 	lines = {
 		{ 'Title', 0, 0.37, 0.075 }, { 'Sub', 0.375, 0.235, 0.1 }, { 'Power', 0.61, 0.235, 0.1 }, { 'Status', 0.88, 0.12, 0.1 },
 	},
@@ -10414,6 +10421,13 @@ V2.Waves = Waves -- (the unit tests and integ_waves read it)
 --                            BOSS gateway before gate 16 (the CEO tower and its rooftop beyond)
 -- City.avenueStage (f5_avenue) calls these by district.
 
+-- (Lobby round 2, the critic: "each open gate shows the next gates behind it, a tunnel of identical gates") World 2's
+-- gate haze is denser at eye level than World 1's (0.66 there, was 0.5), so the next gate closes the view: the street
+-- beyond shows faintly through one haze, and the gates after it are hidden behind two.
+GATE.haze = {
+	{ 18.5, C(168, 24, 58), 0.86 }, { 16.5, C(186, 32, 68), 0.82 }, { 12.5, C(212, 54, 90), 0.75 },
+	{ 8, C(230, 86, 120), 0.7 }, { 3, C(242, 122, 152), 0.66 }, { 0, C(246, 142, 168), 0.66 },
+}
 City.D = {
 	lantern = C(44, 48, 62), lanternGlow = C(255, 214, 120),
 	brick = { C(198, 88, 68), C(182, 76, 60), C(208, 104, 80) }, grey = { C(150, 156, 172), C(132, 140, 160), C(168, 172, 186) },
@@ -10917,6 +10931,23 @@ City.EdgeColors = {
 	{ C(146, 150, 160), C(120, 126, 140), C(160, 162, 170) }, -- Transit Area: concrete
 	{ C(70, 62, 120), C(56, 66, 128), C(88, 64, 132) }, -- Luxury District: dark violet and blue
 }
+-- (Lobby round 2, the critic: "the five districts look alike, a tunnel of identical gates") Each district's own colours
+-- on the things you look at down the street: the gate's pillars and caps (stone, light, dark) and a kerb cap along both
+-- road edges (kerb). The beam keeps its hazard stripes, so a gate still reads as a gate.
+City.DistrictTone = {
+	{ stone = C(186, 92, 70), light = C(222, 140, 104), dark = C(138, 60, 46), kerb = C(214, 72, 58) }, -- City Streets: red brick
+	{ stone = C(96, 176, 214), light = C(190, 230, 246), dark = C(56, 124, 170), kerb = C(64, 196, 236) }, -- Modern Plaza: glass blue
+	{ stone = C(236, 178, 36), light = C(255, 216, 100), dark = C(64, 66, 76), kerb = C(250, 196, 30) }, -- Construction Zone: site yellow
+	{ stone = C(72, 156, 104), light = C(150, 210, 168), dark = C(40, 104, 70), kerb = C(64, 190, 110) }, -- Transit Area: line green
+	{ stone = C(108, 76, 168), light = C(250, 136, 214), dark = C(64, 48, 118), kerb = C(255, 96, 200) }, -- Luxury District: violet and pink
+}
+function City.toneGate(model, look)
+	local t = City.DistrictTone[math.clamp(look, 1, #City.DistrictTone)]
+	local map = { GatePillar = t.stone, GateCap = t.light, GatePilaster = t.light, GateCapBand = t.dark, GatePlinth = t.dark }
+	for _, p in model:GetDescendants() do
+		if p:IsA('BasePart') and map[p.Name] then p.Color = map[p.Name] end
+	end
+end
 function City.bench(c, cf)
 	local b = c:at(cf):group('Bench')
 	for _, x in { -1.6, 1.6 } do sbox(b, 'BenchLeg', V(x - 0.3, 0, -0.6), V(x + 0.3, 1.4, 0.6), City.steelDark) end
@@ -11041,6 +11072,11 @@ function City.avenueStage(ctx, i)
 			e.CastShadow = false
 			if look == 5 then e.Color, e.Material = K.pink, M.Neon end
 		end
+		-- (lobby round 2) the district's kerb cap along the road edge, the length of the stage
+		local kt = City.DistrictTone[look]
+		local ka, kb = x(ST.road, ST.road + 0.9)
+		local ky = ST.kerb + (look == 3 and 0.14 or 0.02)
+		decor(sbox(d, 'DistrictKerb', V(ka, ky - 0.1, top - SLEN), V(kb, ky + 0.12, top), kt.kerb)).CastShadow = false
 		-- lamps on the sidewalk (the old streets' black lanterns), their arms over the run
 		for _, zp in { 9, 30 } do
 			-- (round 6: the plan's warm lanterns in the streets, the plaza and the transit area)
@@ -11299,6 +11335,7 @@ local function buildStages(ctx)
 	local gates = ctx:group('Gates')
 	for i = 1, STAGES + 1 do
 		local model = stageGate(gates, i)
+		City.toneGate(model, lookOf(math.min(i, STAGES))) -- (lobby round 2: the gate in its district's colours)
 		model:SetAttribute('WallId', 'HoodW' .. (V2.World or 2) .. 'Stage' .. i)
 		model:SetAttribute('World', V2.World or 2)
 		local name = model:FindFirstChild('GateWorldName', true)

@@ -41,7 +41,9 @@ local GATE = {
 	-- from there, see HoodClient/Stages: GrowFrom studs, GrowPow, GrowMax, never past the openings in front of it), and
 	-- its lines: name, top and height (0-1 of the sign) and outline thickness as a share of the line's height (UI2's:
 	-- ~7% on titles, ~11% on small lines).
-	signW = 34, signH = 11.6, signY = 6.8, signZ = 2.9, signPPS = 30, -- (the board: studs, foot height, distance in front of the wall, px per stud)
+	-- (lobby round 2, the critic: "the gate sign sits at camera height and fills the screen on approach"; ref W01 and
+	-- LOOK_RECIPE 24: small and high) 0.62x, its foot at 14.2 so it ends at the beam's top, over the camera's eye line
+	signW = 21, signH = 7.2, signY = 14.2, signZ = 2.9, signPPS = 40, -- (the board: studs, foot height, distance in front of the wall, px per stud)
 	lines = {
 		{ 'Title', 0, 0.37, 0.075 }, { 'Sub', 0.375, 0.235, 0.1 }, { 'Power', 0.61, 0.235, 0.1 }, { 'Status', 0.88, 0.12, 0.1 },
 	},

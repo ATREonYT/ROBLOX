@@ -145,16 +145,19 @@ L.Presets = {
 	-- and 0.36: brighter and paler. The +1 games' recipe: a real sun with clear shadows, a moderate sky fill (shade keeps
 	-- its colour but is visibly darker), exposure pulled down, no haze (haze greys the colours), and the colour grade
 	-- doing the vividness (saturation up) instead of brightness. Huzz's sky and clouds stay.
+	-- (Lobby round 2, the critic: play frames measured darker and duller than ref_W01, mean 114-122 against 139-146,
+	-- saturation 0.48-0.58 against 0.63-0.71: exposure -0.3 to -0.15, grade saturation 0.35 to 0.45, and a slightly warm
+	-- ambient so the warehouse floor under the closed roof reads warm, not lavender. Never past the ref's ~145 / 1% white.)
 	PlusOne = {
 		technology = 'ShadowMap',
 		lighting = {
-			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.6, ExposureCompensation = -0.3,
-			Ambient = C(125, 125, 135), OutdoorAmbient = C(170, 172, 182),
+			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.6, ExposureCompensation = -0.15,
+			Ambient = C(132, 128, 122), OutdoorAmbient = C(176, 172, 168),
 			ColorShift_Top = C(255, 248, 236), ColorShift_Bottom = C(0, 0, 0),
 			EnvironmentDiffuseScale = 0.8, EnvironmentSpecularScale = 0.3, ShadowSoftness = 0.45, GlobalShadows = true,
 		},
 		atmosphere = { Density = 0.15, Offset = 0.3, Haze = 0, Glare = 0, Color = C(170, 210, 255), Decay = C(80, 160, 245) },
-		grade = { Brightness = 0, Contrast = 0.12, Saturation = 0.35, TintColor = C(255, 255, 255) },
+		grade = { Brightness = 0, Contrast = 0.12, Saturation = 0.45, TintColor = C(255, 255, 255) },
 		bloom = { Intensity = 0.25, Size = 24, Threshold = 2 },
 		rays = { Intensity = 0.03, Spread = 0.5 },
 		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 3000, CelestialBodiesShown = true },

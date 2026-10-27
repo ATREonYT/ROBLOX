@@ -34,8 +34,8 @@ LabelFade.PAINT_STEP, LabelFade.SIZE_STEP = 0.025, 0.006 -- smallest change wort
 -- Each kind's band (studs from the camera). Near: whole inside; Far: gone past it.
 LabelFade.Kinds = {
 	Lane = { Near = 45, Far = 75, Shrink = 34, ShrinkMin = 0.35, Group = 'Lanes' }, -- a lane's stack (12 x 7.2 studs)
-	Gun = { Near = 38, Far = 62 }, -- a gun's nameplate in the ARMORY
-	Box = { Near = 34, Far = 58 }, -- a shoe box's name and price on the dais
+	Gun = { Near = 16, Far = 24, Group = 'Guns' }, -- a gun's nameplate in the ARMORY (lobby round 2: only the guns you stand by)
+	Box = { Near = 24, Far = 34 }, -- a shoe box's name and price on the dais (lobby round 2: off the HUD from the spawn)
 	Pad = { Near = 26, Far = 44 }, -- LOBBY / FURTHEST over a stage's pads
 	Sign = { Cap = 70, NearShare = 0.6 }, -- a small WorldLabel (notices, the lobby's FURTHEST STAGE pad): ends at its MaxDistance, 70 at most
 	Title = { NearShare = 0.75, TallFrom = 4 }, -- a big floating title (4+ studs tall): across the hall, gone from the streets

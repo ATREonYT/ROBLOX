@@ -155,8 +155,9 @@ local function paint(slot, state)
 		local pay = state == 'Locked' or state == 'Buy'
 		if slot.PriceIcon then slot.PriceIcon.Visible = pay and not slot.PriceIconMissing end
 		local price = slot.Gun.Cost == 0 and 'FREE' or Format.compact(slot.Gun.Cost)
-		local text = pay and ((glyph ~= '' and glyph .. ' ' or '') .. price) or string.upper(state)
-		if state == 'Buy' then text = 'BUY ' .. text end
+		-- (lobby round 2, the critic: one short line per gun) the price only while it is to buy; the state word (BUY,
+		-- OWNED, EQUIPPED, LOCKED) is the plate's alone
+		local text = pay and ((glyph ~= '' and glyph .. ' ' or '') .. price) or ''
 		slot.Price.Text = text
 		slot.Price.TextColor3 = look.Word or look.Text
 	end

@@ -300,11 +300,13 @@ function Armory.label(c, pos, gun, state, colors)
 	local g = Instance.new('BillboardGui')
 	g.Name = 'GunLabel'
 	g.Size = UDim2.fromScale(Armory.LabelW, Armory.LabelH)
-	g.MaxDistance = 46
+	g.MaxDistance = 24
 	-- (LOBBY5 r3, CRITIC3: the whole price ladder reads from the walkway, the back tiers too; B31 PLAZA, critic 3: up close
-	-- only, whole to 34 studs, gone by 46, so the plaza's other views stay clear of the stand's ten plates)
-	g:SetAttribute('FadeNear', 34)
-	g:SetAttribute('FadeFar', 46)
+	-- only. Lobby round 2, the critic: "about 10 labels in one view, back rows over front rows": only the guns you stand by,
+	-- whole to 16 studs from the camera, gone by 24, and a nearer plate hides one it covers, like ref_V2-02.0's 3 per view)
+	g:SetAttribute('FadeNear', 16)
+	g:SetAttribute('FadeFar', 24)
+	g:SetAttribute('FadeGroup', 'Guns')
 	g.LightInfluence = 0
 	g.Parent = anchor
 	local ink = C(24, 22, 40)
@@ -337,7 +339,7 @@ function Armory.label(c, pos, gun, state, colors)
 	end
 	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' Power', P.white, 0, 0.6, 3)
 	local price = row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), look.Word or C(255, 228, 92), 0.62, 0.38, 2)
-	if state == 'Equipped' or state == 'Owned' then price.Text = string.upper(state) end
+	if state == 'Equipped' or state == 'Owned' then price.Text = '' end -- (lobby round 2: the state word is the plate's)
 	shadowAll(g)
 	return anchor
 end
@@ -405,6 +407,7 @@ function Armory.slot(c, gun, x, z, y, colors)
 	end
 	local sg = surface(strip, Enum.NormalId.Front, 60)
 	sg.Name = 'StateGui'
+	sg.MaxDistance = 26 -- (lobby round 2: the state tag reads at the stand, not across the hall)
 	line(sg, 'State', string.upper(state), P.white, FONT.title, 0.06, 0.88, look.Strip:Lerp(P.black, 0.45), 2)
 	-- The gun floating over the pad in profile to the hall (muzzle to the viewer's right), tilted up a little,
 	-- bobbing; never turning, so it is never seen end-on.

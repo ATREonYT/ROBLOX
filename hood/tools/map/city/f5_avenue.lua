@@ -160,6 +160,23 @@ City.EdgeColors = {
 	{ C(146, 150, 160), C(120, 126, 140), C(160, 162, 170) }, -- Transit Area: concrete
 	{ C(70, 62, 120), C(56, 66, 128), C(88, 64, 132) }, -- Luxury District: dark violet and blue
 }
+-- (Lobby round 2, the critic: "the five districts look alike, a tunnel of identical gates") Each district's own colours
+-- on the things you look at down the street: the gate's pillars and caps (stone, light, dark) and a kerb cap along both
+-- road edges (kerb). The beam keeps its hazard stripes, so a gate still reads as a gate.
+City.DistrictTone = {
+	{ stone = C(186, 92, 70), light = C(222, 140, 104), dark = C(138, 60, 46), kerb = C(214, 72, 58) }, -- City Streets: red brick
+	{ stone = C(96, 176, 214), light = C(190, 230, 246), dark = C(56, 124, 170), kerb = C(64, 196, 236) }, -- Modern Plaza: glass blue
+	{ stone = C(236, 178, 36), light = C(255, 216, 100), dark = C(64, 66, 76), kerb = C(250, 196, 30) }, -- Construction Zone: site yellow
+	{ stone = C(72, 156, 104), light = C(150, 210, 168), dark = C(40, 104, 70), kerb = C(64, 190, 110) }, -- Transit Area: line green
+	{ stone = C(108, 76, 168), light = C(250, 136, 214), dark = C(64, 48, 118), kerb = C(255, 96, 200) }, -- Luxury District: violet and pink
+}
+function City.toneGate(model, look)
+	local t = City.DistrictTone[math.clamp(look, 1, #City.DistrictTone)]
+	local map = { GatePillar = t.stone, GateCap = t.light, GatePilaster = t.light, GateCapBand = t.dark, GatePlinth = t.dark }
+	for _, p in model:GetDescendants() do
+		if p:IsA('BasePart') and map[p.Name] then p.Color = map[p.Name] end
+	end
+end
 function City.bench(c, cf)
 	local b = c:at(cf):group('Bench')
 	for _, x in { -1.6, 1.6 } do sbox(b, 'BenchLeg', V(x - 0.3, 0, -0.6), V(x + 0.3, 1.4, 0.6), City.steelDark) end
@@ -284,6 +301,11 @@ function City.avenueStage(ctx, i)
 			e.CastShadow = false
 			if look == 5 then e.Color, e.Material = K.pink, M.Neon end
 		end
+		-- (lobby round 2) the district's kerb cap along the road edge, the length of the stage
+		local kt = City.DistrictTone[look]
+		local ka, kb = x(ST.road, ST.road + 0.9)
+		local ky = ST.kerb + (look == 3 and 0.14 or 0.02)
+		decor(sbox(d, 'DistrictKerb', V(ka, ky - 0.1, top - SLEN), V(kb, ky + 0.12, top), kt.kerb)).CastShadow = false
 		-- lamps on the sidewalk (the old streets' black lanterns), their arms over the run
 		for _, zp in { 9, 30 } do
 			-- (round 6: the plan's warm lanterns in the streets, the plaza and the transit area)
@@ -542,6 +564,7 @@ local function buildStages(ctx)
 	local gates = ctx:group('Gates')
 	for i = 1, STAGES + 1 do
 		local model = stageGate(gates, i)
+		City.toneGate(model, lookOf(math.min(i, STAGES))) -- (lobby round 2: the gate in its district's colours)
 		model:SetAttribute('WallId', 'HoodW' .. (V2.World or 2) .. 'Stage' .. i)
 		model:SetAttribute('World', V2.World or 2)
 		local name = model:FindFirstChild('GateWorldName', true)

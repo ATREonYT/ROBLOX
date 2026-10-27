@@ -31,7 +31,9 @@ Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 116,
 Lobby.WHColors = { -- (Oct 27 round 3, the owner picked the Oct 13 warehouse, "E", the one with blue highlights: its
 	-- palette is back: warm light concrete, orange brick with a dark brick skirting and cream pilasters, blue steel trusses
 	-- and lamp shades; the layout stays today's)
-	floorA = C(224, 210, 190), floorB = C(212, 198, 178), grass = Lobby.Bright.floor,
+	floorA = C(238, 202, 152), floorB = C(226, 190, 142), -- (lobby round 2, the critic: the pale beige read lavender under the
+	-- blue sky fill and grey from above; S ~0.35 so it lands warm)
+	 grass = Lobby.Bright.floor,
 	brick = C(206, 112, 72), brickLight = C(218, 128, 84), skirt = C(142, 64, 48), trim = C(240, 216, 176),
 	steel = C(66, 82, 132), steelLight = C(98, 116, 170), slat = C(176, 184, 198), slatDark = C(146, 154, 170),
 	drum = C(84, 92, 112), lamp = C(255, 236, 170),

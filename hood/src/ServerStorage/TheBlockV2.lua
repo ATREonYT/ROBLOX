@@ -2781,11 +2781,13 @@ function Armory.label(c, pos, gun, state, colors)
 	local g = Instance.new('BillboardGui')
 	g.Name = 'GunLabel'
 	g.Size = UDim2.fromScale(Armory.LabelW, Armory.LabelH)
-	g.MaxDistance = 46
+	g.MaxDistance = 24
 	-- (LOBBY5 r3, CRITIC3: the whole price ladder reads from the walkway, the back tiers too; B31 PLAZA, critic 3: up close
-	-- only, whole to 34 studs, gone by 46, so the plaza's other views stay clear of the stand's ten plates)
-	g:SetAttribute('FadeNear', 34)
-	g:SetAttribute('FadeFar', 46)
+	-- only. Lobby round 2, the critic: "about 10 labels in one view, back rows over front rows": only the guns you stand by,
+	-- whole to 16 studs from the camera, gone by 24, and a nearer plate hides one it covers, like ref_V2-02.0's 3 per view)
+	g:SetAttribute('FadeNear', 16)
+	g:SetAttribute('FadeFar', 24)
+	g:SetAttribute('FadeGroup', 'Guns')
 	g.LightInfluence = 0
 	g.Parent = anchor
 	local ink = C(24, 22, 40)
@@ -2818,7 +2820,7 @@ function Armory.label(c, pos, gun, state, colors)
 	end
 	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' Power', P.white, 0, 0.6, 3)
 	local price = row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), look.Word or C(255, 228, 92), 0.62, 0.38, 2)
-	if state == 'Equipped' or state == 'Owned' then price.Text = string.upper(state) end
+	if state == 'Equipped' or state == 'Owned' then price.Text = '' end -- (lobby round 2: the state word is the plate's)
 	shadowAll(g)
 	return anchor
 end
@@ -2886,6 +2888,7 @@ function Armory.slot(c, gun, x, z, y, colors)
 	end
 	local sg = surface(strip, Enum.NormalId.Front, 60)
 	sg.Name = 'StateGui'
+	sg.MaxDistance = 26 -- (lobby round 2: the state tag reads at the stand, not across the hall)
 	line(sg, 'State', string.upper(state), P.white, FONT.title, 0.06, 0.88, look.Strip:Lerp(P.black, 0.45), 2)
 	-- The gun floating over the pad in profile to the hall (muzzle to the viewer's right), tilted up a little,
 	-- bobbing; never turning, so it is never seen end-on.
@@ -7293,7 +7296,9 @@ Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 116,
 Lobby.WHColors = { -- (Oct 27 round 3, the owner picked the Oct 13 warehouse, "E", the one with blue highlights: its
 	-- palette is back: warm light concrete, orange brick with a dark brick skirting and cream pilasters, blue steel trusses
 	-- and lamp shades; the layout stays today's)
-	floorA = C(224, 210, 190), floorB = C(212, 198, 178), grass = Lobby.Bright.floor,
+	floorA = C(238, 202, 152), floorB = C(226, 190, 142), -- (lobby round 2, the critic: the pale beige read lavender under the
+	-- blue sky fill and grey from above; S ~0.35 so it lands warm)
+	 grass = Lobby.Bright.floor,
 	brick = C(206, 112, 72), brickLight = C(218, 128, 84), skirt = C(142, 64, 48), trim = C(240, 216, 176),
 	steel = C(66, 82, 132), steelLight = C(98, 116, 170), slat = C(176, 184, 198), slatDark = C(146, 154, 170),
 	drum = C(84, 92, 112), lamp = C(255, 236, 170),
@@ -7751,7 +7756,9 @@ local GATE = {
 	-- from there, see HoodClient/Stages: GrowFrom studs, GrowPow, GrowMax, never past the openings in front of it), and
 	-- its lines: name, top and height (0-1 of the sign) and outline thickness as a share of the line's height (UI2's:
 	-- ~7% on titles, ~11% on small lines).
-	signW = 34, signH = 11.6, signY = 6.8, signZ = 2.9, signPPS = 30, -- (the board: studs, foot height, distance in front of the wall, px per stud)
+	-- (lobby round 2, the critic: "the gate sign sits at camera height and fills the screen on approach"; ref W01 and
+	-- LOOK_RECIPE 24: small and high) 0.62x, its foot at 14.2 so it ends at the beam's top, over the camera's eye line
+	signW = 21, signH = 7.2, signY = 14.2, signZ = 2.9, signPPS = 40, -- (the board: studs, foot height, distance in front of the wall, px per stud)
 	lines = {
 		{ 'Title', 0, 0.37, 0.075 }, { 'Sub', 0.375, 0.235, 0.1 }, { 'Power', 0.61, 0.235, 0.1 }, { 'Status', 0.88, 0.12, 0.1 },
 	},

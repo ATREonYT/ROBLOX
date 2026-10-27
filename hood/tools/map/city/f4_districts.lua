@@ -12,6 +12,13 @@
 --                            BOSS gateway before gate 16 (the CEO tower and its rooftop beyond)
 -- City.avenueStage (f5_avenue) calls these by district.
 
+-- (Lobby round 2, the critic: "each open gate shows the next gates behind it, a tunnel of identical gates") World 2's
+-- gate haze is denser at eye level than World 1's (0.66 there, was 0.5), so the next gate closes the view: the street
+-- beyond shows faintly through one haze, and the gates after it are hidden behind two.
+GATE.haze = {
+	{ 18.5, C(168, 24, 58), 0.86 }, { 16.5, C(186, 32, 68), 0.82 }, { 12.5, C(212, 54, 90), 0.75 },
+	{ 8, C(230, 86, 120), 0.7 }, { 3, C(242, 122, 152), 0.66 }, { 0, C(246, 142, 168), 0.66 },
+}
 City.D = {
 	lantern = C(44, 48, 62), lanternGlow = C(255, 214, 120),
 	brick = { C(198, 88, 68), C(182, 76, 60), C(208, 104, 80) }, grey = { C(150, 156, 172), C(132, 140, 160), C(168, 172, 186) },
