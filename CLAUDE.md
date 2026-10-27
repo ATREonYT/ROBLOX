@@ -36,7 +36,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (440 since the Oct 27 UI round 8: HudReveal, YOU'RE READY! first);
+- unit: all pass (442 since the Oct 27 2x and 4x Luck passes);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - city_contracts: 215 checks / 0 failed;
