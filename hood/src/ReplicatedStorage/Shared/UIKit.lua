@@ -2331,8 +2331,9 @@ Kit.ImageLoader = ImageLoader
 -- (Oct 27, round 7, OUR_UI_AUDIT A3/A4) OFF: the mockup crops were 25-58 px tall in the mockup, so on screen they were
 -- blown up 1.4-8x (blurry), and their cut edges lost the outline on some sides. Every block now draws natively (Frame +
 -- UICorner + UIStroke + UIGradient: sharp at any size), shaped like the mockup by Kit.MockLook below. true brings the
--- pictures back (the switch stays for the owner's call).
-Kit.UseOwnerSkins = false
+-- pictures back (the switch stays for the owner's call). (Oct 27, 23:36) ON again, the owner's call after comparing
+-- the drawn shop with the mockup: "keep the mock ups, not the draw ones".
+Kit.UseOwnerSkins = true
 -- (round 7) The mockup's shapes for the tones the pictures used to cover (Kit.SkinPieces): buttons and pills rounded
 -- (about a fifth of their height), smooth (no studs) with a soft light band over their top half; cards and tiles
 -- rounded 12 px with their faint studs. Only where the caller didn't ask for its own Radius / Studs.

@@ -12,7 +12,7 @@
 # (shoes, boxes, guns, the spin wheel) MAX_ITEM px, other icons MAX_ICON px: a Shop card shows a picture at up to ~160
 # canvas px, ~240 px on a 1080p PC and ~340 px on a phone. Each module returns { W, H, Z }.
 # The owner's UI pieces keep the old palette format { W, H, P = base64 palette (RGBA), Data = base64 (count, index)
-# runs, Slice?, Mode? } (they are switched off: UIKit.UseOwnerSkins = false).
+# runs, Slice?, Mode? } (UIKit.UseOwnerSkins switches them on or off; on since Oct 27, the owner's call).
 #
 # Not packed: the featured-card backgrounds and the box lid / base / open pictures (only their uploads are drawn), and
 # any picture whose upload is CURRENT: hood/art/asset_ids.json has its file's sha256, it went up through the edge-colour
