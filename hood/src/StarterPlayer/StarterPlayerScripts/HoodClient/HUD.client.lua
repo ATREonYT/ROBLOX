@@ -1003,7 +1003,10 @@ do
 				local MomentQueue = require(RS.Shared.MomentQueue)
 				local token = MomentQueue.acquire('Rebirth', { Timeout = 6 })
 				rebirthMoment(n)
-				task.delay(3.4, function() MomentQueue.release(token) end)
+				-- (the calm starts when it leaves: its 1.5 s hold, or a tap after 0.6 s; 4 s at most)
+				local shown = root:FindFirstChild('RebirthMoment')
+				if shown then shown.Destroying:Connect(function() MomentQueue.release(token) end) end
+				task.delay(4, function() MomentQueue.release(token) end)
 			end)
 		end
 		lastCash, lastRebirths = cash, n
