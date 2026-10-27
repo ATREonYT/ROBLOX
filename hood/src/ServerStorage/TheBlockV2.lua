@@ -7203,10 +7203,10 @@ end
 -- B33 WAREHOUSE (the user: "bring back the warehouse ... it gives the game more personality"; rules 16, 19, 33), made
 -- COMPACT in B34 (the user: "redo the lobby layout completely ... make it feel nice to play"; their pick: a smaller,
 -- tidier warehouse, everything a few steps from the spawn). Runs after e3_plaza, which lays the zones out.
---   Floor    mid-grey concrete slabs (two tones, 16 x 16, faint studs), no grass inside; the walks lie on it.
---   Walls    chunky light-grey courses round x -86..86, z 6..100 (Oct 27; the training block and the head lane's stage
---            clear of the west wall; grey again in round 3, as the owner asked), a darker grey skirting, pale pilasters every 16 studs, an open clerestory band showing the
---            cliffs and the hood blocks outside, one painted field per wall (west red behind the head lane, north blue
+--   Floor    warm light concrete slabs (two tones, 16 x 16, faint studs), no grass inside; the walks lie on it.
+--   Walls    chunky brick round x -86..86, z 6..100 (Oct 27; the training block and the head lane's stage clear of
+--            the west wall; the Oct 13 hall's colours again in round 3), a dark brick skirting, cream pilasters every
+--            16 studs, an open clerestory band showing the cliffs and the hood blocks outside, one painted field per wall (west red behind the head lane, north blue
 --            either side of the door, east teal behind the gun shop, south yellow behind the box dais), roller doors:
 --            open ones onto the yard (the north one onto the Stage 1 gate, 6 studs out), shut slatted ones as detail.
 --   Roof     open trusses (chords, posts and braces) and purlins, 31-37 up: no sheeting, so the HoodToy sun throws
@@ -7222,19 +7222,18 @@ Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 100,
 	open = { { 'N', -24, 24, 28 }, { 'S', -46, -32, 16 }, { 'S', 32, 46, 16 }, { 'W', 58, 72, 16 } },
 	shut = { { 'N', -66, -52, 14 }, { 'W', 12, 24, 14 }, { 'E', 64, 76, 14 } },
 	-- one painted field per wall: { wall, u0, u1, y0, y1, colour key }
-	-- (B34 fix round: one muted warm brick, no painted fields, stripes or posters: the walls stay quieter than the
-	-- things you can use)
-	fields = {},
+	-- (B34 fix round: none; Oct 27 round 3: back, as in the Oct 13 hall the owner picked ("E"): red behind the ranges,
+	-- blue either side of the gate's door, teal behind the gun shop, yellow behind the box dais, all under the windows)
+	fields = { { 'W', 28, 54, 3, 15, 'red' }, { 'N', -46, -30, 3, 15, 'blue' }, { 'N', 30, 46, 3, 15, 'blue' },
+		{ 'E', 30, 58, 3, 15, 'teal' }, { 'S', -14, 14, 3, 14, 'yellow' } },
 }
-Lobby.WHColors = { -- (Oct 27 round 2, the owner: "make the colors more bright ... like the reference": the reference's light green
-	-- floor (e3's Lobby.Bright), warm vivid terracotta walls and cream trim instead of the dark brick, lighter steel)
-	-- (Oct 27 round 3, the owner: "please use the grey warehouse that was originally used": the Oct 8 hall's clean
-	-- neutral greys for the shell (walls, pilasters, steel, the concrete floor), a shade deeper than then so the light
-	-- walks and platforms read on the floor and the walls don't glare; the colour comes from what stands in the hall)
-	floorA = C(150, 154, 164), floorB = C(144, 148, 158), grass = Lobby.Bright.floor,
-	brick = C(186, 189, 196), brickLight = C(196, 199, 205), skirt = C(140, 143, 151), trim = C(226, 228, 232),
-	steel = C(98, 102, 112), steelLight = C(130, 134, 144), slat = C(214, 216, 220), slatDark = C(190, 192, 198),
-	drum = C(110, 118, 140), lamp = C(255, 236, 170),
+Lobby.WHColors = { -- (Oct 27 round 3, the owner picked the Oct 13 warehouse, "E", the one with blue highlights: its
+	-- palette is back: warm light concrete, orange brick with a dark brick skirting and cream pilasters, blue steel trusses
+	-- and lamp shades; the layout stays today's)
+	floorA = C(224, 210, 190), floorB = C(212, 198, 178), grass = Lobby.Bright.floor,
+	brick = C(206, 112, 72), brickLight = C(218, 128, 84), skirt = C(142, 64, 48), trim = C(240, 216, 176),
+	steel = C(66, 82, 132), steelLight = C(98, 116, 170), slat = C(176, 184, 198), slatDark = C(146, 154, 170),
+	drum = C(84, 92, 112), lamp = C(255, 236, 170),
 	red = C(214, 70, 60), blue = C(60, 128, 214), teal = C(40, 172, 160), yellow = C(250, 196, 50),
 }
 -- (tutorial targets: gate 1 is reached through the north loading door; its arrows pass the doorway first)
