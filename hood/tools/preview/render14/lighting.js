@@ -45,6 +45,16 @@ export const LIGHTING_PRESETS = {
     { Intensity: 0.4, Size: 24, Threshold: 1.6 },
     { Cover: 0.3, Density: 0.7, Color: [255, 255, 255] },
     { SunAngularSize: 14 }),
+  // Huzz (Oct 27): Huzz Valley's look, the game's preset now (copied from HoodLighting.lua's Huzz; no LightingStyle set).
+  Huzz: P(
+    { technology: 'ShadowMap', ClockTime: 13, GeographicLatitude: 23, Brightness: 1.4, ExposureCompensation: 0.05,
+      Ambient: [150, 150, 160], OutdoorAmbient: [210, 210, 218], ColorShift_Top: [255, 252, 245], ColorShift_Bottom: [0, 0, 0],
+      EnvironmentDiffuseScale: 1, EnvironmentSpecularScale: 0.4, ShadowSoftness: 0.6, GlobalShadows: true },
+    { Density: 0.22, Offset: 0.25, Haze: 0.3, Glare: 0, Color: [178, 214, 255], Decay: [85, 165, 245] },
+    { Brightness: 0, Contrast: 0.05, Saturation: 0.12, TintColor: [255, 254, 250] },
+    { Intensity: 0.4, Size: 24, Threshold: 1.6 },
+    { Cover: 0.4, Density: 0.75, Color: [255, 255, 255] },
+    { SunAngularSize: 14 }),
   // HoodSun20: LIGHT2's HoodSun (BRIEF20-22), what the user's Studio showed on 2026-10-10 (brief/ref23/ours_studio_spawn.png): the same sun direction and ColorShift_Top, a little more sun
   // (0.36), a high neutral-warm ambient so shade stays light, little blue sky fill, +0.3 exposure, saturation +0.45 and a
   // touch of contrast (Roblox's ACES tone curve: index.html K), a thin Atmosphere with no haze, bloom on Neon only.

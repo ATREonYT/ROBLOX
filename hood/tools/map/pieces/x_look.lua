@@ -102,7 +102,7 @@ end
 -- apron, the walls, the roof's steel and the cliffs and terraces outside. Smooth stay: Neon glows, glass, anything see-
 -- through, anything carrying words (a SurfaceGui), signs, boards, screens and lamps, every lane, pad, item and prop, and
 -- the owner's designed meshes (MeshParts). The faint stud texture goes wherever real studs replace it.
-Look.Classic = true
+Look.Classic = false -- (Oct 27 round 2: the faint studs above instead; the classic surface's contrast can't be tuned)
 Look.ClassicNames = { '^Concrete$', '^Threshold$', '^Grass$', '^Wall', '^Roof', '^Path', '^SpawnSquare$', '^Plaza', '^Dais',
 	'^Apron', '^Cliff', '^Floor$', '^FloorField$' }
 Look.ClassicKeep = { 'Sign', 'Board', 'Glow', 'Lamp', 'Screen', 'Label', 'Text', 'Neon', 'Nosing', 'Hazard' }
@@ -162,7 +162,12 @@ end
 -- (B31 PLAZA) Saturation over this on a lane's surfaces comes down to it (critic 7: big fields S 0.55-0.75; the pad tops,
 -- prices and items keep theirs). Measured in the colour the part is built with; HoodToy's grade adds ~0.1 on screen.
 Look.BigS = 0.38 -- (B31 PLAZA, lead: the lanes' view toward the reference's median S ~0.5)
-Look.Layers = { Grass = 4, Path = 3, SpawnSquare = 3, PlazaDeck = 2, Concrete = 1 } -- (stud layers on the plaza's ground, by part name)
+-- (stud layers on the plaza's ground, by part name; Oct 27 round 2, the owner: "make the studs not stand out as much,
+-- make it like the reference": the faint tone-on-tone studs on the floor, the walks and every platform instead of
+-- Roblox's classic Studs surface, tuned to the reference's stud contrast: a flat lit patch's luminance spread (p10..p90)
+-- 16-26 of 255 in ref_STILL_lobby_topdown's floor and platforms)
+Look.Layers = { Grass = 3, Path = 3, SpawnSquare = 3, PlazaDeck = 3, Concrete = 3, PlazaKerb = 2, PlazaStep = 2, DaisTop = 3, DaisStep = 3, DaisStairTread = 3 }
+Look.WallLayers = 1 -- (the warehouse's brick walls: the same faint studs on every face, fainter: 2 layers measured 62 on a lit wall)
 local function calm(col, maxS)
 	local h, sat, v = col:ToHSV()
 	if sat <= maxS then return col end
@@ -203,6 +208,8 @@ function Look.apply(root)
 				elseif upright and top <= deckY + 2.6 and (v ~= 'P' or p.Size.Y <= 1.7) and p.Size.X >= 3 and p.Size.Z >= 3 then
 					Look.faintStuds(p, { Enum.NormalId.Top }) -- (B31 PLAZA: walkable ground only: the grass, walks, decks, mats, pads)
 				end
+			elseif v == 'P' and p.Name == 'Wall' and p:IsA('Part') and p.Transparency < 0.05 then
+				for _ = 1, Look.WallLayers do Look.faintStuds(p, ALL) end
 			end
 		end
 	end

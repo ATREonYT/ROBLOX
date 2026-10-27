@@ -5,12 +5,12 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## The owner's standing rules (short version; full list in `hood/docs/RULES.md`)
 - **Match the soldier game in style, not one to one.** Vibrant, clean, chunky, readable; calm space, loud interactables; smooth eased motion; nothing "AI slop".
 - **Objects are the owner's blocky designs** (LEGO-like blocks, studs on tops are fine), placed through `Shared/ItemMeshes` with a Part build as the fallback. They live in `hood/art/models/items/`, as 4 GLBs plus a manifest. New objects come from the owner via Claude Design (`hood/art/CLAUDE_DESIGN_PROMPT.md`), not from us.
-- **The lobby is a compact warehouse** (Oct 26 relayout, the plan the owner picked):
+- **The lobby is a roomy warehouse** (Oct 27: "dont make it so cramped", laid out like `docs/refs/ref_STILL_lobby_topdown_superhero.png`; 172 x 88 studs, one bright green floor, each zone on a raised light-grey platform, soft studs):
   - the Stage 1 gate straight ahead of spawn, as the one focal point; ranges west, gun shop east, shoe boxes south behind you;
   - 2 Robux pads by spawn, the other products beside the station they belong to;
   - calm open floor; props only along the walls.
   - Keep our themed shooting-range bays, without side walls.
-  - No grass inside; clay cliffs and hood buildings outside.
+  - No grass parts inside (the green floor is painted plastic, like the reference); clay cliffs and hood buildings outside.
   - No spawn symbol.
 - **Text:** Montserrat Black (GothamBlack) with a thick dark outline and gradient fills (`Shared/TextStyle`). Robux prices show the Robux sign (`Shared/RobuxText.fmt`).
 - **Kid-safe and honest:**
@@ -59,7 +59,7 @@ Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio
    - Motion (animations, effects) is judged on a 30 fps MP4, not on stills.
 2. **Prove it small before scaling.** Build a "golden slice" (spawn + 2 lanes + one pad) first, get a yes, then roll it out. Full rebuilds that miss waste days.
 3. **What made it look "dead" or "AI slop":**
-   - Studs everywhere in harsh contrast. **Oct 26 the owner chose classic studs everywhere** (Plastic, all six faces `SurfaceType.Studs`, like their Alien inspiration map; see `hood/docs/INSPIRATION.md`). Keep the colours mid-tone and warm, so the studs don't read as black and white noise. Text boards, Neon, glass and the owner's meshes stay smooth.
+   - Studs everywhere in harsh contrast. **Oct 26 the owner chose classic studs everywhere** (Plastic, all six faces `SurfaceType.Studs`, like their Alien inspiration map; see `hood/docs/INSPIRATION.md`). Keep the colours mid-tone and warm, so the studs don't read as black and white noise. **Oct 27 the owner asked for brighter colours and softer studs like the reference:** the lobby uses a faint stud texture instead of the classic studs surface (stud contrast about 16-27 of 255, the reference's 16-26). Text boards, Neon, glass and the owner's meshes stay smooth.
    - A grey or cold palette ("calm" was misread as grey). Big warm, saturated fields with loud items work; neon doesn't.
    - Flat light with no shadows. Use the `HoodToy` sun.
    - Too many labels, tiny items, and stray props.

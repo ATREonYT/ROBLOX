@@ -15,7 +15,7 @@
 -- line like the reference's path, the zones a walk's width off it, calm floor round them; z0 still hugs the gate's wings)
 Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 94,
 	 t = 2, eave = 30, truss = 6, off = 12, bay = 16,
-	win = { 17, 25 }, skirt = 3,
+	win = { 17.6, 28.2 }, skirt = 3, -- (Oct 27 round 2: taller clerestory windows, more sky and cliffs over the walls)
 	-- open doors: { wall, u0, u1, height } (u along the wall: z for west/east, x for north/south)
 	-- (B34 fix round: the north door 28 high, so the Stage 1 gate's whole frame shows through it from the spawn)
 	open = { { 'N', -24, 24, 28 }, { 'S', -46, -32, 16 }, { 'S', 32, 46, 16 }, { 'W', 58, 72, 16 } },
@@ -25,11 +25,12 @@ Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 94,
 	-- things you can use)
 	fields = {},
 }
-Lobby.WHColors = { -- (B34: one muted warm brick family, warm steel; the floor a mid tone under classic studs)
-	floorA = C(198, 150, 106), floorB = C(194, 146, 102), grass = C(122, 204, 82), -- (B35: a warmer, more saturated concrete: the grey walks read lighter on it)
-	brick = C(180, 108, 82), brickLight = C(190, 118, 90), skirt = C(146, 84, 64), trim = C(196, 128, 98),
-	steel = C(98, 88, 84), steelLight = C(128, 116, 108), slat = C(186, 178, 168), slatDark = C(164, 156, 146),
-	drum = C(92, 84, 80), lamp = C(255, 236, 170),
+Lobby.WHColors = { -- (Oct 27 round 2, the owner: "make the colors more bright ... like the reference": the reference's light green
+	-- floor (e3's Lobby.Bright), warm vivid terracotta walls and cream trim instead of the dark brick, lighter steel)
+	floorA = Lobby.Bright.floor, floorB = Lobby.Bright.floorB, grass = Lobby.Bright.floor,
+	brick = C(238, 146, 92), brickLight = C(246, 162, 106), skirt = C(212, 116, 74), trim = C(255, 218, 168),
+	steel = C(124, 132, 156), steelLight = C(158, 166, 188), slat = C(232, 228, 222), slatDark = C(212, 206, 198),
+	drum = C(110, 118, 140), lamp = C(255, 236, 170),
 	red = C(214, 70, 60), blue = C(60, 128, 214), teal = C(40, 172, 160), yellow = C(250, 196, 50),
 }
 -- (tutorial targets: gate 1 is reached through the north loading door; its arrows pass the doorway first)
