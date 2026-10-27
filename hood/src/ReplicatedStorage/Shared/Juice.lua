@@ -183,6 +183,10 @@ end
 local InstanceMap = require(script.Parent.InstanceMap) -- (not a weak table: see InstanceMap)
 -- White flash over a model for one beat. One Highlight per model, made on first use and switched off
 -- between hits: only enabled Highlights count toward the 255 limit, and nothing is created per punch.
+-- (Oct 27, flow round 2, kid-safe) The white is at most once a second on the whole screen (Shared/FlashGate): the
+-- hits in between get a soft warm tint instead, faint enough that the brightness barely moves.
+local FlashGate = require(script.Parent.FlashGate)
+Juice.SoftTint, Juice.SoftFill = Color3.fromRGB(255, 214, 150), 0.82
 local flashes = InstanceMap.new()
 function Juice.flash(model)
 	local f = flashes[model]
@@ -199,7 +203,10 @@ function Juice.flash(model)
 		flashes[model] = f
 	end
 	if f.tween then f.tween:Cancel() end
-	f.h.FillTransparency = 0.3
+	local white = FlashGate.take('hit')
+	f.h.FillColor = white and Color3.new(1, 1, 1) or Juice.SoftTint
+	f.h.FillTransparency = white and 0.3 or Juice.SoftFill
+	f.h:SetAttribute('White', white)
 	f.h.Enabled = true
 	f.tween = TweenService:Create(f.h, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FillTransparency = 1 })
 	f.tween.Completed:Once(function(state)

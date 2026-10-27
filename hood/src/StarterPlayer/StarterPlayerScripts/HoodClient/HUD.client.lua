@@ -565,6 +565,7 @@ local function rebirthMoment(n, unlocked)
 		end
 		Motion.tween(rays, 3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, { Rotation = 60 })
 		-- the glow: one soft gold-white disc that fades out (the one flash)
+		require(RS.Shared.FlashGate).note('rebirth') -- (Oct 27, flow r2: the hits and gates wait a second after it)
 		local glow = Kit.new('Frame', { Name = 'Glow', BackgroundColor3 = hex('FFF4C2'), BackgroundTransparency = 0.45, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = px(420, 420), ZIndex = 59, Parent = holder })
 		Kit.new('UICorner', { CornerRadius = UDim.new(0.5, 0), Parent = glow })
 		Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.6, 0.5), NumberSequenceKeypoint.new(1, 1) }), Parent = glow })

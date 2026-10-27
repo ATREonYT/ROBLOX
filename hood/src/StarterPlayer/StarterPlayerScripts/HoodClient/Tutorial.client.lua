@@ -15,7 +15,7 @@
 --     the same GUI inset as the button's ScreenGui, with the hover/press pops and a window's opening spring taken out
 --     (TutorialRules.restRect), so it never drifts, breathes or jumps; it waits (no box at all) until the button is on
 --     screen and still, and follows a resize or a turn of the phone by locking on again.
---   * The HINT: a dark rounded box, bold white words with the key word yellow, typed in at 32 characters a second.
+--   * The HINT: a dark rounded box, bold white words with the key word yellow, the whole line at once (a short fade and grow).
 -- It stays out of the way of everything else that owns the screen: the loading cover, a window (but the lesson's own),
 -- the unboxing, the rank-up screen, the returning player's cards and offers; the lesson waits until you are in the lobby.
 local Players = game:GetService('Players')
@@ -56,6 +56,7 @@ local ringEdge = Kit.stroke(BLACK, 1, true)
 ringEdge.Parent = ring
 local hintText = Kit.text({ Name = 'Text', Text = '', TextSize = H.TextSize, Stroke = BLACK, StrokeThickness = math.max(2, H.TextSize * 0.1), RichText = true, Position = px(0, -1), Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = face })
 local hintStroke = hintText:FindFirstChildOfClass('UIStroke')
+local hintPop = Kit.new('UIScale', { Name = 'HintPop', Scale = 1, Parent = face }) -- (a new line's short grow, H.Pop)
 
 ---------------------------------------------------------------------------------------------- the box and the dim
 -- Unscaled pixels in a ScreenGui that takes the inset settings of the boxed button's ScreenGui, so a rect read from the
@@ -904,12 +905,17 @@ local function onFrame(dt)
 	end
 	local want = text ~= nil
 	if want then
-		local typed = Rules.typed(now - hintState.Since)
-		if typed ~= hintState.Typed then
-			hintState.Typed = typed
-			hintText.Text = Rules.rich(hintState.Text, typed)
+		-- (Oct 27, flow r2) the whole line at once, its words fading in as the pill grows a little: no half-typed words
+		if hintState.Typed ~= -2 then
+			hintState.Typed = -2
+			hintText.Text = Rules.rich(hintState.Text)
 		end
 		setHintAlpha(hintState.Alpha + dt / H.FadeIn)
+		local e = math.clamp((now - hintState.Since) / H.Pop, 0, 1)
+		local k = 1 - (1 - e) ^ 3
+		hintPop.Scale = H.PopFrom + (1 - H.PopFrom) * k
+		hintText.TextTransparency = 1 - hintState.Alpha * k
+		if hintStroke then hintStroke.Transparency = 1 - hintState.Alpha * k end
 	else
 		-- (it keeps its words: the same line coming back after a popup is not typed again)
 		setHintAlpha(hintState.Alpha - dt / H.FadeOut)

@@ -2032,6 +2032,7 @@ function Words.update(job, t)
 		end
 	end
 	local fc = soft and ((P.reduced and W.tintColor) or W.softColor or WHITE) or WHITE
+	if fa >= 0.3 and not soft then require(Shared:WaitForChild('FlashGate')).note('unbox') end -- (the hits and gates wait a second after it)
 	if W.flash.BackgroundColor3 ~= fc then W.flash.BackgroundColor3 = fc end
 	local ft = 1 - M.c01(fa)
 	if W.flash.BackgroundTransparency ~= ft then W.flash.BackgroundTransparency = ft end

@@ -1,7 +1,7 @@
 -- The first-join welcome (Oct 27, flow: the owner's "there aren't any welcoming traits"; the audit,
 -- hood/docs/research/OUR_FIRST_10_MIN.md, found the kid dropped from the loading cover straight into a full HUD and an
 -- instruction). Once per save, on its very first join (the server's FirstJoin, OnboardingRules.firstJoin):
---   * the camera starts high over the Stage 1 gate, looking back down the hall at you, and glides down to its usual place
+--   * the camera starts in front of the Stage 1 gate, inside the hall, looking back down it at you, and glides down to its usual place
 --     behind you (Duration seconds, eased in and out);
 --   * "WELCOME TO THE BLOCK," and your name, in the game's title style (Shared/TextStyle: Montserrat Black, the thick dark
 --     outline, the gold and white fills), on a soft dark band;
@@ -27,8 +27,8 @@ local Welcome = {
 	Duration = 3.2, -- the camera's glide
 	WordsIn = 0.35, -- the words start
 	WordsOut = 3.1, -- the words start to leave (0.35 s)
-	Height = 16, -- studs over the gate's floor where the camera starts
-	Behind = 8, -- studs past the gate (away from you)
+	Height = 9, -- studs over your floor where the camera starts
+	Front = 10, -- studs in front of the gate, on the hall's side (toward you): inside the hall, never through its walls
 	WaitFor = 12, -- seconds after the cover lifts to hear whether this is a first join
 }
 
@@ -87,14 +87,37 @@ if cam and gate and not reduced then
 		oldType = cam.CameraType
 		local g = gate:GetPivot().Position
 		local you = root.Position
-		local away = Vector3.new(g.X - you.X, 0, g.Z - you.Z)
-		away = away.Magnitude > 0.1 and away.Unit or Vector3.new(0, 0, -1)
-		local eye = g + away * Welcome.Behind + Vector3.new(0, Welcome.Height, 0)
-		from = CFrame.lookAt(eye, you + Vector3.new(0, 2, 0))
+		local toYou = Vector3.new(you.X - g.X, 0, you.Z - g.Z)
+		local dist = toYou.Magnitude
+		toYou = dist > 0.1 and toYou.Unit or Vector3.new(0, 0, 1)
+		local aim = you + Vector3.new(0, 2, 0)
+		-- (Oct 27, flow r2) in front of the gate, inside the hall, with a clear line to you: a wall, a sign or a
+		-- prop in the way moves the start toward you until the line is clear
+		local okP, params = pcall(function()
+			local rp = RaycastParams.new()
+			rp.FilterType = Enum.RaycastFilterType.Exclude
+			rp.FilterDescendantsInstances = { char }
+			return rp
+		end)
+		local function clear(eye)
+			if not okP then return true end -- (no raycasts here, an offline preview: the first spot)
+			local okR, hit = pcall(function() return workspace:Raycast(eye, aim - eye, params) end)
+			return not okR or hit == nil
+		end
+		local eye
+		for k = 0, 8 do
+			local along = math.min(Welcome.Front + k * 4, math.max(dist - 12, 0))
+			eye = Vector3.new(g.X, you.Y + Welcome.Height, g.Z) + toYou * along
+			if clear(eye) then break end
+		end
+		from = CFrame.lookAt(eye, aim)
 		cam.CameraType = Enum.CameraType.Scriptable
 		cam.CFrame = from
 	end)
 	if not ok then from, to = nil, nil end
+end
+if from and to then -- (where the glide runs, for the play-test's clear-path check)
+	gui:SetAttribute('From', from.Position); gui:SetAttribute('To', to.Position)
 end
 
 ---------------------------------------------------------------------------------------------- the moment

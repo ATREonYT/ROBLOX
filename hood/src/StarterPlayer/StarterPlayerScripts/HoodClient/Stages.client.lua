@@ -37,6 +37,7 @@ local Debris = game:GetService('Debris')
 local ActiveMap = require(RS.Shared.ActiveMap)
 local BigAttr = require(RS.Shared.BigAttr)
 local Juice = require(RS.Shared.Juice)
+local FlashGate = require(RS.Shared.FlashGate)
 local Format = require(RS.Shared.Format)
 local Net = require(RS.Shared.Net)
 local StageRules = require(RS.Shared.StageRules)
@@ -136,7 +137,10 @@ end
 -- One flash, under the kid-safe 0.25 s. done() runs at the end.
 local function flashOut(e, seconds, done, clears) -- (clears: the haze fades all the way out, the gate is opening)
 	local t0 = os.clock()
-	local WHITE = Color3.new(1, 1, 1)
+	-- (Oct 27, flow round 2) white only when the screen has had no white flash for a second (Shared/FlashGate: another
+	-- gate, a hit, a level-up); otherwise a soft warm glow that keeps the panes' own see-through
+	local soft = not FlashGate.take('gate')
+	local WHITE = soft and Color3.fromRGB(255, 226, 170) or Color3.new(1, 1, 1)
 	local conn
 	local function step()
 		local k = math.clamp((os.clock() - t0) / seconds, 0, 1)
@@ -155,8 +159,8 @@ local function flashOut(e, seconds, done, clears) -- (clears: the haze fades all
 				if pane:IsA('Frame') then
 					local base = pane:GetAttribute('BaseColor') or pane.BackgroundColor3
 					local baseT = clears and 1 or (pane:GetAttribute('BaseTransparency') or pane.BackgroundTransparency)
-					pane.BackgroundColor3 = clears and WHITE or base:Lerp(WHITE, a) -- (opening: white fading to nothing, never back through red)
-					pane.BackgroundTransparency = baseT + (math.min(pane:GetAttribute('BaseTransparency') or baseT, 0.1) - baseT) * a
+					pane.BackgroundColor3 = clears and WHITE or base:Lerp(WHITE, soft and a * 0.5 or a) -- (opening: white fading to nothing, never back through red)
+					pane.BackgroundTransparency = baseT + ((soft and math.min(baseT, 0.6) or math.min(pane:GetAttribute('BaseTransparency') or baseT, 0.1)) - baseT) * a
 				end
 			end
 		end

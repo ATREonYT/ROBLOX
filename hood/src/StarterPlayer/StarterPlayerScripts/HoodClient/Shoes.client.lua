@@ -1555,6 +1555,7 @@ local function play(info)
 			core.Size = px(cs, cs)
 			core.BackgroundTransparency = lerp(0.2, 1, c01(f * 1.8))
 			flash.BackgroundTransparency = tier.Rank >= 4 and lerp(0.4, 1, c01(f * 1.2)) or 1
+			if tier.Rank >= 4 then require(RS.Shared.FlashGate).note('box') end -- (the hits and gates wait a second after it)
 		else
 			ring.Visible, core.Visible = false, false
 			flash.BackgroundTransparency = 1

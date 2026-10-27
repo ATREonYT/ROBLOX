@@ -108,6 +108,42 @@ K = 0; resetClock()
 do
 local welcomeUp = waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') ~= nil end, 4)
 check('first join: the welcome is up', welcomeUp)
+-- (Oct 27, flow r2) its camera glides inside the hall: no point of the glide inside a wall, a roof or a prop, and the kid
+-- in plain sight from each (the harness has no raycast: points along each line are tested against the map's parts)
+do
+	local wg = P.PlayerGui:FindFirstChild('HoodWelcome')
+	local A, B = wg and wg:GetAttribute('From'), wg and wg:GetAttribute('To')
+	local kid = char.HumanoidRootPart.Position + Vector3.new(0, 2, 0)
+	local blocked, where = 0, ''
+	if typeof(A) == 'Vector3' and typeof(B) == 'Vector3' then
+		local lo = Vector3.new(math.min(A.X, B.X, kid.X), math.min(A.Y, B.Y, kid.Y), math.min(A.Z, B.Z, kid.Z))
+		local hi = Vector3.new(math.max(A.X, B.X, kid.X), math.max(A.Y, B.Y, kid.Y), math.max(A.Z, B.Z, kid.Z))
+		local near = {}
+		for _, b in workspace.TheBlockV2:GetDescendants() do
+			if b:IsA('BasePart') and b.Transparency < 0.5 then
+				local c, r = b.Position, b.Size.Magnitude / 2
+				if c.X + r >= lo.X and c.X - r <= hi.X and c.Y + r >= lo.Y and c.Y - r <= hi.Y and c.Z + r >= lo.Z and c.Z - r <= hi.Z then table.insert(near, b) end
+			end
+		end
+		local function inside(pt)
+			for _, b in near do
+				local l = b.CFrame:PointToObjectSpace(pt)
+				local h = b.Size / 2
+				if math.abs(l.X) < h.X and math.abs(l.Y) < h.Y and math.abs(l.Z) < h.Z then return b end
+			end
+			return nil
+		end
+		for i = 0, 16 do
+			local eye = A:Lerp(B, i / 16)
+			for j = 0, 11 do
+				local pt = eye:Lerp(kid, j / 14) -- (to just short of the kid: the floor and the lane under it don't count)
+				local b = inside(pt)
+				if b then blocked += 1; if where == '' then where = ('%s at %d/16, %d/14 of the way'):format(b:GetFullName():sub(-60), i, j) end end
+			end
+		end
+	end
+	check('first join: the welcome glides inside the hall, the kid in sight all the way', typeof(A) == 'Vector3' and blocked == 0, ('from %s to %s, %d points in a part %s'):format(tostring(A), tostring(B), blocked, where))
+end
 frame(0.3)
 __fireOn(UIS, 'InputBegan', { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.W }, false)
 local skipped, skipWall = waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') == nil end, 3)
@@ -375,6 +411,55 @@ for _, g in gaps do least = math.min(least, g) end
 check('one voice: the goal moment, the rank-up and the notice all show', seenUp.GoalDone and seenUp.RankUp and seenUp.Notice, table.concat(order, ' > '))
 check('one voice: never two on screen at once', #overlap == 0, table.concat(overlap, ', '):sub(1, 160))
 check('one voice: a calm of at least 1.5 s between them (harness frames)', #gaps >= 2 and least >= 1.4, ('%d gaps, the least %.2f s'):format(#gaps, least == math.huge and -1 or least))
+end)()
+
+---------------------------------------------------------------------------------------------------------- 11. at most one white flash a second
+-- (Oct 27, flow round 2, kid-safe) A busy lane: you auto-fire in BAY 1 while two more players join and train beside
+-- you, their hits drawn on the lane's other targets twice a second each. Every white flash on screen is counted (a
+-- Highlight going on near-white, from any source) over 5 s of wall time: never two within a second; the hits in
+-- between still answer, with the soft tint.
+;(function()
+	local Juice = require(RS.Shared.Juice)
+	local others = {}
+	for i = 2, 3 do
+		pcall(function()
+			local q = Instance.new('Player'); q.Name = 'Friend' .. i; q.Parent = game:GetService('Players')
+			table.insert(others, q)
+		end)
+	end
+	local okL = inLane('Starter')
+	local targets = {}
+	for _, m in workspace.TheBlockV2:GetDescendants() do
+		if m:IsA('Model') and m:GetAttribute('Hit') ~= nil then table.insert(targets, m) end
+		if #targets >= 6 then break end
+	end
+	local on, whites, softs, t0, lastFire = {}, {}, 0, os.clock(), 0
+	local n = 0
+	while os.clock() - t0 < 5 do
+		frame(1 / 30)
+		n += 1
+		if os.clock() - lastFire >= 0.25 and #targets > 0 then -- (two friends, two hits a second each)
+			lastFire = os.clock()
+			pcall(Juice.flash, targets[(n % #targets) + 1])
+		end
+		for _, h in workspace:GetDescendants() do
+			if h:IsA('Highlight') and h.Name == 'HitFlash' then
+				local lit = h.Enabled and h.FillTransparency < 0.6
+				local white = lit and h.FillColor.R > 0.95 and h.FillColor.G > 0.95 and h.FillColor.B > 0.95
+				if white and not on[h] then table.insert(whites, os.clock()) end
+				if lit and not white and not on[h] then softs += 1 end
+				on[h] = lit or nil
+				if h.Enabled and h.FillTransparency >= 0.6 and h:GetAttribute('White') == false and not on['s' .. tostring(h)] then softs += 1; on['s' .. tostring(h)] = true end
+				if not h.Enabled then on['s' .. tostring(h)] = nil end
+			end
+		end
+	end
+	local closest = math.huge
+	for i = 2, #whites do closest = math.min(closest, whites[i] - whites[i - 1]) end
+	check('flashes: a busy lane with 3 players flashes white at most once a second', okL and #whites >= 2 and closest >= 0.95, ('%d white flashes in 5 s, the closest two %.2f s apart, %d soft hits, %d friends'):format(#whites, closest == math.huge and -1 or closest, softs, #others))
+	check('flashes: the hits in between still answer (the soft tint)', softs >= 5, softs .. ' soft hits')
+	for _, q in others do pcall(function() q:Destroy() end) end
+	home()
 end)()
 
 print(('[loop] %d checks / %d failed%s'):format(LOOPN, #LOOPF, #LOOPF > 0 and (': ' .. table.concat(LOOPF, '; ')) or ''))

@@ -87,7 +87,7 @@ local function levelUp(from, to)
 	else
 		if not wasShown then toast.Position = UDim2.new(0.5, 0, 0, y - 8) end
 		tween(toast, 0.18, { Position = UDim2.new(0.5, 0, 0, y) }, Enum.EasingStyle.Back)
-		if os.clock() - lastBloom >= 1.2 then -- one flash, 0.25 s at most, never more than one a second
+		if os.clock() - lastBloom >= 1.2 and require(RS.Shared.FlashGate).take('levelup') then -- one flash, 0.25 s at most, never more than one a second (on the whole screen: Shared/FlashGate)
 			lastBloom = os.clock()
 			bloom.Visible, bloom.BackgroundTransparency = true, 0.45
 			tween(bloom, 0.25, { BackgroundTransparency = 1 })

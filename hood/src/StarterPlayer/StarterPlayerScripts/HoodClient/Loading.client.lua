@@ -9,6 +9,7 @@ local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local TweenService = game:GetService('TweenService')
 local Kit = require(RS.Shared.UIKit)
+local TextStyle = require(RS.Shared.TextStyle)
 local ActiveMap = require(RS.Shared.ActiveMap)
 
 local player = Players.LocalPlayer
@@ -19,10 +20,14 @@ local hex = Kit.hex
 local gui, root, fit = Kit.screen('HoodLoading', nil, 1000)
 gui.IgnoreGuiInset = true
 gui.ScreenInsets = Enum.ScreenInsets.None
-local cover = Kit.new('Frame', { Name = 'Cover', Size = UDim2.fromScale(1, 1), BackgroundColor3 = hex('0E1020'), BorderSizePixel = 0, Active = true, ZIndex = 1, Parent = root })
-Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('1B2140'), hex('080A14')), Parent = cover })
-local title = Kit.text({ Name = 'Title', Text = '+1 HOOD EVOLUTION', TextSize = 64, Stroke = hex('060608'), StrokeThickness = 7, TextColor3 = hex('FFD21F'), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.fromOffset(900, 90), ZIndex = 2, Parent = root })
-local sub = Kit.text({ Name = 'Line', Text = 'Getting your look ready...', TextSize = 24, Stroke = hex('060608'), StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.54), Size = UDim2.fromOffset(700, 36), ZIndex = 2, Parent = root })
+-- (Oct 27, flow r2: the critic's "plain black card") a warm card, the hall's colours: brick orange to deep brick red,
+-- and the title in the game's title style (Shared/TextStyle: Montserrat Black, the thick dark outline, the gold fill)
+local cover = Kit.new('Frame', { Name = 'Cover', Size = UDim2.fromScale(1, 1), BackgroundColor3 = hex('E2622F'), BorderSizePixel = 0, Active = true, ZIndex = 1, Parent = root })
+Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex('FFB052')), ColorSequenceKeypoint.new(0.55, hex('E8642E')), ColorSequenceKeypoint.new(1, hex('A8322A')) }), Parent = cover })
+local title = Kit.text({ Name = 'Title', Text = '+1 HOOD EVOLUTION', TextSize = 72, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.fromOffset(1000, 96), ZIndex = 3, Parent = root })
+TextStyle.apply(title, 'gold', { Shadow = true, Thickness = 7 })
+local sub = Kit.text({ Name = 'Line', Text = 'Getting your look ready...', TextSize = 26, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.54), Size = UDim2.fromOffset(700, 36), ZIndex = 3, Parent = root })
+TextStyle.apply(sub, 'white', { Thickness = 3 })
 local bar, fill = Kit.bar({ Name = 'Progress', Width = 420, Height = 34, Tone = 'level', Value = 0.05, ZIndex = 2 })
 bar.AnchorPoint, bar.Position = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.62)
 bar.Parent = root
@@ -64,12 +69,7 @@ task.spawn(function()
 	-- the cover goes: every part of it fades together
 	local info = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 	TweenService:Create(cover, info, { BackgroundTransparency = 1 }):Play()
-	for _, d in { title, sub } do
-		TweenService:Create(d, info, { TextTransparency = 1 }):Play()
-		local st = d:FindFirstChildOfClass('UIStroke')
-		if st then TweenService:Create(st, info, { Transparency = 1 }):Play() end
-	end
-	for _, d in bar:GetDescendants() do
+	for _, d in root:GetDescendants() do -- (the title's drop shadow and outlines too)
 		if d:IsA('Frame') then TweenService:Create(d, info, { BackgroundTransparency = 1 }):Play() end
 		if d:IsA('TextLabel') then TweenService:Create(d, info, { TextTransparency = 1 }):Play() end
 		if d:IsA('UIStroke') then TweenService:Create(d, info, { Transparency = 1 }):Play() end

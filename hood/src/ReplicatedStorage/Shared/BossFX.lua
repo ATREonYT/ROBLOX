@@ -204,9 +204,10 @@ function BossFX.telegraph(frame, a, y, parent)
 		for _, e in edges do e.Transparency = pulse * (1 - k * 0.6) end
 	end
 	function api.finish(landed)
+		local white = landed and require(script.Parent.FlashGate).take('boss') -- (one white flash a second at most)
 		for _, p in all do
 			if p.Parent then
-				p.Color = p.Color:Lerp(Color3.new(1, 1, 1), landed and 0.5 or 0.25)
+				p.Color = p.Color:Lerp(Color3.new(1, 1, 1), white and 0.5 or 0.25)
 				TweenService:Create(p, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Transparency = 1 }):Play()
 			end
 		end

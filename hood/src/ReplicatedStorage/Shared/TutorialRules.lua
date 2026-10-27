@@ -423,6 +423,9 @@ TutorialRules.Hint = {
 	DockH = 54, DockPad = 26, DockGap = 8, -- (docked over a window's button: compact, just over the box)
 	FadeIn = 0.13,
 	FadeOut = 0.2,
+	-- (Oct 27, flow r2: the critic's stills caught half-typed pills, "G", "Now go f") a new line shows whole at once: its
+	-- words fade in and the pill grows from PopFrom to full size over Pop seconds (no typewriter)
+	Pop = 0.16, PopFrom = 0.94,
 	-- (brief 32, FEEL) The WORLD steps' line (walk to BAY 1, the gate, the pad, the gift; no box): the compact strip, a little
 	-- lower. Filmed with the follow camera, the full box at 63 % sat on your own character (the reference's sits on its
 	-- soldier's legs, V4 7.0 s): here it clears your body and stays above the Power and Level row.
