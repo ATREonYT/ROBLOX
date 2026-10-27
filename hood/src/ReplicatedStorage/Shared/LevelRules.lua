@@ -7,8 +7,8 @@
 -- every stage's Recommended Power are in it, a rebirth asks for it and resets it. A Level is only a curve over it:
 --     the level you are = the highest L with Power >= T(L),   T(L) = 1.5^(L-1) - 1   (T(1) = 0)
 -- so every 1.5x more Power is one more level, which is how the soldier game's levels read (many early, slower later):
--- the first shot is already Level 2, the stage 1 gate (10 Power) is Level 6, a first rebirth (600) is Level 16 and
--- the 14th (400M) is Level 49. T is rounded to two significant figures from 100 up, so the bar's numbers read cleanly.
+-- the first shot is already Level 2, the stage 1 gate (10 Power) is Level 6, a first rebirth (1.5K) is Level 19, the
+-- boss yard (1.5M) Level 36 and the 14th rebirth (950M) Level 52 (Oct 27 pacing). T is rounded to two significant figures from 100 up, so the bar's numbers read cleanly.
 -- Nothing is stored for it: a level is always LevelRules.levelOf(Rep), so the economy, the gates and the saves are
 -- exactly what they were. A rebirth resets Power, so it resets the level (the reference's "Level 5 MAX - Rebirth!").
 --

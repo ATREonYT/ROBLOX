@@ -16,6 +16,8 @@ local Players = game:GetService('Players')
 local Schema = require(game.ServerScriptService.HoodServer.ProfileSchema)
 local Art = require(RS.Shared.SkinArt)
 local PadRules = require(RS.Shared.PadRules)
+-- (the stage 1 pads' labels, from the rules, so a Cash change in Config/Balance never makes this run stale)
+local PAD1, PAD10 = PadRules.text(PadRules.reward(1, false)), PadRules.text(PadRules.reward(1, true))
 _G.__screenSize = Vector2.new(1200, 617)
 local V2 = require(game.ServerStorage.TheBlockV2)
 V2.Build()
@@ -242,7 +244,7 @@ do
 	local base = top and top:GetAttribute('BaseColor')
 	check('locked pads keep their own colour, a notch darker (no grey)', base and math.abs(top.Color.R - base.R * 0.85) < 0.01 and math.abs(top.Color.G - base.G * 0.85) < 0.01 and math.abs(top.Color.B - base.B * 0.85) < 0.01, top and tostring(top.Color))
 end
-check('stage 1 pads locked: "+10 Cash" / "+100 Cash" over "🔒 Clear the crew!"', label(r1, 'Title') == '+10 Cash' and label(r1, 'Sub') == '🔒 Clear the crew!' and label(t1, 'Title') == '+100 Cash' and label(t1, 'Sub') == '🔒 Clear the crew!', label(r1, 'Title') .. ' / ' .. label(r1, 'Sub'))
+check('stage 1 pads locked: "+<stage 1> Cash" / "+<10x> Cash" over "🔒 Clear the crew!"', label(r1, 'Title') == PAD1 and label(r1, 'Sub') == '🔒 Clear the crew!' and label(t1, 'Title') == PAD10 and label(t1, 'Sub') == '🔒 Clear the crew!', label(r1, 'Title') .. ' / ' .. label(r1, 'Sub'))
 check('32 pads, two a stage', (function() local n = 0 for s = 1, 16 do if padsByStage[s] and padsByStage[s].Return and padsByStage[s].TenX then n += 2 end end return n end)() == 32)
 shot('01_spawn', 330)
 
@@ -318,13 +320,13 @@ check('gate 3 still shut', barrier(3).CanCollide == true)
 local big, small = label(r1, 'Title'), label(r1, 'Sub')
 local tbig, tsmall = label(t1, 'Title'), label(t1, 'Sub')
 local tprice, tpriceOn = label(t1, 'Price')
-check('pads lit: "+10 Cash / Return" and "+100 Cash / 10x Cash" with the price', big == '+10 Cash' and small == 'Return' and tbig == '+100 Cash' and tsmall == '10x Cash' and tpriceOn and tprice == '\u{E002}' .. tostring(require(RS.Shared.Config.Products).ByKey.TenXCash.Price), table.concat({ big, small, tbig, tsmall, tostring(tprice) }, ' / '))
+check('pads lit: "+<stage 1> Cash / Return" and "+<10x> Cash / 10x Cash" with the price', big == PAD1 and small == 'Return' and tbig == PAD10 and tsmall == '10x Cash' and tpriceOn and tprice == '\u{E002}' .. tostring(require(RS.Shared.Config.Products).ByKey.TenXCash.Price), table.concat({ big, small, tbig, tsmall, tostring(tprice) }, ' / '))
 camFn = function() look(Vector3.new(0, 7.5, g2 + 34), Vector3.new(0, 3, g2 - 4)) end
 shot('05_gate_open', 200)
 camFn = function() look(Vector3.new(0, 6.2, g2 + 24), Vector3.new(0, 3.2, g2 + 2)) end
 shot('05b_pads_close_lit', 160)
 wall(1.6)
-check('the goal line now points at the yellow pad', attr('GoalText') == 'Step on the yellow pad' and attr('GoalWhere') == 'by the gate: +10 Cash', tostring(attr('GoalText')) .. ' - ' .. tostring(attr('GoalWhere')))
+check('the goal line now points at the yellow pad', attr('GoalText') == 'Step on the yellow pad' and attr('GoalWhere') == 'by the gate: ' .. PAD1, tostring(attr('GoalText')) .. ' - ' .. tostring(attr('GoalWhere')))
 
 -------------------------------------------------------------------------------------------- 6. through gate 2
 camFn = behind(0, -1, 12, 6, 7)
@@ -353,16 +355,16 @@ step('08_cashout', 'stepped on the yellow pad')
 local goalPaid = 0
 for _, g in sent('Goal', 'Done', m) do goalPaid += g.Reward or 0 end -- (the "cash out" goal pays its own small reward meanwhile)
 local paid = sent('Cinematic', 'CashOut', m)[1]
-check('+10 Cash', paid and paid.Reward == PadRules.reward(1, false) and data.Cash - cash0 - goalPaid == PadRules.reward(1, false), (data.Cash - cash0) .. ' incl. goal ' .. goalPaid)
+check('the stage 1 pad pays its Cash', paid and paid.Reward == PadRules.reward(1, false) and data.Cash - cash0 - goalPaid == PadRules.reward(1, false), (data.Cash - cash0) .. ' incl. goal ' .. goalPaid)
 check('back on the lobby spawn', at(spawnZ, 2), mapPos().Z)
 check('the run is over: RunCleared 0, RunStage 1, CashOuts 1', attr('RunCleared') == 0 and attr('RunStage') == 1 and attr('CashOuts') == 1, state())
 check('the cash-out moment and the reset reach your client', #sent('Cinematic', 'CashOut', m) == 1 and #sent('WaveState', 'Reset', m) == 1)
-check('(brief 29) no big "+10 Cash" pops on screen: the Cash just joins the balance', string.find(feedback(), '+10 Cash', 1, true) == nil, feedback())
+check('(brief 29) no big "+<stage 1> Cash" pops on screen: the Cash just joins the balance', string.find(feedback(), PAD1, 1, true) == nil, feedback())
 camFn = behind(0, -1, 12, 6, 7)
 shot('08_cashout', 330)
 local early = 0
 for _, g in sent('Goal', 'Done', m) do if g.Text == 'Step on the yellow pad' then early += 1 end end
-check('the cash-out goal waits: "+10 Cash" has the screen to itself first', early == 0, early)
+check('the cash-out goal waits: "+<stage 1> Cash" has the screen to itself first', early == 0, early)
 wall(0.5)
 check('gates shut again for you', barrier(2).CanCollide == true and status(2) == 'Defeat the crew first', status(2))
 check('pads locked again', label(r1, 'Sub') == '🔒 Clear the crew!', label(r1, 'Sub'))
@@ -395,7 +397,7 @@ m = mark()
 onPad(t1)
 wall(0.8)
 step('10_tenx', 'stepped on the magenta pad with the pass')
-check('+100 Cash and home', data.Cash - cash0 == PadRules.reward(1, true) and at(spawnZ, 2), data.Cash - cash0)
+check('the 10x pad pays and takes you home', data.Cash - cash0 == PadRules.reward(1, true) and at(spawnZ, 2), data.Cash - cash0)
 local co = sent('Cinematic', 'CashOut', m)[1]
 check('the moment says 10x', co and co.TenX == true and co.Reward == PadRules.reward(1, true))
 

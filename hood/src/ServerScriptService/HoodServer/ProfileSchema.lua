@@ -20,7 +20,7 @@ Schema.Template={
  -- HoodServer/Runs, never saved). The goal
  -- chain: the current goal's step (Shared/GoalRules); Synced false = a profile from before the chain, caught up
  -- quietly on its first check.
- Waves={Cleared=0},Goals={Step=1,Synced=true,Chain=4},
+ Waves={Cleared=0},Goals={Step=1,Synced=true,Chain=5},
  -- Shoes from the shoe boxes (Shared/ShoeRules): pairs owned by id ({[id]=copies}), the equipped ids (up to 3; the
  -- best is worn, the others follow you) and how many boxes you have opened. Goals.Chain = GoalRules.Chain (a goal
  -- inserted into the chain moves older saves' steps; GoalRules.migrate).

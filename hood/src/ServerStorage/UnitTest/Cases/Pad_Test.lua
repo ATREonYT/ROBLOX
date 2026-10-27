@@ -1,14 +1,14 @@
--- The two pads before every gate (brief 23, Shared/PadRules): the yellow Return pad pays +10 Cash at Stage 1 and more
--- every stage; the magenta pad pays 10x that with the 10x Cash pass; the labels read "+10 Cash / Return" and
--- "+100 Cash / 10x Cash" (with the pass's Robux price while you don't own it).
+-- The two pads before every gate (brief 23, Shared/PadRules): the yellow Return pad pays +20 Cash at Stage 1 and more
+-- every stage; the magenta pad pays 10x that with the 10x Cash pass; the labels read "+20 Cash / Return" and
+-- "+200 Cash / 10x Cash" (with the pass's Robux price while you don't own it).
 return function(t)
 	local RS = game:GetService('ReplicatedStorage')
 	local PadRules = require(RS.Shared.PadRules)
 	local Balance = require(RS.Shared.Config.Balance)
 	local Products = require(RS.Shared.Config.Products)
 
-	t.test('the Return pad pays 10 at Stage 1 and more every stage, up to the boss yard', function()
-		t.expect.equal(PadRules.reward(1, false), 10)
+	t.test('the Return pad pays 20 at Stage 1 and more every stage, up to the boss yard', function()
+		t.expect.equal(PadRules.reward(1, false), 20)
 		t.expect.equal(PadRules.Stages, #Balance.StagePower) -- (one pad reward per stage, the boss yard included)
 		local last = 0
 		for s = 1, PadRules.Stages do
@@ -23,7 +23,7 @@ return function(t)
 
 	t.test('the 10x pad pays exactly ten times the Return pad', function()
 		t.expect.equal(PadRules.TenX, 10)
-		t.expect.equal(PadRules.reward(1, true), 100)
+		t.expect.equal(PadRules.reward(1, true), 200)
 		for s = 1, PadRules.Stages do t.expect.equal(PadRules.reward(s, true), 10 * PadRules.reward(s, false)) end
 	end)
 
@@ -43,21 +43,21 @@ return function(t)
 		t.expect.equal(PadRules.reward(-3, true), PadRules.reward(1, true))
 		t.expect.equal(PadRules.reward(999, false), PadRules.reward(PadRules.Stages, false))
 		t.expect.equal(PadRules.reward(2.7, false), PadRules.reward(2, false))
-		t.expect.equal(PadRules.reward(0 / 0, false), 10)
-		t.expect.equal(PadRules.reward('3', false), 10)
-		t.expect.equal(PadRules.reward(nil, nil), 10)
-		t.expect.equal(PadRules.reward(1, 'yes'), 10) -- (only a real true is the 10x pad)
+		t.expect.equal(PadRules.reward(0 / 0, false), 20)
+		t.expect.equal(PadRules.reward('3', false), 20)
+		t.expect.equal(PadRules.reward(nil, nil), 20)
+		t.expect.equal(PadRules.reward(1, 'yes'), 20) -- (only a real true is the 10x pad)
 	end)
 
-	t.test('labels: "+10 Cash / Return" and "+100 Cash / 10x Cash", the Robux price only while you lack the pass', function()
+	t.test('labels: "+20 Cash / Return" and "+200 Cash / 10x Cash", the Robux price only while you lack the pass', function()
 		local big, small, price = PadRules.labels(1, 'Return')
-		t.expect.equal(big, '+10 Cash'); t.expect.equal(small, 'Return'); t.expect.equal(price, nil)
+		t.expect.equal(big, '+20 Cash'); t.expect.equal(small, 'Return'); t.expect.equal(price, nil)
 		big, small, price = PadRules.labels(1, 'TenX', false)
-		t.expect.equal(big, '+100 Cash'); t.expect.equal(small, '10x Cash')
+		t.expect.equal(big, '+200 Cash'); t.expect.equal(small, '10x Cash')
 		t.expect.equal(price, Products.RobuxMark .. Products.ByKey.TenXCash.Price)
 		t.expect.equal(Products.RobuxMark, utf8.char(0xE002))
 		big, small, price = PadRules.labels(1, 'TenX', true)
-		t.expect.equal(big, '+100 Cash'); t.expect.equal(price, nil)
+		t.expect.equal(big, '+200 Cash'); t.expect.equal(price, nil)
 		t.expect.equal(PadRules.text(1500), '+1.5K Cash')
 		t.expect.equal(PadRules.text(-5), '+0 Cash')
 		t.expect.equal(Balance.CashName, 'Cash') -- (the currency's name lives in one place)

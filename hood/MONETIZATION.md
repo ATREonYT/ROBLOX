@@ -91,8 +91,8 @@ The HUD's four extras (brief 30): the **Spin Wheel** (top left: one free spin ev
   each stage) and takes you back to the lobby. The pink pad pays 10 times that and does the same, but only with this
   pass. Without the pass, stepping on the pink pad opens the purchase window. The 2x Cash and VIP passes add to both
   pads as usual.
-- **Pro Bay / Gold Bay:** the two best shooting lanes in the lobby. Every other lane opens with rebirths (up to x50
-  at 10 rebirths, and the Champ Ring in the Boss Yard at x75 at 12). These two open only with their pass, at any
+- **Pro Bay / Gold Bay:** the two best shooting lanes in the lobby. Every other lane opens with rebirths, one a rebirth (up to x50
+  at 5 rebirths, and the Champ Ring in the Boss Yard at x75 at 7). These two open only with their pass, at any
   rebirth. Stepping into one without the pass opens its purchase window.
 
 ## Upload the icons first

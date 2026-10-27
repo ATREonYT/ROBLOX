@@ -36,15 +36,15 @@ return function(t)
 		t.expect.equal(select(4, L.progress('x')), 0)
 	end)
 
-	t.test('stage gates and rebirths read sensibly as levels: they only climb, stage 1 is Level 6, the first rebirth Level 16', function()
+	t.test('stage gates and rebirths read sensibly as levels: they only climb, stage 1 is Level 6, the first rebirth Level 19', function()
 		local last = 0
 		for s = 1, #Balance.StagePower do
 			local lv = L.stageLevel(s)
 			t.expect.truthy(lv >= last); last = lv
 			t.expect.equal(lv, L.levelOf(Balance.StagePower[s]))
 		end
-		t.expect.equal(L.stageLevel(1), 6); t.expect.equal(L.stageLevel(4), 15); t.expect.equal(L.stageLevel(16), 44)
-		t.expect.equal(L.rebirthLevel(0), 16); t.expect.equal(L.rebirthLevel(13), 49)
+		t.expect.equal(L.stageLevel(1), 6); t.expect.equal(L.stageLevel(4), 15); t.expect.equal(L.stageLevel(16), 36)
+		t.expect.equal(L.rebirthLevel(0), 19); t.expect.equal(L.rebirthLevel(13), 52)
 		for s = 1, 4 do t.expect.truthy(L.stageLevel(s) <= L.rebirthLevel(0)) end -- (stages 1-4 come before the first rebirth)
 		local rl = 0
 		for n = 0, 20 do local v = L.rebirthLevel(n); t.expect.truthy(v >= rl); rl = v end

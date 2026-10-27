@@ -34,8 +34,9 @@ end
 S.ById={};for _,s in S.List do S.ById[s.Id]=s end
 -- The shooting ranges (lanes), in walking order from the entrance (brief 23: the superhero game's ladder). A lane
 -- multiplies every shot's Power by its Multiplier (Shared/ShotRules: base x lane x rebirth multiplier x gun x shoes).
---   Rebirth lanes open at a number of rebirths (Rebirths): BAY 1 at once, then every two rebirths up to BAY 6 (x50 at
---     10), and the Champ Ring in the boss yard at 12 (x75: the best free lane).
+--   Rebirth lanes open at a number of rebirths (Rebirths): BAY 1 at once, then one with every rebirth up to BAY 6 (x50 at
+--     5), and the Champ Ring in the boss yard at 7 (x75: the best free lane, the reward after the world's 6 rebirths;
+--     Oct 27 pacing, Config/Balance).
 --   Robux lanes (PRO BAY x100, GOLD BAY x250) open with their game pass only, at any rebirth: Pass is the key in
 --     Config/Products.Passes (ownership arrives as the player attribute Pass_<Key>), RobuxPrice the Robux price their
 --     label shows (the same number as that pass's Catalog Price). Rebirths is 0 on them and means nothing.
@@ -47,14 +48,14 @@ S.ById={};for _,s in S.List do S.ById[s.Id]=s end
 -- (the old Power price); nothing gameplay reads it.
 S.Stations={
  {Id='Starter',Name='BAY 1',Gear='TireBag',Rebirths=0,Multiplier=1,Required=0,Color=C(150,156,166)},
- {Id='Tape',Name='BAY 2',Gear='TapeBag',Rebirths=2,Multiplier=4,Required=0,Color=C(196,150,96)},
- {Id='Street',Name='BAY 3',Gear='StreetBag',Rebirths=4,Multiplier=10,Required=0,Color=C(84,140,220)},
- {Id='Heavy',Name='BAY 4',Gear='HeavyBag',Rebirths=6,Multiplier=20,Required=0,Color=C(222,72,72)},
- {Id='Speed',Name='BAY 5',Gear='SpeedBag',Rebirths=8,Multiplier=35,Required=0,Color=C(246,136,52)},
- {Id='DoubleEnd',Name='BAY 6',Gear='DoubleEndBag',Rebirths=10,Multiplier=50,Required=0,Color=C(160,86,226)},
+ {Id='Tape',Name='BAY 2',Gear='TapeBag',Rebirths=1,Multiplier=4,Required=0,Color=C(196,150,96)},
+ {Id='Street',Name='BAY 3',Gear='StreetBag',Rebirths=2,Multiplier=10,Required=0,Color=C(84,140,220)},
+ {Id='Heavy',Name='BAY 4',Gear='HeavyBag',Rebirths=3,Multiplier=20,Required=0,Color=C(222,72,72)},
+ {Id='Speed',Name='BAY 5',Gear='SpeedBag',Rebirths=4,Multiplier=35,Required=0,Color=C(246,136,52)},
+ {Id='DoubleEnd',Name='BAY 6',Gear='DoubleEndBag',Rebirths=5,Multiplier=50,Required=0,Color=C(160,86,226)},
  {Id='Pro',Name='PRO BAY',Gear='ProBag',Rebirths=0,Multiplier=100,Pass='RangeVIP1',RobuxPrice=99,Required=0,Color=C(40,190,190)},
  {Id='Gold',Name='GOLD BAY',Gear='GoldBag',Rebirths=0,Multiplier=250,Pass='RangeVIP2',RobuxPrice=249,Required=0,Color=C(240,192,56)},
- {Id='Ring',Name='Champ Ring',Gear='Ring',Rebirths=12,Multiplier=75,Required=0,Color=C(230,60,140)},
+ {Id='Ring',Name='Champ Ring',Gear='Ring',Rebirths=7,Multiplier=75,Required=0,Color=C(230,60,140)},
  -- (brief 30) the soldier game's third paid lane, closing the training aisle on a raised gold stage: x500 at 699 (the paid
  -- ladder steps up like the reference's 25x/100x/250x: PRO x100 at 99, GOLD x250 at 249, HEAD x500 at 699).
  -- Last in the list, after the Champ Ring, so every older lane keeps its place (GoalRules' Range goals count places)

@@ -18,7 +18,7 @@ return function(t)
   t.expect.equal(G.List[1].Need.Power,7);t.expect.equal(G.List[2].Need.Stages,1);t.expect.equal(G.List[3].Need.Wave,1);t.expect.equal(G.List[4].Need.CashOuts,1);t.expect.equal(G.List[5].Need.Guns,2)
   -- (brief 23) the run loop: beat the crew, then cash out on a pad before the gate
   t.expect.equal(G.line(G.List[3]),'Beat the Stage 1 crew - hold to shoot them')
-  t.expect.equal(G.line(G.List[4]),'Step on the yellow pad - by the gate: +10 Cash')
+  t.expect.equal(G.line(G.List[4]),'Step on the yellow pad - by the gate: +20 Cash')
   t.expect.truthy(string.find(G.ById.Stage3.Where,'crew',1,true))
   -- (ECON) the first minute's goals pay less than the first pad: the yellow pad's Cash is the biggest number there
   local PadRules=require(game:GetService('ReplicatedStorage').Shared.PadRules)
@@ -28,13 +28,13 @@ return function(t)
   for _,g in G.List do
    if g.Need.Range then
     local st=Skins.Stations[g.Need.Range];t.expect.truthy(st~=nil and st.Pass==nil)
-    t.expect.truthy(string.find(g.Text,st.Name,1,true));t.expect.truthy(string.find(g.Where,tostring(st.Rebirths)..' rebirths',1,true))
+    t.expect.truthy(string.find(g.Text,st.Name,1,true));t.expect.truthy(string.find(g.Where,st.Rebirths==1 and '1 rebirth' or (tostring(st.Rebirths)..' rebirths'),1,true))
    end
   end
   -- The armory is the stepped stand on the right (east) of the hall now.
   t.expect.truthy(string.find(G.ById.Gun.Where,'right',1,true));t.expect.falsy(string.find(G.ById.Gun.Where,'corner',1,true))
   -- Rebirth goals and lane goals by rebirths.
-  t.expect.equal(G.ById.Rebirth1.Need.Rebirths,1);t.expect.equal(G.ById.Range2.Need.Range,2);t.expect.truthy(string.find(G.ById.Range2.Where,'2 rebirths',1,true))
+  t.expect.equal(G.ById.Rebirth1.Need.Rebirths,1);t.expect.equal(G.ById.Range2.Need.Range,2);t.expect.truthy(string.find(G.ById.Range2.Where,'at 1 rebirth',1,true));t.expect.falsy(string.find(G.ById.Range2.Where,'1 rebirths',1,true))
   t.expect.equal(G.List[#G.List].Need.Range,9)
  end)
  t.test('a goal completes once it is met, one a check, and is returned to be paid',function()
@@ -98,6 +98,10 @@ return function(t)
   -- place). The new pad goal isn't handed out to a player already past it.
   t.expect.equal(id(from(3,3)),'Wave1');t.expect.equal(id(from(3,4)),'Gun');t.expect.falsy(from(3,4).Back)
   t.expect.equal(id(from(3,7)),'Rebirth1');t.expect.equal(id(from(3,19)),'Range6');t.expect.equal(id(from(3,20)),'Ring');t.expect.equal(id(from(3,21)),'done')
+  -- Chain 4 -> 5 (Oct 27 pacing: BAY 2 before Stage 6, BAY 5 before Stage 13): every goal keeps its own id, and BAY 6's
+  -- goal (Range6) stays BAY 6's, never the old chains' BAY 4 rename.
+  t.expect.equal(id(from(4,10)),'Stage6');t.expect.equal(id(from(4,11)),'Range2');t.expect.equal(id(from(4,16)),'Stage13');t.expect.equal(id(from(4,17)),'Range5')
+  t.expect.equal(id(from(4,21)),'Range6');t.expect.equal(id(from(4,22)),'Ring');t.expect.equal(id(from(4,23)),'done')
   local d3=from(3,5,7);t.expect.equal(id(d3),'Shoe');t.expect.equal(G.List[d3.Back].Id,'Rebirth1');t.expect.equal(d3.Chain,G.Chain)
   local current=G.migrate({Chain=4,Step=9,Synced=true});t.expect.equal(current.Step,9)
  end)
