@@ -35,6 +35,8 @@ function V2.feature(name)
 end
 
 V2.Origin = CFrame.new(2400, 0, 0)
+-- The map's root model name in Workspace (World 2's city assembly, tools/map/city, sets 'TheCity' and V2.World = 2)
+V2.Name = 'TheBlockV2'
 
 -- Palette, taken from the concept: bold, simple, one look per district.
 local P = {

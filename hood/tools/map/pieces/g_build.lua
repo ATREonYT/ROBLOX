@@ -118,15 +118,16 @@ function V2.Build()
 	Props = require(game:GetService('ServerStorage').HoodProps)
 	PROPS_KIT = { studs = studs, decor = decor, ghost = ghost, light = light, surface = surface, line = line, billboard = billboard, compact = compact, FONT = FONT }
 
-	local old = workspace:FindFirstChild('TheBlockV2')
+	local old = workspace:FindFirstChild(V2.Name)
 	if old then
 		local backup = Instance.new('Folder')
-		backup.Name = 'TheBlockV2_Before_' .. os.date('!%Y%m%d_%H%M%S')
+		backup.Name = V2.Name .. '_Before_' .. os.date('!%Y%m%d_%H%M%S')
 		backup.Parent = game:GetService('ServerStorage')
 		old.Parent = backup
 	end
 	local root = Instance.new('Model')
-	root.Name = 'TheBlockV2'
+	root.Name = V2.Name
+	if V2.World then root:SetAttribute('HoodWorld', V2.World) end -- (World 2's city: 2; World 1 leaves it unset)
 	root:SetAttribute('BuildVersion', 'Hood Evolution W1 LOBBY6 VIP lanes, full armory side')
 	root:SetAttribute('Origin', V2.Origin.Position)
 	root:SetAttribute('LobbySpawn', Lobby.SpawnAt or SPAWN) -- (B31 PLAZA: on the south walk, the crossing just ahead)
@@ -146,10 +147,10 @@ function V2.Build()
 	root.Parent = workspace
 	local count = 0
 	for _, d in root:GetDescendants() do if d:IsA('BasePart') then count += 1 end end
-	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint('TheBlockV2 built') end)
+	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint(V2.Name .. ' built') end)
 	pcall(function() require(game:GetService('ServerStorage').HoodLighting).Apply(Look.Lighting[Look.Variant] or 'HoodSun') end) -- (B31: HoodToy, a real sun with shadows)
 	V2.SetActive(true)
-	print(string.format('[TheBlockV2] Built %d parts at %s. Press Play to spawn in the hood; select TheBlockV2 and press F to fly there.', count, tostring(V2.Origin.Position)))
+	print(string.format('[%s] Built %d parts at %s. Press Play to spawn in the %s; select %s and press F to fly there.', V2.Name, count, tostring(V2.Origin.Position), V2.Where or 'hood', V2.Name))
 	return { parts = count }
 end
 

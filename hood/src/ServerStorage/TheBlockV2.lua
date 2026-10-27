@@ -35,6 +35,8 @@ function V2.feature(name)
 end
 
 V2.Origin = CFrame.new(2400, 0, 0)
+-- The map's root model name in Workspace (World 2's city assembly, tools/map/city, sets 'TheCity' and V2.World = 2)
+V2.Name = 'TheBlockV2'
 
 -- Palette, taken from the concept: bold, simple, one look per district.
 local P = {
@@ -9625,8 +9627,8 @@ end
 -- or hand the game back to the original Block. Other spawn points are switched off, never deleted: each
 -- remembers it was on (attribute HoodSpawnWasEnabled), and SetActive(false) switches it back on.
 function V2.SetActive(on)
-	local root = workspace:FindFirstChild('TheBlockV2')
-	assert(root, 'Build The Block V2 first: require(game.ServerStorage.TheBlockV2).Build()')
+	local root = workspace:FindFirstChild(V2.Name)
+	assert(root, 'Build the map first: require(game.ServerStorage.' .. V2.Name .. ').Build()')
 	for _, d in workspace:GetDescendants() do
 		if d:IsA('SpawnLocation') and not d:IsDescendantOf(root) then
 			if on and d.Enabled then
@@ -9642,9 +9644,9 @@ function V2.SetActive(on)
 		if d:IsA('SpawnLocation') then d.Enabled = on end
 	end
 	root:SetAttribute('Active', on)
-	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint('TheBlockV2 active ' .. tostring(on)) end)
-	print(on and '[TheBlockV2] Active: press Play to spawn here. SetActive(false) gives the game back to the original Block.'
-		or '[TheBlockV2] Inactive: the original Block is the game map again.')
+	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint(V2.Name .. ' active ' .. tostring(on)) end)
+	print(on and ('[' .. V2.Name .. '] Active: press Play to spawn here. SetActive(false) gives the game back to the original Block.')
+		or ('[' .. V2.Name .. '] Inactive: the original Block is the game map again.'))
 end
 ---------------------------------------------------------------------------------------------- look (B31)
 -- The look pass over the lobby (brief 31 LOOK, $S/brief/B31/LOOK_RECIPE.md): the reference's toy-plastic finish instead
@@ -10000,15 +10002,16 @@ function V2.Build()
 	Props = require(game:GetService('ServerStorage').HoodProps)
 	PROPS_KIT = { studs = studs, decor = decor, ghost = ghost, light = light, surface = surface, line = line, billboard = billboard, compact = compact, FONT = FONT }
 
-	local old = workspace:FindFirstChild('TheBlockV2')
+	local old = workspace:FindFirstChild(V2.Name)
 	if old then
 		local backup = Instance.new('Folder')
-		backup.Name = 'TheBlockV2_Before_' .. os.date('!%Y%m%d_%H%M%S')
+		backup.Name = V2.Name .. '_Before_' .. os.date('!%Y%m%d_%H%M%S')
 		backup.Parent = game:GetService('ServerStorage')
 		old.Parent = backup
 	end
 	local root = Instance.new('Model')
-	root.Name = 'TheBlockV2'
+	root.Name = V2.Name
+	if V2.World then root:SetAttribute('HoodWorld', V2.World) end -- (World 2's city: 2; World 1 leaves it unset)
 	root:SetAttribute('BuildVersion', 'Hood Evolution W1 LOBBY6 VIP lanes, full armory side')
 	root:SetAttribute('Origin', V2.Origin.Position)
 	root:SetAttribute('LobbySpawn', Lobby.SpawnAt or SPAWN) -- (B31 PLAZA: on the south walk, the crossing just ahead)
@@ -10028,10 +10031,10 @@ function V2.Build()
 	root.Parent = workspace
 	local count = 0
 	for _, d in root:GetDescendants() do if d:IsA('BasePart') then count += 1 end end
-	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint('TheBlockV2 built') end)
+	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint(V2.Name .. ' built') end)
 	pcall(function() require(game:GetService('ServerStorage').HoodLighting).Apply(Look.Lighting[Look.Variant] or 'HoodSun') end) -- (B31: HoodToy, a real sun with shadows)
 	V2.SetActive(true)
-	print(string.format('[TheBlockV2] Built %d parts at %s. Press Play to spawn in the hood; select TheBlockV2 and press F to fly there.', count, tostring(V2.Origin.Position)))
+	print(string.format('[%s] Built %d parts at %s. Press Play to spawn in the %s; select %s and press F to fly there.', V2.Name, count, tostring(V2.Origin.Position), V2.Where or 'hood', V2.Name))
 	return { parts = count }
 end
 
