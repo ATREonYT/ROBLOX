@@ -578,72 +578,125 @@ playerGui:GetAttributeChangedSignal('HoodCard'):Connect(paintEnabled)
 local rebirth, quest, ranks
 do
 	---------------------------------------------------------------- REBIRTH (the window the user copied, user_27)
-	-- A 940 x 642 window: "Rebirth n" over a cyan box with the Power arm and "xN", a green arrow, "Rebirth n+1" over
-	-- "x(N+1)"; "Rebirth resets your power" in red; the progress bar with the shield badge; Rebirth and Skip Rebirth.
 	-- (brief 30: the numbers count up as it opens, the arrow bobs, the Rebirth button sweeps a light band when ready)
 	local RB_FONT = Kit.Font.body
-	rebirth = Windows.make('Rebirth', { Title = 'Rebirth', Icon = 'Rebirth', Tone = 'headerCyan', Width = 940, Height = 642, TitleSize = 68, Gloss = false })
+	-- (Oct 27, the owner's mockup) a 1200 x 660 window: on the left "Rebirth n+1" with a one-line subtitle, the Current
+	-- and Next stat cards (Power multiplier and walk speed, the two things a rebirth changes) with a chunky ">>>" between
+	-- them, the reset warning as a small red pill, the progress bar and the big Rebirth button (grey "Need X" until
+	-- ready). On the right the Skip Rebirth card (from rebirth 4, brief 24: earlier rebirths are quick, a paid skip would
+	-- be poor value) or, before that, a "You keep" card that says what a rebirth leaves alone.
+	rebirth = Windows.make('Rebirth', { Title = 'Rebirth', Icon = 'Rebirth', Tone = 'headerCyan', Width = 1200, Height = 660, TitleSize = 68, Gloss = false })
 	local rw = rebirth.Well
-	local BOX_W, BOX_H, BOX_Y = 285, 87, 77
-	local FROM_X, TO_X = 79, 539
-	local fromTitle = label({ Name = 'From', Text = 'Rebirth 0', FontFace = RB_FONT, TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(FROM_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
-	local toTitle = label({ Name = 'To', Text = 'Rebirth 1', FontFace = RB_FONT, TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
-	local function multiplierBox(name, x)
-		local box = Kit.block({ Name = name, Tone = 'navyRow', Width = BOX_W, Height = BOX_H, Position = px(x, BOX_Y), Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 12, Studs = false, ZIndex = 25 })
-		box.Parent = rw
-		Kit.icon3d(POWER, 78, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), ZIndex = 28 }).Parent = box.Body
-		return label({ Name = 'Value', Text = 'x1', FontFace = RB_FONT, TextSize = 38, StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(98, -1), Size = UDim2.new(1, -102, 1, 0), ZIndex = 28, Parent = box.Body })
+	local MAIN_W, SIDE_X, SIDE_W, SIDE_H = 744, 772, 392, 506
+	local main = Kit.new('Frame', { Name = 'Main', BackgroundTransparency = 1, Position = px(0, 0), Size = px(MAIN_W, 520), ZIndex = 25, Parent = rw })
+	local bigTitle = label({ Name = 'From', Text = 'Rebirth 1', TextSize = 56, StrokeThickness = 6, AnchorPoint = Vector2.new(0.5, 0), Position = px(MAIN_W / 2, 0), Size = px(MAIN_W, 62), ZIndex = 26, Parent = main })
+	local subLine = label({ Name = 'Unlock', Text = '', FontFace = RB_FONT, TextSize = 23, StrokeThickness = 3, TextColor3 = hex('CFE0FF'), AnchorPoint = Vector2.new(0.5, 0), Position = px(MAIN_W / 2, 64), Size = px(MAIN_W, 30), ZIndex = 26, Parent = main })
+	local CARD_W, CARD_H, CARD_Y = 296, 150, 106
+	local function statCard(name, x, heading, next)
+		local box = Kit.block({ Name = name, Tone = 'navyRow', Width = CARD_W, Height = CARD_H, Position = px(x, CARD_Y), Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 12, Studs = false, ZIndex = 25 })
+		box.Parent = main
+		label({ Name = 'Heading', Text = heading, FontFace = RB_FONT, TextSize = 24, StrokeThickness = 3, TextColor3 = next and hex('FFE04A') or hex('CFE0FF'), Position = px(0, 6), Size = UDim2.new(1, 0, 0, 30), ZIndex = 28, Parent = box.Body })
+		local values = {}
+		for i, icon in { POWER, iconOr('Speed2x', 'Arrow') } do
+			local y = 40 + (i - 1) * 50
+			Kit.icon3d(icon, 50, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(40, y + 24), ZIndex = 28 }).Parent = box.Body
+			local v = label({ Name = i == 1 and 'Value' or 'Speed', Text = '', TextSize = 32, StrokeThickness = 4, TextXAlignment = Enum.TextXAlignment.Left, Position = px(76, y + 4), Size = UDim2.new(1, -84, 0, 40), ZIndex = 28, Parent = box.Body })
+			if next then fillText(v, { hex('E6FF6A'), hex('7CF03A') }) end
+			values[i] = v
+		end
+		return values
 	end
-	local fromValue = multiplierBox('FromBox', FROM_X)
-	local toValue = multiplierBox('ToBox', TO_X)
-	local arrowHolder = Kit.new('Frame', { Name = 'ArrowHolder', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(454, BOX_Y + BOX_H / 2), Size = px(140, 140), ZIndex = 27, Parent = rw })
-	local arrow = Kit.icon3d('Evolve', 140, { ZIndex = 27 })
-	arrow.Rotation = -10
-	arrow.Name = 'Arrow'
-	arrow.Parent = arrowHolder
-	Motion.bob(arrow, 6, 1.1)
-	local unlockLine = label({ Name = 'Unlock', Text = '', FontFace = RB_FONT, TextSize = 22, TextColor3 = hex('7CFF4F'), StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, BOX_Y + BOX_H + 22), Size = px(BOX_W + 60, 28), ZIndex = 26, Parent = rw })
-	label({ Name = 'Warning', Text = 'Rebirth resets your power', FontFace = RB_FONT, TextSize = 32, TextColor3 = hex('F00606'), StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(452, 228), Size = px(860, 46), ZIndex = 26, Parent = rw })
-	local RBAR_X, RBAR_Y, RBAR_W, RBAR_H = 138, 265, 656, 84
-	local barHolder = Kit.new('Frame', { Name = 'ProgressHolder', BackgroundTransparency = 1, Position = px(RBAR_X - 80, RBAR_Y - 20), Size = px(RBAR_W + 100, RBAR_H + 40), ZIndex = 25, Parent = rw })
-	local rebirthBar, rebirthFill, rebirthBarText = Kit.bar({ Name = 'Progress', Width = RBAR_W, Height = RBAR_H, Tone = 'buyGreen', Track = 'dark', TrackColor = Kit.Skin.well, TrackTransparency = 0, Radius = 10, Value = 0, Text = '0 / 0 Power', TextSize = 36, Position = px(80, 20), Outline = 5, Studs = 20, ZIndex = 25 })
+	local fromValues = statCard('FromBox', 0, 'Current', false)
+	local toValues = statCard('ToBox', MAIN_W - CARD_W, 'Next Rebirth', true)
+	do
+		-- the chunky ">>>" (blue, thick outline), bobbing a little
+		local arrow = label({ Name = 'Arrow', Text = '>>>', TextSize = 76, StrokeThickness = 7, Stroke = hex('0A1A4A'), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(MAIN_W / 2, CARD_Y + CARD_H / 2), Size = px(150, 90), ZIndex = 27, Parent = main })
+		fillText(arrow, { hex('8EE4FF'), hex('2A7CF0') })
+		Motion.bob(arrow, 5, 1.1)
+	end
+	do
+		-- the reset warning: white on a small red pill (red text on navy was hard to read)
+		local pill = Kit.block({ Name = 'Warning', Tone = 'cardRed', Width = 372, Height = 38, AnchorPoint = Vector2.new(0.5, 0), Position = px(MAIN_W / 2, 270), Outline = 3, OutlineColor = Kit.Skin.outline, RimWidth = 2, Radius = 19, Studs = false, ZIndex = 26 })
+		pill.Parent = main
+		label({ Name = 'Text', Text = 'Rebirth resets your Power', FontFace = RB_FONT, TextSize = 22, StrokeThickness = 3, Stroke = Kit.Tone.cardRed.stroke, Size = UDim2.fromScale(1, 1), ZIndex = 29, Parent = pill.Body })
+	end
+	local RBAR_W, RBAR_H, RBAR_Y = 600, 64, 322
+	local barHolder = Kit.new('Frame', { Name = 'ProgressHolder', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = px(MAIN_W / 2 + 20, RBAR_Y - 16), Size = px(RBAR_W + 80, RBAR_H + 32), ZIndex = 25, Parent = main })
+	local rebirthBar, rebirthFill, rebirthBarText = Kit.bar({ Name = 'Progress', Width = RBAR_W, Height = RBAR_H, Tone = 'buyGreen', Track = 'dark', TrackColor = Kit.Skin.well, TrackTransparency = 0, Radius = 10, Value = 0, Text = '0 / 0 Power', TextSize = 32, Position = px(80, 16), Outline = 5, Studs = 20, ZIndex = 25 })
 	rebirthBar.Parent = barHolder
 	if rebirthBarText and rebirthBarText.Text then rebirthBarText.Text.FontFace = RB_FONT end
 	do
 		-- the badge over the bar's left end (the reference's XP shield, tilted) with the Power arm on it
-		local badge = Kit.icon3d(iconOr('Shield', 'XP'), 110, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(50, 20 + RBAR_H / 2), ZIndex = 29 })
+		local badge = Kit.icon3d(iconOr('Shield', 'XP'), 92, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(52, 16 + RBAR_H / 2), ZIndex = 29 })
 		badge.Rotation = -10
 		badge.Parent = barHolder
-		Kit.icon3d(POWER, 66, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(50, 16 + RBAR_H / 2), ZIndex = 33 }).Parent = barHolder
+		Kit.icon3d(POWER, 54, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(52, 13 + RBAR_H / 2), ZIndex = 33 }).Parent = barHolder
 	end
-	local rebirthAction, skipAction, stopShine
-	local ACTION_Y, ACTION_W, ACTION_H = 385, 314, 83
+	-- the side cards (built once; update shows one)
+	local skipCard, keepCard
+	do
+		skipCard = Kit.block({ Name = 'SkipCard', Tone = 'cardPurple', Width = SIDE_W, Height = SIDE_H, Position = px(SIDE_X, 0), Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 14, Studs = false, ZIndex = 25 })
+		skipCard.Parent = rw
+		skipCard.Visible = false
+		label({ Name = 'Title', Text = 'Skip Rebirth', TextSize = 40, StrokeThickness = 5, Stroke = Kit.Tone.cardPurple.stroke, Position = px(0, 10), Size = UDim2.new(1, 0, 0, 48), ZIndex = 28, Parent = skipCard.Body })
+		label({ Name = 'Sub', Text = 'Rebirth now, without the Power', FontFace = RB_FONT, TextSize = 21, StrokeThickness = 3, Stroke = Kit.Tone.cardPurple.stroke, TextColor3 = hex('FFE9FF'), Position = px(0, 56), Size = UDim2.new(1, 0, 0, 28), ZIndex = 28, Parent = skipCard.Body })
+		Kit.icon3d(iconOr('RebirthSkip', 'Rebirth'), 132, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 158), ZIndex = 28 }).Parent = skipCard.Body
+		local lines = {}
+		for i = 1, 4 do
+			local y = 232 + (i - 1) * 36
+			local dot = Kit.new('Frame', { Name = 'Dot' .. i, BackgroundColor3 = i == 4 and hex('FFD84A') or hex('7CF03A'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(34, y + 15), Size = px(14, 14), ZIndex = 28, Parent = skipCard.Body })
+			Kit.corner(UDim.new(0.5, 0)).Parent = dot
+			Kit.stroke(Kit.Skin.outline, 2, true).Parent = dot
+			lines[i] = label({ Name = 'Line' .. i, Text = '', FontFace = RB_FONT, TextSize = 21, StrokeThickness = 3, Stroke = Kit.Tone.cardPurple.stroke, TextXAlignment = Enum.TextXAlignment.Left, Position = px(52, y), Size = UDim2.new(1, -60, 0, 30), ZIndex = 28, Parent = skipCard.Body })
+		end
+		skipCard:SetAttribute('Lines', 4)
+		rebirth.SkipLines = lines
+		local entry = Products.ByKey.SkipRebirth
+		if entry then
+			local btn = Kit.robuxButton({ Name = 'Skip', Tone = 'buyGreen', Price = entry.Price, TextSize = 40, Width = 300, Height = 80, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -18), Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 12, ZIndex = 28 })
+			btn.Parent = skipCard.Body
+			Motion.button(btn, function() buy('SkipRebirth') end)
+		end
+		keepCard = Kit.block({ Name = 'KeepCard', Tone = 'navyRow', Width = SIDE_W, Height = SIDE_H, Position = px(SIDE_X, 0), Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 14, Studs = false, ZIndex = 25 })
+		keepCard.Parent = rw
+		label({ Name = 'Title', Text = 'You keep', TextSize = 40, StrokeThickness = 5, Position = px(0, 12), Size = UDim2.new(1, 0, 0, 48), ZIndex = 28, Parent = keepCard.Body })
+		for i, row in { { iconOr('CashMedium', 'Cash'), 'Your Cash' }, { iconOr('Gun_Pistol', 'Gun'), 'Your guns' }, { iconOr('Sneaker', 'Shoe'), 'Your shoes' }, { iconOr('Trophy', 'Rebirth'), 'Stages and goals' } } do
+			local y = 78 + (i - 1) * 96
+			local r = Kit.block({ Name = 'Keep' .. i, Tone = 'navyRow', Width = SIDE_W - 40, Height = 82, Position = px(20, y), Outline = 3, OutlineColor = Kit.Skin.outline, RimWidth = 2, Radius = 10, Studs = false, ZIndex = 27 })
+			r.Parent = keepCard.Body
+			Kit.icon3d(row[1], 64, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(48, 41), ZIndex = 30 }).Parent = r.Body
+			label({ Name = 'Text', Text = row[2], TextSize = 28, StrokeThickness = 4, TextXAlignment = Enum.TextXAlignment.Left, Position = px(92, 0), Size = UDim2.new(1, -100, 1, 0), ZIndex = 30, Parent = r.Body })
+		end
+	end
+	local rebirthAction, stopShine
+	local ACTION_Y, ACTION_W, ACTION_H = 414, 440, 92
 	local function skipLive(n) return Products.ByKey.SkipRebirth ~= nil and n >= 4 end
-	local function actionIn(old, props, onClick)
-		if old then old:Destroy() end
-		props.ZIndex = props.ZIndex or 26
-		local holder = Kit.blockButton(props)
-		holder.Parent = rw
-		if not props.Disabled and onClick then Motion.button(holder, onClick) end
-		return holder
-	end
 	local counted = {} -- the numbers' last shown value, for the count-up
 	local function countTo(l, value, fmt)
 		local from = counted[l]
 		counted[l] = value
 		if from == nil or from == value then l.Text = fmt(value) return end
+		l.Text = fmt(from) -- (never a blank first frame)
 		Motion.countTo(l, from, value, 0.5, fmt)
+	end
+	local function powerText(x) return times(x) .. ' Power' end
+	local function speedText(n)
+		local ok, v = pcall(function() return RebirthRules.walkSpeed(n) end)
+		return (ok and type(v) == 'number') and (string.format('%g', math.floor(v * 10 + 0.5) / 10) .. ' Speed') or ''
 	end
 	local function update(opening)
 		local power, n = num('Power', 0), rebirthsNow()
 		local need = rebirthNeed(n)
-		fromTitle.Text = 'Rebirth ' .. n
-		toTitle.Text = 'Rebirth ' .. (n + 1)
-		if opening then counted[fromValue], counted[toValue] = 1, 1 end
-		countTo(fromValue, rebirthMultiplier(n), times)
-		countTo(toValue, rebirthMultiplier(n + 1), times)
+		bigTitle.Text = 'Rebirth ' .. (n + 1)
+		if opening then counted[fromValues[1]], counted[toValues[1]] = 1, 1 end
+		countTo(fromValues[1], rebirthMultiplier(n), powerText)
+		countTo(toValues[1], rebirthMultiplier(n + 1), powerText)
+		fromValues[2].Text = speedText(n)
+		toValues[2].Text = speedText(n + 1)
 		local unlock = player:GetAttribute('RebirthUnlock')
-		unlockLine.Text = (type(unlock) == 'string' and unlock ~= '') and ('Unlocks ' .. unlock .. '!') or ''
+		local hasUnlock = type(unlock) == 'string' and unlock ~= ''
+		subLine.Text = hasUnlock and ('Next rebirth opens ' .. unlock .. '!') or 'More Power from every shot, and a faster walk'
+		subLine.TextColor3 = hasUnlock and hex('7CFF4F') or hex('CFE0FF')
 		local frac = math.clamp(power / need, 0, 1)
 		if opening then
 			rebirthFill.Size = UDim2.fromScale(0, 1)
@@ -655,41 +708,42 @@ do
 		local maxed = RebirthRules and type(RebirthRules.Max) == 'number' and n >= RebirthRules.Max
 		local ready = power >= need and not maxed
 		local skip = skipLive(n) and not maxed
+		skipCard.Visible, keepCard.Visible = skip, not skip
+		if skip then
+			local L = rebirth.SkipLines
+			L[1].Text = 'Rebirth right now'
+			L[2].Text = times(rebirthMultiplier(n + 1)) .. ' Power on every shot'
+			L[3].Text = 'Keeps your Cash, guns, shoes'
+			L[4].Text = 'Your Power starts over'
+		end
 		local text = maxed and 'Max rebirths!' or (ready and 'Rebirth' or ('Need ' .. short(need - power)))
-		local key = (ready and 'ready' or 'locked') .. (skip and '+skip' or '')
+		local key = ready and 'ready' or 'locked'
 		if rebirthAction and rebirthAction:GetAttribute('Key') == key then
 			local l = rebirthAction:FindFirstChild('Label', true)
 			if l then l.Text = text end
 			return
 		end
 		if stopShine then stopShine() stopShine = nil end
-		rebirthAction = actionIn(rebirthAction, {
-			Name = 'Action', Tone = ready and 'buyGreen' or 'slate', Disabled = maxed, Text = text, FontFace = RB_FONT, TextSize = ready and 51 or 40,
-			Icon = 'Rebirth', IconSize = 64, IconInset = 22, Width = ACTION_W, Height = ACTION_H, Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 12, Studs = false,
-			Position = skip and px(105, ACTION_Y) or px(452 - ACTION_W / 2, ACTION_Y),
-		}, function()
-			local nowPower, nowNeed = num('Power', 0), rebirthNeed()
-			if nowPower < nowNeed then
-				toast('Need ' .. short(nowNeed - nowPower) .. ' more Power!', 'red')
-				return
-			end
-			Net.get('Rebirth'):FireServer()
-			Windows.close()
-		end)
+		if rebirthAction then rebirthAction:Destroy() end
+		rebirthAction = Kit.blockButton({
+			Name = 'Action', Tone = ready and 'buyGreen' or 'slate', Disabled = maxed, Text = text, FontFace = RB_FONT, TextSize = ready and 56 or 44,
+			Icon = 'Rebirth', IconSize = 70, IconInset = 26, Width = ACTION_W, Height = ACTION_H, Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 14, Studs = false,
+			Position = px(MAIN_W / 2 - ACTION_W / 2, ACTION_Y), ZIndex = 26,
+		})
+		rebirthAction.Parent = main
+		if not maxed then
+			Motion.button(rebirthAction, function()
+				local nowPower, nowNeed = num('Power', 0), rebirthNeed()
+				if nowPower < nowNeed then
+					toast('Need ' .. short(nowNeed - nowPower) .. ' more Power!', 'red')
+					return
+				end
+				Net.get('Rebirth'):FireServer()
+				Windows.close()
+			end)
+		end
 		rebirthAction:SetAttribute('Key', key)
 		if ready then stopShine = Motion.shine(rebirthAction.Body, 2.6, UDim.new(0, 3)) end
-		if skipAction then
-			skipAction:Destroy()
-			skipAction = nil
-		end
-		if skip then
-			local entry = Products.ByKey.SkipRebirth
-			skipAction = actionIn(nil, {
-				Name = 'Skip', Tone = 'cardPurple', Text = 'Skip Rebirth', FontFace = RB_FONT, TextSize = 33, Icon = Kit.iconImage('RebirthSkip') ~= '' and 'RebirthSkip' or 'Rebirth', IconSize = 60, IconInset = 18, Width = ACTION_W, Height = ACTION_H,
-				Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 12, Studs = false, Position = px(480, ACTION_Y),
-			}, function() buy('SkipRebirth') end)
-			Kit.only(entry.Price, 46, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 34, 0, 2), ZIndex = 32, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('E8FF4A'), hex('8AE82A')) }).Parent = skipAction
-		end
 	end
 	rebirth.Open = function() update(true) end
 	rebirth.Update = function() update(false) end

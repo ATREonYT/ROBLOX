@@ -93,7 +93,7 @@ local function gradient(t, top, bottom)
 end
 
 ---------------------------------------------------------------------------------------------- window
-local WIN = { W = 800, Head = 66, Body = 516, Pad = 12, Tabs = 42 } -- (Oct 27: Tabs, the tab row under the header)
+local WIN = { W = 860, Head = 66, Body = 560, Pad = 12, Tabs = 48 } -- (Oct 27: Tabs, the tab row under the header)
 local LIST_W = WIN.W - 2 * WIN.Pad
 -- Tones that are not in Kit.Tone: the reference's lime cards and price buttons, the OWNED button, the gift's blue.
 local LIME = { top = hex('DEF52A'), base = hex('5ED614'), lip = hex('3FA00A'), stroke = hex('1B4A00'), rim = hex('C8F55E') }
@@ -746,7 +746,7 @@ local CREAM = hex('FFF6C8') -- (the reference's Server Luck lettering is cream, 
 local LETTER_EDGE = hex('3F7A10')
 local CHIP_BLUE = { top = hex('3E86E8'), base = hex('1F58BC'), lip = hex('1A4AA0'), stroke = hex('08205C'), rim = hex('86BCF6') }
 local THEMES = {
-	FeaturedPack1 = { Id = 'Street', Sky = { hex('2E1A6E'), hex('FF8A3C') }, Ink = hex('2A0B4E'), Sub = hex('FFE27A') },
+	FeaturedPack1 = { Id = 'Street', Sky = { hex('7B2FE0'), hex('FF8A3C') }, Ink = hex('2A0B4E'), Sub = hex('FFE27A') },
 	FeaturedPack2 = { Id = 'Grail', Sky = { hex('72B8FF'), hex('FFF4D6') }, Ink = hex('1F3F8A'), Sub = hex('FFD34A') },
 	FeaturedPack3 = { Id = 'Sneaker', Sky = { hex('7EC4FF'), hex('E4F2FF') }, Ink = hex('0E3A7A'), Sub = hex('FFE27A') },
 }
@@ -842,6 +842,30 @@ local function featuredCard(key, y, parent)
 	priceButton(c.Body, entry, 200, 76, px(CW - 14, FEAT_H - 20), Vector2.new(1, 1), z + 2, nil, { TextSize = 40, Breathe = true })
 	shownFeatured = key
 	return c
+end
+-- (Oct 27, the owner's mockup) under the week's pack: the best-known passes as a row of solid tiles, a big icon each and
+-- the green price pill (the same passes and prices as the Gamepasses section; OWNED once bought). Returns its height.
+local STRIP_KEYS = { 'DoubleRep', 'DoubleCash', 'Lucky', 'TripleOpen' }
+local STRIP_TONES = { 'cardRed', 'cardBlue', 'cardGreen', 'cardPurple' }
+local STRIP_H = 196
+local function passStrip(y, parent)
+	local shown = {}
+	for _, key in STRIP_KEYS do
+		local e = Products.ByKey[key]
+		if e and e.Wired == true and e.Kind == 'Pass' then table.insert(shown, e) end
+	end
+	if #shown == 0 then return 0 end
+	local q = math.floor((CW - (#shown - 1) * GAP) / #shown)
+	for i, entry in shown do
+		local tone = STRIP_TONES[i]
+		local c = card(entry, tone, q, STRIP_H, MARGIN + (i - 1) * (q + GAP), y, parent)
+		c.Name = 'Strip_' .. entry.Key
+		local t = title(c.Body, entry.Title, 28, tone, { Position = px(q / 2, 6), Width = q - 16 })
+		Sell.Style.apply(t, 'white', { Thickness = math.max(3.5, t.TextSize * 0.15), Shadow = true })
+		Kit.icon3d(iconId(entry), 112, { ZIndex = 29, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(q / 2, 98) }).Parent = c.Body
+		priceButton(c.Body, entry, q - 30, 42, px(q / 2, STRIP_H - 12), Vector2.new(0.5, 1), 31, 'buyGreen', { TextSize = 26 })
+	end
+	return STRIP_H
 end
 -- (brief 30) The Grail Bundle (the user's bundle sheet and handoff): the bundle's own chest on the left (the real 3D
 -- model), The Grail featured largest with its two companion pairs, Astro Crown and Platinum Wings, the same size beside
@@ -1187,6 +1211,8 @@ local function build()
 				elseif entry.Section == 'Featured' then
 					sections[entry.Key] = featuredCard(entry.Key, y, block)
 					y += FEAT_H + GAP
+					local stripH = passStrip(y, block)
+					if stripH > 0 then y += stripH + GAP end
 				else
 					sections[entry.Key] = serverCard(entry, y, block)
 					y += SERVER_H + GAP
@@ -1279,7 +1305,7 @@ buildTabs = function()
 	for _, t in TABS do
 		if headers[t.Id] then table.insert(shownTabs, t) end
 	end
-	local _, set = Kit.tabs(Win.Tabs, { Name = 'Tabs', Items = shownTabs, Width = Win.Tabs.Size.X.Offset, Height = WIN.Tabs, TextSize = 19, ZIndex = 30, Wire = Motion.button, OnSelect = function(id) scrollTo(id) end })
+	local _, set = Kit.tabs(Win.Tabs, { Name = 'Tabs', Items = shownTabs, Width = Win.Tabs.Size.X.Offset, Height = WIN.Tabs, TextSize = 22, ZIndex = 30, Wire = Motion.button, OnSelect = function(id) scrollTo(id) end })
 	setTab = set
 end
 list:GetPropertyChangedSignal('CanvasPosition'):Connect(function()

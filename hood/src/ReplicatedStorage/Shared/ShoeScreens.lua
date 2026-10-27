@@ -374,7 +374,11 @@ S.equippedBadge = equippedBadge
 local function invCard(parent, pos, w, h, e, opts, z)
 	local rar = A.rarity(e.Rank)
 	local selected = opts.Selected
-	local card, face = A.framed(parent, { Name = 'Card_' .. e.Id, Pos = pos, W = w, H = h, Border = selected and hex('FFD21E') or (rar.Rainbow and 'rainbow' or rar.Color), BorderW = 6, Radius = 16, Outline = 4, Glow = selected and hex('FFC400') or nil, Z = z })
+	-- (Oct 27, the owner's mockup: items on bright rarity tiles) the face is the rarity's colour, top-lit; the frame a
+	-- darker band of it (yellow when selected)
+	local tileFace = rar.Rainbow and A.rainbowSeq() or { rar.Color:Lerp(Color3.new(1, 1, 1), 0.28), rar.Color:Lerp(Color3.new(0, 0, 0), 0.12) }
+	local band = selected and hex('FFD21E') or (rar.Rainbow and 'rainbow' or rar.Color:Lerp(Color3.new(0, 0, 0), 0.38))
+	local card, face = A.framed(parent, { Name = 'Card_' .. e.Id, Pos = pos, W = w, H = h, Border = band, BorderW = 6, Radius = 16, Outline = 4, InnerGradient = tileFace, InnerRot = rar.Rainbow and 35 or 90, Glow = selected and hex('FFC400') or nil, Z = z })
 	local art = A.shoeArt(face, e.Id, { X = 14, Y = 14, W = w - 40, H = h - 84, Z = z })
 	A.text(face, e.Name, { Name = 'Name', Size = 30, X = 6, Y = h - 70, W = w - 24, H = 46, Z = z, Fit = true })
 	if e.On > 0 then equippedBadge(face, w - 222, -2, 206, 54, z + 1) end

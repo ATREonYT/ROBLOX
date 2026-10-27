@@ -8,10 +8,16 @@ do
 	local ok0 = waitFor(function() return P.PlayerGui:FindFirstChild('HoodHUD') ~= nil and P.PlayerGui:FindFirstChild('HoodStore') ~= nil end, 30)
 	print('[ui] clients up: ' .. tostring(ok0))
 	wall(1)
-	-- progress: 45% of the way to rebirth 1, some Cash
-	local need = RebirthRules.need(0)
+	-- progress: 4 rebirths (Skip Rebirth shows from 4), 45% of the way to the 5th, some Cash
+	local R = 4
+	local need = RebirthRules.need(R)
+	data.Rebirths = R
 	data.Rep = math.floor(need * 0.45)
 	data.Cash = 25300
+	P:SetAttribute('Rebirths', R)
+	P:SetAttribute('RebirthNeed', need)
+	P:SetAttribute('RebirthMultiplier', RebirthRules.multiplier(R))
+	P:SetAttribute('RebirthNextMultiplier', RebirthRules.multiplier(R + 1))
 	P:SetAttribute('Power', data.Rep)
 	P:SetAttribute('Cash', data.Cash)
 	-- a rack of shoes: two of each rarity (in id order), the first three on
@@ -60,7 +66,7 @@ do
 	end
 	-- Shop
 	openEvent('HoodStore')
-	wall(1.8)
+	wall(4)
 	dump('HoodStore', 'shop')
 	closeAll()
 	-- Rebirth (the HUD's square, like a tap)
@@ -69,6 +75,8 @@ do
 	local hit = rb and (rb:FindFirstChild('Hit', true) or (rb:IsA('GuiButton') and rb))
 	if hit then __fireOn(hit, 'Activated'); sync() else print('[ui] no Rebirth square') end
 	wall(1.4)
+	-- (the harness doesn't tick the count-up's NumberValue: a Power change makes the window show its final numbers)
+	P:SetAttribute('Power', data.Rep + 1); sync(); wall(0.4)
 	dump('HoodPanels', 'rebirth')
 	closeAll()
 	-- Shoes (the inventory's Open with 'Shoes', like the HUD's square: the shoe screens draw in ArtWindows' HoodArt gui)

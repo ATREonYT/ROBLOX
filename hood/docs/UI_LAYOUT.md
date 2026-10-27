@@ -60,8 +60,8 @@ Only one window is open at a time; the game behind it blurs a little.
 
 | Window | Opens from | What's inside |
 |---|---|---|
-| **Shop** (EXCLUSIVE SHOP) | Shop bar | Power packs, x2 Cash, x2 Power, x10 Cash pad, the paid ranges (PRO BAY, GOLD BAY, HEAD LANE), potions, Auto Collect, Triple Open, Extra Equip, the Boost Bundle; a **Weekly Deal!** card; **GIFT** buttons ("Gift A Player"); an **ENTER A CODE** box with **REDEEM**. |
-| **Rebirth** | Rebirth square | What you get (x multiplier, walk speed), "Rebirth resets your power", a big **Rebirth** button, a rainbow **Skip Rebirth** button with its Robux price. |
+| **Shop** (EXCLUSIVE SHOP) | Shop bar | Power packs, x2 Cash, x2 Power, x10 Cash pad, the paid ranges (PRO BAY, GOLD BAY, HEAD LANE), potions, Auto Collect, Triple Open, Extra Equip, the Boost Bundle; a **Weekly Deal!** card (its countdown is the real weekly rotation) with a row of four pass tiles under it (2x Power, 2x Cash, Lucky, Triple Open); **GIFT** buttons ("Gift A Player"); an **ENTER A CODE** box with **REDEEM**. |
+| **Rebirth** | Rebirth square | "Rebirth N" and a one-line subtitle; **Current** and **Next Rebirth** cards (Power multiplier, walk speed) with a ">>>" between them; "Rebirth resets your Power" on a small red pill; the bar; a big green **Rebirth** button (grey "Need X" until ready). Beside it the purple **Skip Rebirth** card (from rebirth 4: four honest lines and the green Robux price), or before that a **You keep** card (Cash, guns, shoes, stages and goals). |
 | **Items** | Items square | Your guns (equip), boosts and potions; "Equip Best"; "More guns at the ARMORY"; "No boosts yet" when empty. |
 | **Shoes** | Shoes square | A grid of your shoes, rarity colours, "NEW!" tags, Favorite (star) and Delete (trash) buttons, a Search box, **Equip Best**. |
 | **Skins** | Skins square | Gun skins grid. |
