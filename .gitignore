@@ -6,3 +6,4 @@ rojo.exe
 *.rbxl.lock
 *.rbxlx.lock
 __pycache__/
+.claude/worktrees/
