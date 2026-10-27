@@ -26,7 +26,7 @@ for i, s in Skins.Stations do rangeIndex[s.Id] = i end
 local function stateOf(player, profile)
 	local owned = 0
 	for id, on in profile.Data.Guns.Owned do
-		if on == true and Guns.ById[id] then owned += 1 end
+		if on == true and Guns.ById[id] and not Guns.ById[id].Exclusive then owned += 1 end -- (a Robux exclusive isn't an ARMORY buy)
 	end
 	local station = player:GetAttribute('TrainingStation')
 	local wave = player:GetAttribute('WaveCleared')

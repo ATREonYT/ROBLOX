@@ -5,7 +5,8 @@
 #   (TheCity) builds with its contracts (city_contracts: "[city] N checks / 0 failed") and plays through its whole track
 #   on the real stage, wave, goal and travel services (city_play: "[play] 10 checks, 0 failed"); both built place files
 #   keep every gate's Required Power exactly (place_gates: "[places] 34 checks / 0 failed"); a fresh World 2 player
-#   can walk to every place they need and never get stuck (city_reach: "[reach] 41 checks / 0 failed").
+#   can walk to every place they need and never get stuck (city_reach: "[reach] 41 checks / 0 failed"), and so can a
+#   World 1 player (block_reach, the same script on TheBlockV2: "[reach1] 41 checks / 0 failed").
 # Needs Lune (https://lune-org.github.io): set LUNE=/path/to/lune or have `lune` on PATH.
 R=${1:-$(cd "$(dirname "$0")/../../.." && pwd)}; O=${2:-${TMPDIR:-/tmp}/hood_checks}
 L=${LUNE:-lune}; T=$(cd "$(dirname "$0")" && pwd); SRC=$R/hood/src
@@ -17,6 +18,7 @@ echo "== integ_lobby"; timeout 900 $L run $T/harness_unit.luau $SRC - "require(g
 echo "== city_contracts"; timeout 900 $L run $T/harness_unit.luau $SRC - "$(cat $T/city_contracts.luau)" 2>&1 | grep -a "\[city\]\|rror" | head -3
 echo "== city_play"; timeout 1200 $L run $T/harness_play.luau $SRC - "$(cat $T/city_play.luau)" 2>&1 | grep -a "\[play\] .*checks\|FAIL" | head -5
 echo "== city_reach"; timeout 900 $L run $T/harness_unit.luau $SRC - "$(cat $T/city_reach.luau)" 2>&1 | grep -a "\[reach\] .*checks\|FAIL\|rror" | head -5
+echo "== block_reach"; timeout 900 $L run $T/harness_unit.luau $SRC - "REACH_MAP='TheBlockV2' $(cat $T/city_reach.luau)" 2>&1 | grep -a "\[reach1\] .*checks\|FAIL\|rror" | head -5
 echo "== place_gates"; timeout 900 $L run $T/harness_unit.luau $SRC - "PLACES_DIR='$R/hood/places' $(cat $T/place_gates.luau)" 2>&1 | grep -a "\[places\] .*checks\|FAIL\|rror" | head -5
 echo "== play_run"; timeout 1200 $L run $T/harness_play.luau $SRC - "$(cat $T/play_run.luau)" > $O/play.log 2>&1; grep -a "\[play\] .*checks" $O/play.log
 echo "== live_shoes"; timeout 900 $L run $T/harness_live.luau $SRC - "$(cat $T/live_shoes.luau)" > $O/live.log 2>&1; echo "live exit $?"

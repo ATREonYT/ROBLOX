@@ -3,19 +3,26 @@
 -- cell's floor is the highest solid top a foot can stand on, a body (1-5.5 over the floor) must fit, a step up is at
 -- most a jump (6 studs), a step down any height. From the spawn: the Stage 1 gate, every stage's pads, the rooftop, the
 -- portal home, the boards, the box dais, the ranges and the gun shop must be reachable; and from every cell you can
--- reach, the spawn must be reachable again ("stuck": a pit or a ledge you can't climb out of).
+-- reach, the spawn must be reachable again ("stuck": a pit or a ledge you can't climb out of). (Oct 27 review) A body is
+-- about 2 studs wide (a cell's body must fit R either side), a thin wall between two cells (a fence plank, a barrier)
+-- blocks the step, and the grid runs out to the boundary walls (x +-124) and past the hall's south wall, so a strip
+-- behind a fence or a house is looked at too.
 -- Run (run_checks.sh does): lune run harness_unit.luau <src> - "$(cat city_reach.luau)"; prints "[reach] N checks / M failed".
-workspace:SetAttribute('HoodWorld', 2)
-local V2 = require(game.ServerStorage.TheCity)
+-- (Oct 27 review) World 1 the same way: put REACH_MAP='TheBlockV2' before the script (run_checks.sh's block_reach; its
+-- lines print "[reach1]").
+local W1 = REACH_MAP == 'TheBlockV2'
+local TAG = W1 and '[reach1]' or '[reach]'
+if not W1 then workspace:SetAttribute('HoodWorld', 2) end
+local V2 = require(game.ServerStorage[W1 and 'TheBlockV2' or 'TheCity'])
 V2.Build()
-local root = workspace:FindFirstChild('TheCity')
+local root = workspace:FindFirstChild(V2.Name)
 local ActiveMap = require(game.ReplicatedStorage.Shared.ActiveMap)
 local a = ActiveMap.get()
 local frame = a and a.Frame or CFrame.new()
 local n, failed = 0, {}
 local function check(name, ok, detail)
 	n += 1
-	if not ok then table.insert(failed, name); print('[reach] FAIL ' .. name .. (detail and (' (' .. detail .. ')') or '')) end
+	if not ok then table.insert(failed, name); print(TAG .. ' FAIL ' .. name .. (detail and (' (' .. detail .. ')') or '')) end
 end
 
 -- every solid part as an axis-aligned box in the map's frame, binned 8 studs
@@ -54,8 +61,8 @@ for _, p in root:GetDescendants() do
 end
 
 local S = 2
-local X0, X1 = -88, 88
-local Z0, Z1 = (V2.BossEnd or -1056) - 12, 104
+local X0, X1 = -130, 130
+local Z0, Z1 = (V2.BossEnd or -1056) - 12, 132
 local function floorAt(x, z)
 	local top = nil
 	for _, b in bins[key(math.floor(x / B), math.floor(z / B))] or {} do
@@ -66,6 +73,15 @@ local function floorAt(x, z)
 	return top
 end
 -- the floor a body standing there would rest on: the highest top at most a jump over `from`, then the body must fit
+local R = 0.6 -- (half a body's width, a little under: only a gap a body can't fit through counts)
+local function around(x, z)
+	local out, seen = {}, {}
+	for _, d in { { -R, -R }, { R, -R }, { -R, R }, { R, R } } do
+		local k = key(math.floor((x + d[1]) / B), math.floor((z + d[2]) / B))
+		if not seen[k] then seen[k] = true; table.insert(out, bins[k] or {}) end
+	end
+	return out
+end
 local cells = {}
 local function cell(i, j)
 	local k = key(i, j)
@@ -80,10 +96,13 @@ local function cell(i, j)
 	table.sort(tops)
 	local best = false
 	for _, t in tops do
-		-- a body fits over t when no box covers (t + 0.3 .. t + 5.5) here
+		-- a body fits over t when no box covers (t + 0.3 .. t + 5.5) within R of here
 		local clear = true
-		for _, b in list do
-			if x >= b[1] and x <= b[4] and z >= b[3] and z <= b[6] and b[2] < t + 5.5 and b[5] > t + 0.3 then clear = false break end
+		for _, lb in around(x, z) do
+			for _, b in lb do
+				if x + R > b[1] and x - R < b[4] and z + R > b[3] and z - R < b[6] and b[2] < t + 5.5 and b[5] > t + 0.3 then clear = false break end
+			end
+			if not clear then break end
 		end
 		if clear then best = t break end -- the lowest standable top (ground under a roof stays ground)
 	end
@@ -92,6 +111,18 @@ local function cell(i, j)
 end
 local NI, NJ = math.floor((X1 - X0) / S), math.floor((Z1 - Z0) / S)
 local function idx(x, z) return math.floor((x - X0) / S), math.floor((z - Z0) / S) end
+-- a thin wall between two cell centres (a fence plank, a gate's barrier): the step is sampled every half stud at body height
+local function wall(i, j, i2, j2, h)
+	local xa, za = X0 + i * S + S / 2, Z0 + j * S + S / 2
+	local xb, zb = X0 + i2 * S + S / 2, Z0 + j2 * S + S / 2
+	for _, t in { 0.25, 0.5, 0.75 } do
+		local x, z = xa + (xb - xa) * t, za + (zb - za) * t
+		for _, b in bins[key(math.floor(x / B), math.floor(z / B))] or {} do
+			if x >= b[1] and x <= b[4] and z >= b[3] and z <= b[6] and b[2] < h + 5.5 and b[5] > h + 0.3 then return true end
+		end
+	end
+	return false
+end
 local function bfs(starts, up, down)
 	local seen, q, head = {}, {}, 1
 	for _, s in starts do seen[key(s[1], s[2])] = true; table.insert(q, s) end
@@ -103,7 +134,7 @@ local function bfs(starts, up, down)
 			local i2, j2 = i + d[1], j + d[2]
 			if i2 >= 0 and i2 < NI and j2 >= 0 and j2 < NJ and not seen[key(i2, j2)] then
 				local g = cell(i2, j2)
-				if g and f and g - f <= up and f - g <= down then
+				if g and f and g - f <= up and f - g <= down and not wall(i, j, i2, j2, math.max(f, g)) then
 					seen[key(i2, j2)] = true
 					table.insert(q, { i2, j2 })
 				end
@@ -138,7 +169,7 @@ check('the portal home (in front of it)', near(L.Plan.World2.x, L.Plan.World2.z 
 for k, b in L.Plan.Boards do check('board ' .. k .. ' (in front of it)', near(b[1], b[2] - 8, 6)) end
 check('the box dais (its front step)', near(0, 77))
 check('the ranges (the training aisle)', near(-40, L.CrossZ))
-check('the gun shop (its deck)', near(40, L.CrossZ))
+check('the gun shop (in buying range of its deck)', near(40, L.CrossZ, 10)) -- (GunRules.Range 14; the stands fill the deck)
 -- nowhere to get stuck: every reachable cell walks back to the spawn (reverse: up any height you came down, down at
 -- most a jump... i.e. from each cell, can you get to the spawn going forward?)
 local back = bfs({ { si, sj } }, math.huge, 6) -- cells from which the spawn is reachable (the moves reversed)
@@ -161,6 +192,6 @@ for k in fwd do
 end
 for _, e in groups do where = (where and where ~= '' and where .. '; ' or '') .. string.format('%d cells x %.0f..%.0f z %.0f..%.0f', e.n, e.x0, e.x1, e.z0, e.z1) end
 check('no cell you can reach is a trap (the spawn reachable from each)', stuck == 0, stuck .. ' cells: ' .. tostring(where))
-print(('[reach] %d solid boxes, %d cells reached'):format(count, reached))
-print(('[reach] %d checks / %d failed'):format(n, #failed))
+print((TAG .. ' %d solid boxes, %d cells reached'):format(count, reached))
+print((TAG .. ' %d checks / %d failed'):format(n, #failed))
 return { checks = n, failed = #failed, reached = reached, stuck = stuck }

@@ -422,8 +422,21 @@ local function fence(c, x, z0, z1, side, h, gaps)
 		end
 		return false
 	end
+	-- (Oct 27 review) an invisible keep-in cap over each run of planks, from just under their tops to 40 up (like
+	-- City.court's): nobody stands on the fence and drops into a yard strip behind it that has no way back out (World 1's
+	-- Stage 1, the strip between the right fence and the house; tools/checks/city_reach.luau with REACH_MAP)
+	local runA, runB = nil, nil
+	local function cap()
+		if not runA then return end
+		local lo, hi = x - 0.9 + math.min(0, side * 0.5), x + 0.9 + math.max(0, side * 0.5)
+		local p = f:box('Boundary', V(lo, h - 0.6, math.min(runA, runB)), V(hi, 40, math.max(runA, runB)), P.white, M.SmoothPlastic)
+		p.Transparency = 1
+		p.CastShadow = false
+		runA = nil
+	end
 	for k = 0, n - 1 do
 		local za, zb = z0 + k * w, z0 + (k + 1) * w
+		if inGap(za, zb) then cap() else runA, runB = runA or za, zb end
 		if not inGap(za, zb) then
 			local col = P.st.fence[k % #P.st.fence + 1]
 			local xm = x + (k % 2 == 1 and side * 0.5 or 0)
@@ -438,6 +451,7 @@ local function fence(c, x, z0, z1, side, h, gaps)
 			end
 		end
 	end
+	cap()
 	for _, g in gaps or {} do
 		local ga, gb = math.min(g[1], g[2]), math.max(g[1], g[2])
 		for _, zp in { ga, gb } do

@@ -1856,14 +1856,20 @@ function drain()
 			-- (the safety net: the cinematic always ends itself; if it ever didn't, the queue still moves on)
 			if unboxing and Cinematic.active and not Cinematic.active() then
 				unboxing = false
+				-- (Oct 27 review: its onDone never came, so nothing else gives the HUD and the toasts back)
+				if #queue == 0 then
+					reportDone()
+					player.PlayerGui:SetAttribute('UnboxingCalm', false)
+					player.PlayerGui:SetAttribute('Unboxing', false)
+				end
 				drain()
 			end
 		end)
 		return
 	end
 	local ok, length = pcall(play, info)
-	if not ok then
-		warn('[Shoes] unboxing: ' .. tostring(length))
+	if not ok or not length then -- (no length: the moment couldn't start, after a failed cinematic had set the flags)
+		if not ok then warn('[Shoes] unboxing: ' .. tostring(length)) end
 		unboxing = false
 		if #queue == 0 then reportDone() end
 		player.PlayerGui:SetAttribute('Unboxing', false)

@@ -12,15 +12,29 @@ local CORE = { Enum.CoreGuiType.Backpack, Enum.CoreGuiType.PlayerList }
 local hidden, coreWas = {}, {}
 local on = false
 
-local function hide()
-	if on then return end
-	on = true
+local function sweep()
 	for _, g in playerGui:GetChildren() do
 		if g:IsA('ScreenGui') and g.Enabled and not KEEP[g.Name] then
 			g.Enabled = false
-			table.insert(hidden, g)
+			if not table.find(hidden, g) then table.insert(hidden, g) end
 		end
 	end
+end
+local onTicket = 0
+local function hide()
+	if on then return end
+	on = true
+	sweep()
+	-- (Oct 27 review) a screen its own script switches on while the moment plays (the goal line comes back when the
+	-- opening closes the Store window it was bought from) is put away too, and back on at the end
+	onTicket += 1
+	local ticket = onTicket
+	task.spawn(function()
+		while on and ticket == onTicket do
+			task.wait(0.1)
+			if on and ticket == onTicket then pcall(sweep) end
+		end
+	end)
 	for _, t in CORE do
 		local ok, was = pcall(function() return StarterGui:GetCoreGuiEnabled(t) end)
 		coreWas[t] = ok and was or false

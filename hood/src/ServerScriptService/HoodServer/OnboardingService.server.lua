@@ -70,7 +70,7 @@ local function stateOf(player, data, ob)
 	local owned = type(data.Guns) == 'table' and data.Guns.Owned or {}
 	local count = 0
 	for id, on in owned do
-		if on == true and Guns.ById[id] then count += 1 end
+		if on == true and Guns.ById[id] and not Guns.ById[id].Exclusive then count += 1 end -- (the ARMORY's guns only)
 	end
 	local _, cost = Rules.nextGun(Guns.List, owned)
 	local waves = type(data.Waves) == 'table' and data.Waves.Cleared or nil
