@@ -2825,7 +2825,8 @@ end
 -- (Oct 27) A row of the mockup's pill tabs: dark navy pills with white outlined labels, the open one bright blue. Each
 -- pill is as wide as its label needs, the row scaled to `Width`. props: Items { { Id, Text } }, Width (600), Height (42),
 -- Gap (8), TextSize (Height * 0.48), Selected (an Id), Position, AnchorPoint, ZIndex, Name, OnSelect(id), Wire
--- (function(pill, fn): how a pill takes taps, e.g. UIMotion.button; default its Hit's Activated).
+-- (function(pill, fn): how a pill takes taps, e.g. UIMotion.button; default its Hit's Activated), OnTone and OnPiece (the
+-- open pill's tone and skin piece: 'tabBlue' / 'tab_on_blue'; the Shop's is gold, as on the owner's mockup).
 -- Returns holder, set(id) (paints the open one, no callback), pills { [id] = holder }.
 function Kit.tabs(parent, props)
 	local items = props.Items or {}
@@ -2843,7 +2844,7 @@ function Kit.tabs(parent, props)
 	local k = total > 0 and room / total or 1
 	local pills = {}
 	local function paint(pill, on)
-		local tone = Kit.Tone[on and 'tabBlue' or 'navyRow']
+		local tone = Kit.Tone[on and (props.OnTone or 'tabBlue') or 'navyRow']
 		local body = pill:FindFirstChild('Body')
 		local g = body and body:FindFirstChildOfClass('UIGradient')
 		if g then g.Color = ColorSequence.new(tone.top, tone.base) end
@@ -2851,7 +2852,8 @@ function Kit.tabs(parent, props)
 		local rs = rim and rim:FindFirstChildOfClass('UIStroke')
 		if rs then rs.Color = tone.rim end
 		local sk = body and body:FindFirstChild('Skin')
-		if sk and sk:GetAttribute('Piece') ~= (on and 'tab_on_blue' or 'tab_off') then Kit.reskin(sk, on and 'tab_on_blue' or 'tab_off') end
+		local piece = on and (props.OnPiece or 'tab_on_blue') or 'tab_off'
+		if sk and sk:GetAttribute('Piece') ~= piece then Kit.reskin(sk, piece) end
 		pill:SetAttribute('On', on)
 	end
 	local function set(id)

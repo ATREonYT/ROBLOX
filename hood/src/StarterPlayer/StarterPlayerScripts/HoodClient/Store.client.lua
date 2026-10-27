@@ -853,7 +853,9 @@ end
 -- (Oct 27, the owner's mockup) under the week's pack: the best-known passes as a row of solid tiles, a big icon each and
 -- the green price pill (the same passes and prices as the Gamepasses section; OWNED once bought). Returns its height.
 local STRIP_KEYS = { 'DoubleRep', 'DoubleCash', 'Lucky', 'TripleOpen' }
-local STRIP_TONES = { 'cardRed', 'cardBlue', 'cardGreen', 'cardPurple' }
+-- (Oct 27, the owner: 'make it look like the reference') each pass keeps its own colour, set by its key; the Lucky clover
+-- sits on gold, not on green, so the green clover stands out the way it does on the mockup's bright card
+local STRIP_TONES = { DoubleRep = 'cardRed', DoubleCash = 'cardBlue', Lucky = 'cardGold', TripleOpen = 'cardPurple' }
 local STRIP_H = 196
 local function passStrip(y, parent)
 	local shown = {}
@@ -864,7 +866,7 @@ local function passStrip(y, parent)
 	if #shown == 0 then return 0 end
 	local q = math.floor((CW - (#shown - 1) * GAP) / #shown)
 	for i, entry in shown do
-		local tone = STRIP_TONES[i]
+		local tone = STRIP_TONES[entry.Key] or 'cardBlue'
 		local c = card(entry, tone, q, STRIP_H, MARGIN + (i - 1) * (q + GAP), y, parent)
 		c.Name = 'Strip_' .. entry.Key
 		local t = title(c.Body, entry.Title, 28, tone, { Position = px(q / 2, 6), Width = q - 16 })
@@ -1313,7 +1315,7 @@ buildTabs = function()
 	for _, t in TABS do
 		if headers[t.Id] then table.insert(shownTabs, t) end
 	end
-	local _, set = Kit.tabs(Win.Tabs, { Name = 'Tabs', Items = shownTabs, Width = Win.Tabs.Size.X.Offset, Height = WIN.Tabs, TextSize = 22, ZIndex = 30, Wire = Motion.button, OnSelect = function(id) scrollTo(id) end })
+	local _, set = Kit.tabs(Win.Tabs, { Name = 'Tabs', Items = shownTabs, Width = Win.Tabs.Size.X.Offset, Height = WIN.Tabs, TextSize = 22, ZIndex = 30, OnTone = 'gold', OnPiece = 'btn_yellow', Wire = Motion.button, OnSelect = function(id) scrollTo(id) end })
 	setTab = set
 end
 list:GetPropertyChangedSignal('CanvasPosition'):Connect(function()
