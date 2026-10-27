@@ -137,7 +137,7 @@ function simulate(opts) -- (global: tune.luau, appended to this snippet, calls i
 		local need = RebirthRules.need(r)
 		if power >= need then
 			local k = reach(power)
-			if k > 0 then run(k) end
+			if k > 0 and not (opts.skipRun and best >= STAGES) then run(k) end -- (skipRun: past the world, just train)
 			power, r = 0, r + 1
 			rebirthAt[r] = t
 			t += slow(5)
@@ -148,7 +148,7 @@ function simulate(opts) -- (global: tune.luau, appended to this snippet, calls i
 				run(k)
 				if stageAt[STAGES] and not opts.stopAt then break end
 			else
-				local rate = ShotRules.AutoRate * ShotRules.pay(ShotRules.perShot(bestLane(r, opts.boost), r, 1), gunMult, shoeMult) * ShotRules.AutoValue
+				local rate = ShotRules.AutoRate * ShotRules.pay(ShotRules.perShot(bestLane(r, opts.boost), r, opts.pass or 1), gunMult, shoeMult) * ShotRules.AutoValue
 				-- train until a new stage, or the rebirth, comes in reach
 				local target = best >= STAGES and need or math.min(need, SP[best + 1])
 				local dt = math.max(1, (math.max(target, power + 1) - power) / rate)
@@ -197,6 +197,15 @@ for _, kind in { { name = 'focused', waste = 0 }, { name = 'casual', waste = 0.3
 	row = {}
 	for i = 2, #Guns.List do table.insert(row, ('%s %s'):format(Guns.List[i].Id, minutes(res.gunAt[i]))) end
 	table.insert(lines, '  guns (min): ' .. table.concat(row, ' |'))
+end
+-- (Oct 27, the owner: "3 hours, but with game passes it will be way quicker") The real way to 50: World 1, then World 2
+-- to its boss (about rebirth 24), then training in World 2's ranges (LaneBoost 2, no more runs) to 50, free and with the
+-- 2x Power pass (pass = 2). The training part is measured from rebirth 24 in a train-only player; the total adds the
+-- focused World 1 and World 2 times above.
+for _, v in { { name = 'free', pass = 1 }, { name = '2x Power pass', pass = 2 } } do
+	local res = simulate({ seed = 1, waste = 0, stopAt = LAST, limit = 40 * 3600, skipRun = true, boost = (Balance.Worlds and Balance.Worlds[2] and Balance.Worlds[2].LaneBoost) or 2, pass = v.pass })
+	local from, to = res.rebirthAt[24], res.rebirthAt[LAST]
+	if from and to then table.insert(lines, ('train 24 -> %d in World 2, %s: %.0f min'):format(LAST, v.name, (to - from) / 60)) end
 end
 -- World 2 (Oct 27): carries on from World 1's boss with World 2's numbers (globals W2_SP, W2_PAD, W2_BOOST, else
 -- Balance.Worlds[2]); its boss at about 40 minutes more is the owner's "later worlds longer".

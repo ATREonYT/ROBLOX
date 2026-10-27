@@ -14,8 +14,8 @@ return function(t)
   t.expect.equal(R.multiplier(-3),1);t.expect.equal(R.multiplier(0/0),1);t.expect.equal(R.multiplier('7'),1);t.expect.equal(R.multiplier(2.7),3)
  end)
  t.test('each rebirth needs more Power than the last, in round numbers',function()
-  t.expect.equal(R.need(0),1000);t.expect.equal(R.need(1),3500);t.expect.equal(R.need(2),8000);t.expect.equal(R.need(8),180000);t.expect.equal(R.need(49),55000000);t.expect.equal(#Balance.RebirthNeed,50)
-  t.expect.equal(R.need(50),60000000);t.expect.equal(R.need(51),70000000);t.expect.equal(R.need(52),80000000) -- (past the list: x1.1 x (n + 1) / n)
+  t.expect.equal(R.need(0),1000);t.expect.equal(R.need(1),3500);t.expect.equal(R.need(2),8000);t.expect.equal(R.need(8),180000);t.expect.equal(R.need(49),530000000);t.expect.equal(#Balance.RebirthNeed,50)
+  t.expect.equal(R.need(50),600000000);t.expect.equal(R.need(51),650000000);t.expect.equal(R.need(52),750000000) -- (past the list: x1.1 x (n + 1) / n)
   for n=0,#Balance.RebirthNeed-1 do t.expect.equal(R.need(n),Balance.RebirthNeed[n+1]) end
   t.expect.equal(Balance.RebirthBase,R.need(0))
   local last=0

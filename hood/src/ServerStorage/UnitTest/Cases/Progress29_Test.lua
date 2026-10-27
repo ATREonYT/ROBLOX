@@ -44,7 +44,7 @@ return function(t)
 			t.expect.equal(lv, L.levelOf(Balance.StagePower[s]))
 		end
 		t.expect.equal(L.stageLevel(1), 6); t.expect.equal(L.stageLevel(4), 15); t.expect.equal(L.stageLevel(16), 31)
-		t.expect.equal(L.rebirthLevel(0), 18); t.expect.equal(L.rebirthLevel(49), 45)
+		t.expect.equal(L.rebirthLevel(0), 18); t.expect.equal(L.rebirthLevel(49), 50)
 		for s = 1, 4 do t.expect.truthy(L.stageLevel(s) <= L.rebirthLevel(0)) end -- (stages 1-4 come before the first rebirth)
 		local rl = 0
 		for n = 0, 20 do local v = L.rebirthLevel(n); t.expect.truthy(v >= rl); rl = v end

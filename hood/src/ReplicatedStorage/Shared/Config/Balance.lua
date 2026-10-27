@@ -31,15 +31,21 @@ local PAD_CASH = { 20, 80, 140, 220, 320, 440, 600, 800, 1000, 1400, 1800, 2400,
 -- The pacing sim (hood/tools/pacing; minutes from a new player, a free player who never stops):
 --   rebirths at about 4.3, 7.4, 10.4, 13.9, 17.3, 19.1, 21, 24.9, 30.3; the boss falls at about 33 for a player who runs
 --   every new stage the moment it opens, 29 for one who trains up and runs once a rebirth (most players about 30); a
---   casual player (a third of the time idle) about 50. Rebirth 50 at about 4 hours (casual about 6).
+--   casual player (a third of the time idle) about 50.
+--   (Oct 27, the owner: "don't make it 4 hours ... or make it 3 hours, but with game passes it will be way quicker" and
+--   "in the start make it quick, but then ... you are better off buying game passes") World 1 and World 2's rebirths (to
+--   25) stay as they were; from 26 on each need climbs up to 10x the old ladder by 50, the same for every player. A free
+--   player who goes on to World 2 reaches 50 at about 3 hours (World 1 ~33 min, World 2 ~62, then about 90 of
+--   training); the 2x Power pass halves the training and the paid lanes cut it far more. Nothing is hidden or per-player.
 local NEED = {
 	1000, 3500, 8000, 16000, 30000, 55000, 90000, 130000, 180000, -- World 1 (rebirths 1-9)
 	250000, 300000, 360000, 430000, 500000, 600000, 700000, 850000, 950000, 1100000, -- 10-19
-	1300000, 1500000, 1700000, 2000000, 2300000, 2600000, 3000000, 3400000, 3900000, 4400000, -- 20-29
-	5000000, 5500000, 6500000, 7500000, 8500000, 9500000, 11000000, 12000000, 14000000, 15000000, -- 30-39
-	17000000, 20000000, 22000000, 25000000, 28000000, 32000000, 36000000, 40000000, 45000000, 50000000, -- 40-49
-	55000000, -- 50
+	1300000, 1500000, 1700000, 2000000, 2300000, 2600000, 3000000, 4000000, 5600000, 7500000, -- 20-29
+	10000000, 13000000, 17000000, 22000000, 28000000, 35000000, 44000000, 52000000, 66000000, 77000000, -- 30-39
+	93000000, 120000000, 140000000, 170000000, 200000000, 240000000, 280000000, 330000000, 390000000, 460000000, -- 40-49
+	530000000, -- 50
 }
+
 
 -- How long each world should take a player in the middle (the owner, Oct 27): World 1 25-30 minutes, later worlds
 -- longer. Only World 1 is built; the sim's targets for the next ones.
