@@ -29,7 +29,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - **Lighting preset:** `HoodToy` in `ServerStorage/HoodLighting.lua`.
 - **Shared code:** `ReplicatedStorage/Shared` (rules modules are unit-tested); client code in `StarterPlayer/StarterPlayerScripts/HoodClient`; server in `ServerScriptService/HoodServer`.
 - **Robux items:** `Shared/Config/Products.lua`; the list to create on the website is `hood/MONETIZATION.md`.
-- **Pacing:** the owner wants World 1 to take 25-30 minutes and later worlds longer (Oct 27). `hood/tools/pacing/pacing.luau` simulates players on the real numbers (`Config/Balance`, `Guns`, `Skins`, `Shoes`); run it after any change to rebirth needs, stage Power, pad Cash, gun prices, lanes or walk speed, and try new numbers with `tune.luau` (both headers say how). World 1 now: 6 rebirths, a lane each rebirth, two new stages each rebirth.
+- **Pacing:** the owner wants World 1 to take 25-30 minutes and later worlds longer (Oct 27). `hood/tools/pacing/pacing.luau` simulates players on the real numbers (`Config/Balance`, `Guns`, `Skins`, `Shoes`); run it after any change to rebirth needs, stage Power, pad Cash, gun prices, lanes or walk speed, and try new numbers with `tune.luau` (both headers say how). World 1 now: 9 rebirths (the boss at about 30 min); the ladder goes on to 50 rebirths (about 4 h), lanes open at 2, 4, 7, 15, 30 and the Champ Ring at 50 (the owner: "more rebirths, up to like 50").
 - **Place file:** `LUNE=<lune> sh hood/tools/place/build_place.sh` writes `hood/places/HoodEvolution.rbxl`. Rebuild it when committing map changes.
 
 ## Checks (must all pass before every commit)

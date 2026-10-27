@@ -8,6 +8,7 @@ if NEED then copy(Balance.RebirthNeed, NEED) end
 if SP then copy(Balance.StagePower, SP) end
 if PAD then copy(Balance.PadCash, PAD) end
 if WALK then copy(Balance.Walk, WALK) end
+if NEED then for i = #NEED + 1, #Balance.RebirthNeed do Balance.RebirthNeed[i] = nil end end
 if LANES then
 	for _, g in Skins.Stations do
 		if LANES[g.Id] then g.Rebirths = LANES[g.Id] end

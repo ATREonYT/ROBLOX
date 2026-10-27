@@ -2,11 +2,11 @@ return function(t)
  local R=require(game.ReplicatedStorage.Shared.RebirthRules)
  local Balance=require(game.ReplicatedStorage.Shared.Config.Balance)
  -- Players keep their own avatar (brief 17): walk speed no longer comes from a look. Everyone starts at Roblox's
- -- default 16 and walks a stud and a half a second faster per rebirth, up to 24 (the old top look's speed; Oct 27
- -- pacing: reached at the world's 6th rebirth); never slower
+ -- default 16 and walks a stud a second faster per rebirth, up to 24 (the old top look's speed; Oct 27 pacing:
+ -- reached at the 8th rebirth, near the boss); never slower
  -- with more rebirths; junk counts as none.
  t.test('walk speed starts at 16 and tops out at 24',function()
-  t.expect.equal(Balance.Walk.Base,16);t.expect.equal(R.walkSpeed(0),16);t.expect.equal(R.walkSpeed(1),17.5);t.expect.equal(R.walkSpeed(6),24);t.expect.equal(R.walkSpeed(1e6),24)
+  t.expect.equal(Balance.Walk.Base,16);t.expect.equal(R.walkSpeed(0),16);t.expect.equal(R.walkSpeed(1),17);t.expect.equal(R.walkSpeed(8),24);t.expect.equal(R.walkSpeed(1e6),24)
  end)
  t.test('walk speed never drops with more rebirths',function()
   local last=0

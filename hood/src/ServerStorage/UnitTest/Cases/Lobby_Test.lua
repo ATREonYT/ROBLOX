@@ -5,9 +5,9 @@ return function(t)
  local function streetZone() return {{Station=S.StationById.Street,X=-50,Z=66,HalfX=5,HalfZ=5,Top=1}} end
  -- BAY 3 (Street) opens at 4 rebirths: before that its box pays nothing and says what it needs.
  t.test('a lane that needs more rebirths pays nothing and names itself',function()
-  local m,id=R.training(1,Vector3.new(-50,4,66),streetZone());t.expect.equal(m,0);t.expect.equal(id,'Locked:Street')
-  t.expect.equal(R.need(id,1),2);t.expect.equal(R.need('Street',9),0);t.expect.equal(R.need('',0),0);t.expect.equal(R.need(nil,0),0)
-  t.expect.equal(R.need('Locked:Street',2),0) -- (opened since)
+  local m,id=R.training(3,Vector3.new(-50,4,66),streetZone());t.expect.equal(m,0);t.expect.equal(id,'Locked:Street')
+  t.expect.equal(R.need(id,3),4);t.expect.equal(R.need('Street',9),0);t.expect.equal(R.need('',0),0);t.expect.equal(R.need(nil,0),0)
+  t.expect.equal(R.need('Locked:Street',4),0) -- (opened since)
  end)
  t.test('training requires standing on the mat of an open lane',function()
   local z=streetZone()

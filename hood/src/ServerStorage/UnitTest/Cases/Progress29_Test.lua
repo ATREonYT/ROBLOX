@@ -36,15 +36,15 @@ return function(t)
 		t.expect.equal(select(4, L.progress('x')), 0)
 	end)
 
-	t.test('stage gates and rebirths read sensibly as levels: they only climb, stage 1 is Level 6, the first rebirth Level 19', function()
+	t.test('stage gates and rebirths read sensibly as levels: they only climb, stage 1 is Level 6, the first rebirth Level 18', function()
 		local last = 0
 		for s = 1, #Balance.StagePower do
 			local lv = L.stageLevel(s)
 			t.expect.truthy(lv >= last); last = lv
 			t.expect.equal(lv, L.levelOf(Balance.StagePower[s]))
 		end
-		t.expect.equal(L.stageLevel(1), 6); t.expect.equal(L.stageLevel(4), 15); t.expect.equal(L.stageLevel(16), 36)
-		t.expect.equal(L.rebirthLevel(0), 19); t.expect.equal(L.rebirthLevel(13), 52)
+		t.expect.equal(L.stageLevel(1), 6); t.expect.equal(L.stageLevel(4), 15); t.expect.equal(L.stageLevel(16), 31)
+		t.expect.equal(L.rebirthLevel(0), 18); t.expect.equal(L.rebirthLevel(49), 45)
 		for s = 1, 4 do t.expect.truthy(L.stageLevel(s) <= L.rebirthLevel(0)) end -- (stages 1-4 come before the first rebirth)
 		local rl = 0
 		for n = 0, 20 do local v = L.rebirthLevel(n); t.expect.truthy(v >= rl); rl = v end
@@ -60,7 +60,7 @@ return function(t)
 	t.test('ranks follow the best level, only go up, and pay once', function()
 		t.expect.equal(#L.Ranks, 8)
 		t.expect.equal(L.rankOf(1).Name, 'Rookie'); t.expect.equal(L.rankOf(9).Name, 'Rookie'); t.expect.equal(L.rankOf(10).Name, 'Street Kid')
-		t.expect.equal(L.rankOf(16).Name, 'Hustler'); t.expect.equal(L.rankOf(46).Name, 'Legend'); t.expect.equal(L.rankOf(999).Name, 'Legend')
+		t.expect.equal(L.rankOf(16).Name, 'Hustler'); t.expect.equal(L.rankOf(45).Name, 'Legend'); t.expect.equal(L.rankOf(999).Name, 'Legend')
 		t.expect.equal(L.rankOf(nil).Name, 'Rookie'); t.expect.equal(L.rankIndex(0 / 0), 1)
 		t.expect.equal(L.nextRank(46), nil); t.expect.equal(L.nextRank(1).Name, 'Street Kid')
 		local prev = 0
@@ -70,8 +70,8 @@ return function(t)
 		local many = L.ranksCrossed(1, 30); t.expect.equal(#many, 4); t.expect.equal(many[4], 5) -- (a big jump crosses every rank on the way)
 		t.expect.equal(#L.ranksCrossed(30, 20), 0) -- (never down)
 		t.expect.equal(L.tag(16, 440), 'Hustler  Lv 16')
-		-- every rank is reached inside World 1 (the 14 rebirths): rebirth 13 asks for Level 49
-		t.expect.truthy(L.rebirthLevel(13) >= L.Ranks[#L.Ranks].Level)
+		-- every rank is reached by the 50th rebirth (it asks for Level 45), and Shot Caller inside World 1 (the boss yard)
+		t.expect.truthy(L.rebirthLevel(49) >= L.Ranks[#L.Ranks].Level); t.expect.truthy(L.stageLevel(16) >= L.Ranks[5].Level)
 		-- and the first rank-up (Level 10) is early, the second (Level 16) is where the first rebirth is
 		t.expect.truthy(L.powerFor(10) <= 40); t.expect.truthy(L.powerFor(16) <= Rebirth.need(0))
 	end)

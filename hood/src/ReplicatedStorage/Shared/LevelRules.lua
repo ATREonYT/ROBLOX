@@ -7,12 +7,12 @@
 -- every stage's Recommended Power are in it, a rebirth asks for it and resets it. A Level is only a curve over it:
 --     the level you are = the highest L with Power >= T(L),   T(L) = 1.5^(L-1) - 1   (T(1) = 0)
 -- so every 1.5x more Power is one more level, which is how the soldier game's levels read (many early, slower later):
--- the first shot is already Level 2, the stage 1 gate (10 Power) is Level 6, a first rebirth (1.5K) is Level 19, the
--- boss yard (1.5M) Level 36 and the 14th rebirth (950M) Level 52 (Oct 27 pacing). T is rounded to two significant figures from 100 up, so the bar's numbers read cleanly.
+-- the first shot is already Level 2, the stage 1 gate (10 Power) is Level 6, a first rebirth (1K) is Level 18, the
+-- boss yard (220K) Level 31 and the 50th rebirth (55M) Level 45 (Oct 27 pacing). T is rounded to two significant figures from 100 up, so the bar's numbers read cleanly.
 -- Nothing is stored for it: a level is always LevelRules.levelOf(Rep), so the economy, the gates and the saves are
 -- exactly what they were. A rebirth resets Power, so it resets the level (the reference's "Level 5 MAX - Rebirth!").
 --
--- RANKS stay: a rank is tied to the BEST level you ever reached (the profile's BestLevel, kept by HoodServer/Levels, never
+-- RANKS stay (Oct 27: spread over the 50 rebirths; Shot Caller by the boss, Legend at the 50th): a rank is tied to the BEST level you ever reached (the profile's BestLevel, kept by HoodServer/Levels, never
 -- lowered by a rebirth), so it only goes up: Rookie, Street Kid, Hustler, Enforcer, Shot Caller, Boss, Kingpin, Legend.
 -- Crossing a rank's level pays its Cash once (the saved BestLevel makes "once" true) and shows the rank-up screen.
 local Balance = require(script.Parent.Config.Balance)
@@ -82,7 +82,7 @@ LevelRules.Ranks = {
 	{ Id = 'ShotCaller', Name = 'Shot Caller', Level = 28, Cash = 1500, Chevrons = 4, Color = '#FF9A1F' },
 	{ Id = 'Boss', Name = 'Boss', Level = 34, Cash = 5000, Chevrons = 5, Color = '#FF4757' },
 	{ Id = 'Kingpin', Name = 'Kingpin', Level = 40, Cash = 15000, Chevrons = 6, Color = '#FFD21F' },
-	{ Id = 'Legend', Name = 'Legend', Level = 46, Cash = 40000, Chevrons = 7, Color = '#FF6BD6' },
+	{ Id = 'Legend', Name = 'Legend', Level = 45, Cash = 40000, Chevrons = 7, Color = '#FF6BD6' },
 }
 
 -- The rank (1..#Ranks) a best level makes.

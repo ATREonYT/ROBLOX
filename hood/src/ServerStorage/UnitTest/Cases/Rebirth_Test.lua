@@ -5,17 +5,17 @@ return function(t)
  local Skins=require(RS.Shared.Config.Skins)
  local Schema=require(game.ServerScriptService.HoodServer.ProfileSchema)
  -- Brief 17: "Rebirth n -> n+1, Nx -> (N+1)x", a requirement that grows every time, the first one a few minutes of
- -- shooting at BAY 1. Oct 27 (the owner: World 1 in 25-30 minutes): 6 rebirths make the world, 1.5K, 20K, 60K,
- -- 140K, 350K, 600K, then the after-the-world ladder to 950M at 13 (Balance.RebirthNeed), then x2 a rebirth times the
- -- multiplier step. The pacing sim (hood/tools/pacing) checks the minutes.
+ -- shooting at BAY 1. Oct 27 (the owner: World 1 in 25-30 minutes, then "more rebirths, up to like 50"): 9 rebirths
+ -- make the world, 1K, 3.5K, 8K ... 180K, then the ladder goes on to 55M at the 50th (Balance.RebirthNeed), then x1.1 a
+ -- rebirth times the multiplier step. The pacing sim (hood/tools/pacing) checks the minutes.
  t.test('the rebirth multiplier is 1x, 2x, 3x ... and the labels read like the reference',function()
   t.expect.equal(R.multiplier(0),1);t.expect.equal(R.multiplier(1),2);t.expect.equal(R.multiplier(8),9)
   local a,b=R.labels(8);t.expect.equal(a,'Rebirth 8 → Rebirth 9');t.expect.equal(b,'9x → 10x')
   t.expect.equal(R.multiplier(-3),1);t.expect.equal(R.multiplier(0/0),1);t.expect.equal(R.multiplier('7'),1);t.expect.equal(R.multiplier(2.7),3)
  end)
  t.test('each rebirth needs more Power than the last, in round numbers',function()
-  t.expect.equal(R.need(0),1500);t.expect.equal(R.need(1),20000);t.expect.equal(R.need(2),60000);t.expect.equal(R.need(4),350000);t.expect.equal(R.need(5),600000);t.expect.equal(R.need(11),190000000)
-  t.expect.equal(R.need(13),950000000);t.expect.equal(R.need(14),2000000000);t.expect.equal(R.need(15),4300000000) -- (past the list: x2 x (n + 1) / n)
+  t.expect.equal(R.need(0),1000);t.expect.equal(R.need(1),3500);t.expect.equal(R.need(2),8000);t.expect.equal(R.need(8),180000);t.expect.equal(R.need(49),55000000);t.expect.equal(#Balance.RebirthNeed,50)
+  t.expect.equal(R.need(50),60000000);t.expect.equal(R.need(51),70000000);t.expect.equal(R.need(52),80000000) -- (past the list: x1.1 x (n + 1) / n)
   for n=0,#Balance.RebirthNeed-1 do t.expect.equal(R.need(n),Balance.RebirthNeed[n+1]) end
   t.expect.equal(Balance.RebirthBase,R.need(0))
   local last=0
@@ -24,30 +24,33 @@ return function(t)
    local digits=string.format('%d',v):gsub('0+$','') -- (two significant figures)
    t.expect.truthy(#digits<=2)
   end
-  t.expect.truthy(R.need(25)>Balance.MaxSafeValue/10) -- (the 1e12 Power cap ends the ladder long before MaxRebirths)
+  t.expect.truthy(R.need(Balance.MaxRebirths)<=Balance.MaxSafeValue) -- (the whole ladder fits under the 1e12 Power cap)
   local top=R.need(R.Max);t.expect.truthy(top==top and top<math.huge and top>=R.need(30)) -- (no inf or NaN at the cap)
  end)
- t.test('the curve: quick first rebirths, then each need at least 1.5x the last',function()
-  -- (Oct 27) the first rebirth is about two minutes of BAY 1 with the first guns (5 shots a second, x2 to x4); the
-  -- rest of its ~4.5 minutes is the first four runs. Every need after it is at least 1.5x the last, so with the lane and
-  -- gun steps each rebirth takes about as long or longer than the one before (the pacing sim checks the times).
+ t.test('the curve: quick first rebirths, World 1 at least 1.3x a rebirth, then a gentle climb to 50',function()
+  -- (Oct 27) the first rebirth is about a minute and a half of BAY 1 with the first guns (5 shots a second, x2 to x4);
+  -- the rest of its ~4.5 minutes is the first four runs. World 1's needs (rebirths 1-9) each at least 1.3x the last;
+  -- after the world each one a little more than the last (the multiplier grows by (n + 1) / n), so the rebirths keep
+  -- coming every few minutes up to 50 (the pacing sim checks the times).
   t.expect.truthy(R.need(0)<=120*5*4)
-  for n=1,30 do t.expect.truthy(R.need(n)>=1.5*R.need(n-1)) end
+  for n=1,8 do t.expect.truthy(R.need(n)>=1.3*R.need(n-1)) end
+  for n=9,80 do t.expect.truthy(R.need(n)>=1.05*R.need(n-1) and R.need(n)<=1.5*R.need(n-1)) end
  end)
  t.test('every stage opens inside one rebirth cycle; the boss yard before the Champ Ring',function()
-  -- Recommended Power (Balance.StagePower, Oct 27): stages 1-4 before the first rebirth, then two a rebirth: stages
-  -- 3 + 2r and 4 + 2r with r rebirths, above the need that cycle starts after and at most the one it ends with (the
-  -- second sits at the need itself: the run before the rebirth reaches it). The boss yard comes with 6.
+  -- Recommended Power (Balance.StagePower, Oct 27): stages 1-4 before the first rebirth; two with each of rebirths 1-3,
+  -- one with each of 4-8, the boss yard in the 9th rebirth's cycle. Each above the need its cycle starts after and at
+  -- most the one it ends with (a cycle's last stage sits at the need: the run before the rebirth reaches it).
   local P=Balance.StagePower
+  local cycle={[5]=1,[6]=1,[7]=2,[8]=2,[9]=3,[10]=3,[11]=4,[12]=5,[13]=6,[14]=7,[15]=8,[16]=9}
   for s=1,4 do t.expect.truthy(P[s]<R.need(0)) end
-  for s=5,16 do local r=math.floor((s-3)/2);t.expect.truthy(P[s]>R.need(r-1) and P[s]<=R.need(r)) end
-  t.expect.truthy(6<Skins.StationById.Ring.Rebirths) -- (the boss yard's cycle comes before the Ring's rebirth)
+  for s=5,16 do local r=cycle[s];t.expect.truthy(P[s]>R.need(r-1) and P[s]<=R.need(r)) end
+  t.expect.truthy(9<Skins.StationById.Ring.Rebirths) -- (the boss yard's cycle comes before the Ring's rebirth)
  end)
  t.test('you can rebirth at the need, not a point before; junk never rebirths',function()
-  t.expect.falsy(R.canRebirth(1499,0));t.expect.truthy(R.canRebirth(1500,0));t.expect.falsy(R.canRebirth(19999,1));t.expect.truthy(R.canRebirth(20000,1))
+  t.expect.falsy(R.canRebirth(999,0));t.expect.truthy(R.canRebirth(1000,0));t.expect.falsy(R.canRebirth(3499,1));t.expect.truthy(R.canRebirth(3500,1))
   t.expect.falsy(R.canRebirth(0/0,0));t.expect.falsy(R.canRebirth(nil,0));t.expect.falsy(R.canRebirth('1e9',0))
   t.expect.falsy(R.canRebirth(1e300,R.Max))
-  t.expect.near(R.progress(750,0),0.5);t.expect.equal(R.progress(1e9,0),1);t.expect.equal(R.progress(-5,0),0)
+  t.expect.near(R.progress(500,0),0.5);t.expect.equal(R.progress(1e9,0),1);t.expect.equal(R.progress(-5,0),0)
  end)
  t.test('a rebirth resets Power only: Cash, guns, shoes, stage clears, waves and goals stay',function()
   local d=Schema.new()
@@ -62,10 +65,10 @@ return function(t)
   local ok2,why=R.apply(d);t.expect.falsy(ok2);t.expect.equal(why,'power');t.expect.equal(d.Rebirths,1)
   t.expect.truthy((R.apply(d,true)));t.expect.equal(d.Rebirths,2);t.expect.equal(d.Rep,0)
  end)
- -- Brief 23: the superhero game's ladder; Oct 27 one lane a rebirth. Six rebirth lanes x1/0, x4/1, x10/2, x20/3, x35/4,
- -- x50/5, the Champ Ring (boss yard) x75/7 (after the world's 6 rebirths), and the two best lanes for Robux: PRO BAY x100 (RangeVIP1, 99) and GOLD BAY x250 (RangeVIP2, 249).
- t.test('the lane ladder: rebirth lanes 0..5 and the Champ Ring at 7, then the two Robux lanes on top',function()
-  local want={{'Starter',0,1},{'Tape',1,4},{'Street',2,10},{'Heavy',3,20},{'Speed',4,35},{'DoubleEnd',5,50},{'Pro',0,100,'RangeVIP1',99},{'Gold',0,250,'RangeVIP2',249},{'Ring',7,75},{'Head',0,500,'RangeVIP3',699}}
+ -- Brief 23: the superhero game's ladder; Oct 27 spread over 50 rebirths. Six rebirth lanes x1/0, x4/2, x10/4, x20/7,
+ -- x35/15, x50/30, the Champ Ring (boss yard) x75/50, and the two best lanes for Robux: PRO BAY x100 (RangeVIP1, 99) and GOLD BAY x250 (RangeVIP2, 249).
+ t.test('the lane ladder: rebirth lanes 0..30 and the Champ Ring at 50, then the two Robux lanes on top',function()
+  local want={{'Starter',0,1},{'Tape',2,4},{'Street',4,10},{'Heavy',7,20},{'Speed',15,35},{'DoubleEnd',30,50},{'Pro',0,100,'RangeVIP1',99},{'Gold',0,250,'RangeVIP2',249},{'Ring',50,75},{'Head',0,500,'RangeVIP3',699}}
   t.expect.equal(#Skins.Stations,#want)
   for i,w in want do
    local s=Skins.Stations[i]
@@ -78,12 +81,12 @@ return function(t)
   for i=2,#free do t.expect.truthy(free[i].Rebirths>free[i-1].Rebirths);t.expect.truthy(free[i].Multiplier>free[i-1].Multiplier) end
   t.expect.truthy(Skins.StationById.Pro.Multiplier>topFree);t.expect.truthy(Skins.StationById.Gold.Multiplier>Skins.StationById.Pro.Multiplier)
   t.expect.truthy(Skins.StationById.Head.Multiplier>Skins.StationById.Gold.Multiplier) -- (brief 30: each paid lane pays more than the cheaper one)
-  t.expect.truthy(R.laneOpen(Skins.Stations[1],0));t.expect.falsy(R.laneOpen(Skins.Stations[2],0));t.expect.truthy(R.laneOpen(Skins.Stations[2],1))
-  t.expect.equal(R.bestLane(0).Id,'Starter');t.expect.equal(R.bestLane(2).Id,'Street');t.expect.equal(R.bestLane(6).Id,'DoubleEnd');t.expect.equal(R.bestLane(99).Id,'Ring')
+  t.expect.truthy(R.laneOpen(Skins.Stations[1],0));t.expect.falsy(R.laneOpen(Skins.Stations[2],1));t.expect.truthy(R.laneOpen(Skins.Stations[2],2))
+  t.expect.equal(R.bestLane(0).Id,'Starter');t.expect.equal(R.bestLane(5).Id,'Street');t.expect.equal(R.bestLane(40).Id,'DoubleEnd');t.expect.equal(R.bestLane(99).Id,'Ring')
   t.expect.equal(R.bestLane(0,{RangeVIP1=true}).Id,'Pro');t.expect.equal(R.bestLane(99,{RangeVIP1=true,RangeVIP2=true}).Id,'Gold');t.expect.equal(R.bestLane(3,{RangeVIP2=true}).Id,'Gold')
   t.expect.equal(R.bestLane(0,{RangeVIP3=true}).Id,'Head');t.expect.equal(R.bestLane(99,{RangeVIP1=true,RangeVIP2=true,RangeVIP3=true}).Id,'Head')
-  t.expect.equal(R.nextUnlock(0).Name,'BAY 2');t.expect.equal(R.nextUnlock(7),nil);t.expect.equal(R.nextUnlock(6).Id,'Ring');t.expect.equal(R.nextUnlock(8),nil)
-  t.expect.equal(R.nextLane(1).Id,'Street');t.expect.equal(R.nextLane(5).Id,'Ring');t.expect.equal(R.nextLane(7),nil);t.expect.equal(R.nextLane(0).Id,'Tape')
+  t.expect.equal(R.nextUnlock(1).Name,'BAY 2');t.expect.equal(R.nextUnlock(2),nil);t.expect.equal(R.nextUnlock(49).Id,'Ring');t.expect.equal(R.nextUnlock(50),nil)
+  t.expect.equal(R.nextLane(3).Id,'Street');t.expect.equal(R.nextLane(30).Id,'Ring');t.expect.equal(R.nextLane(50),nil);t.expect.equal(R.nextLane(0).Id,'Tape')
  end)
  t.test('a Robux lane opens with its pass only (the player, a table or a function), at any rebirth; a pass never opens a rebirth lane',function()
   local pro,gold,tape=Skins.StationById.Pro,Skins.StationById.Gold,Skins.StationById.Tape
@@ -94,7 +97,7 @@ return function(t)
   t.expect.falsy(R.laneOpen(pro,5,p));p:SetAttribute('Pass_RangeVIP1',true);t.expect.truthy(R.laneOpen(pro,5,p));t.expect.falsy(R.laneOpen(gold,5,p))
   p:SetAttribute('Pass_RangeVIP1','yes');t.expect.falsy(R.laneOpen(pro,5,p)) -- (only a real true counts)
   p:Destroy()
-  t.expect.falsy(R.laneOpen(tape,0,{RangeVIP1=true,RangeVIP2=true}));t.expect.falsy(R.laneOpen(tape,0,'RangeVIP1'))
+  t.expect.falsy(R.laneOpen(tape,1,{RangeVIP1=true,RangeVIP2=true}));t.expect.falsy(R.laneOpen(tape,1,'RangeVIP1'))
   t.expect.equal(R.laneNeed(pro),0);t.expect.equal(R.lanePass(pro),'RangeVIP1');t.expect.equal(R.lanePass(gold),'RangeVIP2');t.expect.equal(R.lanePass(tape),nil);t.expect.equal(R.lanePass(nil),nil)
   t.expect.falsy(R.hasPass({RangeVIP1=true},''));t.expect.falsy(R.hasPass(nil,'RangeVIP1'))
  end)
@@ -109,7 +112,7 @@ return function(t)
   end
  end)
  t.test('lane labels read like the reference: rebirths or the Robux price / Unlocked or Locked / Nx Power',function()
-  local top,state,power=R.laneLabel(Skins.StationById.Tape,true);t.expect.equal(top,'1');t.expect.equal(state,'Unlocked');t.expect.equal(power,'4x Power')
+  local top,state,power=R.laneLabel(Skins.StationById.Tape,true);t.expect.equal(top,'2');t.expect.equal(state,'Unlocked');t.expect.equal(power,'4x Power')
   top,state,power=R.laneLabel(Skins.StationById.Starter,true);t.expect.equal(top,'0');t.expect.equal(power,'1x Power')
   local price
   top,state,power,price=R.laneLabel(Skins.StationById.Gold,false);t.expect.equal(top,R.RobuxMark..'249');t.expect.equal(state,'Locked');t.expect.equal(power,'250x Power');t.expect.equal(price,249)
@@ -128,7 +131,7 @@ return function(t)
   local bad=Schema.new();bad.Rebirths=1.5;t.expect.throws(function() Schema.validate(bad) end)
   local huge=Schema.new();huge.Rebirths=Balance.MaxRebirths+1;t.expect.throws(function() Schema.validate(huge) end)
  end)
- t.test('walk speed: 16 to start, a stud and a half faster a rebirth, 24 at most',function()
-  t.expect.equal(R.walkSpeed(0),16);t.expect.equal(R.walkSpeed(4),22);t.expect.equal(R.walkSpeed(16),24);t.expect.equal(R.walkSpeed(500),24);t.expect.equal(R.walkSpeed(nil),16)
+ t.test('walk speed: 16 to start, a stud faster a rebirth, 24 at most',function()
+  t.expect.equal(R.walkSpeed(0),16);t.expect.equal(R.walkSpeed(4),20);t.expect.equal(R.walkSpeed(16),24);t.expect.equal(R.walkSpeed(500),24);t.expect.equal(R.walkSpeed(nil),16)
  end)
 end

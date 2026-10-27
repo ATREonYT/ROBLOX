@@ -139,11 +139,11 @@ function simulate(opts) -- (global: tune.luau, appended to this snippet, calls i
 			local k = reach(power)
 			if k > best and (not opts.patient or k >= STAGES) then
 				run(k)
-				if stageAt[STAGES] then break end
+				if stageAt[STAGES] and not opts.stopAt then break end
 			else
 				local rate = ShotRules.AutoRate * ShotRules.pay(ShotRules.perShot(bestLane(r), r, 1), gunMult, shoeMult) * ShotRules.AutoValue
 				-- train until a new stage, or the rebirth, comes in reach
-				local target = math.min(need, Balance.StagePower[math.min(best + 1, STAGES)])
+				local target = best >= STAGES and need or math.min(need, Balance.StagePower[best + 1])
 				local dt = math.max(1, (math.max(target, power + 1) - power) / rate)
 				dt = math.min(dt, 30)
 				power += rate * dt
@@ -170,13 +170,25 @@ for _, kind in { { name = 'focused', waste = 0 }, { name = 'patient', waste = 0,
 	for s = 1, STAGES do table.insert(row, ('S%d %s'):format(s, minutes(first.stageAt[s]))) end
 	table.insert(lines, table.concat(row, ' |'))
 	row = {}
-	for i = 1, first.rebirths do table.insert(row, ('R%d %s'):format(i, minutes(first.rebirthAt[i]))) end
+	for i = 1, math.min(first.rebirths, 12) do table.insert(row, ('R%d %s'):format(i, minutes(first.rebirthAt[i]))) end
 	table.insert(lines, table.concat(row, ' |'))
 	row = {}
 	for i = 2, #Guns.List do table.insert(row, ('%s %s'):format(Guns.List[i].Id, minutes(first.gunAt[i]))) end
 	table.insert(lines, 'guns: ' .. table.concat(row, ' |'))
 	table.insert(lines, ('shoes at the end x%.2f'):format(first.shoes))
 	table.insert(lines, ('WORLD1 %s %s min (average of %d runs)'):format(kind.name, n > 0 and string.format('%.1f', sum / n / 60) or 'not reached', n))
+end
+-- After the world: rebirths up to LAST_REBIRTH (the owner, Oct 27: "more rebirths, up to like 50 ... we need them to
+-- stay in the game for longer"), for the focused and the casual player.
+local LAST = LAST_REBIRTH or 50
+for _, kind in { { name = 'focused', waste = 0 }, { name = 'casual', waste = 0.35 } } do
+	local res = simulate({ seed = 1, waste = kind.waste, stopAt = LAST, limit = 40 * 3600 })
+	local row = {}
+	for i = 10, LAST, 5 do table.insert(row, ('R%d %s h'):format(i, res.rebirthAt[i] and string.format('%.1f', res.rebirthAt[i] / 3600) or '-')) end
+	table.insert(lines, ('after the world, %s: %s'):format(kind.name, table.concat(row, ' |')))
+	row = {}
+	for i = 2, #Guns.List do table.insert(row, ('%s %s'):format(Guns.List[i].Id, minutes(res.gunAt[i]))) end
+	table.insert(lines, '  guns (min): ' .. table.concat(row, ' |'))
 end
 print(table.concat(lines, '\n'))
 end

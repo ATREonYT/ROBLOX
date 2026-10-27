@@ -49,21 +49,22 @@ GoalRules.List = {
 	{ Id = 'Shoe', Text = 'Open a shoe box', Where = 'at the back of the hall', Reward = 5, Need = { Boxes = 1 }, Side = true },
 	{ Id = 'Stage3', Text = 'Reach Stage 3', Where = 'beat each crew to open its gate', Reward = 25, Need = { Stages = 3 } },
 	{ Id = 'Rebirth1', Text = 'Rebirth!', Where = 'fill the Level bar, then tap Rebirth', Reward = 30, Need = { Rebirths = 1 } },
-	-- (Oct 27 pacing: a lane opens with every rebirth and two stages come with each, so the chain alternates them in the
-	-- order a player meets them: BAY 2 at 1, Stage 6 by 2, BAY 3 at 2, Stage 10 by 4, BAY 4 at 3, BAY 5 at 4, Stage 13 by 5.)
-	lane('Tape', 'Range2', 60),
+	-- (Oct 27 pacing: the chain follows the order a player meets things: Stage 6 with 1 rebirth, BAY 2 at 2, Stage 10
+	-- with 3, BAY 3 at 4, Stage 13 with 6, BAY 4 at 7, the boss in the 9th rebirth's cycle; then the last lanes at 15,
+	-- 30 and 50 rebirths.)
 	{ Id = 'Stage6', Text = 'Reach Stage 6', Where = 'beat the crews down the street', Reward = 50, Need = { Stages = 6 } },
+	lane('Tape', 'Range2', 60),
 	{ Id = 'Gun4', Text = 'Get the Pump Shotgun', Where = 'at the ARMORY', Reward = 75, Need = { Guns = 4 } },
-	lane('Street', 'Range3', 100),
 	{ Id = 'Stage10', Text = 'Reach Stage 10', Where = 'further down the street', Reward = 150, Need = { Stages = 10 } },
-	lane('Heavy', 'Range4', 200),
-	lane('Speed', 'Range5', 400),
+	lane('Street', 'Range3', 100),
 	{ Id = 'Stage13', Text = 'Reach Stage 13', Where = 'the far end of the street', Reward = 300, Need = { Stages = 13 } },
+	lane('Heavy', 'Range4', 200),
 	-- FIGHTS30 BEGIN (brief 30, FIGHTS: the last stage is just a strong last enemy, "remove everything saying its a boss"; the ids stay)
 	{ Id = 'Wave15', Text = 'Beat the Stage 15 crew', Where = 'before the warehouse', Reward = 500, Need = { Wave = 15 } },
 	{ Id = 'BossYard', Text = 'Reach Stage 16', Where = 'the warehouse past Stage 15', Reward = 750, Need = { Stages = 16 } },
 	{ Id = 'BossWave', Text = 'Beat the Harbor crew', Where = 'in the warehouse, Stage 16', Reward = 1000, Need = { Wave = 16 } },
 	-- FIGHTS30 END
+	lane('Speed', 'Range5', 1200),
 	lane('DoubleEnd', 'Range6', 1500),
 	lane('Ring', 'Ring', 2500, 'Stage 16, at %s'), -- FIGHTS30 (was 'Boss Yard, at %d rebirths')
 }
@@ -75,7 +76,7 @@ end
 GoalRules.AllDone = { Text = 'ALL GOALS DONE!', Where = 'World 2 is coming soon' }
 -- The chain's version, saved with each profile's Goals (Chain). Older chains, by goal id (GoalRules.migrate moves a
 -- saved step to the same goal in this chain).
-GoalRules.Chain = 5 -- (5: Oct 27 pacing, BAY 2 before Stage 6 and BAY 5 before Stage 13)
+GoalRules.Chain = 5 -- (5: Oct 27 pacing, the lanes spread over 50 rebirths; BAY 5 after the boss)
 GoalRules.Chains = {
 	[1] = { 'FreeRange', 'Stage1', 'Wave1', 'Gun', 'Stage3', 'Range2', 'Stage6', 'Gun3', 'Range4', 'Stage10', 'Range6', 'Stage13', 'Wave15', 'BossYard', 'BossWave' },
 	[2] = { 'FreeRange', 'Stage1', 'Wave1', 'Gun', 'Shoe', 'Stage3', 'Range2', 'Stage6', 'Gun3', 'Range4', 'Stage10', 'Range6', 'Stage13', 'Wave15', 'BossYard', 'BossWave' },
