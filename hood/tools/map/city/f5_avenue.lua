@@ -146,6 +146,74 @@ function City.court(d, top, at, i)
 	end
 end
 
+---------------------------------------------------------------------------------------------- the street's edge
+-- (Oct 27 round 6, the owner: World 2 should "look and feel like the reference", his plan's stage shots) The street is
+-- framed close, not open: low chunky blocks right behind the props strip on both sides (fronts at |x| 32, 12 deep, an
+-- alley at z' 24..30 between the two), their shops on the street, in the district's colours; benches, crates and a
+-- planter at the alley mouth. The construction zone has a site hoarding there instead (its steel frames stand behind),
+-- the luxury district pink neon pillars (steady, no flashing) in front of its dark blocks.
+City.Edge = { x0 = 32, x1 = 44, segs = { { 2, 24 }, { 30, 54 } } }
+City.EdgeColors = {
+	{ C(150, 154, 166), C(186, 92, 70), C(132, 138, 152) }, -- City Streets: grey stone and red brick
+	{ C(214, 222, 236), C(176, 206, 232), C(226, 230, 238) }, -- Modern Plaza: pale stone and glass
+	nil, -- Construction Zone: the hoarding
+	{ C(146, 150, 160), C(120, 126, 140), C(160, 162, 170) }, -- Transit Area: concrete
+	{ C(70, 62, 120), C(56, 66, 128), C(88, 64, 132) }, -- Luxury District: dark violet and blue
+}
+function City.bench(c, cf)
+	local b = c:at(cf):group('Bench')
+	for _, x in { -1.6, 1.6 } do sbox(b, 'BenchLeg', V(x - 0.3, 0, -0.6), V(x + 0.3, 1.4, 0.6), City.steelDark) end
+	sbox(b, 'BenchSeat', V(-2.2, 1.4, -0.8), V(2.2, 1.8, 0.8), C(176, 116, 70))
+	decor(b:box('BenchBack', V(-2.2, 1.8, 0.5), V(2.2, 3.2, 0.8), C(176, 116, 70), M.SmoothPlastic))
+	return b
+end
+function City.crates(c, cf, seed)
+	local b = c:at(cf):group('Crates')
+	local wood, wood2 = C(196, 140, 78), C(170, 116, 62)
+	sbox(b, 'Crate', V(-1.6, 0, -1.6), V(1.6, 3.2, 1.6), seed % 2 == 0 and wood or wood2)
+	sbox(b, 'Crate', V(1.8, 0, -1.2), V(4.2, 2.4, 1.2), seed % 2 == 0 and wood2 or wood)
+	decor(sbox(b, 'Crate', V(-1.1, 3.2, -1.1), V(1.1, 5.4, 1.1), wood:Lerp(P.white, 0.15))).CastShadow = false
+	return b
+end
+function City.streetEdge(d, top, i, s, look, street)
+	local E, ST, K = City.Edge, P.street, City.D
+	local y = ST.kerb + 0.08
+	local function X(a, b) return math.min(s * a, s * b), math.max(s * a, s * b) end
+	local xa, xb = X(E.x0, E.x1)
+	local pal = City.EdgeColors[look]
+	for k, seg in E.segs do
+		local z0, z1 = top - seg[2], top - seg[1]
+		if look == 3 then
+			-- the site hoarding: a board wall 7 high, blue and yellow panels, a top rail
+			local hx0, hx1 = X(E.x0, E.x0 + 0.8)
+			local n = math.floor((seg[2] - seg[1]) / 8 + 0.5)
+			local len = (seg[2] - seg[1]) / n
+			for q = 0, n - 1 do
+				sbox(d, 'Hoarding', V(hx0, y - 1, top - seg[1] - (q + 1) * len), V(hx1, y + 7, top - seg[1] - q * len), (q + k + i) % 2 == 0 and C(52, 110, 200) or City.yellow)
+			end
+			decor(sbox(d, 'HoardingRail', V(math.min(hx0, hx1) - 0.1, y + 7, z0), V(math.max(hx0, hx1) + 0.1, y + 7.5, z1), City.steel)).CastShadow = false
+		else
+			local col = pal[(i + k + (s > 0 and 1 or 0)) % #pal + 1]
+			local word = City.Words[(i * 3 + k * 5 + (s > 0 and 2 or 0)) % #City.Words + 1]
+			City.block(d, xa, xb, z0, z1, { kind = look == 2 and 'office' or 'shop', floors = look == 5 and 2 or 1, color = col, tone = i + k, faces = { street, 'S' }, word = word, name = 'EdgeBlock' })
+			if look == 5 then
+				-- pink neon pillars at the block's two street corners (steady glow)
+				for _, zp in { seg[1] + 0.5, seg[2] - 1.5 } do
+					local pa, pb = X(E.x0 - 1.6, E.x0 - 0.2)
+					local p = decor(d:box('NeonPillar', V(pa, y, top - zp - 1), V(pb, y + 18, top - zp), K.pink, M.Neon))
+					p.CastShadow = false
+				end
+			end
+		end
+	end
+	-- the alley mouth (z' 24..30): a bench facing the street, a stack of crates, a lantern's warm light over them
+	local seed = i * 7 + (s > 0 and 3 or 0)
+	-- (no bench where a food truck or the plaza's side fountain already stands)
+	local busy = (look == 1 and s > 0) or (look == 2 and trioOf(i) ~= 2 and s == (i % 2 == 0 and 1 or -1))
+	if not busy then City.bench(d, CFrame.new(s * 30.2, y, top - 27) * CFrame.Angles(0, s > 0 and -math.pi / 2 or math.pi / 2, 0)) end
+	if look ~= 5 then City.crates(d, CFrame.new(s * 27.5, y, top - 51.5), seed) end
+end
+
 -- One stage of the avenue: World 1's stage group with its hidden fight marker (District.base), then the city on it, in
 -- its district's dress (city/f4_districts.lua).
 function City.avenueStage(ctx, i)
@@ -198,32 +266,18 @@ function City.avenueStage(ctx, i)
 						o.crown, o.neon = K.pink, K.pink
 					end
 					City.highrise(d, xa, xb, z0, z1, h + 10, o)
-				elseif slot == 1 and s ~= hero and look ~= 3 then
-					-- a low block on the near lot (two storeys over its shops), a paved strip before it
-					local fa, fb = x(FRONT, FRONT + 6)
-					sbox(d, 'Lot', V(fa, lotY - 1.4, z0), V(fb, lotY, z1), lotColor)
-					xa, xb = x(FRONT + 6, FRONT + DEPTH)
-					local o = { kind = 'shop', floors = 2, tone = tone, faces = { street, 'S' }, name = 'LowBlock' }
-					if look == 1 then o.color = K.brick[(i % 3) + 1] elseif look == 5 then o.color = C(84, 70, 140) end
-					City.block(d, xa, xb, z0, z1, o)
 				else
-					-- an open lot: paving to the lot's back, trees in planters (palms in the luxury district)
+					-- an open lot behind the street's own low blocks (round 6: City.streetEdge): paving to the lot's back
 					sbox(d, 'Lot', V(xa, lotY - 1.4, z0), V(xb, lotY, z1), lotColor)
-					local pz, sd = (z0 + z1) / 2, 900 + i * 20 + slot * 3 + (s > 0 and 1 or 0)
-					if look == 5 then
-						City.palmPlanter(d, V(s * (FRONT + 9), lotY, pz + 6), sd)
-					else
-						City.planter(d, V(s * (FRONT + 9), lotY, pz + 6), sd)
-						City.planter(d, V(s * (FRONT + 20), lotY, pz - 6), sd + 7)
-					end
 				end
 			end
 		end
+		if not court then City.streetEdge(d, top, i, s, look, street) end
 		-- (round 5) the street's keep-in: with the lots open, an invisible wall along the street front (the court's
 		-- side keeps its fence, back wall and caps)
 		if not court then invisibleWall(d, V(math.min(s * FRONT, s * (FRONT + 1)), 0, top - SLEN), V(math.max(s * FRONT, s * (FRONT + 1)), 60, top + (i == 1 and 8 or 1))) end
 		local pa, pb = x(ST.open, FRONT + DEPTH)
-		City.block(d, pa, pb, top - SLEN, top - ST.endZ, { kind = 'shop', floors = 0, tone = i * 2 + (s > 0 and 3 or 6), faces = { street, 'S' }, name = 'ShopRow' })
+		City.block(d, pa, pb, top - SLEN, top - ST.endZ, { kind = 'shop', floors = 1, tone = i * 2 + (s > 0 and 3 or 6), color = City.EdgeColors[look] and City.EdgeColors[look][(i + (s > 0 and 2 or 0)) % 3 + 1] or nil, faces = { street, 'S' }, name = 'ShopRow' }) -- (round 6: a storey taller, in the street's own colours, so it reads as the corner building framing the gate, not a low dark fence)
 		-- the solid edge line along the run, broken at the crosswalk (the luxury district's glows pink)
 		for _, r in { { 0, cw0 - 0.5 }, { cw1 + 0.5, SLEN } } do
 			local e = decor(sbox(d, 'LaneEdge', V(s * 7.2, 0, top - r[2]), V(s * 7.7, 0.12, top - r[1]), City.line))
@@ -232,7 +286,8 @@ function City.avenueStage(ctx, i)
 		end
 		-- lamps on the sidewalk (the old streets' black lanterns), their arms over the run
 		for _, zp in { 9, 30 } do
-			if look == 1 then City.lantern(d, at(s * 15.4, zp)) else City.lamp(d, at(s * 15.4, zp), -s) end
+			-- (round 6: the plan's warm lanterns in the streets, the plaza and the transit area)
+			if look == 1 or look == 2 or look == 4 then City.lantern(d, at(s * 15.4, zp)) else City.lamp(d, at(s * 15.4, zp), -s) end
 		end
 	end
 	if look == 4 then City.court(d, top, at, i) end
@@ -253,11 +308,18 @@ function City.avenueStage(ctx, i)
 		planters({ { -19.6, 5 }, { 19.6, 5 }, { -27, 40 }, { 26, 40 }, { -27, 12 } })
 	elseif look == 2 then
 		local fs = i % 2 == 0 and 1 or -1
-		City.fountain(d, at(fs * 26, 25))
+		-- (round 6, the plan's Modern Plaza 2: the fountain in the middle of the road; players pass either side)
+		if trioOf(i) == 2 then City.fountain(d, V(0, 0, top - 22), nil, 3) else City.fountain(d, at(fs * 26, 25)) end
 		City.taxi(d, CFrame.new(at(-fs * 19.6, 30)))
 		planters({ { -19.6, 5 }, { 19.6, 5 }, { -fs * 28, 12 }, { -27, 41 }, { 27, 41 } })
 		City.planter(d, at(-fs * 28, 22), seed + 3, 8, 4)
 	elseif look == 3 then
+		-- (round 6, the plan: sand across the whole street, kerb to kerb and over the sidewalks, to the gate's pads)
+		sbox(d, 'SandStreet', V(-P.street.road + 0.05, -0.2, top - 54), V(P.street.road - 0.05, 0.06, top), K.sand)
+		for _, s in { -1, 1 } do
+			local a, b = math.min(s * (P.street.road - 0.05), s * (P.street.road + P.street.walk)), math.max(s * (P.street.road - 0.05), s * (P.street.road + P.street.walk))
+			sbox(d, 'SandWalk', V(a, P.street.kerb - 0.2, top - 54), V(b, P.street.kerb + 0.12, top), K.sandDark:Lerp(K.sand, 0.5))
+		end
 		for _, s in { -1, 1 } do
 			City.barrier(d, CFrame.new(at(s * 19.2, 9)) * CFrame.Angles(0, math.pi / 2, 0))
 			if Stations then for _, zp in { 4, 24, 36 } do Stations.cone(d:at(CFrame.new(at(s * 9.4, zp))), CFrame.new()) end end
@@ -268,13 +330,13 @@ function City.avenueStage(ctx, i)
 		City.barrier(d, CFrame.new(at(siteSide * 28, 38)) * CFrame.Angles(0, math.pi / 2, 0))
 	elseif look == 4 then
 		City.viaduct(d, top, 0, SLEN, ({ { 1 }, nil, { SLEN - 1 } })[t])
-		if t == 1 then City.station(d, top, 4, 28, 10, 36)
+		if t <= 2 then City.station(d, top, 4, 28, 10, 36) -- (round 6: the escalator up to the line on Transit 2 too, as the plan)
 		else City.taxi(d, CFrame.new(at(-19.6, 30))) end
 		if t == 2 then City.train(d, top, 6, 3) elseif t == 3 then City.train(d, top, 22, 2) end
 		planters({ { -19.6, 5 }, { -27, 18 }, { -27, 38 } })
 	else
 		for _, p in { { -19.6, 5 }, { 19.6, 5 }, { -27, 40 }, { 27, 40 }, { 27, 14 }, { -27, 14 } } do City.palmPlanter(d, at(p[1], p[2]), seed + p[2] + (p[1] > 0 and 1 or 0)) end
-		if i == 14 then City.fountain(d, at(-26, 27), K.pinkSoft) end
+		if i == 14 then City.fountain(d, V(0, 0, top - 22), K.pinkSoft, 3) end -- (round 6: in the road's middle, as the plan)
 		car(d, CFrame.new(at(i % 2 == 0 and 19.6 or -19.6, 26)), K.pinkSoft)
 		if i == 14 then -- a glass sky bridge over the avenue between the two towers' upper floors
 			local y0 = City.heightAt(i, 1, -1) - 22
@@ -456,6 +518,18 @@ local function buildGround(ctx)
 	if ground then
 		for _, p in ground:GetChildren() do
 			if p:IsA('BasePart') and (p.Material == M.Grass or p.Name == 'Wall' or p.Name == 'WallCap' or p.Name == 'Paving') then p:Destroy() end
+		end
+		-- (Oct 27 round 6, the plan's grey stone walks, not white: the sidewalks mid grey stone, their slabs a shade either
+		-- way, the props strip behind them a darker grey, so the street's white band is gone)
+		local walk, strip = C(172, 174, 184), C(138, 140, 152)
+		for _, p in ground:GetChildren() do
+			if p:IsA('BasePart') then
+				if p.Name == 'Sidewalk' then p.Color = walk
+				elseif p.Name == 'WalkSlab' then p.Color = p.Color.R > P.st.walk.R and walk:Lerp(P.white, 0.08) or walk:Lerp(P.black, 0.06)
+				elseif p.Name == 'WalkJoint' then p.Color = walk:Lerp(P.black, 0.18)
+				elseif p.Name == 'Grass' then p.Color = strip
+				elseif p.Name == 'GrassEdge' then p.Color = strip:Lerp(P.black, 0.15) end
+			end
 		end
 	end
 	local ring = ctx.parent:FindFirstChild('RingRoad')
