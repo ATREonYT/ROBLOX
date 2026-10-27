@@ -317,9 +317,9 @@ end)()
 
 -- The way back to the hood, where World 1 has its World 2 door (Lobby.Plan.World2, turned to the crossing): a warm brick
 -- arch (the hood's brick) on a stone step, a soft orange glow filling it, THE HOOD on its lintel. Front -Z of cf faces
--- the plaza; cf is the bottom centre of its back. The model carries TravelWorld = 1 for the travel service.
+-- the plaza; cf is the bottom centre of its back. The model is World1Portal (HoodServer/WorldPortalService reads the number) and carries TravelWorld = 1.
 function Lobby.world2(e, cf)
-	local p, model = e:at(cf):group('HoodPortal')
+	local p, model = e:at(cf):group('World1Portal')
 	model:SetAttribute('TravelWorld', 1)
 	local brick, dark, trim = C(214, 112, 78), C(176, 86, 62), C(255, 222, 170)
 	sbox(p, 'PortalStep', V(-9, 0, -5), V(9, 0.6, 0.6), City.edge)

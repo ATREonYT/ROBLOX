@@ -62,7 +62,7 @@ check('Training stations (8+)', training >= 8)
 local slots = V2.Lobby and V2.Lobby.Slots or {}
 for _, s in { 'Spawn', 'NorthDoor', 'World1Portal', 'Leaderboard1', 'Leaderboard2', 'Leaderboard3' } do check('slot ' .. s, typeof(slots[s]) == 'CFrame') end
 check('spawn location', root:FindFirstChildWhichIsA('SpawnLocation', true) ~= nil)
-check('portal back to the hood', root:FindFirstChild('HoodPortal', true) ~= nil and root:FindFirstChild('HoodPortal', true):GetAttribute('TravelWorld') == 1)
+check('portal back to the hood', root:FindFirstChild('World1Portal', true) ~= nil and root:FindFirstChild('World1Portal', true):GetAttribute('TravelWorld') == 1)
 check('shoe boxes', #tagged('HoodShoeBoxes') == 1)
 print('[city] ' .. n .. ' checks / ' .. #failed .. ' failed' .. (#failed > 0 and (': ' .. table.concat(failed, ', ')) or ''))
 return { checks = n, failed = failed, parts = built and built.parts, training = training }

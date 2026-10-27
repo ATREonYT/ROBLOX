@@ -9730,7 +9730,7 @@ function Look.openPlaza(lobby, deckY)
 		local g = lobby:FindFirstChild(name)
 		if g then
 			for _, p in g:GetDescendants() do
-				if p:IsA('BasePart') and not p:FindFirstAncestor('World2Portal') then
+				if p:IsA('BasePart') and not p:FindFirstAncestor('World2Portal') and not p:FindFirstAncestor('World1Portal') then
 					local top = p.CFrame.Position.Y + p.Size.Y / 2
 					if name == 'Roof' or top > deckY + 1.6 then p:Destroy() end
 				end
@@ -10011,7 +10011,9 @@ function V2.Build()
 	end
 	local root = Instance.new('Model')
 	root.Name = V2.Name
-	if V2.World then root:SetAttribute('HoodWorld', V2.World) end -- (World 2's city: 2; World 1 leaves it unset)
+	-- (World 2's city: 2; World 1 leaves it unset.) The workspace carries it too: that's what Shared/WorldInfo reads, and
+	-- it saves with the place, so World 2's place knows its world from the first server.
+	if V2.World then root:SetAttribute('HoodWorld', V2.World); workspace:SetAttribute('HoodWorld', V2.World) end
 	root:SetAttribute('BuildVersion', 'Hood Evolution W1 LOBBY6 VIP lanes, full armory side')
 	root:SetAttribute('Origin', V2.Origin.Position)
 	root:SetAttribute('LobbySpawn', Lobby.SpawnAt or SPAWN) -- (B31 PLAZA: on the south walk, the crossing just ahead)

@@ -331,12 +331,12 @@ local function padZ(i) return stageTop(i) - 32 end
 local PAD_SIZE = 12
 
 -- Power to get into each of World 2's stages. WORLD2.md: "World 2's Stage 1 asks for about World 1's boss Power". The
--- numbers are the economy's (Config/Balance.World2StagePower, 16 of them, once the pacing pass sets them); without
+-- numbers are the economy's (Config/Balance.Worlds[2].StagePower, the Oct 27 pacing pass); without
 -- them, a stand-in that starts at World 1's boss Power and grows 1.55x a stage.
 local STAGE_POWER = {}
 do
 	local ok, Balance = pcall(function() return require(ReplicatedStorage.Shared.Config.Balance) end)
-	local w2 = ok and type(Balance) == 'table' and Balance.World2StagePower
+	local w2 = ok and type(Balance) == 'table' and Balance.Worlds and Balance.Worlds[2] and Balance.Worlds[2].StagePower
 	if type(w2) == 'table' and #w2 >= STAGES + 1 then
 		STAGE_POWER = table.clone(w2)
 	else
@@ -7759,9 +7759,9 @@ end)()
 
 -- The way back to the hood, where World 1 has its World 2 door (Lobby.Plan.World2, turned to the crossing): a warm brick
 -- arch (the hood's brick) on a stone step, a soft orange glow filling it, THE HOOD on its lintel. Front -Z of cf faces
--- the plaza; cf is the bottom centre of its back. The model carries TravelWorld = 1 for the travel service.
+-- the plaza; cf is the bottom centre of its back. The model is World1Portal (HoodServer/WorldPortalService reads the number) and carries TravelWorld = 1.
 function Lobby.world2(e, cf)
-	local p, model = e:at(cf):group('HoodPortal')
+	local p, model = e:at(cf):group('World1Portal')
 	model:SetAttribute('TravelWorld', 1)
 	local brick, dark, trim = C(214, 112, 78), C(176, 86, 62), C(255, 222, 170)
 	sbox(p, 'PortalStep', V(-9, 0, -5), V(9, 0.6, 0.6), City.edge)
@@ -9693,7 +9693,7 @@ function Look.openPlaza(lobby, deckY)
 		local g = lobby:FindFirstChild(name)
 		if g then
 			for _, p in g:GetDescendants() do
-				if p:IsA('BasePart') and not p:FindFirstAncestor('World2Portal') then
+				if p:IsA('BasePart') and not p:FindFirstAncestor('World2Portal') and not p:FindFirstAncestor('World1Portal') then
 					local top = p.CFrame.Position.Y + p.Size.Y / 2
 					if name == 'Roof' or top > deckY + 1.6 then p:Destroy() end
 				end
@@ -9974,7 +9974,9 @@ function V2.Build()
 	end
 	local root = Instance.new('Model')
 	root.Name = V2.Name
-	if V2.World then root:SetAttribute('HoodWorld', V2.World) end -- (World 2's city: 2; World 1 leaves it unset)
+	-- (World 2's city: 2; World 1 leaves it unset.) The workspace carries it too: that's what Shared/WorldInfo reads, and
+	-- it saves with the place, so World 2's place knows its world from the first server.
+	if V2.World then root:SetAttribute('HoodWorld', V2.World); workspace:SetAttribute('HoodWorld', V2.World) end
 	root:SetAttribute('BuildVersion', 'Hood Evolution W1 LOBBY6 VIP lanes, full armory side')
 	root:SetAttribute('Origin', V2.Origin.Position)
 	root:SetAttribute('LobbySpawn', Lobby.SpawnAt or SPAWN) -- (B31 PLAZA: on the south walk, the crossing just ahead)

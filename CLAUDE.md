@@ -25,7 +25,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
   - one picture or video per change, only when there's something to judge.
 
 ## How the code is built
-- **Map:** `hood/src/ServerStorage/TheBlockV2.lua` is GENERATED. Edit `hood/tools/map/pieces/*.lua`, then run `sh hood/tools/map/assemble.sh`. The order is in `pieces/ASSEMBLE.txt`.
+- **Map:** `hood/src/ServerStorage/TheBlockV2.lua` is GENERATED. Edit `hood/tools/map/pieces/*.lua`, then run `sh hood/tools/map/assemble.sh`. The order is in `pieces/ASSEMBLE.txt`. World 2's map, `ServerStorage/TheCity.lua`, is generated the same way from `hood/tools/map/city/` (its own `ASSEMBLE.txt`, reusing the World 1 pieces) with `sh hood/tools/map/city_assemble.sh`; in World 2's place, run `require(game.ServerStorage.TheCity).Build()`.
 - **Lighting preset:** `Huzz` in `ServerStorage/HoodLighting.lua` (Huzz Valley's look, Oct 27; applied at server start by `HoodServer/LookService`).
 - **Shared code:** `ReplicatedStorage/Shared` (rules modules are unit-tested); client code in `StarterPlayer/StarterPlayerScripts/HoodClient`; server in `ServerScriptService/HoodServer`.
 - **Robux items:** `Shared/Config/Products.lua`; the list to create on the website is `hood/MONETIZATION.md`.
@@ -39,6 +39,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - unit: all pass (408 since the Oct 27 worlds);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
+- city_contracts: 42 checks / 0 failed;
 - play_run: 82 checks / 0 failed;
 - live_shoes and live_reveal: exit 0;
 - first30: 8 ok with 0 purchase prompts;

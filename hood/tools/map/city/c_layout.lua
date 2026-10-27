@@ -19,12 +19,12 @@ local function padZ(i) return stageTop(i) - 32 end
 local PAD_SIZE = 12
 
 -- Power to get into each of World 2's stages. WORLD2.md: "World 2's Stage 1 asks for about World 1's boss Power". The
--- numbers are the economy's (Config/Balance.World2StagePower, 16 of them, once the pacing pass sets them); without
+-- numbers are the economy's (Config/Balance.Worlds[2].StagePower, the Oct 27 pacing pass); without
 -- them, a stand-in that starts at World 1's boss Power and grows 1.55x a stage.
 local STAGE_POWER = {}
 do
 	local ok, Balance = pcall(function() return require(ReplicatedStorage.Shared.Config.Balance) end)
-	local w2 = ok and type(Balance) == 'table' and Balance.World2StagePower
+	local w2 = ok and type(Balance) == 'table' and Balance.Worlds and Balance.Worlds[2] and Balance.Worlds[2].StagePower
 	if type(w2) == 'table' and #w2 >= STAGES + 1 then
 		STAGE_POWER = table.clone(w2)
 	else

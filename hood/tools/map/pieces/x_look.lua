@@ -80,7 +80,7 @@ function Look.openPlaza(lobby, deckY)
 		local g = lobby:FindFirstChild(name)
 		if g then
 			for _, p in g:GetDescendants() do
-				if p:IsA('BasePart') and not p:FindFirstAncestor('World2Portal') then
+				if p:IsA('BasePart') and not p:FindFirstAncestor('World2Portal') and not p:FindFirstAncestor('World1Portal') then
 					local top = p.CFrame.Position.Y + p.Size.Y / 2
 					if name == 'Roof' or top > deckY + 1.6 then p:Destroy() end
 				end
