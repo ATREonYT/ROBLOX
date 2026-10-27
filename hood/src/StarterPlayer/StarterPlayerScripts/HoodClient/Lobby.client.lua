@@ -687,12 +687,15 @@ local MarketplaceService = game:GetService('MarketplaceService')
 local boards = {}
 local function paintBoard(b)
 	local owned = player:GetAttribute('Pass_' .. b.Key) == true
-	if b.Owned == owned then return end
-	b.Owned = owned
-	if b.Prompt then b.Prompt.Enabled = not owned end
+	-- (the luck round) 2x Luck adds nothing on top of 4x Luck: its board says so and sells nothing
+	local covered = not owned and b.Key == 'Lucky' and player:GetAttribute('Pass_Luck4') == true
+	local state = owned and 'OWNED' or (covered and 'YOU HAVE 4x') or ''
+	if b.Owned == state then return end
+	b.Owned = state
+	if b.Prompt then b.Prompt.Enabled = state == '' end
 	if b.Price then
 		local price = b.Price:GetAttribute('Price')
-		b.Price.Text = owned and 'OWNED' or RobuxText.fmt(price or '') -- (lobby round 1: the price alone, no "ONLY")
+		b.Price.Text = state ~= '' and state or RobuxText.fmt(price or '') -- (lobby round 1: the price alone, no "ONLY")
 	end
 end
 local function watchBoards()
@@ -710,10 +713,12 @@ local function watchBoards()
 			prompt:SetAttribute('ComingSoon', not live) -- (HUD.client toasts "<ObjectText> is coming soon!")
 			prompt.Triggered:Connect(function()
 				if not (Products and Products.canBuy(key)) or player:GetAttribute('Pass_' .. key) == true then return end
+				if key == 'Lucky' and player:GetAttribute('Pass_Luck4') == true then return end
 				pcall(function() MarketplaceService:PromptGamePassPurchase(player, Products.idOf(key)) end)
 			end)
 		end
 		player:GetAttributeChangedSignal('Pass_' .. key):Connect(function() paintBoard(b) end)
+		if key == 'Lucky' then player:GetAttributeChangedSignal('Pass_Luck4'):Connect(function() paintBoard(b) end) end
 		paintBoard(b)
 	end
 end

@@ -5,6 +5,9 @@ do
 	local ok0 = waitFor(function() return P.PlayerGui:FindFirstChild('HoodStore') ~= nil end, 30)
 	print('[ui] clients up: ' .. tostring(ok0))
 	wall(1)
+	-- (round 8) a fresh save's welcome has the screen to itself: let it pass first
+	waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') == nil end, 12)
+	P:SetAttribute('FirstJoin', false)
 	local function open(name)
 		local g = P.PlayerGui:FindFirstChild('HoodStore')
 		local e = g and g:FindFirstChild('Open')

@@ -883,12 +883,15 @@ end
 local STRIP_KEYS = { 'DoubleRep', 'DoubleCash', 'Lucky', 'TripleOpen' }
 -- (Oct 27, the owner: 'make it look like the reference') each pass keeps its own colour, set by its key; the Lucky clover
 -- sits on gold, not on green, so the green clover stands out the way it does on the mockup's bright card
-local STRIP_TONES = { DoubleRep = 'cardRed', DoubleCash = 'cardBlue', Lucky = 'cardGold', TripleOpen = 'cardPurple' }
+local STRIP_TONES = { DoubleRep = 'cardRed', DoubleCash = 'cardBlue', Lucky = 'cardGold', Luck4 = 'cardGold', TripleOpen = 'cardPurple' }
 local STRIP_H = 196
 local function passStrip(y, parent)
 	local shown = {}
 	for _, key in STRIP_KEYS do
 		local e = Products.ByKey[key]
+		-- (the luck round) with 4x Luck and no 2x, the tile is 4x Luck (OWNED): 2x adds nothing on top of 4x
+		local four = key == 'Lucky' and Products.ByKey.Luck4
+		if e and four and player:GetAttribute('Pass_Luck4') == true and not owns(e) then e = four end
 		if e and e.Wired == true and e.Kind == 'Pass' then table.insert(shown, e) end
 	end
 	if #shown == 0 then return 0 end
@@ -972,7 +975,7 @@ end
 -- (ShoeRules.luckTable: the same weights the server rolls with), and that they do nothing to the Robux boxes.
 -- (Oct 27, luck round: the owner's "Add 2x and 4x Luck passes") Three columns, Normal / 2x / 4x, the player's own level
 -- marked YOURS; the two passes are the cards under it (4x replaces 2x, they never stack to 8x).
-local LUCKY_H = 300
+local LUCKY_H = 352
 local LUCK_UP, LUCK_DOWN = hex('C8FF5A'), hex('E8E8F0')
 local function luckyCard(_, y, parent)
 	local tone = 'cardGold' -- (the green clover stands out on gold, as on the owner's mockup)
@@ -995,17 +998,18 @@ local function luckyCard(_, y, parent)
 	local rows = (ShoeRules and ShoeRules.luckTable and boxId) and ShoeRules.luckTable(boxId) or {}
 	local mine = (ShoeRules and ShoeRules.luckOf) and ShoeRules.luckOf(player) or 1
 	local TW, RH = 478, 24
-	local tbl = Kit.new('Frame', { Name = 'Odds', BackgroundColor3 = hex('2A1600'), BackgroundTransparency = 0.55, BorderSizePixel = 0, Position = px(rx, 92), Size = px(TW, 30 + #rows * RH + 8), ZIndex = z + 1, Parent = c.Body })
+	local tbl = Kit.new('Frame', { Name = 'Odds', BackgroundColor3 = hex('2A1600'), BackgroundTransparency = 0.55, BorderSizePixel = 0, Position = px(rx, 92), Size = px(TW, 30 + #rows * RH + 30), ZIndex = z + 1, Parent = c.Body })
 	Kit.corner(10).Parent = tbl
 	local cols = { { 'Rarity', 12, 126, Enum.TextXAlignment.Left, nil, 'Rarity' }, { 'Normal', 140, 100, Enum.TextXAlignment.Right, 1, 'Normal' },
 		{ '2x Luck', 248, 104, Enum.TextXAlignment.Right, 2, 'Lucky' }, { '4x Luck', 360, 106, Enum.TextXAlignment.Right, 4, 'Luck4' } }
 	for i, col in cols do
 		local yours = col[5] ~= nil and col[5] == mine
-		if yours then -- (your column: a soft gold band behind it, YOURS on top)
-			local band = Kit.new('Frame', { Name = 'Yours', BackgroundColor3 = hex('FFD54A'), BackgroundTransparency = 0.72, BorderSizePixel = 0, Position = px(col[2] - 4, 2), Size = px(col[3] + 8, 30 + #rows * RH + 4), ZIndex = z + 2, Parent = tbl })
+		if yours then -- (your column: a soft gold band behind it, YOURS under its last row)
+			local band = Kit.new('Frame', { Name = 'Yours', BackgroundColor3 = hex('FFD54A'), BackgroundTransparency = 0.72, BorderSizePixel = 0, Position = px(col[2] - 4, 2), Size = px(col[3] + 8, 30 + #rows * RH + 26), ZIndex = z + 2, Parent = tbl })
 			Kit.corner(8).Parent = band
+			label({ Name = 'YoursTag', Text = 'YOURS', TextSize = 16, StrokeThickness = 2.5, TextColor3 = hex('FFE24A'), Position = px(col[2], 30 + #rows * RH + 2), Size = px(col[3], 22), ZIndex = z + 3, Parent = tbl })
 		end
-		label({ Name = 'Head' .. i, Text = yours and (col[1] .. ' (YOURS)') or col[1], TextSize = yours and 15 or 17, StrokeThickness = 2.5, TextColor3 = (i >= 3) and LUCK_UP or Color.white, TextXAlignment = col[4], Position = px(col[2], 6), Size = px(col[3], 22), ZIndex = z + 3, Parent = tbl })
+		label({ Name = 'Head' .. i, Text = col[1], TextSize = 17, StrokeThickness = 2.5, TextColor3 = (i >= 3) and LUCK_UP or Color.white, TextXAlignment = col[4], Position = px(col[2], 6), Size = px(col[3], 22), ZIndex = z + 3, Parent = tbl })
 	end
 	for i, row in rows do
 		local r = Shoes.RarityById and Shoes.RarityById[row.Rarity]
@@ -1018,10 +1022,8 @@ local function luckyCard(_, y, parent)
 			label({ Name = col[6] .. i, Text = ShoeRules.chanceText(v), TextSize = 18, StrokeThickness = 2.5, TextColor3 = k == 2 and Color.white or (up and LUCK_UP or LUCK_DOWN), TextXAlignment = Enum.TextXAlignment.Right, Position = px(col[2], yy), Size = px(col[3], RH), ZIndex = z + 3, Parent = tbl })
 		end
 	end
-	local bx = rx + TW + 14
-	local bw = CW - bx - 14
-	label({ Name = 'Note', Text = 'Epic and rarer come up 2x or 4x as often. 4x Luck replaces 2x Luck (they never add up to 8x). Robux boxes keep their odds. Yours forever!', FontFace = Kit.Font.body, TextSize = 16, StrokeThickness = 2.5, Stroke = ink, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top,
-		Position = px(bx, 96), Size = px(bw, 180), ZIndex = z + 2, Parent = c.Body })
+	label({ Name = 'Note', Text = 'Epic and rarer come up 2x or 4x as often. 4x Luck replaces 2x Luck (never 8x). Robux boxes keep their odds.', FontFace = Kit.Font.body, TextSize = 17, StrokeThickness = 2.5, Stroke = ink, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
+		Position = px(rx + 2, 92 + 30 + #rows * RH + 30 + 6), Size = px(CW - rx - 16, 46), ZIndex = z + 2, Parent = c.Body })
 	return c
 end
 -- Community Codes (the reference's bottom section): a purple card with a darker header bar, the code field, the lime REDEEM
