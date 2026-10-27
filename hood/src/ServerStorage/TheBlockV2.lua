@@ -6302,7 +6302,9 @@ Lobby.Open = true
 Lobby.SpineHalf = 5 -- every walk's half width (10 wide)
 Lobby.PlazaGap = 15 -- the training deck's mouth (x -15): a walk's width past the spine's edge
 Lobby.Aisle = 5 -- the training aisle's half width (10: the walks' own width)
-Lobby.Stand.Pitch = 11 -- lane centre to lane centre (9-wide bays, 2 studs between)
+-- (Oct 27, the owner: "make the shooting ranges a bit separate from each other") 13: 4 studs of platform between the
+-- bays (was 11, 2 studs), so each bay reads as its own. The head lane's extension is trimmed to fit the wider rows.
+Lobby.Stand.Pitch = 13 -- lane centre to lane centre (9-wide bays, 4 studs between)
 Lobby.RowZ = { N = Lobby.CrossZ - Lobby.Aisle - Lobby.laneHalf(), S = Lobby.CrossZ + Lobby.Aisle + Lobby.laneHalf() } -- (the aisle's half width + the bays' half length)
 do
 	-- the deck hugs the bays: 2.2 of deck and kerb round the four places of each row and the bays' far ends
@@ -6310,7 +6312,7 @@ do
 	local x0 = -Lobby.PlazaGap - 2 * (2.2 + 4.5) - 3 * Lobby.Stand.Pitch
 	Lobby.Plaza = { x0 = x0, x1 = -Lobby.PlazaGap, z0 = Lobby.CrossZ - half, z1 = Lobby.CrossZ + half, aisle = { Lobby.CrossZ - Lobby.Aisle, Lobby.CrossZ + Lobby.Aisle }, deck = 0.36 }
 	Lobby.HeadFront = x0 - 1 -- the head lane's shooter end; its stage's red steps end 3 past the deepest bays
-	Lobby.HeadDeck = { x0 = x0 - 17, z0 = Lobby.CrossZ - 8, z1 = Lobby.CrossZ + 8 } -- the deck's extension under the head lane
+	Lobby.HeadDeck = { x0 = x0 - 15, z0 = Lobby.CrossZ - 8, z1 = Lobby.CrossZ + 8 } -- the deck's extension under the head lane
 end
 -- the warehouse's inner wall faces (e4's Lobby.WH; f_areas puts its keep-in walls on them): x -86..86, z 6..94, the
 -- north door's mouth |x| < 24
