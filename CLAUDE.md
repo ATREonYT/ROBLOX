@@ -36,7 +36,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (417 since the Oct 27 exclusive guns and BigAttr);
+- unit: all pass (419 since the Oct 27 core-loop pass);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - city_contracts: 215 checks / 0 failed;
@@ -45,6 +45,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - block_reach: 56 checks / 0 failed (the same walk on World 1; a body must fit and thin walls block);
 - place_gates: 34 checks / 0 failed (every gate's Required Power in the built place files; rebuild the places first, `Shared/BigAttr` keeps numbers of 2^31 and up);
 - play_run: 83 checks / 0 failed (it buys a gun and checks the goal moves on);
+- core_loop: 41 checks / 0 failed (lane feedback, step on/off, the goal after a purchase, a rebirth and each locked lane, big-number counters);
 - live_shoes and live_reveal: exit 0;
 - first30: 8 ok with 0 purchase prompts;
 - finale_play: 18/0;
