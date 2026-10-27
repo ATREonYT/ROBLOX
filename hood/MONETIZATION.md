@@ -15,7 +15,8 @@ Create a pass, set its price, copy its id, and paste it at `Products.Passes.<Key
 | 2x Cash | 149 | `DoubleCash` | Double Cash from the pads and goals |
 | VIP | 249 | `VIP` | Gold VIP tag + 1.5x Cash |
 | Auto Fight | 99 | `AutoShoot` | Your gun fires at stage goons on its own |
-| Lucky | 129 | `Lucky` | Epic-and-better shoes are twice as likely in Cash boxes |
+| 2x Luck | 129 | `Lucky` | Epic-and-better shoes are twice as likely in Cash boxes (the key is still `Lucky`; name the pass "2x Luck" on the website) |
+| 4x Luck | 299 | `Luck4` | Epic-and-better shoes are four times as likely in Cash boxes. It replaces 2x Luck: owning both is 4x, never 8x (the card says so). Robux boxes keep their odds |
 | Triple Open | 179 | `TripleOpen` | Open 3 Cash shoe boxes at once (for 3x the Cash) |
 | +1 Shoe Slot | 99 | `ExtraEquip` | Wear 4 pairs of shoes instead of 3 |
 | 10x Cash | 199 | `TenXCash` | The pink pad before every gate pays 10x the yellow one (+100 instead of +10 at Stage 1) |

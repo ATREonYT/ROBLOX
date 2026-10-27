@@ -458,7 +458,7 @@ local function boardAnchorOffset(entry)
 end
 -- What a board shows changes with your rack and with the Lucky pass (a Lucky owner's Cash boxes have better odds).
 local function boardKey()
-	return (player:GetAttribute('ShoesOwned') or '') .. '|' .. tostring(player:GetAttribute('Pass_Lucky') == true)
+	return (player:GetAttribute('ShoesOwned') or '') .. '|' .. tostring(ShoeRules.luckOf(player))
 end
 local function cellFor(board, i, id, rack, n)
 	local shoe = Shoes.ById[id]
@@ -480,7 +480,7 @@ local function cellFor(board, i, id, rack, n)
 	icon.Size = UDim2.fromScale(0.96, 0.62)
 	Kit.new('UIAspectRatioConstraint', { AspectRatio = 1, Parent = icon })
 	icon.Parent = cell
-	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true)), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
+	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id, ShoeRules.luckOf(player))), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
 	Kit.sizeText(chance, nil, 6) -- (round 7: whole-pixel sizes from the board's size, not TextScaled)
 	local name = Kit.text({ Name = 'Name', Text = hidden and '???' or string.upper(shoe.Name), FontFace = face('Heading', Kit.Font.body), TextColor3 = Color.white, Stroke = Color.ink, Position = UDim2.fromScale(0.04, 0.85), Size = UDim2.fromScale(0.92, 0.13), ZIndex = 3, Parent = cell })
 	Kit.sizeText(name, nil, 6)
@@ -866,7 +866,7 @@ function Art.auto(boxId)
 end
 function Art.ctx(boxId)
 	return {
-		lucky = player:GetAttribute('Pass_Lucky') == true,
+		lucky = ShoeRules.luckOf(player),
 		open = Art.open, auto = Art.auto, autoOn = function() return autoOn end,
 		autoAvailable = function(id) return not (Shoes.BoxById[id] and Shoes.BoxById[id].Robux) end,
 		openState = function(id, n)
@@ -929,7 +929,7 @@ local function refreshKeys()
 	end
 	keysUI.Holder.Visible = best ~= nil
 	if best then
-		keysUI.paint(best.Box.Id, { cash = cashNow(), lucky = player:GetAttribute('Pass_Lucky') == true, autoOn = autoOn, owned = passOwned, entry = passEntry })
+		keysUI.paint(best.Box.Id, { cash = cashNow(), lucky = ShoeRules.luckOf(player), autoOn = autoOn, owned = passOwned, entry = passEntry })
 	end
 end
 task.spawn(function()
@@ -989,7 +989,7 @@ function Art.reveal(info, job)
 	end
 	local handle = Art.Windows.dialog('Reveal', function(holder)
 		return Art.Screens.reveal(holder, info, {
-			lucky = player:GetAttribute('Pass_Lucky') == true,
+			lucky = ShoeRules.luckOf(player),
 			equip = function()
 				if not info.Equipped then Net.get('ShoeAction'):FireServer('Equip', info.Shoe) end
 				keep()

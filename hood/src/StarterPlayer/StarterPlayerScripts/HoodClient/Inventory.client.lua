@@ -77,9 +77,9 @@ local function maxEquipped()
 	local m = player:GetAttribute('ShoesMax')
 	return type(m) == 'number' and m >= 1 and m <= 8 and math.floor(m) or ShoeRules.MaxEquipped
 end
--- A box's odds for this player (a Lucky owner's are better: ShoeRules.chances(boxId, lucky) once SHOP2 has it).
+-- A box's odds for this player (a luck pass owner's are better: ShoeRules.chances(boxId, level), ShoeRules.luckOf).
 local function chancesOf(box)
-	local lucky = player:GetAttribute('Pass_Lucky') == true
+	local lucky = ShoeRules.luckOf(player)
 	local ok, list = pcall(ShoeRules.chances, box.Id, lucky)
 	local out = {}
 	if ok and type(list) == 'table' and #list == #box.Shoes then
@@ -446,7 +446,7 @@ local function paintIndex()
 					show()
 					if s.Owned then spinFor(models, nil, i) end
 					press(holder)
-					if not s.Owned then say(row.Box.Name .. '  ' .. pctText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true))) end
+					if not s.Owned then say(row.Box.Name .. '  ' .. pctText(ShoeRules.chanceOf(id, ShoeRules.luckOf(player)))) end
 				end)
 			end
 		end
@@ -969,7 +969,7 @@ local function keyNow()
 		for _, b in boostList() do table.insert(boosts, b.Level .. (b.Party and 'p' or '')) end
 		return 'items|' .. table.concat(owned, ',') .. '|' .. table.concat(boosts, ',') .. '|' .. state.Query
 	end
-	return 'boxes|' .. tostring(player:GetAttribute('ShoesOwned')) .. '|' .. tostring(player:GetAttribute('Pass_Lucky')) .. '|' .. state.Query
+	return 'boxes|' .. tostring(player:GetAttribute('ShoesOwned')) .. '|' .. tostring(ShoeRules.luckOf(player)) .. '|' .. state.Query
 end
 refresh = function(force)
 	if not isOpen then return end

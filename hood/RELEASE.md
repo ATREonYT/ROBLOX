@@ -21,16 +21,17 @@ Do these in order. Each step says where the details are. Tick them off as you go
 8. **Passes and products:** create every game pass and developer product listed in `hood/MONETIZATION.md`, at the prices given. Paste each id into `hood/src/ReplicatedStorage/Shared/Config/Products.lua`.
    - Until an id is pasted, that button says "Coming soon!" and nothing breaks.
 9. **Group:** put your group id in `hood/src/ServerScriptService/HoodServer/ServerConfig.lua` (`GroupId`). This turns on the group reward chest.
-10. **Exclusive guns:** the 5 Robux exclusive guns (Neon Viper, Frostbite, Galaxy Ray, Inferno Cannon, Royal Crown) are sold as game passes in the Shop. They're in the pass list in step 8, so create them with the rest.
+10. **Luck passes:** there are two, "2x Luck" (key `Lucky`, 129) and "4x Luck" (key `Luck4`, 299). If you already made the old "Lucky" pass, just rename it to "2x Luck" on the website (keep its id); then create "4x Luck" and paste its id at `Products.Passes.Luck4`. In Studio, buy 4x Luck and check the Shop's Luck tab marks the 4x column YOURS and the 2x card says YOU HAVE 4x.
+11. **Exclusive guns:** the 5 Robux exclusive guns (Neon Viper, Frostbite, Galaxy Ray, Inferno Cannon, Royal Crown) are sold as game passes in the Shop. They're in the pass list in step 8, so create them with the rest.
 
 ## D. Test before anyone else plays (Studio → Play)
-11. **First 5 minutes, as a new player:**
+12. **First 5 minutes, as a new player:**
    - the tutorial hint and arrows lead you to the range, the gun shop, Stage 1 and a box;
    - nothing is stuck, no error in Output.
-12. **Purchases:** Studio test purchases are free. Buy one pass, one box and one Cash pack; check each gives what it says.
-13. **Save:** this one is tested in the published game (step 18), not in Studio, because Studio progress resets on Stop. There: play, earn Cash, leave, join again; the Cash must still be there.
-14. **Phone:** Test → Device → an iPhone. Every button must be reachable, and no text cut off.
-15. **Two players:** Test → Clients and Servers → 2 players. Check the leaderboards and gifting. (The World Boss and the free gift are switched off for now: `Config/Features`.)
+13. **Purchases:** Studio test purchases are free. Buy one pass, one box and one Cash pack; check each gives what it says.
+14. **Save:** this one is tested in the published game (step 19), not in Studio, because Studio progress resets on Stop. There: play, earn Cash, leave, join again; the Cash must still be there.
+15. **Phone:** Test → Device → an iPhone. Every button must be reachable, and no text cut off.
+16. **Two players:** Test → Clients and Servers → 2 players. Check the leaderboards and gifting. (The World Boss and the free gift are switched off for now: `Config/Features`.)
 
 ## D2. World 2 (Business District), a second place in the same game
 - **Add the place:** in Studio, open your game, then **View → Asset Manager → Places → Add New Place**. Open `hood/places/HoodEvolution_World2.rbxl` and **File → Publish to Roblox As** that new place.
@@ -39,17 +40,17 @@ Do these in order. Each step says where the details are. Tick them off as you go
 - **Test in the published game** (Studio can't teleport): beat World 1's Stage 16 → the lobby's World 2 portal takes you to the Business District with your Power, guns and shoes; in Business District, the brick arch (THE HOOD) takes you back.
 
 ## E. Publish
-16. **Experience page.** These are worth designing in Claude Design, with the same blocky prompt (`hood/art/CLAUDE_DESIGN_PROMPT.md`):
+17. **Experience page.** These are worth designing in Claude Design, with the same blocky prompt (`hood/art/CLAUDE_DESIGN_PROMPT.md`):
     - an icon, 512×512;
     - 3+ thumbnails, 1920×1080, showing the plaza, a fight and a box opening;
     - a short description.
-17. **Content questionnaire:** Creator Dashboard → your experience → **Questionnaire**. Answer honestly. The game has toy-style blocky guns and knock-outs with no blood, and paid random items (the shoe boxes show their odds and a pity counter).
-18. **Private first:**
+18. **Content questionnaire:** Creator Dashboard → your experience → **Questionnaire**. Answer honestly. The game has toy-style blocky guns and knock-outs with no blood, and paid random items (the shoe boxes show their odds and a pity counter).
+19. **Private first:**
     - Publish, keep it **Private** or friends-only;
     - play it on a real phone and a computer with 2-3 friends;
-    - do the save test from step 13 (earn Cash, leave, join again);
+    - do the save test from step 14 (earn Cash, leave, join again);
     - fix what they find.
-19. **Public:** make it Public. Watch the first day's **Analytics** (Retention, Monetization) and send Claude what you see.
+20. **Public:** make it Public. Watch the first day's **Analytics** (Retention, Monetization) and send Claude what you see.
 
 ## Known open items
 - Stage props: a batch from Claude Design is still to come. The stages keep their current props until then.

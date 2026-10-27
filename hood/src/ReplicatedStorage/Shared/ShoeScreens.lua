@@ -45,7 +45,7 @@ local function commas(n)
 	return (out:gsub('^,', ''))
 end
 S.commas = commas
-local function chanceOf(id, lucky) return ShoeRules.chanceText(ShoeRules.chanceOf(id, lucky == true)) end
+local function chanceOf(id, lucky) return ShoeRules.chanceText(ShoeRules.chanceOf(id, lucky)) end -- (lucky: the luck level)
 local function call(fn, ...) if type(fn) == 'function' then return fn(...) end return nil end
 
 -- the price of n opens of a box: '25 Cash' / '⏣99' (n = 1, 3)
@@ -1055,7 +1055,7 @@ function S.keyPanel(parent, ctx)
 			end
 		end
 		for _, d in grid:GetDescendants() do
-			if d.Name == 'Chance' and d:IsA('TextLabel') then d.Text = ShoeRules.chanceText(ShoeRules.chanceOf(d:GetAttribute('Shoe'), st.lucky == true)) end
+			if d.Name == 'Chance' and d:IsA('TextLabel') then d.Text = ShoeRules.chanceText(ShoeRules.chanceOf(d:GetAttribute('Shoe'), st.lucky)) end
 		end
 		name.Text = A.boxName(boxId)
 		local cash = st.cash or 0

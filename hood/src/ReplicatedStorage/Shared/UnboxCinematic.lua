@@ -146,8 +146,18 @@ function UnboxCinematic.tierFor(info, player)
 	if UnboxCinematic.isGift(info, player) then return 'gift' end
 	return 'egg'
 end
--- The drop chance (percent) of a shoe from its box, and its text ("3%", "0.45%").
-local function chanceOf(boxId, shoeId)
+-- The drop chance (percent) of a shoe from its box, and its text ("3%", "0.45%"). (Oct 27, luck passes) `luck`: the
+-- opener's luck level (ShoeRules.luckOf: 1, 2 or 4), so the reveal shows their real odds; plan() reads info.Luck.
+local ShoeRulesOpt = optional('ShoeRules')
+local function chanceOf(boxId, shoeId, luck)
+	if ShoeRulesOpt and type(luck) == 'number' and luck > 1 then
+		local box = boxDef(boxId)
+		if box and box.Shoes then
+			for _, row in ShoeRulesOpt.chances(boxId, luck) do
+				if row.Id == shoeId then return row.Chance end
+			end
+		end
+	end
 	local box = boxDef(boxId)
 	if box and box.Shoes and box.Chances then
 		for i, id in box.Shoes do
@@ -289,7 +299,7 @@ function UnboxCinematic.plan(info, opts)
 	P.start = P.start or 0
 	P.total = P.done - P.start
 	P.skipTo = (P.multi and not P.fan and not P.inworld) and P.group or P.accent[best]
-	P.chance = chanceOf(info.Box, list[best].Shoe)
+	P.chance = chanceOf(info.Box, list[best].Shoe, info.Luck)
 	return P
 end
 
@@ -484,7 +494,7 @@ function UnboxCinematic._secret(info, opts)
 	P.group = sum and onChain(last, sum.group) or nil
 	P.done, P.total = at, at
 	P.skipTo = P.accent[best]
-	P.chance = chanceOf(info.Box, list[best].Shoe)
+	P.chance = chanceOf(info.Box, list[best].Shoe, info.Luck)
 	return P
 end
 

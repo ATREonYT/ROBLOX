@@ -22,8 +22,9 @@
 -- Waves.client). The Robux shoe boxes, one or a bundle of 3 or 8 (brief 21/22: StoreService opens them through
 -- HoodServer/ShoeOpening, the same roll and unboxing as a Cash box; the dais prompt and the Store's 'Box' cards buy them).
 -- The shoe passes (brief 22; ShoeOpening and ShoeService read the Pass_* attributes): ExtraEquip (+1 Shoe Slot, 4 pairs
--- on; ShoesMax tells the UI), Lucky (Cash boxes roll with ShoeRules.weights(boxId, true); every odds display shows the
--- owner ShoeRules.chances / chanceOf(..., true)) and TripleOpen (the dais's "Open x3" prompt: OpenShoeBox(boxId, 3), 3
+-- on; ShoesMax tells the UI), Lucky ("2x Luck") and Luck4 ("4x Luck", Oct 27; it supersedes 2x, never 8x): Cash boxes
+-- roll with ShoeRules.weights(boxId, level), the level from ShoeRules.luckOf(player); every odds display shows the
+-- owner's real level (ShoeRules.chances / chanceOf(..., level)), and TripleOpen (the dais's "Open x3" prompt: OpenShoeBox(boxId, 3), 3
 -- at once for 3x the Price).
 --
 -- Honest prices (brief 22): a bundle's WasPrice is what its parts cost bought one by one (a box bundle: Count x the
@@ -44,7 +45,8 @@ Products.Passes = {
 	DoubleCash = 0, -- 2x Cash from the pads and goals
 	AutoShoot = 0, -- (shown as "Auto Fight", brief 18) your gun fires at stage goons on its own
 	VIP = 0, -- VIP tag + 1.5x Cash
-	Lucky = 0, -- better odds for Epic and up in Cash shoe boxes
+	Lucky = 0, -- "2x Luck": Epic and up twice as often in Cash shoe boxes (the key from the first build)
+	Luck4 = 0, -- (Oct 27) "4x Luck": Epic and up four times as often in Cash shoe boxes; supersedes 2x Luck (never 8x)
 	TripleOpen = 0, -- open 3 Cash shoe boxes at once for 3x the Cash
 	ExtraEquip = 0, -- +1 shoe pair on (4 instead of 3); replaces the old crew-slot pass
 	-- (brief 23)
@@ -147,7 +149,9 @@ Products.Catalog = {
 	{ Key = 'DoubleCash', Kind = 'Pass', Section = 'Gamepass', Title = '2x Cash', Big = 'Every\nStage', Detail = 'Double Cash from pads and goals', Sub = 'Double pad Cash', Price = 149, Art = 'icon:DoubleCash', Tone = 'cardPurple', Offer = '2x Cash', Sticker = '2x', Wired = true },
 	{ Key = 'VIP', Kind = 'Pass', Section = 'Gamepass', Banner = true, Title = 'VIP', Big = 'VIP', Detail = 'GOLD TAG + 1.5x CASH', Sub = 'A gold tag and 1.5x Cash', Price = 249, Art = 'icon:VIP', Tone = 'cardGreen', Wired = true },
 	{ Key = 'AutoShoot', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Fight', Big = 'Hands\nFree', Detail = 'Fires at goons for you', Sub = 'Fires for you', Price = 99, Art = 'icon:AutoFight', Tone = 'cardRed', Offer = 'Auto Fight', Wired = true },
-	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = 'Lucky', Big = 'Better\nBoxes', Detail = 'Better odds for Epic and up in Cash boxes', Sub = 'Better box odds', Price = 129, Art = 'icon:Lucky', Tone = 'cardTeal', Wired = true },
+	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = '2x Luck', Big = '2x\nLuck', Detail = 'Epic+ 2x as often in Cash boxes', Sub = '2x box luck', Price = 129, Art = 'icon:Lucky', Tone = 'cardTeal', Sticker = '2x', Wired = true },
+	-- (Oct 27, the owner: "Add 2x and 4x Luck passes") 4x supersedes 2x: owning both is 4x, never 8x (ShoeRules.luckOf)
+	{ Key = 'Luck4', Kind = 'Pass', Section = 'Gamepass', Title = '4x Luck', Big = '4x\nLuck', Detail = '4x Epic+ odds. Replaces 2x Luck', Sub = '4x box luck', Price = 299, Art = 'icon:Lucky', Tone = 'cardGold', Sticker = '4x', Wired = true },
 	{ Key = 'TripleOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Triple Open', Big = '3 Boxes\nat Once', Detail = 'Open 3 Cash boxes at once, for 3x the Cash', Sub = 'Open 3 at once', Price = 179, Art = 'icon:TripleOpen', Tone = 'cardBlue', Sticker = 'x3', Wired = true },
 	{ Key = 'ExtraEquip', Kind = 'Pass', Section = 'Gamepass', Title = '+1 Shoe Slot', Big = '4 Pairs\nOn', Detail = 'Wear 4 pairs at once', Sub = 'Wear 4 pairs', Price = 99, Art = 'icon:ExtraEquip', Tone = 'cardPink', Sticker = '+1', Wired = true },
 	-- (brief 23) the 10x Cash pad and the two Robux lanes. A lane row's Price is its station's RobuxPrice (Config/Skins).

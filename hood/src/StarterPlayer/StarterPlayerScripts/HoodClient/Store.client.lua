@@ -231,8 +231,8 @@ local function idleIcon(art, id, prio)
 	return art
 end
 -- (round 7) The passes the Luck section shows (in this order) instead of the Gamepasses section.
-local LUCK_KEYS = { 'Lucky', 'TripleOpen', 'AutoOpen' }
-local LUCK_SET = { Lucky = true, TripleOpen = true, AutoOpen = true }
+local LUCK_KEYS = { 'Lucky', 'Luck4', 'TripleOpen', 'AutoOpen' }
+local LUCK_SET = { Lucky = true, Luck4 = true, TripleOpen = true, AutoOpen = true }
 -- The section a Store.Open(at) target belongs to ('Featured' by default).
 local function sectionOf(at)
 	if type(at) ~= 'string' then return 'Featured' end
@@ -678,6 +678,13 @@ local function passCard(entry, x, y, parent, tone, opts)
 	local size = Kit.textWidth(text, 21) <= aw * 1.7 and 21 or 18 -- (two lines at most; 18 px is 12.6 px on a phone)
 	label({ Name = 'Desc', Text = text, FontFace = Kit.Font.body, TextSize = size, StrokeThickness = 3, Stroke = ink, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Center,
 		AnchorPoint = Vector2.new(0.5, 0), Position = px(ax + aw / 2, 58), Size = px(aw, 2 * (size + 5)), ZIndex = z + 2, Parent = c.Body })
+	if opts.Covered then -- (a pass a better one you own already does: a grey chip saying so, nothing to buy)
+		local w, h = math.min(aw - 8, 196), 48
+		local chip = Kit.block({ Name = 'Covered', Tone = OWNEDBTN, Width = w, Height = h, Studs = false, Outline = 3, RimWidth = 2, Radius = btnR(h), OutlineColor = OWNEDBTN.stroke, Position = px(ax + aw / 2, HALF_H - 16), AnchorPoint = Vector2.new(0.5, 1), ZIndex = z + 2 })
+		label({ Name = 'Text', Text = opts.Covered, TextSize = 20, Stroke = hex('3A3A24'), StrokeThickness = 2.5, Size = UDim2.fromScale(1, 1), ZIndex = z + 6, Parent = chip.Body })
+		chip.Parent = c.Body
+		return c
+	end
 	priceButton(c.Body, entry, math.min(aw - 8, 196), 48, px(ax + aw / 2, HALF_H - 16), Vector2.new(0.5, 1), z + 2, nil, opts.Was and { Was = opts.Was, TextSize = 24 } or nil)
 	return c
 end
@@ -961,49 +968,60 @@ local function serverCard(entry, y, parent)
 	infoTab(c, 'Everyone in this server gets x2 Power for 15 minutes. Buy again to add 15 more minutes!', CW - 70, 2, z + 3, true)
 	return c
 end
--- (Oct 27, round 7) The Luck tab's hero: the Lucky pass with what it really does to a Cash box's odds, rarity by rarity
--- (ShoeRules.luckTable: the same weights the server rolls with), and that it does nothing to the Robux boxes.
+-- (Oct 27, round 7) The Luck tab's hero: what the luck passes really do to a Cash box's odds, rarity by rarity
+-- (ShoeRules.luckTable: the same weights the server rolls with), and that they do nothing to the Robux boxes.
+-- (Oct 27, luck round: the owner's "Add 2x and 4x Luck passes") Three columns, Normal / 2x / 4x, the player's own level
+-- marked YOURS; the two passes are the cards under it (4x replaces 2x, they never stack to 8x).
 local LUCKY_H = 300
 local LUCK_UP, LUCK_DOWN = hex('C8FF5A'), hex('E8E8F0')
-local function luckyCard(entry, y, parent)
+local function luckyCard(_, y, parent)
 	local tone = 'cardGold' -- (the green clover stands out on gold, as on the owner's mockup)
-	local c = card(entry, tone, CW, LUCKY_H, MARGIN, y, parent)
+	local c = card({ Key = 'LuckOdds' }, tone, CW, LUCKY_H, MARGIN, y, parent)
 	local z = 28
 	local ink = Kit.toneOf(tone).stroke
 	addShine(c.Body)
-	local artW = 236
-	idleIcon(Kit.icon3d(iconId(entry), 200, { ZIndex = z, Place = Kit.inBox(4, 4, artW, LUCKY_H - 8, 0.08) }), iconId(entry), 3).Parent = c.Body
+	local artW = 200
+	idleIcon(Kit.icon3d('Lucky', 180, { ZIndex = z, Place = Kit.inBox(4, 4, artW, LUCKY_H - 8, 0.08) }), 'Lucky', 3).Parent = c.Body
 	local rx = artW + 8
-	local t = title(c.Body, 'LUCKY', 46, tone, { Align = Enum.TextXAlignment.Left, Anchor = Vector2.zero, Position = px(rx, 6), Width = 300 })
+	local t = title(c.Body, 'BOX LUCK', 46, tone, { Align = Enum.TextXAlignment.Left, Anchor = Vector2.zero, Position = px(rx, 6), Width = 320 })
 	Sell.Style.apply(t, 'white', { Thickness = 5, Shadow = true })
-	label({ Name = 'Sub', Text = 'Better odds in every Cash box. Yours forever!', FontFace = Kit.Font.body, TextSize = 20, StrokeThickness = 3, Stroke = ink, TextXAlignment = Enum.TextXAlignment.Left,
+	label({ Name = 'Sub', Text = 'The real odds in every Cash box, with each Luck pass:', FontFace = Kit.Font.body, TextSize = 20, StrokeThickness = 3, Stroke = ink, TextXAlignment = Enum.TextXAlignment.Left,
 		Position = px(rx + 2, 58), Size = px(CW - rx - 16, 26), ZIndex = z + 2, Parent = c.Body })
-	-- the odds: one row a rarity, normal and with Lucky (a Cash box of this world: they all share these odds)
+	-- the odds: one row a rarity, at each luck level (a Cash box of this world: they all share these odds)
 	local boxId
 	for _, b in (Shoes and Shoes.boxesForWorld and Shoes.boxesForWorld(Shoes.ActiveWorld) or {}) do
 		if not b.Robux then boxId = b.Id break end
 	end
 	local rows = (ShoeRules and ShoeRules.luckTable and boxId) and ShoeRules.luckTable(boxId) or {}
-	local TW, RH = 404, 24
+	local mine = (ShoeRules and ShoeRules.luckOf) and ShoeRules.luckOf(player) or 1
+	local TW, RH = 478, 24
 	local tbl = Kit.new('Frame', { Name = 'Odds', BackgroundColor3 = hex('2A1600'), BackgroundTransparency = 0.55, BorderSizePixel = 0, Position = px(rx, 92), Size = px(TW, 30 + #rows * RH + 8), ZIndex = z + 1, Parent = c.Body })
 	Kit.corner(10).Parent = tbl
-	local cols = { { 'Rarity', 12, 140, Enum.TextXAlignment.Left }, { 'Normal', 150, 100, Enum.TextXAlignment.Right }, { 'With Lucky', 262, 128, Enum.TextXAlignment.Right } }
+	local cols = { { 'Rarity', 12, 126, Enum.TextXAlignment.Left, nil, 'Rarity' }, { 'Normal', 140, 100, Enum.TextXAlignment.Right, 1, 'Normal' },
+		{ '2x Luck', 248, 104, Enum.TextXAlignment.Right, 2, 'Lucky' }, { '4x Luck', 360, 106, Enum.TextXAlignment.Right, 4, 'Luck4' } }
 	for i, col in cols do
-		label({ Name = 'Head' .. i, Text = col[1], TextSize = 17, StrokeThickness = 2.5, TextColor3 = i == 3 and LUCK_UP or Color.white, TextXAlignment = col[4], Position = px(col[2], 6), Size = px(col[3], 22), ZIndex = z + 3, Parent = tbl })
+		local yours = col[5] ~= nil and col[5] == mine
+		if yours then -- (your column: a soft gold band behind it, YOURS on top)
+			local band = Kit.new('Frame', { Name = 'Yours', BackgroundColor3 = hex('FFD54A'), BackgroundTransparency = 0.72, BorderSizePixel = 0, Position = px(col[2] - 4, 2), Size = px(col[3] + 8, 30 + #rows * RH + 4), ZIndex = z + 2, Parent = tbl })
+			Kit.corner(8).Parent = band
+		end
+		label({ Name = 'Head' .. i, Text = yours and (col[1] .. ' (YOURS)') or col[1], TextSize = yours and 15 or 17, StrokeThickness = 2.5, TextColor3 = (i >= 3) and LUCK_UP or Color.white, TextXAlignment = col[4], Position = px(col[2], 6), Size = px(col[3], 22), ZIndex = z + 3, Parent = tbl })
 	end
 	for i, row in rows do
 		local r = Shoes.RarityById and Shoes.RarityById[row.Rarity]
 		local yy = 30 + (i - 1) * RH
-		local up = row.Lucky > row.Normal + 1e-9
 		label({ Name = 'Rarity' .. i, Text = r and r.Name or row.Rarity, TextSize = 18, StrokeThickness = 2.5, TextColor3 = (r and r.Color or Color.white):Lerp(Color.white, 0.25), TextXAlignment = Enum.TextXAlignment.Left, Position = px(cols[1][2], yy), Size = px(cols[1][3], RH), ZIndex = z + 3, Parent = tbl })
-		label({ Name = 'Normal' .. i, Text = ShoeRules.chanceText(row.Normal), TextSize = 18, StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Right, Position = px(cols[2][2], yy), Size = px(cols[2][3], RH), ZIndex = z + 3, Parent = tbl })
-		label({ Name = 'Lucky' .. i, Text = ShoeRules.chanceText(row.Lucky), TextSize = 18, StrokeThickness = 2.5, TextColor3 = up and LUCK_UP or LUCK_DOWN, TextXAlignment = Enum.TextXAlignment.Right, Position = px(cols[3][2], yy), Size = px(cols[3][3], RH), ZIndex = z + 3, Parent = tbl })
+		for k = 2, 4 do
+			local col = cols[k]
+			local v = row[col[6]] or row.Normal
+			local up = v > row.Normal + 1e-9
+			label({ Name = col[6] .. i, Text = ShoeRules.chanceText(v), TextSize = 18, StrokeThickness = 2.5, TextColor3 = k == 2 and Color.white or (up and LUCK_UP or LUCK_DOWN), TextXAlignment = Enum.TextXAlignment.Right, Position = px(col[2], yy), Size = px(col[3], RH), ZIndex = z + 3, Parent = tbl })
+		end
 	end
 	local bx = rx + TW + 14
 	local bw = CW - bx - 14
-	label({ Name = 'Note', Text = 'Epic and rarer come up twice as often. Robux boxes keep their odds.', FontFace = Kit.Font.body, TextSize = 17, StrokeThickness = 2.5, Stroke = ink, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top,
-		Position = px(bx, 100), Size = px(bw, 96), ZIndex = z + 2, Parent = c.Body })
-	priceButton(c.Body, entry, math.min(bw, 200), 64, px(bx + bw / 2, LUCKY_H - 18), Vector2.new(0.5, 1), z + 2, nil, { TextSize = 34, Breathe = true })
+	label({ Name = 'Note', Text = 'Epic and rarer come up 2x or 4x as often. 4x Luck replaces 2x Luck (they never add up to 8x). Robux boxes keep their odds. Yours forever!', FontFace = Kit.Font.body, TextSize = 16, StrokeThickness = 2.5, Stroke = ink, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top,
+		Position = px(bx, 96), Size = px(bw, 180), ZIndex = z + 2, Parent = c.Body })
 	return c
 end
 -- Community Codes (the reference's bottom section): a purple card with a darker header bar, the code field, the lime REDEEM
@@ -1333,17 +1351,18 @@ local function build()
 		elseif section.Id == 'Cash' or section.Id == 'Power' then
 			y += packGrid(items, y, block) + GAP
 		elseif section.Id == 'Luck' then
-			-- the Lucky hero, Triple Open and Auto Open side by side, then the Chrome Box (its odds and its pity counter)
+			-- the odds hero (Normal / 2x / 4x), the 2x Luck and 4x Luck cards, Triple Open and Auto Open side by side, then
+			-- the Chrome Box (its odds and its pity counter)
+			sections.LuckOdds = luckyCard(nil, y, block)
+			y += LUCKY_H + GAP
 			local col = 0
+			local LUCK_TONES = { Lucky = 'cardTeal', Luck4 = 'cardGold', TripleOpen = 'cardBlue', AutoOpen = 'cardPurple' }
 			for _, entry in items do
-				if entry.Key == 'Lucky' then
-					sections[entry.Key] = luckyCard(entry, y, block)
-					y += LUCKY_H + GAP
-				else
-					sections[entry.Key] = passCard(entry, MARGIN + col * (HALF + GAP), y, block, entry.Key == 'TripleOpen' and 'cardBlue' or 'cardPurple')
-					col += 1
-					if col == 2 then col = 0; y += HALF_H + GAP end
-				end
+				-- (2x Luck when you already have 4x: it would add nothing, so it says so instead of selling it)
+				local covered = entry.Key == 'Lucky' and not owns(entry) and player:GetAttribute('Pass_Luck4') == true
+				sections[entry.Key] = passCard(entry, MARGIN + col * (HALF + GAP), y, block, LUCK_TONES[entry.Key] or 'cardPurple', covered and { Covered = 'YOU HAVE 4x' } or nil)
+				col += 1
+				if col == 2 then col = 0; y += HALF_H + GAP end
 			end
 			if col == 1 then y += HALF_H + GAP end
 			local boxRows = {}
