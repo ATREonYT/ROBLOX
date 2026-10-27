@@ -79,7 +79,7 @@ Spec.ShopArt = { W = 1.42, H = 1.3, X = 0.5, XH = 0, Y = 0.3, TopAt = -0.24, Cli
 -- Pack 94 in; Missions under Playtime)
 Spec.Spin = { X = 258, Y = 12, Size = 68, Badge = 18, Caption = 22 }
 Spec.Playtime = { Right = 241, Y = -16, Icon = 68, Caption = 20 }
-Spec.Starter = { Right = 94, Y = 82, Icon = 88, Caption = 20 } -- (the crate's drawn part 97..152 under the caption at 90, as the reference's)
+Spec.Starter = { Right = 94, Y = 0, Icon = 88, Caption = 20 } -- (Oct 27: up beside Playtime, Y 82 -> 0: at 82 it sat on the x2 Cash card)
 Spec.Missions = { Right = 243, Y = 107, Icon = 60, Caption = 22 }
 -- the top centre: the boss timer line (ref 10..48, "Next GUNSHIP boss fight in: 2:52" + SKIP) and the fight chip
 -- (CLEAR! / 5 LEFT, about 103 x 29 centred at 36) share the band; FIGHTS fills both slots

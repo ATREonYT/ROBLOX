@@ -1063,10 +1063,18 @@ do
 			counters.AnchorPoint = Vector2.new(0, 1)
 			counters.Position = UDim2.new(0, 0, 1, 0)
 			offers.Position = UDim2.new(1, -Spec.Offers.Right, 0, Spec.Offers.Top)
+			-- (Oct 27, release fixes: on a computer the Starter Pack's slot (82..212) sat on the x2 Cash card (its picture pokes
+			-- ~32 over its top at 179)) the Starter Pack moves up beside Playtime: Playtime (x -301..-181) and the Starter
+			-- Pack (-169..-19) side by side on top, Missions under Playtime, the cards under the Starter Pack
 			slots.StarterSlot.Position = UDim2.new(1, -Spec.Starter.Right, 0, Spec.Starter.Y)
 			slots.PlaytimeSlot.Position = UDim2.new(1, -Spec.Playtime.Right, 0, Spec.Playtime.Y)
 			slots.MissionsSlot.Position = UDim2.new(1, -Spec.Missions.Right, 0, Spec.Missions.Y)
 		end
+		-- the Spin wheel's glow reaches ~54 over its slot's centre: on a big screen (the HUD scaled up, Roblox's top bar not)
+		-- it would run off the top, so it comes down just enough to stay on the screen
+		local okI, inset = pcall(function() return game:GetService('GuiService'):GetGuiInset() end)
+		local room = (okI and typeof(inset) == 'Vector2' and inset.Y or Spec.Inset) / k
+		slots.SpinSlot.Position = UDim2.new(0, Spec.Spin.X, 0, math.max(Spec.Spin.Y, math.ceil(56 - room)))
 		-- the bottom block centred, unless that would put the Auto Fight button under the SHOOT button (phones)
 		local B = Spec.Bottom
 		local shootLeft = (abs.X - SHOOT_RIGHT - SHOOT_SIZE) / k
