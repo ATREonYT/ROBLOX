@@ -6,11 +6,13 @@
 --            light grey platforms on it, the walks over it
 --   Edge     a low terracotta planter wall with a trimmed hedge on top all round (the keep-in walls are f_areas' invisible
 --            ones on Lobby.Bounds), open to the north on the gate's forecourt
---   Outside  a ring street (light stone sidewalks, asphalt with white dashes, taxis and cars) and glass-and-steel towers
---            on warm stone bases all round, 30-110 studs high: the skyline over the hedge, sky above it
---   Portal   the way back: a brick arch onto the hood (the travel itself is the services'), where World 1 has its World 2 door
--- The builders below (City.tower, City.taxi, City.bus, City.foodTruck, City.busStop, City.planter, City.lamp) are the
--- avenue's too (city/f5_avenue.lua).
+--   Outside  a ring street (light stone sidewalks, asphalt with white dashes, taxis and cars) and "pre-downtown" round it
+--            (Oct 27 round 2): 2-5 storey blocks in warm paint and brick, shops with awnings and signs, a diner, a
+--            parking lot; two far glass towers as landmarks. Open sky over the hedge.
+--   Portal   the way back: a brick arch onto the hood (the travel itself is the services'), at the end of its own walk west
+--            off the south walk; the boards on a yard at the end of the walk east (see Lobby.Plan below)
+-- The builders below (City.block, City.diner, City.parking, City.tower, City.taxi, City.bus, City.foodTruck,
+-- City.busStop, City.planter, City.lamp) are the avenue's too (city/f5_avenue.lua).
 
 ---------------------------------------------------------------------------------------------- city kit
 -- A face of an axis-aligned block a0..a1 (x) by b0..b1 (z), as a mapper: box(name, u0, u1, y0, y1, d0, d1, colour, mat)
@@ -191,74 +193,231 @@ function City.busStop(c, cf)
 	return s
 end
 
+---------------------------------------------------------------------------------------------- pre-downtown blocks
+-- (Oct 27 round 2, the owner: "make the second world not such high buildings ... make like pre downtown") The city's
+-- buildings are 2-5 storey mid-rise blocks in warm saturated paint and brick, busy at street level: shops with striped
+-- awnings and signs, apartments with rows of windows, small offices with ribbon windows, a corner diner, a parking lot.
+-- Glass towers only as two far landmarks. A storey is 5 studs; a shop's ground floor 8 (glass, awning, sign).
+City.Paint = { C(232, 112, 84), C(244, 186, 72), C(84, 176, 170), C(120, 170, 232), C(236, 132, 170), C(132, 200, 120), C(246, 224, 182), C(200, 104, 74) }
+City.Awnings = { C(232, 64, 60), C(48, 140, 220), C(40, 170, 110), C(250, 180, 40), C(150, 90, 210) }
+City.Words = { 'BAKERY', 'PIZZA', 'BOOKS', 'CAFE', 'MARKET', 'TOYS', 'SHOES', 'DONUTS', 'GAMES', 'FLOWERS', 'MUSIC', 'SPORTS' }
+City.WindowGlass, City.ShopGlass = C(150, 206, 246), C(56, 84, 124)
+-- One block over x0..x1, z0..z1 (this frame). o.kind: 'shop' (shopfronts under an awning and a sign, flats over them),
+-- 'flats' (a plain ground floor with a door, windows above), 'office' (ribbon windows); o.floors: storeys over the ground
+-- floor; o.tone picks the paint, the awning and the sign's word; o.faces: the faces with windows (the ones you see).
+function City.block(c, x0, x1, z0, z1, o)
+	local t, model = c:group(o.name or 'Block')
+	local k = o.tone or 1
+	local col = o.color or City.Paint[(k - 1) % #City.Paint + 1]
+	local trim = o.trim or col:Lerp(P.white, 0.6)
+	local kind = o.kind or 'flats'
+	local g = kind == 'shop' and 8 or 6
+	local n = o.floors or 2
+	local top = g + n * 5
+	sbox(t, 'BlockBody', V(x0, -1, z0), V(x1, top, z1), col)
+	local function d(p) decor(p).CastShadow = false return p end
+	d(sbox(t, 'BlockPlinth', V(x0 - 0.2, -1, z0 - 0.2), V(x1 + 0.2, 0.9, z1 + 0.2), col:Lerp(P.black, 0.22)))
+	d(sbox(t, 'BlockBand', V(x0 - 0.25, g - 0.5, z0 - 0.25), V(x1 + 0.25, g, z1 + 0.25), trim))
+	d(sbox(t, 'BlockCornice', V(x0 - 0.5, top, z0 - 0.5), V(x1 + 0.5, top + 1, z1 + 0.5), trim))
+	for _, f in o.faces or { 'S' } do
+		local box, u0, u1 = City.face(t, f, x0, x1, z0, z1)
+		local bays = math.max(1, math.floor((u1 - u0) / 5.5))
+		local bw = (u1 - u0) / bays
+		-- the storeys over the ground floor
+		for fl = 0, n - 1 do
+			local y = g + fl * 5 + 1.1
+			if kind == 'office' then
+				d(box('Ribbon', u0 + 1, u1 - 1, y, y + 3, 0, 0.15, City.WindowGlass))
+				for b = 1, bays - 1 do d(box('RibbonMullion', u0 + b * bw - 0.2, u0 + b * bw + 0.2, y, y + 3, 0, 0.25, trim)) end
+			else
+				for b = 0, bays - 1 do
+					local m = u0 + (b + 0.5) * bw
+					d(box('Window', m - 1.3, m + 1.3, y, y + 2.9, 0, 0.15, City.WindowGlass))
+					d(box('Sill', m - 1.6, m + 1.6, y - 0.35, y, 0, 0.4, trim))
+				end
+			end
+		end
+		-- the ground floor
+		if kind == 'shop' then
+			local awn = City.Awnings[(k - 1) % #City.Awnings + 1]
+			d(box('ShopGlass', u0 + 1, u1 - 1, 0.9, 5.2, 0, 0.12, City.ShopGlass))
+			for b = 0, bays do d(box('ShopFrame', u0 + 1 + b * (u1 - u0 - 2) / bays - 0.2, u0 + 1 + b * (u1 - u0 - 2) / bays + 0.2, 0.9, 5.2, 0, 0.25, P.white)) end
+			for b = 0, bays * 2 - 1 do
+				local a0 = u0 + 1 + b * (u1 - u0 - 2) / (bays * 2)
+				d(box('Awning', a0, a0 + (u1 - u0 - 2) / (bays * 2), 5.2, 5.8, 0, 2.6, b % 2 == 0 and awn or P.white))
+			end
+			local w = math.min(u1 - u0 - 4, 14)
+			local m = (u0 + u1) / 2
+			local sign = box('ShopSign', m - w / 2, m + w / 2, 5.95, 7.45, 0, 0.3, P.white)
+			decor(sign)
+			local face = ({ S = Enum.NormalId.Back, N = Enum.NormalId.Front, E = Enum.NormalId.Right, W = Enum.NormalId.Left })[f]
+			local word = o.word or City.Words[(k - 1) % #City.Words + 1]
+			line(surface(sign, face, 12), 'Shop', word, awn:Lerp(P.black, 0.15), FONT.title, 0.06, 0.88, P.white, 2)
+		elseif kind == 'office' then
+			d(box('LobbyGlass', u0 + 1, u1 - 1, 0.9, g - 1.2, 0, 0.12, City.ShopGlass))
+		else
+			local m = (u0 + u1) / 2
+			d(box('Door', m - 1.4, m + 1.4, 0.9, 5, 0, 0.15, col:Lerp(P.black, 0.45)))
+			d(box('DoorHood', m - 2, m + 2, 5, 5.4, 0, 1.2, trim))
+			for b = 0, bays - 1 do
+				local wm = u0 + (b + 0.5) * bw
+				if math.abs(wm - m) > 3 then d(box('Window', wm - 1.3, wm + 1.3, 2, 4.6, 0, 0.15, City.WindowGlass)) end
+			end
+		end
+	end
+	-- on the roof: a plant box, and a water tank on every other block
+	local cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
+	d(t:box('RoofBox', V(cx - 3, top + 1, cz - 2.5), V(cx + 3, top + 3.2, cz + 2.5), C(150, 156, 172), M.SmoothPlastic))
+	if k % 2 == 0 then
+		d(t:box('TankLegs', V(cx + 4, top + 1, cz - 1), V(cx + 6, top + 3, cz + 1), C(110, 80, 60), M.SmoothPlastic))
+		d(t:box('Tank', V(cx + 3.6, top + 3, cz - 1.4), V(cx + 6.4, top + 6, cz + 1.4), C(170, 112, 76), M.SmoothPlastic))
+	end
+	if o.noShadow then for _, p in model:GetDescendants() do if p:IsA('BasePart') then p.CastShadow = false end end end
+	return t, model
+end
+-- A corner diner (cf: the middle of its front on the ground, front -Z, 26 wide, 12 deep): one storey in cream with a red
+-- band, a long window, a chrome roof edge, DINER on posts over the roof.
+function City.diner(c, cf)
+	local t = c:at(cf):group('Diner')
+	sbox(t, 'DinerBody', V(-13, -1, 0), V(13, 7, 12), C(250, 236, 206))
+	decor(sbox(t, 'DinerBand', V(-13.2, 1, -0.2), V(13.2, 2.2, 12.2), C(226, 56, 56))).CastShadow = false
+	decor(t:box('DinerWindow', V(-11, 2.6, -0.15), V(7, 5.8, 0), C(56, 84, 124), M.SmoothPlastic)).CastShadow = false
+	decor(t:box('DinerDoor', V(8.5, 0.9, -0.15), V(11.5, 5.8, 0), C(226, 56, 56), M.SmoothPlastic)).CastShadow = false
+	decor(t:box('DinerRoofEdge', V(-13.5, 7, -0.5), V(13.5, 7.8, 12.5), C(206, 214, 228), M.SmoothPlastic)).CastShadow = false
+	for _, x in { -6, 6 } do decor(t:box('SignPost', V(x - 0.3, 7.8, 4), V(x + 0.3, 10, 4.6), C(206, 214, 228), M.SmoothPlastic)) end
+	local sign = t:box('DinerSign', V(-9, 10, 3.9), V(9, 14, 4.5), C(226, 56, 56), M.SmoothPlastic)
+	line(surface(sign, Enum.NormalId.Front, 10), 'Diner', 'DINER', P.white, FONT.title, 0.08, 0.84, C(120, 20, 20), 3)
+	decor(sign)
+	return t
+end
+-- A parking lot over x0..x1, z0..z1, its top at y: asphalt with white bays across it, a pale kerb on three sides (open to
+-- the street on `open`'s side), a few cars, the P sign.
+function City.parking(c, x0, x1, z0, z1, seed, y, openX)
+	local t = c:group('ParkingLot')
+	sbox(t, 'Lot', V(x0, -1, z0), V(x1, y, z1), City.road:Lerp(P.white, 0.1))
+	local kx = openX == x0 and x1 - 0.8 or x0
+	for _, e in { { V(x0, -1, z0), V(x1, y + 0.4, z0 + 0.8) }, { V(x0, -1, z1 - 0.8), V(x1, y + 0.4, z1) }, { V(kx, -1, z0), V(kx + 0.8, y + 0.4, z1) } } do
+		decor(sbox(t, 'LotKerb', e[1], e[2], City.kerb)).CastShadow = false
+	end
+	local r = Random.new(seed)
+	local cars = { C(214, 52, 52), P.white, C(52, 102, 214), City.taxiYellow, C(120, 210, 90) }
+	for z = z0 + 2, z1 - 6, 6 do
+		decor(sbox(t, 'BayLine', V(x0 + 2, y, z), V(x1 - 2, y + 0.1, z + 0.3), City.line)).CastShadow = false
+		if r:NextNumber() < 0.65 then
+			local side = r:NextNumber() < 0.5 and 0.25 or 0.75
+			car(t, CFrame.new(x0 + (x1 - x0) * side, y, z + 3.15) * CFrame.Angles(0, math.pi / 2, 0), cars[r:NextInteger(1, #cars)])
+		end
+	end
+	local px = openX == x0 and x0 + 1.4 or x1 - 1.4
+	t:box('ParkPole', V(px - 0.2, y, z0 + 1.4), V(px + 0.2, y + 9, z0 + 1.8), City.steel, M.SmoothPlastic)
+	local plate = t:box('ParkSign', V(px - 1.4, y + 9, z0 + 1.5), V(px + 1.4, y + 11.8, z0 + 1.7), C(40, 110, 220), M.SmoothPlastic)
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do line(surface(plate, face, 20), 'P', 'P', P.white, FONT.title, 0.05, 0.9) end
+	return t
+end
+
 ---------------------------------------------------------------------------------------------- the plaza
--- Downtown's ring street and skyline round the plaza (map frame): sidewalk x 88.5..96, the road 96..110, the far
--- sidewalk 110..116, the towers past it (over f_areas' low wall at 124); the same to the south from z 96.5.
-City.Ring = { walk0 = 88.5, road0 = 96, road1 = 110, walk1 = 116, south = 96.5 }
-City.Skyline = {
-	-- { x0, x1, z0, z1, h, tone, faces } on the east side (the west mirrors it); faces: the ones you see from the plaza
-	east = {
-		{ 116, 150, -66, -32, 104, 3 }, { 116, 150, -26, 8, 72, 1 }, { 116, 150, 14, 46, 112, 2 },
-		{ 116, 150, 52, 80, 82, 4 }, { 116, 150, 86, 116, 64, 1 }, { 116, 150, 122, 154, 92, 3 },
-	},
-	south = { { -110, -82, 124, 156, 70, 2 }, { -76, -46, 124, 156, 96, 4 }, { -40, -14, 124, 156, 60, 1 }, { -8, 22, 124, 156, 84, 3 },
-		{ 28, 56, 124, 156, 66, 2 }, { 62, 90, 124, 156, 100, 1 }, { 96, 110, 124, 156, 58, 4 } },
-	-- behind the avenue's towers, either side of the gate (seen over the plaza's north edge)
-	north = { { 66, 94, -52, -8, 86, 2 }, { 66, 94, -112, -58, 118, 4 } },
+-- Downtown's ring street round the plaza (map frame): the plaza's sidewalk x 88.5..96 (south: from the hedge's outer face
+-- 5.5 deep), the road 96..110 (south: 12 wide), the far sidewalk 6 wide, the blocks past it on a paved base (over
+-- f_areas' lots, low wall and ring road). The side streets run north past the avenue's blocks to z -220. Its levels: the
+-- road's top 0.5, the sidewalks' 0.95 (over f_areas' lots behind the avenue, whose grass tops 0.4); the plaza's floor
+-- is 0, behind its hedge.
+City.Ring = { walk0 = 88.5, road0 = 96, road1 = 110, walk1 = 116, north = -220, road = 0.5, walk = 0.95 }
+City.Blocks = {
+	-- { z0, z1, kind, floors, tone } along the far side of the side streets (x 116..150; the west takes other tones, and
+	-- the diner where the east has the parking lot)
+	east = { { -170, -136, 'flats', 3, 1 }, { -130, -100, 'shop', 2, 2 }, { -94, -62, 'office', 4, 3 }, { -56, -30, 'flats', 3, 4 },
+		{ -24, 8, 'lot', 0, 5 }, { 14, 42, 'shop', 3, 6 }, { 48, 78, 'flats', 4, 7 }, { 84, 114, 'shop', 2, 8 }, { 120, 156, 'flats', 3, 1 } },
+	-- { x0, x1, kind, floors, tone } along the south street's far side (z from the far sidewalk, 30 deep)
+	south = { { -114, -88, 'flats', 3, 3 }, { -82, -54, 'shop', 2, 4 }, { -48, -20, 'office', 4, 5 }, { -14, 14, 'shop', 3, 6 },
+		{ 20, 48, 'flats', 2, 7 }, { 54, 82, 'shop', 3, 8 } },
+	-- { z0, z1, kind, floors, tone } behind the avenue's blocks, fronting the side streets (|x| 64..88.5)
+	north = { { -56, 0, 'shop', 2, 2 }, { -116, -62, 'flats', 3, 5 }, { -176, -122, 'office', 4, 1 } },
 }
 function City.skyline(L)
 	local g = L:group('Surroundings')
-	local R = City.Ring
-	-- the ring street: sidewalks (light stone, a pale kerb on the road edge), the asphalt with a white dashed centre line
+	local R, Wh = City.Ring, Lobby.WH
+	local RY, WY = R.road, R.walk
+	local zs = Wh.z1 + 2.5 -- the hedge's outer face, south
+	local zr0, zr1 = zs + 5.5, zs + 17.5 -- the south road
+	local zf = zr1 + 6 -- the far sidewalk's back
 	local function walk(a, b) sbox(g, 'Sidewalk', a, b, City.walk) end
 	local function road(a, b) sbox(g, 'Road', a, b, City.road) end
+	local function kerb(a, b) decor(sbox(g, 'KerbStone', a, b, City.kerb)).CastShadow = false end
+	local function paint(a, b) decor(sbox(g, 'RoadLine', a, b, City.line)).CastShadow = false end
+	local base = City.walk:Lerp(City.road, 0.25)
+	-- the side streets and the south street meet in an L at each corner: each sidewalk and road ends where the other's
+	-- begins, a kerb along every road edge, the kerbs meeting at the corners
 	for _, s in { -1, 1 } do
-		walk(V(s * R.walk0, -1, -4), V(s * R.road0, 0.45, R.south))
-		road(V(s * R.road0, -1, -70), V(s * R.road1, 0, 104))
-		walk(V(s * R.road1, -1, -70), V(s * R.walk1, 0.45, 124))
-		walk(V(s * 36, -1, -4), V(s * R.walk0, 0.45, 3.5)) -- (the strip along the plaza's north edge, to the avenue's towers)
-		for _, x in { R.road0, R.road1 } do decor(sbox(g, 'KerbStone', V(s * (x - 0.6), -0.5, -70), V(s * (x + 0.6), 0.55, x == R.road0 and R.south or 124), City.kerb)).CastShadow = false end
-		for z = -66, 100, 12 do decor(sbox(g, 'RoadDash', V(s * 102.7, 0, z), V(s * 103.3, 0.12, z + 5), City.line)).CastShadow = false end
+		local function X(a, b) return math.min(s * a, s * b), math.max(s * a, s * b) end
+		local a, b = X(R.walk0, R.road0)
+		walk(V(a, -1, R.north), V(b, WY, zr0))
+		a, b = X(R.road0, R.road1)
+		road(V(a, -1, R.north), V(b, RY, zr0))
+		a, b = X(R.road1, R.walk1)
+		walk(V(a, -1, R.north), V(b, WY, zr1))
+		-- along the plaza's north edge, from the avenue's blocks to the side street's sidewalk
+		a, b = X(36, R.walk0)
+		walk(V(a, -1, 0), V(b, WY, Wh.z0 - 2.5))
+		kerb(V(s * (R.road0 - 0.6), -0.5, R.north), V(s * (R.road0 + 0.6), WY + 0.1, zr0 - 0.6))
+		kerb(V(s * (R.road1 - 0.6), -0.5, R.north), V(s * (R.road1 + 0.6), WY + 0.1, zr1 + 0.6))
+		for z = R.north + 4, zr0 - 16, 12 do paint(V(s * 102.7, RY, z), V(s * 103.3, RY + 0.12, z + 5)) end
+		-- a crosswalk over the side street where it meets the south one: the plaza's sidewalk to the far one
+		for k = 0, 4 do paint(V(s * (R.road0 + 1.2 + k * 2.6), RY, zr0 - 7), V(s * (R.road0 + 2.6 + k * 2.6), RY + 0.12, zr0 - 1.5)) end
+		-- the blocks' paved base (their alleys and forecourts), behind the far sidewalk and behind the avenue
+		a, b = X(R.walk1, R.walk1 + 34)
+		sbox(g, 'CityBase', V(a, -1, R.north), V(b, WY, zf + 30), base)
+		a, b = X(64, R.walk0)
+		sbox(g, 'CityBase', V(a, -1, R.north), V(b, WY, 0), base)
 	end
-	walk(V(-R.road0, -1, R.south), V(R.road0, 0.45, 104))
-	road(V(-R.road1, -1, 104), V(R.road1, 0, 118))
-	walk(V(-R.walk1, -1, 118), V(R.walk1, 0.45, 124))
-	for x = -106, 100, 12 do decor(sbox(g, 'RoadDash', V(x, 0, 110.7), V(x + 5, 0.12, 111.3), City.line)).CastShadow = false end
-	-- crosswalks where the side streets meet the south one
+	walk(V(-R.walk0, -1, zs), V(R.walk0, WY, zr0))
+	road(V(-R.road1, -1, zr0), V(R.road1, RY, zr1))
+	walk(V(-R.walk1, -1, zr1), V(R.walk1, WY, zf))
+	sbox(g, 'CityBase', V(-R.walk1, -1, zf), V(R.walk1, WY, zf + 30), base)
+	kerb(V(-(R.road0 + 0.6), -0.5, zr0 - 0.6), V(R.road0 + 0.6, WY + 0.1, zr0 + 0.6))
+	kerb(V(-(R.road1 + 0.6), -0.5, zr1 - 0.6), V(R.road1 + 0.6, WY + 0.1, zr1 + 0.6))
+	for x = -106, 100, 12 do paint(V(x, RY, (zr0 + zr1) / 2 - 0.3), V(x + 5, RY + 0.12, (zr0 + zr1) / 2 + 0.3)) end
+	-- the blocks
+	local bx0, bx1 = R.walk1, R.walk1 + 34
 	for _, s in { -1, 1 } do
-		for k = 0, 4 do decor(sbox(g, 'Zebra', V(s * (R.road0 + 1 + k * 2.6), 0, 98), V(s * (R.road0 + 2.4 + k * 2.6), 0.12, 103.4), City.line)).CastShadow = false end
-	end
-	-- the towers
-	for _, s in { -1, 1 } do
-		local side = s > 0 and 'W' or 'E'
-		for _, b in City.Skyline.east do
-			City.tower(g, s * b[1], s * b[2], b[3], b[4], b[5], { tone = b[6] + (s > 0 and 0 or 1), faces = { side, 'S', 'N' }, setback = b[5] >= 90 and 4 or nil, noShadow = true })
+		local street = s > 0 and 'W' or 'E'
+		for i, b in City.Blocks.east do
+			local x0, x1 = math.min(s * bx0, s * bx1), math.max(s * bx0, s * bx1)
+			local tone = b[5] + (s > 0 and 0 or 3)
+			if b[3] == 'lot' then
+				if s > 0 then City.parking(g, x0, x1, b[1], b[2], 900 + i, WY + 0.15, x0)
+				else City.diner(g:at(CFrame.new(0, WY, 0)), CFrame.new(-(bx0 + 0.5), 0, (b[1] + b[2]) / 2) * CFrame.Angles(0, -math.pi / 2, 0)) end
+			else
+				City.block(g, x0, x1, b[1], b[2], { kind = b[3], floors = b[4], tone = tone, faces = { street }, name = 'Block' })
+			end
 		end
-		for _, b in City.Skyline.north do
-			City.tower(g, s * b[1], s * b[2], b[3], b[4], b[5], { tone = b[6] + (s > 0 and 1 or 0), faces = { 'S', side }, setback = b[5] >= 90 and 4 or nil, noShadow = true })
+		for _, b in City.Blocks.north do
+			local x0, x1 = math.min(s * 64, s * R.walk0), math.max(s * 64, s * R.walk0)
+			local side = s > 0 and 'E' or 'W'
+			City.block(g, x0, x1, b[1], b[2], { kind = b[3], floors = b[4], tone = b[5] + (s > 0 and 1 or 4), faces = b[2] == 0 and { side, 'S' } or { side }, name = 'Block' })
 		end
 	end
-	for _, b in City.Skyline.south do
-		City.tower(g, b[1], b[2], b[3], b[4], b[5], { tone = b[6], faces = { 'N' }, setback = b[5] >= 90 and 4 or nil, noShadow = true, door = 'N' })
-	end
-	-- the street's life: taxis and cars at the kerbs, trees in planters and lamps along the plaza's sidewalk
+	for _, b in City.Blocks.south do City.block(g, b[1], b[2], zf, zf + 30, { kind = b[3], floors = b[4], tone = b[5], faces = { 'N' }, name = 'Block' }) end
+	City.diner(g:at(CFrame.new(0, WY, 0)), CFrame.new(100, 0, zf + 0.5))
+	-- two far glass towers: the downtown still ahead, well behind the avenue, either side of the view up it
+	City.tower(g, -112, -86, -200, -176, 92, { tone = 2, faces = { 'S', 'E' }, setback = 3, noShadow = true, name = 'Landmark' })
+	City.tower(g, 88, 112, -196, -172, 76, { tone = 3, faces = { 'S', 'W' }, noShadow = true, name = 'Landmark' })
+	-- the street's life: taxis and cars at the kerbs, trees in planters and lamps along the plaza's sidewalks
 	local cars = { C(214, 52, 52), P.white, C(52, 102, 214), C(120, 210, 90) }
 	for k, z in { -40, 6, 52, 88 } do
 		for _, s in { -1, 1 } do
-			local cf = CFrame.new(s * 99, 0, z + (s > 0 and 14 or 0)) * CFrame.Angles(0, s > 0 and math.pi or 0, 0)
+			local cf = CFrame.new(s * 99, RY, z + (s > 0 and 14 or 0)) * CFrame.Angles(0, s > 0 and math.pi or 0, 0)
 			if (k + (s > 0 and 1 or 0)) % 2 == 0 then City.taxi(g, cf) else car(g, cf, cars[k]) end
 		end
 	end
 	for k, x in { -70, -20, 44, 86 } do
-		local cf = CFrame.new(x, 0, 107) * CFrame.Angles(0, math.pi / 2, 0)
+		local cf = CFrame.new(x, RY, zr0 + 3) * CFrame.Angles(0, math.pi / 2, 0)
 		if k % 2 == 1 then City.taxi(g, cf) else car(g, cf, cars[k]) end
 	end
 	for _, s in { -1, 1 } do
-		for z = 14, 90, 19 do City.planter(g, V(s * 92.2, 0.45, z), 700 + z + (s > 0 and 3 or 0)) end
-		for z = 23.5, 80, 19 do City.lamp(g, V(s * 94.6, 0.45, z), s) end
+		for z = 14, 90, 19 do City.planter(g, V(s * 92.2, WY, z), 700 + z + (s > 0 and 3 or 0)) end
+		for z = 23.5, 80, 19 do City.lamp(g, V(s * 94.6, WY, z), s) end
 	end
-	for x = -80, 80, 20 do City.planter(g, V(x, 0.45, 100.2), 760 + x) end
-	-- (no shade from out here on the plaza: the towers cast none, like World 1's cliffs)
+	for x = -80, 80, 20 do City.planter(g, V(x, WY, zs + 2.75), 760 + x, 3.6, 3.6) end
 	return g
 end
 -- The hall's shell, swapped for the plaza: the pavers, the threshold onto the gate's forecourt, the planter wall with its
@@ -281,20 +440,29 @@ function Lobby.hall(L)
 		end
 	end
 	f:box('Threshold', V(-Lobby.Bounds.mouth, -1, Lobby.N - 1), V(Lobby.Bounds.mouth, 0, Wh.z0), City.paverB, M.SmoothPlastic)
-	-- the edge: the planter wall (2.4 high, a pale cap) with its hedge, west / east / south, and the north either side of
-	-- the gate's forecourt
+	-- the edge: the planter wall (2.4 high, a pale flush cap) with its hedge, west / east / south, and the north either side
+	-- of the gate's forecourt (from the forecourt's own keep-in wall, |x| = mouth). The pieces butt at the corners and
+	-- each layer's ring is laid as one ring (the hedge inset 0.4 from both faces, its top 0.8), so nothing overlaps or
+	-- leaves a notch.
 	local e = L:group('PlazaEdge')
-	local function wall(a, b)
-		sbox(e, 'PlanterWall', V(a.X, -1, a.Z), V(b.X, 2.4, b.Z), City.clay)
-		decor(sbox(e, 'PlanterCap', V(a.X - 0.2, 2.4, a.Z - 0.2), V(b.X + 0.2, 2.7, b.Z + 0.2), City.clayCap)).CastShadow = false
-		sbox(e, 'Hedge', V(a.X + 0.4, 2.7, a.Z + 0.4), V(b.X - 0.4, 4.2, b.Z - 0.4), City.hedge)
-		decor(sbox(e, 'HedgeTop', V(a.X + 0.8, 4.2, a.Z + 0.8), V(b.X - 0.8, 4.7, b.Z - 0.8), City.hedgeTop))
+	local xi, xo = Wh.x1, Wh.x1 + 2.5
+	local zn0, zn1, zsi, zso = Wh.z0 - 2.5, Wh.z0, Wh.z1, Wh.z1 + 2.5
+	local m = Lobby.Bounds.mouth
+	local function ring(name, y0, y1, col, i, isDecor)
+		local runs = {
+			{ -xo + i, -xi - i, zn0 + i, zso - i }, { xi + i, xo - i, zn0 + i, zso - i }, -- west, east
+			{ -xi - i, xi + i, zsi + i, zso - i }, -- south, between them
+			{ -xi - i, -m - (i > 0 and i or 0), zn0 + i, zn1 - i }, { m + (i > 0 and i or 0), xi + i, zn0 + i, zn1 - i }, -- north
+		}
+		for _, r in runs do
+			local p = sbox(e, name, V(r[1], y0, r[3]), V(r[2], y1, r[4]), col)
+			if isDecor then decor(p).CastShadow = false end
+		end
 	end
-	local x1, zs = Wh.x1 + 2.5, Wh.z1 + 2.5
-	wall(V(-x1, 0, Wh.z0 - 2.5), V(-Wh.x1, 0, zs))
-	wall(V(Wh.x1, 0, Wh.z0 - 2.5), V(x1, 0, zs))
-	wall(V(-Wh.x1, 0, Wh.z1), V(Wh.x1, 0, zs))
-	for _, s in { -1, 1 } do wall(V(s * (Lobby.Bounds.mouth + 1), 0, Wh.z0 - 2.5), V(s * Wh.x1, 0, Wh.z0)) end
+	ring('PlanterWall', -1, 2.4, City.clay, 0)
+	ring('PlanterCap', 2.4, 2.7, City.clayCap, 0, true)
+	ring('Hedge', 2.7, 4.2, City.hedge, 0.4)
+	ring('HedgeTop', 4.2, 4.7, City.hedgeTop, 0.8, true)
 	City.skyline(L)
 	return h
 end
@@ -307,13 +475,41 @@ Lobby.Scenery = (function()
 	local Wh = Lobby.WH
 	for _, sx in { -1, 1 } do
 		add('Scn_Tree_1', sx * (Wh.x1 - 5), Wh.z0 + 5, 0) add('Scn_Tree_2', sx * (Wh.x1 - 5), Wh.z1 - 5, 0)
-		add('Scn_Bench', sx * 62, Wh.z1 - 2.4, 0) add('Scn_TrashCan', sx * 56.5, Wh.z1 - 2.2, 0)
+		add('Scn_Bench', sx * 77, Wh.z1 - 2.4, 0) add('Scn_TrashCan', sx * 72.5, Wh.z1 - 2.2, 0)
 		add('Scn_StreetLamp', sx * 66, Wh.z0 + 2.2, -90)
 		add('Scn_StreetLamp', sx * (Wh.x1 - 2.4), 70, sx < 0 and 0 or 180)
 		add('Scn_Bush_1', sx * (Wh.x1 - 3), 30, 0)
 	end
 	return list
 end)()
+
+-- (Oct 27 round 2, the owner: "make the leaderboards, portal placing way better, so people can actually see and reach
+-- them, not just being one another") The band between the zones' platforms and the box dais carries a walk each way off
+-- the south walk (the reference's: its portal west, its boards east, each by the path): west to the portal, standing at
+-- the walk's end and turned to the crossing; east to a paved yard where the three boards stand on an arc round the
+-- crossing (60 studs out, 12 degrees apart, clear of the gun stand's stairs), each turned to it: seen side by side from
+-- the crossing, none behind another, and each with open yard in front of it. (The portal is behind the training block
+-- from the crossing; its floating words show over the bays, and the south walk sees it straight down its own walk.)
+do
+	local Pz = Lobby.Plaza
+	local zA, zB = Pz.z1 + 1.4, Pz.z1 + 10.2
+	Lobby.PortalPath = { x0 = -62, z0 = zA, z1 = zB }
+	Lobby.Plan.World2 = { x = -64, z = (zA + zB) / 2 + 2, look = Lobby.Centre, scale = 0.85 }
+	City.BoardYard = { x0 = 30, x1 = 70, z0 = 68, z1 = Lobby.WH.z1 - 2 }
+	local boards, cz = {}, Lobby.Centre.Z
+	for _, deg in { 60, 48, 36 } do
+		local a = math.rad(deg)
+		table.insert(boards, { math.floor(60 * math.cos(a) * 10 + 0.5) / 10, math.floor((cz + 60 * math.sin(a)) * 10 + 0.5) / 10 })
+	end
+	Lobby.Plan.Boards = boards
+	local paths = Lobby.paths
+	function Lobby.paths()
+		local list, Y = paths(), City.BoardYard
+		table.insert(list, { Lobby.SpineHalf, Y.x0, zA, zB, 'Boards' })
+		table.insert(list, { Y.x0, Y.x1, Y.z0, Y.z1, 'BoardYard' })
+		return list
+	end
+end
 
 -- The way back to the hood, where World 1 has its World 2 door (Lobby.Plan.World2, turned to the crossing): a warm brick
 -- arch (the hood's brick) on a stone step, a soft orange glow filling it, THE HOOD on its lintel. Front -Z of cf faces

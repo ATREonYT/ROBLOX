@@ -12,7 +12,7 @@ Do these in order. Each step says where the details are. Tick them off as you go
    - **File → Import 3D**, then pick the 4 files in `hood/art/models/items/`.
    - Paste `hood/tools/blender/studio_item_meshes.lua` into the **Command Bar**.
    - Check: `ReplicatedStorage → HoodItemMeshes` has 57 models. Press Play and the plaza shows your designs.
-4. **Icons:** upload the UI pictures with `python3 hood/tools/upload_assets.py`, using your Open Cloud API key (`hood/art/README_upload.md`). Without this, menus show stand-ins.
+4. **Icons and footsteps:** upload the UI pictures and the footstep sounds with `python3 hood/tools/upload_assets.py`, using your Open Cloud API key (`hood/art/README_upload.md`). Without this, menus show stand-ins.
 5. **Lighting:** select **Lighting** in the Explorer and set **Technology** to **ShadowMap** in Properties (a script can't set it; the rest of the Huzz Valley look is applied when the game starts).
 6. **Animations:** upload the 7 moves from your R15 pack (Idle, Walk, Run, Jump, Fall, Climb, Swimming: right-click each in the pack's AnimSaves → Save to Roblox) and paste the numbers into `hood/src/ReplicatedStorage/Shared/Config/Animations.lua` (or send them to Claude). The pack itself stays out of GitHub: its licence forbids sharing it.
 7. **Saving:** Game Settings → Security → turn on **Enable Studio Access to API Services**. In Studio, progress is on purpose a throwaway copy that resets when you press Stop, so your real saves are never touched by tests (Output says "MOCK DATA").

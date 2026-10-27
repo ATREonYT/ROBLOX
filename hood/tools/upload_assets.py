@@ -10,7 +10,8 @@ Plain python3 (3.8+), standard library only: runs on a Mac with no pip installs.
   python3 hood/tools/upload_assets.py              # upload new/changed PNGs, write the ids
 
 What it uploads: every PNG in hood/art/icons3d/ (-> IconModels.Images[<file name>]) and hood/art/ui/ (-> the UIKit line
-`Kit.<Name> = '...' -- hood/art/ui/<file>.png`). Ids go in as 'rbxassetid://<id>'.
+`Kit.<Name> = '...' -- hood/art/ui/<file>.png`), and every .ogg in hood/art/sounds/ (the footsteps, as Audio ->
+Config/Sound's Steps[<file name>]). Ids go in as 'rbxassetid://<id>'.
 
 Idempotent: hood/art/asset_ids.json remembers the sha256 and asset id of every uploaded file. Unchanged files are not
 uploaded again (their ids are still written, so a re-run repairs the Lua files); a changed PNG is uploaded as a new
@@ -39,8 +40,10 @@ DEFAULT_ROOT = os.path.abspath(os.path.join(HERE, '..'))  # the hood/ folder
 API = 'https://apis.roblox.com'
 ICON_MODULE = os.path.join('src', 'ReplicatedStorage', 'Shared', 'Models', 'IconModels.lua')
 UIKIT = os.path.join('src', 'ReplicatedStorage', 'Shared', 'UIKit.lua')
+SOUND_MODULE = os.path.join('src', 'ReplicatedStorage', 'Shared', 'Config', 'Sound.lua')
 MANIFEST = os.path.join('art', 'asset_ids.json')
-SOURCES = (('icons3d', 'icon'), ('ui', 'texture'))
+SOURCES = (('icons3d', 'icon'), ('ui', 'texture'), ('sounds', 'sound'))
+EXT = {'icon': '.png', 'texture': '.png', 'sound': '.ogg'}
 SECRET = []  # the key, only so it can be scrubbed from server text
 
 
@@ -70,6 +73,8 @@ def sha256(path):
 
 
 def png_size(path):
+	if path.lower().endswith('.ogg'):
+		return 0, 0
 	with open(path, 'rb') as f:
 		head = f.read(24)
 	if head[:8] != b'\x89PNG\r\n\x1a\n':
@@ -78,14 +83,14 @@ def png_size(path):
 
 
 def collect(root, only):
-	"""[(key, abs_path, kind, name)] for every PNG to handle. key = path relative to hood/art (e.g. icons3d/Basket.png)."""
+	"""[(key, abs_path, kind, name)] for every file to handle. key = path relative to hood/art (e.g. icons3d/Basket.png)."""
 	out = []
 	for folder, kind in SOURCES:
 		d = os.path.join(root, 'art', folder)
 		if not os.path.isdir(d):
 			continue
 		for fn in sorted(os.listdir(d)):
-			if not fn.lower().endswith('.png'):
+			if not fn.lower().endswith(EXT[kind]):
 				continue
 			name = fn[:-4]
 			if only and name not in only:
@@ -120,14 +125,15 @@ def write_text(path, text):
 
 # ------------------------------------------------------------------------------------------------- Lua writers
 IMAGES_BLOCK = re.compile(r'(M\.Images = \{\n)(.*?)(\n\})', re.S)
+STEPS_BLOCK = re.compile(r'(Sound\.Steps = \{\n)(.*?)(\n\})', re.S)
 
 
-def set_icon_images(text, ids):
-	"""Set M.Images[<Id>] = 'rbxassetid://N' in IconModels.lua; new ids are appended to the block.
-	Returns (text, changes)."""
-	m = IMAGES_BLOCK.search(text)
+def set_icon_images(text, ids, block=IMAGES_BLOCK, where='IconModels.Images'):
+	"""Set M.Images[<Id>] = 'rbxassetid://N' in IconModels.lua (or another `X = {` block of `Key = '...'` lines);
+	new ids are appended to the block. Returns (text, changes)."""
+	m = block.search(text)
 	if not m:
-		raise UploadError('IconModels.lua: no "M.Images = {" block found')
+		raise UploadError('%s: no "%s = {" block found' % (where, where))
 	lines = m.group(2).split('\n') if m.group(2) else []
 	changes = []
 	for iid, value in sorted(ids.items()):
@@ -137,11 +143,11 @@ def set_icon_images(text, ids):
 			if mm:
 				if mm.group(3) != value:
 					lines[i] = "%s%s%s'%s'%s" % (mm.group(1), iid, mm.group(2), value, mm.group(4))
-					changes.append('IconModels.Images.%s: %r -> %r' % (iid, mm.group(3), value))
+					changes.append('%s.%s: %r -> %r' % (where, iid, mm.group(3), value))
 				break
 		else:
 			lines.append("\t%s = '%s', -- %s" % (iid, value, iid))
-			changes.append('IconModels.Images.%s: (new key) -> %r' % (iid, value))
+			changes.append('%s.%s: (new key) -> %r' % (where, iid, value))
 	text = text[:m.start()] + m.group(1) + '\n'.join(lines) + m.group(3) + text[m.end():]
 	return text, changes
 
@@ -188,7 +194,16 @@ def apply_ids(root, ids_by_key, dry):
 	"""Write ids into IconModels.lua and UIKit.lua. ids_by_key: {'icons3d/Basket.png': 'rbxassetid://N', ...}."""
 	icons = {k.split('/', 1)[1][:-4]: v for k, v in ids_by_key.items() if k.startswith('icons3d/')}
 	textures = {k.split('/', 1)[1]: v for k, v in ids_by_key.items() if k.startswith('ui/')}
+	sounds = {k.split('/', 1)[1][:-4]: v for k, v in ids_by_key.items() if k.startswith('sounds/')}
 	all_changes = []
+	if sounds:
+		p = os.path.join(root, SOUND_MODULE)
+		with open(p) as f:
+			old = f.read()
+		new, changes = set_icon_images(old, sounds, STEPS_BLOCK, 'Sound.Steps')
+		all_changes += changes
+		if new != old and not dry:
+			write_text(p, new)
 	if icons:
 		p = os.path.join(root, ICON_MODULE)
 		with open(p) as f:
@@ -273,12 +288,13 @@ def multipart(fields):
 
 def upload_one(cfg, path, display, description):
 	creator = {'userId': cfg.creator_id} if cfg.creator_type == 'user' else {'groupId': cfg.creator_id}
-	request = {'assetType': cfg.asset_type, 'displayName': display[:50], 'description': description[:1000],
-		'creationContext': {'creator': creator}}
+	sound = path.lower().endswith('.ogg')
+	request = {'assetType': 'Audio' if sound else cfg.asset_type, 'displayName': display[:50],
+		'description': description[:1000], 'creationContext': {'creator': creator}}
 	with open(path, 'rb') as f:
 		data = f.read()
 	body, ctype = multipart([('request', None, json.dumps(request).encode('utf-8'), None),
-		('fileContent', os.path.basename(path), data, 'image/png')])
+		('fileContent', os.path.basename(path), data, 'audio/ogg' if sound else 'image/png')])
 	op = http('POST', cfg.api + '/assets/v1/assets', cfg.key, body, ctype)
 	op_id = op.get('operationId') or (op.get('path') or '').split('/')[-1]
 	if not op_id:
@@ -384,7 +400,7 @@ def main(argv=None):
 
 	files = collect(root, only)
 	if not files:
-		log('nothing to do: no PNGs in art/icons3d or art/ui%s' % (' matching --only' if only else ''))
+		log('nothing to do: no PNGs in art/icons3d or art/ui, no sounds in art/sounds%s' % (' matching --only' if only else ''))
 		return 0
 	if a.status:
 		class StatusCfg:
@@ -409,9 +425,9 @@ def main(argv=None):
 	counts = {}
 	for p in plan:
 		counts[p[5]] = counts.get(p[5], 0) + 1
-	log('  %d PNGs: %s' % (len(plan), ', '.join('%d %s' % (n, s) for s, n in sorted(counts.items()))))
+	log('  %d files: %s' % (len(plan), ', '.join('%d %s' % (n, s) for s, n in sorted(counts.items()))))
 	for key_, path, kind, name, digest, status, (w, h) in plan:
-		target = "IconModels.Images.%s" % name if kind == 'icon' else "Kit line '-- hood/art/ui/%s.png'" % name
+		target = {'icon': "IconModels.Images.%s", 'sound': "Sound.Steps.%s"}.get(kind, "Kit line '-- hood/art/ui/%s.png'") % name
 		rec = manifest.get(key_) or {}
 		have = (' (has rbxassetid://%s)' % rec['assetId']) if rec.get('assetId') else ''
 		log('  %-9s %-28s %4dx%-4d -> %s%s' % (status.upper(), key_, w, h, target, have))
@@ -435,8 +451,8 @@ def main(argv=None):
 		if a.dry_run:
 			ids[key_] = 'rbxassetid://<new>'
 			continue
-		display = 'Hood %s %s' % ('Icon' if kind == 'icon' else 'UI', name)
-		desc = '+1 Hood Evolution %s (%s)' % ('HUD icon' if kind == 'icon' else 'UI texture', key_)
+		display = 'Hood %s %s' % ({'icon': 'Icon', 'sound': 'Sound'}.get(kind, 'UI'), name)
+		desc = '+1 Hood Evolution %s (%s)' % ({'icon': 'HUD icon', 'sound': 'footstep sound'}.get(kind, 'UI texture'), key_)
 		try:
 			log('  uploading %s ...' % key_)
 			asset_id, state, atype = upload_one(cfg, path, display, desc)
@@ -450,7 +466,7 @@ def main(argv=None):
 		ids[key_] = 'rbxassetid://%s' % asset_id
 		uploaded += 1
 		log('  ok %s -> rbxassetid://%s (moderation: %s)' % (key_, asset_id, state))
-		if a.asset_type == 'Decal':
+		if a.asset_type == 'Decal' and kind != 'sound':
 			log('  ! uploaded as a Decal: ImageLabels need the IMAGE id. Paste rbxassetid://%s into any ImageLabel.Image '
 				'in Studio; it turns into the image id: put that one in the Lua file (or re-run with --asset-type Image).' % asset_id)
 
