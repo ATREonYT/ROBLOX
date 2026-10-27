@@ -8,6 +8,7 @@
 --     spawn + GiftOffset), published as OnboardingGiftAt (a world Vector3) for the client to draw. Walking into it
 --     (OnboardingRules.atGift, checked here from the root's position) opens GiftCount pairs of the Street box at its
 --     normal odds through HoodServer/ShoeOpening (the same unboxing as a bought box; nothing is paid).
+--   * FirstJoin (Oct 27, flow): true on the very first join of a save (OnboardingRules.firstJoin), for the welcome.
 --   * the quiet window: OnboardingQuiet = true for the first QuietSeconds of play (StageService's 10x pad and
 --     LobbyService's Robux lanes open no purchase prompt meanwhile).
 -- Saved inside the profile's existing Onboarding table: Gift, Done, Seconds (OnboardingRules.sanitize). A returning
@@ -20,7 +21,6 @@ local Data = require(script.Parent.DataService)
 local Rules = require(RS.Shared.OnboardingRules)
 local Guns = require(RS.Shared.Config.Guns)
 local ActiveMap = require(RS.Shared.ActiveMap)
-local LevelRules = require(RS.Shared.LevelRules)
 local BigAttr = require(RS.Shared.BigAttr)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
@@ -54,8 +54,9 @@ local function stageOneNeed()
 	for _, g in ok and tagged or {} do
 		if g:GetAttribute('Stage') == 1 then
 			local r = BigAttr.get(g, 'Required')
-			-- (brief 29, P4: the gate's Recommended is a LEVEL now; you are ready the moment you reach it, where that level starts)
-			if type(r) == 'number' and r > 0 then return LevelRules.powerFor(LevelRules.levelOf(r)) end
+			-- (Oct 27, flow: the kid stays in BAY 1 until the gate's own Recommended Power, the first goal's "Train to 10
+			-- Power"; brief 29 had moved on at the start of its Level, 7 Power, a second and a half after stepping in)
+			if type(r) == 'number' and r > 0 then return r end
 		end
 	end
 	return 10
@@ -119,6 +120,8 @@ local function check(player, dt)
 			ob.Done = true
 			ob.Seconds = math.max(ob.Seconds, Rules.QuietSeconds)
 		end
+		-- (Oct 27, flow) the very first join (a save that has never played a second): HoodClient/Welcome greets it
+		set(player, 'FirstJoin', Rules.firstJoin(ob))
 	end
 	Rules.tick(ob, dt)
 	-- (Oct 27: no free gift for now) home after the first crew counts as the gift's moment, so run 2 ends the guidance

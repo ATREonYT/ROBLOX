@@ -26,6 +26,79 @@ for _, name in { 'tracer', 'muzzle', 'popNumber', 'burst', 'combo', 'shards', 'k
 end
 -- HOOK's own pieces: the callout word, the arrow's word, the present, OnboardingStep.
 local hk = { word = nil, arrow = nil, gift = false, step = nil }
+-- (Oct 27, flow) What the flow round promises, watched every tick: one moment at a time with a calm between, the goal
+-- line quiet during the tutorial, one guide at a time, no level toast in the first minute.
+local FL = { moments = {}, cur = nil, curAt = nil, lastEnd = nil, gaps = {}, overlap = {}, goalLineInTut = 0, guides2 = 0,
+	levelToastEarly = 0, goalDoneInTut = 0, ready = false, crew = false, reveal = nil, powerBox = false, start = nil }
+local function shownGui(g)
+	if not g or (g:IsA('ScreenGui') and not g.Enabled) then return false end
+	return true
+end
+local function visibleChainF(d)
+	local x = d
+	while x and x:IsA('GuiObject') do if not x.Visible then return false end; x = x.Parent end
+	return true
+end
+local function flowTrack()
+	local G = P.PlayerGui
+	local now = K
+	-- the moment queue's own word for what is on screen
+	local m = G:GetAttribute('HoodMoment')
+	m = (type(m) == 'string' and m ~= '') and m or nil
+	if m ~= FL.cur then
+		if FL.cur then FL.lastEnd = now; ev('moment', 'moment ends: ' .. FL.cur) end
+		if m then
+			if FL.lastEnd and FL.cur == nil then table.insert(FL.gaps, { now - FL.lastEnd, m }) end
+			table.insert(FL.moments, { m, now })
+			ev('moment', 'moment: ' .. m)
+		end
+		FL.cur = m
+	end
+	-- the popups themselves: never two at once
+	local up = {}
+	local goals = G:FindFirstChild('HoodGoals')
+	local gd = goals and goals:FindFirstChild('GoalDone', true)
+	if gd then
+		local title = gd:FindFirstChild('Title')
+		local tt = title and title.Text or ''
+		table.insert(up, 'GoalDone:' .. tt)
+		if tt == "YOU'RE READY!" then FL.ready = true end
+		if tt == 'GOAL DONE!' and P:GetAttribute('OnboardingStep') ~= 'Done' then FL.goalDoneInTut += 1 end
+	end
+	if G:FindFirstChild('HoodGunReveal') then
+		table.insert(up, 'GunReveal')
+		local t = {}
+		for _, d in G.HoodGunReveal:GetDescendants() do if d:IsA('TextLabel') and not d.Name:find('Shadow') then table.insert(t, d.Text) end end
+		FL.reveal = FL.reveal or table.concat(t, ' | ')
+	end
+	local prog = G:FindFirstChild('HoodProgress')
+	if prog and prog:FindFirstChild('RankUp', true) then table.insert(up, 'RankUp') end
+	local hud = G:FindFirstChild('HoodHUD')
+	if hud and hud:FindFirstChild('RebirthMoment', true) then table.insert(up, 'Rebirth') end
+	local waves = G:FindFirstChild('HoodWaves')
+	if waves and waves:FindFirstChild('CrewIncoming', true) then table.insert(up, 'Crew'); FL.crew = true end
+	if G:FindFirstChild('HoodWelcome') then table.insert(up, 'Welcome') end
+	if #up > 1 then table.insert(FL.overlap, ('%.1f %s'):format(now, table.concat(up, '+'))) end
+	-- the goal line while the tutorial runs
+	local tr = goals and goals:FindFirstChild('Goal', true)
+	if tr and tr:IsA('GuiObject') and visibleChainF(tr) and goals.Enabled and P:GetAttribute('OnboardingStep') ~= 'Done' then FL.goalLineInTut += 1 end
+	-- one guide at a time: the tutorial's arrows, the goal guide's arrow, the lobby's "TRAIN HERE" pointer
+	local gs = {}
+	if G:GetAttribute('HoodGuide') == 'Tutorial' then table.insert(gs, 'Tutorial') end
+	local gg = workspace:FindFirstChild('HoodGoalGuide')
+	local shaft = gg and gg:FindFirstChild('ArrowShaft')
+	if shaft and shaft.Transparency < 0.5 then table.insert(gs, 'GoalGuide') end
+	local nd = G:FindFirstChild('NextDestination')
+	if nd and nd.Adornee ~= nil and nd.Enabled ~= false then table.insert(gs, 'Lobby') end
+	if #gs > 1 then FL.guides2 += 1; FL.guidePair = FL.guidePair or ('%.1f %s %s (lobby pointer on %s)'):format(now, table.concat(gs, '+'), tostring(P:GetAttribute('OnboardingStep')), nd and nd.Adornee and nd.Adornee.Name or '-') end
+	-- level toasts in the first minute (of the visit: the harness clock from the start of the clients)
+	local lt = prog and prog:FindFirstChild('LevelToast', true)
+	if lt and lt.Visible and os.clock() - W0 < 60 then FL.levelToastEarly += 1 end
+	-- BAY 1's Power box
+	local foc = G:FindFirstChild('HoodTutorial')
+	-- (the harness lays out no HUD, so the box itself can't lock on here: the tutorial's own word for what it points at)
+	if foc and (foc:GetAttribute('Boxed') == 'Line' or foc:GetAttribute('Want') == 'Power') then FL.powerBox = true end
+end
 local function hookTrack()
 	local g = P.PlayerGui:FindFirstChild('HoodOnboarding')
 	local c = g and g:FindFirstChild('Callout', true)
@@ -49,6 +122,7 @@ local function hookTrack()
 	end
 	local s = P:GetAttribute('OnboardingStep')
 	if s ~= hk.step then hk.step = s end
+	flowTrack()
 end
 local trackOrig = track
 track = function() trackOrig(); hookTrack() end
@@ -117,6 +191,34 @@ camFn = follow(0, -1)
 K = 0; resetClock(); EV = {}
 ev('spawn', 'spawned (fresh save)')
 frame(0.2)
+-- (Oct 27, flow) the first-join welcome: hands off, it plays out by itself and gives the camera back; the kid clock
+-- (K) then starts again from 0 at the moment the kid has control
+local WEL = { seen = false, text = '', k = nil, camBack = nil, hintDuring = false }
+WEL.seen = waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') ~= nil end, 4)
+if WEL.seen then
+	local seenText, frames = {}, 0
+	waitFor(function()
+		frames += 1 -- (game time: one harness frame is 1/30 s, however slow the machine runs it)
+		local g = P.PlayerGui:FindFirstChild('HoodWelcome')
+		if g then
+			for _, d in g:GetDescendants() do
+				if d:IsA('TextLabel') and d.Text ~= '' and not d.Name:find('Shadow') and not seenText[d.Text] then seenText[d.Text] = true; WEL.text ..= (WEL.text == '' and '' or ' ') .. d.Text end
+			end
+		end
+		local hg = P.PlayerGui:FindFirstChild('HoodTutorialHint')
+		local h = hg and hg:FindFirstChild('Hint', true)
+		if h and h.Visible then WEL.hintDuring = true end
+		return g == nil
+	end, 30)
+	WEL.k = frames / 30
+	WEL.camBack = workspace.CurrentCamera.CameraType ~= Enum.CameraType.Scriptable
+end
+log(('[welcome] seen=%s for %.1f s (game time) text="%s" camera back=%s hint during it=%s'):format(tostring(WEL.seen), WEL.k or -1, WEL.text, tostring(WEL.camBack), tostring(WEL.hintDuring)))
+-- (the moment tracker's times move with the kid clock's new 0)
+if FL.lastEnd then FL.lastEnd -= K end
+for _, mo in FL.moments do mo[2] -= K end
+K = 0; resetClock(); EV = {}
+ev('spawn', 'control after the welcome')
 local CLICK_AT = K
 ev('input', 'kid clicks (holds 0.3 s) on the spawn')
 hold(true); wall(0.3); hold(false)
@@ -140,8 +242,9 @@ mark('in_bay1')
 local p0 = data.Rep
 waitFor(function() return data.Rep > p0 end, 6)
 mark('first_power', ('Power %d -> %d'):format(p0, data.Rep))
-untilStep('Door', 12)
+untilStep('Door', 14)
 mark('step_door', ('Power %d'):format(data.Rep))
+local POWER_AT_DOOR = data.Rep
 wall(1.2) -- (a kid watches the numbers a beat, hears "GO!")
 log(('[1 bay1] K=%.1f step=%s screen: %s'):format(K, tostring(stepNow()), screen()))
 
@@ -276,6 +379,36 @@ waitFor(function() keepPressing(); return (P:GetAttribute('WaveLeft') or 1) == 0
 hold(false)
 mark('run2_cleared', ('fight %.1f s'):format(K - t2))
 wall(2)
+
+---------------------------------------------------------------------------------------------------------- the flow checks (Oct 27)
+waitFor(function() return FL.ready end, 12) -- (YOU'RE READY! after the run-2 fight, once the screen is calm)
+wall(1)
+local FLN, FLF = 0, {}
+local function fcheck(name, ok, detail)
+	FLN += 1
+	if not ok then table.insert(FLF, name) end
+	log(('[flow] CHECK %s %s%s'):format(ok and 'ok  ' or 'FAIL', name, detail and (' (' .. tostring(detail) .. ')') or ''))
+end
+local GoalRulesF = require(RS.Shared.GoalRules)
+fcheck('welcome: shown on the first join, with the name', WEL.seen and WEL.text:find('WELCOME TO THE BLOCK') ~= nil and WEL.text:upper():find(string.upper(P.DisplayName ~= '' and P.DisplayName or P.Name), 1, true) ~= nil, WEL.text)
+fcheck('welcome: 3-4 s, then the camera is the kid\'s again', WEL.k ~= nil and WEL.k >= 2.8 and WEL.k <= 5 and WEL.camBack == true, ('%.1f s, camera back %s'):format(WEL.k or -1, tostring(WEL.camBack)))
+fcheck('welcome: the tutorial waits for it', not WEL.hintDuring)
+fcheck('BAY 1: the kid trains to Stage 1\'s Power before the door step', POWER_AT_DOOR ~= nil and POWER_AT_DOOR >= GoalRulesF.FirstPower, ('Power %s at the door step, needs %d'):format(tostring(POWER_AT_DOOR), GoalRulesF.FirstPower))
+fcheck('BAY 1: the first goal speaks Power', GoalRulesF.List[1].Text:find('Power') ~= nil, GoalRulesF.List[1].Text)
+fcheck('BAY 1: the Power count gets its box', FL.powerBox)
+fcheck('tutorial: its goals complete quietly (no GOAL DONE while it runs)', FL.goalDoneInTut == 0, FL.goalDoneInTut .. ' ticks')
+fcheck('tutorial: the goal line waits while it runs', FL.goalLineInTut == 0, FL.goalLineInTut .. ' ticks')
+fcheck('tutorial: ends on one YOU\'RE READY! moment', FL.ready)
+fcheck('Stage 1: CREW INCOMING!', FL.crew)
+fcheck('first gun: its own moment (NEW GUN!, the name, x2 POWER PER SHOT)', FL.reveal ~= nil and FL.reveal:find('NEW GUN') ~= nil and FL.reveal:upper():find('X2 POWER PER SHOT', 1, true) ~= nil, FL.reveal)
+fcheck('one voice: never two popups at once', #FL.overlap == 0, table.concat(FL.overlap, ', '):sub(1, 200))
+local worst = math.huge
+for _, g in FL.gaps do worst = math.min(worst, g[1]) end
+fcheck('one voice: a calm of at least 1.5 s between two moments', worst >= 1.4, (#FL.gaps == 0 and 'no two moments' or ('%.2f s at the least, %d gaps'):format(worst, #FL.gaps)))
+fcheck('one guide at a time', FL.guides2 == 0, FL.guides2 .. ' ticks with two, first ' .. tostring(FL.guidePair))
+fcheck('no level toast in the first minute', FL.levelToastEarly == 0, FL.levelToastEarly .. ' ticks')
+log(('[flow] %d checks / %d failed'):format(FLN, #FLF))
+log('[flow] moments: ' .. (function() local t = {}; for _, mm in FL.moments do table.insert(t, ('%s %.1f'):format(mm[1], mm[2])) end; return table.concat(t, ' | ') end)())
 
 ---------------------------------------------------------------------------------------------------------- the HOOK timeline
 local function firstOf(pred, after)

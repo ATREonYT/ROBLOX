@@ -371,6 +371,33 @@ FightUI.dock(pill.Gui, 'FightChipSlot', root) -- (the HUD's slot at the top cent
 -- you have beaten a couple of stages; the Auto Fight pass needs no telling.
 local shootHint = Kit.text({ Name = 'ShootHint', Text = 'Hold click to shoot!', TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, TextColor3 = Kit.hex('FFD21A'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52), Size = UDim2.fromOffset(460, 32), Visible = false, Parent = root })
 local HINT_UNTIL, HINT_IDLE = 2, 1.2 -- (shown while WaveCleared < HINT_UNTIL, after HINT_IDLE s without a shot)
+-- (Oct 27, flow: the audit's "the first fight is over before it starts") A crew you have never beaten announces itself:
+-- "CREW INCOMING!" in red over the street for a beat as you walk in (once a stage a visit). It cannot wait its turn, so
+-- it takes the moment queue's screen at once (MomentQueue.mark) and the others hold back.
+local TextStyle = require(RS.Shared.TextStyle)
+local MomentQueue = require(RS.Shared.MomentQueue)
+local announced = {}
+local CREW_FOR = 1.4
+local function crewIncoming(stage)
+	if announced[stage] then return end
+	local best = player:GetAttribute('WaveCleared')
+	if type(best) == 'number' and stage <= best then return end
+	announced[stage] = true
+	MomentQueue.mark('CrewIncoming', CREW_FOR)
+	local holder = Kit.new('Frame', { Name = 'CrewIncoming', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), Size = UDim2.fromOffset(700, 80), Parent = root })
+	local sc = Kit.new('UIScale', { Scale = 0.5, Parent = holder })
+	local t = Kit.text({ Name = 'Text', Text = 'CREW INCOMING!', TextSize = 54, Parent = holder })
+	TextStyle.apply(t, 'red', { Shadow = true })
+	TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	task.delay(CREW_FOR - 0.35, function()
+		local out = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		for _, d in holder:GetDescendants() do
+			if d:IsA('TextLabel') then TweenService:Create(d, out, { TextTransparency = 1 }):Play() end
+			if d:IsA('UIStroke') then TweenService:Create(d, out, { Transparency = 1 }):Play() end
+		end
+		task.delay(0.4, function() holder:Destroy() end)
+	end)
+end
 local clearUntil = 0 -- (the CLEAR! moment holds the pill until then)
 
 -- (brief 30) The revive screen (Shared/FightUI.revive), its prices from Config/Products.
@@ -1244,6 +1271,7 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 	local stage = info.Stage
 	if info.Kind == 'Wave' then
 		onWave(info)
+		if not info.Restored then pcall(crewIncoming, stage) end
 		return
 	end
 	local drawn = waves[stage] ~= nil

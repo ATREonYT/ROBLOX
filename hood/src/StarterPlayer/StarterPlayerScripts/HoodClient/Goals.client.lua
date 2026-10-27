@@ -92,6 +92,15 @@ local function calloutUp()
 end
 
 local holding = false -- while a GOAL DONE moment is up, the tracker waits
+-- (Oct 27, flow: "one voice at a time") While the tutorial runs (OnboardingStep before Done) its hint is the one voice:
+-- the goal line waits. (No OnboardingStep 8 s after joining, a broken service: the line shows anyway.)
+local MomentQueue = require(RS.Shared.MomentQueue)
+local joinedAt = os.clock()
+local function tutorialOn()
+	local s = player:GetAttribute('OnboardingStep')
+	if s == nil then return os.clock() - joinedAt < 8 end
+	return s ~= 'Done'
+end
 -- (brief 18) In a fight the "N LEFT" counter owns the top centre (FightUI), so the goal line steps aside.
 local clearUntil = 0 -- (and for the 2.4 s Waves.client holds "CLEAR!" after a wave falls)
 local function fighting()
@@ -113,7 +122,7 @@ local function paintTracker(pop)
 		local where = player:GetAttribute('GoalWhere')
 		line.Text = type(where) == 'string' and where ~= '' and where or ''
 		place(line.Text, nil)
-		tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and os.clock() - allDoneAt < 12
+		tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and not tutorialOn() and os.clock() - allDoneAt < 12
 		if tracker.Visible then task.delay(12.5, function() paintTracker(false) end) end
 		return
 	end
@@ -121,13 +130,13 @@ local function paintTracker(pop)
 	head.Text = 'NEXT GOAL'
 	line.Text = text
 	place(text, '+' .. Format.compact(reward))
-	tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp()
+	tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and not tutorialOn()
 	if pop and tracker.Visible then
 		trackerScale.Scale = 1.15
 		TweenService:Create(trackerScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	end
 end
-for _, name in { 'GoalStep', 'GoalText', 'GoalWhere', 'GoalReward', 'WaveLeft' } do
+for _, name in { 'GoalStep', 'GoalText', 'GoalWhere', 'GoalReward', 'WaveLeft', 'OnboardingStep' } do
 	player:GetAttributeChangedSignal(name):Connect(function() paintTracker(false) end)
 end
 
@@ -203,7 +212,7 @@ end
 
 -- (LOOP) PlayerGui's GoalMoment attribute is true while a moment is up: the HUD's notices drop below it meanwhile.
 local function momentUp(on) pcall(function() player.PlayerGui:SetAttribute('GoalMoment', on) end) end
-local function moment(info)
+local function moment(info, token)
 	holding = true
 	momentUp(true)
 	tracker.Visible = false
@@ -217,8 +226,11 @@ local function moment(info)
 	-- with its picture in white 63 px under it, "NEXT GOAL" gold 127 under, the next goal and where in white 177 under (it
 	-- wraps like the tracker); no box, no band, the thick outlines carry it.
 	local cashText = '+' .. Format.compact(type(info.Reward) == 'number' and info.Reward or 0) .. ' Cash'
-	local nextPlain = info.NextText or ''
-	local width = math.clamp(math.max(Kit.textWidth('GOAL DONE!', 26), Kit.textWidth(cashText, 28) + 50, 460) + 20, 340, MOMENT_W)
+	local liveNext = player:GetAttribute('GoalText')
+	local nextPlain = info.NextText or (type(liveNext) == 'string' and liveNext) or ''
+	local titleText = type(info.Title) == 'string' and info.Title or 'GOAL DONE!' -- (Oct 27, flow: the tutorial's "YOU'RE READY!")
+	local titleSize = info.Title and 34 or 26
+	local width = math.clamp(math.max(Kit.textWidth(titleText, titleSize), Kit.textWidth(cashText, 28) + 50, 460) + 20, 340, MOMENT_W)
 	local x = UDim.new(0.5, 0)
 	if screen.Phone then
 		local l, r = 300, screen.W - 330
@@ -234,13 +246,14 @@ local function moment(info)
 		Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFB020')), Parent = t })
 		return t
 	end
-	local title = goldText(Kit.text({ Name = 'Title', Text = 'GOAL DONE!', TextSize = 26, Stroke = BLACK, StrokeThickness = 4, Position = px(0, 0), Size = UDim2.new(1, 0, 0, 28), Parent = holder }))
+	local title = goldText(Kit.text({ Name = 'Title', Text = titleText, TextSize = titleSize, Stroke = BLACK, StrokeThickness = titleSize >= 30 and 5 or 4, Position = px(0, titleSize >= 30 and -6 or 0), Size = UDim2.new(1, 0, 0, titleSize + 2), Parent = holder }))
 	local rewardW = 46 + Kit.textWidth(cashText, 28)
 	local rewardRow = Kit.new('Frame', { Name = 'RewardRow', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 14 + 63), Size = px(rewardW, 40), ZIndex = 2, Parent = holder })
 	local cashIcon = Kit.icon3d('Cash', 44, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -6, 0.5, 0), ZIndex = 2 })
 	cashIcon.Parent = rewardRow
 	local reward = Kit.text({ Name = 'Reward', Text = cashText, TextSize = 28, Stroke = BLACK, StrokeThickness = 4, TextColor3 = Color.white, TextXAlignment = Enum.TextXAlignment.Left, Position = px(46, 0), Size = UDim2.new(1, -46, 1, 0), ZIndex = 2, Parent = rewardRow })
-	local nextHead = goldText(Kit.text({ Name = 'NextHead', Text = 'NEXT GOAL', TextSize = 24, Stroke = BLACK, StrokeThickness = 3.5, Position = px(0, 127), Size = UDim2.new(1, 0, 0, 28), Parent = holder }))
+	rewardRow.Visible = type(info.Reward) == 'number' and info.Reward > 0
+	local nextHead = goldText(Kit.text({ Name = 'NextHead', Text = type(info.NextHead) == 'string' and info.NextHead or 'NEXT GOAL', TextSize = 24, Stroke = BLACK, StrokeThickness = 3.5, Position = px(0, 127), Size = UDim2.new(1, 0, 0, 28), Parent = holder }))
 	local nextLine = Kit.text({ Name = 'NextLine', Text = nextPlain, TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 14 + 127 + 49), Size = px(460, 36), Parent = holder })
 	nextLine.TextSize = Kit.fitSize(nextPlain, 26, 450, 14)
 	for _, t in { nextHead, nextLine } do
@@ -280,6 +293,7 @@ local function moment(info)
 		table.insert(queue, 1, info)
 		holding = false
 		momentUp(false)
+		MomentQueue.release(token)
 		return false
 	end
 	if not hold(0.9) then return stepAside() end
@@ -297,6 +311,7 @@ local function moment(info)
 	holder:Destroy()
 	holding = false
 	momentUp(false)
+	MomentQueue.release(token)
 	paintTracker(true)
 	return true
 end
@@ -316,21 +331,68 @@ local function drain()
 			while os.clock() < settleUntil or (os.clock() < settleUntil + 2 and calloutUp()) do task.wait(0.1) end
 			-- Goals done meanwhile ("Walk to Stage 1", then "Beat Stage 1's goons" in the same fight) make one moment: the
 			-- newest goal and NEXT GOAL, with all their Cash, so a stale "NEXT GOAL" never plays after it is done.
+			-- (Oct 27, flow) its turn in the one moment queue (Shared/MomentQueue): nothing else on screen, and a calm
+			-- after the last moment
+			local token = MomentQueue.acquire('GoalDone', { Ready = function() return not (busyUntil > os.clock() or fighting() or unboxing()) end, Timeout = 45 })
 			local info = table.remove(queue, 1)
-			while #queue > 0 do
+			-- (Oct 27, flow: a titled moment, YOU'RE READY! or SHOE BOXES!, is never merged; it has its own turn)
+			while info and info.Title == nil and #queue > 0 and queue[1].Title == nil do
 				local newer = table.clone(table.remove(queue, 1))
 				newer.Reward = (tonumber(newer.Reward) or 0) + (tonumber(info.Reward) or 0)
 				info = newer
 			end
-			moment(info)
+			if info then moment(info, token) else MomentQueue.release(token) end
 		end
 		running = false
 	end)
 end
 
+-- (Oct 27, flow) The tutorial's end: ONE moment, "YOU'RE READY!", with the Cash its steps paid and the next goal, once
+-- the screen is free (after the fight it usually ends in). Once a visit, and only after a tutorial seen in this visit.
+local quietCash, sawTutorial, readyShown = 0, false, false
+local function onStep()
+	local s = player:GetAttribute('OnboardingStep')
+	if type(s) == 'string' and s ~= 'Done' then sawTutorial = true end
+	if s == 'Done' and sawTutorial and not readyShown then
+		readyShown = true
+		table.insert(queue, { Kind = 'Done', Title = "YOU'RE READY!", Reward = quietCash }) -- (NEXT GOAL: the one current when it shows)
+		quietCash = 0
+		drain()
+	end
+end
+player:GetAttributeChangedSignal('OnboardingStep'):Connect(onStep)
+task.defer(onStep)
+-- (Oct 27, flow: the audit's "the first box is never introduced") The first time you can afford a shoe box and have
+-- never opened one, after the tutorial: one moment says what boxes are and where. Once a visit, never again once you
+-- have opened a box (the server's BoxesOpened).
+local Shoes = require(RS.Shared.Config.Shoes)
+local okWorld, WorldInfo = pcall(function() return require(RS.Shared.WorldInfo) end)
+local GOAL_WORLD = okWorld and WorldInfo.current() or 1
+local cheapestBox = math.huge
+for _, b in Shoes.Boxes do
+	if type(b.Price) == 'number' and (b.World or 1) == GOAL_WORLD and b.Price < cheapestBox then cheapestBox = b.Price end
+end
+local boxIntroShown = false
+local function checkBoxIntro()
+	if boxIntroShown or player:GetAttribute('OnboardingStep') ~= 'Done' then return end
+	if RS:GetAttribute('ShoeBoxes') ~= true or player:GetAttribute('BoxesOpened') ~= 0 then return end
+	local cash = player:GetAttribute('Cash')
+	if type(cash) ~= 'number' or cash < cheapestBox then return end
+	boxIntroShown = true
+	table.insert(queue, { Kind = 'Done', Title = 'SHOE BOXES!', Reward = 0, NextHead = 'SHOES BOOST YOUR POWER', NextText = 'Open one at the back of the hall' })
+	drain()
+end
+for _, name in { 'Cash', 'BoxesOpened', 'OnboardingStep' } do player:GetAttributeChangedSignal(name):Connect(checkBoxIntro) end
 task.spawn(function()
 	Net.get('Goal').OnClientEvent:Connect(function(info)
 		if type(info) ~= 'table' or info.Kind ~= 'Done' then return end
+		if info.Quiet then
+			-- (Oct 27, flow) a tutorial goal, done while the tutorial runs: its Cash lands quietly (the Cash counter
+			-- ticks), and the tutorial's end says it all at once
+			quietCash += tonumber(info.Reward) or 0
+			sawTutorial = true
+			return
+		end
 		table.insert(queue, info)
 		drain()
 	end)

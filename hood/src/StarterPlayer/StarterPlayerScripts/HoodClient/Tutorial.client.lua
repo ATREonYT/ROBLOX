@@ -352,6 +352,7 @@ local function visibleChild(gui, names)
 end
 local function popupUp() -- the loading cover, the rank-up screen, a returning player's card or offer chip, an artboard dialog
 	if playerGui:FindFirstChild('HoodLoading') then return true end
+	if playerGui:GetAttribute('HoodWelcome') == true then return true end -- (Oct 27, flow: the first-join welcome goes first)
 	local art = playerGui:FindFirstChild('HoodArt') -- (ArtWindows' dialogs: a review, a confirmation, the reveal card, Inventory Full)
 	local artRoot = art and art.Enabled ~= false and art:FindFirstChild('ArtRoot')
 	local dialogs = artRoot and artRoot:FindFirstChild('Dialog')
@@ -389,6 +390,13 @@ function Boxed.Hud()
 	local hud = playerGui:FindFirstChild('HoodHUD')
 	local column = hud and hud:FindFirstChild('Actions', true)
 	return (column and column:FindFirstChild('Rebirth')) or holderWithHit(hud, 'Rebirth')
+end
+-- (Oct 27, flow) HoodHUD's Power count (bottom centre: the icon and the number), boxed without the dim while BAY 1's
+-- Power line says what it is for
+function Boxed.Power()
+	local hud = playerGui:FindFirstChild('HoodHUD')
+	local status = hud and hud:FindFirstChild('Status', true)
+	return status and status:FindFirstChild('Power')
 end
 function Boxed.Window()
 	local panels = playerGui:FindFirstChild('HoodPanels')
@@ -715,6 +723,23 @@ local rayFor = nil -- (the character the floor rays leave out, set once per char
 local endedAt = nil
 local leg = { At = -1, Kind = nil, Hub = false, Passed = {} }
 local fight = { Since = nil, Left = nil } -- (brief 32: when the Fight step began, and the crew standing then)
+local seq = { Key = nil, Index = 1 } -- (Oct 27, flow: where we are in the step's lines, TutorialRules.lines)
+local guideShown = nil
+local function setGuide(on) -- (Oct 27, flow: one guide at a time; PlayerGui HoodGuide = 'Tutorial' while our arrows are down)
+	if guideShown == on then return end
+	guideShown = on
+	playerGui:SetAttribute('HoodGuide', on and 'Tutorial' or '')
+end
+-- The line of `list` to show now: the first, and each next one once the one on screen is typed out and read.
+local function lineFrom(key, list, now)
+	if seq.Key ~= key then seq.Key, seq.Index = key, 1 end
+	local cur = list[seq.Index]
+	if cur and seq.Index < #list and hintState.Text == cur.Text and hintState.Alpha > 0.5 and Rules.holdLeft(cur.Text, hintState.Since, now) <= 0 then
+		seq.Index += 1
+	end
+	cur = list[math.min(seq.Index, #list)]
+	return cur and cur.Text or nil
+end
 
 local function mirrorInsets(sg)
 	if not sg then return end
@@ -769,6 +794,7 @@ local function stepFocus(info, key)
 	local vp = viewport()
 	local t = clock - lock.At
 	local scale, lineA, dim = Rules.lockOn(t)
+	if info.NoDim then dim = 0 end -- (Oct 27, flow: a box in the world steps points, it does not stop the game)
 	if attr('ReducedMotion') == true then scale = 1 end
 	local line = Rules.lineFor(vp.Y)
 	local bp, bs, r = Rules.boxRect(lock.Pos, lock.Size, vp.Y, Rules.gutterPad(lock.Pos, lock.Size, nb, line), lock.Radius)
@@ -819,24 +845,27 @@ local function onFrame(dt)
 	})
 	if lessonStep ~= lesson.Step then lesson.Step, lesson.Shown = lessonStep, 0 end
 	local info = lessonStep and Rules.Lesson[lessonStep] or nil
-	local boxed = stepFocus(info, lessonStep)
-	if boxed then
-		lesson.Shown += dt
-		if lesson.Shown > Rules.LessonGiveUp then lesson.GaveUp = true end -- (ignored: it leaves for this visit)
-	end
-	focusGui:SetAttribute('Step', lessonStep or (worldStep and stepName) or '')
-	focusGui:SetAttribute('Boxed', boxed and info and info.Box or '')
+	local boxed = false
+	local talk = type(stepName) == 'string' and Rules.Talk[stepName] ~= nil
 
 	-------------------------------------------------------------- the hint
 	local text
 	if info then
+		boxed = stepFocus(info, lessonStep)
+		if boxed then
+			lesson.Shown += dt
+			if lesson.Shown > Rules.LessonGiveUp then lesson.GaveUp = true end -- (ignored: it leaves for this visit)
+		end
 		if lessonStep == 'After' then
-			text = info.Text
+			-- (Oct 27, flow) what you keep first, then "Now go train again!"
+			local before = info.Before and Rules.Why[info.Before]
+			text = before and lineFrom('Lesson:After', { before, { Text = info.Text } }, now) or info.Text
 		elseif boxed then
 			text = (touchOnly() and info.Touch) or info.Text
 		end
-	elseif worldStep and not busyScreen and window() == '' then
-		text = Rules.worldHint(stepName, stepName == 'Train' and inLane(), touchOnly())
+	elseif (worldStep or talk) and not busyScreen and window() == '' then
+		local inBay = stepName == 'Train' and inLane()
+		text = lineFrom(tostring(stepName) .. (inBay and ':lane' or ''), (Rules.lines(stepName, inBay, touchOnly())), now)
 		-- (brief 32) the fight's line leaves once you have got it (the first goon down, or a few seconds)
 		if stepName == 'Fight' then
 			if fight.Since == nil then fight.Since, fight.Left = now, num(attr('WaveLeft')) end
@@ -849,8 +878,17 @@ local function onFrame(dt)
 			text = hintState.Text
 		end
 	end
-	if text then sayHint(text, (boxed and lock.At) or now) end
-	if boxed and info.Box == 'Window' and lock.Top then
+	if not info then
+		-- (Oct 27, flow) a line with a box (BAY 1's Power line): the white box round its HUD piece, no dim, while it shows
+		local l = Rules.lineOf(text or (hintState.Alpha > 0 and hintState.Text) or nil)
+		local okF, b = pcall(stepFocus, l and l.Box and { Box = l.Box, NoDim = true } or nil, l and l.Box and ('Line:' .. l.Box) or nil)
+		boxed = okF and b == true
+		focusGui:SetAttribute('Want', l and l.Box or '') -- (what the line points at, drawn or not)
+	end
+	focusGui:SetAttribute('Step', lessonStep or ((worldStep or talk) and stepName) or '')
+	focusGui:SetAttribute('Boxed', boxed and ((info and info.Box) or 'Line') or '')
+	if text then sayHint(text, (boxed and info and lock.At) or now) end
+	if boxed and info and info.Box == 'Window' and lock.Top then
 		placeHint(math.floor(lock.Top + insetOf(focusGui).Y + 0.5))
 	elseif text then
 		placeHint(nil, info == nil)
@@ -876,6 +914,7 @@ local function onFrame(dt)
 		endedAt = endedAt or now
 		if now - endedAt > 1 then
 			over = true
+			setGuide(false)
 			if world then world:Destroy() end
 			world, arrows = nil, {}
 			return
@@ -891,6 +930,7 @@ local function onFrame(dt)
 	if not aim then
 		if world then hideArrows() end
 		worldShown = nil
+		setGuide(false)
 		return
 	end
 	local feetY = rootPart.Position.Y - ((hum and hum.HipHeight or 2) + rootPart.Size.Y / 2)
@@ -920,8 +960,10 @@ local function onFrame(dt)
 	local list, dir = Rules.arrows(Vector3.new(you.X, feetY, you.Z), aim)
 	if #list == 0 then
 		if world then hideArrows() end
+		setGuide(false)
 		return
 	end
+	setGuide(true)
 	if not world then
 		world = Instance.new('Folder')
 		world.Name = 'HoodTutorialLocal'

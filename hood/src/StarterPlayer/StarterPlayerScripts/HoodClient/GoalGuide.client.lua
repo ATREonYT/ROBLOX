@@ -87,9 +87,18 @@ local function layArrow(tip, face)
 	arrow.BackL.CFrame = wedge(headMid - UP * 0.075 - right * 1.0 + back, -UP, right)
 	arrow.BackR.CFrame = wedge(headMid - UP * 0.075 + right * 1.0 + back, -UP, -right)
 end
+-- (Oct 27, flow: one guide at a time) PlayerGui HoodGoalGuide is true while this guide is up: the lobby's
+-- "TRAIN xN HERE" pointer steps aside for it.
+local up = nil
+local function setUp(on)
+	if up == on then return end
+	up = on
+	playerGui:SetAttribute('HoodGoalGuide', on)
+end
 local function hideAll()
 	setArrowAlpha(0)
 	for _, c in chevrons do c.L.Transparency, c.R.Transparency = 1, 1 end
+	setUp(false)
 end
 
 ---------------------------------------------------------------------------------------------- the floor
@@ -240,6 +249,7 @@ local function busy()
 	if (type(w) == 'string' and w ~= '') or (type(card) == 'string' and card ~= '') then return true end
 	if playerGui:GetAttribute('Unboxing') == true or playerGui:FindFirstChild('HoodLoading') then return true end
 	if TutorialRules.step(attr('OnboardingStep')) then return true end -- (the tutorial's own arrows)
+	if playerGui:GetAttribute('HoodGuide') == 'Tutorial' or playerGui:GetAttribute('HoodWelcome') == true then return true end -- (Oct 27, flow)
 	if num(attr('WaveLeft')) > 0 or attr('Downed') == true or attr('WorldBossFight') == true then return true end
 	return false
 end
@@ -276,6 +286,7 @@ local function tick(dt)
 	local bob = still and 0 or 0.5 * math.sin(clock * 2 * math.pi / 1.3)
 	layArrow(at + UP * (ARROW_UP + bob), face.Unit)
 	setArrowAlpha(1)
+	setUp(true)
 	-- the trail: chevrons on the floor along the straight line to it, drifting on, fading in by you and out by it
 	local feetY = you.Y - 3
 	local dir = dist > 0.01 and flat.Unit or Vector3.new(0, 0, -1)

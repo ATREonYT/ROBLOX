@@ -998,7 +998,13 @@ do
 		rebirthCount.Text = short(n)
 		if lastRebirths and n > lastRebirths then
 			Motion.pop(rebirthIcon, 0.3)
-			task.delay(0.5, function() rebirthMoment(n) end)
+			task.delay(0.5, function()
+				-- (Oct 27, flow: one voice at a time) its turn in the moment queue, then the calm after it
+				local MomentQueue = require(RS.Shared.MomentQueue)
+				local token = MomentQueue.acquire('Rebirth', { Timeout = 6 })
+				rebirthMoment(n)
+				task.delay(3.4, function() MomentQueue.release(token) end)
+			end)
 		end
 		lastCash, lastRebirths = cash, n
 	end

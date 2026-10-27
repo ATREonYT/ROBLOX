@@ -47,6 +47,49 @@ TutorialRules.Steps = {
 }
 TutorialRules.Order = { 'Train', 'Door', 'Fight', 'Cash', 'Gift' }
 
+-- (Oct 27, flow: the owner's "no flow"; the audit found hints that said where to walk and never why) Three short WHY
+-- lines, each at a calm moment, and each true to how the game works: Power is the damage of every shot, so it beats the
+-- crews (a gate opens when its crew is beaten); Cash buys the ARMORY's guns and the shoe boxes; a rebirth keeps your
+-- Cash, guns and shoes and its multiplier stays for good (the rebirth moment says "x2 Power forever!").
+--   In BAY 1 the "it shoots for you" line boxes the HUD's Power count (the white box, no dim), so you watch it climb to
+--   the gate's Power, and the Power line follows it while you are still there. Back home with your first Cash (the Gun step, which has no arrows of
+--   ours: the goal guide's gold arrow points at the ARMORY), the Cash line, then where to spend it.
+TutorialRules.Why = {
+	Power = { Text = 'More <POWER> beats tougher crews!', Box = 'Power', Why = true },
+	Cash = { Text = '<CASH> buys guns and shoe boxes!', Why = true },
+	Keep = { Text = 'You keep your <Cash>, guns and shoes!', Why = true },
+}
+-- Lines for the steps after the arrows (no target: HoodClient/GoalGuide's arrow shows the way there).
+TutorialRules.Talk = {
+	Gun = { TutorialRules.Why.Cash, { Text = 'Get a <gun> at the ARMORY!' } },
+	Run = { { Text = 'Now go <further> down the street!' } },
+}
+-- A WHY line stays up this long once typed (a plain line: HintHold) before the next one may take its place.
+TutorialRules.ReadHold = 2.2
+
+-- The lines for where you are, in order (each { Text, Box?, Why? }; the last one stays), and the arrows' target. The
+-- first line is worldHint's; BAY 1 adds the Power line; Gun and Run talk without arrows.
+function TutorialRules.lines(onboardingStep, inLane, touch)
+	local text, target = TutorialRules.worldHint(onboardingStep, inLane, touch)
+	if text then
+		local list = { { Text = text } }
+		if onboardingStep == 'Train' and inLane then list = { TutorialRules.LaneLine, TutorialRules.Why.Power } end
+		return list, target
+	end
+	local talk = type(onboardingStep) == 'string' and TutorialRules.Talk[onboardingStep] or nil
+	if talk then return talk, nil end
+	return {}, nil
+end
+-- BAY 1's first line points at the Power count already (the kid can reach the gate's Power in a few seconds there).
+TutorialRules.LaneLine = { Text = TutorialRules.Steps.Train.InLane, Box = 'Power' }
+-- The line (from Why / Talk / Steps) a text belongs to, for its box and its hold; nil for none.
+function TutorialRules.lineOf(text)
+	if type(text) ~= 'string' then return nil end
+	for _, l in TutorialRules.Why do if l.Text == text then return l end end
+	if text == TutorialRules.LaneLine.Text then return TutorialRules.LaneLine end
+	return nil
+end
+
 -- (brief 32, FEEL) A hint is never cut off mid-word: a new line waits until the one on screen has been typed out and read
 -- for HintHold seconds (filmed: "BAY 1 shoots for you!" was replaced by "Go to STAGE 1!" before it finished typing).
 TutorialRules.HintHold = 0.9
@@ -54,7 +97,9 @@ TutorialRules.HintHold = 0.9
 function TutorialRules.holdLeft(text, since, now)
 	if type(text) ~= 'string' or type(since) ~= 'number' or type(now) ~= 'number' then return 0 end
 	local _, n = TutorialRules.plain(text)
-	return math.max(0, since + n / TutorialRules.TypeRate + TutorialRules.HintHold - now)
+	local l = TutorialRules.lineOf(text)
+	local hold = (l and l.Why) and TutorialRules.ReadHold or TutorialRules.HintHold -- (Oct 27, flow: a why line is read)
+	return math.max(0, since + n / TutorialRules.TypeRate + hold - now)
 end
 -- (brief 32, FEEL) The fight's line ("Hold click to shoot the crew!") leaves once you have got it: the first goon of the
 -- crew falls, or FightHintFor seconds pass. The reference shows no hint in a fight at all (W 30-34 s): the box in the
@@ -93,10 +138,10 @@ TutorialRules.Lesson = {
 	Press = { Text = 'Click <REBIRTH>!', Touch = 'Tap <REBIRTH>!', Box = 'Window' },
 	-- (the reference's "Now go try it out!": no box, it stays a moment, under the HUD's own "Rebirth 1! 2x Power forever!",
 	-- so it says what to do next rather than the multiplier again)
-	After = { Text = 'Now go <train> again!' },
+	After = { Text = 'Now go <train> again!', Before = 'Keep' }, -- (Oct 27, flow: first what you keep, TutorialRules.Why.Keep)
 }
 TutorialRules.LessonGiveUp = 15 -- seconds a lesson step may wait unanswered on screen before it leaves for this visit
-TutorialRules.AfterSeconds = 3.2 -- how long the last line stays (the reference's stays about 3 s)
+TutorialRules.AfterSeconds = 6.4 -- how long the after-lines stay: the Keep line read, then "Now go train again!" about 3 s
 
 -- The lesson's step for a state (missing = 0 / false / ''):
 --   Rebirths, RebirthReady     the rebirth attributes

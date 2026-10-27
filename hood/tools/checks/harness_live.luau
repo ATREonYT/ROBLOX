@@ -474,6 +474,9 @@ local cache, loading = {}, {}
 local function envFor(scriptInst)
 	local env = { script = scriptInst }
 	for k, v in base do env[k] = v end
+	-- (a video scene, tools/preview/ui/firstvideo.luau, puts the game's scripts on the frames' own clock: its task and os)
+	if _G.__vtask then env.task = _G.__vtask end
+	if _G.__vos then env.os = _G.__vos end
 	return env
 end
 function base.require(target)

@@ -728,6 +728,14 @@ log(('goons in the world: %d'):format(#goons()))
 hold(true)
 local koSeen = false
 local tFight = K
+-- (Oct 27, flow: this step stood still at z -15 and the crew, waiting on its own spots further in, never came within
+-- the gun's reach: no KO in 12 s. Like route.luau, walk on toward the crew while holding the trigger.)
+for k = 1, 16 do
+	walkTo(0, -15 - k * 1.5)
+	keepPressing()
+	for _, m in goons() do if m:FindFirstChild('GoonStars', true) or m:GetAttribute('KO') then koSeen = true end end
+	if koSeen or (P:GetAttribute('WaveLeft') or 1) == 0 then break end
+end
 waitFor(function()
 	keepPressing()
 	for _, m in goons() do if m:FindFirstChild('GoonStars', true) or m:GetAttribute('KO') then koSeen = true end end

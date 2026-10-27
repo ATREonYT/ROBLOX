@@ -28,7 +28,7 @@ echo "== live_reveal"; timeout 900 $L run $T/harness_live.luau $SRC - "$(cat $T/
 echo "== first30"; F=$O/first30; rm -rf $F; mkdir -p $F
 N=$(grep -n "^-------.*0\. spawn" $T/feel_base.luau | head -1 | cut -d: -f1); head -$((N - 1)) $T/feel_base.luau > $O/first30.luau; cat $T/route.luau >> $O/first30.luau
 timeout 1500 $L run $T/harness_live.luau $SRC - "EXPORT=nil REPORT_DIR='$F' $(cat $O/first30.luau)" > $F/log.txt 2>&1
-grep -c "\[ok" $F/first30_report.txt; grep -E "BORED|purchase prompts" $F/first30_report.txt
+grep -c "\[ok" $F/first30_report.txt; grep -E "BORED|purchase prompts" $F/first30_report.txt; grep -a "\[flow\] CHECK FAIL\|\[flow\] [0-9]* checks" $F/first30_report.txt
 echo "== core_loop"; head -$((N - 1)) $T/feel_base.luau > $O/loop.luau; cat $T/loop.luau >> $O/loop.luau
 timeout 1500 $L run $T/harness_live.luau $SRC - "EXPORT=nil REPORT_DIR=nil $(cat $O/loop.luau)" > $O/loop.log 2>&1; grep -a "\[loop\] CHECK FAIL\|\[loop\] [0-9]* checks" $O/loop.log
 for t in finale_play wb_play; do echo "== $t"; timeout 1200 $L run $T/harness_play.luau $SRC - "$(cat $T/$t.luau)" 2>&1 | grep -a "\[play\] .*checks\|FAIL" | head -5; done

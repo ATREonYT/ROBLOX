@@ -103,11 +103,16 @@ local function levelUp(from, to)
 		end)
 	end)
 end
+-- (Oct 27, flow: "one voice at a time") No level toast in the first minute of a visit (the first shots level you up every
+-- second or two: the counter and the Level bar tick, quietly), and none while another moment owns the screen.
+local MomentQueue = require(RS.Shared.MomentQueue)
+local QUIET_FIRST = 60
+local joinedAt = os.clock()
 local function onPower()
 	local p = player:GetAttribute('Power')
 	if type(p) ~= 'number' then return end
 	local level = LevelRules.levelOf(p)
-	if lastLevel and level > lastLevel then levelUp(lastLevel, level) end
+	if lastLevel and level > lastLevel and os.clock() - joinedAt >= QUIET_FIRST and not MomentQueue.busy() then levelUp(lastLevel, level) end
 	lastLevel = level -- (a rebirth lowers it: no toast, just the new base)
 end
 player:GetAttributeChangedSignal('Power'):Connect(onPower)
@@ -213,11 +218,12 @@ local function drain()
 	task.spawn(function()
 		while #queue > 0 do
 			local info = table.remove(queue, 1)
-			local t0 = os.clock()
-			while busy() and os.clock() - t0 < 25 do task.wait(0.3) end
-			if not busy() then
+			-- (Oct 27, flow) its turn in the one moment queue, on a free screen (25 s at most, as before)
+			local token = MomentQueue.acquire('RankUp', { Ready = function() return not busy() end, Timeout = 25 })
+			if token then
 				showRank(info)
 				task.wait(2.1)
+				MomentQueue.release(token)
 			end
 		end
 		running = false

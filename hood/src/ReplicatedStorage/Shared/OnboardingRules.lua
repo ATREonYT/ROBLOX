@@ -104,6 +104,11 @@ function OnboardingRules.tick(t, dt)
 	return t.Seconds
 end
 
+-- (Oct 27, flow) Is this the very first join of a save? Never played a second, not done, no gift: the welcome plays.
+function OnboardingRules.firstJoin(t)
+	return type(t) == 'table' and t.Done ~= true and t.Gift ~= true and num(t.Seconds) <= 0
+end
+
 -- Is the quiet window on for this saved table? (A veteran's is closed when first seen: Seconds = QuietSeconds.)
 function OnboardingRules.quietFor(t)
 	return type(t) == 'table' and num(t.Seconds) < OnboardingRules.QuietSeconds

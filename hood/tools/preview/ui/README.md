@@ -67,6 +67,11 @@ have it under `/opt/node22/lib/node_modules`). A slot in `compose.py` can be `no
   drawn), then the goal guide recorded on a walk from the spawn toward the ARMORY (`guide_frames.dat`), which
   render14 draws in the hall: `CHROME=<chromium> FPS=30 GUIDE=<out>/guide_frames.dat node ../render14/walk.js
   <scene.json> <frames> 960 540 135` (`scene.json` from `render14/tools/export.sh`).
+- `sh firstvideo.sh <out>` (Oct 27, the flow round): a fresh save's first 40 s as `<out>/first40.mp4`. The kid plays
+  first30's route; the game's scripts run on the frames' clock (the harness's `_G.__vtask` / `_G.__vos`), every
+  ScreenGui is drawn at 30 fps (`video.js`) over the hall drawn by render14 from the recorded cameras at 5 fps
+  (`walk.js` with `CAMS=`). `SKIP3D=1`: the screens over a plain backdrop. Not shown: billboards over the world, the
+  real avatar, particles. About an hour in all (the 3D frames).
 
 ## Phones, the HUD, the fallback and closing (Oct 27, release fixes)
 - `SCENE=hud SW=844 SH=390 NOTCH=47 TOUCH=1 sh shoot.sh <out>` draws the HUD alone on a phone screen (`hud.luau`) and

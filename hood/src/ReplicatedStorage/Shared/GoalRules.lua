@@ -14,7 +14,7 @@
 -- on a pad to cash out (back to the lobby), spend the Cash, then fight further each run.
 local Skins = require(script.Parent.Config.Skins)
 local PadRules = require(script.Parent.PadRules)
-local LevelRules = require(script.Parent.LevelRules) -- (brief 29: goals speak in Levels; the Need stays in Power)
+local Balance = require(script.Parent.Config.Balance)
 
 local GoalRules = {}
 GoalRules.MaxText = 28
@@ -38,12 +38,18 @@ end
 -- (Where: the hall's layout as built: the ranges are the lanes on the west wall, the ARMORY the stand on the east
 -- side, the shoe boxes at the back, the stage door at the end. The ranges fire by themselves; every stage is a crew of
 -- goons to beat, and the two pads before its far gate cash out.)
+-- (Oct 27, flow) A Tutorial goal is one the tutorial itself walks you through: while the tutorial runs it completes
+-- quietly (its Cash still lands; GoalService marks the message Quiet), and the tutorial ends on one "YOU'RE READY!"
+-- moment instead of five GOAL DONE moments in 20 seconds (the audit, hood/docs/research/OUR_FIRST_10_MIN.md).
+local FIRST_POWER = (Balance.Worlds and Balance.Worlds[1] and Balance.Worlds[1].StagePower[1]) or 10
+GoalRules.FirstPower = FIRST_POWER
 GoalRules.List = {
-	{ Id = 'FreeRange', Text = 'Reach Level ' .. LevelRules.levelOf(10) .. ' in BAY 1', Where = 'on the left, it shoots for you', Reward = 2, Need = { Power = LevelRules.powerFor(LevelRules.levelOf(10)) } }, -- (Level 6 starts at 7 Power)
-	{ Id = 'Stage1', Text = 'Walk to Stage 1', Where = 'through the big door ahead', Reward = 3, Need = { Stages = 1 } },
-	{ Id = 'Wave1', Text = 'Beat the Stage 1 crew', Where = 'hold to shoot them', Reward = 5, Need = { Wave = 1 } },
-	{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 5, Need = { CashOuts = 1 } },
-	{ Id = 'Gun', Text = 'Buy a gun', Where = 'at the ARMORY, right side of the hall', Reward = 5, Need = { Guns = 2 } },
+	-- (Oct 27, flow: the kid stays in BAY 1 until Stage 1's Power, and the goal says it in Power, not in Levels)
+	{ Id = 'FreeRange', Text = 'Train to ' .. FIRST_POWER .. ' Power in BAY 1', Where = 'on the left, it shoots for you', Reward = 2, Need = { Power = FIRST_POWER }, Tutorial = true },
+	{ Id = 'Stage1', Text = 'Walk to Stage 1', Where = 'through the big door ahead', Reward = 3, Need = { Stages = 1 }, Tutorial = true },
+	{ Id = 'Wave1', Text = 'Beat the Stage 1 crew', Where = 'hold to shoot them', Reward = 5, Need = { Wave = 1 }, Tutorial = true },
+	{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 5, Need = { CashOuts = 1 }, Tutorial = true },
+	{ Id = 'Gun', Text = 'Buy a gun', Where = 'at the ARMORY, right side of the hall', Reward = 5, Need = { Guns = 2 }, Tutorial = true },
 	-- (CRITIC3 r1: the stage 2 pad pays for the shoe box the next goal points at)
 	{ Id = 'CashOut2', Text = 'Beat Stage 2 and cash out', Where = 'the yellow pad: ' .. PadRules.text(PadRules.reward(2, false)), Reward = 5, Need = { CashOutStage = 2 } },
 	{ Id = 'Shoe', Text = 'Open a shoe box', Where = 'at the back of the hall', Reward = 5, Need = { Boxes = 1 }, Side = true },

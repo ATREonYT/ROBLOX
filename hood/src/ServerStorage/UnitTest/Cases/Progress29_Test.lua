@@ -53,7 +53,7 @@ return function(t)
 
 	t.test('the goal chain speaks in Levels but still needs Power', function()
 		local first = Goals.List[1]
-		t.expect.equal(first.Text, 'Reach Level 6 in BAY 1'); t.expect.equal(first.Need.Power, 7) -- (Level 6 starts at 7 Power; the Stage 1 gate's own Required stays 10)
+		t.expect.equal(first.Text, 'Train to 10 Power in BAY 1'); t.expect.equal(first.Need.Power, 10) -- (Oct 27, flow: the gate's own Power, said in Power)
 		t.expect.truthy(string.find(Goals.List[9].Where, 'Level bar', 1, true) ~= nil)
 	end)
 

@@ -104,9 +104,26 @@ standMap(SPL.X, SPL.Z, workspace.TheBlockV2:GetAttribute('LobbySpawnYaw') or 0)
 pcall(function() __fireOn(P, 'CharacterAdded', char) end)
 camFn = follow(0, -1)
 K = 0; resetClock()
+-- (Oct 27, flow) a fresh save is greeted: the welcome is up, and any input ends it at once with the camera given back
+do
+local welcomeUp = waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') ~= nil end, 4)
+check('first join: the welcome is up', welcomeUp)
+frame(0.3)
+__fireOn(UIS, 'InputBegan', { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.W }, false)
+local skipped, skipWall = waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') == nil end, 3)
+check('first join: any input ends the welcome at once, camera given back', skipped and skipWall <= 1 and workspace.CurrentCamera.CameraType ~= Enum.CameraType.Scriptable, ('%.2f s wall, camera %s'):format(skipWall, tostring(workspace.CurrentCamera.CameraType)))
+end
 settle(1.5)
+-- (Oct 27, flow: one voice) while the tutorial runs its hint says the step; the goal line waits
+local function hintText()
+	local hg = P.PlayerGui:FindFirstChild('HoodTutorialHint')
+	local h = hg and hg:FindFirstChild('Hint', true)
+	local tx = h and h.Visible and h:FindFirstChild('Text', true)
+	return tx and strip(tx.Text) or ''
+end
+waitFor(function() return hintText() ~= '' end, 4)
 local line0 = goalLine()
-check('spawn: the goal line shows a step', line0 ~= '', line0)
+check('spawn: the tutorial says the step, the goal line waits', hintText() ~= '' and line0 == '', ('hint "%s", goal line "%s"'):format(hintText(), line0))
 check('spawn: counters are clean numbers', #badNumbers() == 0, table.concat(badNumbers(), ', '))
 
 ---------------------------------------------------------------------------------------------------------- 2. lane: every shot answers
@@ -319,6 +336,46 @@ data.Rep = 1e15
 inLane('Starter'); settle(1.2)
 check('Power at the 1e15 cap stays a number', data.Rep == data.Rep and data.Rep <= 1e15, tostring(data.Rep))
 home()
+
+---------------------------------------------------------------------------------------------------------- 10. one voice at a time
+-- (Oct 27, flow) A goal moment, a rank-up and a news notice all arrive in the same frame: they take turns (the moment
+-- queue, Shared/MomentQueue), never two on screen, with a calm between; the level toast stays quiet meanwhile.
+home(); settle(3)
+;(function() -- (its own function: the script is at Luau's 200 locals)
+local HudToasts = require(RS.Shared.HudToasts)
+local seenUp, overlap, order, gaps = {}, {}, {}, {}
+local lastName, lastEnd = nil, nil
+RS.HoodNet.Goal:FireClient(P, { Kind = 'Done', Text = 'A test goal', Reward = 5, NextText = 'Reach Stage 3', NextReward = 25 })
+RS.HoodNet.RankUp:FireClient(P, { From = 2, To = 3, Cash = 150 })
+HudToasts.say('Got a test reward!', 'green')
+local tq = os.clock()
+waitFor(function()
+	local G = P.PlayerGui
+	local up = {}
+	if G:FindFirstChild('HoodGoals') and G.HoodGoals:FindFirstChild('GoalDone', true) then table.insert(up, 'GoalDone') end
+	if G:FindFirstChild('HoodProgress') and G.HoodProgress:FindFirstChild('RankUp', true) then table.insert(up, 'RankUp') end
+	local st = G:FindFirstChild('HoodNotices') and G.HoodNotices:FindFirstChild('Toasts', true)
+	if st then for _, c in st:GetChildren() do if c:IsA('Frame') then table.insert(up, 'Notice'); break end end end
+	for _, u in up do seenUp[u] = true end
+	if #up > 1 then table.insert(overlap, table.concat(up, '+')) end
+	local m = G:GetAttribute('HoodMoment')
+	m = (type(m) == 'string' and m ~= '') and m or nil
+	if m ~= lastName then
+		if lastName then lastEnd = os.clock() end
+		if m then
+			table.insert(order, m)
+			if lastEnd and lastName == nil then table.insert(gaps, os.clock() - lastEnd) end
+		end
+		lastName = m
+	end
+	return seenUp.GoalDone and seenUp.RankUp and seenUp.Notice and m == nil and os.clock() - tq > 3
+end, 30)
+local least = math.huge
+for _, g in gaps do least = math.min(least, g) end
+check('one voice: the goal moment, the rank-up and the notice all show', seenUp.GoalDone and seenUp.RankUp and seenUp.Notice, table.concat(order, ' > '))
+check('one voice: never two on screen at once', #overlap == 0, table.concat(overlap, ', '):sub(1, 160))
+check('one voice: a calm of at least 1.5 s between them (harness frames)', #gaps >= 2 and least >= 1.4, ('%d gaps, the least %.2f s'):format(#gaps, least == math.huge and -1 or least))
+end)()
 
 print(('[loop] %d checks / %d failed%s'):format(LOOPN, #LOOPF, #LOOPF > 0 and (': ' .. table.concat(LOOPF, '; ')) or ''))
 return { checks = LOOPN, failed = #LOOPF }

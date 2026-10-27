@@ -3,7 +3,7 @@
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const [sceneFile, outDir, Wa, Ha, Na] = process.argv.slice(2);
-const W = +(Wa || 960), H = +(Ha || 540), N = +(Na || 120), FPS = +(process.env.FPS || 10); // (FPS: the particle clock's frame rate)
+const W = +(Wa || 960), H = +(Ha || 540), N = CAMS ? CAMS.frames.length : +(Na || 120), FPS = +(process.env.FPS || 10); // (FPS: the particle clock's frame rate)
 const root = __dirname;
 const art = path.join(__dirname, '..', '..', '..', 'art', 'vfx'); // (hood/art/vfx)
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.woff2': 'font/woff2', '.ttf': 'font/ttf' };
@@ -18,6 +18,10 @@ const server = http.createServer((req, res) => {
 // GUIDE=<file> (Oct 27, ui/corevideo.luau's guide_frames.dat): the real HoodClient/GoalGuide's parts for each frame, recorded
 // in the game harness on the same route (its route is used when WALK is not set)
 const GUIDE = process.env.GUIDE ? JSON.parse(fs.readFileSync(process.env.GUIDE, 'utf8')) : null;
+// CAMS=<file> (Oct 27, ui/firstvideo.luau's cams.json): a recorded play — per frame the game camera (c, l: eye and a
+// point it looks at), the kid (a: x, y, z of the root, facing) and the parts the scripts added to the world (p); N is
+// its frame count and the route, CAM and GUIDE are not used
+const CAMS = process.env.CAMS ? JSON.parse(fs.readFileSync(process.env.CAMS, 'utf8')) : null;
 // (the game harness has no raycast, so the guide's floor chevrons come at the feet's height there; in the game
 // GoalGuide lays them 0.16 over the floor its ray finds: the same is done here against the scene's floor parts)
 let floorParts = null;
@@ -45,12 +49,12 @@ const WP = (process.env.WALK || (GUIDE && GUIDE.route) || '0,58;0,86;0,62;-44,55
 const segs = []; let total = 0;
 for (let i = 0; i < WP.length - 1; i++) { const a = WP[i], b = WP[i + 1]; const L = Math.hypot(b[0] - a[0], b[1] - a[1]); segs.push([a, b, total, L]); total += L; }
 function at(d) { for (const [a, b, s0, L] of segs) if (d <= s0 + L) { const u = (d - s0) / L; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, Math.atan2(b[0] - a[0], b[1] - a[1])]; } const l = segs[segs.length - 1]; return [l[1][0], l[1][1], 0]; }
-function avatar(x, z, yaw, k) {
+function avatar(x, z, yaw, k, y0 = 0) {
   const c = Math.cos(yaw), s = Math.sin(yaw); const out = [];
   const swing = Math.sin(k * 1.6) * 0.35;
   const C = (r, g, b) => [r / 255, g / 255, b / 255];
   const part = (n, size, o, col, tilt = 0) => { const wx = 2400 + x + c * o[0] + s * o[2], wz = z - s * o[0] + c * o[2];
-    out.push({ c: col, cf: [wx, 0.12 + o[1], wz, c, 0, s, 0, 1, 0, -s, 0, c], k: 'Part', m: 'SmoothPlastic', n, s: size, sh: 'Block', shadow: true, t: 0 }); };
+    out.push({ c: col, cf: [wx, y0 + 0.12 + o[1], wz, c, 0, s, 0, 1, 0, -s, 0, c], k: 'Part', m: 'SmoothPlastic', n, s: size, sh: 'Block', shadow: true, t: 0 }); };
   part('AvLegL', [0.95, 2, 1], [-0.5, 1.0, swing], C(40, 110, 60)); part('AvLegR', [0.95, 2, 1], [0.5, 1.0, -swing], C(40, 110, 60));
   part('AvTorso', [2, 2, 1], [0, 3.0, 0], C(30, 110, 190));
   part('AvArmL', [0.95, 2, 1], [-1.5, 3.0, -swing], C(245, 205, 48)); part('AvArmR', [0.95, 2, 1], [1.5, 3.0, swing], C(245, 205, 48));
@@ -75,6 +79,18 @@ function avatar(x, z, yaw, k) {
   const START = +(process.env.START || 0), END = Math.min(N, +(process.env.END || N));
   let cam = null, yawS = null; const t0 = Date.now();
   for (let i = 0; i < END; i++) {
+    if (CAMS) {
+      if (i < START) continue;
+      const f = CAMS.frames[i] || CAMS.frames[i - 1];
+      data.parts.length = base;
+      data.parts.push(...avatar(f.a[0] - 2400, f.a[2], f.a[3] + Math.PI, i, f.a[1] - 3.12));
+      data.parts.push(...(f.p || []));
+      await page.evaluate(([dd, o]) => window.loadScene(dd, o), [data, { time: 3 + i / FPS, bloom: true, lighting: process.env.LIGHTING || 'PlusOne', lights: 24 }]);
+      const url = await page.evaluate(c => window.shoot(c), { name: 'f' + i, pos: f.c, look: f.l, fov: 70 });
+      fs.writeFileSync(path.join(outDir, 'f_' + String(i).padStart(4, '0') + '.png'), Buffer.from(url.split(',')[1], 'base64'));
+      if ((i + 1) % 10 === 0) console.log(`${i + 1} frames, ${((Date.now() - t0) / (i + 1 - START) / 1000).toFixed(1)} s/frame`);
+      continue;
+    }
     const d = total * (i / (N - 1)) ** 1;
     const [x, z, yaw] = at(d);
     if (yawS === null) yawS = yaw; else { let dy = yaw - yawS; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; yawS += dy * 0.22; }

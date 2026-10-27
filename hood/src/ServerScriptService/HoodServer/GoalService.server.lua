@@ -64,6 +64,9 @@ local function check(player)
 	local profile = Data.get(player)
 	if not profile then return end
 	local goals = profile.Data.Goals
+	-- (Oct 27, flow) the shoe boxes you have ever opened, for the client's one-time box introduction (HoodClient/Goals)
+	local opened = type(profile.Data.Shoes) == 'table' and tonumber(profile.Data.Shoes.Opened) or 0
+	set(player, 'BoxesOpened', opened)
 	local done = GoalRules.advance(goals, stateOf(player, profile))
 	if done then
 		local paid = Boosts.cashFor(player, done.Reward)
@@ -76,6 +79,9 @@ local function check(player)
 			NextText = nextText,
 			NextWhere = nextWhere,
 			NextReward = nextGoal and nextGoal.Reward or 0,
+			-- (Oct 27, flow) a tutorial goal done while the tutorial runs: no GOAL DONE moment, the tutorial's own
+			-- "YOU'RE READY!" sums them up at its end (HoodClient/Goals)
+			Quiet = done.Tutorial == true and player:GetAttribute('OnboardingStep') ~= 'Done' or nil,
 		})
 		Data.push(player)
 	end

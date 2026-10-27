@@ -15,7 +15,7 @@ return function(t)
    t.expect.falsy(string.find(string.lower(g.Text..g.Where),'look',1,true));t.expect.falsy(string.find(g.Where,'Power)',1,true))
   end
   t.expect.truthy(total<10000)
-  t.expect.equal(G.List[1].Need.Power,7);t.expect.equal(G.List[2].Need.Stages,1);t.expect.equal(G.List[3].Need.Wave,1);t.expect.equal(G.List[4].Need.CashOuts,1);t.expect.equal(G.List[5].Need.Guns,2)
+  t.expect.equal(G.List[1].Need.Power,10);t.expect.equal(G.List[1].Text,'Train to 10 Power in BAY 1');t.expect.equal(G.List[2].Need.Stages,1);t.expect.equal(G.List[3].Need.Wave,1);t.expect.equal(G.List[4].Need.CashOuts,1);t.expect.equal(G.List[5].Need.Guns,2)
   -- (brief 23) the run loop: beat the crew, then cash out on a pad before the gate
   t.expect.equal(G.line(G.List[3]),'Beat the Stage 1 crew - hold to shoot them')
   t.expect.equal(G.line(G.List[4]),'Step on the yellow pad - by the gate: +20 Cash')
