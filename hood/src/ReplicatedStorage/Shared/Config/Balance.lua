@@ -51,7 +51,7 @@ local NEED = {
 -- longer. Only World 1 is built; the sim's targets for the next ones.
 local WORLD_TARGETS = { 27, 62, 90, 120, 150 }
 
--- World 2, Downtown (Oct 27; hood/docs/WORLD2.md): its own place, entered at about rebirth 9-10 (World 1's boss).
+-- World 2, Business District (Oct 27; hood/docs/WORLD2.md): its own place, entered at about rebirth 9-10 (World 1's boss).
 -- (the owner: "we need way way higher power needed for world 2, in other games it's usually billions" and "make it way
 -- longer") Everything in World 2 runs at Scale x World 1's numbers: every shot pays Scale times more (ShotBase), every
 -- rebirth needs Scale times more Power (RebirthRules.need), so the pace is World 1's ladder while the numbers read in

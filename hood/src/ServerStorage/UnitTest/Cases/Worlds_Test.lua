@@ -6,7 +6,7 @@ return function(t)
 	local Schema = require(game.ServerScriptService.HoodServer.ProfileSchema)
 
 	t.test('this server is World 1 without a map that says otherwise', function()
-		t.expect.equal(WI.current(), 1); t.expect.equal(WI.get(2).Name, 'Downtown'); t.expect.equal(WI.get(9), nil)
+		t.expect.equal(WI.current(), 1); t.expect.equal(WI.get(2).Name, 'Business District'); t.expect.equal(WI.get(9), nil)
 	end)
 
 	t.test('entering World 2 sets World 1 aside and starts it fresh; coming back restores it; Power and Cash carry', function()

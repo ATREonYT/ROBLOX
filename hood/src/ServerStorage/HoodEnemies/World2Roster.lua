@@ -1,5 +1,5 @@
 --!strict
--- World 2 (Downtown) enemy crews, picked Oct 27: office workers and bosses, 8 crews of 4 in stage order.
+-- World 2 (Business District) enemy crews, picked Oct 27: office workers and bosses, 8 crews of 4 in stage order.
 -- Same structure as EnemyRoster.lua (World 1) and dressed the same way by EnemyLooks: real Roblox catalog items
 -- (ids below, with the item name and creator as a comment), every id checked against the economy API on Oct 27
 -- (it exists, its asset type fits its slot, its name fits the look).
@@ -11,7 +11,7 @@ Roster.Crews = {
 	{
 		Key = "interns",
 		Name = "Interns",
-		Area = "Downtown Streets",
+		Area = "Business District",
 		Stages = { 1, 2 },
 		Theme = "First-week interns in crisp white and blue office shirts with khakis, name tags and lanyards, each juggling a coffee or a clipboard; the Head Intern has a little blue blazer, slicked hair and the clipboard.",
 		Characters = {
@@ -102,7 +102,7 @@ Roster.Crews = {
 	{
 		Key = "mailroom",
 		Name = "Mailroom",
-		Area = "Downtown Streets",
+		Area = "Business District",
 		Stages = { 3, 4 },
 		Theme = "The mailroom crew in blue postal shirts and matching mail-carrier trousers, blue caps and messenger bags full of letters; the Mailroom Boss wears the blue mail cap and uniform, a letter backpack and the delivery clipboard.",
 		Characters = {

@@ -14,7 +14,7 @@
 --   timeText(seconds)                       "9:07", "1:02:03"
 --   passes(attributes)                      the Store's game passes with whether you own each
 --   guns(ownedText, equipped)               every gun with its state (Equipped / Owned / Locked)
---   worlds()                                the World window's cards: Config/Worlds (The Hood open; Downtown and what opens it)
+--   worlds()                                the World window's cards: Config/Worlds (The Hood open; Business District and what opens it)
 -- Client (Instances):
 --   open(tab) / openWorld()                 fire PlayerGui.HoodInventory.Open / HoodWorld.Open (the HUD's squares do)
 --   Layout, Tone                            the measured sizes (design px; 1 design px = 1.8 reference px) and colours
@@ -199,7 +199,7 @@ function InventoryKit.guns(ownedText, equipped)
 	return list
 end
 
--- The World window's cards (Oct 27): the game's worlds, Config/Worlds (World 1 The Hood, World 2 Downtown). World 1 is
+-- The World window's cards (Oct 27): the game's worlds, Config/Worlds (World 1 The Hood, World 2 Business District). World 1 is
 -- always open; a later world says what opens it (Need = its UnlockedBy: beat that world's crew stage, the final boss)
 -- and whether its place is in the experience yet (Live: a PlaceId; the lobby's door says "coming soon" until then).
 -- (brief 23: the trips, Lobby and "Start a run", are StageRules.Trips, the rule the server checks; World.client reads

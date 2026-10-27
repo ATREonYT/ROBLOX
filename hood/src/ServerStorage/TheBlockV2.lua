@@ -4096,7 +4096,7 @@ function Lobby.world2(e, cf)
 		local top = p:box('World2Panel', V(-dw + 1, dh * 0.52, -1.95), V(dw - 1, dh - 0.4, -1.8), green, M.SmoothPlastic)
 		local low = p:box('World2Panel', V(-dw + 1, st + 1, -1.95), V(dw - 1, dh * 0.5 - 0.6, -1.8), green, M.SmoothPlastic)
 		local g = surface(top, Enum.NormalId.Front, 14)
-		line(g, 'Soon', 'DOWNTOWN', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2) -- (Oct 27: World 2 is built)
+		line(g, 'Soon', 'BUSINESS DISTRICT', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2) -- (Oct 27: World 2 is built)
 		line(g, 'World', 'WORLD 2', P.white, FONT.title, 0.44, 0.44, C(10, 50, 20), 3)
 		line(surface(low, Enum.NormalId.Front, 14), 'Detail', 'Beat the Boss Yard\nto unlock!', C(220, 255, 220), FONT.title, 0.62, 0.32, C(10, 50, 20), 1)
 		-- the padlock over the panels' join: a gold body with a keyhole, a darker shackle
@@ -7151,7 +7151,7 @@ function Lobby.corners(L)
 	Lobby.Slots.World2Portal = cf
 	local words = Lobby.signWords(g, (cf * CFrame.new(0, 17.5 * (w2.scale or 1), -1)).Position, 12, 3.6, {
 		{ 'Title', 'World 2', 0.6, Lobby.Grad.pink, 4.5 },
-		{ 'Soon', 'DOWNTOWN', 0.4, Lobby.Grad.white, 3.5 }, -- (Oct 27: World 2 is built; the door says what opens it)
+		{ 'Soon', 'BUSINESS DISTRICT', 0.4, Lobby.Grad.white, 3.5 }, -- (Oct 27: World 2 is built; the door says what opens it)
 	}, 120)
 	words.WorldLabel:SetAttribute('FadeNear', 30)
 	words.WorldLabel:SetAttribute('FadeFar', 48)

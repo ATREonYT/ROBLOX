@@ -1,7 +1,7 @@
 -- The World window (brief 22, UI4): the HUD's World square opens it (PlayerGui.HoodWorld.Open, a BindableEvent; a
 -- second tap closes it). (Oct 27) The owner's UI mockup look (Shared/InventoryKit: the yellow header bar with the globe
 -- breaking out, the title and the red square X over the dark navy body), smaller:
---   This world (World 1 The Hood or World 2 Downtown, Config/Worlds): two trips, StageRules.Trips (brief 23): Lobby
+--   This world (World 1 The Hood or World 2 Business District, Config/Worlds): two trips, StageRules.Trips (brief 23): Lobby
 --             (the hall's spawn) and Stage 1 (just inside the Stage 1 gate: start a run). Both end the run you are on.
 --             The server checks every trip (HoodServer/TravelService -> StageService's teleport, StageRules.travelTarget).
 --   Other Worlds  the other world's card: what opens it, or "Coming soon" until its place is in the experience.
@@ -70,6 +70,9 @@ globe.Parent = card.Body
 label({ Name = 'Title', Text = 'World ' .. HERE, TextSize = 40, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(126, 22), Size = px(240, 46), ZIndex = 31, Parent = card.Body })
 local sub = label({ Name = 'Name', Text = IK.WorldNames[HERE] or '', TextSize = 24, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, Position = px(128, 70), Size = px(240, 30), ZIndex = 31, Parent = card.Body })
 Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFA81A')), Parent = sub })
+-- (Oct 27: World 2 is the "Business District", longer than its slot at 24: it shrinks to fit, short of the trip buttons)
+sub.TextScaled = true
+Kit.new('UITextSizeConstraint', { MaxTextSize = 24, Parent = sub })
 label({ Name = 'You', Text = "You're here", TextSize = 18, StrokeThickness = 2.5, TextColor3 = hex('7CFF4F'), TextXAlignment = Enum.TextXAlignment.Left, Position = px(128, 102), Size = px(240, 24), ZIndex = 31, Parent = card.Body })
 
 -- The trips: one green button each (the same for everyone; the server checks every trip).
@@ -88,8 +91,8 @@ for i, trip in StageRules.Trips do
 end
 
 ---------------------------------------------------------------------------------------------- the other worlds
--- (Oct 27) The game's other worlds (Config/Worlds through IK.worlds: World 2 Downtown from World 1, World 1 The Hood from
--- Downtown) as the mockup's world tiles: the name on a bar across the top, then what opens it. Travel is the lobby's
+-- (Oct 27) The game's other worlds (Config/Worlds through IK.worlds: World 2 Business District from World 1, World 1 The Hood from
+-- Business District) as the mockup's world tiles: the name on a bar across the top, then what opens it. Travel is the lobby's
 -- door (HoodServer/WorldPortalService, which checks it); this card only says how, honestly: "Coming soon" until the
 -- world's place is in the experience, a padlock and "Beat the final boss" while it is locked.
 IK.titleLine(content, 'Other Worlds', 296, { Width = WW, ZIndex = 26, TextSize = 26 })

@@ -1,9 +1,9 @@
----------------------------------------------------------------------------------------------- the downtown plaza (World 2)
+---------------------------------------------------------------------------------------------- the business district plaza (World 2)
 -- World 2's lobby (runs after e4_warehouse, so it replaces the warehouse's shell): the same plan as World 1's (e3_plaza:
 -- spawn on the spine facing the Stage 1 gate north, the training block west, the gun stand east, the box dais south, the
 -- portal SW, the boards SE, the special-sale spots and the chests before the gate), inside the owner's "C" hall
 -- (city/e6_hall.lua: its shell, floor and props; the keep-in walls are f_areas' invisible ones on Lobby.Bounds):
---   Outside  a ring street (light stone sidewalks, asphalt with white dashes, taxis and cars) and downtown round it (Oct
+--   Outside  a ring street (light stone sidewalks, asphalt with white dashes, taxis and cars) and business district round it (Oct
 --            27 round 3, the owner: "make the buildings taller"): glass and warm stone towers 55-95 high on shop podiums
 --            (awnings and signs on the street), a diner; they show through the hall's door, windows and skylights.
 --   Portal   the way back: a brick arch onto the hood (the travel itself is the services'), where World 1 has its World 2
@@ -86,9 +86,9 @@ function City.tower(c, x0, x1, z0, z1, h, o)
 	end
 	return t, model
 end
----------------------------------------------------------------------------------------------- downtown highrises
+---------------------------------------------------------------------------------------------- business district highrises
 -- (Oct 27 round 3, the owner: "make the buildings taller, make it the size of the first world, and then make the look in
--- general way better") Downtown's towers: a warm studded stone podium (one shop storey, 8 high, with shopfronts,
+-- general way better") the Business District's towers: a warm studded stone podium (one shop storey, 8 high, with shopfronts,
 -- striped awnings and signs on its street faces), and over it either a glass body (sky-blue, teal or violet glass in a
 -- white mullion grid) or a warm painted stone one (a window band each storey, piers over them), a bright crown band and
 -- a plant room on the roof (a mast with a red tip from 110 up). A storey is 5 studs. Only the podium casts a shadow
@@ -229,7 +229,7 @@ function City.bus(c, cf, color)
 	decor(b:box('BusWindscreen', V(-2.3, 3.8, -12.1), V(2.3, 7.8, -12.05), C(52, 76, 112), M.SmoothPlastic))
 	b:box('BusRoof', V(-2.4, 9, -10), V(2.4, 9.6, 10), C(222, 226, 236), M.SmoothPlastic)
 	local board = b:box('BusBoard', V(-1.9, 8.0, -12.2), V(1.9, 8.8, -12.05), C(30, 32, 40), M.SmoothPlastic)
-	line(surface(board, Enum.NormalId.Front, 30), 'Route', '1 DOWNTOWN', C(255, 190, 40), FONT.title, 0.08, 0.84)
+	line(surface(board, Enum.NormalId.Front, 30), 'Route', '1 BUSINESS DIST', C(255, 190, 40), FONT.title, 0.08, 0.84)
 	for _, x in { -1.8, 1.0 } do decor(b:box('Headlight', V(x, 2.2, -12.15), V(x + 0.8, 2.8, -12.05), C(255, 244, 200), M.Neon)) end
 	return b
 end
@@ -270,7 +270,7 @@ function City.busStop(c, cf)
 	return s
 end
 
----------------------------------------------------------------------------------------------- pre-downtown blocks
+---------------------------------------------------------------------------------------------- pre-business district blocks
 -- (Oct 27 round 2, the owner: "make the second world not such high buildings ... make like pre downtown") The city's
 -- buildings are 2-5 storey mid-rise blocks in warm saturated paint and brick, busy at street level: shops with striped
 -- awnings and signs, apartments with rows of windows, small offices with ribbon windows, a corner diner, a parking lot.
@@ -400,7 +400,7 @@ function City.parking(c, x0, x1, z0, z1, seed, y, openX)
 end
 
 ---------------------------------------------------------------------------------------------- the plaza
--- Downtown's ring street round the plaza (map frame): the plaza's sidewalk x 88.5..96 (south: from the hedge's outer face
+-- the Business District's ring street round the plaza (map frame): the plaza's sidewalk x 88.5..96 (south: from the hedge's outer face
 -- 5.5 deep), the road 96..110 (south: 12 wide), the far sidewalk 6 wide, the towers past it on a paved base (over
 -- f_areas' lots). Its levels: the road's top 0.5, the sidewalks' 0.95; the plaza's floor is 0, behind its hedge. North of
 -- z = 0 the side streets go on up the whole avenue with the towers along them (City.skylineFar, f5_avenue).
@@ -490,7 +490,7 @@ function City.skyline(L)
 	return g
 end
 -- (Oct 27, the owner's "C" for World 2's lobby) The hall round the plan, its floor and its props: city/e6_hall.lua
--- (it calls City.skyline, so downtown stands round the hall's walls).
+-- (it calls City.skyline, so business district stands round the hall's walls).
 
 -- (Oct 27 round 3, the owner: "please make the leaderboards not be behind each other") The portal and the boards stand
 -- where World 1's do (e3_plaza's Lobby.Plan): the portal SW off the south walk on its own path; the three boards in one

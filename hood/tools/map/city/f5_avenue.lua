@@ -1,4 +1,4 @@
----------------------------------------------------------------------------------------------- the downtown avenue (World 2)
+---------------------------------------------------------------------------------------------- the business district avenue (World 2)
 -- World 2's stages (runs after f2_stages and f3_waves; its buildStages is the one V2.Build calls). (Oct 27 round 3, the
 -- owner: "make the buildings taller, make it the size of the first world, and then make the look in general way
 -- better") World 1's track: 15 stages of 64 studs, gate 16, the boss yard (here the rooftop, Stage 16: The CEO's crew).
@@ -124,7 +124,7 @@ function City.court(d, top, at, i)
 	invisibleWall(d, V(x0, capY, top - za - 0.5), V(x1, 40, top - za + 0.5))
 	invisibleWall(d, V(x0, capY, top - zb - 0.5), V(x1, 40, top - zb + 0.5))
 	local mural = ghost(d:box('Mural', V(x1 - 0.08, ST.kerb + 3, top - 12), V(x1 - 0.02, ST.kerb + 12, top - 44), P.white, M.SmoothPlastic))
-	line(surface(mural, Enum.NormalId.Left, 12), 'Mural', ({ 'DOWNTOWN HOOPS', 'GAME ON', 'NEXT UP' })[trioOf(i)], ({ C(255, 210, 60), C(255, 96, 206), C(70, 220, 255) })[trioOf(i)], FONT.tag, 0.1, 0.8, P.black, 4).Rotation = -4
+	line(surface(mural, Enum.NormalId.Left, 12), 'Mural', ({ 'CITY HOOPS', 'GAME ON', 'NEXT UP' })[trioOf(i)], ({ C(255, 210, 60), C(255, 96, 206), C(70, 220, 255) })[trioOf(i)], FONT.tag, 0.1, 0.8, P.black, 4).Rotation = -4
 	for _, fl in { { 24, 5 }, { 60, 5 }, { 24, 53 }, { 60, 53 } } do District.floodlight(d, CFrame.lookAt(at(fl[1], fl[2]), at(45, 29)), 22) end
 	for k, zp in ipairs({ 8, 47 }) do tree(d, at(19.4, zp), i * 100 + k, 0.8, 30 * k) end
 	-- the players' tunnel (PropModels 'CourtTunnel', as World 1's courts), its mouth toward the gate

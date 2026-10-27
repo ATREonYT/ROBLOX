@@ -68,7 +68,7 @@ GoalRules.List = {
 	lane('DoubleEnd', 'Range6', 1500),
 	lane('Ring', 'Ring', 2500, 'Stage 16, at %s'), -- FIGHTS30 (was 'Boss Yard, at %d rebirths')
 }
--- (Oct 27) World 2, Downtown (its own place; Shared/WorldInfo): a fresh chain through its five districts (City Streets,
+-- (Oct 27) World 2, Business District (its own place; Shared/WorldInfo): a fresh chain through its five districts (City Streets,
 -- Modern Plaza, Construction Zone, Transit Area, Luxury District), up to the CEO on the rooftop. You
 -- arrive with your rebirths, guns and shoes, so it's only the new stages, the crews and the last lanes; the rewards are
 -- scaled to its pads (7K to 40K). A World 2 visitor's goals start unsynced (HoodServer/WorldData), so the lanes and guns
@@ -77,7 +77,7 @@ local okW, WorldInfo = pcall(function() return require(script.Parent.WorldInfo) 
 GoalRules.World = okW and WorldInfo.current() or 1
 if GoalRules.World == 2 then
 	GoalRules.List = {
-		{ Id = 'Stage1', Text = 'Walk to Downtown Stage 1', Where = 'through the big doors ahead', Reward = 500, Need = { Stages = 1 } },
+		{ Id = 'Stage1', Text = 'Walk to Business District Stage 1', Where = 'through the big doors ahead', Reward = 500, Need = { Stages = 1 } },
 		{ Id = 'Wave1', Text = 'Beat the Interns', Where = 'hold to shoot them', Reward = 750, Need = { Wave = 1 } },
 		{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 750, Need = { CashOuts = 1 } },
 		{ Id = 'Stage4', Text = 'Reach Stage 4', Where = 'the Modern Plaza, past the City Streets', Reward = 1500, Need = { Stages = 4 } },
@@ -98,7 +98,7 @@ for i, g in GoalRules.List do
 	GoalRules.ById[g.Id] = g
 end
 GoalRules.AllDone = GoalRules.World == 2 and { Text = 'ALL GOALS DONE!', Where = 'more worlds are coming soon' }
-	or { Text = 'ALL GOALS DONE!', Where = 'take the World 2 portal to Downtown' }
+	or { Text = 'ALL GOALS DONE!', Where = 'take the World 2 portal to the Business District' }
 -- The chain's version, saved with each profile's Goals (Chain). Older chains, by goal id (GoalRules.migrate moves a
 -- saved step to the same goal in this chain).
 GoalRules.Chain = 5 -- (5: Oct 27 pacing, the lanes spread over 50 rebirths; BAY 5 after the boss)

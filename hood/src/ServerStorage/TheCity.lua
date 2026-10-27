@@ -83,15 +83,15 @@ local P = {
 	-- fronts at front; the last SLEN - endZ studs of each stage narrow to |x| = open, framing the next gate's wall.
 	street = { road = 8.5, walk = 8, kerb = 0.6, front = 36, open = 22, fence = 34.5, endZ = 56, eave = 30, band = 15, sills = { 4, 19 }, winH = 8.5 },
 }
----------------------------------------------------------------------------------------------- World 2: Downtown (city)
+---------------------------------------------------------------------------------------------- World 2: Business District (city)
 -- TheCity: World 2's map (hood/docs/WORLD2.md; the owner, Oct 27: "make the second world more advanced ... more of a
 -- city, not the hood, as they are escaping the hood"). Assembled by tools/map/city_assemble.sh from World 1's shared
 -- pieces (the kit, the lobby's zone builders, the stage gates, the look pass, the build) plus the city's own:
 --   city/c_layout.lua   the layout constants: World 1's size, 15 stages and the rooftop (Stage 16)
---   city/e5_plaza.lua   the lobby's zones and slots (World 1's plan), the city kit, downtown round the lobby
+--   city/e5_plaza.lua   the lobby's zones and slots (World 1's plan), the city kit, business district round the lobby
 --   city/e6_hall.lua    the lobby's hall: the owner's "C" (the Oct 10 indoor hall) in place of the warehouse
 --   city/f4_districts.lua  the five districts' props (the owner's Oct 27 mockup)
---   city/f5_avenue.lua  the stages: a downtown avenue (asphalt, lane lines, crosswalks, sidewalks, towers on shop
+--   city/f5_avenue.lua  the stages: a business district avenue (asphalt, lane lines, crosswalks, sidewalks, towers on shop
 --                       podiums taller up the track, five districts), the rooftop, the city round it
 --   city/x2_look.lua    the hall's faint studs on its pillars and bands, after the look pass
 -- The crews' hangouts are World 1's (pieces/f3_waves).
@@ -4145,7 +4145,7 @@ function Lobby.world2(e, cf)
 		local top = p:box('World2Panel', V(-dw + 1, dh * 0.52, -1.95), V(dw - 1, dh - 0.4, -1.8), green, M.SmoothPlastic)
 		local low = p:box('World2Panel', V(-dw + 1, st + 1, -1.95), V(dw - 1, dh * 0.5 - 0.6, -1.8), green, M.SmoothPlastic)
 		local g = surface(top, Enum.NormalId.Front, 14)
-		line(g, 'Soon', 'DOWNTOWN', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2) -- (Oct 27: World 2 is built)
+		line(g, 'Soon', 'BUSINESS DISTRICT', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2) -- (Oct 27: World 2 is built)
 		line(g, 'World', 'WORLD 2', P.white, FONT.title, 0.44, 0.44, C(10, 50, 20), 3)
 		line(surface(low, Enum.NormalId.Front, 14), 'Detail', 'Beat the Boss Yard\nto unlock!', C(220, 255, 220), FONT.title, 0.62, 0.32, C(10, 50, 20), 1)
 		-- the padlock over the panels' join: a gold body with a keyhole, a darker shackle
@@ -7200,7 +7200,7 @@ function Lobby.corners(L)
 	Lobby.Slots.World2Portal = cf
 	local words = Lobby.signWords(g, (cf * CFrame.new(0, 17.5 * (w2.scale or 1), -1)).Position, 12, 3.6, {
 		{ 'Title', 'World 2', 0.6, Lobby.Grad.pink, 4.5 },
-		{ 'Soon', 'DOWNTOWN', 0.4, Lobby.Grad.white, 3.5 }, -- (Oct 27: World 2 is built; the door says what opens it)
+		{ 'Soon', 'BUSINESS DISTRICT', 0.4, Lobby.Grad.white, 3.5 }, -- (Oct 27: World 2 is built; the door says what opens it)
 	}, 120)
 	words.WorldLabel:SetAttribute('FadeNear', 30)
 	words.WorldLabel:SetAttribute('FadeFar', 48)
@@ -7581,12 +7581,12 @@ Lobby.Scenery = (function()
 	add('Scn_Bush_1', Wh.x1 + 6, 4, -90) add('Scn_Bush_1', Wh.x1 + 6, 26, -90) add('Scn_Bush_1', Wh.x0 - 6, 64, 90) add('Scn_Bush_1', Wh.x0 - 6, 88, 90)
 	return list
 end)()
----------------------------------------------------------------------------------------------- the downtown plaza (World 2)
+---------------------------------------------------------------------------------------------- the business district plaza (World 2)
 -- World 2's lobby (runs after e4_warehouse, so it replaces the warehouse's shell): the same plan as World 1's (e3_plaza:
 -- spawn on the spine facing the Stage 1 gate north, the training block west, the gun stand east, the box dais south, the
 -- portal SW, the boards SE, the special-sale spots and the chests before the gate), inside the owner's "C" hall
 -- (city/e6_hall.lua: its shell, floor and props; the keep-in walls are f_areas' invisible ones on Lobby.Bounds):
---   Outside  a ring street (light stone sidewalks, asphalt with white dashes, taxis and cars) and downtown round it (Oct
+--   Outside  a ring street (light stone sidewalks, asphalt with white dashes, taxis and cars) and business district round it (Oct
 --            27 round 3, the owner: "make the buildings taller"): glass and warm stone towers 55-95 high on shop podiums
 --            (awnings and signs on the street), a diner; they show through the hall's door, windows and skylights.
 --   Portal   the way back: a brick arch onto the hood (the travel itself is the services'), where World 1 has its World 2
@@ -7669,9 +7669,9 @@ function City.tower(c, x0, x1, z0, z1, h, o)
 	end
 	return t, model
 end
----------------------------------------------------------------------------------------------- downtown highrises
+---------------------------------------------------------------------------------------------- business district highrises
 -- (Oct 27 round 3, the owner: "make the buildings taller, make it the size of the first world, and then make the look in
--- general way better") Downtown's towers: a warm studded stone podium (one shop storey, 8 high, with shopfronts,
+-- general way better") the Business District's towers: a warm studded stone podium (one shop storey, 8 high, with shopfronts,
 -- striped awnings and signs on its street faces), and over it either a glass body (sky-blue, teal or violet glass in a
 -- white mullion grid) or a warm painted stone one (a window band each storey, piers over them), a bright crown band and
 -- a plant room on the roof (a mast with a red tip from 110 up). A storey is 5 studs. Only the podium casts a shadow
@@ -7812,7 +7812,7 @@ function City.bus(c, cf, color)
 	decor(b:box('BusWindscreen', V(-2.3, 3.8, -12.1), V(2.3, 7.8, -12.05), C(52, 76, 112), M.SmoothPlastic))
 	b:box('BusRoof', V(-2.4, 9, -10), V(2.4, 9.6, 10), C(222, 226, 236), M.SmoothPlastic)
 	local board = b:box('BusBoard', V(-1.9, 8.0, -12.2), V(1.9, 8.8, -12.05), C(30, 32, 40), M.SmoothPlastic)
-	line(surface(board, Enum.NormalId.Front, 30), 'Route', '1 DOWNTOWN', C(255, 190, 40), FONT.title, 0.08, 0.84)
+	line(surface(board, Enum.NormalId.Front, 30), 'Route', '1 BUSINESS DIST', C(255, 190, 40), FONT.title, 0.08, 0.84)
 	for _, x in { -1.8, 1.0 } do decor(b:box('Headlight', V(x, 2.2, -12.15), V(x + 0.8, 2.8, -12.05), C(255, 244, 200), M.Neon)) end
 	return b
 end
@@ -7853,7 +7853,7 @@ function City.busStop(c, cf)
 	return s
 end
 
----------------------------------------------------------------------------------------------- pre-downtown blocks
+---------------------------------------------------------------------------------------------- pre-business district blocks
 -- (Oct 27 round 2, the owner: "make the second world not such high buildings ... make like pre downtown") The city's
 -- buildings are 2-5 storey mid-rise blocks in warm saturated paint and brick, busy at street level: shops with striped
 -- awnings and signs, apartments with rows of windows, small offices with ribbon windows, a corner diner, a parking lot.
@@ -7983,7 +7983,7 @@ function City.parking(c, x0, x1, z0, z1, seed, y, openX)
 end
 
 ---------------------------------------------------------------------------------------------- the plaza
--- Downtown's ring street round the plaza (map frame): the plaza's sidewalk x 88.5..96 (south: from the hedge's outer face
+-- the Business District's ring street round the plaza (map frame): the plaza's sidewalk x 88.5..96 (south: from the hedge's outer face
 -- 5.5 deep), the road 96..110 (south: 12 wide), the far sidewalk 6 wide, the towers past it on a paved base (over
 -- f_areas' lots). Its levels: the road's top 0.5, the sidewalks' 0.95; the plaza's floor is 0, behind its hedge. North of
 -- z = 0 the side streets go on up the whole avenue with the towers along them (City.skylineFar, f5_avenue).
@@ -8073,7 +8073,7 @@ function City.skyline(L)
 	return g
 end
 -- (Oct 27, the owner's "C" for World 2's lobby) The hall round the plan, its floor and its props: city/e6_hall.lua
--- (it calls City.skyline, so downtown stands round the hall's walls).
+-- (it calls City.skyline, so business district stands round the hall's walls).
 
 -- (Oct 27 round 3, the owner: "please make the leaderboards not be behind each other") The portal and the boards stand
 -- where World 1's do (e3_plaza's Lobby.Plan): the portal SW off the south walk on its own path; the three boards in one
@@ -8148,7 +8148,7 @@ end
 --   Shell    light aqua walls 2.5 thick (faint studs), a darker studded base band with a pale lip, a paler cap band over
 --            a cornice; periwinkle wall pillars with the kinked face (e2's Lobby.wallPillar) on the side and back walls
 --            and the corners, kept clear of the training block's head deck
---   Windows  a big recessed window in every bay, cut through the wall, so downtown's towers (City.skyline, outside
+--   Windows  a big recessed window in every bay, cut through the wall, so the business district's towers (City.skyline, outside
 --            the walls) show through; a wall lamp over each
 --   Door     the north wall's exit bay: a grey framed recess round the open doorway (x +-23, 32 high) onto the Stage 1
 --            gate, two framed panels over it, white neon lines
@@ -8509,7 +8509,7 @@ function Lobby.floorPlan(L)
 	return f
 end
 
-Lobby.outdoors = function() end -- (no cliffs downtown)
+Lobby.outdoors = function() end -- (no cliffs in the city)
 -- The hall's props, along its walls only (the calm floor stays clear): benches and bins in the back wall's corner bays,
 -- potted bushes in the side bays.
 Lobby.Scenery = (function()
@@ -10723,7 +10723,7 @@ function City.bossGate(d, top, zp)
 	line(surface(sign, Enum.NormalId.Back, 10), 'Boss', 'BOSS', P.white, FONT.title, 0.04, 0.92, C(120, 0, 20), 4)
 	return g
 end
----------------------------------------------------------------------------------------------- the downtown avenue (World 2)
+---------------------------------------------------------------------------------------------- the business district avenue (World 2)
 -- World 2's stages (runs after f2_stages and f3_waves; its buildStages is the one V2.Build calls). (Oct 27 round 3, the
 -- owner: "make the buildings taller, make it the size of the first world, and then make the look in general way
 -- better") World 1's track: 15 stages of 64 studs, gate 16, the boss yard (here the rooftop, Stage 16: The CEO's crew).
@@ -10849,7 +10849,7 @@ function City.court(d, top, at, i)
 	invisibleWall(d, V(x0, capY, top - za - 0.5), V(x1, 40, top - za + 0.5))
 	invisibleWall(d, V(x0, capY, top - zb - 0.5), V(x1, 40, top - zb + 0.5))
 	local mural = ghost(d:box('Mural', V(x1 - 0.08, ST.kerb + 3, top - 12), V(x1 - 0.02, ST.kerb + 12, top - 44), P.white, M.SmoothPlastic))
-	line(surface(mural, Enum.NormalId.Left, 12), 'Mural', ({ 'DOWNTOWN HOOPS', 'GAME ON', 'NEXT UP' })[trioOf(i)], ({ C(255, 210, 60), C(255, 96, 206), C(70, 220, 255) })[trioOf(i)], FONT.tag, 0.1, 0.8, P.black, 4).Rotation = -4
+	line(surface(mural, Enum.NormalId.Left, 12), 'Mural', ({ 'CITY HOOPS', 'GAME ON', 'NEXT UP' })[trioOf(i)], ({ C(255, 210, 60), C(255, 96, 206), C(70, 220, 255) })[trioOf(i)], FONT.tag, 0.1, 0.8, P.black, 4).Rotation = -4
 	for _, fl in { { 24, 5 }, { 60, 5 }, { 24, 53 }, { 60, 53 } } do District.floodlight(d, CFrame.lookAt(at(fl[1], fl[2]), at(45, 29)), 22) end
 	for k, zp in ipairs({ 8, 47 }) do tree(d, at(19.4, zp), i * 100 + k, 0.8, 30 * k) end
 	-- the players' tunnel (PropModels 'CourtTunnel', as World 1's courts), its mouth toward the gate

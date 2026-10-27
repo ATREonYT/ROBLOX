@@ -6,7 +6,7 @@
 --   Shell    light aqua walls 2.5 thick (faint studs), a darker studded base band with a pale lip, a paler cap band over
 --            a cornice; periwinkle wall pillars with the kinked face (e2's Lobby.wallPillar) on the side and back walls
 --            and the corners, kept clear of the training block's head deck
---   Windows  a big recessed window in every bay, cut through the wall, so downtown's towers (City.skyline, outside
+--   Windows  a big recessed window in every bay, cut through the wall, so the business district's towers (City.skyline, outside
 --            the walls) show through; a wall lamp over each
 --   Door     the north wall's exit bay: a grey framed recess round the open doorway (x +-23, 32 high) onto the Stage 1
 --            gate, two framed panels over it, white neon lines
@@ -367,7 +367,7 @@ function Lobby.floorPlan(L)
 	return f
 end
 
-Lobby.outdoors = function() end -- (no cliffs downtown)
+Lobby.outdoors = function() end -- (no cliffs in the city)
 -- The hall's props, along its walls only (the calm floor stays clear): benches and bins in the back wall's corner bays,
 -- potted bushes in the side bays.
 Lobby.Scenery = (function()

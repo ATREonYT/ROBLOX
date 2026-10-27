@@ -1,4 +1,4 @@
-# World 2: Downtown (design, Oct 27)
+# World 2: Business District (design, Oct 27)
 
 The owner (Oct 27): "start working on a second world, using the style you already learnt from building this map, and
 then make it not the hood, make the second world more advanced, by that i mean make it more of a city, not the hood, as
@@ -7,12 +7,12 @@ workers, bosses, etc. But dont use your placeholders as they look bad, also give
 to beat the final boss to get to the next world"; World 2 longer than World 1 (the sim's target 40 minutes).
 
 ## The story in one line
-You beat the Harbor crew's boss, the World 2 door opens, and you've made it out of the hood into Downtown: glass towers,
+You beat the Harbor crew's boss, the World 2 door opens, and you've made it out of the hood into the Business District: glass towers,
 offices and bosses in suits. Same loop, bigger numbers.
 
 ## Order of work (World 1 ships first)
 1. World 1 release polish (the Oct 27 list, jobs 1-9 in `plan-2026-10-27.md`).
-2. World 2 golden slice: the Downtown lobby corner, Stage 1-2 street and one crew with real characters, judged by the
+2. World 2 golden slice: the Business District lobby corner, Stage 1-2 street and one crew with real characters, judged by the
    owner against the reference before the rest is built (CLAUDE.md lesson 2).
 3. The rest of World 2's 16 stages, its ranges, guns and boxes, then the pacing sim.
 
@@ -32,7 +32,7 @@ Calm streets, loud interactables. Props from the owner's Claude Design batches w
 
 Oct 27 decisions:
 - The lobby is the owner's "C": the Oct 10 indoor hall (aqua studded walls, periwinkle pillars, cyan floor lines,
-  skylights and blue trusses) round World 2's own zones, at World 1's size; downtown's towers show through its door,
+  skylights and blue trusses) round World 2's own zones, at World 1's size; the business district's towers show through its door,
   windows and skylights (`tools/map/city/e6_hall.lua`).
 - The track is five districts of three stages each, after the owner's mockup
   (`docs/refs/world2/owner_world2_districts_oct27.png`; "don't make it exactly like this ... more low poly/cartoony"):

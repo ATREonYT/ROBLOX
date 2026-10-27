@@ -65,7 +65,7 @@ Only one window is open at a time; the game behind it blurs a little.
 | **Items** | Items square | Your guns (equip), boosts and potions; "Equip Best"; "More guns at the ARMORY"; "No boosts yet" when empty. |
 | **Shoes** | Shoes square | A grid of your shoes, rarity colours, "NEW!" tags, Favorite (star) and Delete (trash) buttons, a Search box, **Equip Best**. |
 | **Skins** | Skins square | Gun skins grid. |
-| **World** | the World button / the portal | World 1 (The Hood), World 2 (Downtown), each with its picture and "Coming soon" or the travel button. |
+| **World** | the World button / the portal | World 1 (The Hood), World 2 (Business District), each with its picture and "Coming soon" or the travel button. |
 | **Spin Wheel** | the wheel | The wheel, **SPIN!**, "Chances" (the odds for every slice, always shown), "Next free spin in 12:00". |
 | **Playtime Rewards** | the gift | A row of gifts that unlock the longer you play, **Claim!** on each ready one. |
 | **Missions** | the clipboard | A list of tasks with progress bars and rewards. |

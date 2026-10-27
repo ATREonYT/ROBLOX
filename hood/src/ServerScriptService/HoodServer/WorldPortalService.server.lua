@@ -1,5 +1,5 @@
 -- The doors between worlds (Oct 27, World 2: each world is its own place in the experience; Config/Worlds). Any model
--- in the map named World<N>Portal (World 1's lobby has World2Portal; Downtown's has World1Portal) gets a prompt.
+-- in the map named World<N>Portal (World 1's lobby has World2Portal; the Business District's has World1Portal) gets a prompt.
 -- Travelling is checked here: a known world with a place id, unlocked (World 2: World 1's boss yard beaten once,
 -- Shared/WorldInfo), a rate limit, a loaded profile. The profile is released before the trip so the next place loads
 -- it straight away (ProfileStore's session lock). Until the owner adds the place (PlaceId 0) the door says "coming soon".

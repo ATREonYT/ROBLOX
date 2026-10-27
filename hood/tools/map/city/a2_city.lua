@@ -1,12 +1,12 @@
----------------------------------------------------------------------------------------------- World 2: Downtown (city)
+---------------------------------------------------------------------------------------------- World 2: Business District (city)
 -- TheCity: World 2's map (hood/docs/WORLD2.md; the owner, Oct 27: "make the second world more advanced ... more of a
 -- city, not the hood, as they are escaping the hood"). Assembled by tools/map/city_assemble.sh from World 1's shared
 -- pieces (the kit, the lobby's zone builders, the stage gates, the look pass, the build) plus the city's own:
 --   city/c_layout.lua   the layout constants: World 1's size, 15 stages and the rooftop (Stage 16)
---   city/e5_plaza.lua   the lobby's zones and slots (World 1's plan), the city kit, downtown round the lobby
+--   city/e5_plaza.lua   the lobby's zones and slots (World 1's plan), the city kit, business district round the lobby
 --   city/e6_hall.lua    the lobby's hall: the owner's "C" (the Oct 10 indoor hall) in place of the warehouse
 --   city/f4_districts.lua  the five districts' props (the owner's Oct 27 mockup)
---   city/f5_avenue.lua  the stages: a downtown avenue (asphalt, lane lines, crosswalks, sidewalks, towers on shop
+--   city/f5_avenue.lua  the stages: a business district avenue (asphalt, lane lines, crosswalks, sidewalks, towers on shop
 --                       podiums taller up the track, five districts), the rooftop, the city round it
 --   city/x2_look.lua    the hall's faint studs on its pillars and bands, after the look pass
 -- The crews' hangouts are World 1's (pieces/f3_waves).
