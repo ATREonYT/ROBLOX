@@ -21,7 +21,10 @@ python3 $T/sbs.py out/shots/spawn.png hood/docs/refs/ref_W01.0_spawn_view_north.
   The lobby is built at world x + 2400 (map x 0 = world 2400). `plan.json` (from export) drops the roof for top-down views.
 - Walk video: `FPS=30 WALK="0,38;0,33;-30,33" node walk.js scene.json frames/ 854 480 <frames>`, then
   `ffmpeg -framerate 30 -i frames/f_%04d.png -pix_fmt yuv420p walk.mp4`. The avatar walks the map-frame route with a
-  follow camera 12 back and 9 up.
+  follow camera 12 back and 9 up. `GUIDE=<guide_frames.dat>` (from `ui/corevideo.luau`) adds the real goal guide's parts
+  for each frame, recorded in the game harness on the same route (its route is the default WALK then).
+  `CAM='back,up'` sets the follow camera (12,12 with GUIDE: from head height the avatar hides the trail's first 15 studs).
+  Each frame takes about 11 s; `START`/`END` render a chunk, so three chunks can run side by side.
 - `tools/lobby_metrics.luau`: the lobby's numbers (distances from the spawn, labels readable from it, empty floor share,
   design models tilted). Run it after a build through the harness.
 - `tools/fake_items.luau`: fakes `ReplicatedStorage.HoodItemMeshes` the way the Studio import leaves it, so builders take

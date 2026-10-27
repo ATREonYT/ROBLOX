@@ -62,6 +62,10 @@ have it under `/opt/node22/lib/node_modules`). A slot in `compose.py` can be `no
   `ffmpeg -framerate 30 -i f_%03d.png -c:v libx264 -pix_fmt yuv420p shop.mp4`. It shows the pop-in, the stagger,
   the icons' idle motion, the shine sweeps, the sparkles and the green buttons' glow (all on `Shared/UIIdle`). Not drawn:
   a UIGradient's Offset (the HUD offers' shine, `UIMotion.shine`), the 3D views.
+- `SCENE=corevideo sh shoot.sh <out>` (Oct 27, the core loop): a real rebirth's payoff as HUD frames (`r_NNN.json`,
+  drawn), then the goal guide recorded on a walk from the spawn toward the ARMORY (`guide_frames.dat`), which
+  render14 draws in the hall: `CHROME=<chromium> FPS=30 GUIDE=<out>/guide_frames.dat node ../render14/walk.js
+  <scene.json> <frames> 960 540 135` (`scene.json` from `render14/tools/export.sh`).
 
 ## Phones, the HUD, the fallback and closing (Oct 27, release fixes)
 - `SCENE=hud SW=844 SH=390 NOTCH=47 TOUCH=1 sh shoot.sh <out>` draws the HUD alone on a phone screen (`hud.luau`) and

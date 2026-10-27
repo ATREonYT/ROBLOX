@@ -544,30 +544,83 @@ game:GetService('ProximityPromptService').PromptTriggered:Connect(function(promp
 	if prompt:GetAttribute('ComingSoon') then toast((prompt.ObjectText ~= '' and prompt.ObjectText or 'This') .. ' is coming soon!', 'blue') end
 end)
 
--- The rebirth moment: "Rebirth n!", the new multiplier and the lane it opened pop in the middle, then float away (< 2 s).
+-- The rebirth moment (Oct 27, the core loop: "make the core loop done well"; the soldier game's payoff): "Rebirth n!"
+-- punches in over slowly turning gold rays and one soft glow (a single flash, under 1 a second), then the old and the new
+-- multiplier, "x1 > x2", with the new one popping in to a burst of stars and confetti (SellFX.burst), "Power forever!"
+-- and the lane it opened under it; it holds a moment and floats away (about 3 s). Reduced Motion: no rays, glow or burst.
 local lastMoment = 0
 local function rebirthMoment(n, unlocked)
 	if n <= lastMoment then return end
 	lastMoment = n
-	local holder = Kit.new('Frame', { Name = 'RebirthMoment', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = px(800, 170), ZIndex = 60, Parent = root })
+	local still = player:GetAttribute('ReducedMotion') == true
+	local holder = Kit.new('Frame', { Name = 'RebirthMoment', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = px(820, 300), ZIndex = 60, Parent = root })
 	local scale = Kit.new('UIScale', { Scale = 0.3, Parent = holder })
-	local title = fillText(label({ Name = 'Title', Text = 'Rebirth ' .. n .. '!', TextSize = 80, StrokeThickness = 7, Size = UDim2.new(1, 0, 0, 92), ZIndex = 61, Parent = holder }), { Color.white, hex('FF6B7A') })
-	local text = times(rebirthMultiplier(n)) .. ' Power forever!'
+	if not still then
+		-- the rays: twelve soft gold spokes behind the words, turning a sixth of a turn while it shows
+		local rays = Kit.new('Frame', { Name = 'Rays', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = px(620, 620), ZIndex = 58, Parent = holder })
+		for i = 0, 5 do
+			local ray = Kit.new('Frame', { Name = 'Ray', BackgroundColor3 = hex('FFE27A'), BackgroundTransparency = 0.55, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.07, 1), Rotation = i * 30, ZIndex = 58, Parent = rays })
+			Kit.new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.32, 0.6), NumberSequenceKeypoint.new(0.5, 1), NumberSequenceKeypoint.new(0.68, 0.6), NumberSequenceKeypoint.new(1, 1) }), Parent = ray })
+		end
+		Motion.tween(rays, 3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, { Rotation = 60 })
+		-- the glow: one soft gold-white disc that fades out (the one flash)
+		local glow = Kit.new('Frame', { Name = 'Glow', BackgroundColor3 = hex('FFF4C2'), BackgroundTransparency = 0.45, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = px(420, 420), ZIndex = 59, Parent = holder })
+		Kit.new('UICorner', { CornerRadius = UDim.new(0.5, 0), Parent = glow })
+		Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.6, 0.5), NumberSequenceKeypoint.new(1, 1) }), Parent = glow })
+		Motion.tween(glow, 0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { BackgroundTransparency = 1, Size = px(560, 560) })
+	end
+	local title = fillText(label({ Name = 'Title', Text = 'Rebirth ' .. n .. '!', TextSize = 80, StrokeThickness = 7, Position = px(0, 10), Size = UDim2.new(1, 0, 0, 92), ZIndex = 61, Parent = holder }), { Color.white, hex('FF6B7A') })
+	-- "x1 > x2": the old multiplier small and white, the new one big and gold
+	local old, new = times(rebirthMultiplier(math.max(0, n - 1))), times(rebirthMultiplier(n))
+	local row = Kit.new('Frame', { Name = 'Multiplier', BackgroundTransparency = 1, Position = px(0, 104), Size = UDim2.new(1, 0, 0, 84), ZIndex = 61, Parent = holder })
+	-- (placed by hand, centred as one line: a UIScale on the new one must not move the others)
+	local GAP_X = 14
+	local widths = { Kit.textWidth(old, 54) + 16, Kit.textWidth('>', 58) + 16, Kit.textWidth(new, 76) + 16 }
+	local x = -(widths[1] + widths[2] + widths[3] + 2 * GAP_X) / 2
+	local function part_(name, text, size, colors, i)
+		local t = label({ Name = name, Text = text, TextSize = size, StrokeThickness = math.max(4, size * 0.09), AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.5, x, 0.5, 0), Size = px(widths[i], size + 12), ZIndex = 62, Parent = row })
+		x += widths[i] + GAP_X
+		return fillText(t, colors)
+	end
+	local from = part_('From', old, 54, { Color.white, hex('C9D4E6') }, 1)
+	local arrow = part_('Arrow', '>', 58, Spec.Text.gold, 2)
+	local to = part_('To', new, 76, Spec.Text.gold, 3)
+	local toScale = Kit.new('UIScale', { Scale = 0, Parent = to })
+	local text = 'Power forever!'
 	if type(unlocked) == 'string' and unlocked ~= '' then text ..= '  ' .. unlocked .. ' unlocked!' end
-	local line = fillText(label({ Name = 'Multiplier', Text = text, TextSize = 38, StrokeThickness = 4.5, Position = px(0, 96), Size = UDim2.new(1, 0, 0, 46), ZIndex = 61, Parent = holder }), Spec.Text.gold)
+	local line = fillText(label({ Name = 'Forever', Text = text, TextSize = 34, StrokeThickness = 4, Position = px(0, 194), Size = UDim2.new(1, 0, 0, 42), ZIndex = 61, Parent = holder }), { Color.white, hex('D8F0FF') })
 	line.TextScaled = true
-	Kit.new('UITextSizeConstraint', { MaxTextSize = 38, Parent = line })
-	Motion.tween(scale, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
-	task.delay(1.45, function()
-		if not holder.Parent then return end
+	Kit.new('UITextSizeConstraint', { MaxTextSize = 34, Parent = line })
+	-- the beats, each starting when the one before ends (so they keep their spacing on any frame rate): the punch, in
+	-- past full size and back (0.3 s + 0.18 s); the new multiplier pops in with the burst; it holds 2.1 s; it floats
+	-- up and fades (0.4 s) and is gone
+	local function chain(inst, time, style, dir, goal, after)
+		local tw = game:GetService('TweenService'):Create(inst, TweenInfo.new(time, style, dir), goal)
+		if after then tw.Completed:Connect(function() if holder.Parent then after() end end) end
+		tw:Play()
+		return tw
+	end
+	local function fadeOut()
 		Motion.tween(holder, 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Position = UDim2.fromScale(0.5, 0.34) })
-		for _, t in { title, line } do
+		for _, t in { title, from, arrow, to, line } do
 			Motion.tween(t, 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { TextTransparency = 1 })
 			local s = t:FindFirstChildOfClass('UIStroke')
 			if s then Motion.tween(s, 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Transparency = 1 }) end
 		end
-		task.wait(0.45)
-		holder:Destroy()
+		local rays = holder:FindFirstChild('Rays')
+		if rays then
+			for _, r in rays:GetChildren() do Motion.tween(r, 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { BackgroundTransparency = 1 }) end
+		end
+		local gone = Kit.new('NumberValue', { Name = 'Fade', Parent = holder })
+		chain(gone, 0.45, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, { Value = 1 }, function() holder:Destroy() end)
+	end
+	chain(scale, 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1.12 }, function()
+		chain(scale, 0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Scale = 1 }, function()
+			chain(toScale, 0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
+			if not still then Sell.FX.burst(row, { Count = 10, Confetti = 22, Radius = 300, Size = 28, ZIndex = 63, Seed = n }) end
+			local hold = Kit.new('NumberValue', { Name = 'Hold', Parent = holder })
+			chain(hold, 2.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, { Value = 1 }, fadeOut)
+		end)
 	end)
 end
 

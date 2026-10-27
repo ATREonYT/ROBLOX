@@ -192,6 +192,27 @@ data.Cash = 500; P:SetAttribute('Cash', data.Cash)
 settle(1.5)
 local _, gtBuy = goalLine()
 check('the gun goal is up', gtBuy == GoalRules.ById.Gun.Text, tostring(gtBuy))
+-- (Oct 27, round 6) the lasting guide after the tutorial (HoodClient/GoalGuide): an arrow over the goal's place, the
+-- ARMORY for "Buy a gun", seen from the spawn; gone while a window is open
+data.Onboarding = type(data.Onboarding) == 'table' and data.Onboarding or {}
+data.Onboarding.Done, data.Onboarding.Gift = true, true
+waitFor(function() return P:GetAttribute('OnboardingStep') == 'Done' end, 4)
+frame(0.3)
+local guide = workspace:FindFirstChild('HoodGoalGuide')
+local shaft = guide and guide:FindFirstChild('ArrowShaft')
+local armory = game:GetService('CollectionService'):GetTagged('HoodArmory')[1]
+local guideOn = shaft ~= nil and shaft.Transparency < 0.5
+-- (the arrow stands at the ARMORY's edge nearest you: how far it is outside the ARMORY's footprint, in studs)
+local guideD
+if guideOn and armory then
+	local bcf, bsize = armory:GetBoundingBox()
+	local q = bcf:PointToObjectSpace(shaft.CFrame.Position)
+	guideD = math.max(0, math.abs(q.X) - bsize.X / 2) + math.max(0, math.abs(q.Z) - bsize.Z / 2)
+end
+check('guide: after the tutorial an arrow stands at the ARMORY for "Buy a gun"', guideOn and guideD ~= nil and guideD < 2, ('step %s shown %s, %s studs outside the ARMORY'):format(tostring(P:GetAttribute('OnboardingStep')), tostring(guideOn), tostring(guideD and math.floor(guideD * 10) / 10)))
+P.PlayerGui:SetAttribute('HoodWindow', 'Store'); frame(0.2)
+check('guide: hidden while a window is open', shaft ~= nil and shaft.Transparency >= 0.99, shaft and tostring(shaft.Transparency) or 'no arrow')
+P.PlayerGui:SetAttribute('HoodWindow', ''); frame(0.2)
 local pt = workspace.TheBlockV2:FindFirstChild('GunPoint_Revolver', true)
 if pt then
 	local q = frameCF:PointToObjectSpace(pt.CFrame.Position)
@@ -226,9 +247,10 @@ check('rebirth: Power back to 0, Rebirths +1', data.Rep == 0 and data.Rebirths =
 check('rebirth: the multiplier went up', cine ~= nil and type(mBefore) == 'number' and cine.Multiplier > mBefore, tostring(mBefore) .. ' -> ' .. tostring(cine and cine.Multiplier))
 check('rebirth: the moment shows on screen', sawMoment and #momText > 0, table.concat(momText, ' / '))
 local mt = table.concat(momText, ' ')
--- (the Rebirth window counts x1 up to x2 before you press; the moment after names the new one. Logged, not failed:
--- HUD.client is the UI's file)
-log(('NOTE rebirth moment names the new multiplier%s: "%s"'):format(mt:find('x' .. tostring(mBefore) .. ' ', 1, true) and ' and the old' or ' only', mt))
+-- (Oct 27, round 6: the moment is the payoff, "x1 > x2": the old multiplier, then the new one)
+local function momPart(name) local l = mom and mom:FindFirstChild(name, true); return l and l:IsA('TextLabel') and strip(l.Text) or '' end
+local fromTo = momPart('From') .. ' ' .. momPart('Arrow') .. ' ' .. momPart('To')
+check('rebirth: the moment shows the old and the new multiplier ("x1 > x2")', fromTo == ('x' .. tostring(mBefore) .. ' > x' .. tostring(cine and cine.Multiplier)), fromTo)
 check('rebirth: the moment names the new multiplier', mt:find('x' .. tostring(cine and cine.Multiplier)) ~= nil, mt)
 check('rebirth: the counters are clean after', #badNumbers() == 0, table.concat(badNumbers(), ', '))
 settle(1.5)
