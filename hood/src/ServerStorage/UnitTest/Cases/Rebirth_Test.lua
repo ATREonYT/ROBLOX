@@ -134,4 +134,10 @@ return function(t)
  t.test('walk speed: 16 to start, a stud faster a rebirth, 24 at most',function()
   t.expect.equal(R.walkSpeed(0),16);t.expect.equal(R.walkSpeed(4),20);t.expect.equal(R.walkSpeed(16),24);t.expect.equal(R.walkSpeed(500),24);t.expect.equal(R.walkSpeed(nil),16)
  end)
+ -- (Oct 27 review) Power stops at 1e15 (every writer's cap): a need past it could never be met (World 2, Scale 5000, hit it
+ -- from rebirth 104 before the cap came after the Scale; tools/checks/loop.luau's notes)
+ t.test('a rebirth need never passes the Power cap',function()
+  for _,n in {0,50,103,104,200,999,R.Max} do t.expect.truthy(R.need(n)<=1e15 and R.need(n)>0) end
+  t.expect.truthy(R.canRebirth(1e15,R.Max-1))
+ end)
 end

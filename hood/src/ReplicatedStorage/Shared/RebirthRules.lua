@@ -39,7 +39,9 @@ function RebirthRules.need(n: any): number
 	if k < #list then return list[k + 1] * scale end
 	local last = #list - 1
 	local v = list[#list] * Balance.RebirthGrowth ^ math.min(k - last, 60) * RebirthRules.multiplier(k) / RebirthRules.multiplier(last)
-	return Balance.round(math.min(v, RebirthRules.NeedCap)) * scale
+	-- (Oct 27 review: never past NeedCap after World 2's Scale either: Power itself stops at 1e15, so a need over it, World
+	-- 2 from rebirth 104 on, could never be met)
+	return math.min(Balance.round(math.min(v, RebirthRules.NeedCap)) * scale, RebirthRules.NeedCap)
 end
 
 function RebirthRules.canRebirth(power: any, n: any): boolean

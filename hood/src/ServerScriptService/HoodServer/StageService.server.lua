@@ -284,34 +284,40 @@ local function reached(player, profile, gate)
 end
 
 local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
+local lastPlayerError -- (one player's error, reported once)
 while task.wait(POLL) do
 	local ok, err = pcall(function()
 		for _, player in Players:GetPlayers() do
-			local profile = Data.get(player)
-			local character, root = living(player)
-			if profile and root then
-				local p = frame:PointToObjectSpace(root.Position)
-				if StageRules.inLobby(gates, p) then
-					Runs.reset(player, 'lobby')
-					stay[player] = nil
-				else
-					local newly, blockedBy = StageRules.check(gates, p, Runs.stage(player), profile.Data.ClearedWalls)
-					for _, gate in newly do reached(player, profile, gate) end
-					if blockedBy then
-						-- Past a gate you haven't opened this run: back in front of it, on the road (clear of the end buildings).
-						local back = (frame * CFrame.new(math.clamp(p.X, -8, 8), 3, blockedBy.Z + 5)).Position
-						character:PivotTo(CFrame.new(back) * (root.CFrame - root.Position))
+			-- (Oct 27 review) each player in a pcall of their own: one bad save never stops the gates and pads for the rest
+			local okP, errP = pcall(function()
+				local profile = Data.get(player)
+				local character, root = living(player)
+				if profile and root then
+					local p = frame:PointToObjectSpace(root.Position)
+					if StageRules.inLobby(gates, p) then
+						Runs.reset(player, 'lobby')
+						stay[player] = nil
+					else
+						local newly, blockedBy = StageRules.check(gates, p, Runs.stage(player), profile.Data.ClearedWalls)
+						for _, gate in newly do reached(player, profile, gate) end
+						if blockedBy then
+							-- Past a gate you haven't opened this run: back in front of it, on the road (clear of the end buildings).
+							local back = (frame * CFrame.new(math.clamp(p.X, -8, 8), 3, blockedBy.Z + 5)).Position
+							character:PivotTo(CFrame.new(back) * (root.CFrame - root.Position))
+						end
+						padCheck(player, root)
+						if player:GetAttribute('Pass_AutoCollect') == true then autoCollect(player, profile) end
 					end
-					padCheck(player, root)
-					if player:GetAttribute('Pass_AutoCollect') == true then autoCollect(player, profile) end
+					Runs.publish(player)
+					local cleared = StageRules.count(gates, profile.Data.ClearedWalls)
+					player:SetAttribute('StagesCleared', cleared)
+					stageStat(player, cleared)
+					player:SetAttribute('Cash', profile.Data.Cash)
+					if player:GetAttribute('CashOuts') == nil then player:SetAttribute('CashOuts', cashOuts[player] or 0) end
 				end
-				Runs.publish(player)
-				local cleared = StageRules.count(gates, profile.Data.ClearedWalls)
-				player:SetAttribute('StagesCleared', cleared)
-				stageStat(player, cleared)
-				player:SetAttribute('Cash', profile.Data.Cash)
-				if player:GetAttribute('CashOuts') == nil then player:SetAttribute('CashOuts', cashOuts[player] or 0) end
-			end
+			end)
+			if not okP and errP ~= lastPlayerError then warn('[StageService] ' .. player.Name .. ': ' .. tostring(errP)) end
+			if not okP then lastPlayerError = errP end
 		end
 	end)
 	if not ok and err ~= lastTickError then warn('[StageService] tick failed, carrying on: ' .. tostring(err)) end

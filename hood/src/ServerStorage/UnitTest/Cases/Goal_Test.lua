@@ -105,4 +105,13 @@ return function(t)
   local d3=from(3,5,7);t.expect.equal(id(d3),'Shoe');t.expect.equal(G.List[d3.Back].Id,'Rebirth1');t.expect.equal(d3.Chain,G.Chain)
   local current=G.migrate({Chain=4,Step=9,Synced=true});t.expect.equal(current.Step,9)
  end)
+ -- (Oct 27, the core loop) A lane goal for a lane still locked reads as the rebirth that opens it; open, the goal's own words.
+ t.test('a locked lane goal says to rebirth',function()
+  local G=require(game.ReplicatedStorage.Shared.GoalRules)
+  local g=G.ById.Range4
+  local text,where=G.shown(g,6);t.expect.equal(text,'Rebirth to open BAY 4');t.expect.truthy(where:find('7 rebirths',1,true) and where:find('you have 6',1,true))
+  t.expect.equal(G.shown(g,7),g.Text);t.expect.equal(G.shown(G.ById.Stage6,0),G.ById.Stage6.Text)
+  t.expect.equal(G.shown(nil,0),G.AllDone.Text)
+  for _,x in G.List do t.expect.truthy(#G.shown(x,0)<=G.MaxText) end
+ end)
 end

@@ -117,6 +117,19 @@ local function number(v)
 	return type(v) == 'number' and v == v and v or 0
 end
 
+-- (Oct 27, the core loop) What the goal line says for `goal` with `rebirths` rebirths: a lane goal whose lane is still
+-- locked reads "Rebirth to open BAY 4" (where: "it opens at 7 rebirths, you have 6"), so the line never sends a player
+-- to a locked lane with nothing to do there. nil goal: the chain is done. Returns text, where.
+function GoalRules.shown(goal, rebirths)
+	if not goal then return GoalRules.AllDone.Text, GoalRules.AllDone.Where end
+	local st = goal.Need.Range and Skins.Stations[goal.Need.Range]
+	local n = number(rebirths)
+	if st and (st.Rebirths or 0) > n then
+		return 'Rebirth to open ' .. st.Name, string.format('it opens at %d rebirths, you have %d', st.Rebirths, n)
+	end
+	return goal.Text, goal.Where
+end
+
 -- True when `state` meets the goal. A wave goal on a map without waves (state.Waves false), or a shoe-box goal on a
 -- map without shoe boxes (state.ShoeBoxes not true), can't be met; advance() skips it instead.
 function GoalRules.done(goal, state)

@@ -51,11 +51,12 @@ end
 local function set(player, name, value)
 	if player:GetAttribute(name) ~= value then player:SetAttribute(name, value) end
 end
-local function publish(player, step)
+local function publish(player, step, rebirths)
 	local g = GoalRules.at(step)
+	local text, where = GoalRules.shown(g, rebirths) -- (a lane still locked reads "Rebirth to open BAY n")
 	set(player, 'GoalStep', step)
-	set(player, 'GoalText', g and g.Text or GoalRules.AllDone.Text)
-	set(player, 'GoalWhere', g and g.Where or GoalRules.AllDone.Where)
+	set(player, 'GoalText', text)
+	set(player, 'GoalWhere', where)
 	set(player, 'GoalReward', g and g.Reward or 0)
 end
 
@@ -69,15 +70,16 @@ local function check(player)
 		profile.Data.Cash = math.min(1e12, profile.Data.Cash + paid)
 		player:SetAttribute('Cash', profile.Data.Cash)
 		local nextGoal = GoalRules.at(goals.Step)
+		local nextText, nextWhere = GoalRules.shown(nextGoal, profile.Data.Rebirths)
 		remote:FireClient(player, {
 			Kind = 'Done', Text = done.Text, Reward = paid,
-			NextText = nextGoal and nextGoal.Text or GoalRules.AllDone.Text,
-			NextWhere = nextGoal and nextGoal.Where or GoalRules.AllDone.Where,
+			NextText = nextText,
+			NextWhere = nextWhere,
 			NextReward = nextGoal and nextGoal.Reward or 0,
 		})
 		Data.push(player)
 	end
-	publish(player, goals.Step)
+	publish(player, goals.Step, profile.Data.Rebirths)
 end
 
 -- The goal line shows the moment a profile loads (HOOK, brief 23: a new player reads "Stand in BAY 1" at once); the
@@ -106,7 +108,7 @@ while task.wait(TICK) do
 				end
 				seen[player] = values
 				if was == nil then
-					local ok, err = pcall(publish, player, profile.Data.Goals.Step)
+					local ok, err = pcall(publish, player, profile.Data.Goals.Step, profile.Data.Rebirths)
 					if not ok then warn('[GoalService] ' .. tostring(err)) end
 				elseif now >= GRACE and os.clock() >= (holdUntil[player] or 0) and math.floor(now / EVERY) ~= math.floor(was / EVERY) then
 					local ok, err = pcall(check, player)
