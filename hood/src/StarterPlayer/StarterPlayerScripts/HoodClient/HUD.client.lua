@@ -359,9 +359,12 @@ do
 		local boost = num('FriendBoost', 0)
 		local pct = math.floor(boost * 100 + 0.5)
 		friendText.Text = 'Friend Boost: <font color="#FFD23A">+' .. pct .. '%</font>'
-		friendPlus.Position = UDim2.new(0, F.TextX + Kit.textWidth('Friend Boost: +' .. pct .. '%', F.TextSize) + 4, 0.5, 0)
+		-- (Oct 27, release fixes: on a small phone the text floor grows the words, so the + is placed after them at the size
+		-- they are drawn at, not the design size; it covered "+0%" on a 667 x 375 screen)
+		friendPlus.Position = UDim2.new(0, F.TextX + Kit.textWidth('Friend Boost: +' .. pct .. '%', friendText.TextSize) + 4, 0.5, 0)
 	end
 	player:GetAttributeChangedSignal('FriendBoost'):Connect(paintFriend)
+	friendText:GetPropertyChangedSignal('TextSize'):Connect(paintFriend)
 	paintFriend()
 end
 
@@ -1047,10 +1050,14 @@ do
 			-- the counters: rank, rebirths and Cash one under the other beside the column, clear of the thumbstick
 			counters.AnchorPoint = Vector2.new(0, 0)
 			counters.Position = px(C.X + C.ShopW * small + 10, 60 + 60)
-			offers.Position = UDim2.new(1, -Spec.Offers.Right, 0, 124)
-			slots.StarterSlot.Position = UDim2.new(1, -Spec.Starter.Right, 0, 18)
-			slots.PlaytimeSlot.Position = UDim2.new(1, -Spec.Playtime.Right + 20, 0, -18)
-			slots.MissionsSlot.Position = UDim2.new(1, -Spec.Missions.Right + 20, 0, 70)
+			-- (Oct 27, release fixes: the right column overlapped on phones: Playtime ran into Missions and the Starter Pack,
+			-- Missions into the cards) a tidy block at the top right, in design px at the 0.9 phone scale: Playtime (108 wide)
+			-- and the Starter Pack (135) side by side on top, Missions under Playtime, the offer cards under the Starter Pack
+			-- (their pictures poke ~13 over a card), each at least 4 px clear of the next
+			slots.StarterSlot.Position = UDim2.new(1, -82, 0, 0)
+			slots.PlaytimeSlot.Position = UDim2.new(1, -214, 0, 0)
+			slots.MissionsSlot.Position = UDim2.new(1, -214, 0, 112)
+			offers.Position = UDim2.new(1, -Spec.Offers.Right, 0, 142)
 		else
 			column.Position = px(C.X, C.Y)
 			counters.AnchorPoint = Vector2.new(0, 1)

@@ -188,6 +188,9 @@ local function setContent(label, content) pcall(function() label.ImageContent = 
 local function clearContent(label) pcall(function() label.ImageContent = Content.none end) end
 
 local function show(label, b, e)
+	-- (a label already dropped or destroyed is skipped: its callback would touch a face that is gone)
+	local there, parent = pcall(function() return label.Parent end)
+	if not there or parent == nil then return end
 	setContent(label, e.content)
 	b.shown, b.failedShown = true, false
 	call(b.opts.onShow, label)
@@ -311,7 +314,8 @@ local function drawNext()
 	while #pending > 0 do
 		local job = table.remove(pending, 1)
 		local b = job.b
-		if bound[job.label] == b and not drawn[b.key] and onScreen(job.label) then
+		local fine, visible = pcall(onScreen, job.label)
+		if bound[job.label] == b and not drawn[b.key] and fine and visible then
 			local fine, done = pcall(draw, b.kind, b.name, b.key)
 			if fine and not done and not failed[b.key] then table.insert(pending, 1, job) end
 			return true

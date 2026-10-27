@@ -9,5 +9,12 @@ do
 	-- hood/art/icons3d). In Studio they need Game Settings > Security > "Allow Mesh / Image APIs".
 	local Loader = require(game.ReplicatedStorage.Shared.ImageLoader)
 	Loader.Supported = true
-	Loader.make = function() return { Destroy = function() end }, {} end
+	if UI_FALLBACK then
+		-- (FALLBACK=1: Roblox refuses every picture, as in a place without the setting: the drawn look must show)
+		Loader.make = function() error('EditableImage is not available for this place') end
+	else
+		Loader.make = function() return { Destroy = function() end }, {} end
+	end
+	-- (the RemoteFunctions answer, so the HUD's extras (Playtime, Missions, Starter Pack) show as in the game)
+	_G.__liveInvoke = true
 end

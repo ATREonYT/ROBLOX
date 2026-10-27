@@ -141,4 +141,10 @@ end
 __uiDump = function(gui, path)
 	__fs.writeFile(path, __serde.encode('json', node(gui)))
 end
+-- several ScreenGuis in one file (the whole HUD: index.html draws a list in DisplayOrder)
+__uiDumpAll = function(guis, path)
+	local list = {}
+	for _, g in guis do table.insert(list, node(g)) end
+	__fs.writeFile(path, __serde.encode('json', list))
+end
 end

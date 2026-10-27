@@ -57,6 +57,37 @@ do
 		local ok, err = pcall(__uiDump, g, UI_OUT .. '/' .. file .. '.json')
 		print('[ui] ' .. file .. ': ' .. (ok and 'dumped' or ('failed ' .. tostring(err))))
 	end
+	-- (Oct 27, release check) a window's painted parts on screen (shown fills and words), and its real X pressed: after
+	-- the close the screen must hold none of it. Prints [ui] <name> open: N painted / closed by its X: ok | STILL SHOWN.
+	local function painted(g)
+		if not g or not g.Enabled then return 0 end
+		local n = 0
+		for _, d in g:GetDescendants() do
+			if d:IsA('GuiObject') and d.Visible then
+				local up, shown = d.Parent, true
+				while up and up ~= g do
+					if (up:IsA('GuiObject') and not up.Visible) or (up:IsA('CanvasGroup') and up.GroupTransparency >= 0.99) then shown = false; break end
+					up = up.Parent
+				end
+				local words = (d:IsA('TextLabel') or d:IsA('TextButton')) and d.Text ~= '' and d.TextTransparency < 0.99
+				if shown and (d.BackgroundTransparency < 0.99 or words) then n += 1 end
+			end
+		end
+		return n
+	end
+	local function closeByX(guiName, file)
+		local g = P.PlayerGui:FindFirstChild(guiName)
+		local open = painted(g)
+		local x
+		for _, d in (g and g:GetDescendants() or {}) do
+			if (d.Name == 'Close' or d.Name == 'CloseButton') and d:IsA('GuiObject') and d.Visible then x = d; break end
+		end
+		local hit = x and (x:FindFirstChild('Hit', true) or (x:IsA('GuiButton') and x))
+		if hit then __fireOn(hit, 'Activated'); sync() end
+		wall(1)
+		local left = painted(g)
+		print(('[ui] %s open: %d painted / closed by its X: %s'):format(file, open, not hit and 'NO X FOUND' or (left == 0 and 'ok' or ('STILL SHOWN (' .. left .. ' painted)'))))
+	end
 	local function openEvent(guiName, ...)
 		local g = P.PlayerGui:FindFirstChild(guiName)
 		local e = g and g:FindFirstChild('Open')
@@ -68,6 +99,7 @@ do
 	openEvent('HoodStore')
 	wall(4)
 	dump('HoodStore', 'shop')
+	closeByX('HoodStore', 'shop')
 	closeAll()
 	-- Rebirth (the HUD's square, like a tap)
 	local hud = P.PlayerGui:FindFirstChild('HoodHUD')
@@ -78,16 +110,19 @@ do
 	-- (the harness doesn't tick the count-up's NumberValue: a Power change makes the window show its final numbers)
 	P:SetAttribute('Power', data.Rep + 1); sync(); wall(0.4)
 	dump('HoodPanels', 'rebirth')
+	closeByX('HoodPanels', 'rebirth')
 	closeAll()
 	-- Shoes (the inventory's Open with 'Shoes', like the HUD's square: the shoe screens draw in ArtWindows' HoodArt gui)
 	openEvent('HoodInventory', 'Shoes')
 	wall(1.4)
 	dump('HoodArt', 'shoes')
+	closeByX('HoodArt', 'shoes')
 	closeAll()
 	-- Worlds
 	openEvent('HoodWorld')
 	wall(1.2)
 	dump('HoodWorld', 'worlds')
+	closeByX('HoodWorld', 'worlds')
 	closeAll()
 	print('[ui] done')
 end

@@ -55,3 +55,13 @@ have it under `/opt/node22/lib/node_modules`). A slot in `compose.py` can be `no
 - Only Studio shows whether Roblox actually draws them: Game Settings > Security > "Allow Mesh / Image APIs" must be on
   (the place published), and the picture memory budget holds. Without them the windows fall back to their drawn look
   and Output prints one `[HoodUI]` line naming the fix.
+
+## Phones, the HUD, the fallback and closing (Oct 27, release fixes)
+- `SCENE=hud SW=844 SH=390 NOTCH=47 TOUCH=1 sh shoot.sh <out>` draws the HUD alone on a phone screen (`hud.luau`) and
+  prints what overlaps or runs off the screen (`hud.layout.json`: each screen's top-level blocks, as the box around
+  their painted parts). The harness doesn't run Extras' fills of the right column, so those three slots are drawn as
+  magenta stand-ins of their size. Roblox's own thumbstick and jump button aren't drawn.
+- `FALLBACK=1` makes Roblox refuse every packed picture (as without "Allow Mesh / Image APIs"): the windows must show
+  their old drawn look, and Output one `[HoodUI]` line.
+- `windows.luau` presses each window's real X after its picture and prints `[ui] <name> open: N painted / closed by
+  its X: ok` (or what is still shown).

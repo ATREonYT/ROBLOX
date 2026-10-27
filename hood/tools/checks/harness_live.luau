@@ -185,7 +185,19 @@ roblox.implementProperty("Instance", "DescendantAdded", function(self) return in
 roblox.implementProperty("ValueBase", "Changed", function(self) return instSignal(self, "Changed") end)
 roblox.implementProperty("ProximityPromptService", "PromptTriggered", function(self) return instSignal(self, "PromptTriggered") end)
 roblox.implementMethod("Players", "GetUserThumbnailAsync", function() return "" end)
-roblox.implementMethod("RemoteFunction", "InvokeServer", function() return { Ready = false } end)
+-- (a RemoteFunction answers { Ready = false } unless a scenario sets _G.__liveInvoke before the servers start: then the
+-- server's OnServerInvoke answers, with the LocalPlayer, as in Roblox; the UI preview's HUD uses it for its extras)
+_G.__serverInvokers = {}
+roblox.implementProperty("RemoteFunction", "OnServerInvoke", function(self) return _G.__serverInvokers[self] end, function(self, fn)
+	-- (the checks keep the old harness: no live answers, and setting the handler fails as it always did there)
+	if not _G.__liveInvoke then error('OnServerInvoke is not a valid member of ' .. self.Name) end
+	_G.__serverInvokers[self] = fn
+end)
+roblox.implementMethod("RemoteFunction", "InvokeServer", function(self, ...)
+	local fn = _G.__liveInvoke and _G.__serverInvokers[self]
+	if not fn then return { Ready = false } end
+	return fn(game:GetService("Players").LocalPlayer, ...)
+end)
 roblox.implementProperty("Instance", "AncestryChanged", function(self) return instSignal(self, "AncestryChanged") end)
 roblox.implementProperty("Instance", "Destroying", function(self) return instSignal(self, "Destroying") end)
 roblox.implementProperty("Instance", "DescendantRemoving", function(self) return instSignal(self, "DescendantRemoving") end)

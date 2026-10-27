@@ -36,7 +36,7 @@ local function fade(label, t) -- text and its outline out
 end
 
 ---------------------------------------------------------------------------------------------- level up
-local TOAST_W, TOAST_H, TOAST_Y = 250, 30, 86 -- (under the goal tracker's three lines)
+local TOAST_W, TOAST_H, TOAST_Y = 250, 30, 104 -- (at least under the goal tracker's lines, which end ~100 down since its restyle)
 local toast = Kit.new('Frame', { Name = 'LevelToast', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TOAST_Y), Size = px(TOAST_W, TOAST_H), BackgroundColor3 = hex('0B0D18'), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 5, Parent = root })
 Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.18, 0.2), NumberSequenceKeypoint.new(0.82, 0.2), NumberSequenceKeypoint.new(1, 1) }), Parent = toast })
 local toastText = Kit.text({ Name = 'Text', Text = '', TextSize = 19, Stroke = BLACK, StrokeThickness = 3, TextColor3 = hex('FFF27A'), ZIndex = 6, Parent = toast })

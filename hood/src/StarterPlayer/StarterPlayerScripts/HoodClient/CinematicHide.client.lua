@@ -1,7 +1,7 @@
 -- The box opening has the screen to itself (open item "Box opening: hide the HUD during the cinematic"; Huzz Valley's
 -- lesson: no menus or prompts over a cinematic). While PlayerGui's Unboxing is true, every other screen of ours is
--- switched off, and Roblox's backpack and player list too; they come back as they were when it ends. HoodHUD stays on:
--- its column already steps aside for the moment (UnboxingCalm) and the new pair flies into its Shoes square at the end.
+-- switched off, and Roblox's backpack and player list too; they come back as they were when it ends. HoodHUD slides
+-- aside first (UnboxingCalm), then goes off too (below); it is back on before the new pair flies into its Shoes square.
 local Players = game:GetService('Players')
 local StarterGui = game:GetService('StarterGui')
 local player = Players.LocalPlayer
@@ -49,3 +49,37 @@ local function sync()
 end
 playerGui:GetAttributeChangedSignal('Unboxing'):Connect(sync)
 sync()
+
+-- (Oct 27, release fixes) the HUD itself goes too: once its column, cards and bottom block have slid aside (UnboxingCalm,
+-- 0.1 s), HoodHUD is switched off, so nothing of it shows over the cinematic; it is switched back on the moment the calm
+-- ends, before its pieces slide back and the new pair flies into its Shoes square.
+local hudOff = false
+local calmTicket = 0
+local function hudBack()
+	calmTicket += 1
+	if not hudOff then return end
+	hudOff = false
+	local hud = playerGui:FindFirstChild('HoodHUD')
+	if hud then hud.Enabled = true end
+end
+local function syncCalm()
+	local ok, err = pcall(function()
+		if playerGui:GetAttribute('UnboxingCalm') ~= true then return hudBack() end
+		calmTicket += 1
+		local ticket = calmTicket
+		task.delay(0.12, function()
+			if ticket ~= calmTicket or playerGui:GetAttribute('UnboxingCalm') ~= true then return end
+			local hud = playerGui:FindFirstChild('HoodHUD')
+			if hud and hud.Enabled then
+				hud.Enabled = false
+				hudOff = true
+			end
+		end)
+	end)
+	if not ok then warn('[CinematicHide] ' .. tostring(err)) end
+end
+playerGui:GetAttributeChangedSignal('UnboxingCalm'):Connect(syncCalm)
+-- (a moment that ends without its calm ending first, e.g. a failed cinematic, never leaves the HUD off)
+playerGui:GetAttributeChangedSignal('Unboxing'):Connect(function()
+	if playerGui:GetAttribute('Unboxing') ~= true then pcall(hudBack) end
+end)

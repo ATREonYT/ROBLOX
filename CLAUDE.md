@@ -102,7 +102,4 @@ Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio
 `hood/RELEASE.md` is the owner's step-by-step checklist: import, icons, Robux items, tests, publish.
 
 ## Open items (at the time of writing)
-- Box opening: hide the HUD during the cinematic; rarity text under the shoe.
-- Product labels too big when passing on the walk to the gate.
-- Phone HUD right column overlap.
 - Stage props: waiting on a Claude Design batch from the owner.

@@ -5172,6 +5172,17 @@ function Lobby.nearWords(gui, near, far)
 	gui:SetAttribute('FadeGroup', 'Lanes')
 	return gui
 end
+-- (Oct 27, release fixes: the open item "product labels too big when passing on the walk to the gate") a product's or a
+-- Robux box pad's words: 6.4 x 2.5 studs (were 7.6 x 3.0), whole from 26 studs, gone by 36, and inside 22 studs they
+-- shrink with the distance down to half, so walking past one at arm's length never fills the screen (LabelFade's
+-- FadeShrink, in studs: the same on a phone and a PC).
+Lobby.ProductWordsW, Lobby.ProductWordsH = 6.4, 2.5
+function Lobby.productWords(gui)
+	Lobby.nearWords(gui, 26, 36)
+	gui:SetAttribute('FadeShrink', 22)
+	gui:SetAttribute('FadeShrinkMin', 0.5)
+	return gui
+end
 -- The codes terminal (c: on the floor, front -Z): a dark studded foot, a navy body with a yellow stripe, a sloped
 -- top carrying a glowing screen, a keypad ledge; a floating CODES label and a ComingSoon prompt.
 function Lobby.codeTerminal(c)
@@ -5536,12 +5547,12 @@ function Lobby.productStand(c, key, opts)
 	if type(entry.Sticker) == 'string' and entry.Sticker ~= '' and not Lobby.hasDesign('Pad_' .. key) then Lobby.padTag(g, entry.Sticker, -half - 0.35) end
 	-- the words (rule 28, ref W01 "x2 Power / ONLY 3"): the headline big in gold-orange, "ONLY <Robux mark><price>" in lime
 	local name = entry.Title or key
-	local a, labels = Lobby.signWords(g, V(0, foot + tall + 2.3 + (opts.lift or 0), 0), 7.6, 3.0, {
+	local a, labels = Lobby.signWords(g, V(0, foot + tall + 2.0 + (opts.lift or 0), 0), Lobby.ProductWordsW, Lobby.ProductWordsH, {
 		{ 'Title', name, 0.56, Lobby.Grad.gold, 4 },
 		{ 'Price', 'ONLY ' .. RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 },
 	}, 36)
 	labels.Price:SetAttribute('Price', entry.Price)
-	Lobby.nearWords(a.WorldLabel, 26, 36)
+	Lobby.productWords(a.WorldLabel)
 	-- the prompt, on a point at the pad's front
 	local point = ghost(g:box('PassPoint', V(-1.2, 0.6, -half - 1.6), V(1.2, 3.4, -half), P.white))
 	point.CastShadow = false
@@ -5600,11 +5611,11 @@ function Lobby.boxPadStand(c, boxId, key, tone, tag, special, lift)
 	Lobby.sparkles(g, midY, tone, 2.6)
 	Lobby.shine(g, midY, tone)
 	-- the words: the name in the box's colour, "ONLY <Robux mark><price>" in lime under it
-	local a = Lobby.signWords(g, V(0, foot + tall + 2.3 + (lift or 0), 0), 8.4, 3.0, {
+	local a = Lobby.signWords(g, V(0, foot + tall + 2.0 + (lift or 0), 0), Lobby.ProductWordsW + 0.8, Lobby.ProductWordsH, {
 		{ 'Title', entry.Title or boxId, 0.56, { tone:Lerp(P.white, 0.6), tone:Lerp(P.white, 0.1) }, 4 },
 		{ 'Price', 'ONLY ' .. RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 },
 	}, 36)
-	Lobby.nearWords(a.WorldLabel, 26, 36)
+	Lobby.productWords(a.WorldLabel)
 	-- the prompt: opens the Store at the box's card
 	local point = ghost(g:box('BoxPadPoint', V(-1.2, 0.6, -5.6), V(1.2, 3.4, -4.1), P.white))
 	point.CastShadow = false

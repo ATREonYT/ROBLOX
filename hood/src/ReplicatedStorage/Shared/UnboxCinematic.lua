@@ -1887,7 +1887,7 @@ function Words.build(job)
 	else
 		gradient(W.rarity, { WHITE:Lerp(rcol, 0.35), rcol, rcol:Lerp(BLACK, 0.12) }, 90)
 	end
-	local below = rowY + 30
+	local below = rowY - 34 -- (the box line keeps the top; the rarity word sits under the pair, below)
 	if P.multi then
 		local box = boxDef(P.box)
 		W.sub = label(stage, { Name = 'Count', Role = 'heading', Text = P.gift and 'Welcome gift!' or ((box and box.Name or 'Box') .. '  x' .. P.n), TextSize = 22, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, below + 34), Size = UDim2.new(1, 0, 0, 28), ZIndex = 32 })
@@ -1896,7 +1896,13 @@ function Words.build(job)
 	-- (the gift's best pair stands centre-left: its name and chip sit under it)
 	local nameX = P.n == 2 and 0.28 or P.n == 1 and 0.43 or 0.5
 	W.reelRight = P.n == 1 -- (a single: the Power reel stands right of the pair, which slides left to make room)
-	W.name = label(stage, { Name = 'Name', Text = sd and sd.Name or tostring(best.Shoe), TextSize = P.multi and 46 or 54, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(nameX, 0, 1, P.multi and -64 or -40), Size = UDim2.new(1, 0, 0, 62), ZIndex = 32 })
+	W.name = label(stage, { Name = 'Name', Text = sd and sd.Name or tostring(best.Shoe), TextSize = P.multi and 46 or 54, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(nameX, 0, 1, P.multi and -100 or -76), Size = UDim2.new(1, 0, 0, 62), ZIndex = 32 })
+	-- (Oct 27, release fixes: the open item "rarity text under the shoe") the rarity word, in its colour, right under the
+	-- pair's name (the in-world opening has it there too) instead of alone at the top
+	W.rarity.TextSize = 30
+	W.rarity.AnchorPoint = Vector2.new(0.5, 1)
+	W.rarity.Position = UDim2.new(nameX, 0, 1, P.multi and -64 or -40)
+	W.rarity.Size = UDim2.new(1, 0, 0, 36)
 	W.bonusValue = sd and sd.Bonus or 0
 	if W.reelRight then
 		W.bonus = label(stage, { Name = 'Bonus', Role = 'number', Text = '+0% Power', TextSize = 36, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.81, 0, 0.46, 0), Size = UDim2.fromOffset(280, 46), ZIndex = 32 })

@@ -152,8 +152,15 @@ if point then
 	local function camState() return cam and (cam.CameraType.Name .. ' fov ' .. string.format('%.1f', cam.FieldOfView)) or 'no camera' end
 	log('  REVEAL during: stage=' .. tostring(workspace:FindFirstChild('HoodUnboxStage') ~= nil) .. ' camera=' .. camState()
 		.. ' words=' .. tostring(P.PlayerGui.HoodUnboxing:FindFirstChild('Unboxed', true) ~= nil) .. ' ClockTime=' .. tostring(game.Lighting.ClockTime))
+	-- (Oct 27: the HUD goes off for the cinematic once it has slid aside, CinematicHide; the harness fires attribute
+	-- signals only when asked)
+	local function hudOn() local h = P.PlayerGui:FindFirstChild('HoodHUD'); return h and tostring(h.Enabled) or 'no HUD in this run' end
+	__fireOn(P.PlayerGui, 'Attr_UnboxingCalm'); frame(0.3)
+	log('  HUD during the reveal: calm=' .. tostring(P.PlayerGui:GetAttribute('UnboxingCalm')) .. ' HoodHUD on=' .. tostring(hudOn()))
 	local beforeFx = cam and #cam:GetChildren() or 0
-	frame(12) -- (28c: the opening in the world holds until a tap, auto-closing by 9.4 s)
+	frame(12)
+	__fireOn(P.PlayerGui, 'Attr_UnboxingCalm'); __fireOn(P.PlayerGui, 'Attr_Unboxing'); frame(0.3)
+	log('  HUD after the reveal: calm=' .. tostring(P.PlayerGui:GetAttribute('UnboxingCalm')) .. ' HoodHUD on=' .. tostring(hudOn())) -- (28c: the opening in the world holds until a tap, auto-closing by 9.4 s)
 	log('  reveal finished: Unboxing=' .. tostring(P.PlayerGui:GetAttribute('Unboxing')))
 	log('  REVEAL after: stage=' .. tostring(workspace:FindFirstChild('HoodUnboxStage') ~= nil) .. ' camera=' .. camState() .. ' camera effects left=' .. tostring(cam and #cam:GetChildren() or 0)
 		.. ' words left=' .. tostring(P.PlayerGui.HoodUnboxing:FindFirstChild('Unboxed', true) ~= nil) .. ' ClockTime=' .. tostring(game.Lighting.ClockTime))

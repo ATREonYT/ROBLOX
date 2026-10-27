@@ -255,8 +255,50 @@ function build(n, host, layout) {
   host.appendChild(el);
 }
 
+// (Oct 27, the phone HUD) What overlaps or runs off the screen: each ScreenGui's top-level blocks (Root's children), as
+// the box around their painted leaves (a fill, a picture or words), compared pairwise. Returns { blocks, overlaps, off }.
+window.layoutReport = function (W, H) {
+  const painted = e => {
+    if (e.querySelector(':scope > .own, :scope > .txt')) return true;
+    const cs = getComputedStyle(e);
+    if (cs.backgroundImage !== 'none') return true;
+    const m = cs.backgroundColor.match(/rgba?\(([^)]+)\)/); if (!m) return false;
+    const p = m[1].split(',').map(Number); return p.length < 4 || p[3] > 0.05;
+  };
+  const blocks = [];
+  for (const gui of document.querySelectorAll('#ui > .g')) {
+    const tops = [];
+    for (const k of gui.children) {
+      if (!k.classList.contains('g')) continue;
+      if (k.dataset.name === 'Root') { for (const c of k.children) if (c.classList.contains('g')) tops.push(c); } else tops.push(k);
+    }
+    for (const t of tops) {
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, n = 0;
+      for (const e of [t, ...t.querySelectorAll('.g')]) {
+        if (e.querySelector(':scope > .g') || !painted(e)) continue;
+        if (e.checkVisibility && !e.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+        const r = e.getBoundingClientRect(); if (r.width < 1 || r.height < 1) continue;
+        x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.right); y1 = Math.max(y1, r.bottom); n++;
+      }
+      if (n) blocks.push({ name: gui.dataset.gui + '/' + t.dataset.name, x0: Math.round(x0), y0: Math.round(y0), x1: Math.round(x1), y1: Math.round(y1) });
+    }
+  }
+  const overlaps = [], off = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const a = blocks[i];
+    if (a.x0 < -1 || a.y0 < -1 || a.x1 > W + 1 || a.y1 > H + 1) off.push(a);
+    for (let j = i + 1; j < blocks.length; j++) {
+      const b = blocks[j];
+      const ox = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0), oy = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+      if (ox > 3 && oy > 3) overlaps.push({ a: a.name, b: b.name, w: ox, h: oy });
+    }
+  }
+  return { blocks, overlaps, off };
+};
+
 window.renderUI = function (tree, opts) {
   opts = opts || {};
+  document.body.style.width = (opts.w || 1280) + 'px'; document.body.style.height = (opts.h || 720) + 'px';
   document.getElementById('bg').className = opts.bg === false ? '' : 'on';
   if (opts.bg !== false) {
     const bg = document.getElementById('bg');
@@ -267,10 +309,13 @@ window.renderUI = function (tree, opts) {
   const trees = Array.isArray(tree) ? tree : [tree];
   for (const t of trees) {
     if (t.enabled === false) continue;
-    const g = document.createElement('div'); g.className = 'g';
-    const full = t.ignoreInset || t.insets === 'None' || t.insets === 'DeviceSafeInsets';
-    g.style.position = 'absolute'; g.style.left = '0'; g.style.width = '1280px';
-    g.style.top = full ? '0' : '58px'; g.style.height = full ? '720px' : '662px';
+    const g = document.createElement('div'); g.className = 'g'; g.dataset.gui = t.n;
+    // the screen (opts.w x opts.h, default 1280 x 720), Roblox's top bar (opts.top, 58) and a phone's notch on each side
+    // (opts.notch): ScreenInsets None fills it all; the others keep out of the notch, and the top bar unless IgnoreGuiInset
+    const W = opts.w || 1280, H = opts.h || 720, top = opts.top === undefined ? 58 : opts.top, notch = opts.notch || 0;
+    const none = t.insets === 'None', y0 = none || t.ignoreInset || t.insets === 'DeviceSafeInsets' ? 0 : top, x0 = none ? 0 : notch;
+    g.style.position = 'absolute'; g.style.left = x0 + 'px'; g.style.width = (W - 2 * x0) + 'px';
+    g.style.top = y0 + 'px'; g.style.height = (H - y0) + 'px';
     g.style.zIndex = t.order || 0;
     for (const k of (Array.isArray(t.kids) ? t.kids : Object.values(t.kids || {}))) build(k, g, null);
     ui.appendChild(g);
