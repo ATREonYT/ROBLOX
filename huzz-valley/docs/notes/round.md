@@ -363,3 +363,14 @@ Not proven offline: only a busy live server shows whether it's enough. Ask for F
   left this round's start zone (Running / HeroRun) and pushes them back out if they step in again.
 - Oct 24 07:03 ("make the help action actuall work"): Rescue Range 5.5 -> 8 studs across the ground, to the nearer of
   the feet spot and the body's middle (a helper by the head was out of reach); Time 1.2 -> 1 s.
+
+## Rarity folders and girl names (Oct 27)
+- Owner: "make the divine girls be more rare than secrets and be above them ... change the names of the new girls to
+  what their models are named not for example epic girls 9".
+- GirlService.canonRarity reads a folder (or Rarity attribute) name loosely: case, spaces, a plural and "Girls" don't
+  matter ("DIVINE GIRLS", "Secrets" work). A name that still isn't a rarity warns on a `[Huzz]` Output line (it would
+  roll at weight 1, as often as a Common, and miss its cutscene).
+- Divine weight 0.1 (Secret 0.4). It is last in Config.Rarities, so it shows above Secret in the odds and the Index.
+- Shown name: Config/GirlNames, else the model's own name (underscores to spaces). A `CAC_...` avatar-export name
+  still shows "<Rarity> Girl <n>" so no username reaches players.
+- tools/preview/check_girl_folders.luau covers it.

@@ -22,6 +22,23 @@ for _, r in Config.Rarities do
 	rarityByName[r.Name] = r
 end
 
+-- A rarity folder's or attribute's name as the game's own rarity name: case, spaces and a plural or "Girls" don't
+-- matter ("DIVINE", "Divines", "Divine Girls" are all Divine). Owner, Oct 27: Divine girls came out more common than
+-- Secret ones and without their cutscene: a folder name that didn't match exactly fell back to weight 1 and no rarity.
+local function squash(name: string): string
+	return (string.gsub(string.lower(name), "[^%a]", ""))
+end
+local rarityBySquash = {}
+for _, r in Config.Rarities do
+	rarityBySquash[squash(r.Name)] = r.Name
+end
+function GirlService.canonRarity(name: string?): string?
+	if type(name) ~= "string" then return nil end
+	local s = squash(name)
+	s = string.gsub(s, "girls?$", "")
+	return rarityBySquash[s] or rarityBySquash[(string.gsub(s, "e?s$", ""))] or rarityBySquash[(string.gsub(s, "s$", ""))] or name
+end
+
 function GirlService.rarity(name)
 	return rarityByName[name] or { Name = name, Weight = 1, Color = Color3.new(1, 1, 1) }
 end
@@ -32,11 +49,19 @@ local function addGirl(model, folderRarity)
 		return
 	end
 	seen[model.Name] = true
-	local rarity = model:GetAttribute("Rarity") or folderRarity or "Common"
+	local rarity = GirlService.canonRarity(model:GetAttribute("Rarity") or folderRarity) or "Common"
+	if not rarityByName[rarity] then
+		warn(`[Huzz] Girl "{model.Name}" is in a folder named "{rarity}", which isn't a rarity: she rolls as often as a Common`)
+	end
 	countByRarity[rarity] = (countByRarity[rarity] or 0) + 1
-	-- id = the model's name, the key saved in the player's Characters (Index). The shown
-	-- name comes from Config/GirlNames (the models are named after the avatars' owners).
+	-- id = the model's name, the key saved in the player's Characters (Index). The shown name comes from
+	-- Config/GirlNames, else her model's own name (owner, Oct 27: "change the names of the new girls to what their
+	-- models are named not for example epic girls 9"). A model still named after the avatar it was exported from
+	-- ("CAC_R6_<username>_<code>") keeps "<Rarity> Girl <n>", so players never see someone's username.
 	local name = model:GetAttribute("DisplayName") or GirlNames[model.Name]
+	if (not name or name == "") and not string.find(model.Name, "^CAC_") then
+		name = (string.gsub(string.gsub(model.Name, "_", " "), "^%s*(.-)%s*$", "%1"))
+	end
 	if not name or name == "" then
 		name = `{rarity} Girl {countByRarity[rarity]}`
 	end

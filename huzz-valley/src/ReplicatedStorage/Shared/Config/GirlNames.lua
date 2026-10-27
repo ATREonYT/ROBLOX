@@ -4,7 +4,8 @@
 -- Shaula, Rem, Ram, Taiga, Darkness, Eto, Alya, Zero Two, Waguri, Yui, Konata, Nezuko, Rukia, Orihime, Nami, Itsuki,
 -- Yotsuba, Ichika, Nino, Miku, Miku N (Miku Nakano), Teto, Maki. Matched by the code at the end of each model's name;
 -- Alya (long white hair), Rize, Waguri, Yui and Miku Nakano had no matching code and are a best guess: swap freely.
--- Empty = "<Rarity> Girl <n>", so players never see the avatar owners' usernames.
+-- Not listed: her model's own name (underscores shown as spaces), or "<Rarity> Girl <n>" for a model still named
+-- after its avatar (CAC_R6_<username>_...), so players never see the avatar owners' usernames.
 -- Owner, Oct 23 15:23: "fully change them everywhere to these: The shrimp - Kita ...": every girl shows a title now
 -- (her old name stays in the notes above; both Ninos are The Tsundere). Saves use the model name, so owned girls stay.
 return {

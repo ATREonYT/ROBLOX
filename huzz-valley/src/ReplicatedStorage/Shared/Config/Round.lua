@@ -272,7 +272,9 @@ return {
 		{ Name = "Secret", Weight = 0.4, Color = Color3.fromRGB(30, 30, 30) },
 		-- Divine (owner, Oct 26): above Secret, with her own cutscene (Shared/DivineReveal). Counts only once the
 		-- place has a Divine folder with girls in it; its odds show in the roller and the luck window like the rest.
-		{ Name = "Divine", Weight = 0.15, Color = Color3.fromRGB(255, 232, 140) },
+		-- Oct 27 "make the divine girls be more rare than secrets": a quarter of Secret's chance (about 1 round in 400
+		-- with no luck).
+		{ Name = "Divine", Weight = 0.1, Color = Color3.fromRGB(255, 232, 140) },
 	},
 	-- Server luck (owner, Oct 23: "add a x2 luck, x4 luck, x8 luck dev products ... if someone bought server luck, it
 	-- stays with the person while he is in the game, and then when he leaves it resets"; "they can go up to like 10x").
