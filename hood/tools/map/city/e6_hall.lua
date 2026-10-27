@@ -10,7 +10,7 @@
 --            the walls) show through; a wall lamp over each
 --   Door     the north wall's exit bay: a grey framed recess round the open doorway (x +-23, 32 high) onto the Stage 1
 --            gate, two framed panels over it, white neon lines
---   Roof     a light ceiling grid with a skylight in every bay, blue steel lattice girders, long white light bars;
+--   Roof     a light ceiling grid with a solid panel in every bay (round 5: was a skylight), blue steel lattice girders, long white light bars;
 --            nothing up there (nor the walls or pillars) casts a shadow, so the sun lights the hall like the reference
 --   Floor    one light lavender studded floor; a thin cyan neon line round each zone's platform (open where a walk
 --            runs onto it), two tiled panels either side of the spine before the door
@@ -250,8 +250,9 @@ function City.hallRoof(L)
 		for j = 1, #zs - 1 do
 			local a0, a1 = xs[i] + (i > 1 and 3 or 0), xs[i + 1] - (i < #xs - 1 and 3 or 0)
 			local b0, b1 = zs[j] + (j > 1 and 3 or 0), zs[j + 1] - (j < #zs - 1 and 3 or 0)
-			local glass = r:box('RoofSkylight', V(a0, H + 0.4, b0), V(a1, H + 0.7, b1), K.skylight, M.Glass)
-			glass.Transparency = 0.35
+			-- (Oct 27 round 5, the owner: "add roofs to the warehouses") each bay is a solid light ceiling panel now (was a
+			-- see-through skylight showing the sky); a soft light under it keeps the hall bright (City.hallLights, x2_look)
+			r:box('RoofPanel', V(a0, H + 0.4, b0), V(a1, H + 0.7, b1), K.ceilingPanel, M.SmoothPlastic)
 			for _, e in { { a0, b0, a1, b0 + 1 }, { a0, b1 - 1, a1, b1 }, { a0, b0 + 1, a0 + 1, b1 - 1 }, { a1 - 1, b0 + 1, a1, b1 - 1 } } do
 				r:box('RoofSkylightFrame', V(e[1], H - 0.6, e[2]), V(e[3], H + 1, e[4]), K.ceilingPanel, M.SmoothPlastic)
 			end

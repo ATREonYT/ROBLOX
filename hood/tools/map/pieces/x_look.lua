@@ -52,7 +52,7 @@ function Look.studTexture()
 	return Look._stud
 end
 -- Faint studs on one face (or every face): a white StudBevel tile per stud.
-function Look.faintStuds(p, faces)
+function Look.faintStuds(p, faces, alpha)
 	local id = Look.studTexture()
 	if id == '' then return end
 	for _, f in faces do
@@ -62,7 +62,7 @@ function Look.faintStuds(p, faces)
 		t.Face = f
 		t.StudsPerTileU, t.StudsPerTileV = 1, 1
 		t.Color3 = Color3.new(1, 1, 1)
-		t.Transparency = Look.StudAlpha
+		t.Transparency = alpha or Look.StudAlpha
 		t:SetAttribute('PreviewTexture', 'stud_bevel')
 		t.Parent = p
 	end
@@ -231,6 +231,49 @@ function Look.apply(root)
 	end
 	Look.itemFX(lobby)
 	lobby:SetAttribute('LookVariant', v)
+end
+-- (Oct 27 round 5, the owner: "make the studs less visible", both worlds) The one rule for everything the lobby pass
+-- doesn't cover (the stages, the gates, the buildings, the props, the edges): Roblox's classic Studs surface comes off
+-- every face (its strokes are high-contrast in the real client and can't be tuned), and the lobby's faint stud texture
+-- goes on instead where a stud reads: SoftGroundLayers on the top of walkable ground (an upright block, top within 2.6 of
+-- the deck, 3 x 3 or more), one fainter layer (SoftWallAlpha) on any other studded face of SoftFaceArea or more (a
+-- building's wall, a tree's crown); small parts (trims, posts, props) turn smooth. Untouched: the owner's meshes (MeshParts), Neon, glass,
+-- see-through parts and anything carrying words (a SurfaceGui).
+Look.SoftGroundLayers = 1
+Look.SoftFaceArea = 24
+Look.SoftWallAlpha = 0.4 -- (the walls' and crowns' one layer, fainter than the ground's: a stud you notice only up close)
+local NORMAL = { TopSurface = Enum.NormalId.Top, BottomSurface = Enum.NormalId.Bottom, FrontSurface = Enum.NormalId.Front,
+	BackSurface = Enum.NormalId.Back, LeftSurface = Enum.NormalId.Left, RightSurface = Enum.NormalId.Right }
+local function faceArea(s, f)
+	if f == 'TopSurface' or f == 'BottomSurface' then return s.X * s.Z end
+	if f == 'FrontSurface' or f == 'BackSurface' then return s.X * s.Y end
+	return s.Y * s.Z
+end
+function Look.softStuds(root)
+	local parts, textures = 0, 0
+	for _, p in root:GetDescendants() do
+		if p:IsA('BasePart') and not p:IsA('MeshPart') and Look.isStudded(p) then
+			parts += 1
+			local studded = {}
+			for _, f in FACES do
+				if p[f] == S.Studs then table.insert(studded, f) end
+				p[f] = S.Smooth
+			end
+			if p.Material == M.Plastic then p.Material = M.SmoothPlastic end
+			if p.Material ~= M.Neon and p.Material ~= M.Glass and p.Transparency < 0.05 and not p:FindFirstChildOfClass('SurfaceGui') then
+				local block = p:IsA('Part') and p.Shape == Enum.PartType.Block
+				local ground = block and p.CFrame.UpVector.Y > 0.99 and p.Size.X >= 3 and p.Size.Z >= 3
+					and V2.Origin:PointToObjectSpace(p.CFrame.Position).Y + p.Size.Y / 2 <= 2.6
+				for _, f in studded do
+					local onGround = ground and f == 'TopSurface'
+					local layers = onGround and Look.SoftGroundLayers or ((block and faceArea(p.Size, f) >= Look.SoftFaceArea) and 1 or 0)
+					for _ = 1, layers do Look.faintStuds(p, { NORMAL[f] }, not onGround and Look.SoftWallAlpha or nil); textures += 1 end
+				end
+			end
+		end
+	end
+	root:SetAttribute('SoftStudParts', parts)
+	root:SetAttribute('SoftStudTextures', textures)
 end
 V2.Look = Look
 V2.Stations = Stations

@@ -9383,9 +9383,9 @@ V2.Waves = Waves -- (the unit tests and integ_waves read it)
 -- its front wall. Inside: a clear fight floor (|x| <= 31, marked in yellow, a big anchor painted in the middle), container
 -- stacks and pallet racks along the walls, a parked forklift, the CHAMP BAY (the Champ Ring's lane: its TrainingZone, no
 -- ring) in the near right corner, catwalks along both walls and across the back, an overhead crane with its hook,
--- hanging lamps under the roof trusses, skylights, and the loading dock along the back wall: two roller doors and,
+-- hanging lamps under the roof trusses, a solid roof (round 5: was skylit), and the loading dock along the back wall: two roller doors and,
 -- between them, the WORLD 2 door (a stage gate's frame and haze, tagged HoodWorldDoor: HoodClient/Stages writes "Defeat
--- <name>" on it while the Harbor crew stands, flashes it white when the last one falls, then "WORLD 2 / Coming soon!").
+-- <name>" on it while the Harbor crew stands, flashes it white when the last one falls, then "WORLD 2 / Portal in the lobby!").
 -- The Harbor crew waits in front of it like every wave; the stage's two cash pads stand before it like every gate's.
 -- (brief 30: no BOSS pad, ring, perch or reserve doors any more.) The props are BoxKit models (Shared/Models/PropModels).
 --   Finale.yard(ctx)           the warehouse, stage 16 (f2_stages' bossYard calls it)
@@ -9486,9 +9486,11 @@ function Finale.yard(ctx)
 	for _, s in { -1, 1 } do
 		for k = 0, bays - 1 do
 			local z0 = T - 0.2 - k * L / bays
+			-- (Oct 27 round 5, the owner: "add roofs to the warehouses") every bay is solid now; the old skylight bays (every
+			-- other one) cast no shadow, so the floor keeps the light they let in
 			local glass = k % 2 == 1
-			local p = roof:part(glass and 'Skylight' or 'RoofPanel', V(slope, 0.8, L / bays), CFrame.new(s * run / 2, EH + rise / 2 + 0.4, z0 - L / bays / 2) * CFrame.Angles(0, 0, -s * a), glass and P.st.glassA or steel:Lerp(P.black, 0.12), glass and M.Glass or M.Plastic)
-			if glass then p.Transparency = 0.45 end
+			local p = roof:part('RoofPanel', V(slope, 0.8, L / bays), CFrame.new(s * run / 2, EH + rise / 2 + 0.4, z0 - L / bays / 2) * CFrame.Angles(0, 0, -s * a), steel:Lerp(P.black, 0.12), M.Plastic)
+			if glass then p.CastShadow = false end
 		end
 	end
 	roof:box('Ridge', V(-0.8, RH, E - wallT), V(0.8, RH + 0.9, T - 0.2), dark, M.Plastic)
@@ -9607,7 +9609,7 @@ function Finale.yard(ctx)
 	cr:box('Trolley', V(-36.5, 23.4, bz - 1.6), V(-31.5, 25.2, bz + 1.6), dark, M.Metal)
 	decor(cr:part('Cable', V(5.4, 0.25, 0.25), CFrame.new(-34, 23.4 - 2.7, bz) * CFrame.Angles(0, 0, math.pi / 2), C(30, 32, 36), M.Metal, Enum.PartType.Cylinder))
 	Finale.prop(cr, 'CraneHook', CFrame.new(-34, 18, bz), 1.4)
-	-- the hanging lamps (a few of them really light the floor; the skylights do the rest)
+	-- the hanging lamps (a few of them really light the floor; the sun through the shadowless old skylight bays does the rest)
 	local lamps = b:group('Lamps')
 	local n = 0
 	for _, d in { 18, 42, 66 } do
@@ -9838,7 +9840,7 @@ function Look.studTexture()
 	return Look._stud
 end
 -- Faint studs on one face (or every face): a white StudBevel tile per stud.
-function Look.faintStuds(p, faces)
+function Look.faintStuds(p, faces, alpha)
 	local id = Look.studTexture()
 	if id == '' then return end
 	for _, f in faces do
@@ -9848,7 +9850,7 @@ function Look.faintStuds(p, faces)
 		t.Face = f
 		t.StudsPerTileU, t.StudsPerTileV = 1, 1
 		t.Color3 = Color3.new(1, 1, 1)
-		t.Transparency = Look.StudAlpha
+		t.Transparency = alpha or Look.StudAlpha
 		t:SetAttribute('PreviewTexture', 'stud_bevel')
 		t.Parent = p
 	end
@@ -10018,6 +10020,49 @@ function Look.apply(root)
 	Look.itemFX(lobby)
 	lobby:SetAttribute('LookVariant', v)
 end
+-- (Oct 27 round 5, the owner: "make the studs less visible", both worlds) The one rule for everything the lobby pass
+-- doesn't cover (the stages, the gates, the buildings, the props, the edges): Roblox's classic Studs surface comes off
+-- every face (its strokes are high-contrast in the real client and can't be tuned), and the lobby's faint stud texture
+-- goes on instead where a stud reads: SoftGroundLayers on the top of walkable ground (an upright block, top within 2.6 of
+-- the deck, 3 x 3 or more), one fainter layer (SoftWallAlpha) on any other studded face of SoftFaceArea or more (a
+-- building's wall, a tree's crown); small parts (trims, posts, props) turn smooth. Untouched: the owner's meshes (MeshParts), Neon, glass,
+-- see-through parts and anything carrying words (a SurfaceGui).
+Look.SoftGroundLayers = 1
+Look.SoftFaceArea = 24
+Look.SoftWallAlpha = 0.4 -- (the walls' and crowns' one layer, fainter than the ground's: a stud you notice only up close)
+local NORMAL = { TopSurface = Enum.NormalId.Top, BottomSurface = Enum.NormalId.Bottom, FrontSurface = Enum.NormalId.Front,
+	BackSurface = Enum.NormalId.Back, LeftSurface = Enum.NormalId.Left, RightSurface = Enum.NormalId.Right }
+local function faceArea(s, f)
+	if f == 'TopSurface' or f == 'BottomSurface' then return s.X * s.Z end
+	if f == 'FrontSurface' or f == 'BackSurface' then return s.X * s.Y end
+	return s.Y * s.Z
+end
+function Look.softStuds(root)
+	local parts, textures = 0, 0
+	for _, p in root:GetDescendants() do
+		if p:IsA('BasePart') and not p:IsA('MeshPart') and Look.isStudded(p) then
+			parts += 1
+			local studded = {}
+			for _, f in FACES do
+				if p[f] == S.Studs then table.insert(studded, f) end
+				p[f] = S.Smooth
+			end
+			if p.Material == M.Plastic then p.Material = M.SmoothPlastic end
+			if p.Material ~= M.Neon and p.Material ~= M.Glass and p.Transparency < 0.05 and not p:FindFirstChildOfClass('SurfaceGui') then
+				local block = p:IsA('Part') and p.Shape == Enum.PartType.Block
+				local ground = block and p.CFrame.UpVector.Y > 0.99 and p.Size.X >= 3 and p.Size.Z >= 3
+					and V2.Origin:PointToObjectSpace(p.CFrame.Position).Y + p.Size.Y / 2 <= 2.6
+				for _, f in studded do
+					local onGround = ground and f == 'TopSurface'
+					local layers = onGround and Look.SoftGroundLayers or ((block and faceArea(p.Size, f) >= Look.SoftFaceArea) and 1 or 0)
+					for _ = 1, layers do Look.faintStuds(p, { NORMAL[f] }, not onGround and Look.SoftWallAlpha or nil); textures += 1 end
+				end
+			end
+		end
+	end
+	root:SetAttribute('SoftStudParts', parts)
+	root:SetAttribute('SoftStudTextures', textures)
+end
 V2.Look = Look
 V2.Stations = Stations
 ---------------------------------------------------------------------------------------------- z-fighting
@@ -10168,6 +10213,7 @@ function V2.Build()
 	local lifted, fights = resolveCoplanar(root)
 	for _ = 1, 2 do lifted += resolveCoplanar(root) end -- (a lift can land on a third part's plane: more passes settle the chains)
 	root:SetAttribute('FaceFightsLifted', lifted)
+	Look.softStuds(root) -- (Oct 27 round 5) the faint studs outside the lobby too, both worlds (x_look)
 	root.Parent = workspace
 	local count = 0
 	for _, d in root:GetDescendants() do if d:IsA('BasePart') then count += 1 end end

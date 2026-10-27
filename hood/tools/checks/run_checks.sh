@@ -5,8 +5,8 @@
 #   (TheCity) builds with its contracts (city_contracts: "[city] N checks / 0 failed") and plays through its whole track
 #   on the real stage, wave, goal and travel services (city_play: "[play] 10 checks, 0 failed"); both built place files
 #   keep every gate's Required Power exactly (place_gates: "[places] 34 checks / 0 failed"); a fresh World 2 player
-#   can walk to every place they need and never get stuck (city_reach: "[reach] 41 checks / 0 failed"), and so can a
-#   World 1 player (block_reach, the same script on TheBlockV2: "[reach1] 41 checks / 0 failed").
+#   can walk to every place they need and never get stuck (city_reach: "[reach] 56 checks / 0 failed", incl. no way round a shut gate), and so can a
+#   World 1 player (block_reach, the same script on TheBlockV2: "[reach1] 56 checks / 0 failed").
 # Needs Lune (https://lune-org.github.io): set LUNE=/path/to/lune or have `lune` on PATH.
 R=${1:-$(cd "$(dirname "$0")/../../.." && pwd)}; O=${2:-${TMPDIR:-/tmp}/hood_checks}
 L=${LUNE:-lune}; T=$(cd "$(dirname "$0")" && pwd); SRC=$R/hood/src

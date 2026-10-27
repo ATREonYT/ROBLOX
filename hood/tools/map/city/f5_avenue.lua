@@ -161,24 +161,34 @@ function City.avenueStage(ctx, i)
 		local function x(a, b) return math.min(s * a, s * b), math.max(s * a, s * b) end
 		local court = look == 4 and s > 0
 		if ground then District.floor(d, top, s, ST.road + ST.walk, FRONT, 0, ST.endZ, ST.kerb + 0.08, ground, 'DistrictGround') end
-		-- the towers (this side's tones offset, so facing towers differ); Stage 1's first pair also shops on the plaza
+		-- (Oct 27 round 5, the owner: "make way less buildings following the new building plans": his mockup's stages
+		-- are an open street under the sky, carried by the district's props, with only a few towers set back and spaced
+		-- out) Per stage: one hero tower, set back off the street on the far lot (z' 28..56, the side alternating, never
+		-- the court's), one low block on the near lot across from it, and open lots (paving and trees in planters) in
+		-- between; the construction zone keeps its steel frames on the far lots instead.
 		if not court then
-			local xa, xb = x(FRONT, FRONT + DEPTH)
+			local hero = (i % 2 == 1 and 1 or -1)
+			if look == 4 then hero = -1 end -- (the court has the right side)
+			local lotY = ST.kerb + 0.08
+			local lotColor = ground or City.walk:Lerp(City.road, 0.15)
 			for slot = 1, 2 do
 				local z0, z1 = top - 28 * slot, top - 28 * (slot - 1)
 				local h = City.heightAt(i, slot, s)
 				local tone = i * 2 + slot + (s > 0 and 3 or 0)
-				local name = slot == 1 and 'TowerA' or 'TowerB'
+				local xa, xb = x(FRONT, FRONT + DEPTH)
 				if look == 3 and slot == 2 then
 					-- the construction zone's back lots: a building going up (a crane over the one on the crane side)
 					City.steelFrame(d, xa, xb, z0, z1, 40 + ((i + (s > 0 and 1 or 0)) % 3) * 6, street, i * 10 + s)
 					if s == siteSide then City.crane(d, s * 46.75, top - 38.75, 84 + trioOf(i) * 4, -s, 34) end
-				else
-					local shops = (i == 1 and slot == 1) and { street, 'S' } or { street }
+				elseif slot == 2 and s == hero then
+					-- the hero tower, 8 back from the street front, a paved forecourt before it
+					local fa, fb = x(FRONT, FRONT + 8)
+					sbox(d, 'Lot', V(fa, lotY - 1.4, z0), V(fb, lotY, z1), lotColor)
+					xa, xb = x(FRONT + 8, FRONT + DEPTH)
 					local word = City.Words[(i * 5 + slot * 3 + (s > 0 and 7 or 0)) % #City.Words + 1]
-					local o = { kind = City.kindAt(i, slot, s), tone = tone, faces = { street, 'S' }, shops = shops, word = word, setback = h >= 80 and 3 or nil, shadow = true, name = name }
+					local o = { kind = City.kindAt(i, slot, s), tone = tone, faces = { street, 'S' }, shops = { street }, word = word, setback = h >= 80 and 3 or nil, shadow = true, name = 'TowerB' }
 					if look == 1 then -- red brick and grey
-						local brick = (slot + (s > 0 and 1 or 0) + i) % 2 == 0
+						local brick = (i % 2) == 0
 						o.stone = brick and K.brick[(i % 3) + 1] or K.grey[(i + slot) % 3 + 1]
 						o.crown = brick and C(250, 206, 120) or C(232, 64, 60)
 					elseif look == 2 then -- clean glass, a white crown
@@ -187,10 +197,31 @@ function City.avenueStage(ctx, i)
 						o.kind, o.glassColor = 'glass', ({ C(70, 92, 176), C(96, 76, 168), C(58, 108, 176) })[(i + slot) % 3 + 1]
 						o.crown, o.neon = K.pink, K.pink
 					end
-					City.highrise(d, xa, xb, z0, z1, h, o)
+					City.highrise(d, xa, xb, z0, z1, h + 10, o)
+				elseif slot == 1 and s ~= hero and look ~= 3 then
+					-- a low block on the near lot (two storeys over its shops), a paved strip before it
+					local fa, fb = x(FRONT, FRONT + 6)
+					sbox(d, 'Lot', V(fa, lotY - 1.4, z0), V(fb, lotY, z1), lotColor)
+					xa, xb = x(FRONT + 6, FRONT + DEPTH)
+					local o = { kind = 'shop', floors = 2, tone = tone, faces = { street, 'S' }, name = 'LowBlock' }
+					if look == 1 then o.color = K.brick[(i % 3) + 1] elseif look == 5 then o.color = C(84, 70, 140) end
+					City.block(d, xa, xb, z0, z1, o)
+				else
+					-- an open lot: paving to the lot's back, trees in planters (palms in the luxury district)
+					sbox(d, 'Lot', V(xa, lotY - 1.4, z0), V(xb, lotY, z1), lotColor)
+					local pz, sd = (z0 + z1) / 2, 900 + i * 20 + slot * 3 + (s > 0 and 1 or 0)
+					if look == 5 then
+						City.palmPlanter(d, V(s * (FRONT + 9), lotY, pz + 6), sd)
+					else
+						City.planter(d, V(s * (FRONT + 9), lotY, pz + 6), sd)
+						City.planter(d, V(s * (FRONT + 20), lotY, pz - 6), sd + 7)
+					end
 				end
 			end
 		end
+		-- (round 5) the street's keep-in: with the lots open, an invisible wall along the street front (the court's
+		-- side keeps its fence, back wall and caps)
+		if not court then invisibleWall(d, V(math.min(s * FRONT, s * (FRONT + 1)), 0, top - SLEN), V(math.max(s * FRONT, s * (FRONT + 1)), 60, top + (i == 1 and 8 or 1))) end
 		local pa, pb = x(ST.open, FRONT + DEPTH)
 		City.block(d, pa, pb, top - SLEN, top - ST.endZ, { kind = 'shop', floors = 0, tone = i * 2 + (s > 0 and 3 or 6), faces = { street, 'S' }, name = 'ShopRow' })
 		-- the solid edge line along the run, broken at the crosswalk (the luxury district's glows pink)
@@ -389,45 +420,25 @@ function City.skylineFar(ctx)
 		sbox(g, 'CityBase', V(a, -1, zN), V(b, WY, 0), base)
 		for _, kx in { R.road0, R.road1 } do decor(sbox(g, 'KerbStone', V(s * (kx - 0.6), -0.5, zN), V(s * (kx + 0.6), WY + 0.1, 0), City.kerb)).CastShadow = false end
 		for z = -8, zN + 6, -12 do decor(sbox(g, 'RoadLine', V(s * 102.7, RY, z - 5), V(s * 103.3, RY + 0.12, z), City.line)).CastShadow = false end
-		-- the rows: inner (its faces to the avenue, over the front towers, and south), outer (to the side street and
-		-- south), far (plain silhouettes)
-		local inner = s > 0 and 'W' or 'E'
+		-- (Oct 27 round 5, the owner's plan: a few towers for the skyline, set back and spaced out, not walls of them)
+		-- one hero tower past the side street every 3 stages a side (the sides offset by a stage and a half), each in its
+		-- district's glass or stone; open paved base between them
 		local outer = s > 0 and 'W' or 'E'
-		local z, k = -2, 0
-		while z - 24 > zN do
+		local k = 0
+		local z = s > 0 and -40 or -136
+		while z - 40 > zN do
 			k += 1
-			local len = 26 + ((k * 7 + (s > 0 and 3 or 0)) % 4) * 4
-			local z1, z0 = z, math.max(zN + 2, z - len)
-			local h = City.heightAt(stageAt(z0), 2, s) + 18 + ((k * 5) % 3) * 8
-			local xa, xb = X(FRONT + DEPTH + 1, R.walk0 - 1.5)
-			City.highrise(g, xa, xb, z0, z1, h, { kind = (k + (s > 0 and 1 or 0)) % 3 == 0 and 'stone' or 'glass', tone = k + (s > 0 and 2 or 5), faces = { inner, 'S' }, setback = h >= 90 and 2 or nil, pitch = 6, name = 'InnerTower' })
-			z = z0 - 4
-		end
-		z, k = -2, 0
-		while z - 30 > zN do
-			k += 1
-			local len = 32 + ((k * 5 + (s > 0 and 1 or 0)) % 3) * 8
-			local z1, z0 = z, math.max(zN + 2, z - len)
-			local h = City.heightAt(stageAt(z0), 1, s) + 34 + ((k * 7) % 4) * 8
-			local xa, xb = X(R.walk1 + 1.5, R.walk1 + 46)
-			City.highrise(g, xa, xb, z0, z1, h, { kind = k % 3 == 1 and 'stone' or 'glass', tone = k + (s > 0 and 4 or 1), faces = { outer, 'S' }, setback = h >= 100 and 3 or nil, pitch = 6, name = 'OuterTower' })
-			z = z0 - 5
-		end
-		local fz = 140
-		k = 0
-		while fz - 30 > zN do
-			k += 1
-			local len = 30 + (k % 3) * 10
-			local h = City.heightAt(stageAt(fz - len), 1, s) + 56 + (k % 4) * 12
-			local xa, xb = X(172, 204)
-			City.highrise(g, xa, xb, fz - len, fz, h, { kind = k % 4 == 2 and 'stone' or 'glass', tone = k * 3 + (s > 0 and 1 or 0), faces = { outer }, pitch = 8, name = 'FarTower' })
-			fz -= len + 6
+			local z1, z0 = z, z - 36
+			local h = City.heightAt(stageAt(z0), 1, s) + 40 + ((k * 7) % 3) * 12
+			local xa, xb = X(R.walk1 + 4, R.walk1 + 40)
+			City.highrise(g, xa, xb, z0, z1, h, { kind = (k + (s > 0 and 1 or 0)) % 3 == 1 and 'stone' or 'glass', tone = k + (s > 0 and 4 or 1), faces = { outer, 'S' }, setback = h >= 100 and 3 or nil, pitch = 6, name = 'OuterTower' })
+			z -= 192
 		end
 	end
 	-- the north end: the city's base round the CEO tower, a row of towers across either side of it
 	sbox(g, 'CityBase', V(-206, -1, zN - 80), V(206, WY, zN), base)
 	sbox(g, 'CityBase', V(-(FRONT + DEPTH), -1, zN), V(FRONT + DEPTH, WY, BOSS_END), base)
-	for k, xs in ipairs({ { 46, 84 }, { 90, 128 }, { 134, 172 } }) do
+	for k, xs in ipairs({ { 90, 128 } }) do -- (round 5: one a side, framing the CEO tower; was three)
 		for _, s in { -1, 1 } do
 			local xa, xb = math.min(s * xs[1], s * xs[2]), math.max(s * xs[1], s * xs[2])
 			City.highrise(g, xa, xb, zN - 46, zN - 4, 150 + k * 10 + (s > 0 and 8 or 0), { kind = (k + (s > 0 and 1 or 0)) % 2 == 0 and 'stone' or 'glass', tone = k * 2 + (s > 0 and 1 or 0), faces = { 'S' }, setback = 3, pitch = 6, name = 'NorthTower' })

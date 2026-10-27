@@ -409,10 +409,10 @@ end
 City.Ring = { walk0 = 88.5, road0 = 96, road1 = 110, walk1 = 116, north = 0, road = 0.5, walk = 0.95 }
 City.Blocks = {
 	-- { z0, z1, kind, height, tone } along the far side of the side streets (x 116..150; the west takes other tones)
-	east = { { 0, 30, 'glass', 85, 1 }, { 34, 62, 'stone', 60, 2 }, { 66, 96, 'glass', 75, 3 }, { 100, 156, 'stone', 55, 4 } },
+	-- (Oct 27 round 5, the owner: "make way less buildings": one tower a side and two to the south, gaps between; was 14)
+	east = { { 34, 62, 'glass', 85, 1 } },
 	-- { x0, x1, kind, height, tone } along the south street's far side (z from the far sidewalk, 30 deep)
-	south = { { -114, -84, 'glass', 70, 5 }, { -80, -52, 'stone', 55, 6 }, { -48, -18, 'glass', 90, 1 }, { 18, 48, 'stone', 65, 2 },
-		{ 52, 80, 'glass', 80, 3 }, { 84, 114, 'stone', 60, 4 } },
+	south = { { -80, -52, 'stone', 70, 6 }, { 52, 80, 'glass', 90, 3 } },
 }
 function City.skyline(L)
 	local g = L:group('Surroundings')

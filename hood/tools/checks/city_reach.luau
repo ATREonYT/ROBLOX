@@ -29,11 +29,22 @@ end
 local B = 8
 local bins = {}
 local function key(i, j) return i * 100000 + j end
+local gateBoxes = {} -- (round 5) each gate's barrier footprint, by its stage: the "no way round a shut gate" check
 local function passable(p)
 	-- a gate's barrier and fields open for the run; invisible walls stay (Bounds keep you in)
 	local m = p:FindFirstAncestorWhichIsA('Model')
 	while m and not m:HasTag('HoodStageGate') do m = m.Parent and m.Parent:FindFirstAncestorWhichIsA('Model') end
-	if m and (p.Name == 'Barrier' or p.Name:sub(1, 5) == 'Field' or p.Name:sub(1, 4) == 'Lock') then return true end
+	if m and (p.Name == 'Barrier' or p.Name:sub(1, 5) == 'Field' or p.Name:sub(1, 4) == 'Lock') then
+		local st = m:GetAttribute('Stage')
+		if st and p.Name == 'Barrier' then
+			local cf, h = frame:ToObjectSpace(p.CFrame), p.Size / 2
+			local ex = math.abs(cf.RightVector.X) * h.X + math.abs(cf.UpVector.X) * h.Y + math.abs(cf.LookVector.X) * h.Z
+			local ez = math.abs(cf.RightVector.Z) * h.X + math.abs(cf.UpVector.Z) * h.Y + math.abs(cf.LookVector.Z) * h.Z
+			gateBoxes[st] = gateBoxes[st] or {}
+			table.insert(gateBoxes[st], { cf.Position.X - ex, cf.Position.Z - ez, cf.Position.X + ex, cf.Position.Z + ez })
+		end
+		return true
+	end
 	return false
 end
 local count = 0
@@ -123,7 +134,7 @@ local function wall(i, j, i2, j2, h)
 	end
 	return false
 end
-local function bfs(starts, up, down)
+local function bfs(starts, up, down, blocked)
 	local seen, q, head = {}, {}, 1
 	for _, s in starts do seen[key(s[1], s[2])] = true; table.insert(q, s) end
 	while head <= #q do
@@ -134,7 +145,7 @@ local function bfs(starts, up, down)
 			local i2, j2 = i + d[1], j + d[2]
 			if i2 >= 0 and i2 < NI and j2 >= 0 and j2 < NJ and not seen[key(i2, j2)] then
 				local g = cell(i2, j2)
-				if g and f and g - f <= up and f - g <= down and not wall(i, j, i2, j2, math.max(f, g)) then
+				if g and f and g - f <= up and f - g <= down and not wall(i, j, i2, j2, math.max(f, g)) and not (blocked and blocked(i2, j2)) then
 					seen[key(i2, j2)] = true
 					table.insert(q, { i2, j2 })
 				end
@@ -170,6 +181,33 @@ for k, b in L.Plan.Boards do check('board ' .. k .. ' (in front of it)', near(b[
 check('the box dais (its front step)', near(0, 77))
 check('the ranges (the training aisle)', near(-40, L.CrossZ))
 check('the gun shop (in buying range of its deck)', near(40, L.CrossZ, 10)) -- (GunRules.Range 14; the stands fill the deck)
+-- (Oct 27 round 5: World 2's stages have open lots and fewer buildings now) no way round a shut gate: with gate i's
+-- barrier standing (and every other gate open), the stage past it can't be walked to
+for gi = 2, 16 do
+	local boxes = gateBoxes[gi]
+	if boxes then
+		local function shut(i, j)
+			local x, z = X0 + i * S + S / 2, Z0 + j * S + S / 2
+			for _, b in boxes do
+				-- (a barrier is thinner than a cell: its band is widened by a stud, so a step can't hop it)
+				if x + R + 1 > b[1] and x - R - 1 < b[3] and z + R + 1 > b[2] and z - R - 1 < b[4] then return true end
+			end
+			return false
+		end
+		local seen = bfs({ { si, sj } }, 6, math.huge, shut)
+		local tx, tz = 0, gi <= 15 and top(gi) - 30 or (V2.BossTop or -960) - 40
+		local past = false
+		for dx = -4, 4, S do
+			for dz = -4, 4, S do
+				local i, j = idx(tx + dx, tz + dz)
+				if seen[key(i, j)] then past = true end
+			end
+		end
+		check('no way round gate ' .. gi .. ' while it is shut', not past)
+	else
+		check('gate ' .. gi .. ' has a barrier', false)
+	end
+end
 -- nowhere to get stuck: every reachable cell walks back to the spawn (reverse: up any height you came down, down at
 -- most a jump... i.e. from each cell, can you get to the spawn going forward?)
 local back = bfs({ { si, sj } }, math.huge, 6) -- cells from which the spawn is reachable (the moves reversed)
