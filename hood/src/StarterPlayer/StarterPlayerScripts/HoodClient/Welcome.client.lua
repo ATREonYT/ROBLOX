@@ -34,7 +34,7 @@ local Welcome = {
 
 ---------------------------------------------------------------------------------------------- is it a first join?
 local active = ActiveMap.wait(20)
-if not active then return end
+if not active then playerGui:SetAttribute('HoodWelcome', false); return end
 local t0 = os.clock()
 while playerGui:FindFirstChild('HoodLoading') and os.clock() - t0 < 30 do task.wait(0.05) end
 t0 = os.clock()
@@ -42,7 +42,7 @@ while player:GetAttribute('FirstJoin') == nil and os.clock() - t0 < Welcome.Wait
 if player:GetAttribute('FirstJoin') ~= true then return end
 local char = player.Character or player.CharacterAdded:Wait()
 local root = char:WaitForChild('HumanoidRootPart', 10)
-if not root then return end
+if not root then playerGui:SetAttribute('HoodWelcome', false); return end
 
 ---------------------------------------------------------------------------------------------- the words
 local gui, groot, fit = Kit.screen('HoodWelcome', nil, 60)
@@ -51,10 +51,10 @@ local band = Kit.new('Frame', { Name = 'Band', AnchorPoint = Vector2.new(0.5, 0.
 Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.45), NumberSequenceKeypoint.new(0.8, 0.45), NumberSequenceKeypoint.new(1, 1) }), Parent = band })
 local holder = Kit.new('Frame', { Name = 'Words', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), Size = UDim2.fromOffset(900, 170), Parent = groot })
 local scale = Kit.new('UIScale', { Scale = 0.6, Parent = holder })
-local title = Kit.text({ Name = 'Title', Text = 'WELCOME TO THE BLOCK,', TextSize = 58, Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, 0, 0, 72), Parent = holder })
-TextStyle.apply(title, 'gold', { Shadow = true })
+local title = Kit.text({ Name = 'Title', Text = 'WELCOME TO THE BLOCK,', TextSize = 58, ZIndex = 3, Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, 0, 0, 72), Parent = holder })
+TextStyle.apply(title, 'gold', { Shadow = true }) -- (ZIndex 3: over its drop shadow, which TextStyle puts at ZIndex - 1)
 local name = player.DisplayName ~= '' and player.DisplayName or player.Name
-local who = Kit.text({ Name = 'Name', Text = string.upper(name) .. '!', TextSize = 50, Position = UDim2.fromOffset(0, 86), Size = UDim2.new(1, 0, 0, 64), Parent = holder })
+local who = Kit.text({ Name = 'Name', Text = string.upper(name) .. '!', TextSize = 50, ZIndex = 3, Position = UDim2.fromOffset(0, 86), Size = UDim2.new(1, 0, 0, 64), Parent = holder })
 who.TextScaled = true -- (a long name shrinks to fit; the outline is given, so nothing measures the label first)
 Kit.new('UITextSizeConstraint', { MaxTextSize = 50, MinTextSize = 20, Parent = who })
 TextStyle.apply(who, 'white', { Shadow = true, Thickness = 6 })

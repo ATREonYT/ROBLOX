@@ -350,9 +350,17 @@ local function visibleChild(gui, names)
 	end
 	return false
 end
+local startedAt, WELCOME_WAIT = os.clock(), 20
 local function popupUp() -- the loading cover, the rank-up screen, a returning player's card or offer chip, an artboard dialog
 	if playerGui:FindFirstChild('HoodLoading') then return true end
 	if playerGui:GetAttribute('HoodWelcome') == true then return true end -- (Oct 27, flow: the first-join welcome goes first)
+	-- (and before it starts: a first join waits for the welcome to have played, the server's word on it for a moment;
+	-- WELCOME_WAIT seconds at most, so a welcome that never comes can't hold the tutorial)
+	if os.clock() - startedAt < WELCOME_WAIT then
+		local first = player:GetAttribute('FirstJoin')
+		if first == nil and os.clock() - startedAt < 4 then return true end
+		if first == true and playerGui:GetAttribute('HoodWelcome') ~= false then return true end
+	end
 	local art = playerGui:FindFirstChild('HoodArt') -- (ArtWindows' dialogs: a review, a confirmation, the reveal card, Inventory Full)
 	local artRoot = art and art.Enabled ~= false and art:FindFirstChild('ArtRoot')
 	local dialogs = artRoot and artRoot:FindFirstChild('Dialog')

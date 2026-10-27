@@ -298,7 +298,7 @@ local function reveal(gun)
 		local sc = Kit.new('UIScale', { Scale = 0.4, Parent = card })
 		local band = Kit.new('Frame', { Name = 'Band', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1.6, 0, 1, 0), BackgroundColor3 = Kit.hex('070912'), BackgroundTransparency = 0.35, BorderSizePixel = 0, Parent = card })
 		Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0), NumberSequenceKeypoint.new(0.75, 0), NumberSequenceKeypoint.new(1, 1) }), Parent = band })
-		local head = Kit.text({ Name = 'Head', Text = 'NEW GUN!', TextSize = 40, Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 46), Parent = card })
+		local head = Kit.text({ Name = 'Head', Text = 'NEW GUN!', TextSize = 40, ZIndex = 3, Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 46), Parent = card })
 		local view
 		local models = gunModels()
 		if models and models.viewport then
@@ -309,8 +309,8 @@ local function reveal(gun)
 				vf.Parent = card
 			end
 		end
-		local nameLabel = Kit.text({ Name = 'GunName', Text = string.upper(gun.Name), TextSize = 34, Position = UDim2.fromOffset(0, 226), Size = UDim2.new(1, 0, 0, 42), Parent = card })
-		local what = Kit.text({ Name = 'What', Text = 'x' .. tostring(gun.Multiplier) .. ' POWER PER SHOT', TextSize = 30, Position = UDim2.fromOffset(0, 272), Size = UDim2.new(1, 0, 0, 38), Parent = card })
+		local nameLabel = Kit.text({ Name = 'GunName', Text = string.upper(gun.Name), TextSize = 34, ZIndex = 3, Position = UDim2.fromOffset(0, 226), Size = UDim2.new(1, 0, 0, 42), Parent = card })
+		local what = Kit.text({ Name = 'What', Text = 'x' .. tostring(gun.Multiplier) .. ' POWER PER SHOT', TextSize = 30, ZIndex = 3, Position = UDim2.fromOffset(0, 272), Size = UDim2.new(1, 0, 0, 38), Parent = card })
 		if okStyle then
 			TextStyle.apply(head, 'price', { Shadow = true })
 			TextStyle.apply(nameLabel, 'white', { Shadow = true })
