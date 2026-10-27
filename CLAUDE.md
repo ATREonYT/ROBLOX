@@ -36,7 +36,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (432 since the Oct 27 flow round: welcome, moment queue);
+- unit: all pass (433 since the Oct 27 flow round 2: one white flash a second, FlashGate);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - city_contracts: 215 checks / 0 failed;
@@ -45,7 +45,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - block_reach: 56 checks / 0 failed (the same walk on World 1; a body must fit and thin walls block);
 - place_gates: 34 checks / 0 failed (every gate's Required Power in the built place files; rebuild the places first, `Shared/BigAttr` keeps numbers of 2^31 and up);
 - play_run: 83 checks / 0 failed (it buys a gun and checks the goal moves on);
-- core_loop: 49 checks / 0 failed (the first-join welcome and its skip, one moment at a time, lane feedback, the goal guide arrow, step on/off, the goal after a purchase, a rebirth and each locked lane, big-number counters);
+- core_loop: 52 checks / 0 failed (at most one white flash a second on a busy lane, the first-join welcome, its clear glide and its skip, one moment at a time, lane feedback, the goal guide arrow, step on/off, the goal after a purchase, a rebirth and each locked lane, big-number counters);
 - live_shoes and live_reveal: exit 0;
 - first30: 8 ok with 0 purchase prompts, and `[flow] 15 checks / 0 failed` (a quiet tutorial, one voice at a time);
 - finale_play: 18/0;
