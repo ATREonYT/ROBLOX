@@ -30,7 +30,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - **Shared code:** `ReplicatedStorage/Shared` (rules modules are unit-tested); client code in `StarterPlayer/StarterPlayerScripts/HoodClient`; server in `ServerScriptService/HoodServer`.
 - **Robux items:** `Shared/Config/Products.lua`; the list to create on the website is `hood/MONETIZATION.md`. The 5 Robux exclusive guns (Oct 27: the owner took the suggested 149/249/399/599/899 at x8/x12/x20/x28/x40) are game passes in `Config/Guns.Exclusive`, off the Cash ladder; GunService adds one when its pass is owned.
 - **Pacing:** the owner wants World 1 to take 25-30 minutes and later worlds longer (Oct 27). `hood/tools/pacing/pacing.luau` simulates players on the real numbers (`Config/Balance`, `Guns`, `Skins`, `Shoes`); run it after any change to rebirth needs, stage Power, pad Cash, gun prices, lanes or walk speed, and try new numbers with `tune.luau` (both headers say how). World 1 now: 9 rebirths (the boss at about 30 min); the ladder goes on to 50 rebirths (Oct 27: about 3 h for a free player who goes on to World 2, World 1 ~33 + World 2 ~62 + ~90 min of training; about 47 min less training with the 2x Power pass: the owner wants a quick start, then passes clearly worth it, honestly, the same rules for everyone; from rebirth 26 the needs climb to 10x the old ladder by 50), lanes open at 2, 4, 7, 15, 30 and the Champ Ring at 50 (the owner: "more rebirths, up to like 50").
-- **Worlds:** each world is its own place running the same scripts; the map sets the workspace attribute `HoodWorld`, read by `Shared/WorldInfo`. `Config/Balance` picks that world's StagePower, PadCash and LaneBoost, and `GoalRules` its own goal chain. World 2 (Downtown, `hood/docs/WORLD2.md`): numbers at Scale (5000) x World 1's, so Power reads in the billions (shots and rebirth needs both scale); one stage per rebirth 10-25; its boss about 62 min after the door (the sim's World 2 section). World 3 comes after the release (the owner, Oct 27).
+- **Worlds:** each world is its own place running the same scripts; the map sets the workspace attribute `HoodWorld`, read by `Shared/WorldInfo`. `Config/Balance` picks that world's StagePower, PadCash and LaneBoost, and `GoalRules` its own goal chain. World 2 (the Business District, `hood/docs/WORLD2.md`): numbers at Scale (5000) x World 1's, so Power reads in the billions (shots and rebirth needs both scale); one stage per rebirth 10-25; its boss about 62 min after the door (the sim's World 2 section). World 3 comes after the release (the owner, Oct 27).
 - **Place file:** `LUNE=<lune> sh hood/tools/place/build_place.sh` writes `hood/places/HoodEvolution.rbxl`. Rebuild it when committing map changes.
 
 ## Checks (must all pass before every commit)
@@ -41,8 +41,8 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - city_contracts: 215 checks / 0 failed;
 - city_play: 10 checks / 0 failed (World 2's 16 stages and the rooftop, through the real services);
-- city_reach: 41 checks / 0 failed (a fresh World 2 player can reach everything and get back);
-- block_reach: 41 checks / 0 failed (the same walk on World 1; a body must fit and thin walls block);
+- city_reach: 56 checks / 0 failed (a fresh World 2 player can reach everything and get back, and no stage can be walked around while its gate is shut);
+- block_reach: 56 checks / 0 failed (the same walk on World 1; a body must fit and thin walls block);
 - place_gates: 34 checks / 0 failed (every gate's Required Power in the built place files; rebuild the places first, `Shared/BigAttr` keeps numbers of 2^31 and up);
 - play_run: 83 checks / 0 failed (it buys a gun and checks the goal moves on);
 - live_shoes and live_reveal: exit 0;
