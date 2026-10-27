@@ -1,15 +1,15 @@
 ---------------------------------------------------------------------------------------------- layout (World 2: the city)
--- World 1's layout (pieces/c_layout.lua) with the city's own stage count: the golden slice builds Stage 1 and 2 of the
--- avenue and gate 3 (shut, in front of the HQ tower that closes the avenue for now). The lobby's plan is World 1's (the
--- same zones and slots, e3_plaza), so the shared builders read the same constants.
+-- World 1's layout (pieces/c_layout.lua), World 1's size (Oct 27 round 3, the owner: "make it the size of the first
+-- world"): 15 avenue stages of 64 studs, gate 16 onto the rooftop (the boss yard, Stage 16: The CEO's crew), 96 deep.
+-- The lobby's plan is World 1's (the same zones and slots, e3_plaza), so the shared builders read the same constants.
 local FRONT = 36 -- tower fronts at x = ±36, facing the avenue
 local DEPTH = 28 -- the avenue's towers run back to x = ±64
 local WALL_X = 124 -- the low boundary wall (f_areas), hidden under the skyline towers that stand over it
 local SLEN = 64 -- one stage
-local STAGES = 2 -- (the golden slice: WORLD2.md, order of work 2; the other 14 come after the owner's yes)
+local STAGES = 15 -- the avenue's stages; gate 16 opens the rooftop
 local SPAWN_W, SPAWN_TOP = 74, 123 -- (World 1's legacy hall extents: f_areas' ground and e2's legacy builders read them)
-local BOSS_TOP = -STAGES * SLEN -- -128: where the HQ tower closes the avenue (no boss yard in the slice)
-local BOSS_END = BOSS_TOP - 96
+local BOSS_TOP = -STAGES * SLEN -- -960: gate 16, onto the rooftop
+local BOSS_END = BOSS_TOP - 96 -- the rooftop runs to -1056
 local SPAWN = V(0, 0, 42) -- the plaza's crossing, the same as World 1's
 local function stageTop(i) return -(i - 1) * SLEN end
 local function lookOf(i) return (i - 1) // 3 + 1 end
@@ -36,6 +36,7 @@ V2.StagePower = STAGE_POWER
 V2.StageLength = SLEN
 V2.StageTop = stageTop
 
--- Every stage's pad in walking order (the slice has no boss yard).
+-- Every stage's pad in walking order, then the rooftop's (The CEO), as World 1's.
 V2.Fights = {}
 for i = 1, STAGES do table.insert(V2.Fights, { Fight = i, Stage = i, Look = lookOf(i), X = 0, Z = padZ(i) }) end
+table.insert(V2.Fights, { Fight = 16, Stage = 16, Look = 6, X = 0, Z = BOSS_END + 22, Boss = true })

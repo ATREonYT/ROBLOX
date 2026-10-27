@@ -30,6 +30,15 @@ lines and crosswalks, glass-and-steel towers (big flat window grids, warm mid-to
 office lobbies, food trucks, yellow taxis and buses, planters with trimmed trees, billboards, a rooftop for the boss yard.
 Calm streets, loud interactables. Props from the owner's Claude Design batches when they come (CLAUDE.md lesson 4).
 
+Oct 27 decisions:
+- The lobby is the owner's "C": the Oct 10 indoor hall (aqua studded walls, periwinkle pillars, cyan floor lines,
+  skylights and blue trusses) round World 2's own zones, at World 1's size; downtown's towers show through its door,
+  windows and skylights (`tools/map/city/e6_hall.lua`).
+- The track is five districts of three stages each, after the owner's mockup
+  (`docs/refs/world2/owner_world2_districts_oct27.png`; "don't make it exactly like this ... more low poly/cartoony"):
+  City Streets 1-3, Modern Plaza 4-6, Construction Zone 7-9, Transit Area 10-12, Luxury District 13-15 with the red BOSS
+  gateway before gate 16, then the CEO tower's rooftop (Stage 16). Our own chunky props (`tools/map/city/f4_districts.lua`).
+
 ## The people (no placeholders)
 Office workers, security guards, managers, a CEO boss: real Roblox characters, animated with the owner's pack. Two ways
 to get them, both real (we never invent ids):
