@@ -12,6 +12,7 @@ local TweenService = game:GetService('TweenService')
 local RunService = game:GetService('RunService')
 local Skins = require(RS.Shared.Config.Skins)
 local ActiveMap = require(RS.Shared.ActiveMap)
+local BigAttr = require(RS.Shared.BigAttr)
 local RebirthRules = require(RS.Shared.RebirthRules)
 local RobuxText = require(RS.Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
 local Fonts = require(RS.Shared.Fonts)
@@ -393,7 +394,7 @@ local function guidePhase(n)
 	if not gate then return n < GUIDE_POWER and 'lane' or '', nil end
 	local cleared = player:GetAttribute('StagesCleared')
 	if (cleared or 0) >= 1 then return '', nil end
-	if n < LevelRules.powerFor(LevelRules.levelOf(gate:GetAttribute('Required') or 10)) then return 'lane', gate end -- (brief 29: the gate's Level, where it starts)
+	if n < LevelRules.powerFor(LevelRules.levelOf(BigAttr.get(gate, 'Required') or 10)) then return 'lane', gate end -- (brief 29: the gate's Level, where it starts)
 	return cleared ~= nil and 'exit' or '', gate -- (not before the server has said you haven't cleared it)
 end
 

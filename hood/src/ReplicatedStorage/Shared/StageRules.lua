@@ -8,6 +8,7 @@
 -- Run state per player (HoodServer/Runs keeps it, never saved): RunCleared, the highest stage whose crew you have beaten
 -- this run (0 = none), and from it RunStage, the furthest gate open this run.
 local StageRules = {}
+local BigAttr = require(script.Parent.BigAttr) -- (a gate's Required in the billions is stored as digits)
 
 StageRules.LOBBY_MARGIN = 3 -- studs past gate 1's line (on the lobby side) that already count as the lobby
 
@@ -99,7 +100,7 @@ function StageRules.fromModels(models)
 	local gates = {}
 	for _, m in models do
 		table.insert(gates, {
-			Stage = m:GetAttribute('Stage'), WallId = m:GetAttribute('WallId'), Required = m:GetAttribute('Required') or 0,
+			Stage = m:GetAttribute('Stage'), WallId = m:GetAttribute('WallId'), Required = BigAttr.get(m, 'Required') or 0,
 			Reward = m:GetAttribute('Reward') or 0, Z = m:GetAttribute('LineZ'), HalfWidth = m:GetAttribute('HalfWidth') or 20,
 		})
 	end

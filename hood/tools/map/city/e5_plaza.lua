@@ -494,8 +494,10 @@ end
 
 -- (Oct 27 round 3, the owner: "please make the leaderboards not be behind each other") The portal and the boards stand
 -- where World 1's do (e3_plaza's Lobby.Plan): the portal SW off the south walk on its own path; the three boards in one
--- straight row past the dais's east end (x 33, 48, 63 at z 86, 15 apart), each turned to the crossing, along the front
--- of their own path east off the south walk. No yard of their own.
+-- straight row past the dais's east end, each turned to the crossing, along the front of their own path east off the
+-- south walk. No yard of their own. (Oct 27 release fixes) World 1's row starts at x 26, where World 2's first board
+-- (POWER) cut 2.8 studs into the box dais (its east end at x 24.1): here the row is x 31, 51, 71 (20 apart).
+Lobby.Plan.Boards = { { 31, 86 }, { 51, 86 }, { 71, 86 } }
 
 -- The way back to the hood, where World 1 has its World 2 door (Lobby.Plan.World2, turned to the crossing): a warm brick
 -- arch (the hood's brick) on a stone step, a soft orange glow filling it, THE HOOD on its lintel. Front -Z of cf faces

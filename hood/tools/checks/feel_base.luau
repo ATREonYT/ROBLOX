@@ -696,8 +696,8 @@ waitMoment(6, 1.2)
 step('04_first_goal', 'the first goal moment (or none)', 160)
 -- train to the first gate's recommended Power (as the goal line would tell a kid)
 local g1 = gateModel(1)
-local need1 = (g1 and g1:GetAttribute('Required')) or (Balance.StagePower and Balance.StagePower[1]) or 10
-local need2 = (gateModel(2) and gateModel(2):GetAttribute('Required')) or (Balance.StagePower and Balance.StagePower[2]) or 60
+local need1 = (g1 and require(game.ReplicatedStorage.Shared.BigAttr).get(g1, 'Required')) or (Balance.StagePower and Balance.StagePower[1]) or 10
+local need2 = (gateModel(2) and require(game.ReplicatedStorage.Shared.BigAttr).get(gateModel(2), 'Required')) or (Balance.StagePower and Balance.StagePower[2]) or 60
 waitFor(function() return data.Rep >= math.max(need1, 15) end, 20)
 local rate = (data.Rep - pR) / math.max(0.1, K - tR)
 log(('BAY 1 earn rate %.1f Power/s (K); recommended Stage 1 %s, Stage 2 %s'):format(rate, tostring(need1), tostring(need2)))

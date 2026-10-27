@@ -4082,7 +4082,7 @@ function Lobby.world2(e, cf)
 		local top = p:box('World2Panel', V(-dw + 1, dh * 0.52, -1.95), V(dw - 1, dh - 0.4, -1.8), green, M.SmoothPlastic)
 		local low = p:box('World2Panel', V(-dw + 1, st + 1, -1.95), V(dw - 1, dh * 0.5 - 0.6, -1.8), green, M.SmoothPlastic)
 		local g = surface(top, Enum.NormalId.Front, 14)
-		line(g, 'Soon', 'COMING SOON', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2)
+		line(g, 'Soon', 'DOWNTOWN', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2) -- (Oct 27: World 2 is built)
 		line(g, 'World', 'WORLD 2', P.white, FONT.title, 0.44, 0.44, C(10, 50, 20), 3)
 		line(surface(low, Enum.NormalId.Front, 14), 'Detail', 'Beat the Boss Yard\nto unlock!', C(220, 255, 220), FONT.title, 0.62, 0.32, C(10, 50, 20), 1)
 		-- the padlock over the panels' join: a gold body with a keyhole, a darker shackle
@@ -7137,7 +7137,7 @@ function Lobby.corners(L)
 	Lobby.Slots.World2Portal = cf
 	local words = Lobby.signWords(g, (cf * CFrame.new(0, 17.5 * (w2.scale or 1), -1)).Position, 12, 3.6, {
 		{ 'Title', 'World 2', 0.6, Lobby.Grad.pink, 4.5 },
-		{ 'Soon', 'COMING SOON!', 0.4, Lobby.Grad.white, 3.5 },
+		{ 'Soon', 'DOWNTOWN', 0.4, Lobby.Grad.white, 3.5 }, -- (Oct 27: World 2 is built; the door says what opens it)
 	}, 120)
 	words.WorldLabel:SetAttribute('FadeNear', 30)
 	words.WorldLabel:SetAttribute('FadeFar', 48)
@@ -8053,7 +8053,9 @@ local function stageGate(ctx, i)
 	fx.Parent = shell
 	model:SetAttribute('Stage', i)
 	model:SetAttribute('WallId', 'HoodW1Stage' .. i)
-	model:SetAttribute('Required', req)
+	-- (Oct 27) a Power in the billions is kept as its digits (Shared/BigAttr: the place writer wraps big whole numbers)
+	local okBig, BigAttr = pcall(function() return require(ReplicatedStorage.Shared.BigAttr) end)
+	if okBig and type(BigAttr) == 'table' then BigAttr.set(model, 'Required', req) else model:SetAttribute('Required', req) end
 	model:SetAttribute('LineZ', z)
 	model:SetAttribute('PadZ', z + padZ)
 	model:SetAttribute('HalfWidth', front)
@@ -9637,7 +9639,7 @@ function Finale.worldDoor(ctx, z)
 	local grad = Instance.new('UIGradient')
 	grad.Color, grad.Rotation = GATE.titleShade, 90
 	grad.Parent = title
-	put('Sub', 'Coming soon!', 0.52, 0.3, GATE.sub, GATE.subInk, 0.1)
+	put('Sub', 'Portal in the lobby!', 0.52, 0.3, GATE.sub, GATE.subInk, 0.1) -- (Oct 27: World 2 is built; its portal is in the lobby)
 	local status = put('Status', 'Defeat the crew first', 0.3, 0.26, GATE.status, GATE.statusInk, 0.1)
 	status.Position, status.Size = UDim2.fromScale(0.02, 0.3), UDim2.fromScale(0.96, 0.26)
 	title.Visible, gui:FindFirstChild('Sub').Visible = false, false

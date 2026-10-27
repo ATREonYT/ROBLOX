@@ -17,6 +17,17 @@ local active = ActiveMap.get()
 if not active then return end
 
 local limit = RateLimiter.new(1, 0.2) -- one try, then one every 5 s
+-- (Oct 27) In a published server, say in Output which world has no place id yet (RELEASE.md: both worlds' ids go in
+-- Config/Worlds), since its door says "coming soon" until then.
+if game.PlaceId > 0 then
+	for id = 1, 9 do
+		local w = WorldInfo.get(id)
+		if not w then break end
+		if type(w.PlaceId) ~= 'number' or w.PlaceId <= 0 then
+			warn(('[WorldPortalService] Config/Worlds has no PlaceId for World %d (%s): its door says "coming soon". This place is %d.'):format(id, tostring(w.Name), game.PlaceId))
+		end
+	end
+end
 local function notice(player, text) Net.get('Notice'):FireClient(player, text) end
 
 local function travel(player, world)

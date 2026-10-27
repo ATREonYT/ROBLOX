@@ -296,7 +296,7 @@ local base = {
 	Color3 = Color3, Enum = Enum, UDim2 = roblox.UDim2, UDim = roblox.UDim, Vector2 = roblox.Vector2,
 	BrickColor = roblox.BrickColor, NumberSequence = roblox.NumberSequence, ColorSequence = roblox.ColorSequence,
 	NumberRange = roblox.NumberRange, NumberSequenceKeypoint = roblox.NumberSequenceKeypoint,
-	ColorSequenceKeypoint = roblox.ColorSequenceKeypoint, Random = Random, Font = roblox.Font, Rect = roblox.Rect, __fs = fs, __serde = serde, __exportUI = function(...) return exportUI(...) end, TweenInfo = TweenInfoLib, __stepTweens = stepTweens, __exportParts = function(...) return __exportPartsImpl(...) end, task = task, warn = function(...) print("[warn]", ...) end,
+	ColorSequenceKeypoint = roblox.ColorSequenceKeypoint, Random = Random, Font = roblox.Font, Rect = roblox.Rect, __fs = fs, __serde = serde, __roblox = roblox, __exportUI = function(...) return exportUI(...) end, TweenInfo = TweenInfoLib, __stepTweens = stepTweens, __exportParts = function(...) return __exportPartsImpl(...) end, task = task, warn = function(...) print("[warn]", ...) end,
 }
 local cache, loading = {}, {}
 local function envFor(scriptInst)

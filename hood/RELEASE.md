@@ -33,10 +33,10 @@ Do these in order. Each step says where the details are. Tick them off as you go
 15. **Two players:** Test → Clients and Servers → 2 players. Check the leaderboards and gifting. (The World Boss and the free gift are switched off for now: `Config/Features`.)
 
 ## D2. World 2 (Downtown), a second place in the same game
-- **Add the place:** in Studio, open your game, then View → **Asset Manager** → **Places** → right-click → **Add New Place**. Open the new place and publish `hood/places/HoodEvolution_World2.rbxl` into it (File → Open the .rbxl, then File → **Publish to Roblox As…** → your game → the new place).
-- **The two place ids:** in Asset Manager → Places, right-click each place → **Copy ID**. Put them in `hood/src/ReplicatedStorage/Shared/Config/Worlds.lua`: World 1's id on the `The Hood` line, World 2's on the `Downtown` line (or send both numbers to Claude). Until World 2's id is in, its door says "coming soon".
-- **Both places get the same settings:** Game Settings → Security → turn on **Allow Mesh / Image APIs** (the menus' pictures) and **Enable Studio Access to API Services** (saving). Lighting → Technology → **ShadowMap** in each place.
-- **Test the trip:** in the published game (Studio can't teleport), beat World 1's Stage 16, walk through the World 2 door, then use the World window to go back.
+- **Add the place:** in Studio, open your game, then **View → Asset Manager → Places → Add New Place**. Open `hood/places/HoodEvolution_World2.rbxl` and **File → Publish to Roblox As** that new place.
+- **Both place ids:** copy World 1's place id (the start place) and World 2's (Asset Manager → right-click the place → Copy ID) into `hood/src/ReplicatedStorage/Shared/Config/Worlds.lua` (`PlaceId`), or send both numbers to Claude. Publish **both** places again after this, so both have the ids. Until both ids are in, the doors between the worlds say "coming soon", and Output in a live server says which id is missing.
+- **Same settings in both places:** Game Settings → Security → turn on **Allow Mesh / Image APIs** (the menus' pictures) and **Enable Studio Access to API Services** (saving); Lighting → Technology → **ShadowMap**.
+- **Test in the published game** (Studio can't teleport): beat World 1's Stage 16 → the lobby's World 2 portal takes you to Downtown with your Power, guns and shoes; in Downtown, the brick arch (THE HOOD) takes you back.
 
 ## E. Publish
 16. **Experience page.** These are worth designing in Claude Design, with the same blocky prompt (`hood/art/CLAUDE_DESIGN_PROMPT.md`):

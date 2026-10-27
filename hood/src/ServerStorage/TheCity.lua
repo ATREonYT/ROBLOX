@@ -4131,7 +4131,7 @@ function Lobby.world2(e, cf)
 		local top = p:box('World2Panel', V(-dw + 1, dh * 0.52, -1.95), V(dw - 1, dh - 0.4, -1.8), green, M.SmoothPlastic)
 		local low = p:box('World2Panel', V(-dw + 1, st + 1, -1.95), V(dw - 1, dh * 0.5 - 0.6, -1.8), green, M.SmoothPlastic)
 		local g = surface(top, Enum.NormalId.Front, 14)
-		line(g, 'Soon', 'COMING SOON', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2)
+		line(g, 'Soon', 'DOWNTOWN', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2) -- (Oct 27: World 2 is built)
 		line(g, 'World', 'WORLD 2', P.white, FONT.title, 0.44, 0.44, C(10, 50, 20), 3)
 		line(surface(low, Enum.NormalId.Front, 14), 'Detail', 'Beat the Boss Yard\nto unlock!', C(220, 255, 220), FONT.title, 0.62, 0.32, C(10, 50, 20), 1)
 		-- the padlock over the panels' join: a gold body with a keyhole, a darker shackle
@@ -7186,7 +7186,7 @@ function Lobby.corners(L)
 	Lobby.Slots.World2Portal = cf
 	local words = Lobby.signWords(g, (cf * CFrame.new(0, 17.5 * (w2.scale or 1), -1)).Position, 12, 3.6, {
 		{ 'Title', 'World 2', 0.6, Lobby.Grad.pink, 4.5 },
-		{ 'Soon', 'COMING SOON!', 0.4, Lobby.Grad.white, 3.5 },
+		{ 'Soon', 'DOWNTOWN', 0.4, Lobby.Grad.white, 3.5 }, -- (Oct 27: World 2 is built; the door says what opens it)
 	}, 120)
 	words.WorldLabel:SetAttribute('FadeNear', 30)
 	words.WorldLabel:SetAttribute('FadeFar', 48)
@@ -8046,8 +8046,10 @@ end
 
 -- (Oct 27 round 3, the owner: "please make the leaderboards not be behind each other") The portal and the boards stand
 -- where World 1's do (e3_plaza's Lobby.Plan): the portal SW off the south walk on its own path; the three boards in one
--- straight row past the dais's east end (x 33, 48, 63 at z 86, 15 apart), each turned to the crossing, along the front
--- of their own path east off the south walk. No yard of their own.
+-- straight row past the dais's east end, each turned to the crossing, along the front of their own path east off the
+-- south walk. No yard of their own. (Oct 27 release fixes) World 1's row starts at x 26, where World 2's first board
+-- (POWER) cut 2.8 studs into the box dais (its east end at x 24.1): here the row is x 31, 51, 71 (20 apart).
+Lobby.Plan.Boards = { { 31, 86 }, { 51, 86 }, { 71, 86 } }
 
 -- The way back to the hood, where World 1 has its World 2 door (Lobby.Plan.World2, turned to the crossing): a warm brick
 -- arch (the hood's brick) on a stone step, a soft orange glow filling it, THE HOOD on its lintel. Front -Z of cf faces
@@ -9042,7 +9044,9 @@ local function stageGate(ctx, i)
 	fx.Parent = shell
 	model:SetAttribute('Stage', i)
 	model:SetAttribute('WallId', 'HoodW1Stage' .. i)
-	model:SetAttribute('Required', req)
+	-- (Oct 27) a Power in the billions is kept as its digits (Shared/BigAttr: the place writer wraps big whole numbers)
+	local okBig, BigAttr = pcall(function() return require(ReplicatedStorage.Shared.BigAttr) end)
+	if okBig and type(BigAttr) == 'table' then BigAttr.set(model, 'Required', req) else model:SetAttribute('Required', req) end
 	model:SetAttribute('LineZ', z)
 	model:SetAttribute('PadZ', z + padZ)
 	model:SetAttribute('HalfWidth', front)
@@ -10805,6 +10809,13 @@ function City.court(d, top, at, i)
 	chainLink(d, V(x0, ST.kerb, top - za), V(x1, ST.kerb, top - za), 10)
 	chainLink(d, V(x0, ST.kerb, top - zb), V(x1, ST.kerb, top - zb), 10)
 	District.backWall(d, top, 1, x1, 0, 56, 14)
+	-- (release fixes) keep-in caps over the fence tops, from just under them to 40 up: a player who climbs a signal and a
+	-- tree crown can't stand on the chain-link and drop into the court's corners or onto the shop roofs behind it, where
+	-- there's no way back (tools/checks/city_reach); the gateway at ground level stays open
+	local capY = ST.kerb + 9
+	invisibleWall(d, V(x0 - 0.5, capY, top - zb), V(x0 + 0.5, 40, top - za))
+	invisibleWall(d, V(x0, capY, top - za - 0.5), V(x1, 40, top - za + 0.5))
+	invisibleWall(d, V(x0, capY, top - zb - 0.5), V(x1, 40, top - zb + 0.5))
 	local mural = ghost(d:box('Mural', V(x1 - 0.08, ST.kerb + 3, top - 12), V(x1 - 0.02, ST.kerb + 12, top - 44), P.white, M.SmoothPlastic))
 	line(surface(mural, Enum.NormalId.Left, 12), 'Mural', ({ 'DOWNTOWN HOOPS', 'GAME ON', 'NEXT UP' })[trioOf(i)], ({ C(255, 210, 60), C(255, 96, 206), C(70, 220, 255) })[trioOf(i)], FONT.tag, 0.1, 0.8, P.black, 4).Rotation = -4
 	for _, fl in { { 24, 5 }, { 60, 5 }, { 24, 53 }, { 60, 53 } } do District.floodlight(d, CFrame.lookAt(at(fl[1], fl[2]), at(45, 29)), 22) end
@@ -11141,11 +11152,6 @@ local function buildStages(ctx)
 		local model = stageGate(gates, i)
 		model:SetAttribute('WallId', 'HoodW' .. (V2.World or 2) .. 'Stage' .. i)
 		model:SetAttribute('World', V2.World or 2)
-		-- (round 3) World 2's Power reads in the billions: Lune (the place builder, tools/place) stores a whole-number
-		-- attribute as a 32-bit integer and wraps anything past 2,147,483,647 (gate 4's 2.15B came out negative), so a
-		-- whole Required that big carries 1/1024 more, which keeps it a real number in the place file (signs round it)
-		local req = STAGE_POWER[i]
-		if type(req) == 'number' and req >= 2 ^ 31 and req % 1 == 0 then model:SetAttribute('Required', req + 2 ^ -10) end
 		local name = model:FindFirstChild('GateWorldName', true)
 		if name then
 			name.Text = 'WORLD ' .. (V2.World or 2)

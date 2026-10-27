@@ -782,7 +782,7 @@ function Lobby.corners(L)
 	Lobby.Slots.World2Portal = cf
 	local words = Lobby.signWords(g, (cf * CFrame.new(0, 17.5 * (w2.scale or 1), -1)).Position, 12, 3.6, {
 		{ 'Title', 'World 2', 0.6, Lobby.Grad.pink, 4.5 },
-		{ 'Soon', 'COMING SOON!', 0.4, Lobby.Grad.white, 3.5 },
+		{ 'Soon', 'DOWNTOWN', 0.4, Lobby.Grad.white, 3.5 }, -- (Oct 27: World 2 is built; the door says what opens it)
 	}, 120)
 	words.WorldLabel:SetAttribute('FadeNear', 30)
 	words.WorldLabel:SetAttribute('FadeFar', 48)

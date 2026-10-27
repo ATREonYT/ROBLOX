@@ -68,7 +68,8 @@ GoalRules.List = {
 	lane('DoubleEnd', 'Range6', 1500),
 	lane('Ring', 'Ring', 2500, 'Stage 16, at %s'), -- FIGHTS30 (was 'Boss Yard, at %d rebirths')
 }
--- (Oct 27) World 2, Downtown (its own place; Shared/WorldInfo): a fresh chain through its streets, up to the CEO. You
+-- (Oct 27) World 2, Downtown (its own place; Shared/WorldInfo): a fresh chain through its five districts (City Streets,
+-- Modern Plaza, Construction Zone, Transit Area, Luxury District), up to the CEO on the rooftop. You
 -- arrive with your rebirths, guns and shoes, so it's only the new stages, the crews and the last lanes; the rewards are
 -- scaled to its pads (7K to 40K). A World 2 visitor's goals start unsynced (HoodServer/WorldData), so the lanes and guns
 -- they already have are skipped quietly.
@@ -79,12 +80,12 @@ if GoalRules.World == 2 then
 		{ Id = 'Stage1', Text = 'Walk to Downtown Stage 1', Where = 'through the big doors ahead', Reward = 500, Need = { Stages = 1 } },
 		{ Id = 'Wave1', Text = 'Beat the Interns', Where = 'hold to shoot them', Reward = 750, Need = { Wave = 1 } },
 		{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 750, Need = { CashOuts = 1 } },
-		{ Id = 'Stage4', Text = 'Reach Stage 4', Where = 'beat each crew to open its gate', Reward = 1500, Need = { Stages = 4 } },
-		{ Id = 'Stage6', Text = 'Reach Stage 6', Where = 'past Security, into the tower', Reward = 2500, Need = { Stages = 6 } },
-		{ Id = 'Stage10', Text = 'Reach Stage 10', Where = 'up through the office floors', Reward = 4000, Need = { Stages = 10 } },
-		{ Id = 'Stage13', Text = 'Reach Stage 13', Where = 'the top floors', Reward = 6000, Need = { Stages = 13 } },
-		{ Id = 'Wave15', Text = 'Beat the Stage 15 crew', Where = 'before the rooftop', Reward = 8000, Need = { Wave = 15 } },
-		{ Id = 'BossYard', Text = 'Reach the rooftop', Where = 'Stage 16, past Stage 15', Reward = 10000, Need = { Stages = 16 } },
+		{ Id = 'Stage4', Text = 'Reach Stage 4', Where = 'the Modern Plaza, past the City Streets', Reward = 1500, Need = { Stages = 4 } },
+		{ Id = 'Stage6', Text = 'Reach Stage 6', Where = 'by the plaza fountains', Reward = 2500, Need = { Stages = 6 } },
+		{ Id = 'Stage10', Text = 'Reach Stage 10', Where = 'under the train line, past the cranes', Reward = 4000, Need = { Stages = 10 } },
+		{ Id = 'Stage13', Text = 'Reach Stage 13', Where = 'the Luxury District, with the palms', Reward = 6000, Need = { Stages = 13 } },
+		{ Id = 'Wave15', Text = 'Beat the Stage 15 crew', Where = 'by the red BOSS gate', Reward = 8000, Need = { Wave = 15 } },
+		{ Id = 'BossYard', Text = 'Reach the rooftop', Where = 'through the BOSS gate, Stage 16', Reward = 10000, Need = { Stages = 16 } },
 		{ Id = 'BossWave', Text = 'Beat The CEO', Where = 'on the rooftop, Stage 16', Reward = 15000, Need = { Wave = 16 } },
 		lane('Speed', 'Range5', 12000),
 		lane('DoubleEnd', 'Range6', 20000),

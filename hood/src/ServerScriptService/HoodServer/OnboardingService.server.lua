@@ -21,6 +21,7 @@ local Rules = require(RS.Shared.OnboardingRules)
 local Guns = require(RS.Shared.Config.Guns)
 local ActiveMap = require(RS.Shared.ActiveMap)
 local LevelRules = require(RS.Shared.LevelRules)
+local BigAttr = require(RS.Shared.BigAttr)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
 local okOpen, ShoeOpening = pcall(require, script.Parent.ShoeOpening)
@@ -52,7 +53,7 @@ local function stageOneNeed()
 	local ok, tagged = pcall(function() return CollectionService:GetTagged('HoodStageGate') end)
 	for _, g in ok and tagged or {} do
 		if g:GetAttribute('Stage') == 1 then
-			local r = g:GetAttribute('Required')
+			local r = BigAttr.get(g, 'Required')
 			-- (brief 29, P4: the gate's Recommended is a LEVEL now; you are ready the moment you reach it, where that level starts)
 			if type(r) == 'number' and r > 0 then return LevelRules.powerFor(LevelRules.levelOf(r)) end
 		end

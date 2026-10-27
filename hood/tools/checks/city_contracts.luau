@@ -22,6 +22,7 @@ if not root then
 end
 local RS = game:GetService('ReplicatedStorage')
 local Balance = require(RS.Shared.Config.Balance)
+local BigAttr = require(RS.Shared.BigAttr)
 local W2 = Balance.Worlds and Balance.Worlds[2] and Balance.Worlds[2].StagePower or {}
 local function tagged(tag) local r = {}; for _, d in root:GetDescendants() do if d:HasTag(tag) then table.insert(r, d) end end; return r end
 check('HoodWorld = 2', root:GetAttribute('HoodWorld') == 2)
@@ -39,13 +40,13 @@ for i = 1, 16 do
 	check('gate ' .. i, g ~= nil)
 	if g then
 		check('gate ' .. i .. ' WallId', g:GetAttribute('WallId') == 'HoodW2Stage' .. i)
-		local req = g:GetAttribute('Required')
-		check('gate ' .. i .. ' Required = World 2 StagePower', type(req) == 'number' and req > 0 and math.floor(req + 0.5) == W2[i])
+		local req = BigAttr.get(g, 'Required')
+		check('gate ' .. i .. ' Required = World 2 StagePower', type(req) == 'number' and req > 0 and req == W2[i])
 		local z = g:GetAttribute('LineZ')
 		check('gate ' .. i .. ' LineZ 64 north of the last', type(z) == 'number' and (lastZ == nil and z == 0 or lastZ ~= nil and math.abs(lastZ - z - 64) < 0.01))
 		lastZ = type(z) == 'number' and z or lastZ
 		check('gate ' .. i .. ' HalfWidth', type(g:GetAttribute('HalfWidth')) == 'number' and g:GetAttribute('HalfWidth') > 0)
-		if i > 1 then check('Required grows at gate ' .. i, gates[i - 1] and req > (gates[i - 1]:GetAttribute('Required') or math.huge)) end
+		if i > 1 then check('Required grows at gate ' .. i, gates[i - 1] and req > (BigAttr.get(gates[i - 1], 'Required') or math.huge)) end
 	end
 end
 check('gates 1-16 only', gates[17] == nil and #models == 16)

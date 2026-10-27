@@ -292,7 +292,7 @@ function Finale.worldDoor(ctx, z)
 	local grad = Instance.new('UIGradient')
 	grad.Color, grad.Rotation = GATE.titleShade, 90
 	grad.Parent = title
-	put('Sub', 'Coming soon!', 0.52, 0.3, GATE.sub, GATE.subInk, 0.1)
+	put('Sub', 'Portal in the lobby!', 0.52, 0.3, GATE.sub, GATE.subInk, 0.1) -- (Oct 27: World 2 is built; its portal is in the lobby)
 	local status = put('Status', 'Defeat the crew first', 0.3, 0.26, GATE.status, GATE.statusInk, 0.1)
 	status.Position, status.Size = UDim2.fromScale(0.02, 0.3), UDim2.fromScale(0.96, 0.26)
 	title.Visible, gui:FindFirstChild('Sub').Visible = false, false

@@ -406,7 +406,9 @@ local function stageGate(ctx, i)
 	fx.Parent = shell
 	model:SetAttribute('Stage', i)
 	model:SetAttribute('WallId', 'HoodW1Stage' .. i)
-	model:SetAttribute('Required', req)
+	-- (Oct 27) a Power in the billions is kept as its digits (Shared/BigAttr: the place writer wraps big whole numbers)
+	local okBig, BigAttr = pcall(function() return require(ReplicatedStorage.Shared.BigAttr) end)
+	if okBig and type(BigAttr) == 'table' then BigAttr.set(model, 'Required', req) else model:SetAttribute('Required', req) end
 	model:SetAttribute('LineZ', z)
 	model:SetAttribute('PadZ', z + padZ)
 	model:SetAttribute('HalfWidth', front)

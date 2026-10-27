@@ -14,7 +14,7 @@
 -- one you also see the shut line of the gate after it (the reference's view through gate 1). (Brief 30) As you walk
 -- through a gate its sign fades to about 40 % (V1 3.5 s, W 36.6-36.8 s). The last stage's far door (the World 2 door,
 -- tagged HoodWorldDoor) reads "Defeat <name>" while the last crew stands, flashes white when it falls, then "WORLD 2 /
--- Coming soon!" (World 2 isn't built: the door stays shut).
+-- Portal in the lobby!" (the way there is the lobby's World 2 portal: the door itself stays shut).
 -- The pads (parts tagged HoodStagePad, attributes Stage and Kind; the server pays): their own colour a notch darker,
 -- reading the reward over "🔒 Clear the crew!", until that stage's crew is down this run; then lit, with sparkles and
 -- their words: "+10 Cash / Return" (yellow) and
@@ -35,6 +35,7 @@ local RunService = game:GetService('RunService')
 local TweenService = game:GetService('TweenService')
 local Debris = game:GetService('Debris')
 local ActiveMap = require(RS.Shared.ActiveMap)
+local BigAttr = require(RS.Shared.BigAttr)
 local Juice = require(RS.Shared.Juice)
 local Format = require(RS.Shared.Format)
 local Net = require(RS.Shared.Net)
@@ -75,7 +76,7 @@ local gates = {}
 local function track(model)
 	if gates[model] or not model:IsDescendantOf(active.Root) then return end
 	gates[model] = {
-		Model = model, Stage = model:GetAttribute('Stage'), Required = model:GetAttribute('Required') or 0,
+		Model = model, Stage = model:GetAttribute('Stage'), Required = BigAttr.get(model, 'Required') or 0,
 		Z = model:GetAttribute('LineZ'), HalfWidth = model:GetAttribute('HalfWidth') or 20,
 		Color = model:GetAttribute('Color') or C(255, 210, 60), Light = model:GetAttribute('Light') or C(255, 236, 160),
 	}
@@ -242,6 +243,43 @@ local function nextGate()
 	end
 	return best
 end
+-- (Oct 27, release fixes: "gates repeating down the street") Only the gates up to your first shut one are drawn for
+-- you; the shut gates past it (out of reach until it opens) are hidden on your screen, so each stage's view ends on its
+-- own gate. A hidden gate's parts are see-through for you alone (LocalTransparencyModifier: Transparency, CanCollide and
+-- the gate's own state stay as they are), its signs, haze, lights and sparkles are off; it comes back the moment the
+-- gate before it opens (paint() then redraws it from scratch).
+local GUI_CLASSES = { 'SurfaceGui', 'BillboardGui', 'ParticleEmitter', 'PointLight', 'SpotLight', 'SurfaceLight' }
+local function isToggle(d)
+	for _, c in GUI_CLASSES do if d:IsA(c) then return true end end
+	return false
+end
+local function hideOne(e, d)
+	if d:IsA('BasePart') then
+		pcall(function() d.LocalTransparencyModifier = 1 end)
+	elseif isToggle(d) then
+		if e.WasOn[d] == nil then e.WasOn[d] = d.Enabled; table.insert(e.Toggles, d) end
+		d.Enabled = false
+	end
+end
+local function setHidden(e, hide)
+	if hide then
+		if not e.Hidden then
+			e.Hidden, e.WasOn, e.Toggles = true, {}, {}
+			e.HideConn = e.Model.DescendantAdded:Connect(function(d) if e.Hidden then hideOne(e, d) end end)
+			for _, d in e.Model:GetDescendants() do hideOne(e, d) end
+		end
+		-- (paint() can switch a sign or the haze back on while the gate streams in: keep them off)
+		for _, d in e.Toggles do d.Enabled = false end
+	elseif e.Hidden then
+		e.Hidden = false
+		if e.HideConn then e.HideConn:Disconnect() end
+		for _, d in e.Model:GetDescendants() do
+			if d:IsA('BasePart') then pcall(function() d.LocalTransparencyModifier = 0 end) end
+		end
+		for d, was in e.WasOn do if d.Parent then d.Enabled = was end end
+		e.WasOn, e.Toggles, e.State = nil, nil, nil -- (paint() redraws it in full)
+	end
+end
 local shownRun = nil -- the RunStage the gates were last painted for (a rise is a gate opening in front of you)
 local function repaint()
 	local open = runStage()
@@ -256,7 +294,10 @@ local function repaint()
 	end
 	for _, e in gates do
 		local isOpen = (e.Stage or 1) <= open
+		local hide = (e.Stage or 1) > open + 1
+		if not hide then setHidden(e, false) end
 		paint(e, isOpen, e == nxt or (e == after and 'shut') or false, rose and isOpen and e.Stage > shownRun)
+		if hide then setHidden(e, true) end
 	end
 	shownRun = open
 end
@@ -511,7 +552,7 @@ local _ = fovKick
 
 -- (brief 30) The World 2 door at the end of the last stage (code5/f4_finale, tagged HoodWorldDoor): shut, "Defeat
 -- <name>" while the last crew stands; the moment it falls the haze flashes white (FLASH) and the sign reads "WORLD 2 /
--- Coming soon!" (World 2 isn't built: the door stays shut, its lock on). A new run shuts it again.
+-- Portal in the lobby!" (the door itself stays shut, its lock on). A new run shuts it again.
 local doors = {}
 local function trackDoor(m)
 	if doors[m] or not m:IsDescendantOf(active.Root) then return end
