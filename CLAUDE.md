@@ -1,6 +1,6 @@
 # +1 Hood Evolution: project memory
 
-A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood theme. The game is in `hood/`. Work on the branch the session names; the current line of work is `claude/elegant-cannon-i9r37o`. The owner is on a Mac and uses Studio, GitHub Desktop and Claude Design.
+A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood theme. The game is in `hood/`. Work on the branch the session names; the current line of work is `claude/project-thread-u3g0qe`. The owner is on a Mac and uses Studio, GitHub Desktop and Claude Design.
 
 ## The owner's standing rules (short version; full list in `hood/docs/RULES.md`)
 - **Match the soldier game in style, not one to one.** Vibrant, clean, chunky, readable; calm space, loud interactables; smooth eased motion; nothing "AI slop".
