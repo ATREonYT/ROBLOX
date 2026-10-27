@@ -8,7 +8,8 @@
 --            16 studs, an open clerestory band showing the cliffs and the hood blocks outside, one painted field per wall (west red behind the head lane, north blue
 --            either side of the door, east teal behind the gun shop, south yellow behind the box dais), roller doors:
 --            open ones onto the yard (the north one onto the Stage 1 gate, 6 studs out), shut slatted ones as detail.
---   Roof     open trusses (chords, posts and braces) and purlins, 31-37 up: no sheeting, so the HoodToy sun throws
+--   Roof     trusses (chords, posts and braces) and purlins, 31-37 up, closed by a cream ceiling and a steel deck (Oct 27;
+--            they cast no shadow); the HoodToy sun throws
 --            stripes of shadow on the floor; the camera never meets it. The shell itself casts no shade.
 --   Outside  the cliffs, trees and hood blocks, 12 studs past the walls (a grass yard between), seen through the doors.
 -- (Oct 27, the owner: "keep the warehouse ... dont make it so cramped": 172 x 88, was 124 x 76; the spine on its middle
@@ -199,6 +200,22 @@ function Lobby.warehouse(L, h)
 	for x = Wh.x0 + 8.65, Wh.x1 - 4, 17.3 do
 		r:box('RoofPurlin', V(x - 0.6, y1, Wh.z0 - Wh.t), V(x + 0.6, y1 + 1.2, Wh.z1 + Wh.t), K.steel, M.SmoothPlastic)
 	end
+	-- (Oct 27, the owner: "add roofs to the warehouses") the roof closed: a brick band round the top of the walls up to the
+	-- roof (no sky in the gap over the clerestory), a warm cream ceiling on the purlins and a blue steel deck over it with
+	-- a cream lip. The ceiling and deck cast no shadow, so the hall stays as bright as it was under the open trusses
+	-- (the trusses still throw their stripes).
+	local top = y1 + 1.2
+	local band = { { Wh.x0 - Wh.t, Wh.z0 - Wh.t, Wh.x1 + Wh.t, Wh.z0 }, { Wh.x0 - Wh.t, Wh.z1, Wh.x1 + Wh.t, Wh.z1 + Wh.t },
+		{ Wh.x0 - Wh.t, Wh.z0, Wh.x0, Wh.z1 }, { Wh.x1, Wh.z0, Wh.x1 + Wh.t, Wh.z1 } }
+	for _, b in band do
+		r:box('RoofBand', V(b[1], Wh.eave + 1.2, b[2]), V(b[3], top, b[4]), K.brick, M.SmoothPlastic)
+	end
+	local ceiling = r:box('RoofCeiling', V(Wh.x0 - Wh.t, top, Wh.z0 - Wh.t), V(Wh.x1 + Wh.t, top + 0.4, Wh.z1 + Wh.t), K.trim, M.SmoothPlastic)
+	local deck = r:box('RoofDeck', V(Wh.x0 - Wh.t - 0.6, top + 0.4, Wh.z0 - Wh.t - 0.6), V(Wh.x1 + Wh.t + 0.6, top + 1.4, Wh.z1 + Wh.t + 0.6), K.steel, M.SmoothPlastic)
+	for _, e in { { -1, Wh.z0 - Wh.t - 0.6 }, { 1, Wh.z1 + Wh.t + 0.6 } } do
+		r:box('RoofLip', V(Wh.x0 - Wh.t - 0.8, top + 1.4, e[2] - 0.5), V(Wh.x1 + Wh.t + 0.8, top + 1.8, e[2] + 0.5), K.trim, M.SmoothPlastic)
+	end
+	ceiling.CastShadow, deck.CastShadow = false, false
 	-- hanging lamps under the trusses either side of the spine (chunky shade, a warm glowing underside)
 	local lamps = L:group('HallLamps')
 	for z = Wh.z0 + 10, Wh.z1 - 6, 18 do
