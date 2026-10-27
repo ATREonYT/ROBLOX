@@ -96,6 +96,9 @@ local function flowTrack()
 		local title = gd:FindFirstChild('Title')
 		local tt = title and title.Text or ''
 		table.insert(up, 'GoalDone:' .. tt)
+		local wv = G:FindFirstChild('HoodWaves')
+		local sh = wv and wv:FindFirstChild('ShootHint', true)
+		if sh and sh.Visible then FL.shootOverMoment = (FL.shootOverMoment or 0) + 1 end
 		if tt == "YOU'RE READY!" then
 			FL.ready = true
 			FL.readyAt = FL.readyAt or K
@@ -457,6 +460,7 @@ fcheck('tutorial: the goal line waits while it runs', FL.goalLineInTut == 0, FL.
 fcheck('tutorial: ends on one YOU\'RE READY! moment', FL.ready)
 fcheck('YOU\'RE READY!: within 3 s of the tutorial\'s end, saying what\'s next', FL.readyAt ~= nil and FL.doneAt ~= nil and FL.readyAt - FL.doneAt <= 3.5 and FL.readyLead == GoalRulesF.readyLine(1),
 	('%s s after Done, "%s"'):format(FL.readyAt and FL.doneAt and ('%.1f'):format(FL.readyAt - FL.doneAt) or '?', tostring(FL.readyLead)))
+fcheck('YOU\'RE READY! in a fight: the "Hold click to shoot!" line waits for it', (FL.shootOverMoment or 0) <= 3, (FL.shootOverMoment or 0) .. ' ticks together (its 1/15 s look at most)')
 fcheck('welcome: the whole HUD waits for it, then comes back at once', WEL.hudOn == 0 and WEL.otherOn == 0 and WEL.hudBack ~= nil and WEL.hudBack <= 1, ('HUD on %d ticks, goal screen on %d ticks, back after %s s'):format(WEL.hudOn, WEL.otherOn, tostring(WEL.hudBack)))
 do
 	local early, missing, shown = {}, {}, {}

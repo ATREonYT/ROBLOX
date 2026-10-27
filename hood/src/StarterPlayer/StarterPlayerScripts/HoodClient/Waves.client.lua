@@ -1128,7 +1128,10 @@ RunService.PreRender:Connect(function(dt)
 		ownTag(not inFight())
 		local learning = (player:GetAttribute('WaveCleared') or 0) < HINT_UNTIL
 		-- (brief 32, FEEL: not while the tutorial's own hint says the same thing, in a new player's first fight)
+		-- (Oct 27, round 8: YOU'RE READY! now lands in a fight, in the same top band: the hint waits while a goal moment
+		-- is up, PlayerGui GoalMoment)
 		local want = learning and inFight() and not autoFight() and now - last > HINT_IDLE and player:GetAttribute('OnboardingStep') ~= 'Fight'
+			and player.PlayerGui:GetAttribute('GoalMoment') ~= true
 		if want and shootHint.Visible == false then
 			local okT, touch = pcall(function() return UserInputService.TouchEnabled and not UserInputService.MouseEnabled end)
 			touch = okT and touch
