@@ -27,7 +27,7 @@ local Kit = require(Shared.UIKit)
 local Motion = require(Shared.UIMotion)
 local Products = require(Shared.Config.Products)
 local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
-local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX), Idle = require(Shared.UIIdle) } -- (ROBUX, rules 27-28; Oct 27: the idle motion)
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX), Idle = require(Shared.UIIdle), Pity = require(Shared.PityUI), PityLines = {} } -- (ROBUX, rules 27-28; Oct 27: the idle motion, the box cards' pity lines)
 local Balance = require(Shared.Config.Balance)
 
 local function optional(...)
@@ -51,6 +51,10 @@ local function coverPlayerList(on)
 end
 
 local player = Players.LocalPlayer
+-- (Oct 27) the box cards' pity lines follow the server's counter
+player:GetAttributeChangedSignal('ShoePity'):Connect(function()
+	for _, p in Sell.PityLines do pcall(Sell.Pity.paint, p.Label, p.Box) end
+end)
 local playerGui = player:WaitForChild('PlayerGui')
 local Color, short, hex = Kit.Color, Kit.short, Kit.hex
 local BLACK = Color.black
@@ -589,6 +593,10 @@ local function boxCard(rows, y, parent, over)
 			end)
 		end
 	end
+	-- (Oct 27) the visible pity counter under the odds (Shared/PityUI over the server's ShoePity): "Epic+ guaranteed in 8 opens"
+	local pity = label({ Name = 'PityLine', Text = '', TextSize = 19, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(left + right / 2, 177), Size = px(right, 22), ZIndex = z + 3, Parent = c.Body })
+	Sell.Pity.paint(pity, boxId)
+	table.insert(Sell.PityLines, { Label = pity, Box = boxId })
 	-- the buttons: x8 | x3 | x1 (rainbow, yellow, green); over each, its count and (a bundle) "SAVE n%"; inside a bundle's
 	-- button, its real one-by-one price struck through
 	table.sort(rows, function(a, b) return (a.Count or 1) > (b.Count or 1) end)
@@ -1172,6 +1180,7 @@ local function build()
 	table.clear(headers)
 	for _, r in breathers do if r then r.stop() end end
 	table.clear(breathers)
+	table.clear(Sell.PityLines)
 	table.clear(shines)
 	for _, child in list:GetChildren() do
 		if child:IsA('GuiObject') then child:Destroy() end
@@ -1208,6 +1217,17 @@ local function build()
 		local block = Kit.new('Frame', { Name = section.Id, BackgroundTransparency = 1, LayoutOrder = order, ZIndex = 24, Parent = list })
 		local y = 0
 		if section.Id == 'Featured' then
+			-- (Oct 27, the owner's mockup and V3's store: a box on top) the Chrome Box, the Robux box most opened (the
+			-- cheapest), with its real chances, the pity counter and its x8 / x3 / x1 buttons (the same products as the
+			-- Boxes section); the week's pack and the rest one row down. No NEW / EXCLUSIVE banner, no countdown.
+			local boxRows = {}
+			for _, entry in Products.Catalog do
+				if entry.Section == 'Box' and entry.Wired == true and entry.Box == 'Exclusive' then table.insert(boxRows, entry) end
+			end
+			if #boxRows > 0 then
+				boxCard(boxRows, y, block)
+				y += BOX_H + GAP
+			end
 			for _, entry in items do
 				if type(entry.Shoes) == 'table' then
 					-- MOCKUP30: MODELS' bundle product drawn as the user's artboard hero (bundleCard stays as the fallback)
