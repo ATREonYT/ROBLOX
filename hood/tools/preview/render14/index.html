@@ -1,0 +1,1027 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style></head>
+<body>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+<script type="module">
+// render13: a preview renderer that tries to show what Roblox (Future/ShadowMap, LightingStyle Soft) shows for the same
+// parts and Lighting settings. See README.md next to this file for the model, its constants and what still differs.
+import * as THREE from 'three';
+import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+import { LIGHTING_PRESETS, robloxSunDirection } from './lighting.js';
+import { WORLD_VERT, WORLD_FRAG, SKY_VERT, SKY_FRAG, DEPTH_VERT, DEPTH_FRAG, FULL_VERT, BRIGHT_FRAG, BLUR_FRAG, COMPOSITE_FRAG, GRADE_FRAG, SKY_GLSL } from './shaders.js';
+
+const Q = new URLSearchParams(location.search), W = +(Q.get('w') || 1600), H = +(Q.get('h') || 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
+renderer.setSize(W, H);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.autoClear = false;
+document.body.appendChild(renderer.domElement);
+const gl = renderer.getContext();
+renderer.debug.onShaderError = (g, program, vs, fs) => {
+  const src = g.getShaderSource(fs) || '';
+  console.error('shader error: link=' + g.getProgramInfoLog(program) + ' vs=' + g.getShaderInfoLog(vs) + ' fs=' + g.getShaderInfoLog(fs) + ' fsHead=' + src.split('\n').filter(l => /uniform|void main/.test(l)).slice(0, 6).join(' | '));
+};
+
+// ------------------------------------------------------------------------------------------------ constants
+// Calibration (README.md, "the model"): light in Roblox units, linear. A face square to the sun gets
+// Brightness * K.SUN * (1 + K.CS * ColorShift_Top), Ambient/OutdoorAmbient apply at K.AMB (linear), EnvironmentDiffuse is
+// the sky's own light (K.ENV), then ExposureCompensation and Roblox's tone curve.
+// LIGHT2 (BRIEF20): recalibrated on the user's Studio frames brief/ref20/user_30..32 (light17's HoodSun, the 8b9a5fe hall;
+// cameras solved from the neon outlines): Roblox's tone curve is filmic ACES (Narkowicz's fit; it fits 200+ surface
+// clusters at 5.6 sRGB rms, a linear-with-shoulder curve at 8.8, light17's render13 at 28): dark saturated colours lose
+// their low channels, light ones whiten. The sun is ~0.21x light17's (K.SUN 0.069 with K.CS 4.5: about the pre-light17
+// sun), ambient 0.885x, the sky fill 0.26x. Point lights are much stronger than render13 drew and fall off gently
+// (K.LIGHT 4, linear falloff): user_24's white floor was the hall's light bars (1.2 / range 60) reaching the floor.
+// Neon shows at about its Color3 (x1.05) and blooms (K.BLOOM 0.4 of Bloom.Intensity); K.SKY keeps the sky as before.
+// RQ="&tone=knee" gives back light17's model (and its constants) for comparisons; each constant can be overridden
+// (RQ="&ksun=..&kamb=..&kenv=..&klight=..&kfall=..&kbloom=..&ksky=..&kcs=..").
+const TONE_ACES = (Q.get("tone") || "aces") !== "knee";
+const K = TONE_ACES
+  ? { SUN: +(Q.get("ksun") || 0.069), CS: +(Q.get("kcs") || 4.5), BOTTOM: 0.5, NEON: 1.05, LIGHT: +(Q.get("klight") || 4.0), FALL: +(Q.get("kfall") || 1), AMB: +(Q.get("kamb") || 0.885), FOG: 0.00175 * +(Q.get("kfog") || 1), HAZE: 0.0008 * +(Q.get("kfog") || 1), KNEE: 0.5, ENV_DESAT: +(Q.get("kdesat") ?? 0), ENV: +(Q.get("kenv") || 0.51), SKY: +(Q.get("ksky") || 1.0), BLOOM: +(Q.get("kbloom") || 0.4),
+      VOXL: +(Q.get("kvoxl") ?? 3), EC: +(Q.get("kec") ?? 0), SAT: +(Q.get("ksat") ?? 0.4),
+      STUDB: +(Q.get("kstudb") ?? 1.4), STUDD: +(Q.get("kstudd") ?? 0.6) }
+  : { SUN: 0.33, CS: +(Q.get("kcs") || 4.5), BOTTOM: 0.5, NEON: 2.6, LIGHT: 1.6 * +(Q.get("klight") || 1), FALL: +(Q.get("kfall") || 2), AMB: 1, FOG: 0.00175 * +(Q.get("kfog") || 1), HAZE: 0.0008 * +(Q.get("kfog") || 1), KNEE: 0.5, ENV_DESAT: +(Q.get("kdesat") ?? 0), ENV: +(Q.get("kenv") || 2.0), SKY: 1, BLOOM: 1, VOXL: 0, EC: 1, SAT: 1, STUDB: 0, STUDD: 0 };
+
+// ------------------------------------------------------------------------------------------------ helpers
+const lin = v => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+const c255 = a => new THREE.Vector3(lin(a[0] / 255), lin(a[1] / 255), lin(a[2] / 255));
+const c01 = a => new THREE.Vector3(lin(a[0]), lin(a[1]), lin(a[2]));
+function cfMatrix(c) { return new THREE.Matrix4().set(c[3], c[4], c[5], c[0], c[6], c[7], c[8], c[1], c[9], c[10], c[11], c[2], 0, 0, 0, 1); }
+function canvasTex(size, draw) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d', { willReadFrequently: true }); draw(g, size);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return t;
+}
+
+// ------------------------------------------------------------------------------------------------ materials
+// Material ids the world shader knows (shaders.js: matPattern / matSurface).
+const MAT = {
+  Plastic: 0, SmoothPlastic: 1, Neon: 2, Metal: 3, DiamondPlate: 4, Foil: 5, Glass: 6, Wood: 7, WoodPlanks: 8, Brick: 9,
+  Concrete: 10, Grass: 11, Asphalt: 12, Slate: 12, Pavement: 12, Ground: 12, Rock: 12, Basalt: 12, Mud: 12, Sand: 13, Snow: 13,
+  Fabric: 14, CorrodedMetal: 15, Marble: 16, Granite: 16, Pebble: 16, Cobblestone: 16, Limestone: 16, Sandstone: 16, Salt: 13,
+  Ice: 17, Glacier: 17, ForceField: 18, Cardboard: 14, Carpet: 14, Rubber: 0, Leather: 14, Plaster: 10, CeramicTiles: 16,
+  ClayRoofTiles: 9, RoofShingles: 12, LeafyGrass: 11, CrackedLava: 12,
+};
+// roughness, metalness (Roblox's 2022 material set: Plastic is matte, SmoothPlastic a little glossy).
+const SURF = { 0: [0.78, 0], 1: [0.42, 0], 2: [1, 0], 3: [0.42, 0.55], 4: [0.4, 0.6], 5: [0.25, 0.85], 6: [0.06, 0], 7: [0.85, 0], 8: [0.85, 0],
+  9: [0.9, 0], 10: [0.9, 0], 11: [0.95, 0], 12: [0.92, 0], 13: [0.95, 0], 14: [0.95, 0], 15: [0.6, 0.45], 16: [0.7, 0], 17: [0.15, 0], 18: [0.3, 0] };
+
+// ------------------------------------------------------------------------------------------------ geometry batching
+// Opaque parts are merged into world-space batches (one per 96-stud cell) that share one shader, so a 20k-part map is
+// ~200 draw calls. Per vertex: linear colour, uv in studs (anchored at a face corner, for studs and material patterns),
+// and (material id, roughness, metalness, surface: 1 studs).
+const CELL = 96;
+class Batch {
+  constructor() { this.pos = []; this.nrm = []; this.col = []; this.uv = []; this.mat = []; this.idx = []; this.n = 0; }
+  quad(a, b, c, d, n, col, uvs, m) { // a b c d counter-clockwise seen from the front
+    const i = this.n;
+    for (const [p, t] of [[a, uvs[0]], [b, uvs[1]], [c, uvs[2]], [d, uvs[3]]]) {
+      this.pos.push(p.x, p.y, p.z); this.nrm.push(n.x, n.y, n.z); this.col.push(col.x, col.y, col.z); this.uv.push(t[0], t[1]); this.mat.push(m[0], m[1], m[2], m[3]);
+    }
+    this.idx.push(i, i + 1, i + 2, i, i + 2, i + 3); this.n += 4;
+  }
+  tri(a, b, c, n, col, uvs, m) {
+    const i = this.n;
+    for (const [p, t] of [[a, uvs[0]], [b, uvs[1]], [c, uvs[2]]]) {
+      this.pos.push(p.x, p.y, p.z); this.nrm.push(n.x, n.y, n.z); this.col.push(col.x, col.y, col.z); this.uv.push(t[0], t[1]); this.mat.push(m[0], m[1], m[2], m[3]);
+    }
+    this.idx.push(i, i + 1, i + 2); this.n += 3;
+  }
+  // Arbitrary indexed geometry (spheres, cylinders), already in world space.
+  geo(g, col, m) {
+    const p = g.attributes.position, nn = g.attributes.normal, base = this.n;
+    for (let i = 0; i < p.count; i++) {
+      const vc = g.attributes.vcol; // (render14) per-vertex colour baked from a GLB palette texture
+      this.pos.push(p.getX(i), p.getY(i), p.getZ(i)); this.nrm.push(nn.getX(i), nn.getY(i), nn.getZ(i));
+      if (vc) this.col.push(vc.getX(i) * col.x, vc.getY(i) * col.y, vc.getZ(i) * col.z); else this.col.push(col.x, col.y, col.z);
+      this.uv.push(0, 0); this.mat.push(m[0], m[1], m[2], 0);
+    }
+    if (g.index) for (let i = 0; i < g.index.count; i++) this.idx.push(base + g.index.getX(i));
+    else for (let i = 0; i < p.count; i++) this.idx.push(base + i);
+    this.n += p.count;
+  }
+  build() {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(this.nrm, 3));
+    g.setAttribute('acol', new THREE.Float32BufferAttribute(this.col, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
+    g.setAttribute('amat', new THREE.Float32BufferAttribute(this.mat, 4));
+    g.setIndex(this.n > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
+    g.computeBoundingSphere(); g.computeBoundingBox();
+    return g;
+  }
+}
+// Emit a part's faces into a batch, transformed to world space. sf: six surface chars (+X,-X,+Y,-Y,+Z,-Z).
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+function emitBox(b, m4, s, col, mt, sf) {
+  const [sx, sy, sz] = s, x = sx / 2, y = sy / 2, z = sz / 2;
+  const nm = new THREE.Matrix3().getNormalMatrix(m4);
+  const P = v => v.applyMatrix4(m4), N = v => v.applyMatrix3(nm).normalize();
+  // face: corners (ccw from outside), normal, uv size (u along first edge, v along last)
+  const faces = [
+    [[V(x, -y, z), V(x, -y, -z), V(x, y, -z), V(x, y, z)], V(1, 0, 0), sz, sy],
+    [[V(-x, -y, -z), V(-x, -y, z), V(-x, y, z), V(-x, y, -z)], V(-1, 0, 0), sz, sy],
+    [[V(-x, y, z), V(x, y, z), V(x, y, -z), V(-x, y, -z)], V(0, 1, 0), sx, sz],
+    [[V(-x, -y, -z), V(x, -y, -z), V(x, -y, z), V(-x, -y, z)], V(0, -1, 0), sx, sz],
+    [[V(-x, -y, z), V(x, -y, z), V(x, y, z), V(-x, y, z)], V(0, 0, 1), sx, sy],
+    [[V(x, -y, -z), V(-x, -y, -z), V(-x, y, -z), V(x, y, -z)], V(0, 0, -1), sx, sy],
+  ];
+  faces.forEach(([c, n, u, v], f) => {
+    // stud flag: 1 a side face, 2 the top (Roblox turns the stud texture 180 degrees there), 3 the bottom (LIGHT3)
+    const st = sf && sf[f] === 'S' ? (f === 2 ? 2 : f === 3 ? 3 : 1) : 0;
+    b.quad(P(c[0]), P(c[1]), P(c[2]), P(c[3]), N(n), col, [[0, 0], [u, 0], [u, v], [0, v]], [mt[0], mt[1], mt[2], st]);
+  });
+}
+function emitWedge(b, m4, s, col, mt, sf) {
+  // Roblox wedge: vertical face at the back (+Z), slope from the front-bottom edge (-Z) up to the back-top edge.
+  const [sx, sy, sz] = s, x = sx / 2, y = sy / 2, z = sz / 2;
+  const nm = new THREE.Matrix3().getNormalMatrix(m4);
+  const P = v => v.clone().applyMatrix4(m4), N = v => v.clone().applyMatrix3(nm).normalize();
+  const slopeN = V(0, sz, -sy).normalize(), L = Math.hypot(sy, sz);
+  const stud = sf ? ((sf[2] === 'S' || sf[5] === 'S') ? 2 : 0) : 0;
+  const m = st => [mt[0], mt[1], mt[2], st];
+  b.quad(P(V(-x, -y, -z)), P(V(x, -y, -z)), P(V(x, y, z)), P(V(-x, y, z)), N(slopeN), col, [[0, 0], [sx, 0], [sx, L], [0, L]], m(stud));
+  b.quad(P(V(-x, -y, z)), P(V(x, -y, z)), P(V(x, -y, -z)), P(V(-x, -y, -z)), N(V(0, -1, 0)), col, [[0, 0], [sx, 0], [sx, sz], [0, sz]], m(0));
+  b.quad(P(V(x, -y, z)), P(V(-x, -y, z)), P(V(-x, y, z)), P(V(x, y, z)), N(V(0, 0, 1)), col, [[0, 0], [sx, 0], [sx, sy], [0, sy]], m(sf && sf[4] === 'S' ? 1 : 0));
+  // side triangles wound so their geometric normal matches N (they were culled from outside; fix from GATES)
+  b.tri(P(V(x, -y, -z)), P(V(x, y, z)), P(V(x, -y, z)), N(V(1, 0, 0)), col, [[0, 0], [sz, sy], [sz, 0]], m(sf && sf[0] === 'S' ? 1 : 0));
+  b.tri(P(V(-x, -y, z)), P(V(-x, y, z)), P(V(-x, -y, -z)), N(V(-1, 0, 0)), col, [[sz, 0], [sz, sy], [0, 0]], m(sf && sf[1] === 'S' ? 1 : 0));
+}
+function emitCornerWedge(b, m4, s, col, mt) {
+  const [sx, sy, sz] = s, x = sx / 2, y = sy / 2, z = sz / 2;
+  const v = [V(-x, -y, -z), V(x, -y, -z), V(x, -y, z), V(-x, -y, z), V(x, y, -z)].map(p => p.applyMatrix4(m4));
+  const tris = [[0, 2, 1], [0, 3, 2], [0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4]];
+  for (const [i, j, k] of tris) {
+    const n = new THREE.Vector3().subVectors(v[j], v[i]).cross(new THREE.Vector3().subVectors(v[k], v[i])).normalize();
+    b.tri(v[i], v[j], v[k], n, col, [[0, 0], [1, 0], [0, 1]], [mt[0], mt[1], mt[2], 0]);
+  }
+}
+// Roblox TrussPart: four corner rails and an X brace on every face of each 2-stud segment.
+function emitTruss(b, m4, s, col, mt) {
+  const [sx, sy, sz] = s, r = .32, hx = sx / 2 - r / 2, hz = sz / 2 - r / 2;
+  const box = (w, h, d, local) => emitBox(b, new THREE.Matrix4().multiplyMatrices(m4, local), [w, h, d], col, mt, null);
+  for (const [x, z] of [[-hx, -hz], [hx, -hz], [-hx, hz], [hx, hz]]) box(r, sy, r, new THREE.Matrix4().makeTranslation(x, 0, z));
+  const n = Math.max(1, Math.round(sy / 2)), seg = sy / n;
+  for (let k = 0; k < n; k++) {
+    const y = -sy / 2 + seg * (k + .5);
+    for (const [ax, face] of [['x', -hz], ['x', hz], ['z', -hx], ['z', hx]]) {
+      const w = ax === 'x' ? sx : sz, len = Math.hypot(w, seg);
+      for (const sgn of [1, -1]) {
+        const e = ax === 'x' ? new THREE.Euler(0, 0, sgn * Math.atan2(w, seg)) : new THREE.Euler(sgn * Math.atan2(w, seg), 0, 0);
+        const L = new THREE.Matrix4().makeRotationFromEuler(e).setPosition(ax === 'x' ? 0 : face, y, ax === 'x' ? face : 0);
+        box(.22, len, .22, L);
+      }
+    }
+    box(sx, .26, sz, new THREE.Matrix4().makeTranslation(0, -sy / 2 + seg * k, 0));
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ labels (SurfaceGui / BillboardGui)
+// Roblox fonts with bundled look-alikes (OFL/Apache, fonts/): Arcade = Press Start 2P, GothamBlack = Montserrat 900 (from GATES).
+const FONT_FILES = { FredokaOne: ['Fredoka One', 'fonts/FredokaOne-Regular.woff2', 400], Arcade: ['Press Start 2P', 'fonts/PressStart2P-Regular.woff2', 400], LuckiestGuy: ['Luckiest Guy', 'fonts/LuckiestGuy-Regular.woff2', 400], GothamBlack: ['Montserrat', 'fonts/Montserrat-Black.woff2', 900], MontserratBlack: ['Montserrat', 'fonts/Montserrat-Variable.ttf', 900], MontserratBold: ['Montserrat', 'fonts/Montserrat-Variable.ttf', 700] };
+let fontsReady = null;
+function loadFonts() {
+  // (ROBUX) U+E002, the Robux sign Roblox's fonts draw: a one-glyph font (fonts/RbxIcon.ttf, a hexagon ring round a square,
+  // cap-height tall) that every label falls back to, so it draws in the text's colour and outline, not as a missing-glyph box
+  const ICON_FONT = ['RbxIcon', 'fonts/RbxIcon.ttf', 400];
+  if (!fontsReady) fontsReady = Promise.all([...Object.values(FONT_FILES), ICON_FONT].map(async ([family, url, weight]) => {
+    try { const buf = await (await fetch(url)).arrayBuffer(); const f = new FontFace(family, buf, url.endsWith('Variable.ttf') ? { weight: '100 900' } : (family === 'Montserrat' ? { weight: String(weight) } : {})); await f.load(); document.fonts.add(f); }
+    catch (e) { console.error('font ' + url + ' failed: ' + e); }
+  }));
+  return fontsReady;
+}
+function cssFont(L, fs) {
+  const f = FONT_FILES[L.font];
+  return f ? `${f[2]} ${fs}px '${f[0]}', 'RbxIcon', Arial Black, sans-serif` : `900 ${fs}px Arial Black, 'RbxIcon', Arial, sans-serif`;
+}
+function textCanvas(lbl, pxW, pxH, k) { // k: canvas px per gui px (UIStroke Thickness honoured when the gui's PixelsPerStud is known)
+  const c = document.createElement('canvas'); c.width = Math.max(8, pxW | 0); c.height = Math.max(8, pxH | 0);
+  const g = c.getContext('2d', { willReadFrequently: true });
+  for (const L of lbl) {
+    const x = L.px * c.width, y = L.py * c.height, w = L.sx * c.width, h = L.sy * c.height;
+    if (L.bgT < 1) { g.globalAlpha = 1 - L.bgT; g.fillStyle = `rgb(${L.bg.map(v => v * 255 | 0)})`; g.fillRect(x, y, w, h); g.globalAlpha = 1; }
+    const lines = String(L.text).split('\n');
+    let fs = L.scaled ? Math.min(h / lines.length * .9, 999) : L.size;
+    g.font = cssFont(L, fs);
+    if (L.scaled) { const widest = Math.max(...lines.map(s => g.measureText(s).width)); if (widest > w * .96) fs *= w * .96 / widest; g.font = cssFont(L, fs); }
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    lines.forEach((s, i) => {
+      const ty = y + h / 2 + (i - (lines.length - 1) / 2) * fs * 1.05;
+      if (L.strokeT < 1) { g.lineWidth = (k && L.strokeW) ? 2 * L.strokeW * k : Math.max(2, fs * .12); g.lineJoin = 'round'; g.strokeStyle = `rgba(${L.stroke.map(v => v * 255 | 0)},${1 - L.strokeT})`; g.strokeText(s, x + w / 2, ty); }
+      g.fillStyle = `rgba(${L.color.map(v => v * 255 | 0)},${1 - (L.textT || 0)})`;
+      if (L.grad && Math.abs(((L.grad.rot % 180) + 180) % 180 - 90) < 1) { // vertical UIGradient: text colour times the keypoints, top to bottom
+        const lg = g.createLinearGradient(0, ty - fs / 2, 0, ty + fs / 2);
+        for (const kp of L.grad.c) lg.addColorStop(Math.min(1, Math.max(0, kp[0])), `rgba(${L.color.map((v, j) => v * kp[j + 1] * 255 | 0)},${1 - (L.textT || 0)})`);
+        g.fillStyle = lg;
+      }
+      g.fillText(s, x + w / 2, ty);
+    });
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+// Face planes: size and placement of a plane lying on one face of a part (local space), offset `eps` outward.
+function facePlane(face, s, eps) {
+  const [sx, sy, sz] = s; let w, h; const rot = new THREE.Euler(); let off;
+  if (face === 'Front') { w = sx; h = sy; rot.set(0, Math.PI, 0); off = [0, 0, -sz / 2 - eps]; }
+  else if (face === 'Back') { w = sx; h = sy; off = [0, 0, sz / 2 + eps]; }
+  else if (face === 'Right') { w = sz; h = sy; rot.set(0, Math.PI / 2, 0); off = [sx / 2 + eps, 0, 0]; }
+  else if (face === 'Left') { w = sz; h = sy; rot.set(0, -Math.PI / 2, 0); off = [-sx / 2 - eps, 0, 0]; }
+  else if (face === 'Top') { w = sx; h = sz; rot.set(-Math.PI / 2, 0, 0); off = [0, sy / 2 + eps, 0]; }
+  else { w = sx; h = sz; rot.set(Math.PI / 2, 0, 0); off = [0, -sy / 2 - eps, 0]; }
+  return { w, h, local: new THREE.Matrix4().makeRotationFromEuler(rot).setPosition(...off) };
+}
+const billboards = [];
+function addSurfaceGui(m4, p, gui) {
+  const { w, h, local } = facePlane(gui.face, p.s, .02);
+  const ppu = Math.min(64, 2048 / Math.max(w, h));
+  const tex = textCanvas(gui.labels, w * ppu, h * ppu, gui.pps ? ppu / gui.pps : 0);
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false });
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  plane.applyMatrix4(new THREE.Matrix4().multiplyMatrices(m4, local));
+  plane.renderOrder = 5;
+  overlay.add(plane);
+  // SurfaceGui.MaxDistance: hidden past it, measured from the camera to the part (checked per shot).
+  if (gui.maxd > 0) billboards.push({ sp: plane, at: new THREE.Vector3().setFromMatrixPosition(m4), maxd: gui.maxd });
+}
+function addBillboard(pos, gui) {
+  const w = gui.sw, h = gui.sh; if (!(w > 0 && h > 0)) return;
+  const ppu = Math.min(80, 1024 / Math.max(w, h));
+  const tex = textCanvas(gui.labels, w * ppu, h * ppu, gui.pps ? ppu / gui.pps : 0);
+  // no depth write: a floating label must not punch a hole in the glass or haze behind it
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: !gui.top, depthWrite: false, toneMapped: false }));
+  sp.scale.set(w, h, 1); sp.position.set(pos[0] + gui.off[0], pos[1] + gui.off[1], pos[2] + gui.off[2]);
+  sp.renderOrder = gui.top ? 20 : 6;
+  if (gui.maxd > 0) billboards.push({ sp, at: new THREE.Vector3(pos[0], pos[1], pos[2]), maxd: gui.maxd });
+  overlay.add(sp);
+}
+
+// ------------------------------------------------------------------------------------------------ effects (unchanged from the
+// work8/work12 renderer: particles blend in display space, as every effect was tuned)
+const texLoader = new THREE.TextureLoader();
+const texCache = {};
+const BUILTIN = { sparkles_main: 'sparkle', smoke_main: 'smoke', fire_main: 'flame1', fire_sparks_main: 'sparkle', explosion01_core_main: 'glow', explosion01_shockwave_main: 'ring', explosion01_smoke_main: 'smoke' };
+const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, firepuff: { g: 4, mode: 'loop', fps: 17 }, wisp: { g: 4, mode: 'oneshot' }, wispline: { g: 4, mode: 'random' }, flame: { g: 4, mode: 'loop', fps: 18 } };
+let FX_OPTS = {};
+function fxName(fx) {
+  let name = FX_OPTS.builtinOnly ? null : fx.preview;
+  if (!name) {
+    const tex = String(fx.tex || '');
+    const m = tex.match(/particles\/(\w+)\.dds/);
+    name = m ? (BUILTIN[m[1]] || 'glow') : /glow\.png/.test(tex) ? 'glow' : /SquareParticle/.test(tex) ? 'confetti' : (fx.tex ? 'glow' : (fx.kind === 'beam' ? 'energy' : 'sparkle'));
+  }
+  return name;
+}
+function baseTexture(name) {
+  if (!texCache[name]) { texCache[name] = texLoader.load(`vfx/${name}.png`); texCache[name].colorSpace = THREE.SRGBColorSpace; }
+  return texCache[name];
+}
+function fxTexture(fx) { return baseTexture(fxName(fx)); }
+function frameTexture(name, g, frame) {
+  const key = name + '#' + frame;
+  if (!texCache[key]) {
+    const t = baseTexture(name).clone();
+    t.repeat.set(1 / g, 1 / g);
+    t.offset.set((frame % g) / g, 1 - (Math.floor(frame / g) + 1) / g);
+    t.needsUpdate = true;
+    texCache[key] = t;
+  }
+  return texCache[key];
+}
+const FX_NAMES = ['glow', 'sparkle', 'star', 'ring', 'smoke', 'streak', 'shard', 'confetti', 'pow', 'lightning', 'energy', 'flame1',
+  'aura', 'wisp', 'wispline', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow',
+  'rain', 'ember', 'bubble', 'snow', 'comet', 'stamp', 'firepuff', 'streakup', 'chevron', 'stud_bevel'];
+async function preloadFx() {
+  await Promise.all(FX_NAMES.map(async n => { if (!texCache[n]) { try { const t = await texLoader.loadAsync(`vfx/${n}.png`); t.colorSpace = THREE.SRGBColorSpace; texCache[n] = t; } catch (e) { console.error('missing vfx/' + n + '.png'); } } }));
+}
+function emissive(mat, e) {
+  mat.blending = THREE.CustomBlending;
+  mat.blendEquation = THREE.AddEquation;
+  mat.blendSrc = THREE.OneFactor;
+  mat.blendDst = THREE.OneMinusSrcAlphaFactor;
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uEmission = { value: e };
+    shader.fragmentShader = 'uniform float uEmission;\n' + shader.fragmentShader.replace('#include <opaque_fragment>',
+      'gl_FragColor = vec4( outgoingLight * diffuseColor.a, diffuseColor.a * ( 1.0 - uEmission ) );');
+  };
+  return mat;
+}
+function rnd(seed) { const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); }
+function seqN(seq, t, r) {
+  for (let i = 0; i < seq.length - 1; i++) {
+    const a = seq[i], b = seq[i + 1];
+    if (t >= a[0] && t <= b[0]) { const f = (t - a[0]) / Math.max(1e-6, b[0] - a[0]); const v = a[1] + (b[1] - a[1]) * f, e = (a[2] || 0) + ((b[2] || 0) - (a[2] || 0)) * f; return v + (r * 2 - 1) * e; }
+  }
+  return seq[seq.length - 1][1];
+}
+function seqC(seq, t) {
+  for (let i = 0; i < seq.length - 1; i++) {
+    const a = seq[i], b = seq[i + 1];
+    if (t >= a[0] && t <= b[0]) { const f = (t - a[0]) / Math.max(1e-6, b[0] - a[0]); return [1, 2, 3].map(j => a[j] + (b[j] - a[j]) * f); }
+  }
+  return seq[seq.length - 1].slice(1);
+}
+const DIRS = { Top: [0, 1, 0], Bottom: [0, -1, 0], Front: [0, 0, -1], Back: [0, 0, 1], Right: [1, 0, 0], Left: [-1, 0, 0] };
+const parallelSprites = [], worldUpQuads = [], zoffItems = [], beams = [];
+const QUAD = new THREE.PlaneGeometry(1, 1);
+function addParticles(fx, idx, T) {
+  if (fx.enabled === false && !fx.burst) return;
+  const m = cfMatrix(fx.cf), rot = new THREE.Matrix4().extractRotation(m), origin = new THREE.Vector3().setFromMatrixPosition(m);
+  const name = fxName(fx);
+  const flip = FX_OPTS.builtinOnly ? null : FLIP[name];
+  const spawns = [];
+  if (fx.burst) {
+    const [count, age] = String(fx.burst).split(',').map(Number);
+    for (let k = 0; k < count; k++) spawns.push({ k, age });
+  } else {
+    const maxLife = fx.life[1] / (fx.timeScale || 1);
+    const n0 = Math.floor(T * fx.rate);
+    for (let j = 0; j <= Math.ceil(maxLife * fx.rate) + 1; j++) { const n = n0 - j; const age = T - n / fx.rate; if (age >= 0 && age <= maxLife) spawns.push({ k: n, age }); }
+  }
+  const e = Math.min(1, Math.max(0, fx.emission || 0));
+  for (const { k, age: realAge } of spawns) {
+    const seed = idx * 1000.13 + k * 7.31;
+    const age = realAge * (fx.timeScale || 1);
+    const life = fx.life[0] + (fx.life[1] - fx.life[0]) * rnd(seed + 1);
+    if (age > life) continue;
+    const f = age / life;
+    let local = new THREE.Vector3();
+    if (fx.box) {
+      const [bx, by, bz] = fx.box, u = rnd(seed + 2) - 0.5, v = rnd(seed + 3) - 0.5, w = rnd(seed + 4) - 0.5;
+      if (fx.shape === 'Sphere') { const d = new THREE.Vector3(u, v, w).normalize(); local = d.multiplyScalar(Math.min(bx, by, bz) / 2 * (fx.style === 'Surface' ? 1 : Math.cbrt(rnd(seed + 5)))); }
+      else if (fx.shape === 'Disc' || fx.shape === 'Cylinder') { const a = rnd(seed + 2) * Math.PI * 2, r = (fx.style === 'Surface' ? 1 : Math.sqrt(rnd(seed + 3))) * Math.min(bx, bz) / 2; local.set(Math.cos(a) * r, fx.shape === 'Cylinder' ? v * by : 0, Math.sin(a) * r); }
+      else local.set(u * bx, v * by, w * bz);
+    }
+    let dir = fx.box && fx.shape === 'Sphere' ? local.clone().normalize() : new THREE.Vector3(...(DIRS[fx.dir] || DIRS.Top));
+    if (fx.inout === 'Inward' && fx.box && fx.shape === 'Sphere') dir.negate();
+    const sx = (fx.spread[0] || 0) * Math.PI / 180, sy = (fx.spread[1] || 0) * Math.PI / 180;
+    if (sx > 0 || sy > 0) {
+      const ax = (rnd(seed + 6) * 2 - 1) * sx, ay = (rnd(seed + 7) * 2 - 1) * sy;
+      const up = Math.abs(dir.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+      const p1 = new THREE.Vector3().crossVectors(dir, up).normalize(), p2 = new THREE.Vector3().crossVectors(dir, p1).normalize();
+      dir.applyAxisAngle(p1, ax).applyAxisAngle(p2, ay).normalize();
+    }
+    const speed = fx.speed[0] + (fx.speed[1] - fx.speed[0]) * rnd(seed + 8);
+    const v0 = dir.clone().applyMatrix4(rot).multiplyScalar(speed);
+    const start = local.applyMatrix4(rot).add(origin);
+    const d = fx.drag || 0, acc = new THREE.Vector3(...fx.acc);
+    const travel = d > 0 ? (1 - Math.exp(-d * age)) / d : age;
+    const pos = start.clone().addScaledVector(v0, travel).addScaledVector(acc, 0.5 * age * age);
+    const vel = v0.clone().multiplyScalar(d > 0 ? Math.exp(-d * age) : 1).addScaledVector(acc, age);
+    const size = Math.max(0, seqN(fx.size, f, rnd(seed + 9)));
+    const alpha = 1 - Math.min(1, Math.max(0, seqN(fx.tr, f, rnd(seed + 10))));
+    if (size <= 0.001 || alpha <= 0.005) continue;
+    const col = seqC(fx.color, f).map(c => Math.min(1, c * (fx.brightness || 1)));
+    let map = baseTexture(name);
+    if (flip) {
+      const n = flip.g * flip.g;
+      let frame;
+      if (flip.mode === 'oneshot') frame = Math.min(n - 1, Math.floor(f * n));
+      else if (flip.mode === 'loop') frame = Math.floor(rnd(seed + 13) * n + age * (flip.fps || 12)) % n;
+      else frame = Math.floor(rnd(seed + 13) * n) % n;
+      map = frameTexture(name, flip.g, frame);
+    }
+    const angle = ((fx.rot[0] + (fx.rot[1] - fx.rot[0]) * rnd(seed + 11)) + (fx.rotSpeed[0] + (fx.rotSpeed[1] - fx.rotSpeed[0]) * rnd(seed + 12)) * age) * Math.PI / 180;
+    const sq = seqN(fx.squash, f, 0);
+    const wq = size * Math.pow(2, -sq / 2), hq = size * Math.pow(2, sq / 2);
+    let obj;
+    if (fx.orient === 'VelocityPerpendicular' || fx.orient === 'FacingCameraWorldUp') {
+      const mat = emissive(new THREE.MeshBasicMaterial({ map, color: new THREE.Color().setRGB(...col, THREE.SRGBColorSpace), transparent: true, opacity: alpha, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }), e);
+      obj = new THREE.Mesh(QUAD, mat);
+      obj.scale.set(wq, hq, 1);
+      if (fx.orient === 'VelocityPerpendicular') {
+        const n = vel.lengthSq() > 1e-9 ? vel.clone().normalize() : new THREE.Vector3(0, 1, 0);
+        obj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+        obj.rotateZ(angle);
+      } else { obj.userData.angle = angle; worldUpQuads.push(obj); }
+    } else {
+      const mat = emissive(new THREE.SpriteMaterial({ map, color: new THREE.Color().setRGB(...col, THREE.SRGBColorSpace), transparent: true, opacity: alpha, depthWrite: false, toneMapped: false }), e);
+      mat.rotation = angle;
+      obj = new THREE.Sprite(mat);
+      obj.scale.set(wq, hq, 1);
+      if (fx.orient === 'VelocityParallel' && vel.lengthSq() > 1e-6) { obj.userData.vel = vel.clone(); obj.userData.base = obj.scale.clone(); parallelSprites.push(obj); }
+    }
+    obj.position.copy(pos);
+    obj.renderOrder = 10;
+    if (fx.zoff) { obj.userData.zoff = fx.zoff; obj.userData.home = pos.clone(); obj.userData.homeScale = obj.scale.clone(); zoffItems.push(obj); }
+    overlay.add(obj);
+  }
+}
+function addBeam(fx) { beams.push(fx); }
+function buildBeams(camera) {
+  for (const b of beams) {
+    if (b.mesh) overlay.remove(b.mesh);
+    const m0 = cfMatrix(b.p0), m1 = cfMatrix(b.p1);
+    const p0 = new THREE.Vector3().setFromMatrixPosition(m0), p1 = new THREE.Vector3().setFromMatrixPosition(m1);
+    const r0 = new THREE.Vector3(1, 0, 0).applyMatrix4(new THREE.Matrix4().extractRotation(m0)), r1 = new THREE.Vector3(1, 0, 0).applyMatrix4(new THREE.Matrix4().extractRotation(m1));
+    const c0 = p0.clone().addScaledVector(r0, b.curve0 || 0), c1 = p1.clone().addScaledVector(r1, -(b.curve1 || 0));
+    const n = Math.max(2, Math.min(40, b.segments || 10));
+    const pos = [], col = [], uv = [], idx = [];
+    const length = p0.distanceTo(p1);
+    const bez = t => { const it = 1 - t; return p0.clone().multiplyScalar(it * it * it).addScaledVector(c0, 3 * it * it * t).addScaledVector(c1, 3 * it * t * t).addScaledVector(p1, t * t * t); };
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, p = bez(t);
+      const tn = i < n ? bez((i + 1) / n).sub(p) : p.clone().sub(bez((i - 1) / n));
+      const toCam = camera.position.clone().sub(p);
+      const side = new THREE.Vector3().crossVectors(tn, toCam).normalize();
+      const w = (b.w0 + (b.w1 - b.w0) * t) / 2;
+      const a = p.clone().addScaledVector(side, w), c = p.clone().addScaledVector(side, -w);
+      pos.push(a.x, a.y, a.z, c.x, c.y, c.z);
+      const cs = seqC(b.color, t).map(v => Math.min(1, v * (b.brightness || 1))), al = 1 - Math.min(1, Math.max(0, seqN(b.tr, t, 0.5)));
+      const lc = new THREE.Color().setRGB(cs[0], cs[1], cs[2], THREE.SRGBColorSpace), cc = [lc.r, lc.g, lc.b];
+      col.push(...cc, al, ...cc, al);
+      const u = b.texMode === 'Wrap' || b.texMode === 'Static' ? t * length / (b.texLen || 1) : t * (b.texLen || 1);
+      uv.push(u, 1, u, 0);
+      if (i < n) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 4));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    const t = fxTexture(b); t.wrapS = THREE.RepeatWrapping;
+    const mat = emissive(new THREE.MeshBasicMaterial({ map: t, vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }), Math.min(1, Math.max(0, b.emission || 0)));
+    b.mesh = new THREE.Mesh(g, mat); b.mesh.renderOrder = 9;
+    overlay.add(b.mesh);
+  }
+}
+function orientParallel(camera) {
+  for (const sp of parallelSprites) {
+    const p = sp.position.clone(), q = p.clone().add(sp.userData.vel.clone().normalize());
+    p.project(camera); q.project(camera);
+    const ang = Math.atan2((q.y - p.y) * H, (q.x - p.x) * W);
+    sp.material.rotation = ang - Math.PI / 2;
+    sp.scale.set(sp.userData.base.x, sp.userData.base.y, 1);
+  }
+  for (const o of worldUpQuads) {
+    const to = camera.position.clone().sub(o.userData.home || o.position); to.y = 0;
+    o.rotation.set(0, Math.atan2(to.x, to.z), 0);
+    o.rotateZ(o.userData.angle || 0);
+  }
+  for (const o of zoffItems) {
+    const home = o.userData.home, dist = camera.position.distanceTo(home), z = Math.min(o.userData.zoff, dist - 0.5);
+    o.position.copy(home).addScaledVector(camera.position.clone().sub(home).normalize(), z);
+    o.scale.copy(o.userData.homeScale).multiplyScalar((dist - z) / dist);
+  }
+}
+
+// ------------------------------------------------------------------------------------------------ scenes and passes
+const world = new THREE.Scene();   // lit parts + sky, drawn into the HDR target
+const casters = new THREE.Scene(); // depth-only geometry of parts that cast shadows / block the sky
+const overlay = new THREE.Scene(); // particles, beams, GUIs: drawn after tone mapping, in display space
+const LAYER_OPAQUE = 1, LAYER_TRANSP = 2, LAYER_SKY = 3;
+const pointLights = [];
+let LIT = null;            // derived lighting (lighting.js + this file)
+let sceneMinY = 1e9;         // lowest part bottom (ortho shadow fitting)
+let worldMat = null;       // the shared world ShaderMaterial (uniforms updated per shot)
+const uniforms = {};
+
+// Two shadow cascades (near: the first 60 studs, far: up to 320) and five sky-visibility maps.
+const SHADOW_RES = +(Q.get('sres') || 2048), SKY_RES = 1024, SKY_DIRS = 5, MAXL = 24, CASCADE_SPLIT = 60;
+const shadowRT = [0, 1].map(() => { const rt = new THREE.WebGLRenderTarget(SHADOW_RES, SHADOW_RES, { depthBuffer: true }); rt.depthTexture = new THREE.DepthTexture(SHADOW_RES, SHADOW_RES, THREE.UnsignedIntType); return rt; });
+const skyRT = [];
+for (let i = 0; i < SKY_DIRS; i++) { const rt = new THREE.WebGLRenderTarget(SKY_RES, SKY_RES, { depthBuffer: true }); rt.depthTexture = new THREE.DepthTexture(SKY_RES, SKY_RES, THREE.UnsignedIntType); skyRT.push(rt); }
+const depthMat = new THREE.ShaderMaterial({ vertexShader: DEPTH_VERT, fragmentShader: DEPTH_FRAG, side: THREE.DoubleSide, colorWrite: false });
+// Depth pre-pass with the world's own vertex shader (identical depths), so the heavy lighting shader runs once per pixel.
+const prepassMat = new THREE.ShaderMaterial({ vertexShader: WORLD_VERT, fragmentShader: 'void main() { gl_FragColor = vec4(0.0); }', colorWrite: false });
+const depthOnlyMat = prepassMat;
+let hdrRT = null, brightRT = null, blurA = null, blurB = null, blurC = null, blurD = null, gradeTex = null;
+function makeTargets() {
+  for (const t of [hdrRT, brightRT, blurA, blurB, blurC, blurD, gradeTex]) if (t) t.dispose(); // (B30 LOBBY: one page, many frames)
+  const hf = { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter };
+  hdrRT = new THREE.WebGLRenderTarget(W, H, { ...hf, samples: +(Q.get('msaa') ?? 4) });
+  const w2 = Math.ceil(W / 2), h2 = Math.ceil(H / 2), w4 = Math.ceil(W / 4), h4 = Math.ceil(H / 4);
+  brightRT = new THREE.WebGLRenderTarget(w2, h2, hf);
+  blurA = new THREE.WebGLRenderTarget(w2, h2, hf); blurB = new THREE.WebGLRenderTarget(w2, h2, hf);
+  blurC = new THREE.WebGLRenderTarget(w4, h4, hf); blurD = new THREE.WebGLRenderTarget(w4, h4, hf);
+  gradeTex = new THREE.FramebufferTexture(W, H);
+}
+const fsCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+function fsPass(frag, u) {
+  const m = new THREE.ShaderMaterial({ vertexShader: FULL_VERT, fragmentShader: frag, uniforms: u, depthTest: false, depthWrite: false });
+  const s = new THREE.Scene(); const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m); q.frustumCulled = false; s.add(q);
+  return { scene: s, mat: m };
+}
+let brightPass, blurPass, compositePass, gradePass;
+
+// ------------------------------------------------------------------------------------------------ lighting
+// options.lighting: a preset name ("HoodSoft", ...) or an object with HoodLighting's fields (flat Lighting properties plus
+// atmosphere / grade / bloom / clouds / sky). Missing fields come from HoodSoft (what TheBlockV2.Build applies) or from the
+// named `preset`.
+function resolveLighting(opt) {
+  let Lg = opt.lighting;
+  if (typeof Lg === 'string') Lg = { preset: Lg };
+  Lg = Lg || {};
+  const base = LIGHTING_PRESETS[Lg.preset || 'HoodSoft'] || LIGHTING_PRESETS.HoodSoft;
+  const L = { ...base, ...Lg };
+  for (const k of ['atmosphere', 'grade', 'bloom', 'clouds', 'sky']) {
+    if (Lg[k] === false || Lg[k] === null) L[k] = null; else L[k] = { ...(base[k] || {}), ...(Lg[k] || {}) };
+  }
+  return L;
+}
+function deriveLighting(L, opt) {
+  const D = {};
+  // Sun: Roblox's own formula (lighting.js), with HoodLighting.Apply's rule that flips the latitude when the sun would face
+  // players walking down the street (-Z).
+  let lat = L.GeographicLatitude ?? 41.733;
+  let sun = robloxSunDirection(L.ClockTime ?? 14, lat);
+  if (sun.z < 0 && L.autoFlip !== false) { lat = -lat; sun = robloxSunDirection(L.ClockTime ?? 14, lat); }
+  if (opt.sun) sun = new THREE.Vector3(...opt.sun).normalize();
+  D.sunDir = sun; D.latitude = lat;
+  // Night: the moon (opposite side) lights with a fraction of the strength.
+  let src = sun.clone(), strength = 1;
+  if (sun.y < 0) { src = sun.clone().negate(); strength = 0.12; }
+  const elev = Math.asin(Math.max(-1, Math.min(1, src.y)));
+  // Sun colour: ColorShift_Top tints a white sun (Roblox adds it to a white base); low suns go warm and fade at the horizon.
+  // ColorShift_Top: black (the default) leaves the sun white; a colour tints it halfway (fits the docs' Island Jump pair).
+  // light17: ColorShift_Top ADDS a sun-coloured term K.CS times the white base (the docs' ColorShift_Top pair and the
+  // user's Studio frame user_24 both say so; the old "tint halfway" kept HoodSun's sun ~5x too dim). Black = the base.
+  const top = L.ColorShift_Top ? c255(L.ColorShift_Top) : new THREE.Vector3(0, 0, 0);
+  const tint = new THREE.Vector3(1, 1, 1).addScaledVector(top, K.CS);
+  const warm = Math.max(0, 1 - elev / 0.35);
+  tint.multiply(new THREE.Vector3(1, 1 - 0.25 * warm, 1 - 0.55 * warm));
+  const fade = THREE.MathUtils.smoothstep(src.y, -0.03, 0.12);
+  const B = L.Brightness ?? 2;
+  D.lightDir = src;
+  D.sunCol = tint.multiplyScalar(B * K.SUN * strength * fade);
+  D.botCol = (L.ColorShift_Bottom ? c255(L.ColorShift_Bottom) : new THREE.Vector3()).multiplyScalar(B * K.SUN * K.BOTTOM * strength);
+  const amb = c255(L.Ambient || [0, 0, 0]), out = c255(L.OutdoorAmbient || [127, 127, 127]);
+  // The engine clamps OutdoorAmbient to >= Ambient per channel. GlobalShadows off: Ambient everywhere.
+  D.amb = amb; D.out = new THREE.Vector3(Math.max(amb.x, out.x), Math.max(amb.y, out.y), Math.max(amb.z, out.z));
+  if (L.GlobalShadows === false) D.out = amb.clone();
+  D.amb.multiplyScalar(K.AMB); D.out.multiplyScalar(K.AMB); // LIGHT2: Studio's ambient is ~0.89 of the Color3 (linear)
+  D.globalShadows = L.GlobalShadows !== false;
+  // LIGHT3: the user's Studio showed ExposureCompensation 0.3 as no change at all (ours_studio_spawn.png; the place runs
+  // Technology Voxel), so render13 applies EC x K.EC (0). HoodSun keeps EC at 0 so this does not matter for it.
+  D.exposure = Math.pow(2, (L.ExposureCompensation ?? 0) * K.EC);
+  D.envDiffuse = L.EnvironmentDiffuseScale ?? 0;
+  D.envSpec = L.EnvironmentSpecularScale ?? 0;
+  // B31 LOOK: the 0.35 floor stands for voxel lighting's blurry 4-stud sun shadows; a ShadowMap/Future preset (technology)
+  // draws its sun shadows from a real shadow map at its own ShadowSoftness (uncalibrated against Studio: check there).
+  const mapped = L.technology === 'ShadowMap' || L.technology === 'Future';
+  const soft = (L.LightingStyle || 'Soft') === 'Soft' && !mapped ? Math.max(0.35, L.ShadowSoftness ?? 0.2) : (L.ShadowSoftness ?? 0.2);
+  D.shadowSoft = soft;
+  // Sky (lighting.js describes it): the classic default skybox's blues, lifted toward Atmosphere.Color near the horizon by Haze
+  // and Density; Decay tints the half away from the sun; Glare brightens around it.
+  const A = (opt.noAtmosphere || opt.transparent) ? null : L.atmosphere;
+  D.atm = A;
+  const zen = c255([58, 132, 222]), hor = c255([168, 204, 240]);
+  D.zenith = zen; D.horizon = hor;
+  // LIGHT3: the sky as drawn (and in fog and reflections): the user's Studio shows the default sky through the hall door at
+  // 72,210,254 (14-20 degrees up, HoodSun), a clear saturated cyan-blue. The sky's light (EnvironmentDiffuse, envIrradiance)
+  // keeps LIGHT2's calibrated colours above.
+  D.skyZenith = c255([40, 140, 250]); D.skyHorizon = c255([130, 215, 255]);
+  D.atmCol = A ? c255(A.Color || [199, 199, 199]) : hor.clone();
+  D.decay = A ? c255(A.Decay || [106, 112, 125]) : hor.clone();
+  D.haze = A ? (A.Haze ?? 0) : 0; D.glare = A ? (A.Glare ?? 0) : 0;
+  D.density = A ? (A.Density ?? 0.3) : 0; D.offset = A ? (A.Offset ?? 0.25) : 0;
+  D.skyDim = Math.max(0.08, Math.min(1, (src.y + 0.15) / 0.45)) * (sun.y < 0 ? 0.15 : 1);
+  const cl = L.clouds; D.cloudCover = cl ? (cl.Cover ?? 0.5) : 0; D.cloudDensity = cl ? (cl.Density ?? 0.3) : 0;
+  D.cloudCol = cl ? c255(cl.Color || [255, 255, 255]) : new THREE.Vector3(1, 1, 1);
+  D.sunSize = L.sky ? (L.sky.SunAngularSize ?? 21) : 21;
+  D.bloom = (opt.bloom === false || opt.transparent || !L.bloom) ? null : L.bloom;
+  D.grade = L.grade;
+  return D;
+}
+// The sky's light on a surface (EnvironmentDiffuseScale), from the same sky model, cosine-weighted: up, horizontal, down.
+function envIrradiance(D) {
+  const sky = (dx, dy, dz) => skyColorJS(D, dx, dy, dz);
+  const res = { up: new THREE.Vector3(), side: new THREE.Vector3(), down: new THREE.Vector3() };
+  const N = 24, M = 48;
+  for (const [key, nrm] of [['up', [0, 1, 0]], ['side', [1, 0, 0]], ['side', [-1, 0, 0]], ['side', [0, 0, 1]], ['side', [0, 0, -1]], ['down', [0, -1, 0]]]) {
+    const acc = new THREE.Vector3(); let wsum = 0;
+    for (let i = 0; i < N; i++) for (let j = 0; j < M; j++) {
+      const th = Math.acos(1 - 2 * (i + .5) / N), ph = 2 * Math.PI * (j + .5) / M;
+      const d = [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)];
+      const c = d[0] * nrm[0] + d[1] * nrm[1] + d[2] * nrm[2]; if (c <= 0) continue;
+      acc.add(sky(...d).multiplyScalar(c)); wsum += c;
+    }
+    res[key].add(acc.multiplyScalar(1 / wsum));
+  }
+  res.side.multiplyScalar(1 / 4);
+  // Roblox's environment light is a blurred, less saturated version of the sky (fits the docs' Island Jump shade/top pair).
+  for (const k of ['up', 'side', 'down']) { const v = res[k], l = (v.x + v.y + v.z) / 3; v.lerp(new THREE.Vector3(l, l, l), K.ENV_DESAT).multiplyScalar(K.ENV); }
+  return res;
+}
+// JS twin of shaders.js skyBase (no clouds; clouds add their average brightness by cover).
+function skyColorJS(D, dx, dy, dz) {
+  const y = Math.max(dy, 0);
+  const t = Math.pow(y, 0.32);
+  const c = D.horizon.clone().lerp(D.zenith, t);
+  const hz = Math.exp(-y * (10 - 7 * Math.min(1, D.haze / 3)));
+  c.lerp(D.atmCol.clone().multiplyScalar(1.05), Math.min(1, hz * Math.min(1, D.haze * 0.7 + D.density * 0.9)));
+  if (dy < 0) { const g = Math.min(1, -dy * 3); c.multiplyScalar(1 - 0.45 * g); }
+  // clouds brighten the upper sky on average
+  if (dy > 0.02) c.lerp(D.cloudCol.clone().multiplyScalar(1.0), D.cloudCover * 0.45 * Math.min(1, dy * 4));
+  return c.multiplyScalar(D.skyDim);
+}
+
+function makeWorldMaterial(defines = {}) {
+  const u = uniforms;
+  return new THREE.ShaderMaterial({
+    vertexShader: WORLD_VERT, fragmentShader: SKY_GLSL + WORLD_FRAG, uniforms: u, defines: { MAXL, SHADOW_RES, ...defines },
+    side: THREE.FrontSide, extensions: { derivatives: true },
+  });
+}
+function initUniforms() {
+  const v3 = () => ({ value: new THREE.Vector3() });
+  Object.assign(uniforms, {
+    uCam: v3(), uSunDir: v3(), uSunCol: v3(), uBotCol: v3(), uAmb: v3(), uOut: v3(), uEnvUp: v3(), uEnvSide: v3(), uEnvDown: v3(),
+    uEnvSpec: { value: 0 }, uExposure: { value: 1 },
+    uShadowMap0: { value: shadowRT[0].depthTexture }, uShadowMap1: { value: shadowRT[1].depthTexture },
+    uShadowMat0: { value: new THREE.Matrix4() }, uShadowMat1: { value: new THREE.Matrix4() }, uShadowRange0: { value: 1 }, uShadowRange1: { value: 1 },
+    uShadowTexel0: { value: 1 }, uShadowTexel1: { value: 1 }, uShadowSoft: { value: 0.3 }, uShadowOn: { value: 1 },
+    uSkyMap0: { value: skyRT[0].depthTexture }, uSkyMap1: { value: skyRT[1].depthTexture }, uSkyMap2: { value: skyRT[2].depthTexture },
+    uSkyMap3: { value: skyRT[3].depthTexture }, uSkyMap4: { value: skyRT[4].depthTexture },
+    uSkyMat: { value: Array.from({ length: SKY_DIRS }, () => new THREE.Matrix4()) }, uSkyRange: { value: 1 }, uSkyTexel: { value: 1 }, uSkyOn: { value: 1 },
+    uZenith: v3(), uHorizon: v3(), uAtmCol: v3(), uDecay: v3(), uHaze: { value: 0 }, uGlare: { value: 0 }, uDensity: { value: 0 }, uOffset: { value: 0 },
+    uFogOn: { value: 1 }, uSkyDim: { value: 1 }, uCloudCover: { value: 0 }, uCloudDensity: { value: 0 }, uCloudCol: v3(), uSunSize: { value: 21 },
+    uLightCount: { value: 0 }, uLightPos: { value: Array.from({ length: MAXL }, () => new THREE.Vector3()) },
+    uLightCol: { value: Array.from({ length: MAXL }, () => new THREE.Vector3()) }, uLightRange: { value: new Array(MAXL).fill(1) },
+    uInvViewProj: { value: new THREE.Matrix4() }, uKnee: { value: K.KNEE }, uNeon: { value: K.NEON }, uStudB: { value: K.STUDB }, uStudD: { value: K.STUDD }, uTone: { value: TONE_ACES ? 1 : 0 }, uLFall: { value: K.FALL }, uSkyK: { value: K.SKY }, uFogK: { value: K.FOG }, uHazeK: { value: K.HAZE },
+    uMap: { value: null }, uMapXf: { value: new THREE.Vector4(1, 1, 0, 0) }, uOpacity: { value: 1 }, uTint: v3(), uDecal: { value: 0 },
+  });
+}
+
+let BASE_OPTS = {}, LIT_VIEW = false;
+const MESHES = {};
+// (render14, B32 ASSETS) the user's GLB items: GLBS[file][meshName] = { pos, nrm, vcol (linear, from the palette texture at each
+// vertex's UV, nearest), size } with the geometry centred on its own box, like the OBJs (a MeshPart's CFrame is its box centre).
+const GLBS = {};
+async function loadGlb(file) {
+  const gltf = await new GLTFLoader().loadAsync(file);
+  const out = {};
+  const pixels = new Map();
+  const texPixels = tex => {
+    if (!tex || !tex.image) return null;
+    if (pixels.has(tex)) return pixels.get(tex);
+    const im = tex.image, cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height;
+    const cx = cv.getContext('2d'); cx.drawImage(im, 0, 0);
+    const px = { w: im.width, h: im.height, d: cx.getImageData(0, 0, im.width, im.height).data }; pixels.set(tex, px); return px;
+  };
+  gltf.scene.updateMatrixWorld(true);
+  gltf.scene.traverse(o => {
+    if (!o.isMesh) return;
+    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    const pos = g.attributes.position, nrm = g.attributes.normal, uv = g.attributes.uv;
+    const px = texPixels(o.material && o.material.map);
+    const P = [], N = [], C = [];
+    const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (let i = 0; i < pos.count; i++) {
+      const v = [pos.getX(i), pos.getY(i), pos.getZ(i)];
+      for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], v[k]); hi[k] = Math.max(hi[k], v[k]); }
+      P.push(...v); N.push(nrm.getX(i), nrm.getY(i), nrm.getZ(i));
+      if (px && uv) {
+        // the colour of the triangle's swatch: sample at the triangle's UV centroid (all 3 corners sit in one swatch)
+        const t0 = i - (i % 3);
+        let u = 0, w = 0; for (let j = 0; j < 3; j++) { u += uv.getX(t0 + j) / 3; w += uv.getY(t0 + j) / 3; }
+        const x = Math.min(px.w - 1, Math.max(0, Math.floor(u * px.w))), y = Math.min(px.h - 1, Math.max(0, Math.floor(w * px.h)));
+        const q = (y * px.w + x) * 4; C.push(lin(px.d[q] / 255), lin(px.d[q + 1] / 255), lin(px.d[q + 2] / 255));
+      } else C.push(1, 1, 1);
+    }
+    const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
+    for (let i = 0; i < P.length; i += 3) { P[i] -= c[0]; P[i + 1] -= c[1]; P[i + 2] -= c[2]; }
+    // the glTF node's own name (three renames duplicates: the item node and its body mesh share the id)
+    const as = gltf.parser.associations.get(o), jn = as && as.nodes !== undefined ? gltf.parser.json.nodes[as.nodes] : null;
+    out[jn ? jn.name : o.name] = { pos: P, nrm: N, vcol: C, size: [hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]] };
+  });
+  return out;
+}
+function parseObj(text) {
+  const v = [], n = [], pos = [], nrm = [];
+  for (const line of text.split('\n')) {
+    if (line.startsWith('v ')) { const a = line.split(' '); v.push([+a[1], +a[2], +a[3]]); }
+    else if (line.startsWith('vn ')) { const a = line.split(' '); n.push([+a[1], +a[2], +a[3]]); }
+    else if (line.startsWith('f ')) {
+      const c = line.slice(2).trim().split(' ').map(t => t.split('//').map(x => +x - 1));
+      for (let k = 1; k + 1 < c.length; k++) for (const q of [c[0], c[k], c[k + 1]]) { pos.push(...v[q[0]]); nrm.push(...(n[q[1]] || [0, 1, 0])); }
+    }
+  }
+  return { pos, nrm };
+}
+window.loadScene = async (data, opts = {}) => {
+  // (B30 LOBBY: walkfilm.js renders many frames in one page; every scene starts empty, or the frames before it stay drawn:
+  // a ghost of the avatar at each earlier spot, stacked particles)
+  for (const sc of [world, casters, overlay]) {
+    for (const o of [...sc.children]) { sc.remove(o); o.traverse(x => { if (x.geometry) x.geometry.dispose(); }); }
+  }
+  for (const a of [billboards, parallelSprites, worldUpQuads, zoffItems, beams, pointLights]) a.length = 0;
+  sceneMinY = 1e9;
+  FX_OPTS = opts; BASE_OPTS = opts;
+  const t0 = performance.now();
+  if (data.parts.some(p => p.fx || p.textures)) await preloadFx();
+  // (B31 MESH) MeshParts whose PreviewMesh attribute names a local OBJ (the exporter's per-part OBJs, Roblox axes, studs,
+  // centred on the part): the harness fakes ReplicatedStorage.HoodItemMeshes with them, so shots show the after-import look.
+  const meshFiles = [...new Set(data.parts.filter(p => p.meshFile && !MESHES[p.meshFile]).map(p => p.meshFile))];
+  await Promise.all(meshFiles.map(async f => { const r = await fetch(f); MESHES[f] = r.ok ? parseObj(await r.text()) : null; if (!r.ok) console.error('mesh missing ' + f); }));
+  const glbFiles = [...new Set(data.parts.filter(p => p.glb && !GLBS[p.glb]).map(p => p.glb))];
+  await Promise.all(glbFiles.map(async f => { try { GLBS[f] = await loadGlb(f); } catch (e) { GLBS[f] = {}; console.error('glb failed ' + f + ' ' + e); } }));
+  await loadFonts();
+  makeTargets();
+  initUniforms();
+  const Lg = resolveLighting(opts);
+  LIT = deriveLighting(Lg, opts);
+  LIT.env = envIrradiance(LIT);
+  worldMat = makeWorldMaterial();
+  const lightBudget = opts.lights ?? 40;
+
+  // Sky: a full-screen triangle at the far plane, drawn first.
+  if (!opts.transparent) {
+    const skyMat = new THREE.ShaderMaterial({ vertexShader: SKY_VERT, fragmentShader: SKY_GLSL + SKY_FRAG, uniforms, depthTest: false, depthWrite: false });
+    const sky = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), skyMat); sky.frustumCulled = false; sky.renderOrder = -1000; sky.layers.set(LAYER_SKY);
+    world.add(sky);
+  }
+  const cells = new Map(), casterCells = new Map();
+  const cellOf = (map, x, z) => { const k = Math.floor(x / CELL) + ',' + Math.floor(z / CELL); if (!map.has(k)) map.set(k, new Batch()); return map.get(k); };
+  let counted = 0, transparentCount = 0;
+  for (const p of data.parts) {
+    if (p.k === 'Terrain') continue;
+    const visible = p.t < 1;
+    if (!visible && !p.guis?.length && !p.fx && !p.lights) continue;
+    const m4 = cfMatrix(p.cf), c = p.cf;
+    const sf = p.sf || (p.studs ? 'SSS-SS' : null);
+    if (visible) {
+      const mid = MAT[p.m] ?? 0, surf = SURF[mid] || SURF[0];
+      const col = c01(p.c);
+      const mt = [mid, surf[0], surf[1]];
+      const transparent = p.t > 0 || p.m === 'Glass' || p.m === 'ForceField';
+      const target = transparent ? new Batch() : cellOf(cells, c[0], c[2]);
+      const [sx, sy, sz] = p.s;
+      const emit = (b, flagsSf) => {
+        if (p.k === 'TrussPart') emitTruss(b, m4, p.s, col, mt);
+        else if (p.k === 'MeshPart' && p.meshFile && MESHES[p.meshFile]) {
+          const o = MESHES[p.meshFile], g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute(o.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(o.nrm, 3));
+          const ms = p.msz || p.s; g.scale(sx / ms[0], sy / ms[1], sz / ms[2]); g.applyMatrix4(m4); b.geo(g, col, mt);
+        }
+        else if (p.k === 'MeshPart' && p.glb && GLBS[p.glb] && GLBS[p.glb][p.node]) {
+          const o = GLBS[p.glb][p.node], g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute(o.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(o.nrm, 3));
+          // textured bodies keep their palette colours (Studio: Color white + TextureID); Neon glow parts use the part colour
+          if (p.m !== 'Neon') g.setAttribute('vcol', new THREE.Float32BufferAttribute(o.vcol, 3));
+          const ms = o.size; g.scale(sx / Math.max(ms[0], 1e-4), sy / Math.max(ms[1], 1e-4), sz / Math.max(ms[2], 1e-4)); g.applyMatrix4(m4); b.geo(g, col, mt);
+        }
+        else if (p.k === 'WedgePart' || p.mesh === 'Wedge') emitWedge(b, m4, p.s, col, mt, flagsSf);
+        else if (p.k === 'CornerWedgePart') emitCornerWedge(b, m4, p.s, col, mt);
+        else if (p.sh === 'Ball' || p.mesh === 'Sphere') {
+          const g = new THREE.SphereGeometry(.5, 24, 16);
+          if (p.sh === 'Ball' && !p.mesh) { const d = Math.min(sx, sy, sz); g.scale(d, d, d); } else g.scale(sx * (p.ms?.[0] ?? 1), sy * (p.ms?.[1] ?? 1), sz * (p.ms?.[2] ?? 1));
+          g.applyMatrix4(m4); b.geo(g, col, mt);
+        } else if (p.mesh === 'Head') { const g = new THREE.CylinderGeometry(.5, .5, 1, 24); g.scale(sx * .95, sy, sz * .95); g.applyMatrix4(m4); b.geo(g, col, mt); }
+        else if (p.sh === 'Cylinder') { const d = Math.min(sy, sz); const g = new THREE.CylinderGeometry(d / 2, d / 2, sx, 28); g.rotateZ(-Math.PI / 2); g.applyMatrix4(m4); b.geo(g, col, mt); }
+        else emitBox(b, m4, p.s, col, mt, flagsSf);
+      };
+      emit(target, sf);
+      if (transparent) {
+        const mat = makeWorldMaterial({ TRANSPARENT: 1 });
+        const glass = p.m === 'Glass';
+        mat.transparent = true; mat.depthWrite = p.t < .5 && !glass;
+        mat.uniforms = { ...uniforms, uOpacity: { value: glass ? Math.min(1, (1 - p.t) * .55 + .15) : 1 - p.t } };
+        const mesh = new THREE.Mesh(target.build(), mat); mesh.layers.set(LAYER_TRANSP); world.add(mesh); transparentCount++;
+      }
+      // Casters: CastShadow parts that are mostly opaque block the sun and the sky (Roblox leaves CastShadow=false parts,
+      // e.g. the hall roof, out of both).
+      if (p.shadow !== false && p.t <= 0.25 && p.m !== 'ForceField') emit(cellOf(casterCells, c[0], c[2]), null);
+      counted++;
+    }
+    for (const tx of p.textures || []) addTextureDecal(m4, p, tx);
+    for (const gui of p.guis || []) {
+      if (gui.kind === 'surface') addSurfaceGui(m4, p, gui);
+      else if (gui.kind === 'billboard') addBillboard(gui.adornee || [c[0], c[1], c[2]], gui);
+    }
+    let fxi = 0;
+    for (const f of p.fx || []) { if (f.kind === 'particles') addParticles(f, fxi++ + (p.cf[0] * 3.1 + p.cf[2] * 1.7), opts.time ?? 3); else addBeam(f); }
+    for (const L of p.lights || []) pointLights.push({ pos: new THREE.Vector3(c[0], c[1], c[2]), col: c01(L.c), b: L.b, r: Math.min(60, L.r) });
+  }
+  // LIGHT3 (BRIEF23): Roblox lights local lights through its 4-stud lighting voxels, so a PointLight whose voxel is mostly
+  // solid (a light set on a pad's top face, inside a lamp housing) lights little round it. The user's Studio frame
+  // (ours_studio_spawn.png) shows no glow from the armory pads' StateGlow lights (2 / 9 on the pad face) that render13 drew
+  // as bright pools. Each light is scaled by the open share of the 4-stud cube round it (shadow-casting opaque parts).
+  if (K.VOXL > 0) occludeLights(data.parts);
+  for (const b of cells.values()) { const m = new THREE.Mesh(b.build(), worldMat); m.layers.set(LAYER_OPAQUE); world.add(m); sceneMinY = Math.min(sceneMinY, m.geometry.boundingBox.min.y); }
+  for (const b of casterCells.values()) { const m = new THREE.Mesh(b.build(), depthMat); casters.add(m); }
+  brightPass = fsPass(BRIGHT_FRAG, { tHdr: { value: null }, uThreshold: { value: 1 } });
+  blurPass = fsPass(BLUR_FRAG, { tSrc: { value: null }, uDir: { value: new THREE.Vector2() }, uSigma: { value: 4 } });
+  compositePass = fsPass(COMPOSITE_FRAG, { tHdr: { value: null }, tBloomA: { value: null }, tBloomB: { value: null }, uBloom: { value: 0 }, uKnee: { value: K.KNEE }, uTone: { value: Q.get('out') === 'linear' ? 2 : (TONE_ACES ? 1 : 0) }, uAlphaOut: { value: opts.transparent ? 1 : 0 } });
+  gradePass = fsPass(GRADE_FRAG, { tSrc: { value: gradeTex }, uB: { value: 0 }, uC: { value: 0 }, uS: { value: 0 }, uTint: { value: new THREE.Vector3(1, 1, 1) } });
+  window.__lightBudget = lightBudget;
+  if (Q.has('lightinfo')) console.error('lights ' + JSON.stringify(pointLights.map(l => [l.pos.x.toFixed(1), l.pos.y.toFixed(1), l.pos.z.toFixed(1), +(l.occ ?? 0).toFixed(2), +l.b.toFixed(3)])));
+  return { parts: data.parts.length, drawn: counted, cells: cells.size, transparent: transparentCount, lights: pointLights.length,
+    sun: LIT.sunDir.toArray().map(v => +v.toFixed(3)), latitude: LIT.latitude, ms: Math.round(performance.now() - t0) };
+};
+function occludeLights(parts) {
+  const solids = [];
+  for (const p of parts) {
+    if (p.k === 'Terrain' || p.shadow === false || p.t > 0.25 || p.m === 'ForceField' || p.m === 'Glass') continue;
+    const c = p.cf, h = [p.s[0] / 2, p.s[1] / 2, p.s[2] / 2];
+    solids.push({ c: [c[0], c[1], c[2]], R: [c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11]], h, rad: Math.hypot(h[0], h[1], h[2]) });
+  }
+  const inside = (q, near) => {
+    for (const o of near) {
+      const d0 = q[0] - o.c[0], d1 = q[1] - o.c[1], d2 = q[2] - o.c[2], R = o.R;
+      if (Math.abs(d0 * R[0] + d1 * R[3] + d2 * R[6]) <= o.h[0] && Math.abs(d0 * R[1] + d1 * R[4] + d2 * R[7]) <= o.h[1] && Math.abs(d0 * R[2] + d1 * R[5] + d2 * R[8]) <= o.h[2]) return true;
+    }
+    return false;
+  };
+  for (const l of pointLights) {
+    const P = l.pos;
+    const near = solids.filter(o => Math.hypot(o.c[0] - P.x, o.c[1] - P.y, o.c[2] - P.z) <= o.rad + 3.5);
+    let n = 0, tot = 0;
+    for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) for (let k = -2; k <= 2; k++) {
+      tot++; if (inside([P.x + i * 0.9, P.y + j * 0.9, P.z + k * 0.9], near)) n++;
+    }
+    l.occ = n / tot;
+    // and short-range lights hardly show at all (the armory's pad and gun lights, range 8-9, left no tint on the stand
+    // 2-3 studs away), while long ones in open air do (the old bars at 1.2 / 60 whitened the floor in user_24)
+    const short = THREE.MathUtils.smoothstep(l.r, 6, 20);
+    l.b *= Math.max(0.02, Math.pow(1 - l.occ, K.VOXL) * short);
+  }
+}
+// Roblox Texture: an image tiled every StudsPerTileU x StudsPerTileV studs on one face, tinted by Color3, lit like the part.
+function addTextureDecal(m4, p, tx) {
+  if (!tx.preview || (FX_OPTS.builtinOnly && !tx.tex)) return;
+  const { w, h, local } = facePlane(tx.face, p.s, .012);
+  const map = baseTexture(tx.preview).clone();
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(w / (tx.su || 2), h / (tx.sv || 2));
+  map.offset.set((tx.ou || 0) / (tx.su || 2), (tx.ov || 0) / (tx.sv || 2));
+  map.needsUpdate = true;
+  const g = new THREE.PlaneGeometry(w, h);
+  g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(m4, local));
+  const n = g.attributes.position.count;
+  g.setAttribute('acol', new THREE.Float32BufferAttribute(new Array(n * 3).fill(1), 3));
+  g.setAttribute('amat', new THREE.Float32BufferAttribute(Array.from({ length: n }, () => [0, 0.7, 0, 0]).flat(), 4));
+  const mat = makeWorldMaterial({ TRANSPARENT: 1, DECAL: 1 });
+  mat.transparent = true; mat.depthWrite = false; mat.polygonOffset = true; mat.polygonOffsetFactor = -2; mat.polygonOffsetUnits = -2;
+  mat.uniforms = { ...uniforms, uMap: { value: map }, uMapXf: { value: new THREE.Vector4(map.repeat.x, map.repeat.y, map.offset.x, map.offset.y) }, uOpacity: { value: 1 - (tx.t || 0) }, uTint: { value: c01(tx.c) }, uDecal: { value: 1 } };
+  const mesh = new THREE.Mesh(g, mat); mesh.layers.set(LAYER_TRANSP); mesh.renderOrder = 1; world.add(mesh);
+}
+
+// ------------------------------------------------------------------------------------------------ per-shot passes
+// Fit an orthographic light camera around the camera frustum (up to maxDist), extended toward the light for casters.
+function fitLightCamera(camera, dir, maxDist, extra, minDist) {
+  const corners = [];
+  const inv = new THREE.Matrix4().multiplyMatrices(camera.matrixWorld, camera.projectionMatrixInverse);
+  const nearZ = minDist > 0 ? new THREE.Vector3(0, 0, -minDist).applyMatrix4(camera.projectionMatrix).z : -1;
+  // far plane in NDC for maxDist (perspective) or the ortho range
+  const pFar = new THREE.Vector3(0, 0, -maxDist).applyMatrix4(camera.projectionMatrix);
+  const farZ = Math.min(1, pFar.z);
+  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [nearZ, farZ]) corners.push(new THREE.Vector3(x, y, z).applyMatrix4(inv));
+  const center = corners.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / 8);
+  const lc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+  lc.position.copy(center).addScaledVector(dir, 600);
+  lc.up.set(Math.abs(dir.y) > 0.99 ? 1 : 0, Math.abs(dir.y) > 0.99 ? 0 : 1, 0);
+  lc.lookAt(center); lc.updateMatrixWorld();
+  const view = lc.matrixWorldInverse;
+  let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9, minZ = 1e9, maxZ = -1e9;
+  for (const c of corners) { const q = c.clone().applyMatrix4(view); minX = Math.min(minX, q.x); maxX = Math.max(maxX, q.x); minY = Math.min(minY, q.y); maxY = Math.max(maxY, q.y); minZ = Math.min(minZ, q.z); maxZ = Math.max(maxZ, q.z); }
+  const pad = extra || 4;
+  lc.left = minX - pad; lc.right = maxX + pad; lc.bottom = minY - pad; lc.top = maxY + pad;
+  lc.near = Math.max(0.1, -maxZ - 900); lc.far = -minZ + 60;
+  lc.updateProjectionMatrix();
+  return lc;
+}
+function skyCameras(camera) {
+  // Region around what the camera sees: centred ahead of it on the ground, 440 studs across.
+  const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd); fwd.y = 0; if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1); fwd.normalize();
+  const center = camera.position.clone().addScaledVector(fwd, 120); center.y = 0;
+  const half = 220, cams = [];
+  const dirs = [new THREE.Vector3(0, 1, 0)];
+  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4, e = 55 * Math.PI / 180; dirs.push(new THREE.Vector3(Math.cos(a) * Math.cos(e), Math.sin(e), Math.sin(a) * Math.cos(e))); }
+  for (const d of dirs) {
+    const lc = new THREE.OrthographicCamera(-half, half, half, -half, 1, 1600);
+    lc.position.copy(center).addScaledVector(d, 700);
+    lc.up.set(Math.abs(d.y) > 0.99 ? 1 : 0, Math.abs(d.y) > 0.99 ? 0 : 1, 0);
+    lc.lookAt(center); lc.updateMatrixWorld(); lc.updateProjectionMatrix();
+    cams.push(lc);
+  }
+  return cams;
+}
+const BIAS = new THREE.Matrix4().set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
+function lightMatrix(lc) { return new THREE.Matrix4().multiplyMatrices(BIAS, new THREE.Matrix4().multiplyMatrices(lc.projectionMatrix, lc.matrixWorldInverse)); }
+
+function setLightingUniforms(camera) {
+  const D = LIT, u = uniforms;
+  u.uCam.value.copy(camera.position);
+  u.uSunDir.value.copy(D.lightDir); u.uSunCol.value.copy(D.sunCol); u.uBotCol.value.copy(D.botCol);
+  u.uAmb.value.copy(D.amb); u.uOut.value.copy(D.out);
+  u.uEnvUp.value.copy(D.env.up).multiplyScalar(D.envDiffuse); u.uEnvSide.value.copy(D.env.side).multiplyScalar(D.envDiffuse); u.uEnvDown.value.copy(D.env.down).multiplyScalar(D.envDiffuse);
+  u.uEnvSpec.value = D.envSpec; u.uExposure.value = D.exposure;
+  u.uZenith.value.copy(D.skyZenith || D.zenith); u.uHorizon.value.copy(D.skyHorizon || D.horizon); u.uAtmCol.value.copy(D.atmCol); u.uDecay.value.copy(D.decay);
+  u.uHaze.value = D.haze; u.uGlare.value = D.glare; u.uDensity.value = D.density; u.uOffset.value = D.offset; u.uSkyDim.value = D.skyDim;
+  u.uFogOn.value = D.atm ? 1 : 0; u.uCloudCover.value = D.cloudCover; u.uCloudDensity.value = D.cloudDensity; u.uCloudCol.value.copy(D.cloudCol); u.uSunSize.value = D.sunSize;
+  u.uShadowSoft.value = D.shadowSoft; u.uShadowOn.value = D.globalShadows && D.sunCol.lengthSq() > 1e-6 ? 1 : 0; u.uSkyOn.value = D.globalShadows ? 1 : 0;
+  // Point lights nearest to what the camera looks at.
+  const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
+  const focus = camera.position.clone().addScaledVector(fwd, 40);
+  const budget = Math.min(MAXL, window.__lightBudget ?? 40);
+  const ls = pointLights.map(l => ({ l, d: l.pos.distanceTo(focus) - l.r })).sort((a, b) => a.d - b.d).slice(0, budget);
+  u.uLightCount.value = ls.length;
+  ls.forEach(({ l }, i) => { u.uLightPos.value[i].copy(l.pos); u.uLightCol.value[i].copy(l.col).multiplyScalar(l.b * (window.__klight ?? K.LIGHT)); u.uLightRange.value[i] = l.r; });
+  u.uInvViewProj.value.multiplyMatrices(camera.matrixWorld, camera.projectionMatrixInverse);
+}
+
+window.setFocus = () => {}; // compatibility: render13 fits the sun's shadow map to every view by itself
+const PROF = Q.has('prof');
+let profT = 0; const prof = {};
+function mark(name) { if (!PROF) return; const px = new Uint8Array(4); const cur = renderer.getRenderTarget(); renderer.setRenderTarget(null); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); renderer.setRenderTarget(cur); const t = performance.now(); prof[name] = Math.round(t - profT); profT = t; }
+window.shoot = (cam) => {
+  const t0 = performance.now(); profT = t0;
+  // r20 (LIGHT2): a view may carry its own "options" (lighting, bloom, noGrade, noAtmosphere, lights), merged over the job's.
+  if (cam.options || LIT_VIEW) {
+    const VO = cam.options ? { ...BASE_OPTS, ...cam.options } : BASE_OPTS;
+    LIT = deriveLighting(resolveLighting(VO), VO); LIT.env = envIrradiance(LIT);
+    window.__lightBudget = VO.lights ?? 40; FX_OPTS = VO; LIT_VIEW = !!cam.options;
+  }
+  uniforms.uLFall.value = FX_OPTS.lfall ?? K.FALL; window.__klight = FX_OPTS.klight ?? K.LIGHT; uniforms.uNeon.value = FX_OPTS.kneon ?? K.NEON;
+  let camera;
+  if (cam.ortho) { const h = cam.ortho, w = h * W / H; camera = new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, .1, 3000); }
+  else camera = new THREE.PerspectiveCamera(cam.fov || 55, W / H, .1, 3000);
+  camera.position.set(...cam.pos);
+  if (cam.up) camera.up.set(...cam.up);
+  camera.lookAt(...cam.look);
+  camera.updateMatrixWorld(); camera.updateProjectionMatrix();
+  setLightingUniforms(camera);
+  const u = uniforms;
+  // 1. sun shadow map
+  if (u.uShadowOn.value) {
+    // Orthographic views: shadows only need to cover down to the lowest part of the scene.
+    let maxDist = 320;
+    if (cam.ortho) { const dir = new THREE.Vector3(); camera.getWorldDirection(dir); maxDist = Math.min(1500, Math.max(50, (camera.position.y - sceneMinY + 30) / Math.max(0.15, -dir.y))); }
+    const ranges = cam.ortho ? [[0, maxDist], [0, maxDist]] : [[0, CASCADE_SPLIT], [CASCADE_SPLIT - 8, maxDist]];
+    ranges.forEach(([d0, d1], i) => {
+      const lc = fitLightCamera(camera, LIT.lightDir, d1, 6, d0);
+      renderer.setRenderTarget(shadowRT[i]); renderer.setClearColor(0xffffff, 1); renderer.clear(true, true);
+      renderer.render(casters, lc);
+      u['uShadowMat' + i].value.copy(lightMatrix(lc)); u['uShadowRange' + i].value = lc.far - lc.near;
+      u['uShadowTexel' + i].value = (lc.right - lc.left) / SHADOW_RES;
+    });
+  }
+  mark('shadow');
+  // 2. sky visibility maps (Ambient indoors, OutdoorAmbient + sky light outdoors)
+  if (u.uSkyOn.value) {
+    const cams = skyCameras(camera);
+    cams.forEach((lc, i) => {
+      renderer.setRenderTarget(skyRT[i]); renderer.clear(true, true);
+      renderer.render(casters, lc);
+      u.uSkyMat.value[i].copy(lightMatrix(lc));
+    });
+    u.uSkyRange.value = cams[0].far - cams[0].near; u.uSkyTexel.value = (cams[0].right - cams[0].left) / SKY_RES;
+  }
+  mark('skyvis');
+  // 3. world into the HDR target
+  buildBeams(camera);
+  orientParallel(camera);
+  for (const b of billboards) b.sp.visible = camera.position.distanceTo(b.at) <= b.maxd;
+  renderer.setRenderTarget(hdrRT); renderer.setClearColor(0x000000, 0); renderer.clear(true, true, true);
+  camera.layers.set(LAYER_SKY); renderer.render(world, camera); mark('sky');
+  camera.layers.set(LAYER_OPAQUE);
+  world.overrideMaterial = prepassMat; renderer.render(world, camera); world.overrideMaterial = null; mark('prepass');
+  worldMat.depthWrite = false; worldMat.depthFunc = THREE.LessEqualDepth;
+  renderer.render(world, camera); mark('opaque');
+  worldMat.depthWrite = true;
+  camera.layers.set(LAYER_TRANSP); renderer.render(world, camera); mark('transparent');
+  // 4. bloom (Lighting.Bloom: Threshold on the exposed HDR colour, Size in pixels at 1080p, Intensity)
+  let bloomOn = 0;
+  if (LIT.bloom && FX_OPTS.bloom !== false) {
+    const B = LIT.bloom, sz = (B.Size ?? 24) * H / 1080;
+    brightPass.mat.uniforms.tHdr.value = hdrRT.texture; brightPass.mat.uniforms.uThreshold.value = B.Threshold ?? 2;
+    renderer.setRenderTarget(brightRT); renderer.render(brightPass.scene, fsCam);
+    const blur = (src, dst, dir, sigma) => { blurPass.mat.uniforms.tSrc.value = src.texture; blurPass.mat.uniforms.uDir.value.set(dir[0] / src.width, dir[1] / src.height); blurPass.mat.uniforms.uSigma.value = sigma; renderer.setRenderTarget(dst); renderer.render(blurPass.scene, fsCam); };
+    blur(brightRT, blurA, [1, 0], Math.max(1, sz / 6)); blur(blurA, blurB, [0, 1], Math.max(1, sz / 6));
+    blur(blurB, blurC, [1, 0], Math.max(1, sz / 8)); blur(blurC, blurD, [0, 1], Math.max(1, sz / 8));
+    bloomOn = (B.Intensity ?? 1) * (FX_OPTS.kbloom ?? K.BLOOM);
+  }
+  mark('bloom');
+  // 5. tone map to the canvas
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(0x000000, 0); renderer.clear(true, true, true);
+  const cu = compositePass.mat.uniforms;
+  cu.tHdr.value = hdrRT.texture; cu.tBloomA.value = blurB.texture; cu.tBloomB.value = blurD.texture; cu.uBloom.value = bloomOn;
+  renderer.render(compositePass.scene, fsCam);
+  // 6. world depth into the canvas, then particles / beams / GUIs in display space
+  world.overrideMaterial = depthOnlyMat; camera.layers.set(LAYER_OPAQUE); renderer.render(world, camera); world.overrideMaterial = null;
+  camera.layers.set(0); renderer.render(overlay, camera);
+  mark('composite+overlay');
+  // 7. ColorCorrection
+  const g = LIT.grade;
+  if (g && !FX_OPTS.noGrade) {
+    renderer.copyFramebufferToTexture(new THREE.Vector2(0, 0), gradeTex);
+    const gu = gradePass.mat.uniforms;
+    gu.uB.value = g.Brightness || 0; gu.uC.value = g.Contrast || 0; gu.uS.value = (g.Saturation || 0) * K.SAT; // LIGHT3: Studio's Saturation 0.45 looked like ~0.18 here (K.SAT 0.4)
+    gu.uTint.value.set(...(g.TintColor || [255, 255, 255]).map(v => v / 255));
+    renderer.render(gradePass.scene, fsCam);
+  }
+  mark('grade');
+  window.__lastShotMs = Math.round(performance.now() - t0);
+  if (PROF) console.log('prof ' + JSON.stringify(prof));
+  return renderer.domElement.toDataURL('image/png');
+};
+window.__debugCount = () => { let s = 0; overlay.traverse(o => { if (o.isSprite) s++; }); return s; };
+window.__lit = () => LIT && { sun: LIT.sunDir.toArray(), sunCol: LIT.sunCol.toArray(), env: { up: LIT.env.up.toArray(), side: LIT.env.side.toArray(), down: LIT.env.down.toArray() }, out: LIT.out.toArray(), amb: LIT.amb.toArray(), exposure: LIT.exposure };
+window.ready = true;
+</script>
+</body></html>

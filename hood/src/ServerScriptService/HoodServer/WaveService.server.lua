@@ -1,0 +1,398 @@
+-- Stage goons (brief 18; the rules are Shared/WaveRules and Shared/EnemyRules). Every stage street and the Boss Yard holds
+-- a small crew of cartoon goons in front of the next gate. Each player has their own: the server runs them here as plain
+-- points (no Humanoids, no physics, EnemyRules.Tick = 10 steps a second, only while they are up and about) and sends
+-- their moves to that player alone; Waves.client draws them (Shared/GoonRig), so other players never see your goons.
+--   They wait in front of the next gate and run at you when you come near (EnemyRules.Notice), wind up and punch. A punch
+--   that lands takes EnemyRules.punch off your Humanoid's health (Roblox's own health bar and hurt flash). (brief 30) The
+--   punch that would finish you knocks you down instead: the reference's REVIVE? screen (Waves.client) for ReviveFor
+--   seconds, the goons walking home calm. "No" (or the time running out) puts you back at the stage start, healed, with
+--   a short ForceField: free, as before. "Revive!" (a Robux product) stands you up where you fell with full HP; "Revenge!"
+--   (another) does that and knocks out the crew there (StoreReceipts -> the FightGrant BindableFunction here). While a
+--   purchase prompt is open the countdown waits (at most PayMax seconds), so nobody is rushed into paying.
+--   Your shots: Waves.client asks to shoot one (WaveShot stage, index, melee); the server checks it (you stand in that
+--   stage, the goon is up and within reach, the shot rate) and deals your Power as damage (EnemyRules.damage), and pays
+--   the x1 shot's Power for the hit (rebirth multiplier, boosts, gun, shoes), like the video's "+6". (brief 30) A swing
+--   (melee: you're within EnemyRules.MeleeRange) hits and pays EnemyRules.MeleePay x that (the video's "+9"). The last
+--   goon down clears the wave
+--   and opens the next gate for the rest of the run (brief 23: HoodServer/Runs; StageService and HoodClient/Stages read
+--   RunStage); a clear heals you. A stage's first clear EVER pays a little Cash (WaveRules.reward), a later one
+--   WaveRules.repeatReward (0 for now: the pads before the gate pay). Cash is x2 with the x2 Cash pass.
+--   A cleared wave stays down for the rest of the run. When the run ends (back in the lobby: StageService calls
+--   Runs.reset) your session is reset and every crew stands again, fresh.
+--   (brief 24) Leave a stage before its crew is down (back through its gate, into the lobby, or on past the next gate:
+--   WaveRules.bandAt, LeaveMargin studs past the line) and that crew is whole again (WaveRules.restore): full HP, a
+--   knocked-out goon back on its spot, the rest walking home. A step back over the line, or off the street inside the
+--   stage (a side street), only sends them home, as before (you can't shoot them from there).
+-- Player attributes: WaveCleared (the highest stage whose wave you ever cleared, saved as profile Waves.Cleared),
+-- WaveStage (the stage with goons you stand in, 0 = none), WaveLeft (your goons still up there); Runs sets RunCleared
+-- and RunStage.
+-- Remote WaveState, to that player only:
+--   { Kind = 'Wave', Stage, HP, Max, Left, Enemies = { {Kind, Name, Home = {x, z}} }, D }  entering a stage (fresh or kept);
+--     with Restored = true: a crew you left, whole again (sent as you leave, and for crews still walking home when a
+--     run ends)
+--   { Kind = 'Moves', Stage, D = {x, z, state, ...} }  10 a second while they move (map frame; EnemyRules state codes)
+--   { Kind = 'Hit', Stage, Index, HP, Left, Damage, Gain, Melee }  each hit
+--   { Kind = 'Punch', Stage, Index, Damage, Landed }  a wind-up ending (Landed: it reached you)
+--   { Kind = 'KO', Stage, For }  you're down: the revive screen for For seconds;  { Kind = 'Up', Stage, How = 'No' |
+--     'Revive' | 'Revenge' }  you're up again;  { Kind = 'Wait', Stage, For }  the countdown waits (a prompt is open) or
+--     goes on (For = the seconds left);  { Kind = 'Cleared', Stage, Reward, First, Opens (the gate it opened) }
+--   { Kind = 'Reset', Stage = 0, Keep = { stage, ... } }  the run ended: every crew is fresh again (Keep: the crews
+--     still walking home, whole; their Restored 'Wave' follows)
+--   (brief 29) Who they are: the user's HoodEnemies (EnemyLooks.forStage, via HoodServer/EnemyModels, which builds each
+--   look once into ReplicatedStorage.HoodEnemyModels for the clients to clone); 'Wave' carries each goon's Look.
+--   A crew's strongest's signature move (EnemyRules.Moves/Bosses): { Kind = 'Tele', Stage, Index, Move, Shape, O, D, L, W,
+--   R, A, P, T, Flight, Jump } when its red telegraph goes down (T seconds before it lands), then { Kind = 'Blast', Stage,
+--   Index, Move, Damage, Landed } as it lands (Landed: you were still inside; it hurts like a punch, KO included).
+local Players = game:GetService('Players')
+local RS = game:GetService('ReplicatedStorage')
+local CollectionService = game:GetService('CollectionService')
+local Debris = game:GetService('Debris')
+local Data = require(script.Parent.DataService)
+local Net = require(RS.Shared.Net)
+local ActiveMap = require(RS.Shared.ActiveMap)
+local StageRules = require(RS.Shared.StageRules)
+local WaveRules = require(RS.Shared.WaveRules)
+local EnemyRules = require(RS.Shared.EnemyRules)
+local ShotRules = require(RS.Shared.ShotRules)
+local RebirthRules = require(RS.Shared.RebirthRules)
+local Boosts = require(script.Parent.Boosts)
+local Runs = require(script.Parent.Runs)
+-- (brief 29: optional, so a server without it still runs today's goons)
+local enemyModels = script.Parent:FindFirstChild('EnemyModels')
+local EnemyModels = enemyModels and require(enemyModels) or nil
+
+while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
+local active = ActiveMap.get()
+if not active then return end
+local frame = active.Frame
+
+local models = {}
+for _, m in CollectionService:GetTagged('HoodStageGate') do
+	if m:IsDescendantOf(active.Root) then table.insert(models, m) end
+end
+local gates = StageRules.fromModels(models)
+-- No gates on this map: no waves (WaveCleared stays unset).
+if #gates == 0 then return end
+local world, arenas = EnemyRules.world(gates, nil, EnemyModels and EnemyModels.forStage or nil)
+local lastStage = gates[#gates].Stage
+-- (the run counts a stage without goons as beaten; a map with gates and no goons at all opens every gate)
+Runs.setCrews(world, lastStage)
+if next(world) == nil then return end
+if EnemyModels then EnemyModels.start(EnemyModels.keysOf(world)) end
+local gateOf = {}
+for _, g in gates do gateOf[g.Stage] = g end
+
+local stateRemote = Net.get('WaveState')
+-- (brief 30) The revive screen's answers (found lazily: a place or harness without the remote still runs the fights).
+local function reviveRemote()
+	local net = RS:FindFirstChild('HoodNet')
+	return net and net:FindFirstChild('Revive') or nil
+end
+local ReviveFor, PayMax = 10, 60 -- (bible 2.4: the reference's 10.00 s countdown; a purchase prompt holds it at most this long)
+local downed = {} -- [player] = { Stage, Left (seconds of countdown left), At (os.clock it was last counted), Paying, Paid }
+local sessions, shoeCarry = {}, {}
+local function sessionOf(player)
+	local s = sessions[player]
+	if not s then
+		s = WaveRules.session(world, os.clock, arenas)
+		sessions[player] = s
+	end
+	return s
+end
+local function best(profile) return WaveRules.effective(profile.Data.Waves.Cleared, world, lastStage) end
+local function set(player, name, value)
+	if player:GetAttribute(name) ~= value then player:SetAttribute(name, value) end
+end
+local function publish(player, profile, s)
+	set(player, 'WaveCleared', best(profile))
+	set(player, 'WaveStage', s.Stage)
+	local w = s:current()
+	set(player, 'WaveLeft', w and w.Left or 0)
+end
+local function living(player)
+	local c = player.Character
+	local root = c and c:FindFirstChild('HumanoidRootPart')
+	local h = c and c:FindFirstChildOfClass('Humanoid')
+	if not root or not h or h.Health <= 0 then return nil end
+	return c, root, h
+end
+local function mapPos(root)
+	local p = frame:PointToObjectSpace(root.Position)
+	return Vector3.new(p.X, 0, p.Z)
+end
+
+-- The wave you just walked into (or that came back), whole, for your client; restored: a crew you left, made whole.
+local function sendWave(player, stage, w, restored)
+	local enemies = {}
+	for i, e in world[stage] or {} do enemies[i] = { Kind = e.Kind, Name = e.Name, Home = { e.Home.X, e.Home.Z }, Look = e.Look, Reserve = e.Reserve } end
+	stateRemote:FireClient(player, { Kind = 'Wave', Stage = stage, HP = table.clone(w.HP), Max = table.clone(w.Max), Left = w.Left, Enemies = enemies, D = WaveRules.pack(w), Restored = restored or nil })
+end
+-- Where you stand now; on entering a stage with goons its wave (fresh or kept) goes to your client, and the run is on.
+-- Leaving a stage (its stretch of the map, WaveRules.bandAt) makes its crew whole again: your client hears that too.
+local function place(player, s, root)
+	local before = s.Stage
+	local p = root and frame:PointToObjectSpace(root.Position)
+	local _, whole = s:move(p and WaveRules.stageAt(gates, p) or nil, p and WaveRules.bandAt(gates, p, s:keep()) or nil)
+	for _, left in whole do sendWave(player, left.Stage, left, true) end
+	local w = s:current()
+	if s.Stage ~= 0 then Runs.start(player) end
+	if s.Stage ~= before and w then sendWave(player, s.Stage, w) end
+end
+
+local function heal(player)
+	local _, _, h = living(player)
+	if h then h.Health = h.MaxHealth end
+end
+
+local function shield(c, seconds, visible)
+	for _, old in c:GetChildren() do if old.Name == 'KOShield' then old:Destroy() end end
+	local f = Instance.new('ForceField')
+	f.Name = 'KOShield'
+	f.Visible = visible ~= false
+	f.Parent = c
+	Debris:AddItem(f, seconds)
+end
+-- (brief 30) KO: you're down where you stand (shielded, so nothing hurts you meanwhile; the goons go home calm) and the
+-- revive screen counts down ReviveFor seconds.
+local function knockdown(player, s, stage)
+	local c, _, h = living(player)
+	if not c or not gateOf[stage] or downed[player] then return end
+	s:knockout()
+	h.Health = math.max(1, h.Health)
+	shield(c, ReviveFor + PayMax + 5, false)
+	downed[player] = { Stage = stage, Left = ReviveFor, At = os.clock() }
+	player:SetAttribute('Downed', stage)
+	stateRemote:FireClient(player, { Kind = 'KO', Stage = stage, For = ReviveFor })
+end
+
+-- A wind-up ended (or a boss's big move landed): did it land, and what did it do.
+local function punch(player, s, ev)
+	local c, _, h = living(player)
+	local landed = ev.Landed and c ~= nil and ev.Stage == s.Stage and not c:FindFirstChildOfClass('ForceField')
+	local blast = ev.Kind == 'blast'
+	stateRemote:FireClient(player, { Kind = blast and 'Blast' or 'Punch', Stage = ev.Stage, Index = ev.Index, Damage = landed and ev.Damage or 0, Landed = landed, Move = blast and ev.Attack and ev.Attack.Move or nil })
+	if not landed then return end
+	local damage = math.clamp(ev.Damage, 0, EnemyRules.MaxPunch)
+	if h.Health - damage <= 0 then
+		knockdown(player, s, ev.Stage)
+	else
+		h:TakeDamage(damage)
+	end
+end
+-- A boss's big move starts: its red telegraph on your screen (map frame x, z pairs).
+local function xz(v) return { math.floor(v.X * 100 + 0.5) / 100, math.floor(v.Z * 100 + 0.5) / 100 } end
+local function tele(player, ev)
+	local a = ev.Attack
+	if not a then return end
+	local points = {}
+	for k, p in a.P or {} do points[k] = xz(p) end
+	stateRemote:FireClient(player, { Kind = 'Tele', Stage = ev.Stage, Index = ev.Index, Move = a.Move, Shape = a.Shape, O = xz(a.O), D = xz(a.D), L = a.L, W = a.W, R = a.R, A = a.A, P = points, T = a.Tele, Flight = a.Flight, Jump = a.Jump, Ri = a.Ri, Drop = a.Drop })
+end
+
+-- The wave of `stage` is down: the first clear ever pays, you're healed, the next gate opens for the run.
+local function cleared(player, profile, stage)
+	local first = stage > best(profile)
+	if first then profile.Data.Waves.Cleared = math.max(profile.Data.Waves.Cleared, stage) end
+	local base = first and WaveRules.reward(stage) or WaveRules.repeatReward(stage)
+	local reward = base > 0 and Boosts.cashFor(player, base) or 0
+	if reward > 0 then
+		profile.Data.Cash = math.min(1e12, profile.Data.Cash + reward)
+		player:SetAttribute('Cash', profile.Data.Cash)
+		Data.push(player)
+	end
+	heal(player)
+	-- The gate after this stage opens for the rest of the run (Stages.client plays its open moment).
+	local opens = Runs.clear(player, stage) and gateOf[stage + 1] and stage + 1 or nil
+	stateRemote:FireClient(player, { Kind = 'Cleared', Stage = stage, Reward = reward, First = first, Opens = opens })
+end
+
+Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index, melee)
+	local profile = Data.get(player)
+	local _, root = living(player)
+	if not profile or not root or downed[player] then return end
+	melee = melee == true
+	-- (only a crew behind a gate this run has opened: someone who slipped past a shut gate, before StageService puts
+	-- them back, can't beat a crew further down the street)
+	if type(stage) ~= 'number' or stage > Runs.stage(player) then return end
+	local s = sessionOf(player)
+	place(player, s, root) -- (where you are now, not at the last tick)
+	-- Damage is your Power; the hit pays what a shot pays on a x1 lane: your rebirth multiplier and boosts, times your
+	-- gun, times your equipped shoes (ShoeService's ShoeMultiplier; their fraction carries to the next hit).
+	-- (brief 30) a swing hits and pays EnemyRules.MeleePay x a shot (the reference's +9 next to +6)
+	local damage = math.floor(EnemyRules.damage(profile.Data.Rep) * (melee and EnemyRules.MeleePay or 1))
+	local ok, _, w, _, done = s:shoot(stage, index, mapPos(root), damage, melee)
+	if not ok then return end
+	shoeCarry[player] = shoeCarry[player] or {}
+	local perShot = ShotRules.perShot(1, RebirthRules.count(profile.Data.Rebirths), Boosts.power(player))
+	-- P4 (brief 29) BEGIN: every shot pays a little, less than a range: a hit on a goon or boss pays ShotRules.EnemyShare of the x1 shot
+	local share = ShotRules.EnemyShare * (melee and EnemyRules.MeleePay or 1)
+	local gain = ShotRules.share(ShotRules.pay(perShot, player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry[player]), share, shoeCarry[player], melee and 'Melee' or 'Enemy')
+	-- P4 (brief 29) END
+	profile.Data.Rep = math.min(1e12, profile.Data.Rep + gain)
+	player:SetAttribute('Power', profile.Data.Rep)
+	stateRemote:FireClient(player, { Kind = 'Hit', Stage = stage, Index = index, HP = w.HP[index], Left = w.Left, Damage = damage, Gain = gain, Melee = melee or nil })
+	if done then cleared(player, profile, stage) end
+	publish(player, profile, s)
+end)
+
+---------------------------------------------------------------------------------------------- the revive screen (brief 30)
+-- Up again: 'No' back at the stage start (free), 'Revive' where you fell with full HP, 'Revenge' that and the crew of
+-- that stage knocked out (its wave cleared, the gate ahead opens as if you'd beaten it). Returns true if you were down.
+local function getUp(player, how)
+	local d = downed[player]
+	if not d then return false end
+	downed[player] = nil
+	player:SetAttribute('Downed', nil)
+	local c, _, h = living(player)
+	if c then
+		if how == 'No' then
+			local gate = gateOf[d.Stage]
+			if gate then c:PivotTo(frame * CFrame.new(0, 3, gate.Z - 4)) end
+		end
+		h.Health = h.MaxHealth
+		shield(c, EnemyRules.Shield, true)
+	end
+	stateRemote:FireClient(player, { Kind = 'Up', Stage = d.Stage, How = how })
+	if how == 'Revenge' then
+		local profile = Data.get(player)
+		local s = sessions[player]
+		local w = s and s.Waves[d.Stage]
+		if profile and w and not w.Cleared then
+			local done = false
+			for i, hp in w.HP do
+				if hp > 0 then
+					local _, _, all = WaveRules.hit(w, i, hp)
+					stateRemote:FireClient(player, { Kind = 'Hit', Stage = d.Stage, Index = i, HP = 0, Left = w.Left, Damage = hp, Gain = 0 })
+					done = done or all
+				end
+			end
+			if done then cleared(player, profile, d.Stage) end
+			publish(player, profile, s)
+		end
+	end
+	return true
+end
+-- What a Robux product does here (StoreReceipts' Revive / Revenge grants, through the FightGrant BindableFunction): up
+-- again if you're down; if you're not (the screen timed out while Roblox finished the purchase) you still get something:
+-- full HP and a shield, and Revenge still knocks out the crew you're fighting.
+local function grant(player, how)
+	if how ~= 'Revive' and how ~= 'Revenge' then return false end
+	if getUp(player, how) then return true end
+	local c, _, h = living(player)
+	if not c then error('no character to revive') end
+	h.Health = h.MaxHealth
+	shield(c, EnemyRules.Shield, true)
+	local s = sessions[player]
+	if how == 'Revenge' and s and s.Stage ~= 0 then
+		downed[player] = { Stage = s.Stage, Left = 0, At = os.clock() }
+		getUp(player, 'Revenge')
+	end
+	return true
+end
+do
+	local fn = Instance.new('BindableFunction')
+	fn.Name = 'FightGrant'
+	fn.OnInvoke = function(player, how) return grant(player, how) end
+	fn.Parent = script
+end
+task.spawn(function()
+	local remote = reviveRemote()
+	local t0 = os.clock()
+	while not remote and os.clock() - t0 < 30 do
+		task.wait(1)
+		remote = reviveRemote()
+	end
+	if not remote then return end
+	remote.OnServerEvent:Connect(function(player, what, on)
+		local d = downed[player]
+		if not d then return end
+		if what == 'No' then
+			getUp(player, 'No')
+		elseif what == 'Paying' then
+			-- a purchase prompt is open (on = true) or closed: the countdown waits for it, at most PayMax seconds in all
+			local now = os.clock()
+			if on == true and not d.Paying and (d.Paid or 0) < PayMax then
+				d.Left = math.max(0, d.Left - (now - d.At))
+				d.At, d.Paying = now, now
+			elseif on ~= true and d.Paying then
+				d.Paid = (d.Paid or 0) + (now - d.Paying)
+				d.At, d.Paying = now, nil
+			end
+			stateRemote:FireClient(player, { Kind = 'Wait', Stage = d.Stage, For = d.Left, Paused = d.Paying ~= nil })
+		end
+	end)
+end)
+-- The countdowns (every tick): time up, or the prompt held too long, is a 'No'.
+local function countdowns()
+	local now = os.clock()
+	for player, d in downed do
+		if not player.Parent then
+			downed[player] = nil
+		elseif d.Paying then
+			if (d.Paid or 0) + (now - d.Paying) >= PayMax then
+				d.Paid, d.At, d.Paying = PayMax, now, nil
+			end
+		elseif d.Left - (now - d.At) <= 0 then
+			getUp(player, 'No')
+		end
+	end
+end
+
+-- The run ended (StageService: back in the lobby): every crew stands again, fresh, and your client drops its goons,
+-- except a crew still on its way home (whole again: it walks on, it doesn't pop back).
+Runs.onReset(function(player)
+	if downed[player] then
+		-- (a run that ends while you're down, a respawn or a trip: you're simply up again where the run put you)
+		downed[player] = nil
+		player:SetAttribute('Downed', nil)
+		stateRemote:FireClient(player, { Kind = 'Up', Stage = 0, How = 'Reset' })
+	end
+	local s = sessions[player]
+	local walking = s and s:reset() or {}
+	stateRemote:FireClient(player, { Kind = 'Reset', Stage = 0, Keep = walking })
+	for _, stage in walking do sendWave(player, stage, s.Waves[stage], true) end
+	local profile = Data.get(player)
+	if profile and s then publish(player, profile, s) end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	sessions[player] = nil
+	shoeCarry[player] = nil
+	downed[player] = nil
+end)
+
+-- The goons' clock: 10 steps a second for every player whose goons are up and about; where everyone stands and the
+-- attributes 4 times a second.
+local since = 0
+local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
+while true do
+	local ok, err = pcall(function()
+		local dt = task.wait(EnemyRules.Tick)
+		dt = math.min(dt, 0.5)
+		since += dt
+		local beat = since >= 0.25
+		if beat then since = 0 end
+		countdowns()
+		for _, player in Players:GetPlayers() do
+			local profile = Data.get(player)
+			if profile then
+				local s = sessionOf(player)
+				local _, root = living(player)
+				if beat and not downed[player] then place(player, s, root) end
+				local you = root and s.Stage ~= 0 and not downed[player] and mapPos(root) or nil
+				local events, moved = s:tick(dt, you)
+				for _, ev in events do
+					if ev.Kind == 'punch' or ev.Kind == 'blast' then punch(player, s, ev)
+					elseif ev.Kind == 'tele' then tele(player, ev) end
+				end
+				for stage in moved do
+					local w = s.Waves[stage]
+					if w then stateRemote:FireClient(player, { Kind = 'Moves', Stage = stage, D = WaveRules.pack(w) }) end
+				end
+				if beat then publish(player, profile, s) end
+			end
+		end
+	end)
+	if not ok and err ~= lastTickError then warn('[WaveService] tick failed, carrying on: ' .. tostring(err)) end
+	lastTickError = if ok then nil else err
+end

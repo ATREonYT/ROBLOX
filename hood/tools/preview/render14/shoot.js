@@ -1,0 +1,47 @@
+// Usage: node shoot.js scene.json views.json outDir   (render14 = render13 + the user's GLB items: Roblox-fidelity lighting; see README.md)
+const { chromium } = require('playwright');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const [sceneFile, viewsFile, outDir] = process.argv.slice(2);
+const root = __dirname;
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.glb': 'model/gltf-binary' };
+// Effect textures come from hood/art/vfx (the same PNGs the game uploads); render/vfx holds preview-only extras.
+const art = path.join(__dirname, '..', '..', '..', 'art', 'vfx'); // (hood/art/vfx)
+const server = http.createServer((req, res) => {
+  const url = decodeURIComponent(req.url.split('?')[0]);
+  let p = path.join(root, url);
+  if (url.startsWith('/vfx/') && !fs.existsSync(p)) p = path.join(art, url.slice(5));
+  if (!(p.startsWith(root) || p.startsWith(art)) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { if (process.env.DEBUG) console.error('404 ' + url); res.writeHead(404); return res.end(); }
+  res.writeHead(200, { 'Content-Type': types[path.extname(p)] || 'application/octet-stream' });
+  fs.createReadStream(p).pipe(res);
+});
+
+(async () => {
+  await new Promise(r => server.listen(0, r));
+  const port = server.address().port;
+  const browser = await chromium.launch({
+    executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--disable-gpu-watchdog'],
+  });
+  const page = await browser.newPage({ viewport: { width: +(process.env.W || 1600), height: +(process.env.H || 1000) } });
+  page.on('console', m => { if (m.type() === 'error' || process.env.DEBUG) console.error('page:', m.type(), m.text()); });
+  page.on('pageerror', e => console.error('pageerror:', e.message));
+  await page.goto(`http://localhost:${port}/index.html?w=${process.env.W || 1600}&h=${process.env.H || 1000}${process.env.RQ || ''}`);
+  await page.waitForFunction('window.ready === true', null, { timeout: 120000 });
+  const data = JSON.parse(fs.readFileSync(sceneFile, 'utf8'));
+  const views = JSON.parse(fs.readFileSync(viewsFile, 'utf8'));
+  const info = await page.evaluate(([d, o]) => window.loadScene(d, o), [data, views.options || {}]);
+  console.log('loaded', JSON.stringify(info));
+  fs.mkdirSync(outDir, { recursive: true });
+  for (const v of views.views) {
+    if (v.focus) await page.evaluate(f => window.setFocus(f), v.focus);
+    const t0 = Date.now();
+    const url = await page.evaluate(c => window.shoot(c), v);
+    fs.writeFileSync(path.join(outDir, v.name + '.png'), Buffer.from(url.split(',')[1], 'base64'));
+    console.log('wrote', v.name, ((Date.now() - t0) / 1000).toFixed(1) + 's');
+  }
+  await browser.close();
+  server.close();
+})().catch(e => { console.error(e); process.exit(1); });

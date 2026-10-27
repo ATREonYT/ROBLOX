@@ -14,6 +14,23 @@ Each game folder already contains its map file (`default.project.json`)
 telling Rojo which script goes into which Studio service. You don't need
 to touch those.
 
+## One-time setup (Mac)
+
+1. Open **Terminal** (Cmd+Space, type Terminal) and install Rokit, the tool manager:
+   ```sh
+   curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
+   ```
+   Close the Terminal window and open a new one.
+2. Install Rojo for this project (the version matches the Studio plugin, 7.7.0):
+   ```sh
+   cd ~/ROBLOX/hood        # wherever you cloned the repo
+   rokit install           # answer yes if it asks to trust the tools
+   ```
+3. Install the Rojo plugin in Studio (<https://rojo.space> → Installation), if you haven't.
+
+Every time you work: in Terminal, `cd ~/ROBLOX/hood`, then `rojo serve default.project.json`. Leave that window open
+(it should say `listening on 127.0.0.1:34872`), then in Studio click Plugins → Rojo → Connect.
+
 ## One-time setup (Windows)
 
 1. **Get the repo onto your PC.** Easiest long-term: install

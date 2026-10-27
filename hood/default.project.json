@@ -37,6 +37,21 @@
       "SimulatorLobby": {
         "$path": "src/ServerStorage/SimulatorLobby.lua"
       },
+      "TheBlockV2": {
+        "$path": "src/ServerStorage/TheBlockV2.lua"
+      },
+      "HoodLighting": {
+        "$path": "src/ServerStorage/HoodLighting.lua"
+      },
+      "HoodProps": {
+        "$path": "src/ServerStorage/HoodProps.lua"
+      },
+      "UIKitDemo": {
+        "$path": "src/ServerStorage/UIKitDemo.lua"
+      },
+      "HoodEnemies": {
+        "$path": "src/ServerStorage/HoodEnemies"
+      },
       "UnitTest": {
         "$path": "src/ServerStorage/UnitTest",
         "$ignoreUnknownInstances": true
