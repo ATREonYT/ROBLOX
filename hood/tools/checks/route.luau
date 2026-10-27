@@ -70,6 +70,9 @@ local function flowTrack()
 		local t = {}
 		for _, d in G.HoodGunReveal:GetDescendants() do if d:IsA('TextLabel') and not d.Name:find('Shadow') then table.insert(t, d.Text) end end
 		FL.reveal = FL.reveal or table.concat(t, ' | ')
+		local hg = G:FindFirstChild('HoodTutorialHint')
+		local h = hg and hg:FindFirstChild('Hint', true)
+		if h and h.Visible and visibleChainF(h) then FL.hintOverReveal = (FL.hintOverReveal or 0) + 1 end
 	end
 	local prog = G:FindFirstChild('HoodProgress')
 	if prog and prog:FindFirstChild('RankUp', true) then table.insert(up, 'RankUp') end
@@ -400,7 +403,7 @@ fcheck('tutorial: its goals complete quietly (no GOAL DONE while it runs)', FL.g
 fcheck('tutorial: the goal line waits while it runs', FL.goalLineInTut == 0, FL.goalLineInTut .. ' ticks')
 fcheck('tutorial: ends on one YOU\'RE READY! moment', FL.ready)
 fcheck('Stage 1: CREW INCOMING!', FL.crew)
-fcheck('first gun: its own moment (NEW GUN!, the name, x2 POWER PER SHOT)', FL.reveal ~= nil and FL.reveal:find('NEW GUN') ~= nil and FL.reveal:upper():find('X2 POWER PER SHOT', 1, true) ~= nil, FL.reveal)
+fcheck('first gun: its own moment (NEW GUN!, the name, x2 POWER PER SHOT)', FL.reveal ~= nil and FL.reveal:find('NEW GUN') ~= nil and FL.reveal:upper():find('X2 POWER PER SHOT', 1, true) ~= nil and (FL.hintOverReveal or 0) <= 3, tostring(FL.reveal) .. ('; the hint over it %d ticks (its 0.3 s fade at most)'):format(FL.hintOverReveal or 0))
 fcheck('one voice: never two popups at once', #FL.overlap == 0, table.concat(FL.overlap, ', '):sub(1, 200))
 local worst = math.huge
 for _, g in FL.gaps do worst = math.min(worst, g[1]) end

@@ -3,6 +3,7 @@
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const [sceneFile, outDir, Wa, Ha, Na] = process.argv.slice(2);
+const CAMS = process.env.CAMS ? JSON.parse(fs.readFileSync(process.env.CAMS, 'utf8')) : null;
 const W = +(Wa || 960), H = +(Ha || 540), N = CAMS ? CAMS.frames.length : +(Na || 120), FPS = +(process.env.FPS || 10); // (FPS: the particle clock's frame rate)
 const root = __dirname;
 const art = path.join(__dirname, '..', '..', '..', 'art', 'vfx'); // (hood/art/vfx)
@@ -21,7 +22,6 @@ const GUIDE = process.env.GUIDE ? JSON.parse(fs.readFileSync(process.env.GUIDE, 
 // CAMS=<file> (Oct 27, ui/firstvideo.luau's cams.json): a recorded play — per frame the game camera (c, l: eye and a
 // point it looks at), the kid (a: x, y, z of the root, facing) and the parts the scripts added to the world (p); N is
 // its frame count and the route, CAM and GUIDE are not used
-const CAMS = process.env.CAMS ? JSON.parse(fs.readFileSync(process.env.CAMS, 'utf8')) : null;
 // (the game harness has no raycast, so the guide's floor chevrons come at the feet's height there; in the game
 // GoalGuide lays them 0.16 over the floor its ray finds: the same is done here against the scene's floor parts)
 let floorParts = null;

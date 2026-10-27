@@ -354,6 +354,7 @@ local startedAt, WELCOME_WAIT = os.clock(), 20
 local function popupUp() -- the loading cover, the rank-up screen, a returning player's card or offer chip, an artboard dialog
 	if playerGui:FindFirstChild('HoodLoading') then return true end
 	if playerGui:GetAttribute('HoodWelcome') == true then return true end -- (Oct 27, flow: the first-join welcome goes first)
+	if playerGui:FindFirstChild('HoodGunReveal') then return true end -- (and the new gun's moment: one voice at a time)
 	-- (and before it starts: a first join waits for the welcome to have played, the server's word on it for a moment;
 	-- WELCOME_WAIT seconds at most, so a welcome that never comes can't hold the tutorial)
 	if os.clock() - startedAt < WELCOME_WAIT then
