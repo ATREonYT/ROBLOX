@@ -139,6 +139,28 @@ L.Presets = {
 		clouds = { Cover = 0.4, Density = 0.75, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),
 	},
+	-- PlusOne (Oct 27, the owner: "keep the colours vibrant, but don't make the lighting so bright, it hurts my eyes ...
+	-- check other games that are +1 games ... how their lighting operates"). Measured against the +1 game's spawn frame
+	-- (ref_W01.0: mean brightness 145, 0.8% of the picture near white, colour saturation 0.66), Huzz rendered 165, 4.6%
+	-- and 0.36: brighter and paler. The +1 games' recipe: a real sun with clear shadows, a moderate sky fill (shade keeps
+	-- its colour but is visibly darker), exposure pulled down, no haze (haze greys the colours), and the colour grade
+	-- doing the vividness (saturation up) instead of brightness. Huzz's sky and clouds stay.
+	PlusOne = {
+		technology = 'ShadowMap',
+		lighting = {
+			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.6, ExposureCompensation = -0.3,
+			Ambient = C(125, 125, 135), OutdoorAmbient = C(170, 172, 182),
+			ColorShift_Top = C(255, 248, 236), ColorShift_Bottom = C(0, 0, 0),
+			EnvironmentDiffuseScale = 0.8, EnvironmentSpecularScale = 0.3, ShadowSoftness = 0.45, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.15, Offset = 0.3, Haze = 0, Glare = 0, Color = C(170, 210, 255), Decay = C(80, 160, 245) },
+		grade = { Brightness = 0, Contrast = 0.12, Saturation = 0.35, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.25, Size = 24, Threshold = 2 },
+		rays = { Intensity = 0.03, Spread = 0.5 },
+		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 3000, CelestialBodiesShown = true },
+		clouds = { Cover = 0.4, Density = 0.75, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
 	HoodToy = {
 		technology = 'ShadowMap',
 		-- (B35, the owner: "make the lighting block better to fix the lighting look"; it read pale and hazy) the soldier

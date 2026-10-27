@@ -6350,8 +6350,10 @@ Lobby.PortalPath = { x0 = -30, z0 = Lobby.Plaza.z1 + 1.4, z1 = Lobby.Plaza.z1 + 
 -- edge (35, 56, 87). Built a shade under, so Huzz's sun lands them on the reference.
 Lobby.Bright = {
 	floor = C(158, 232, 74), floorB = C(154, 228, 70),
-	deck = C(196, 204, 228), deckLight = C(212, 218, 238), kerb = C(116, 130, 170), kerbTop = C(146, 158, 194), edge = C(80, 94, 132),
-	walk = C(228, 232, 246),
+	-- (Oct 27, the owner: "don't make the lighting so bright, it hurts my eyes": the near-white walks and platforms were
+	-- the glare, ~5% of the spawn view clipped against the reference's 0.8%; a shade down, still light and clean)
+	deck = C(180, 188, 214), deckLight = C(194, 200, 224), kerb = C(110, 124, 164), kerbTop = C(138, 150, 186), edge = C(80, 94, 132),
+	walk = C(198, 205, 224),
 }
 local BR = Lobby.Bright
 Lobby.PlazaColors = {
@@ -6397,9 +6399,10 @@ return {
 	Group = { codes = { -36, 13 }, chest = { 37, 12 }, scale = 0.62 },
 	World2 = { x = -36, z = 80, look = Lobby.Centre, scale = 0.85 }, -- (Oct 27: past the dais's west end, its own path) -- (SW, facing the crossing; Oct 27 round 2, the owner: "put the second world portal closer ... easy for the players to see": just off the south walk under the training block, like the reference's)
 	WorldBoss = { x = 40, z = 80, look = Lobby.Centre }, -- (SE, facing the crossing; off for now)
-	-- (SE) the three boards in a staggered row off the south walk, under the gun stand's platform, each facing the crossing (the
-	-- reference's: close to the path, angled to the centre)
-	Boards = { { 32, 71.5 }, { 39.5, 77.5 }, { 47, 83.5 } },
+	-- (SE) the three boards side by side in one row past the dais's east end, 15 apart, each facing the crossing, at the
+	-- end of their own path off the south walk (Oct 27, the owner: "so people can actually see and reach them, not just
+	-- being one another": the old staggered row hid each board behind the next from the spawn)
+	Boards = { { 33, 86 }, { 48, 86 }, { 63, 86 } },
 }
 end)()
 
@@ -6642,6 +6645,8 @@ function Lobby.paths()
 		-- (Oct 27, the owner: "make a pathway to the portal") off the south walk, west between the training block and
 		-- the box dais, onto the portal's front
 		Lobby.PortalPath and { Lobby.PortalPath.x0, -a, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Portal' } or nil,
+		-- and its mirror east, along the front of the three leaderboards
+		Lobby.PortalPath and { a, Lobby.BoardsPathX or 70, Lobby.PortalPath.z0, Lobby.PortalPath.z1, 'Boards' } or nil,
 	}
 end
 -- One path rectangle: two-tone 4 x 4 studded tiles on a grid from the spawn, a dark 1-stud curb along every stretch of
@@ -9683,7 +9688,7 @@ local Look = {}
 Look.Variant = 'P' -- (B31 PLAZA: the open plaza, rule 26; 'A' / 'B' were the slice's variants)
 Look.StudAlpha = 0.15 -- the stud texture's Transparency (B31 PLAZA, critic 1: the ref's walks and grass show their studs plainly, a lit patch's
 -- luminance spread 15-25 of 255; 0.45 measured 0.4, a dead fill)
-Look.Lighting = { P = 'Huzz', A = 'Huzz', B = 'Huzz', off = 'HoodSun' } -- (Oct 27: Huzz Valley's look; HoodToy before)
+Look.Lighting = { P = 'PlusOne', A = 'PlusOne', B = 'PlusOne', off = 'HoodSun' } -- (Oct 27: PlusOne, the +1 games' softer look; Huzz, HoodToy before)
 -- Old colour (r,g,b) -> new colour, per variant. Keys are the hall's own colours (Lobby.Colors, Lobby.FieldColor and the
 -- shades the hall builder derives), measured by area in the B30 lobby (work31_LOOK/tools: 57% of its surface was studded).
 local function key(c) return string.format('%d,%d,%d', math.round(c.R * 255), math.round(c.G * 255), math.round(c.B * 255)) end

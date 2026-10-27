@@ -3,7 +3,7 @@
 -- LookService does, so a place saved with older Lighting or another skybox still looks right. Lighting replicates to
 -- everyone. (Lighting.Technology can't be set by a running game: the place sets it, ShadowMap, in Properties.)
 local ServerStorage = game:GetService('ServerStorage')
-local PRESET = 'Huzz'
+local PRESET = 'PlusOne' -- (Oct 27: softer than Huzz, the owner's "it hurts my eyes"; ServerStorage/HoodLighting)
 
 local ok, err = pcall(function()
 	require(ServerStorage:WaitForChild('HoodLighting', 10)).Apply(PRESET)

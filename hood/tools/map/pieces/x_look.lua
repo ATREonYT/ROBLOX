@@ -19,7 +19,7 @@ local Look = {}
 Look.Variant = 'P' -- (B31 PLAZA: the open plaza, rule 26; 'A' / 'B' were the slice's variants)
 Look.StudAlpha = 0.15 -- the stud texture's Transparency (B31 PLAZA, critic 1: the ref's walks and grass show their studs plainly, a lit patch's
 -- luminance spread 15-25 of 255; 0.45 measured 0.4, a dead fill)
-Look.Lighting = { P = 'Huzz', A = 'Huzz', B = 'Huzz', off = 'HoodSun' } -- (Oct 27: Huzz Valley's look; HoodToy before)
+Look.Lighting = { P = 'PlusOne', A = 'PlusOne', B = 'PlusOne', off = 'HoodSun' } -- (Oct 27: PlusOne, the +1 games' softer look; Huzz, HoodToy before)
 -- Old colour (r,g,b) -> new colour, per variant. Keys are the hall's own colours (Lobby.Colors, Lobby.FieldColor and the
 -- shades the hall builder derives), measured by area in the B30 lobby (work31_LOOK/tools: 57% of its surface was studded).
 local function key(c) return string.format('%d,%d,%d', math.round(c.R * 255), math.round(c.G * 255), math.round(c.B * 255)) end
