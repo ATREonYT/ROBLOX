@@ -79,7 +79,7 @@ do
 			V.cams[V.n // STEP + 1] = { c = { cam.X, cam.Y, cam.Z }, l = { at.X, at.Y, at.Z }, a = { r.X, r.Y, r.Z, math.atan2(r.LookVector.X, r.LookVector.Z) }, p = parts }
 		end
 		V.n += 1
-		if V.n % 120 == 0 or V.n == MAX then
+		if V.n % 30 == 0 or V.n == MAX then -- (often: the route can end a little before MAX)
 			__fs.writeFile(UI_OUT .. '/cams.json', __serde.encode('json', { step = STEP, frames = V.cams }))
 			print(('[video] %d frames'):format(V.n))
 		end
