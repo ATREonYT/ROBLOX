@@ -81,7 +81,11 @@ end
 local nowhere = Instance.new('Part'); nowhere.Name = 'HarnessNowhere'; nowhere.Anchored = true; nowhere.Transparency = 1
 nowhere.CFrame = CFrame.new(0, -20000, 0); pcall(function() nowhere.Position = Vector3.new(0, -20000, 0) end); nowhere.Parent = workspace
 _G.__nowhere = nowhere
-local function lunePatch(source) return (source:gsub('([%w_%.]+%.Adornee) = nil', '%1 = _G.__nowhere')) end
+local function lunePatch(source)
+	source = source:gsub('([%w_%.]+%.Adornee) = nil', '%1 = _G.__nowhere')
+	-- (the harness has no Position default on map parts: GunService measures the reach through CFrames instead)
+	return (source:gsub('%(root%.Position %- point%.Position%)', '(root.CFrame.Position - point.CFrame.Position)'))
+end
 local function run(src, name, parent)
 	local m = Instance.new('ModuleScript'); m.Name = name; m.Source = lunePatch(src.Source); m.Parent = parent
 	task.spawn(function()
@@ -90,7 +94,7 @@ local function run(src, name, parent)
 	end)
 end
 P:SetAttribute('ProfileReady', true)
-for _, s in { 'StageService', 'WaveService', 'GoalService', 'TravelService' } do run(HS[s], s, fake) end
+for _, s in { 'StageService', 'WaveService', 'GoalService', 'TravelService', 'GunService' } do run(HS[s], s, fake) end
 local HC = game.StarterPlayer.StarterPlayerScripts.HoodClient
 for _, c in { 'Stages', 'Waves', 'Goals', 'LabelFade', 'World' } do run(HC[c], c .. 'CUT', HC) end
 
@@ -371,6 +375,21 @@ check('pads locked again', label(r1, 'Sub') == '🔒 Clear the crew!', label(r1,
 wall(1.8)
 check('the goal moves on to buying a gun', attr('GoalText') == 'Buy a gun', attr('GoalText'))
 check('BestCashOut 1 (the stage cashed out at)', attr('BestCashOut') == 1, attr('BestCashOut'))
+-- (Oct 27, the "stale Buy a gun goal" open item) buying a gun at the ARMORY moves the goal on within the hold + a check.
+do
+	local second
+	for _, g in require(RS.Shared.Config.Guns).List do if g.Id ~= 'Pistol' and not g.Exclusive then second = second or g end end
+	local point = workspace:FindFirstChild('GunPoint_' .. second.Id, true)
+	local cashBefore = data.Cash
+	data.Cash = math.max(data.Cash, second.Cost + 100)
+	moveTo(CFrame.new(point.CFrame.Position + Vector3.new(0, 3, 0)))
+	wall(0.3)
+	RS.HoodNet.BuyGun:FireServer(second.Id)
+	wall(3.5)
+	check('buying a gun moves the goal on from "Buy a gun"', attr('GoalText') ~= 'Buy a gun' and attr('EquippedGun') == second.Id,
+		tostring(attr('GoalText')) .. ' / ' .. tostring(attr('EquippedGun')))
+	data.Cash = cashBefore
+end
 cash0 = data.Cash
 onPad(r1)
 wall(0.6)

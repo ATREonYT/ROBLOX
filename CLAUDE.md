@@ -39,8 +39,9 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - unit: all pass (413 since the Oct 27 footsteps);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
-- city_contracts: 42 checks / 0 failed;
-- play_run: 82 checks / 0 failed;
+- city_contracts: 215 checks / 0 failed;
+- city_play: 10 checks / 0 failed (World 2's 16 stages and the rooftop, through the real services);
+- play_run: 83 checks / 0 failed (it buys a gun and checks the goal moves on);
 - live_shoes and live_reveal: exit 0;
 - first30: 8 ok with 0 purchase prompts;
 - finale_play: 18/0;
@@ -103,7 +104,6 @@ Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio
 ## Open items (at the time of writing)
 - Box opening: hide the HUD during the cinematic; rarity text under the shoe.
 - Product labels too big when passing on the walk to the gate.
-- Stale "Buy a gun" goal after buying.
 - Phone HUD right column overlap.
 - The 5 Robux exclusive guns (NeonViper, GalaxyRay, InfernoCannon, Frostbite, RoyalCrown) are imported but not for sale; waiting on the owner's prices.
 - Stage props: waiting on a Claude Design batch from the owner.
