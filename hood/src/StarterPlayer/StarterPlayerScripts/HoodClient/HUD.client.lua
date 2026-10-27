@@ -31,7 +31,7 @@ local Balance = require(Shared.Config.Balance)
 local Guns = require(Shared.Config.Guns)
 local Products = require(Shared.Config.Products)
 local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
-local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX) } -- (ROBUX, rules 27-28: one local for both)
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX), Idle = require(Shared.UIIdle) } -- (ROBUX, rules 27-28: one local for both)
 local Spec = require(Shared.HudSpec)
 local Windows = require(Shared.HudWindows)
 local Toasts = require(Shared.HudToasts)
@@ -456,7 +456,9 @@ do
 		-- (ROBUX, rule 27-28) the reference's "x2 Wins": white to light grey, a thick near-black outline, a dark foot; the
 		-- art bobs gently and a few stars twinkle round the card (ref_W01.0_spawn_view_north)
 		Sell.Style.apply(head, 'white', { Thickness = 4.5, Shadow = true })
-		Motion.bob(icon, 3, 2.2 + 0.3 * i)
+		-- (Oct 27, the owner: "make the luck clovers spin left and right little") the art idles on UIIdle's one shared loop, by
+		-- what it shows: the cash bobs, the arm breathes, the shoe rocks; staggered by its row
+		Sell.Idle.icon(icon, iconId, i)
 		hit.Position = px(0, -8)
 		hit.Size = UDim2.new(1, 0, 1, 22)
 		local lime = ColorSequence.new(hex('E8FF4A'), hex('4EE020'))

@@ -56,6 +56,13 @@ have it under `/opt/node22/lib/node_modules`). A slot in `compose.py` can be `no
   (the place published), and the picture memory budget holds. Without them the windows fall back to their drawn look
   and Output prints one `[HoodUI]` line naming the fix.
 
+## Motion: the Shop as a video (Oct 27)
+- `SCENE=shopvideo sh shoot.sh <out>` opens the Shop and dumps it every 1/30 s of game time (210 frames, 7 s; a
+  hover and a press on the Featured price half way), draws each frame, then in <out>:
+  `ffmpeg -framerate 30 -i f_%03d.png -c:v libx264 -pix_fmt yuv420p shop.mp4`. It shows the pop-in, the stagger,
+  the icons' idle motion, the shine sweeps, the sparkles and the green buttons' glow (all on `Shared/UIIdle`). Not drawn:
+  a UIGradient's Offset (the HUD offers' shine, `UIMotion.shine`), the 3D views.
+
 ## Phones, the HUD, the fallback and closing (Oct 27, release fixes)
 - `SCENE=hud SW=844 SH=390 NOTCH=47 TOUCH=1 sh shoot.sh <out>` draws the HUD alone on a phone screen (`hud.luau`) and
   prints what overlaps or runs off the screen (`hud.layout.json`: each screen's top-level blocks, as the box around

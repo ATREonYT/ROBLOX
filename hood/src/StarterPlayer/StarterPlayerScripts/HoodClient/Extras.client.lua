@@ -23,7 +23,7 @@ local Motion = require(Shared.UIMotion)
 local Net = require(Shared.Net)
 local Products = require(Shared.Config.Products)
 local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
-local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX) } -- (ROBUX, rules 27-28)
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX), Idle = require(Shared.UIIdle) } -- (ROBUX, rules 27-28)
 local Format = require(Shared.Format)
 local Spec = require(Shared.HudSpec)
 local Windows = require(Shared.HudWindows)
@@ -327,7 +327,7 @@ do
 		crate.Parent = body
 		-- (ROBUX, rules 27-28) the reference's Starter Pack: the white outlined caption, the crate bobbing, stars round it
 		Sell.Style.apply(caption, 'white', { Thickness = 3.5, Shadow = true })
-		Motion.bob(crate, 4, 2.4)
+		Sell.Idle.add(crate, 'bob', { Px = 4, Period = 2.4 }) -- (Oct 27: on UIIdle's one shared loop, still while hidden)
 		Sell.FX.sparkles(body, { Count = 2, Size = 16, ZIndex = 5, Every = 3, Inset = 0.15 })
 		local function paint()
 			holder.Visible = player:GetAttribute('StarterOwned') ~= true

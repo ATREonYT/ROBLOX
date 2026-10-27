@@ -27,7 +27,7 @@ local Kit = require(Shared.UIKit)
 local Motion = require(Shared.UIMotion)
 local Products = require(Shared.Config.Products)
 local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
-local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX) } -- (ROBUX, rules 27-28)
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX), Idle = require(Shared.UIIdle) } -- (ROBUX, rules 27-28; Oct 27: the idle motion)
 local Balance = require(Shared.Config.Balance)
 
 local function optional(...)
@@ -192,34 +192,39 @@ local Art -- MOCKUP30 (the Grail Bundle, the gift picker; below)
 -- Tasteful motion (the references' pops and stagger-ins), all TweenService and one shared Heartbeat: the window pops in
 -- (0.9 > 1.03 > 1), a section's cards and title stagger in, the hero price buttons breathe (scale only, 3%), a slow soft
 -- shine sweeps the Featured and BEST DEAL cards every few seconds, a new OWNED stamp pops. Nothing flashes.
-local RunService = game:GetService('RunService')
 local TweenService = game:GetService('TweenService')
 local entrance, headers, breathers, shines, popOwned = {}, {}, {}, {}, {}
 local curSection -- (the section build() is filling: cards register themselves for the stagger-in)
-local breathConn
-local function startBreath()
-	if breathConn then return end
-	local ok, conn = pcall(function()
-		return RunService.Heartbeat:Connect(function()
-			local k = 1 + 0.03 * (0.5 + 0.5 * math.sin(os.clock() * 2.4))
-			for i = #breathers, 1, -1 do
-				local s = breathers[i]
-				if s.Parent then s.Scale = k else table.remove(breathers, i) end
-			end
-		end)
-	end)
-	if ok then breathConn = conn end
-end
-local function stopBreath()
-	if breathConn then breathConn:Disconnect() end
-	breathConn = nil
-end
--- A soft diagonal band the shared loop (startTicker) sweeps across `body` every few seconds.
+-- (Oct 27, the owner: "make the ui more animated ... look more buyable") every idle motion here (the breath of the big
+-- buy buttons, the shine sweeps, the sparkles, the icons' rock / bob / breathe, the green buttons' glow) runs on
+-- Shared/UIIdle's one shared loop, staggered, and only while it is on screen: a closed Store does no work.
+-- A soft diagonal band sweeping across `body` every few seconds (cards one after another: 0.6 s apart, from 1.4 s).
 local function addShine(body)
 	body.ClipsDescendants = true
-	local band = Kit.new('Frame', { Name = 'Shine', BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(-0.3, 0, 0.5, 0), Size = UDim2.new(0.14, 0, 2, 0), Rotation = 18, ZIndex = 58, Parent = body })
+	local band = Kit.new('Frame', { Name = 'Shine', BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(-0.3, 0, 0.5, 0), Size = UDim2.new(0.14, 0, 2, 0), Rotation = 18, ZIndex = 58, Visible = false, Parent = body })
 	Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.74), NumberSequenceKeypoint.new(1, 1) }), Parent = band })
 	table.insert(shines, band)
+	Sell.Idle.add(band, 'sweep', { Band = band, Every = 3.5, Dur = 0.9, Delay = 1.4 + ((#shines - 1) % 4) * 0.6, Phase = 0, Watch = body })
+end
+-- A price button's own shine (inside a clipping frame, so the owner's button piece keeps its outline), and, on a green
+-- Robux button, a soft lime glow breathing behind it.
+local buyCount = 0
+local function buyFX(holder, green)
+	buyCount += 1
+	local body = holder:FindFirstChild('Body') or holder
+	local clip = Kit.new('Frame', { Name = 'ShineClip', BackgroundTransparency = 1, ClipsDescendants = true, Position = px(2, 2), Size = UDim2.new(1, -4, 1, -4), ZIndex = body.ZIndex + 6, Parent = body })
+	Kit.new('UICorner', { CornerRadius = UDim.new(0, 6), Parent = clip })
+	local band = Kit.new('Frame', { Name = 'Shine', BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(-0.3, 0, 0.5, 0), Size = UDim2.new(0.12, 0, 2.4, 0), Rotation = 18, ZIndex = body.ZIndex + 6, Visible = false, Parent = clip })
+	Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.6), NumberSequenceKeypoint.new(1, 1) }), Parent = band })
+	Sell.Idle.add(band, 'sweep', { Band = band, Every = 4.2, Dur = 0.7, Delay = 2.2 + (buyCount % 5) * 0.45, Phase = 0, Watch = holder })
+	if green then Sell.Idle.add(holder, 'glow', { Color = hex('B4FF4A'), Pad = 5, Radius = 10, Period = 1.6, ZIndex = math.max(0, body.ZIndex - 2) }) end
+end
+-- An item icon's idle motion (the clover rocks, cash bobs, the rest breathes), staggered by its place.
+local iconCount = 0
+local function idleIcon(art, id)
+	iconCount += 1
+	Sell.Idle.icon(art, id, iconCount)
+	return art
 end
 -- The section a Store.Open(at) target belongs to ('Featured' by default).
 local function sectionOf(at)
@@ -261,7 +266,6 @@ end
 local function close()
 	if not isOpen then return end
 	isOpen = false
-	stopBreath()
 	if closePicker then closePicker() end
 	coverPlayerList(false)
 	Motion.blur(NAME, false)
@@ -389,9 +393,9 @@ local function priceButton(parent, entry, w, h, pos, anchor, z, tone, opts)
 	local holder, _, l = Kit.robuxButton({ Name = 'Buy', Tone = tone, Price = entry.Price, TextSize = opts.TextSize, Width = w, Height = h, Position = pos, AnchorPoint = anchor, Outline = 3, RimWidth = 2, Radius = 6, ZIndex = z })
 	holder.Parent = parent
 	if opts.Breathe then
-		local bs = Kit.new('UIScale', { Name = 'Breathe', Parent = holder })
-		table.insert(breathers, bs)
+		table.insert(breathers, Sell.Idle.add(holder, 'breathe', { Name = 'Breathe', Amount = 0.03, Period = 2.6 }))
 	end
+	buyFX(holder, tone == LIMEBTN or tone == 'buyGreen')
 	local row = holder.Body:FindFirstChild('Price')
 	if opts.Was and row then
 		local size = opts.WasSize or 22 -- (>= 14 dp on a phone, ~20 px on a PC)
@@ -641,6 +645,7 @@ local function passCard(entry, x, y, parent, tone, opts)
 	local z = 28
 	local art = Kit.icon3d(iconId(entry), 178, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(76, HALF_H / 2 - 2) })
 	art.Parent = c.Body
+	idleIcon(art, iconId(entry))
 	local ax, aw = 146, HALF - 146 - 12
 	local ink = Kit.toneOf(tone).stroke
 	local t = title(c.Body, entry.Title, 32, tone, { Position = px(ax + aw / 2, 8), Width = aw })
@@ -679,6 +684,7 @@ local function packCard(entry, x, y, w, h, parent, mode)
 	local art = Kit.icon3d(iconId(entry, section == 'Power' and 'Muscle' or 'Cash'), size, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = tall and px(w / 2, h - 140) or (wide and px(98, h / 2 - 2) or px(66, h / 2 - 6)) })
 	art.Parent = c.Body
+	idleIcon(art, iconId(entry, section == 'Power' and 'Muscle' or 'Cash'))
 	local sz = tall and 58 or (wide and 56 or 40)
 	local amount = label({ Name = 'Amount', Text = amountText(entry), TextSize = Kit.fitSize(amountText(entry), sz, tall and w - 20 or (w - 100), 20), TextColor3 = Color.white, Stroke = hex('5A2E00'), StrokeThickness = math.max(3.5, sz * 0.13),
 		TextXAlignment = tall and Enum.TextXAlignment.Center or Enum.TextXAlignment.Right, AnchorPoint = tall and Vector2.new(0.5, 0) or Vector2.new(1, 0.5),
@@ -788,7 +794,7 @@ local function tile(parent, cx, cy, icon, chip, z)
 	-- (the reference sits each item on a soft glow circle)
 	blob(parent, cx - 54, cy - 54, 108, 108, Color.white, 0.82, true).ZIndex = z - 2
 	blob(parent, cx - 38, cy - 38, 76, 76, Color.white, 0.7, true).ZIndex = z - 1
-	Kit.icon3d(icon, 76, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, cy) }).Parent = parent
+	idleIcon(Kit.icon3d(icon, 76, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, cy) }), icon).Parent = parent
 	local cw = math.max(76, Kit.textWidth(chip, 18) + 18)
 	local ch = Kit.block({ Name = 'Chip', Tone = CHIP_BLUE, Width = cw, Height = 28, Studs = false, Outline = 2.5, RimWidth = 2, Radius = 6, OutlineColor = hex('08205C'), Position = px(cx, cy + 50), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = z + 1 })
 	label({ Name = 'Text', Text = chip, TextSize = 19, Stroke = hex('08205C'), Size = UDim2.fromScale(1, 1), ZIndex = z + 6, Parent = ch.Body })
@@ -863,7 +869,7 @@ local function passStrip(y, parent)
 		c.Name = 'Strip_' .. entry.Key
 		local t = title(c.Body, entry.Title, 28, tone, { Position = px(q / 2, 6), Width = q - 16 })
 		Sell.Style.apply(t, 'white', { Thickness = math.max(3.5, t.TextSize * 0.15), Shadow = true })
-		Kit.icon3d(iconId(entry), 112, { ZIndex = 29, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(q / 2, 98) }).Parent = c.Body
+		idleIcon(Kit.icon3d(iconId(entry), 112, { ZIndex = 29, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(q / 2, 98) }), iconId(entry)).Parent = c.Body
 		priceButton(c.Body, entry, q - 30, 42, px(q / 2, STRIP_H - 12), Vector2.new(0.5, 1), 31, 'buyGreen', { TextSize = 26 })
 	end
 	return STRIP_H
@@ -908,7 +914,7 @@ local function serverCard(entry, y, parent)
 	local z = 28
 	addShine(c.Body)
 	Sell.FX.sparkles(c.Body, { Count = 2, Size = 18, ZIndex = z + 8, Every = 3, Inset = 0.12 })
-	Kit.icon3d(iconOr('ServerBoost', iconId(entry)), 172, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(88, SERVER_H / 2) }).Parent = c.Body
+	idleIcon(Kit.icon3d(iconOr('ServerBoost', iconId(entry)), 172, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(88, SERVER_H / 2) }), 'ServerBoost').Parent = c.Body
 	local mid = 372
 	local st = title(c.Body, 'Server Boost', 46, LIME, { Position = px(mid, 2), Width = 330 })
 	st.TextColor3 = CREAM
@@ -1162,6 +1168,7 @@ local function build()
 	countdownLabel, partyLine, shownFeatured = nil, nil, nil
 	table.clear(entrance)
 	table.clear(headers)
+	for _, r in breathers do if r then r.stop() end end
 	table.clear(breathers)
 	table.clear(shines)
 	for _, child in list:GetChildren() do
@@ -1415,21 +1422,7 @@ local function startTicker()
 			task.wait(1)
 		end
 	end)
-	-- the shine sweep: one soft diagonal band over each registered card, one after another, every few seconds
-	task.spawn(function()
-		task.wait(1.4)
-		while isOpen and mine == tickToken do
-			for i, band in shines do
-				task.delay(((i - 1) % 4) * 0.6, function()
-					if band.Parent and isOpen then
-						band.Position = UDim2.new(-0.3, 0, 0.5, 0)
-						Motion.tween(band, 0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, { Position = UDim2.new(1.3, 0, 0.5, 0) })
-					end
-				end)
-			end
-			task.wait(3.5)
-		end
-	end)
+	-- (the shine sweeps run on UIIdle's shared loop, addShine)
 end
 local function open(at)
 	if isOpen then
@@ -1451,7 +1444,6 @@ local function open(at)
 	pop.Completed:Once(function(state)
 		if state == Enum.PlaybackState.Completed then Motion.tween(ps, 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, { Scale = 1 }) end
 	end)
-	startBreath()
 	animateIn(sectionOf(at))
 	scrollTo(at)
 end

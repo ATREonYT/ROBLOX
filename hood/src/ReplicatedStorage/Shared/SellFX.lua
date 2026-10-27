@@ -6,9 +6,9 @@
 --       stars round the x2 buttons and the Starter Pack; ref_V3-00.5_store_exclusive: the stars on the clover card).
 --       props: Count (3), Size (16 px), Color (white), ZIndex, Every (2.8 s: one star's whole cycle),
 --       Inset (0.08: keep this share of the parent's size clear at each edge).
---   SellFX.pulse(gui, amount, period) -> the tween
+--   SellFX.pulse(gui, amount, period) -> the UIIdle record (rec.stop())
 --       a gentle idle breath (scale 1 -> 1 + amount, 0.035, and back over `period`, 2.4 s) on a UIScale named Pulse.
-local TweenService = game:GetService('TweenService')
+local UIIdle = require(script.Parent.UIIdle)
 
 local SellFX = {}
 
@@ -62,28 +62,15 @@ function SellFX.sparkles(parent, props)
 	local n = props.Count or 3
 	local every = props.Every or 2.8
 	local inset = props.Inset or 0.08
-	local alive = true
-	local rng = Random.new(props.Seed or (#parent.Name * 7919 + n))
+	local seed = props.Seed or (#parent.Name * 7919 + n)
+	-- (Oct 27) the twinkles run on UIIdle's one shared loop, only while the parent is on screen (no loop per star)
+	local recs = {}
 	for i = 1, n do
 		local s, scale = star(parent, props.Size or 16, props.Color or Color3.new(1, 1, 1), props.ZIndex or 20)
-		task.spawn(function()
-			task.wait((i - 1) * every / n)
-			while alive and s.Parent do
-				s.Position = UDim2.fromScale(inset + rng:NextNumber() * (1 - 2 * inset), inset + rng:NextNumber() * (1 - 2 * inset))
-				s.Rotation = 0
-				s.Visible = true
-				TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-				TweenService:Create(s, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Rotation = 45 }):Play()
-				task.wait(0.4)
-				TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0 }):Play()
-				task.wait(0.32)
-				s.Visible = false
-				task.wait(math.max(0.1, every - 0.72))
-			end
-		end)
+		table.insert(recs, UIIdle.add(s, 'twinkle', { Star = s, Scale = scale, Every = every, Inset = inset, Seed = seed * 31 + i, Delay = (i - 1) * every / n, Watch = parent }))
 	end
 	return function()
-		alive = false
+		for _, r in recs do r.stop() end
 		for _, c in parent:GetChildren() do
 			if c.Name == 'Sparkle' then c:Destroy() end
 		end
@@ -98,9 +85,8 @@ function SellFX.pulse(gui, amount, period)
 		s.Parent = gui
 	end
 	s.Scale = 1
-	local t = TweenService:Create(s, TweenInfo.new((period or 2.4) / 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1 + (amount or 0.035) })
-	t:Play()
-	return t
+	-- (Oct 27: UIIdle's shared loop, paused while off screen)
+	return UIIdle.add(gui, 'breathe', { Name = 'Pulse', Amount = amount or 0.035, Period = period or 2.4 })
 end
 
 return SellFX

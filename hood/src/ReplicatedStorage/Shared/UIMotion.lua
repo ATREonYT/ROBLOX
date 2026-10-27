@@ -155,15 +155,9 @@ function Motion.shine(gui, every, radius)
 	g.Offset = Vector2.new(-1, 0)
 	g.Parent = band
 	band.Parent = gui
-	local alive = true
-	task.spawn(function()
-		while alive and band.Parent do
-			g.Offset = Vector2.new(-1, 0)
-			TweenService:Create(g, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Offset = Vector2.new(1, 0) }):Play()
-			task.wait(every or 3.5)
-		end
-	end)
-	return function() alive = false; band:Destroy() end
+	-- (Oct 27: on UIIdle's one shared loop, paused while off screen, instead of a loop per shine)
+	local rec = require(script.Parent.UIIdle).add(band, 'sweep', { Band = band, Gradient = g, Every = every or 3.5, Dur = 0.7, Phase = 0, Watch = gui })
+	return function() if rec then rec.stop() end; band:Destroy() end
 end
 
 -- Slide a toast in from above, hold, slide out and destroy it.
