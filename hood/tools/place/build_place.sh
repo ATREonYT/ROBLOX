@@ -4,6 +4,7 @@
 # (https://lune-org.github.io/docs, e.g. `brew install lune` or `rokit add lune-org/lune`).
 #   sh hood/tools/place/build_place.sh                 -> hood/places/HoodEvolution.rbxl
 #   sh hood/tools/place/build_place.sh out.rbxlx       -> any path (.rbxlx for the XML format)
+#   MAP=TheCity sh hood/tools/place/build_place.sh hood/places/HoodEvolution_World2.rbxl   -> World 2's place
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 HOOD=$(cd "$HERE/../.." && pwd)
@@ -17,4 +18,4 @@ LUNE=${LUNE:-lune}
 COMMIT=$(git -C "$HOOD" rev-parse --short HEAD 2>/dev/null || echo '?')
 printf -- '-- Written by tools/place/build_place.sh: when this place file was built and from which commit (shown small in Studio only).\nreturn { Stamp = "%s %s" }\n' "$(date -u '+%b %d %H:%M') UTC" "$COMMIT" > "$HOOD/src/ReplicatedStorage/Shared/Config/Build.lua"
 cd "$HOOD/tools/preview"
-HOOD_PLACE_OUT="$OUT" "$LUNE" run harness.luau "$HOOD/src" - "require(game.ServerStorage.TheBlockV2).Build()"
+HOOD_PLACE_OUT="$OUT" "$LUNE" run harness.luau "$HOOD/src" - "require(game.ServerStorage.${MAP:-TheBlockV2}).Build()"

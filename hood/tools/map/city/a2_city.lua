@@ -11,6 +11,9 @@
 -- HoodStageGate models, HoodStagePad parts, HoodFightPad markers, the lobby slots), the root named TheCity with
 -- HoodWorld = 2. Command Bar:  require(game.ServerStorage.TheCity).Build()
 V2.Name, V2.World, V2.Where = 'TheCity', 2, 'city'
+-- This place is World 2: say so before anything reads the economy (the helpers' Robux text loads Config/Products and
+-- with it Config/Balance), so the pads' Cash and the gates' Power are World 2's from the very first build.
+pcall(function() workspace:SetAttribute('HoodWorld', 2) end)
 
 -- The avenue's colours (the bright reference palette: light clean stone, mid asphalt, white lines) over the hood
 -- street's: f_areas' ground and the gate builders read P.st.
