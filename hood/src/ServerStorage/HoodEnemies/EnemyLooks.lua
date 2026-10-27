@@ -21,7 +21,10 @@
 
 local Players = game:GetService("Players")
 
-local Roster = require(script.Parent:WaitForChild("EnemyRoster"))
+-- (Oct 27) World 2's place (Downtown) dresses its crews from World2Roster: the office workers, up to the CEO.
+local okWorld, WorldInfo = pcall(function() return require(game:GetService("ReplicatedStorage").Shared.WorldInfo) end)
+local inWorld2 = okWorld and WorldInfo.current() == 2 and script.Parent:FindFirstChild("World2Roster") ~= nil
+local Roster = require(script.Parent:WaitForChild(if inWorld2 then "World2Roster" else "EnemyRoster"))
 
 export type Item = { id: number, type: string }
 export type Entry = {

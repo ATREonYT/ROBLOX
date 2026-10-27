@@ -177,7 +177,7 @@ local robuxRows = {
 	} },
 }
 
-Shoes.ActiveWorld = 1
+Shoes.ActiveWorld = require(script.Parent.Parent.WorldInfo).current() -- (Oct 27: each world is its own place)
 Shoes.Worlds = 5 -- worlds the boxes are planned for (2 Cash boxes each)
 Shoes.Boxes = {}
 Shoes.BoxById = {}

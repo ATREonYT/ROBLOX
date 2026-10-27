@@ -21,6 +21,8 @@ Schema.Template={
  -- chain: the current goal's step (Shared/GoalRules); Synced false = a profile from before the chain, caught up
  -- quietly on its first check.
  Waves={Cleared=0},Goals={Step=1,Synced=true,Chain=5},
+ -- (Oct 27) The world the fields above belong to, and the other worlds' own Waves/Goals/ClearedWalls (HoodServer/WorldData).
+ CurrentWorld=1,Worlds={},
  -- Shoes from the shoe boxes (Shared/ShoeRules): pairs owned by id ({[id]=copies}), the equipped ids (up to 3; the
  -- best is worn, the others follow you) and how many boxes you have opened. Goals.Chain = GoalRules.Chain (a goal
  -- inserted into the chain moves older saves' steps; GoalRules.migrate).
@@ -93,6 +95,9 @@ function Schema.migrate(data)
   data.StarterPack=data.StarterPack==true
  end
  -- HUD30 END
+ -- Worlds (Oct 27): this place's world's progress on top, the others' saved aside (HoodServer/WorldData); before
+ -- the reconcile, so a first visit to a world gets a fresh set. No version bump: an older server keeps the fields.
+ require(script.Parent.WorldData).enter(data,require(game.ReplicatedStorage.Shared.WorldInfo).current())
  reconcile(data,Schema.Template)
  -- BestLevel (brief 29): a damaged or missing value is rebuilt from Power and the rebirths (LevelRules.bestOf), never a reason
  -- to kick, and never below what the profile already earned (nobody loses a rank).
