@@ -86,7 +86,7 @@ function StoreReceipts.grants(ctx)
 		local need = RebirthRules and RebirthRules.need(profile.Data.Rebirths) or 2500
 		local amount = Products.powerAmount(key, need, profile.Data.Rep)
 		assert(amount > 0, 'no amount for ' .. key)
-		profile.Data.Rep = math.min(1e12, profile.Data.Rep + amount)
+		profile.Data.Rep = math.min(1e15, profile.Data.Rep + amount)
 		setAttribute(player, 'Power', profile.Data.Rep)
 		notice(player, 'Thanks! +' .. Format.compact(amount) .. ' Power')
 	end

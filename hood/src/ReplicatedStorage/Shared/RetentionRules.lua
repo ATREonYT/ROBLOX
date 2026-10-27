@@ -172,7 +172,7 @@ function R.sanitize(r: any): { [string]: any }
 	if type(r) ~= 'table' then return out end
 	for _, key in { 'Joins', 'LastSeen', 'Pending', 'LastOffline' } do
 		local v = number(r[key], 0)
-		out[key] = (v >= 0 and v <= 1e12) and math.floor(v) or 0
+		out[key] = (v >= 0 and v <= 1e15) and math.floor(v) or 0
 	end
 	out.Group = r.Group == true
 	return out

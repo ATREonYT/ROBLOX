@@ -167,7 +167,7 @@ local function autoFire(player,profile,lane,station,dt)
  local gun,shoes=player:GetAttribute('GunMultiplier'),player:GetAttribute('ShoeMultiplier')
  local pay=0
  for _=1,shots do pay+=ShotRules.autoValue(ShotRules.pay(per,gun,shoes,shoeCarry[player]),autoCarry[player]) end -- (FEEL 32: each worth AutoValue shots)
- profile.Data.Rep=math.min(1e12,profile.Data.Rep+pay)
+ profile.Data.Rep=math.min(1e15,profile.Data.Rep+pay)
  profile.Data.Onboarding.Trained=true
  RebirthService.publish(player,profile.Data) -- (Power and RebirthReady at once, so the counter climbs with every shot)
 end

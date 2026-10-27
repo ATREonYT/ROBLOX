@@ -201,7 +201,11 @@ end
 -- World 2 (Oct 27): carries on from World 1's boss with World 2's numbers (globals W2_SP, W2_PAD, W2_BOOST, else
 -- Balance.Worlds[2]); its boss at about 40 minutes more is the owner's "later worlds longer".
 local W2 = Balance.Worlds and Balance.Worlds[2]
-local sp2, pad2, boost2 = W2_SP or (W2 and W2.StagePower), W2_PAD or (W2 and W2.PadCash), W2_BOOST or (W2 and W2.LaneBoost)
+local sp2, pad2, boost2 = W2_SP, W2_PAD or (W2 and W2.PadCash), W2_BOOST or (W2 and W2.LaneBoost)
+if not sp2 and W2 then -- (World 2 runs at Scale x World 1's numbers on both sides: the sim plays it in World 1's units)
+	sp2 = {}
+	for i, v in W2.StagePower do sp2[i] = v / (W2.Scale or 1) end
+end
 if sp2 and pad2 then
 	for _, kind in { { name = 'focused', waste = 0 }, { name = 'patient', waste = 0, patient = true }, { name = 'casual', waste = 0.35 } } do
 		local one = simulate({ seed = 1, waste = kind.waste, patient = kind.patient })

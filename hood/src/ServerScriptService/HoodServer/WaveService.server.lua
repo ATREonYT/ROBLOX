@@ -228,7 +228,7 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index, melee)
 	local share = ShotRules.EnemyShare * (melee and EnemyRules.MeleePay or 1)
 	local gain = ShotRules.share(ShotRules.pay(perShot, player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry[player]), share, shoeCarry[player], melee and 'Melee' or 'Enemy')
 	-- P4 (brief 29) END
-	profile.Data.Rep = math.min(1e12, profile.Data.Rep + gain)
+	profile.Data.Rep = math.min(1e15, profile.Data.Rep + gain)
 	player:SetAttribute('Power', profile.Data.Rep)
 	stateRemote:FireClient(player, { Kind = 'Hit', Stage = stage, Index = index, HP = w.HP[index], Left = w.Left, Damage = damage, Gain = gain, Melee = melee or nil })
 	if done then cleared(player, profile, stage) end

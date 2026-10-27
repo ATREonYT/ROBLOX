@@ -38,6 +38,8 @@ return function(t)
 		for s = 2, 16 do t.expect.truthy(W2.StagePower[s] > W2.StagePower[s - 1] and W2.PadCash[s] > W2.PadCash[s - 1]) end
 		t.expect.truthy(W2.LaneBoost > 1)
 		t.expect.truthy(W2.StagePower[16] <= B.MaxSafeValue)
+		-- (the owner: World 2's Power in the billions) its numbers run at Scale x World 1's; World 1 at 1
+		t.expect.truthy(W2.Scale >= 1000 and W2.StagePower[1] >= 1e9); t.expect.equal(B.Scale, 1); t.expect.equal(B.ShotBase, 1)
 	end)
 
 	t.test('a profile from before the worlds migrates and validates in World 1', function()

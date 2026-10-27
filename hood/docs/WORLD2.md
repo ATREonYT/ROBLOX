@@ -22,7 +22,7 @@ offices and bosses in suits. Same loop, bigger numbers.
 - World 2's Stage 1 asks for about World 1's boss Power; pads pay more; its ranges multiply more (the lanes keep opening
   by rebirths, World 2's set above World 1's).
 - Unlock: the World 2 door opens once you've beaten World 1's boss yard (saved, once ever). You can always travel back.
-- Pacing: `tools/pacing` grows a second world; the target is ~40 minutes from the World 2 door to its boss.
+- Pacing: World 2 runs at 5000x World 1's numbers (Power in the billions, the owner: "in other games it's usually billions"), one stage per rebirth from 10 to 25; about 62 minutes from the door to its boss (the owner: "make it way longer").
 
 ## The look ("more advanced", same style)
 Same LEGO-like blocky kit, classic studs, the Huzz lighting. City instead of hood: clean asphalt avenues with white lane

@@ -37,7 +37,7 @@ function Retention.give(profile, reward, now)
 		data.Passes = passes
 	end
 	if reward.Cash then data.Cash = math.min(1e12, data.Cash + reward.Cash) end
-	if reward.Power then data.Rep = math.min(1e12, data.Rep + reward.Power) end
+	if reward.Power then data.Rep = math.min(1e15, data.Rep + reward.Power) end
 end
 
 local function fmtLines(reward)
@@ -81,7 +81,7 @@ function Retention.claimOffline(profile)
 	local r = table_(profile.Data)
 	local amount = r.Pending
 	if amount <= 0 then return false, 'none' end
-	profile.Data.Rep = math.min(1e12, profile.Data.Rep + amount)
+	profile.Data.Rep = math.min(1e15, profile.Data.Rep + amount)
 	r.LastOffline = amount
 	r.Pending = 0
 	return true, amount
@@ -119,7 +119,7 @@ function Retention.offlineDouble(profile)
 	else
 		amount = Rules.eightHours(need(data))
 	end
-	data.Rep = math.min(1e12, data.Rep + amount)
+	data.Rep = math.min(1e15, data.Rep + amount)
 	r.Pending, r.LastOffline = 0, 0
 	return amount
 end

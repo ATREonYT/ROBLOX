@@ -112,7 +112,7 @@ end
 function Schema.validate(data)
  for _,key in ipairs({'Rep','Cash','Rebirths','DailyStreak','LastDaily','TimePlayed','Speed'}) do
   local n=data[key]
-  assert(type(n)=='number' and n==n and n>=0 and n<=1e12,'Invalid numeric profile field: '..key)
+  assert(type(n)=='number' and n==n and n>=0 and n<=1e15,'Invalid numeric profile field: '..key)
  end
  assert(type(data.EquippedSkin)=='string' and require(game.ReplicatedStorage.Shared.Config.Skins).ById[data.EquippedSkin],'Invalid equipped skin')
  assert(data.Rebirths%1==0 and data.Rebirths<=require(game.ReplicatedStorage.Shared.Config.Balance).MaxRebirths,'Invalid rebirth count')
