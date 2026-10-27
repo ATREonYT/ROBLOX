@@ -45,11 +45,12 @@ end
 
 -- Can this player buy gun `id` right now? Returns true, or false and a reason:
 -- 'unknown' (no such gun), 'owned' (already yours: equip it instead), 'far' (not at the pedestal),
--- 'cash' (can't afford it).
+-- 'cash' (can't afford it), 'robux' (a Robux exclusive: it comes with its game pass).
 function GunRules.canBuy(guns, cash: number, id: any, distance: any): (boolean, string?)
 	local gun = type(id) == 'string' and Guns.ById[id]
 	if not gun then return false, 'unknown' end
 	if GunRules.state(guns, id) ~= 'Locked' then return false, 'owned' end
+	if gun.Exclusive then return false, 'robux' end -- (a Robux exclusive comes only with its game pass)
 	if not near(distance) then return false, 'far' end
 	if type(cash) ~= 'number' or cash ~= cash or cash < gun.Cost then return false, 'cash' end
 	return true, nil
@@ -71,11 +72,13 @@ function GunRules.multiplier(guns): number
 	return Guns.multiplier(guns and guns.Equipped)
 end
 
--- Owned gun ids in ladder order, comma separated: the OwnedGuns player attribute clients read.
+-- Owned gun ids in ladder order (then the Robux exclusives), comma separated: the OwnedGuns player attribute clients read.
 function GunRules.ownedList(guns): string
 	local ids = {}
-	for _, gun in Guns.List do
-		if guns and type(guns.Owned) == 'table' and guns.Owned[gun.Id] == true then table.insert(ids, gun.Id) end
+	for _, list in { Guns.List, Guns.Exclusive } do
+		for _, gun in list do
+			if guns and type(guns.Owned) == 'table' and guns.Owned[gun.Id] == true then table.insert(ids, gun.Id) end
+		end
 	end
 	return table.concat(ids, ',')
 end

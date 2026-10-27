@@ -475,7 +475,8 @@ local function title(parent, text, size, tone, props)
 end
 -- Every picture slot asks for its own key (icon:<Name>), so a picture dropped in under that name is used at once; until it is
 -- uploaded the nearest existing picture stands in.
-local ICON_FALLBACK = { CashBig = 'CashMedium', CashMega = 'CashLarge', PowerBig = 'PowerMedium', PowerMega = 'PowerLarge', Speed2x = 'Arrow', AutoOpen = 'TripleOpen', ServerBoost = 'BlockParty' }
+local ICON_FALLBACK = { CashBig = 'CashMedium', CashMega = 'CashLarge', PowerBig = 'PowerMedium', PowerMega = 'PowerLarge', Speed2x = 'Arrow', AutoOpen = 'TripleOpen', ServerBoost = 'BlockParty',
+	Gun_NeonViper = 'Gun', Gun_Frostbite = 'Gun', Gun_GalaxyRay = 'Gun', Gun_InfernoCannon = 'Gun', Gun_RoyalCrown = 'Gun' }
 local function iconId(entry, fallback)
 	local id = (entry.Art or ''):match('^icon:(.+)$') or fallback or 'Shop'
 	if id == 'Power' then id = iconOr('Muscle', 'Power') end

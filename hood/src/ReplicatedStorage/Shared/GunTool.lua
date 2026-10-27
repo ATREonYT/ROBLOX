@@ -53,7 +53,10 @@ function GunTool.build(id: string)
 	local meshMuzzle = nil
 	if M then
 		-- (brief 32) M.build gives the user's blocky gun mesh when it is imported (same grip origin, muzzle -Z), else Parts
-		local model = M.weld(M.build(gun.Id, scale))
+		-- (Oct 27) a Robux exclusive exists only as the user's mesh: without the imported meshes it is held as the Neon
+		-- Blaster's Parts, so the gun still works
+		local ok, built = pcall(M.build, gun.Id, scale)
+		local model = M.weld(if ok and built then built else M.build('Blaster', scale))
 		handle = model.PrimaryPart
 		meshMuzzle = model:GetAttribute('Mesh') and model:GetAttribute('Muzzle') or nil
 		if meshMuzzle then tool:SetAttribute('Mesh', true) end

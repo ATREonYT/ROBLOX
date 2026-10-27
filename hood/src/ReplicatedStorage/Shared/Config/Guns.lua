@@ -22,6 +22,23 @@ for i, r in {
 	Guns.ById[gun.Id] = gun
 end
 Guns.Starter = 'Pistol'
+-- (Oct 27, the owner: "Yes, at my suggested prices") The 5 Robux exclusive guns: the owner's designs (Shared/ItemMeshes,
+-- Gun_<Id>), each a one-time game pass (Config/Products.Passes, key Pass = 'Gun' .. Id; no random chance), never sold
+-- for Cash. They are not on the Cash ladder (Guns.List, the ARMORY's ten pads and the pacing sim stay as they were):
+-- they live in Guns.Exclusive and Guns.ById. GunService adds one to your guns the moment its Pass_<Pass> is true.
+Guns.Exclusive = {}
+for i, r in {
+	{ 'NeonViper', 'Neon Viper', 8, 149, C(80, 255, 170), 'Sleek neon green snake gun' },
+	{ 'Frostbite', 'Frostbite', 12, 249, C(140, 220, 255), 'Ice blue blaster with frost crystals' },
+	{ 'GalaxyRay', 'Galaxy Ray', 20, 399, C(150, 90, 255), 'Purple space ray gun with stars' },
+	{ 'InfernoCannon', 'Inferno Cannon', 28, 599, C(255, 110, 40), 'Fiery orange cannon with flames' },
+	{ 'RoyalCrown', 'Royal Crown', 40, 899, C(255, 205, 60), 'Gold and purple royal gun with a crown' },
+} do
+	local gun = { Id = r[1], Name = r[2], Multiplier = r[3], Robux = r[4], Cost = 0, Color = r[5], Look = r[6],
+		Tier = #Guns.List + i, Exclusive = true, Pass = 'Gun' .. r[1] }
+	table.insert(Guns.Exclusive, gun)
+	Guns.ById[gun.Id] = gun
+end
 function Guns.multiplier(id: string?): number
 	local gun = id and Guns.ById[id]
 	return gun and gun.Multiplier or 1

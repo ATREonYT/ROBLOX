@@ -21,7 +21,7 @@ Do these in order. Each step says where the details are. Tick them off as you go
 8. **Passes and products:** create every game pass and developer product listed in `hood/MONETIZATION.md`, at the prices given. Paste each id into `hood/src/ReplicatedStorage/Shared/Config/Products.lua`.
    - Until an id is pasted, that button says "Coming soon!" and nothing breaks.
 9. **Group:** put your group id in `hood/src/ServerScriptService/HoodServer/ServerConfig.lua` (`GroupId`). This turns on the group reward chest.
-10. **Optional:** the 5 Robux exclusive guns (Neon Viper, Galaxy Ray, Inferno Cannon, Frostbite, Royal Crown) are imported but not for sale yet. Tell Claude if you want them sold, and at what prices.
+10. **Exclusive guns:** the 5 Robux exclusive guns (Neon Viper, Frostbite, Galaxy Ray, Inferno Cannon, Royal Crown) are sold as game passes in the Shop. They're in the pass list in step 8, so create them with the rest.
 
 ## D. Test before anyone else plays (Studio → Play)
 11. **First 5 minutes, as a new player:**

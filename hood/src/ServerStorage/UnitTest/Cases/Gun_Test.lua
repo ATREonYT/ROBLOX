@@ -69,4 +69,22 @@ return function(t)
   local folder=game.ReplicatedStorage:FindFirstChild('HoodNet')
   if folder then for _,name in {'BuyGun','EquipGun'} do t.expect.truthy(folder:FindFirstChild(name)) end end
  end)
+ -- (Oct 27) The 5 Robux exclusive guns: game passes only, never Cash; off the ladder; listed once owned.
+ t.test('Robux exclusive guns: one pass each, never for Cash, listed when owned',function()
+  local P=require(game.ReplicatedStorage.Shared.Config.Products)
+  local Inv=require(game.ReplicatedStorage.Shared.InventoryKit)
+  t.expect.equal(#Guns.Exclusive,5)
+  for _,g in Guns.Exclusive do
+   t.expect.equal(Guns.ById[g.Id],g);t.expect.truthy(g.Exclusive and g.Robux>0 and g.Multiplier>1)
+   t.expect.truthy(P.Passes[g.Pass]~=nil)
+   local e=P.ByKey[g.Pass];t.expect.truthy(e and e.Kind=='Pass' and e.Gun==g.Id and e.Price==g.Robux)
+   for _,l in Guns.List do t.expect.truthy(l.Id~=g.Id) end
+   local ok,why=R.canBuy(fresh(),1e12,g.Id,0);t.expect.falsy(ok);t.expect.equal(why,'robux')
+  end
+  local guns=fresh();guns.Owned.RoyalCrown=true
+  t.expect.equal(R.ownedList(guns),'Pistol,RoyalCrown')
+  local ok=R.canEquip(guns,'RoyalCrown',0);t.expect.truthy(ok)
+  local list=Inv.guns('Pistol,RoyalCrown','RoyalCrown')
+  t.expect.equal(#list,#Guns.List+1);t.expect.equal(list[#list].Gun.Id,'RoyalCrown');t.expect.equal(list[#list].State,'Equipped')
+ end)
 end

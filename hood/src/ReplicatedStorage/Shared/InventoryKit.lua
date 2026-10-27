@@ -192,6 +192,10 @@ function InventoryKit.guns(ownedText, equipped)
 	for _, gun in Guns.List do
 		table.insert(list, { Gun = gun, State = gun.Id == equipped and 'Equipped' or owned[gun.Id] and 'Owned' or 'Locked' })
 	end
+	-- (Oct 27) the Robux exclusives you own, after the ladder (one you don't own is sold in the Store, not shown here)
+	for _, gun in Guns.Exclusive do
+		if owned[gun.Id] then table.insert(list, { Gun = gun, State = gun.Id == equipped and 'Equipped' or 'Owned' }) end
+	end
 	return list
 end
 

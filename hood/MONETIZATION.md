@@ -25,6 +25,11 @@ Create a pass, set its price, copy its id, and paste it at `Products.Passes.<Key
 | Auto Open | 249 | `AutoOpen` | The box's T button opens box after box by itself (one at a time, stops when you press it or run out of Cash) |
 | 2x Speed | 99 | `Speed2x` | Walk speed exactly x2 |
 | Auto Collect | 149 | `AutoCollect` | A street's pad Cash is paid the moment its crew is down (the 10x pad's amount with the 10x pass); the pad then only takes you back to the lobby. There are no loose drops in the game, so pads are what it collects |
+| Neon Viper | 149 | `GunNeonViper` | Exclusive gun: x8 Power per shot (equipped the moment it's bought) |
+| Frostbite | 249 | `GunFrostbite` | Exclusive gun: x12 Power per shot |
+| Galaxy Ray | 399 | `GunGalaxyRay` | Exclusive gun: x20 Power per shot |
+| Inferno Cannon | 599 | `GunInfernoCannon` | Exclusive gun: x28 Power per shot |
+| Royal Crown | 899 | `GunRoyalCrown` | Exclusive gun: x40 Power per shot (the Cash shop's best is x32) |
 
 ## Developer products (Monetization → Developer Products)
 

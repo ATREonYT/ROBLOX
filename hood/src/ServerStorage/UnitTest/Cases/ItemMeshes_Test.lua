@@ -219,7 +219,7 @@ return function(t)
 		end
 		for _, x in { 'NeonViper', 'GalaxyRay', 'InfernoCannon', 'Frostbite', 'RoyalCrown' } do
 			e.truthy(D['Gun_' .. x] and D['Gun_' .. x].Exclusive)
-			e.falsy(Guns.ById[x]) -- packaged only: not a game gun (yet)
+			e.truthy(Guns.ById[x] and Guns.ById[x].Exclusive) -- (Oct 27) sold as Robux game passes, off the Cash ladder
 		end
 		local pads = 0
 		for _, p in Products.Catalog do

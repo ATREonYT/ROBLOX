@@ -56,6 +56,12 @@ Products.Passes = {
 	AutoOpen = 0, -- "Auto Open": the box's T card opens box after box by itself (Shoes.client; free to stop any time)
 	Speed2x = 0, -- "2x Speed": walk speed x Products.SpeedPassFactor (2), LobbyService.walk
 	AutoCollect = 0, -- "Auto Collect": a street's pad Cash pays the moment its crew is down (StageService), no walk to the pad
+	-- (Oct 27) the 5 Robux exclusive guns (Config/Guns.Exclusive): owning the pass adds the gun (GunService)
+	GunNeonViper = 0, -- "Neon Viper", x8 Power per shot, 149 Robux
+	GunFrostbite = 0, -- "Frostbite", x12, 249 Robux
+	GunGalaxyRay = 0, -- "Galaxy Ray", x20, 399 Robux
+	GunInfernoCannon = 0, -- "Inferno Cannon", x28, 599 Robux
+	GunRoyalCrown = 0, -- "Royal Crown", x40, 899 Robux
 }
 -- Developer product ids (0 = not created yet).
 Products.DeveloperProducts = {
@@ -154,6 +160,12 @@ Products.Catalog = {
 	{ Key = 'AutoOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Open', Big = 'Open\nNon-Stop', Detail = 'The box T button opens boxes for you', Sub = 'Opens boxes for you', Price = 249, Art = 'icon:AutoOpen', Tone = 'cardTeal', Sticker = 'AUTO', Wired = true },
 	{ Key = 'Speed2x', Kind = 'Pass', Section = 'Gamepass', Title = '2x Speed', Big = 'Run\nFaster', Detail = 'Walk and run twice as fast', Sub = 'Twice as fast', Price = 99, Art = 'icon:Speed2x', Tone = 'cardGold', Offer = '2x Speed', Sticker = '2x', Wired = true },
 	{ Key = 'AutoCollect', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Collect', Big = 'Cash\nCollects Itself', Detail = 'A street\'s pad Cash pays the moment its crew is down', Sub = 'Pads pay by themselves', Price = 149, Art = 'icon:AutoCollect', Tone = 'cardGreen', Offer = 'Auto Collect', Sticker = 'AUTO', Wired = true },
+	-- (Oct 27) the Robux exclusive guns, one card each (Config/Guns.Exclusive: the price and Power come from there)
+	{ Key = 'GunNeonViper', Kind = 'Pass', Section = 'Gamepass', Gun = 'NeonViper', Title = 'Neon Viper', Big = 'x8\nPower', Detail = 'Exclusive gun: x8 Power per shot', Sub = 'x8 Power gun', Price = 149, Art = 'icon:Gun_NeonViper', Tone = 'cardGreen', Wired = true },
+	{ Key = 'GunFrostbite', Kind = 'Pass', Section = 'Gamepass', Gun = 'Frostbite', Title = 'Frostbite', Big = 'x12\nPower', Detail = 'Exclusive gun: x12 Power per shot', Sub = 'x12 Power gun', Price = 249, Art = 'icon:Gun_Frostbite', Tone = 'cardBlue', Wired = true },
+	{ Key = 'GunGalaxyRay', Kind = 'Pass', Section = 'Gamepass', Gun = 'GalaxyRay', Title = 'Galaxy Ray', Big = 'x20\nPower', Detail = 'Exclusive gun: x20 Power per shot', Sub = 'x20 Power gun', Price = 399, Art = 'icon:Gun_GalaxyRay', Tone = 'cardPurple', Wired = true },
+	{ Key = 'GunInfernoCannon', Kind = 'Pass', Section = 'Gamepass', Gun = 'InfernoCannon', Title = 'Inferno Cannon', Big = 'x28\nPower', Detail = 'Exclusive gun: x28 Power per shot', Sub = 'x28 Power gun', Price = 599, Art = 'icon:Gun_InfernoCannon', Tone = 'cardRed', Wired = true },
+	{ Key = 'GunRoyalCrown', Kind = 'Pass', Section = 'Gamepass', Gun = 'RoyalCrown', Title = 'Royal Crown', Big = 'x40\nPower', Detail = 'Exclusive gun: x40 Power per shot', Sub = 'x40 Power gun', Price = 899, Art = 'icon:Gun_RoyalCrown', Tone = 'cardGold', Wired = true },
 	-- ~Boosts~ (two 2x + one 3x bought one by one: 39 + 39 + 69 = 147)
 	{ Key = 'BoostBundle', Kind = 'Product', Section = 'Boost', Wide = true, Title = 'Boost Bundle', Detail = '45 minutes of boosts', Sub = 'Two 2x + one 3x', Bundle = { 'RepBoost2x', 'RepBoost2x', 'RepBoost3x' }, Lines = { '- Two 2x Power Boosts', '- One 3x Power Boost' }, Price = 119, WasPrice = 147, Art = 'icon:BoostBundle', Tone = 'rainbow', Wired = true },
 	{ Key = 'RepBoost2x', Kind = 'Product', Section = 'Boost', Title = '2x Power', Detail = '15 minutes', Sub = '15 minutes', Boost = 2, Price = 39, Art = 'icon:PotionRed', Tone = 'cardRed', Wired = true },
