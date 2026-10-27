@@ -14,18 +14,19 @@
 --   Outside  the cliffs, trees and hood blocks, 12 studs past the walls (a grass yard between), seen through the doors.
 -- (Oct 27, the owner: "keep the warehouse ... dont make it so cramped": 172 x 88, was 124 x 76; the spine on its middle
 -- line like the reference's path, the zones a walk's width off it, calm floor round them; z0 still hugs the gate's wings)
-Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 100,
+-- (lobby round 1, the owner: "way too crowded": 16 deeper, 172 x 110, so the zones stand the reference's 15-25 apart)
+Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 116,
 	 t = 2, eave = 30, truss = 6, off = 12, bay = 16,
 	win = { 17.6, 28.2 }, skirt = 3, -- (Oct 27 round 2: taller clerestory windows, more sky and cliffs over the walls)
 	-- open doors: { wall, u0, u1, height } (u along the wall: z for west/east, x for north/south)
 	-- (B34 fix round: the north door 28 high, so the Stage 1 gate's whole frame shows through it from the spawn)
-	open = { { 'N', -24, 24, 28 }, { 'S', -46, -32, 16 }, { 'S', 32, 46, 16 }, { 'W', 58, 72, 16 } },
-	shut = { { 'N', -66, -52, 14 }, { 'W', 12, 24, 14 }, { 'E', 64, 76, 14 } },
+	open = { { 'N', -24, 24, 28 }, { 'S', -46, -32, 16 }, { 'S', 32, 46, 16 }, { 'W', 88, 102, 16 } },
+	shut = { { 'N', -66, -52, 14 }, { 'W', 12, 24, 14 }, { 'E', 88, 100, 14 } },
 	-- one painted field per wall: { wall, u0, u1, y0, y1, colour key }
 	-- (B34 fix round: none; Oct 27 round 3: back, as in the Oct 13 hall the owner picked ("E"): red behind the ranges,
 	-- blue either side of the gate's door, teal behind the gun shop, yellow behind the box dais, all under the windows)
-	fields = { { 'W', 28, 54, 3, 15, 'red' }, { 'N', -46, -30, 3, 15, 'blue' }, { 'N', 30, 46, 3, 15, 'blue' },
-		{ 'E', 30, 58, 3, 15, 'teal' }, { 'S', -14, 14, 3, 14, 'yellow' } },
+	fields = { { 'W', 42, 68, 3, 15, 'red' }, { 'N', -46, -30, 3, 15, 'blue' }, { 'N', 30, 46, 3, 15, 'blue' },
+		{ 'E', 42, 68, 3, 15, 'teal' }, { 'S', -14, 14, 3, 14, 'yellow' } }, -- (round 1: W and E follow the zones 13 south)
 }
 Lobby.WHColors = { -- (Oct 27 round 3, the owner picked the Oct 13 warehouse, "E", the one with blue highlights: its
 	-- palette is back: warm light concrete, orange brick with a dark brick skirting and cream pilasters, blue steel trusses
@@ -223,7 +224,8 @@ function Lobby.warehouse(L, h)
 			lamps:box('LampRod', V(x - 0.2, 24.6, z - 0.2), V(x + 0.2, y0, z + 0.2), K.drum, M.SmoothPlastic)
 			lamps:box('LampShade', V(x - 1.6, 23.4, z - 1.6), V(x + 1.6, 24.6, z + 1.6), K.steel, M.SmoothPlastic)
 			local g = lamps:box('LampGlow', V(x - 1.2, 23.1, z - 1.2), V(x + 1.2, 23.4, z + 1.2), K.lamp, M.Neon)
-			light(g, K.lamp, 0.6, 26)
+			-- (lobby round 1: a light on every other row; the glow keeps every lamp lit to the eye)
+			if math.floor((z - Wh.z0 - 10) / 18) % 2 == 0 then light(g, K.lamp, 0.6, 26) end
 		end
 	end
 	for _, p in lamps.parent:GetDescendants() do
@@ -293,13 +295,7 @@ Lobby.Scenery = (function()
 	local list = {}
 	local function add(id, x, z, yaw, k) table.insert(list, { id, x, z, yaw or 0, k or 1 }) end
 	local Wh = Lobby.WH
-	add('Scn_Hoop', Wh.x0 + 4, 54, -90) -- (by the west door)
-	add('Scn_Crate', Wh.x0 + 3.4, Wh.z1 - 3.4, 0) add('Scn_Crate', Wh.x0 + 6.4, Wh.z1 - 3, 12) add('Scn_Barrel', Wh.x0 + 3.6, Wh.z1 - 7.4, 0)
-	add('Scn_Crate', Wh.x1 - 3.4, Wh.z1 - 3.4, 0) add('Scn_Barrel', Wh.x1 - 3.6, Wh.z1 - 7.4, 0) add('Scn_Barrel', Wh.x1 - 6.2, Wh.z1 - 3.2, 20)
-	for _, d in Wh.open do
-		if d[1] == 'S' then add('Scn_Cone', d[2] + 2, Wh.z1 - 2.2, 0) add('Scn_Cone', d[3] - 2, Wh.z1 - 2.2, 0) end
-	end
-	add('Scn_Hydrant', -50, Wh.z1 - 2.4, 180) add('Scn_TrashCan', 28, Wh.z1 - 2.4, 180)
+	-- (lobby round 1, the owner: "way too crowded": no props inside the hall any more; the yard keeps its trees)
 	-- out in the yard (framed by the doors and the clerestory)
 	add('Scn_Tree_1', -56, Wh.z1 + 10, 0) add('Scn_Tree_2', 42, Wh.z1 + 10, 0) add('Scn_Tree_2', Wh.x1 + 12, 15, 0) add('Scn_Tree_1', Wh.x0 - 12, 78, 0)
 	for _, x in { -70, -44, 34, 58 } do add('Scn_Bush_1', x, Wh.z1 + 5.6, 0) end

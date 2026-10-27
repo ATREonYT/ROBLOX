@@ -1344,8 +1344,7 @@ function Stations.labels(st, s, t, at, opts)
 	local image = not paid and okI and type(icons) == 'table' and icons.Images and icons.Images.Rebirth
 	local rowY, rowH = 0.2, 0.27
 	-- (a Robux lane: "ONLY <Robux> 99" in lime, the reference's paid lanes; the pair sits right of the word)
-	local pairX0 = paid and 0.46 or nil
-	if paid then text('Only', 'ONLY', P.white, 0.1, rowY + 0.02, 0.34, rowH - 0.04, 3, Stations.TextGrad.lime).TextXAlignment = Enum.TextXAlignment.Right end
+	local pairX0 = nil -- (lobby round 1: the price alone, centred, no "ONLY" before it)
 	local numberColor = P.white
 	local cost
 	if type(image) == 'string' and image ~= '' then

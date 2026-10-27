@@ -692,7 +692,7 @@ local function paintBoard(b)
 	if b.Prompt then b.Prompt.Enabled = not owned end
 	if b.Price then
 		local price = b.Price:GetAttribute('Price')
-		b.Price.Text = owned and 'OWNED' or ('ONLY ' .. RobuxText.fmt(price or '')) -- (B31 PLAZA: the reference's "ONLY <price>")
+		b.Price.Text = owned and 'OWNED' or RobuxText.fmt(price or '') -- (lobby round 1: the price alone, no "ONLY")
 	end
 end
 local function watchBoards()

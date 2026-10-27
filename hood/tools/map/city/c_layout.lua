@@ -10,7 +10,7 @@ local STAGES = 15 -- the avenue's stages; gate 16 opens the rooftop
 local SPAWN_W, SPAWN_TOP = 74, 123 -- (World 1's legacy hall extents: f_areas' ground and e2's legacy builders read them)
 local BOSS_TOP = -STAGES * SLEN -- -960: gate 16, onto the rooftop
 local BOSS_END = BOSS_TOP - 96 -- the rooftop runs to -1056
-local SPAWN = V(0, 0, 42) -- the plaza's crossing, the same as World 1's
+local SPAWN = V(0, 0, 55) -- the plaza's crossing, the same as World 1's
 local function stageTop(i) return -(i - 1) * SLEN end
 local function lookOf(i) return (i - 1) // 3 + 1 end
 local function trioOf(i) return (i - 1) % 3 + 1 end

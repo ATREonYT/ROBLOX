@@ -1027,7 +1027,7 @@ function Lobby.headStage(t, K)
 	local Pz, H = Lobby.Plaza, Lobby.Stand.Head
 	local h, hz = Pz.deck, H.HalfZ
 	local zc = Lobby.CrossZ
-	local x0 = Lobby.endX() - Lobby.headHalf() - 1.0 -- (its back, a stud past the lane's, in the alcove)
+	local x0 = Lobby.endX() - Lobby.headHalf() - (Lobby.HeadStageBack or 1.0) -- (its back, a stud past the lane's, in the alcove)
 	-- (the head lane faces east, +x: its front, the shooter's end, is at endX + HALF_Z)
 	local xf = Lobby.endX() + Lobby.headHalf() + 0.6 -- the stage's front edge, 0.6 past the lane's rim
 	local top = h + H.Rise
@@ -1055,8 +1055,8 @@ function Lobby.headStage(t, K)
 		decor(t:box('HeadPostLamp', V(x - 0.4, top + 5.55, z - 0.4), V(x + 0.4, top + 6.35, z + 0.4), C(255, 232, 140), M.Neon)).CastShadow = false
 	end
 	-- the glass dome over the target field (an ellipsoid half under the stage top), a gold finial on its crown
-	local cx = Lobby.endX() - 3.4
-	local dome = decor(t:blob('HeadDome', V(14, 17, 2 * hz - 0.4), V(cx, top, zc), C(236, 246, 255), M.Glass))
+	local cx = Lobby.endX() - (Lobby.HeadDomeIn or 3.4)
+	local dome = decor(t:blob('HeadDome', V(Lobby.HeadDomeX or 14, 17, 2 * hz - 0.4), V(cx, top, zc), C(236, 246, 255), M.Glass))
 	dome.Transparency, dome.CastShadow = 0.72, false
 	t:post('HeadFinialFoot', 0.9, 0.5, V(cx, top + 8.4, zc), goldDeep, M.SmoothPlastic)
 	decor(t:part('HeadFinial', V(1.1, 1.1, 1.1), CFrame.new(cx, top + 9.4, zc) * CFrame.Angles(0, math.pi / 4, math.pi / 4), goldPale, M.Neon)).CastShadow = false
@@ -1124,7 +1124,7 @@ function Lobby.stand(L, skins)
 		decor(t:box('LaneLamp', V(x - 0.38, y + 4.7, z - 0.38), V(x + 0.38, y + 5.4, z + 0.38), C(255, 236, 196), M.Neon)).CastShadow = false
 		t:box('LaneLampTop', V(x - 0.52, y + 5.4, z - 0.52), V(x + 0.52, y + 5.62, z + 0.52), K.riserDark, M.SmoothPlastic)
 	end
-	for _, z in { a0 - 0.65, a1 + 0.65 } do lamp(x1 - 0.6, z) end
+	if Lobby.LaneLamps ~= false then for _, z in { a0 - 0.65, a1 + 0.65 } do lamp(x1 - 0.6, z) end end -- (e3: none, lobby round 1)
 
 	-- the head lane's gold stage
 	Lobby.headStage(t, K)
@@ -2080,7 +2080,7 @@ function Lobby.productStand(c, key, opts)
 	local name = entry.Title or key
 	local a, labels = Lobby.signWords(g, V(0, foot + tall + 2.0 + (opts.lift or 0), 0), Lobby.ProductWordsW, Lobby.ProductWordsH, {
 		{ 'Title', name, 0.56, Lobby.Grad.gold, 4 },
-		{ 'Price', 'ONLY ' .. RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 },
+		{ 'Price', RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 }, -- (lobby round 1: the price alone, no "ONLY")
 	}, 36)
 	labels.Price:SetAttribute('Price', entry.Price)
 	Lobby.productWords(a.WorldLabel)
@@ -2144,7 +2144,7 @@ function Lobby.boxPadStand(c, boxId, key, tone, tag, special, lift)
 	-- the words: the name in the box's colour, "ONLY <Robux mark><price>" in lime under it
 	local a = Lobby.signWords(g, V(0, foot + tall + 2.0 + (lift or 0), 0), Lobby.ProductWordsW + 0.8, Lobby.ProductWordsH, {
 		{ 'Title', entry.Title or boxId, 0.56, { tone:Lerp(P.white, 0.6), tone:Lerp(P.white, 0.1) }, 4 },
-		{ 'Price', 'ONLY ' .. RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 },
+		{ 'Price', RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 }, -- (lobby round 1: the price alone, no "ONLY")
 	}, 36)
 	Lobby.productWords(a.WorldLabel)
 	-- the prompt: opens the Store at the box's card
@@ -2486,6 +2486,7 @@ function Lobby.leaderboard(L, cf, b)
 		l.TextSize, l.LineHeight = SIZE, ROW / (SIZE * 1.219) -- (Montserrat's line is 1.219 em)
 		l.RichText, l.TextWrapped, l.TextYAlignment, l.TextXAlignment = true, false, Enum.TextYAlignment.Top, align
 		l.TextColor3 = color
+		l.Text = '' -- (lobby round 1: never Roblox's default "Label"; LobbyService fills the rows)
 		local s = Instance.new('UIStroke')
 		s.Color, s.Thickness, s.LineJoinMode = C(8, 12, 30), 2, Enum.LineJoinMode.Round
 		s.Parent = l

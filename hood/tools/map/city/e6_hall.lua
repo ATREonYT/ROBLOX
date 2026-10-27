@@ -2,7 +2,7 @@
 -- (Oct 27, the owner, for World 2's lobby: "for the second world C", the Oct 10 hall) World 2's lobby is that indoor
 -- hall again, round World 2's own plan (e3_plaza's: the training block west, the gun stand east, the box dais south,
 -- the portal SW, the boards in one straight row SE, the sale spots and chests by the door), at World 1's size (the
--- warehouse's footprint, Lobby.WH: x -86..86, z 6..100). Runs after e5_plaza, so its Lobby.hall replaces the plaza's.
+-- warehouse's footprint, Lobby.WH: x -86..86, z 6..116). Runs after e5_plaza, so its Lobby.hall replaces the plaza's.
 --   Shell    light aqua walls 2.5 thick (faint studs), a darker studded base band with a pale lip, a paler cap band over
 --            a cornice; periwinkle wall pillars with the kinked face (e2's Lobby.wallPillar) on the side and back walls
 --            and the corners, kept clear of the training block's head deck
@@ -18,9 +18,9 @@
 
 City.Hall = {
 	H = 50, t = 2.5, DoorH = 32, WinY = 29, WinH = 16, Band = 43,
-	Side = { 28, 56, 78 }, -- side-wall pillars (z): clear of the head deck (z 34..50, out to x -82.4)
+	Side = { 30, 74, 96 }, -- side-wall pillars (z): clear of the head deck (lobby round 1: z 47..63, out to the west wall)
 	Back = { -43, 0, 43 }, -- back-wall pillars (x)
-	Rows = { 28, 56, 78 }, -- cross girders and light-bar rows (z), on the side pillars
+	Rows = { 30, 74, 96 }, -- cross girders and light-bar rows (z), on the side pillars
 	Cols = { -60, -30, 0, 30, 60 }, -- long girders and light-bar centres (x)
 	RX = 43, RH = 37, -- the exit bay's frame (half width, height)
 }
