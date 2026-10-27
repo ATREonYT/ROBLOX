@@ -14,8 +14,14 @@
 --   * a big picture is decoded in slices (a frame each) so opening a window never freezes the game;
 --   * a strong table of labels, dropped on Destroying (never a weak table keyed by Instance, CLAUDE.md);
 --   * every loop pcalls each step and reports an error once.
--- Packed format (hood/tools/ui/pack_images.py): { W, H, P = base64 RGBA palette, Data = base64 (count, index) runs,
--- Mode?, Slice? }. Kinds: 'Icons' (hood/art/icons3d) and 'Ui' (the owner's UI pieces, hood/art/ui_owner).
+-- Packed formats (hood/tools/ui/pack_images.py): Icons (Oct 27, round 7) { W, H, Z = base64 zlib stream of the PNG's
+-- filtered RGBA rows } (full colour, edge-colour filled; Shared/Inflate decodes it); Ui { W, H, P = base64 RGBA palette,
+-- Data = base64 (count, index) runs, Mode?, Slice? }. Kinds: 'Icons' (hood/art/icons3d) and 'Ui' (the owner's UI
+-- pieces, hood/art/ui_owner).
+--   (round 7, OUR_UI_AUDIT C1: no picture pops in after a window opens) ImageLoader.prepare(root, maxWait, done): draws
+--   now every picture under `root` that will be in view once it shows (at most PrepareMax of them) and preloads its
+--   uploaded ones, then calls done() (at the latest after maxWait seconds): a window opens when its pictures are ready.
+--   ImageLoader.fresh(name): whether an icon's upload is its current drawing (Shared/Images/Uploads, from the packer).
 --   ImageLoader.apply(label, kind, name, uploadedId?, opts?)  opts: onShow(label) once its picture shows, onFail(label)
 --                                                             when it can't (yet); both may run again later
 --   ImageLoader.packed(kind, name) -> module?                 ImageLoader.meta(kind, name) -> { W, H, Mode, Slice }?
@@ -26,6 +32,8 @@ ImageLoader.RETRY = 5
 ImageLoader.RETRY_MAX = 60
 
 local Images = script.Parent:FindFirstChild('Images')
+local Inflate = require(script.Parent.Inflate)
+ImageLoader.PrepareMax = 24 -- pictures one window may draw before it opens (the rest draw as they scroll into view)
 
 local ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 local VALUE = {}
@@ -54,6 +62,8 @@ local function decode(s)
 	return out
 end
 
+ImageLoader.base64 = decode -- (base64 text -> buffer; the checks use it)
+
 function ImageLoader.packed(kind, name)
 	local folder = Images and Images:FindFirstChild(kind)
 	local m = folder and folder:FindFirstChild(name)
@@ -78,6 +88,11 @@ function ImageLoader.pixels(kind, name)
 	local m = ImageLoader.packed(kind, name)
 	assert(m, 'no packed image ' .. kind .. '/' .. name)
 	local d = require(m)
+	if d.Z then
+		-- (round 7) full colour: the PNG's own compressed rows, inflated and un-filtered
+		local raw = Inflate.zlib(decode(d.Z), d.H * (d.W * 4 + 1))
+		return Inflate.unfilter(raw, d.W, d.H), d.W, d.H
+	end
 	local palette = decode(d.P)
 	local runs = decode(d.Data)
 	local rgba = buffer.create(d.W * d.H * 4)
@@ -378,6 +393,113 @@ function ImageLoader.apply(label, kind, name, uploadedId, opts)
 		fail(label, b)
 	end
 	if not running then loop() end
+end
+
+-- Is `label` (a descendant of root) in view once root shows: every GuiObject from it up to root Visible, and inside
+-- its scrolling list (or half a list away), whatever root's own ancestors are doing.
+local function inViewUnder(label, root)
+	if label:IsA('GuiObject') and not label.Visible then return false end
+	local node, scroll = label.Parent, nil
+	while node and node ~= root do
+		if node:IsA('GuiObject') then
+			if not node.Visible then return false end
+			if not scroll and node:IsA('ScrollingFrame') then scroll = node end
+		end
+		node = node.Parent
+	end
+	if node ~= root then return false end
+	if scroll then
+		local fine, shown = pcall(inView, label, scroll)
+		if fine and not shown then return false end
+	end
+	return true
+end
+local preloaded = {} -- [uploaded id] = true
+-- (Oct 27, round 7) Gets root's pictures ready before it shows: the packed ones that will be in view are drawn now (one
+-- after another, at most PrepareMax), the uploaded ones are preloaded (ContentProvider); done() runs once when they are
+-- all there, or after maxWait seconds (whichever is first; at once when nothing is missing). Returns true when nothing
+-- was missing (done has already run).
+function ImageLoader.prepare(root, maxWait, done)
+	local finished = false
+	local function finish()
+		if finished then return end
+		finished = true
+		if type(done) == 'function' then
+			local ok, err = pcall(done)
+			if not ok then warnOnce('prepare', 'prepare callback: ' .. tostring(err)) end
+		end
+	end
+	local missing, keys, uploads = {}, {}, {}
+	local now = os.clock()
+	local okWalk = pcall(function()
+		for label, b in bound do
+			if label:IsDescendantOf(root) and inViewUnder(label, root) then
+				local e = drawn[b.key]
+				if e then
+					e.seen = now
+					if not b.shown then show(label, b, e) end
+				elseif not keys[b.key] and not blocked and not failed[b.key] and #missing < ImageLoader.PrepareMax then
+					keys[b.key] = true
+					table.insert(missing, b)
+				end
+			end
+		end
+		for _, d in root:GetDescendants() do
+			if d:IsA('ImageLabel') or d:IsA('ImageButton') then
+				local id = d.Image
+				if type(id) == 'string' and string.sub(id, 1, 13) == 'rbxassetid://' and not preloaded[id] and inViewUnder(d, root) then
+					preloaded[id] = true
+					table.insert(uploads, d)
+				end
+			end
+		end
+	end)
+	if not okWalk or (#missing == 0 and #uploads == 0) then
+		finish()
+		return true
+	end
+	local left = (#missing > 0 and 1 or 0) + (#uploads > 0 and 1 or 0)
+	local function part()
+		left -= 1
+		if left <= 0 then finish() end
+	end
+	if #missing > 0 then
+		task.spawn(function()
+			for _, b in missing do
+				if finished and maxWait then break end -- (late: the rest draw as usual, once in view)
+				if not drawn[b.key] and not failed[b.key] and not blocked then
+					local fine, ok = pcall(draw, b.kind, b.name, b.key)
+					if fine and not ok and not failed[b.key] then pcall(draw, b.kind, b.name, b.key) end -- (once more after freeing room)
+				end
+			end
+			part()
+		end)
+	end
+	if #uploads > 0 then
+		task.spawn(function()
+			pcall(function() game:GetService('ContentProvider'):PreloadAsync(uploads) end)
+			part()
+		end)
+	end
+	if maxWait then task.delay(maxWait, finish) end
+	if not running then loop() end
+	return false
+end
+
+-- Whether an icon's upload (IconModels.Images) is its current drawing: Shared/Images/Uploads.Fresh, written by the
+-- packer. Without that list every upload counts as current (as before).
+local uploadsInfo
+function ImageLoader.fresh(name)
+	if uploadsInfo == nil then
+		uploadsInfo = false
+		local m = Images and Images:FindFirstChild('Uploads')
+		if m then
+			local ok, d = pcall(require, m)
+			if ok and type(d) == 'table' and type(d.Fresh) == 'table' then uploadsInfo = d end
+		end
+	end
+	if not uploadsInfo then return true end
+	return uploadsInfo.Fresh[name] == true
 end
 
 -- For the checks: whether the label shows its drawn picture, and how many pictures are drawn.

@@ -57,11 +57,12 @@ have it under `/opt/node22/lib/node_modules`). A slot in `compose.py` can be `no
   and Output prints one `[HoodUI]` line naming the fix.
 
 ## Motion: the Shop as a video (Oct 27)
-- `SCENE=shopvideo sh shoot.sh <out>` opens the Shop and dumps it every 1/30 s of game time (210 frames, 7 s; a
-  hover and a press on the Featured price half way), draws each frame, then in <out>:
+- `SCENE=shopvideo sh shoot.sh <out>` opens the Shop and dumps it every 1/30 s of game time (210 frames, 7 s; round 7:
+  taps on the Luck and Gamepasses tabs, then a hover and a press on a Gamepass price), draws each frame, then in <out>:
   `ffmpeg -framerate 30 -i f_%03d.png -c:v libx264 -pix_fmt yuv420p shop.mp4`. It shows the pop-in, the stagger,
   the icons' idle motion, the shine sweeps, the sparkles and the green buttons' glow (all on `Shared/UIIdle`). Not drawn:
-  a UIGradient's Offset (the HUD offers' shine, `UIMotion.shine`), the 3D views.
+  a UIGradient's Offset (`UIMotion.shine`, which every shine uses since round 7: the preview draws the band standing
+  still mid-card, Studio shows it only while it sweeps), the 3D views.
 - `SCENE=corevideo sh shoot.sh <out>` (Oct 27, the core loop): a real rebirth's payoff as HUD frames (`r_NNN.json`,
   drawn), then the goal guide recorded on a walk from the spawn toward the ARMORY (`guide_frames.dat`), which
   render14 draws in the hall: `CHROME=<chromium> FPS=30 GUIDE=<out>/guide_frames.dat node ../render14/walk.js

@@ -13,6 +13,11 @@ What it uploads: every PNG in hood/art/icons3d/ (-> IconModels.Images[<file name
 `Kit.<Name> = '...' -- hood/art/ui/<file>.png`), and every .ogg in hood/art/sounds/ (the footsteps, as Audio ->
 Config/Sound's Steps[<file name>]). Ids go in as 'rbxassetid://<id>'.
 
+Clean edges (Oct 27, round 7): every PNG is sent through hood/tools/ui/alpha_bleed.py first (standard library only):
+its fully see-through pixels take the colour of the nearest solid pixel, so Roblox's scaling never blends a dark or
+light rim into the picture's edge. The file in the repo is not changed; the manifest marks each upload with
+"prep": PREP, and a picture uploaded before this step (no mark) counts as changed and goes up again, cleaned.
+
 Idempotent: hood/art/asset_ids.json remembers the sha256 and asset id of every uploaded file. Unchanged files are not
 uploaded again (their ids are still written, so a re-run repairs the Lua files); a changed PNG is uploaded as a new
 asset. Options: --only Basket,stud_tile (names without .png), --force (re-upload everything), --write-only (no uploads:
@@ -35,6 +40,9 @@ import urllib.error
 import urllib.request
 import uuid
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ui'))
+import alpha_bleed  # noqa: E402  (hood/tools/ui/alpha_bleed.py: the edge-colour fill, standard library only)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_ROOT = os.path.abspath(os.path.join(HERE, '..'))  # the hood/ folder
 API = 'https://apis.roblox.com'
@@ -45,6 +53,7 @@ MANIFEST = os.path.join('art', 'asset_ids.json')
 SOURCES = (('icons3d', 'icon'), ('ui', 'texture'), ('sounds', 'sound'))
 EXT = {'icon': '.png', 'texture': '.png', 'sound': '.ogg'}
 SECRET = []  # the key, only so it can be scrubbed from server text
+PREP = 'bleed1'  # what was done to a PNG before it went up (alpha_bleed); an upload without this mark is redone
 
 
 class UploadError(Exception):
@@ -293,6 +302,8 @@ def upload_one(cfg, path, display, description):
 		'description': description[:1000], 'creationContext': {'creator': creator}}
 	with open(path, 'rb') as f:
 		data = f.read()
+	if not sound:
+		data = alpha_bleed.bleed_png_bytes(data)  # (the edge-colour fill: clean edges at any size)
 	body, ctype = multipart([('request', None, json.dumps(request).encode('utf-8'), None),
 		('fileContent', os.path.basename(path), data, 'audio/ogg' if sound else 'image/png')])
 	op = http('POST', cfg.api + '/assets/v1/assets', cfg.key, body, ctype)
@@ -417,7 +428,7 @@ def main(argv=None):
 		w, h = png_size(path)
 		if a.write_only:
 			status = 'keep' if rec and rec.get('assetId') else 'no-id'
-		elif rec and rec.get('assetId') and rec.get('sha256') == digest and not a.force:
+		elif rec and rec.get('assetId') and rec.get('sha256') == digest and not a.force and (kind == 'sound' or rec.get('prep') == PREP):
 			status = 'unchanged'
 		else:
 			status = 'changed' if rec and rec.get('assetId') else 'new'
@@ -460,7 +471,7 @@ def main(argv=None):
 			failures += 1
 			log('  FAILED %s: %s' % (key_, e))
 			continue
-		manifest[key_] = {'sha256': digest, 'assetId': asset_id, 'assetType': atype, 'moderation': state,
+		manifest[key_] = {'sha256': digest, 'assetId': asset_id, 'assetType': atype, 'moderation': state, 'prep': PREP,
 			'uploaded': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
 		save_manifest(root, manifest)  # after every upload, so an interrupted run loses nothing
 		ids[key_] = 'rbxassetid://%s' % asset_id

@@ -70,8 +70,10 @@ Spec.Bottom = {
 -- the right column (ref: the x2 cards 977..1137 = 160 x 52, 11 in from the right edge, tops at 237 / 325 / 413)
 Spec.Offers = { W = 160, H = 52, Right = 11, Top = 179, Step = 88, TitleSize = 30, PriceSize = 20 }
 -- where the cards' pictures sit (a UIKit Kit.Place rule; fractions of the card's height): the reference's trophy is about
--- 1.4 h wide and 1.15 h tall, centred, its top 0.2 h over the card's top edge, the title over it
-Spec.OfferArt = { W = 1.5, H = 1.3, X = 0.5, XH = 0, Y = 0.42, TopAt = -0.28 }
+-- 1.4 h wide and 1.15 h tall, centred, its top 0.2 h over the card's top edge, the title over it. (Oct 27, round 7,
+-- OUR_UI_AUDIT B: it stood 0.28 h over, 18-24 px into the gap above; now exactly the reference's 0.2 h. Held fully inside
+-- the card, the picture hid behind the title.)
+Spec.OfferArt = { W = 1.5, H = 1.3, X = 0.5, XH = 0, Y = 0.42, TopAt = -0.2 }
 -- the Shop bar's basket (ref: 80 x 60 over a 155 x 60 bar, centred, its handle 0.2 h over the top; its foot hides behind
 -- "Shop"; drawn in a frame from 0.5 h over the top down to the bar's bottom edge)
 Spec.ShopArt = { W = 1.42, H = 1.3, X = 0.5, XH = 0, Y = 0.3, TopAt = -0.24, ClipTop = -0.5 }

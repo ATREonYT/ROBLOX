@@ -67,7 +67,7 @@ function SellFX.sparkles(parent, props)
 	local recs = {}
 	for i = 1, n do
 		local s, scale = star(parent, props.Size or 16, props.Color or Color3.new(1, 1, 1), props.ZIndex or 20)
-		table.insert(recs, UIIdle.add(s, 'twinkle', { Star = s, Scale = scale, Every = every, Inset = inset, Seed = seed * 31 + i, Delay = (i - 1) * every / n, Watch = parent }))
+		table.insert(recs, UIIdle.add(s, 'twinkle', { Star = s, Scale = scale, Every = every, Inset = inset, Seed = seed * 31 + i, Delay = (i - 1) * every / n, Watch = parent, Priority = props.Priority }))
 	end
 	return function()
 		for _, r in recs do r.stop() end
@@ -77,7 +77,7 @@ function SellFX.sparkles(parent, props)
 	end
 end
 
-function SellFX.pulse(gui, amount, period)
+function SellFX.pulse(gui, amount, period, priority)
 	local s = gui:FindFirstChild('Pulse')
 	if not s then
 		s = Instance.new('UIScale')
@@ -86,7 +86,7 @@ function SellFX.pulse(gui, amount, period)
 	end
 	s.Scale = 1
 	-- (Oct 27: UIIdle's shared loop, paused while off screen)
-	return UIIdle.add(gui, 'breathe', { Name = 'Pulse', Amount = amount or 0.035, Period = period or 2.4 })
+	return UIIdle.add(gui, 'breathe', { Name = 'Pulse', Amount = amount or 0.035, Period = period or 2.4, Priority = priority })
 end
 
 -- (Oct 27, the core loop: the rebirth payoff) A one-shot burst from the parent's centre: gold and white stars and bright

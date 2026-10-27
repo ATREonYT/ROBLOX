@@ -205,7 +205,8 @@ local function paintShines()
 			rec.Off = false
 			task.delay(rec.Delay, function()
 				if rec.Off or not rec.Face.Parent then return end
-				local stopShine = Motion.shine(rec.Face, rec.Every, UDim.new(0, 3))
+				local corner = rec.Face:FindFirstChildOfClass('UICorner') -- (round 7: the band follows the face's own corners)
+				local stopShine = Motion.shine(rec.Face, rec.Every, corner and corner.CornerRadius or UDim.new(0, 3))
 				local stopSparkles = rec.Sparkles and Sell.FX.sparkles(rec.Sparkles.Parent, rec.Sparkles) or nil
 				rec.Stop = function() stopShine(); if stopSparkles then stopSparkles() end end
 			end)
@@ -399,7 +400,7 @@ do
 		local x = (i - 1) * (B.PackW + B.PackGap)
 		local holder = Kit.blockButton({ Name = key, Tone = T['pack' .. i], Width = B.PackW, Height = B.PackH, Position = px(x, y(B.PackAbove)), StudPattern = 'checker', RimWidth = 2, ZIndex = 2 })
 		holder.Parent = status
-		Kit.icon3d(POWER, 54, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 2, 0.5, 1), ZIndex = 6 }).Parent = holder
+		Kit.icon3d(POWER, 54, { ZIndex = 6, Place = Kit.inBox(0, 0, B.PackH, B.PackH, 0.06) }).Parent = holder -- (round 7: inside its button)
 		packLabels[key] = label({ Name = 'Amount', Text = '+0', TextSize = B.PackText, StrokeThickness = 3.5, Position = px(24, -1), Size = UDim2.new(1, -26, 1, 0), ZIndex = 7, Parent = holder.Body })
 		local price = Kit.only(entry.Price, B.PackPrice, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 2, 0, 0), ZIndex = 8, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('D8FF5A'), hex('6CE01E')) })
 		price.Parent = holder
@@ -589,8 +590,7 @@ local function rebirthMoment(n, unlocked)
 	local text = 'Power forever!'
 	if type(unlocked) == 'string' and unlocked ~= '' then text ..= '  ' .. unlocked .. ' unlocked!' end
 	local line = fillText(label({ Name = 'Forever', Text = text, TextSize = 34, StrokeThickness = 4, Position = px(0, 194), Size = UDim2.new(1, 0, 0, 42), ZIndex = 61, Parent = holder }), { Color.white, hex('D8F0FF') })
-	line.TextScaled = true
-	Kit.new('UITextSizeConstraint', { MaxTextSize = 34, Parent = line })
+	line.TextSize = Kit.fitSize(text, 34, 800, 18) -- (round 7: a fixed whole size, not TextScaled)
 	-- the beats, each starting when the one before ends (so they keep their spacing on any frame rate): the punch, in
 	-- past full size and back (0.3 s + 0.18 s); the new multiplier pops in with the burst; it holds 2.1 s; it floats
 	-- up and fades (0.4 s) and is gone
@@ -600,7 +600,10 @@ local function rebirthMoment(n, unlocked)
 		tw:Play()
 		return tw
 	end
+	local leaving = false
 	local function fadeOut()
+		if leaving or not holder.Parent then return end
+		leaving = true
 		Motion.tween(holder, 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Position = UDim2.fromScale(0.5, 0.34) })
 		for _, t in { title, from, arrow, to, line } do
 			Motion.tween(t, 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { TextTransparency = 1 })
@@ -619,9 +622,22 @@ local function rebirthMoment(n, unlocked)
 			chain(toScale, 0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
 			if not still then Sell.FX.burst(row, { Count = 10, Confetti = 22, Radius = 300, Size = 28, ZIndex = 63, Seed = n }) end
 			local hold = Kit.new('NumberValue', { Name = 'Hold', Parent = holder })
-			chain(hold, 2.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, { Value = 1 }, fadeOut)
+			chain(hold, 1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, { Value = 1 }, fadeOut)
 		end)
 	end)
+	-- (Oct 27, round 7, UI_CRISP_AND_JUICE) a tap or a click anywhere sends it away once it has shown for 0.6 s (it
+	-- listens without taking the tap: the shot or the button under it still works)
+	local shownAt = os.clock()
+	local tapConn
+	tapConn = game:GetService('UserInputService').InputBegan:Connect(function(input)
+		if not holder.Parent then tapConn:Disconnect() return end
+		local t = input.UserInputType
+		if (t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch) and os.clock() - shownAt >= 0.6 then
+			tapConn:Disconnect()
+			fadeOut()
+		end
+	end)
+	holder.Destroying:Connect(function() if tapConn.Connected then tapConn:Disconnect() end end)
 end
 
 ---------------------------------------------------------------------------------------------- windows
@@ -830,11 +846,9 @@ do
 			label({ Name = 'Step', Text = tostring(goal.Step or ''), TextSize = 36, StrokeThickness = 4, Position = px(10, 0), Size = px(56, 74), ZIndex = 28, Parent = row.Body })
 		end
 		local text = label({ Name = 'Text', Text = goal.Text or '', TextSize = 26, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(74, 6), Size = px(640, 32), ZIndex = 28, Parent = row.Body })
-		text.TextScaled = true
-		Kit.new('UITextSizeConstraint', { MaxTextSize = 26, MinTextSize = 12, Parent = text })
+		text.TextSize = Kit.fitSize(text.Text, 26, 640, 14) -- (round 7: a whole size that fits, not TextScaled)
 		local where = label({ Name = 'Where', Text = goal.Where or '', TextSize = 19, StrokeThickness = 2.5, TextColor3 = hex('E8FBFF'), TextXAlignment = Enum.TextXAlignment.Left, Position = px(74, 40), Size = px(640, 24), ZIndex = 28, Parent = row.Body })
-		where.TextScaled = true
-		Kit.new('UITextSizeConstraint', { MaxTextSize = 19, MinTextSize = 10, Parent = where })
+		where.TextSize = Kit.fitSize(where.Text, 19, 640, 13)
 		Kit.icon3d('Cash', 46, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, -150, 0.5, 0), ZIndex = 28 }).Parent = row.Body
 		fillText(label({ Name = 'Reward', Text = '+' .. short(goal.Reward or 0), TextSize = 30, StrokeThickness = 4, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.new(1, -100, 0, 0), Size = px(96, 74), ZIndex = 28, Parent = row.Body }), { hex('F0FF8A'), hex('3CCB3C') })
 		return row
@@ -1038,14 +1052,17 @@ do
 		if current and current.Update then current.Update() end
 	end
 	-- a running timed boost: "2x Boost 14:59"
+	local pillBeat = 0
 	task.spawn(function()
 		while true do
 			local level = num('PowerBoost', 1)
 			local left = math.max(num('BoostEnds', 0), num('PartyEnds', 0)) - os.time()
 			boostChip.Visible = level > 1 and left > 0
 			if boostChip.Visible then boostChip.Text = times(level):sub(2) .. 'x Boost  ' .. string.format('%d:%02d', math.floor(left / 60), left % 60) end
-			-- the Rebirth pill breathes while a rebirth is ready (a slow 1.0 -> 1.12 -> 1.0, never a flash)
-			if wasReady and not quiet() then Motion.pop(rebirthPill, 0.12) end
+			-- the Rebirth pill pulses gently while a rebirth is ready: 1.0 -> 1.08 -> 1.0 over 0.8 s, once every 3 s
+			-- (round 7: it popped every second, a twitch), never a flash
+			pillBeat = (pillBeat + 1) % 3
+			if wasReady and pillBeat == 0 and not quiet() then Motion.bump(rebirthPill, 0.08, 0.8) end
 			task.wait(1)
 		end
 	end)

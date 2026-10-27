@@ -6,9 +6,14 @@
 -- Kid-safe: no flashes (a glow breathes over 1.6 s at most 35% opaque; a shine is one soft band every few seconds), no
 -- strobing. ReducedMotion (a player attribute) holds everything still.
 --
+-- (Oct 27, round 7, OUR_UI_AUDIT C: "the animations are bad") A BUDGET: at most UIIdle.Budget (6) motions move on
+-- screen at once, the highest opts.Priority first (the hero cards 3, their big buy buttons 2, the rest 1), then the
+-- oldest; the others rest still until one leaves the screen. Nothing wobbles endlessly: a 'rock' swings once and rests
+-- (opts.Rest seconds) between swings.
+--
 --   UIIdle.add(gui, kind, opts) -> rec        rec.stop() ends it (and puts the gui back as it was); opts.Phase (0..1),
---                                             opts.Watch (what must be on screen; default gui)
---     'rock'     gui.Rotation swings +-Deg (5) over Period (1.5 s)                 (the Lucky clover)
+--                                             opts.Watch (what must be on screen; default gui), opts.Priority (1)
+--     'rock'     gui.Rotation swings +-Deg (5) over Period (1.5 s), then rests Rest (2.5 s)   (the Lucky clover)
 --     'bob'      gui.Position rises Px (4) and back over Period (2.2 s)           (cash, boxes, gifts)
 --     'breathe'  a UIScale (opts.Name, 'IdleScale') 1 -> 1 + Amount (0.04) over Period (1.8 s)   (potions, crowns)
 --     'glow'     a soft rounded halo behind gui (opts.Color, Pad 5, Radius 10) breathing 0.65 -> 0.95 transparent
@@ -24,7 +29,8 @@ local RunService = game:GetService('RunService')
 local Players = game:GetService('Players')
 
 local UIIdle = {}
-UIIdle.VisEvery = 0.25 -- seconds between a motion's on-screen checks
+UIIdle.VisEvery = 0.25 -- seconds between the on-screen checks (and the budget's pick)
+UIIdle.Budget = 6 -- motions moving on screen at once (UI_CRISP_AND_JUICE: a calm screen with a few loud things)
 
 local ImageLoader -- (lazy: its onScreen walks the parents, ScrollingFrames included)
 local items = {}
@@ -50,7 +56,13 @@ local function wave(rec) return math.sin((clock / rec.period + rec.phase) * 2 * 
 local KINDS = {}
 KINDS.rock = {
 	init = function(rec) rec.base = rec.gui.Rotation; rec.period = rec.o.Period or 1.5 end,
-	step = function(rec, still) rec.gui.Rotation = rec.base + (still and 0 or (rec.o.Deg or 5) * wave(rec)) end,
+	step = function(rec, still)
+		-- (one swing, then a rest: a little wiggle every few seconds, never an endless wobble)
+		local cycle = rec.period + (rec.o.Rest or 2.5)
+		local t = (clock + rec.phase * cycle) % cycle
+		local a = (still or t >= rec.period) and 0 or (rec.o.Deg or 5) * math.sin(t / rec.period * 2 * math.pi)
+		rec.gui.Rotation = rec.base + a
+	end,
 	stop = function(rec) rec.gui.Rotation = rec.base end,
 }
 KINDS.bob = {
@@ -153,29 +165,47 @@ KINDS.twinkle = {
 	stop = function(rec) rec.o.Star.Visible = false end,
 }
 
+local pickAt = 0
+local function stepRec(rec, still)
+	local ok, err = pcall(rec.k.step, rec, still)
+	if not ok and not rec.warned then
+		rec.warned = true
+		warn('[UIIdle] ' .. rec.kind .. ': ' .. tostring(err))
+	end
+end
+local function before(a, b)
+	if a.prio ~= b.prio then return a.prio > b.prio end
+	return a.serial < b.serial
+end
 local function tick(dt)
 	clock += dt
 	local now = clock
 	local still = reduced()
-	local memo = {}
+	local repick = now >= pickAt
+	local memo = repick and {} or nil
+	if repick then pickAt = now + UIIdle.VisEvery end
+	local live = repick and {} or nil
 	for i = #items, 1, -1 do
 		local rec = items[i]
 		local alive, parent = pcall(function() return rec.gui.Parent end)
 		if rec.dead or not alive or parent == nil then
 			table.remove(items, i)
-		else
-			if now >= rec.visAt then
-				rec.visAt = now + UIIdle.VisEvery
-				rec.vis = onScreen(rec.watch, memo)
-			end
-			if rec.vis then
-				local ok, err = pcall(rec.k.step, rec, still)
-				if not ok and not rec.warned then
-					rec.warned = true
-					warn('[UIIdle] ' .. rec.kind .. ': ' .. tostring(err))
-				end
-			end
+		elseif repick then
+			rec.vis = onScreen(rec.watch, memo)
+			if rec.vis then table.insert(live, rec) end
 		end
+	end
+	if repick then
+		-- the budget: the first Budget on screen move, the others rest
+		table.sort(live, before)
+		for _, rec in items do rec.wasOn, rec.on = rec.on, false end
+		for n, rec in live do rec.on = n <= UIIdle.Budget end
+		for _, rec in items do
+			if rec.wasOn and not rec.on then stepRec(rec, true) end -- (put to rest, not frozen mid-swing)
+		end
+	end
+	for _, rec in items do
+		if rec.on then stepRec(rec, still) end
 	end
 	if #items == 0 and conn then
 		conn:Disconnect()
@@ -193,7 +223,9 @@ function UIIdle.add(gui, kind, opts)
 	opts = opts or {}
 	-- (staggered: an explicit Phase (0..1), else the golden-ratio walk, so neighbours never move together)
 	-- (opts.Watch: what must be on screen for it to move, when gui itself hides between beats: a sparkle, a shine band)
-	local rec = { gui = gui, watch = opts.Watch or gui, kind = kind, k = k, o = opts, phase = opts.Phase or ((serial * GOLDEN) % 1), vis = false, visAt = 0, t0 = clock }
+	local rec = { gui = gui, watch = opts.Watch or gui, kind = kind, k = k, o = opts, phase = opts.Phase or ((serial * GOLDEN) % 1), vis = false, on = false, t0 = clock,
+		prio = tonumber(opts.Priority) or 1, serial = serial }
+	pickAt = 0 -- (a new motion joins the budget at the next tick)
 	local ok, err = pcall(k.init, rec)
 	if not ok then
 		warn('[UIIdle] ' .. kind .. ': ' .. tostring(err))
@@ -220,14 +252,15 @@ end
 local ROCK = { Lucky = true, Clover = true, LuckyClover = true, Speed2x = true, Arrow = true, Sneaker = true }
 local BOB = { Cash = true, CashSmall = true, CashMedium = true, CashLarge = true, CashBig = true, CashMega = true, DoubleCash = true,
 	TripleOpen = true, AutoOpen = true, Gift = true, StarterPack = true, ServerBoost = true, BlockParty = true }
-function UIIdle.icon(art, id, i)
+-- (round 7) prio: its budget Priority (default 1). The clover's swing is one 1.2 s wiggle every 4 s (the owner asked
+-- for the clovers to "spin left and right little"); a gun breathes (no endless rotation).
+function UIIdle.icon(art, id, i, prio)
 	if typeof(art) ~= 'Instance' then return nil end
 	id = tostring(id or '')
 	local phase = ((i or 0) * 0.29) % 1
-	if ROCK[id] then return UIIdle.add(art, 'rock', { Deg = 6, Period = 1.5, Phase = phase }) end
-	if BOB[id] or id:match('^Box_') or id:match('^Cash') then return UIIdle.add(art, 'bob', { Px = 4, Period = 2.2, Phase = phase }) end
-	if id:match('^Gun_') then return UIIdle.add(art, 'rock', { Deg = 3, Period = 2.4, Phase = phase }) end
-	return UIIdle.add(art, 'breathe', { Amount = 0.05, Period = 1.8, Phase = phase })
+	if ROCK[id] then return UIIdle.add(art, 'rock', { Deg = 5, Period = 1.2, Rest = 2.8, Phase = phase, Priority = prio }) end
+	if BOB[id] or id:match('^Box_') or id:match('^Cash') then return UIIdle.add(art, 'bob', { Px = 4, Period = 2.0, Phase = phase, Priority = prio }) end
+	return UIIdle.add(art, 'breathe', { Amount = 0.04, Period = 2.0, Phase = phase, Priority = prio })
 end
 
 return UIIdle

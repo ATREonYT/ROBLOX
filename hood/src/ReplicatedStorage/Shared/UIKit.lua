@@ -296,6 +296,7 @@ function Kit.hasIcon(id)
 		if ok and v then return true end
 	end
 	if Kit.iconImage(id) ~= '' then return true end
+	if ImageLoader.packed('Icons', id) ~= nil then return true end -- (round 7: a packed picture counts, e.g. Auto Open's own)
 	local rows = models and type(models.Fallback) == 'table' and models.Fallback
 	return (rows and type(rows[id]) == 'table') or Kit.FlatDefault[id] ~= nil
 end
@@ -656,7 +657,11 @@ function Kit.icon3d(id, size, props)
 	-- the bare glyph unless the caller asks for the block (Bare = false: a plain backdrop, e.g. a sheet of icons)
 	local bare = props.Bare ~= false
 	local image = Kit.iconImage(id)
-	if place then size = Kit.placeSize(id, image ~= '', bare, place) end
+	-- (Oct 27, round 7, OUR_UI_AUDIT A3) an upload of an older drawing (Shared/Images/Uploads: not Fresh) gives way to
+	-- the packed picture of the current one; it is kept only as the stand-in while packed pictures can't be drawn
+	local stale = ''
+	if image ~= '' and ImageLoader.packed('Icons', id) ~= nil and not ImageLoader.fresh(id) then stale, image = image, '' end
+	if place then size = Kit.placeSize(id, image ~= '' or stale ~= '', bare, place) end
 	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
 	holder:SetAttribute('IconId', id)
 	local black = Color3.new(0, 0, 0)
@@ -688,7 +693,14 @@ function Kit.icon3d(id, size, props)
 		local function drawPacked()
 			if not packed then return flat() end
 			img.Image = ''
-			ImageLoader.apply(img, 'Icons', id, '', { onShow = unflat, onFail = flat })
+			ImageLoader.apply(img, 'Icons', id, '', { onShow = unflat, onFail = function()
+				if stale ~= '' then
+					img.Image = stale -- (the older upload, better than the flat stand-in)
+					unflat()
+				else
+					flat()
+				end
+			end })
 		end
 		if image == '' then
 			drawPacked()
@@ -798,6 +810,13 @@ function Kit.placeSize(id, imaged, bare, place)
 	local b = Kit.contentBounds(id, imaged, bare)
 	local cw, ch = math.max(0.05, b[3] - b[1]), math.max(0.05, b[4] - b[2])
 	return math.floor(math.min(rule.W * place.H / cw, rule.H * place.H / ch) + 0.5)
+end
+-- (Oct 27, round 7, OUR_UI_AUDIT B: one placement rule for every slot) A Place for Kit.icon3d / Kit.place: the picture's
+-- DRAWN content (its visible box, not its square) fits inside the slot (x, y, w, h: pixels in the holder's parent) with
+-- `margin` (a fraction of the slot, 0.09 by default) clear on every side, centred in it. Nothing spills out of its slot.
+function Kit.inBox(x, y, w, h, margin)
+	local m = margin or 0.09
+	return { Rule = { W = w * (1 - 2 * m), H = h * (1 - 2 * m), X = x + w / 2, XH = 0, Y = y + h / 2 }, W = 1, H = 1 }
 end
 -- Sizes and moves an icon3d holder so its drawn content lands where `place` says (and remembers it: the holder is
 -- placed again if its picture swaps between the PNG and the flat stand-in).
@@ -2309,7 +2328,15 @@ end
 -- upload). The words stay ours (live Montserrat over the piece). While a piece can't be drawn (Studio's Game Settings >
 -- Security > "Allow Mesh / Image APIs" off, or the picture memory full) the drawn look underneath shows instead.
 Kit.ImageLoader = ImageLoader
-Kit.UseOwnerSkins = true
+-- (Oct 27, round 7, OUR_UI_AUDIT A3/A4) OFF: the mockup crops were 25-58 px tall in the mockup, so on screen they were
+-- blown up 1.4-8x (blurry), and their cut edges lost the outline on some sides. Every block now draws natively (Frame +
+-- UICorner + UIStroke + UIGradient: sharp at any size), shaped like the mockup by Kit.MockLook below. true brings the
+-- pictures back (the switch stays for the owner's call).
+Kit.UseOwnerSkins = false
+-- (round 7) The mockup's shapes for the tones the pictures used to cover (Kit.SkinPieces): buttons and pills rounded
+-- (about a fifth of their height), smooth (no studs) with a soft light band over their top half; cards and tiles
+-- rounded 12 px with their faint studs. Only where the caller didn't ask for its own Radius / Studs.
+Kit.MockLook = true
 -- A tone's pieces: { small (buttons, pills, rows), big (h >= Kit.SkinBig: tiles and cards) }.
 Kit.SkinBig = 110
 Kit.SkinPieces = {
@@ -2367,6 +2394,7 @@ end
 -- Height (the whole look's height, for the slice scale), SliceScale, TileScale (tile pieces), Radius (a UICorner on the
 -- piece), Keep { Stroke, Fill, Rim, ... } (parts of the drawn look kept under the piece). Returns the ImageLabel.
 function Kit.skin(face, piece, props)
+	if not Kit.UseOwnerSkins then return nil end
 	local meta = ImageLoader.meta('Ui', piece)
 	if not meta then return nil end
 	props = props or {}
@@ -2382,7 +2410,7 @@ function Kit.skin(face, piece, props)
 end
 -- Points a skin at another piece (a tab turning on, a button turning grey).
 function Kit.reskin(img, piece, props)
-	if not img then return end
+	if not img or not Kit.UseOwnerSkins then return end
 	local meta = ImageLoader.meta('Ui', piece)
 	if not meta then return end
 	props = props or {}
@@ -2412,6 +2440,10 @@ function Kit.block(props)
 	local w, h = props.Width or 160, props.Height or 60
 	-- (brief 19) the reference's blocks have crisp square corners: no UICorner and a mitred outline (Radius > 0 rounds)
 	local r = props.Radius or 0
+	-- (round 7) the mockup's shape where the owner's pictures used to sit (Kit.MockLook)
+	local mock = Kit.MockLook and not Kit.UseOwnerSkins and props.Skin ~= false and type(props.Tone) == 'string' and Kit.SkinPieces[props.Tone] ~= nil
+	local small = mock and h < Kit.SkinBig
+	if mock and props.Radius == nil then r = small and math.clamp(math.floor(h * 0.2 + 0.5), 6, 12) or 12 end
 	local z = props.ZIndex or 1
 	local holder = blank({ Name = props.Name or 'Block', Size = UDim2.fromOffset(w, h), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0, ZIndex = z })
 	local sh = props.Shadow or 0
@@ -2426,7 +2458,7 @@ function Kit.block(props)
 	if r > 0 then corner(r).Parent = body end
 	stroke(props.OutlineColor or Kit.Color.black, O, true, 0, r > 0 and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = body
 	if not props.Flat then Kit.fillGradient(tone).Parent = body end
-	if props.Studs ~= false then
+	if props.Studs ~= false and not (small and props.Studs == nil) then
 		-- (brief 22) the reference's recessed studs on every block ('checker': the raised / recessed tile of the window
 		-- headers and the Rebirth boxes; 'plain': none of these, the old centred outline grid)
 		local pattern = props.StudPattern or 'recessed'
@@ -2434,6 +2466,12 @@ function Kit.block(props)
 		if r > 0 and studs and studs:IsA('ImageLabel') then corner(r).Parent = studs end -- (Oct 27: the tile stays inside rounded corners)
 	end
 	if props.Gloss then Kit.gloss(body, { ZIndex = z + 1, Radius = r }) end
+	if small and props.Gloss == nil then
+		-- (round 7) the mockup buttons' soft light top half: one white band fading out downward
+		local band = blank({ Name = 'TopBand', BackgroundTransparency = 0, BackgroundColor3 = Kit.Color.white, Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 0.5, -2), ZIndex = z + 1, Parent = body })
+		if r > 2 then corner(r - 2).Parent = band end
+		new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new(0.72, 1), Parent = band })
+	end
 	if props.Rim ~= false then
 		local rw = props.RimWidth or 2
 		local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(rw, rw), Size = UDim2.new(1, -2 * rw, 1, -2 * rw), ZIndex = z + 1, Parent = body })
@@ -2624,6 +2662,25 @@ function Kit.fitSize(text, maxSize, width, minSize)
 	local w = Kit.textWidth(text, 100) / 100
 	if w <= 0 then return maxSize end
 	return math.max(minSize or 8, math.min(maxSize, math.floor(width / w)))
+end
+-- (Oct 27, round 7, OUR_UI_AUDIT D) TextScaled's replacement for a label sized by its parent (a world board's
+-- BillboardGui, whose pixels change as you walk): a WHOLE-pixel TextSize from the label's own box (its height x `fill`,
+-- 0.9 by default, held to minSize..maxSize and to the width its text needs), worked out again when the box or the
+-- text changes. (A screen label has a fixed size: it takes Kit.fitSize once.)
+function Kit.sizeText(label, maxSize, minSize, fill)
+	local function fit()
+		local ok, box = pcall(function() return label.AbsoluteSize end)
+		if not ok or typeof(box) ~= 'Vector2' or box.Y <= 0 or box.X <= 0 then return end
+		local size = math.floor(box.Y * (fill or 0.9))
+		if maxSize then size = math.min(size, maxSize) end
+		size = Kit.fitSize(label.Text, size, box.X, minSize or 8)
+		if label.TextSize ~= size then label.TextSize = size end
+	end
+	label.TextScaled = false
+	pcall(function() label:GetPropertyChangedSignal('AbsoluteSize'):Connect(fit) end)
+	pcall(function() label:GetPropertyChangedSignal('Text'):Connect(fit) end)
+	fit()
+	return label
 end
 
 -- "ONLY <Robux> 199" (the reference's price under the offer cards and 2x Speed): ONLY in a yellow -> green gradient,

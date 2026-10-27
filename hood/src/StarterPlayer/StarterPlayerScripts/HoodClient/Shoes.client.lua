@@ -481,12 +481,12 @@ local function cellFor(board, i, id, rack, n)
 	Kit.new('UIAspectRatioConstraint', { AspectRatio = 1, Parent = icon })
 	icon.Parent = cell
 	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true)), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
-	chance.TextScaled = true
+	Kit.sizeText(chance, nil, 6) -- (round 7: whole-pixel sizes from the board's size, not TextScaled)
 	local name = Kit.text({ Name = 'Name', Text = hidden and '???' or string.upper(shoe.Name), FontFace = face('Heading', Kit.Font.body), TextColor3 = Color.white, Stroke = Color.ink, Position = UDim2.fromScale(0.04, 0.85), Size = UDim2.fromScale(0.92, 0.13), ZIndex = 3, Parent = cell })
-	name.TextScaled = true
+	Kit.sizeText(name, nil, 6)
 	if owned then
 		local tick = Kit.text({ Name = 'Owned', Text = '✔', FontFace = face('Body', Kit.Font.body), TextColor3 = Tone.green.top, Stroke = Color.ink, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1.04, -0.06), Size = UDim2.fromScale(0.32, 0.2), ZIndex = 4, Parent = cell })
-		tick.TextScaled = true
+		Kit.sizeText(tick, nil, 6)
 	end
 	return cell
 end
@@ -509,20 +509,20 @@ local function buildBoard(entry)
 	Kit.corner(UDim.new(0.08, 0)).Parent = panel
 	Kit.stroke(Color.ink, 3, true).Parent = panel
 	local title = Kit.text({ Name = 'Title', Text = string.upper(box.Name), Stroke = Color.ink, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromScale(0.03, 0.03), Size = UDim2.fromScale(0.6, 0.22), ZIndex = 2, Parent = panel })
-	title.TextScaled = true
+	Kit.sizeText(title, nil, 8)
 	title.TextColor3 = box.Color:Lerp(Color.white, 0.35)
 	local price = Kit.new('Frame', { Name = 'Price', BackgroundColor3 = Tone.green.base, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(0.97, 0.04), Size = UDim2.fromScale(0.3, 0.2), ZIndex = 2, Parent = panel })
 	Kit.corner(UDim.new(0.5, 0)).Parent = price
 	Kit.stroke(Color.ink, 2.5, true).Parent = price
 	Kit.gradient(Tone.green.top, Tone.green.base, 0.55).Parent = price
 	local priceText = Kit.text({ Name = 'Text', Text = box.Robux and RobuxText.fmt(box.RobuxPrice) or (Format.compact(box.Price) .. ' CASH'), Stroke = Tone.green.stroke, Position = UDim2.fromScale(0.08, 0.1), Size = UDim2.fromScale(0.84, 0.8), ZIndex = 3, Parent = price })
-	priceText.TextScaled = true
+	Kit.sizeText(priceText, nil, 6)
 	entry.Price = price
 	if box.Exclusive then
 		-- (a Robux box: a green EXCLUSIVE tag next to the title, like the reference's "Robux Exclusive" eggs)
-		title.Size = UDim2.fromScale(0.36, 0.22)
+		title.Size = UDim2.fromScale(0.36, 0.22) -- (Kit.sizeText follows the new box)
 		local tag = Kit.text({ Name = 'Exclusive', Text = 'EXCLUSIVE', TextColor3 = Kit.hex('7CFF4F'), Stroke = Color.ink, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromScale(0.4, 0.07), Size = UDim2.fromScale(0.26, 0.15), ZIndex = 2, Parent = panel })
-		tag.TextScaled = true
+		Kit.sizeText(tag, nil, 6)
 	end
 	for i, id in box.Shoes do cellFor(panel, i, id, rack, #box.Shoes) end
 	PityUI.boardTab(gui, panel, box.Id, player) -- ("Epic+ guaranteed in 7 opens" on a tab under the board)
@@ -542,7 +542,7 @@ local function say(text)
 		if c.Name == 'Say' then c:Destroy() end
 	end
 	local t = Kit.text({ Name = 'Say', Text = text, TextSize = 30, TextColor3 = Kit.hex('5AE0FF'), Stroke = Color.black, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 160), Size = px(900, 40), ZIndex = 44, Parent = sayRoot })
-	t.TextScaled = true
+	t.TextSize = Kit.fitSize(text, 30, 900, 16) -- (round 7: a whole size that fits, not TextScaled)
 	Motion.toast(t, 2.6)
 	task.delay(3, function() if mine == saying and t.Parent then t:Destroy() end end)
 end

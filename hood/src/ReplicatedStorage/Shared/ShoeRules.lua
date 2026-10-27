@@ -206,6 +206,18 @@ function ShoeRules.chances(boxId: any, lucky: any, minRank: any)
 	return list
 end
 
+-- (Oct 27, round 7: the Store's Luck tab) What the Lucky pass really changes in a box: one row per entry, commonest
+-- first, { Id, Rarity, Normal, Lucky } (percent, from ShoeRules.chances without and with the pass). A Robux box's rows
+-- are the same both ways (Lucky works in Cash boxes only).
+function ShoeRules.luckTable(boxId: any)
+	local normal, lucky = ShoeRules.chances(boxId, false), ShoeRules.chances(boxId, true)
+	local rows = {}
+	for i, row in normal do
+		table.insert(rows, { Id = row.Id, Rarity = row.Rarity, Normal = row.Chance, Lucky = lucky[i].Chance })
+	end
+	return rows
+end
+
 -- The chance (percent) a shoe's own box gives it (0 for an unknown id); with `lucky`, a Lucky owner's real chance.
 function ShoeRules.chanceOf(id: any, lucky: any): number
 	local shoe = type(id) == 'string' and Shoes.ById[id]

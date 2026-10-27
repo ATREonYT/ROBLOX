@@ -63,16 +63,15 @@ end
 local CARD = { X = 24, Y = 104, W = WW - 48, H = 150 }
 local card = IK.block({ Name = 'Here', Tone = 'tabOn', Width = CARD.W, Height = CARD.H, Outline = 4.5, OutlineColor = Kit.Skin.outline, Radius = 12, RimWidth = 3, Studs = false, Position = px(CARD.X, CARD.Y), ZIndex = 26 })
 card.Parent = content
-local globe = IK.icon({ 'World', 'Rewards' }, 132, { ZIndex = 30 })
+local globe = IK.icon({ 'World', 'Rewards' }, 124, { ZIndex = 30 })
 globe.AnchorPoint = Vector2.new(0, 0.5)
-globe.Position = px(-14, CARD.H / 2 - 6)
+globe.Position = px(-2, CARD.H / 2) -- (round 7: inside its card; it stood 7 px out of the left edge)
 globe.Parent = card.Body
 label({ Name = 'Title', Text = 'World ' .. HERE, TextSize = 40, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(126, 22), Size = px(240, 46), ZIndex = 31, Parent = card.Body })
 local sub = label({ Name = 'Name', Text = IK.WorldNames[HERE] or '', TextSize = 24, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, Position = px(128, 70), Size = px(240, 30), ZIndex = 31, Parent = card.Body })
 Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFA81A')), Parent = sub })
 -- (Oct 27: World 2 is the "Business District", longer than its slot at 24: it shrinks to fit, short of the trip buttons)
-sub.TextScaled = true
-Kit.new('UITextSizeConstraint', { MaxTextSize = 24, Parent = sub })
+sub.TextSize = Kit.fitSize(sub.Text, 24, 240, 14) -- (round 7: a whole size that fits, not TextScaled)
 label({ Name = 'You', Text = "You're here", TextSize = 18, StrokeThickness = 2.5, TextColor3 = hex('7CFF4F'), TextXAlignment = Enum.TextXAlignment.Left, Position = px(128, 102), Size = px(240, 24), ZIndex = 31, Parent = card.Body })
 
 -- The trips: one green button each (the same for everyone; the server checks every trip).

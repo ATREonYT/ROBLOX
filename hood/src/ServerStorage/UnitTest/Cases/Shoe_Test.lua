@@ -53,6 +53,20 @@ return function(t)
   t.expect.equal(R.chanceText(62),'62%');t.expect.equal(R.chanceText(9.5),'9.5%');t.expect.equal(R.chanceText(3),'3%');t.expect.equal(R.chanceText(0.45),'0.45%');t.expect.equal(R.chanceText(0.05),'0.05%')
  end)
 
+ t.test('luck table: the Luck tab shows the real odds without and with Lucky',function()
+  local rows=R.luckTable('Street');t.expect.equal(#rows,6)
+  local sumN,sumL=0,0
+  for i,row in rows do
+   sumN+=row.Normal;sumL+=row.Lucky
+   t.expect.equal(row.Normal,Shoes.BoxById.Street.Chances[i])
+   if Shoes.ById[row.Id].Rank>=R.LuckyRank then t.expect.truthy(row.Lucky>row.Normal) else t.expect.truthy(row.Lucky<row.Normal) end
+  end
+  t.expect.truthy(math.abs(sumN-100)<1e-6);t.expect.truthy(math.abs(sumL-100)<1e-6)
+  t.expect.truthy(math.abs(rows[3].Lucky-9.5*2/1.13)<1e-6) -- (Epic: 19 of 113 weight)
+  local grail=R.luckTable('Grail');for _,row in grail do t.expect.equal(row.Lucky,row.Normal) end -- (a Robux box: no change)
+  t.expect.equal(#R.luckTable('Nope'),0)
+ end)
+
  t.test('odds: 200k rolls come out at the advertised chances',function()
   local n,hits,rnd=200000,{},lcg(12345)
   local rank={};for i,id in Shoes.BoxById.Frost.Shoes do rank[id]=i end

@@ -88,13 +88,11 @@ local function show(text, tone, sub)
 	local h = HudToasts.Size + 8 + (sub and HudToasts.SubSize + 6 or 0)
 	local slot = Kit.new('Frame', { Name = 'Toast' .. count, BackgroundTransparency = 1, Size = UDim2.fromOffset(900, h), LayoutOrder = -count, Parent = stack })
 	local line = Kit.text({ Name = 'Toast', Text = tostring(text), TextSize = HudToasts.Size, Stroke = Kit.Color.black, StrokeThickness = 4.5, Size = UDim2.new(1, 0, 0, HudToasts.Size + 8), ZIndex = 44, Parent = slot })
-	line.TextScaled = true
-	Kit.new('UITextSizeConstraint', { MaxTextSize = HudToasts.Size, MinTextSize = 14, Parent = line })
+	line.TextSize = Kit.fitSize(line.Text, HudToasts.Size, 900, 14) -- (round 7: a whole size that fits, not TextScaled)
 	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(colors[1], colors[2]), Parent = line })
 	if sub then
 		local s = Kit.text({ Name = 'Sub', Text = tostring(sub), TextSize = HudToasts.SubSize, Stroke = Kit.Color.black, StrokeThickness = 3.5, Position = UDim2.fromOffset(0, HudToasts.Size + 8), Size = UDim2.new(1, 0, 0, HudToasts.SubSize + 6), ZIndex = 44, Parent = slot })
-		s.TextScaled = true
-		Kit.new('UITextSizeConstraint', { MaxTextSize = HudToasts.SubSize, MinTextSize = 12, Parent = s })
+		s.TextSize = Kit.fitSize(s.Text, HudToasts.SubSize, 900, 12)
 	end
 	Motion.toast(slot, 3)
 	task.delay(3.5, function() if slot.Parent then slot:Destroy() end end)
