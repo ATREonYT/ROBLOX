@@ -16,6 +16,7 @@
 -- Used by HoodClient/HUD, Store, Shoes, Goals and Waves; UIKitDemo builds sample screens with the older pieces.
 local Kit = {}
 local Fonts = require(script.Parent.Fonts)
+local ImageLoader = require(script.Parent.ImageLoader) -- (round 3: the packed pictures, drawn in game)
 
 local function hex(h)
 	return Color3.fromRGB(tonumber(h:sub(1, 2), 16), tonumber(h:sub(3, 4), 16), tonumber(h:sub(5, 6), 16))
@@ -659,23 +660,45 @@ function Kit.icon3d(id, size, props)
 	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
 	holder:SetAttribute('IconId', id)
 	local black = Color3.new(0, 0, 0)
-	if image ~= '' then
-		-- ART2's uploaded PNG: one ImageLabel, outline and shading baked in
+	local packed = ImageLoader.packed('Icons', id) ~= nil
+	if image ~= '' or packed then
+		-- ART2's PNG: one ImageLabel, outline and shading baked in; the uploaded id, else (round 3) the packed pixels
+		-- drawn in game by Shared/ImageLoader, so every icon and item picture shows without an upload
 		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = props.Locked and black or props.Color or Color3.new(1, 1, 1), Rotation = props.Rotation or 0, ZIndex = z, Parent = holder })
 		img:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws hood/art/icons3d/<id>.png here
-		-- (brief 23/24) an upload that never arrives (in review, rejected) swaps to the flat stand-in; back if it comes later
-		Kit.watchImage(img, function()
+		local function flat()
 			img.Visible = false
-			local f = Kit.flatIcon(holder, id, holder.Size.X.Offset, { Locked = img.ImageColor3 == black, Bare = bare })
-			f.Rotation = img.Rotation
-			Kit.replace(holder)
-		end, function()
+			local has = false
+			for _, d in holder:GetChildren() do
+				if d:GetAttribute('Flat') then has = true end
+			end
+			if not has then
+				local f = Kit.flatIcon(holder, id, holder.Size.X.Offset, { Locked = img.ImageColor3 == black, Bare = bare })
+				f.Rotation = img.Rotation
+				Kit.replace(holder)
+			end
+		end
+		local function unflat()
 			for _, d in holder:GetChildren() do
 				if d:GetAttribute('Flat') then d:Destroy() end
 			end
 			img.Visible = true
 			Kit.replace(holder)
-		end)
+		end
+		local function drawPacked()
+			if not packed then return flat() end
+			img.Image = ''
+			ImageLoader.apply(img, 'Icons', id, '', { onShow = unflat, onFail = flat })
+		end
+		if image == '' then
+			drawPacked()
+		else
+			-- (brief 23/24) an upload that never arrives (in review, rejected) swaps to the packed picture (or the flat
+			-- stand-in); back to the upload if it comes later
+			Kit.watchImage(img, drawPacked, function()
+				ImageLoader.apply(img, 'Icons', id, image, { onShow = unflat })
+			end)
+		end
 	else
 		local f = Kit.flatIcon(holder, id, size, { Locked = props.Locked, Bare = bare })
 		f.Rotation = props.Rotation or 0
@@ -2278,6 +2301,112 @@ end
 -- StudPattern ('checker': the raised / recessed tile) / StudShade (the pre-shaded tiles' strength), Gloss (the diagonal
 -- bands), Shadow (px straight down, 0: the reference has none), Rim (false = no light inner band) / RimWidth (2), Flat.
 -- Returns holder; holder.Body is the face to put content in.
+---------------------------------------------------------------------------------------------- the owner's UI pictures
+-- (Oct 27, round 3; the owner: "directly import the images of the ui ... the ones you make aren't the same") Buttons,
+-- tabs, tiles, cards, bars, the header bar, the X and the window body wear pieces cut from the owner's UI mockup
+-- (hood/tools/ui/cut_mockup.py -> hood/art/ui_owner, packed into Shared/Images/Ui by hood/tools/ui/pack_images.py),
+-- 9-sliced (SliceCenter) so they stretch without blurring their corners, and drawn in game by Shared/ImageLoader (no
+-- upload). The words stay ours (live Montserrat over the piece). While a piece can't be drawn (Studio's Game Settings >
+-- Security > "Allow Mesh / Image APIs" off, or the picture memory full) the drawn look underneath shows instead.
+Kit.ImageLoader = ImageLoader
+Kit.UseOwnerSkins = true
+-- A tone's pieces: { small (buttons, pills, rows), big (h >= Kit.SkinBig: tiles and cards) }.
+Kit.SkinBig = 110
+Kit.SkinPieces = {
+	buyGreen = { 'btn_green', 'tile_green' }, green = { 'btn_green', 'tile_green' }, cardGreen = { 'btn_green', 'tile_green' },
+	lime = { 'price_green', 'tile_green' },
+	slate = { 'btn_grey', 'tile_grey' }, grey = { 'btn_grey', 'tile_grey' }, disabled = { 'btn_grey', 'tile_grey' },
+	red = { 'btn_red', 'tile_red' }, cardRed = { 'btn_red', 'tile_red' },
+	gold = { 'btn_yellow', 'tile_yellow' }, yellow = { 'btn_yellow', 'tile_yellow' }, cardGold = { 'btn_yellow', 'tile_yellow' },
+	blue = { 'tab_on_blue', 'tile_blue' }, cardBlue = { 'tab_on_blue', 'tile_blue' }, tabBlue = { 'tab_on_blue', 'tile_blue' }, cyan = { 'tab_on_blue', 'tile_blue' },
+	purple = { 'tile_purple', 'tile_purple' }, cardPurple = { 'tile_purple', 'tile_purple' }, magenta = { 'tile_purple', 'tile_purple' },
+	navyRow = { 'tab_off', 'stat_card' }, navy = { 'tab_off', 'stat_card' }, dark = { 'tab_off', 'stat_card' },
+	closeRed = { 'close', 'close' },
+}
+-- The tile for a shoe rarity (Config/Shoes.Rarities' Id).
+Kit.RarityPiece = { Common = 'tile_grey', Rare = 'tile_blue', Epic = 'tile_purple', Legendary = 'tile_yellow', Mythic = 'tile_red', Secret = 'tile_secret' }
+function Kit.skinPiece(tone, h)
+	if not Kit.UseOwnerSkins or type(tone) ~= 'string' then return nil end
+	local row = Kit.SkinPieces[tone]
+	if not row then return nil end
+	local piece = (h or 0) >= Kit.SkinBig and row[2] or row[1]
+	return ImageLoader.meta('Ui', piece) and piece or nil
+end
+-- The drawn look's parts a piece covers (hidden while it shows).
+local LOOK = { Studs = true, Gloss = true, Rim = true, TopBand = true, IdleBorder = true, Border = true }
+local function skinLook(face, skinImg, on, keep)
+	local saved = skinImg:GetAttribute('SavedT')
+	if not on then
+		if saved == nil then skinImg:SetAttribute('SavedT', face.BackgroundTransparency) end
+		if not keep.Fill then face.BackgroundTransparency = 1 end
+	elseif saved ~= nil then
+		face.BackgroundTransparency = saved
+	end
+	for _, c in face:GetChildren() do
+		if c:IsA('UIStroke') and not keep.Stroke then
+			c.Enabled = on
+		elseif LOOK[c.Name] and c:IsA('GuiObject') and not keep[c.Name] then
+			c.Visible = on
+		elseif c.Name == 'Face' and c:IsA('GuiObject') and not keep.Face then
+			-- (an ArtKit.framed card's inner face: it holds the item and its words, so only its fill and line go)
+			if c:GetAttribute('SavedT') == nil then c:SetAttribute('SavedT', c.BackgroundTransparency) end
+			c.BackgroundTransparency = on and c:GetAttribute('SavedT') or 1
+			local st = c:FindFirstChildOfClass('UIStroke')
+			if st then st.Enabled = on end
+		end
+	end
+	skinImg:SetAttribute('Shown', not on)
+	if skinImg:GetAttribute('Piece') == 'close' then
+		-- (the owner's X carries its own white cross: our "X" label steps aside while it shows)
+		local label = face:FindFirstChild('Label')
+		if label then label.Visible = on end
+	end
+end
+-- Lays piece `piece` over `face` (a block's face Frame; its look stays underneath while the picture can't be drawn).
+-- props: Out (px the face's outline reaches outside it: the piece carries its own outline and covers that too),
+-- Height (the whole look's height, for the slice scale), SliceScale, TileScale (tile pieces), Radius (a UICorner on the
+-- piece), Keep { Stroke, Fill, Rim, ... } (parts of the drawn look kept under the piece). Returns the ImageLabel.
+function Kit.skin(face, piece, props)
+	local meta = ImageLoader.meta('Ui', piece)
+	if not meta then return nil end
+	props = props or {}
+	local out = props.Out or 0
+	local h = props.Height or (face.Size.Y.Offset + 2 * out)
+	local img = new('ImageLabel', { Name = 'Skin', BackgroundTransparency = 1, Image = '', Position = UDim2.fromOffset(-out, -out), Size = UDim2.new(1, 2 * out, 1, 2 * out), ZIndex = math.max(0, face.ZIndex - 1), Parent = face })
+	img:SetAttribute('Piece', piece)
+	img:SetAttribute('SkinH', h)
+	if props.Radius and props.Radius > 0 then corner(props.Radius).Parent = img end
+	local keep = props.Keep or {}
+	Kit.reskin(img, piece, { SliceScale = props.SliceScale, TileScale = props.TileScale, Keep = keep })
+	return img
+end
+-- Points a skin at another piece (a tab turning on, a button turning grey).
+function Kit.reskin(img, piece, props)
+	if not img then return end
+	local meta = ImageLoader.meta('Ui', piece)
+	if not meta then return end
+	props = props or {}
+	local face = img.Parent
+	img:SetAttribute('Piece', piece)
+	if meta.Mode == 'tile' then
+		img.ScaleType = Enum.ScaleType.Tile
+		local k = props.TileScale or 1
+		img.TileSize = UDim2.fromOffset(math.max(4, math.floor(meta.W * k + 0.5)), math.max(4, math.floor(meta.H * k + 0.5)))
+	elseif meta.Mode == 'whole' then
+		img.ScaleType = Enum.ScaleType.Stretch
+	else
+		img.ScaleType = Enum.ScaleType.Slice
+		local s = meta.Slice
+		img.SliceCenter = Rect.new(s[1], s[2], s[3], s[4])
+		img.SliceScale = props.SliceScale or math.clamp((img:GetAttribute('SkinH') or meta.H) / meta.H, 0.15, 3)
+	end
+	local keep = props.Keep or {}
+	ImageLoader.apply(img, 'Ui', piece, '', {
+		onShow = function() skinLook(face, img, false, keep) end,
+		onFail = function() skinLook(face, img, true, keep) end,
+	})
+end
+
 function Kit.block(props)
 	local tone = toneOf(props.Tone)
 	local w, h = props.Width or 160, props.Height or 60
@@ -2316,6 +2445,9 @@ function Kit.block(props)
 			stroke(tone.lip or Kit.Color.black, 1, true, 0.35, Enum.LineJoinMode.Miter).Parent = line
 		end
 	end
+	-- (round 3) the owner's piece for this tone over the drawn look (props.Skin: a piece name, or false for none)
+	local piece = props.Skin ~= false and (type(props.Skin) == 'string' and props.Skin or Kit.skinPiece(props.Tone, h)) or nil
+	if piece then Kit.skin(body, piece, { Out = O, Height = h }) end
 	holder:SetAttribute('Tone', type(props.Tone) == 'string' and props.Tone or '')
 	return holder
 end
@@ -2347,6 +2479,10 @@ function Kit.blockButton(props)
 	end
 	local hit = new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = z + 3, Parent = holder })
 	holder:SetAttribute('Lip', 3)
+	-- (round 3) the owner's X carries its own white cross: our "X" label steps aside while it shows (skinLook)
+	local skin = body:FindFirstChild('Skin')
+	local label = body:FindFirstChild('Label')
+	if skin and label and skin:GetAttribute('Piece') == 'close' then label.Visible = skin:GetAttribute('Shown') ~= true end
 	return holder, hit
 end
 
@@ -2564,6 +2700,14 @@ function Kit.bar(props)
 	Kit.studs(track, { Width = w, Height = h, Pitch = props.Studs or 15, Color = Kit.Color.black, Transparency = 0.84, Pattern = 'checker', Shade = props.StudShade or 0.6, ZIndex = z })
 	local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 1, -4), ZIndex = z, Parent = fill })
 	stroke(tone.rim or Kit.Color.white, 2, true, 0.35, Enum.LineJoinMode.Miter).Parent = rim
+	-- (round 3) the owner's trough and green fill (a non-green bar keeps its drawn fill)
+	if Kit.UseOwnerSkins and props.Skin ~= false then
+		Kit.skin(track, 'bar_trough', { Out = O, Height = h + 2 * O })
+		if (props.Tone == 'buyGreen' or props.Tone == 'green' or props.Tone == 'lime') then
+			track.ClipsDescendants = false
+			Kit.skin(fill, 'bar_fill', { Height = h })
+		end
+	end
 	local size = props.TextSize or math.floor(h * 0.62)
 	local labels = {}
 	local function label(name, text, align, pos, anchor, width)
@@ -2587,7 +2731,7 @@ end
 -- window; any other tone is the yellow bar, like every window of the mockup), Width (940), Height (642), HeaderHeight
 -- (Kit.Window.Header), TitleSize (80).
 -- Returns panel, well (the body's inside, to fill), closeHit, overlay, header. UIMotion.open/close animate it.
-Kit.Window = { Outline = 6, Header = 104, Rim = 3, Inset = 18 }
+Kit.Window = { Outline = 6, Header = 104, Rim = 3, Inset = 18, TileScale = 0.9 } -- (TileScale: the owner's body tile, round 3)
 function Kit.window(root, props)
 	local w, h = props.Width or 940, props.Height or 642
 	local hh = props.HeaderHeight or Kit.Window.Header
@@ -2609,6 +2753,9 @@ function Kit.window(root, props)
 	local header = Kit.block({ Name = 'Header', Tone = tone, Width = w, Height = hh, Outline = O, OutlineColor = Kit.Skin.outline, Radius = Kit.Skin.headerCorner, Studs = 30, StudShade = 0.22, RimWidth = 4, ZIndex = 23 })
 	header.Parent = panel
 	Kit.headerBand(header, tone)
+	-- (round 3) the owner's yellow header fill with its studs, repeated along the bar (our outline and corners kept)
+	local headMeta = tone == 'headerYellow' and Kit.UseOwnerSkins and ImageLoader.meta('Ui', 'header')
+	if headMeta then Kit.skin(header.Body, 'header', { TileScale = (hh - 2 * O) / headMeta.H, Radius = Kit.Skin.headerCorner, Keep = { Stroke = true } }) end
 	local icon = props.IconNode
 	local left = 30
 	if icon then
@@ -2656,6 +2803,10 @@ function Kit.windowBody(frame, w, h, props)
 	local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(rw, rw), Size = UDim2.new(1, -2 * rw, 1, -2 * rw), ZIndex = frame.ZIndex, Parent = frame })
 	if r > rw then corner(r - rw).Parent = rim end
 	stroke(S.rim, rw, true, 0.25, r > rw and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = rim
+	-- (round 3) the owner's body: his navy square tile, repeated (our outline, corners and light inner line kept)
+	if Kit.UseOwnerSkins and props.Tile ~= false and not props.Top then
+		Kit.skin(frame, 'body_tile', { TileScale = Kit.Window.TileScale, Radius = r, Keep = { Stroke = true, Rim = true } })
+	end
 	return frame
 end
 
@@ -2699,6 +2850,8 @@ function Kit.tabs(parent, props)
 		local rim = body and body:FindFirstChild('Rim')
 		local rs = rim and rim:FindFirstChildOfClass('UIStroke')
 		if rs then rs.Color = tone.rim end
+		local sk = body and body:FindFirstChild('Skin')
+		if sk and sk:GetAttribute('Piece') ~= (on and 'tab_on_blue' or 'tab_off') then Kit.reskin(sk, on and 'tab_on_blue' or 'tab_off') end
 		pill:SetAttribute('On', on)
 	end
 	local function set(id)

@@ -42,7 +42,8 @@ local function fontOf(inst)
 	if okE then return { enum = e } end
 	return { enum = 'SourceSans' }
 end
-local KEEP = { PreviewImage = true, IconId = true, Flat = true, Bare = true, PreviewT = true }
+local KEEP = { PreviewImage = true, IconId = true, Flat = true, Bare = true, PreviewT = true, Packed = true, Piece = true }
+local PackedLoader = require(game.ReplicatedStorage.Shared.ImageLoader) -- (round 3: which packed pictures show)
 local function node(inst)
 	local n = { c = inst.ClassName, n = inst.Name, kids = {}, mods = {} }
 	local okA, attrs = pcall(function() return inst:GetAttributes() end)
@@ -88,6 +89,17 @@ local function node(inst)
 				id = get(inst, 'Image', ''), color = rgb(get(inst, 'ImageColor3', Color3.new(1, 1, 1))), t = get(inst, 'ImageTransparency', 0),
 				scale = enumName(get(inst, 'ScaleType', nil), 'Stretch'), tile = udim2(ts),
 			}
+			-- a packed picture (Shared/ImageLoader) that is showing, and its 9-slice: { x0, y0, x1, y1, SliceScale, W, H }
+			local packed = inst:GetAttribute('Packed')
+			if packed and PackedLoader.showing(inst) then
+				n.img.packed = packed
+				local kind, name = string.match(packed, '^(%w+)/(.+)$')
+				local meta = kind and PackedLoader.meta(kind, name)
+				local sc = get(inst, 'SliceCenter', nil)
+				if meta and sc and n.img.scale == 'Slice' then
+					n.img.slice = { sc.Min.X, sc.Min.Y, sc.Max.X, sc.Max.Y, get(inst, 'SliceScale', 1), meta.W, meta.H }
+				end
+			end
 		end
 	else
 		n.insets = enumName(get(inst, 'ScreenInsets', nil), 'CoreUISafeInsets')

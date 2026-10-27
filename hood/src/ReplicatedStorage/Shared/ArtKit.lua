@@ -60,6 +60,7 @@ local function toneOf(t)
 	return t
 end
 ArtKit.toneOf = toneOf
+ArtKit.RarityPiece = Kit.RarityPiece -- (round 3: the owner's item tile per rarity)
 
 ---------------------------------------------------------------------------------------------- names, rarity, families
 -- The four World 1 box families (the handoff: Street white/red, Graffiti pink/cyan, Chrome silver/charcoal/cyan, Crown
@@ -186,6 +187,14 @@ function ArtKit.block(parent, props)
 		local r = ArtKit.frame(f, { Name = 'Rim', X = inset, Y = inset, W = w - 2 * inset, H = h - 2 * inset, Radius = math.max(2, (props.Radius or 12) - inset), Z = f.ZIndex })
 		stroke(r, tone.rim, 2, true, 0.45)
 	end
+	-- (round 3, the owner's mockup pieces) the owner's piece for this tone laid over the drawn look, which stays
+	-- underneath for when Roblox can't draw the picture. props.Skin: a piece name, or false for none; SkinProps: Kit.skin's
+	-- props (Out defaults to the outline: the piece carries its own outline)
+	local piece = props.Skin ~= false and (type(props.Skin) == 'string' and props.Skin or Kit.skinPiece(props.Tone, h + 2 * o)) or nil
+	if piece then
+		local sp = props.SkinProps or {}
+		Kit.skin(f, piece, { Out = sp.Out or o, Height = sp.Height or (h + 2 * o), TileScale = sp.TileScale, SliceScale = sp.SliceScale, Radius = sp.Radius, Keep = sp.Keep })
+	end
 	return f
 end
 
@@ -211,6 +220,9 @@ function ArtKit.framed(parent, props)
 		local g = props.InnerGradient
 		new('UIGradient', { Rotation = props.InnerRot or 90, Color = typeof(g) == 'ColorSequence' and g or ColorSequence.new(g[1], g[2]), Parent = face })
 	end
+	-- (round 3) props.Piece: the owner's tile for the card (Kit.RarityPiece[rarity]); the frame and face step aside
+	-- while it shows, the item and its words stay on top
+	if props.Piece then Kit.skin(outer, props.Piece, { Out = props.Outline or 3, Height = h + 2 * (props.Outline or 3) }) end
 	return outer, face
 end
 
@@ -415,7 +427,7 @@ function ArtKit.button(parent, props)
 	local z = props.Z or 1
 	local holder = ArtKit.frame(parent, { Name = props.Name or ('Button_' .. tostring(props.Text or '')), X = props.X, Y = props.Y, W = w, H = h, Pos = props.Pos, Anchor = props.Anchor, Z = z })
 	holder:SetAttribute('Lip', 3)
-	local body = ArtKit.block(holder, { Name = 'Body', X = 0, Y = 0, W = w, H = h, Tone = props.Tone or 'green', Radius = props.Radius or 12, Outline = props.Outline or 4, Studs = props.Studs ~= false and 22 or nil, StudShade = 0.88, Z = z })
+	local body = ArtKit.block(holder, { Name = 'Body', X = 0, Y = 0, W = w, H = h, Tone = props.Tone or 'green', Skin = props.Skin, Radius = props.Radius or 12, Outline = props.Outline or 4, Studs = props.Studs ~= false and 22 or nil, StudShade = 0.88, Z = z })
 	local size = props.TextSize or math.floor(h * 0.5)
 	local text = tostring(props.Text or '')
 	local iconS = (props.Icon or props.Glyph) and (props.IconSize or math.floor(h * 0.72)) or 0
@@ -478,16 +490,23 @@ function ArtKit.setState(holder, state, text)
 	end
 	if info.Icon then
 		for _, d in info.Icon:GetDescendants() do
-			if d:IsA('ImageLabel') then d.ImageTransparency = state == 'disabled' and 0.45 or 0 end
+			if d:IsA('ImageLabel') and d.Name ~= 'Skin' then d.ImageTransparency = state == 'disabled' and 0.45 or 0 end
 		end
 	end
-	body.BackgroundTransparency = 0
+	local skin = body:FindFirstChild('Skin')
+	local piece = skin and Kit.skinPiece(state == 'disabled' and 'disabled' or info.Tone, skin:GetAttribute('SkinH'))
+	if piece and skin:GetAttribute('Piece') ~= 'close' and piece ~= skin:GetAttribute('Piece') then Kit.reskin(skin, piece) end
+	if skin and skin:GetAttribute('Shown') then
+		skin:SetAttribute('SavedT', 0)
+	else
+		body.BackgroundTransparency = 0
+	end
 end
 
 -- The red square X (close): props X, Y, S (side), Anchor, Z, OnClick.
 function ArtKit.closeX(parent, props)
 	local s = props.S or 80
-	local holder = ArtKit.button(parent, { Name = 'Close', Text = 'X', Tone = 'red', X = props.X, Y = props.Y, Pos = props.Pos, W = s, H = props.H or s, Anchor = props.Anchor, TextSize = math.floor(s * 0.66), Radius = 8, Outline = 4, Studs = false, Z = props.Z, OnClick = props.OnClick })
+	local holder = ArtKit.button(parent, { Name = 'Close', Text = 'X', Tone = 'red', Skin = 'close', X = props.X, Y = props.Y, Pos = props.Pos, W = s, H = props.H or s, Anchor = props.Anchor, TextSize = math.floor(s * 0.66), Radius = 8, Outline = 4, Studs = false, Z = props.Z, OnClick = props.OnClick })
 	return holder
 end
 
@@ -632,6 +651,7 @@ function ArtKit.field(parent, props)
 	stroke(f, ArtKit.Ink, props.Outline or 4, true)
 	local rim = ArtKit.frame(f, { Name = 'Border', X = 3, Y = 3, W = props.W - 6, H = props.H - 6, Radius = (props.Radius or 12) - 3, Z = props.Z })
 	stroke(rim, props.Border or hex('0A72C4'), props.BorderW or 4, true)
+	if props.Skin ~= false then Kit.skin(f, props.Skin or 'search', { Out = props.Outline or 4, Height = props.H + 2 * (props.Outline or 4) }) end
 	return f
 end
 -- The search box: a magnifier and a TextBox. props X, Y, W, H, Placeholder, Z, OnChanged(text). Returns holder, box.
@@ -689,10 +709,15 @@ function ArtKit.panel(parent, props)
 	end
 	local rim = ArtKit.frame(shell, { Name = 'Rim', X = 4, Y = 4, W = W - 8, H = H - 8, Radius = 13, Z = z })
 	stroke(rim, props.RimColor or S.rim, 2, true, 0.25)
+	-- (round 3) the owner's body tile (our outline, rim and rounded corners kept)
+	if not own then Kit.skin(shell, 'body_tile', { TileScale = Kit.Window.TileScale, Radius = 16, Keep = { Stroke = true, Rim = true } }) end
 	-- the header: (Oct 27) the mockup's bright yellow bar on every window, the red one for a delete / are-you-sure panel
 	-- (HeadTone = 'red'); a faint tile, lighter on top
 	local tone = toneOf(props.HeadTone == 'red' and 'red' or 'yellow')
-	local header = ArtKit.block(panel, { Name = 'Header', X = 0, Y = 0, W = W, H = head, Tone = tone, Radius = 12, Outline = 5, OutlineColor = S.outline, Studs = 26, StudShade = 0.24, Z = z + 1 })
+	local headMeta = props.HeadTone ~= 'red' and Kit.UseOwnerSkins and Kit.ImageLoader.meta('Ui', 'header')
+	local header = ArtKit.block(panel, { Name = 'Header', X = 0, Y = 0, W = W, H = head, Tone = tone, Radius = 12, Outline = 5, OutlineColor = S.outline, Studs = 26, StudShade = 0.24, Z = z + 1,
+		-- (round 3) the owner's yellow header fill, repeated along the bar (our outline and corners kept)
+		Skin = headMeta and 'header' or false, SkinProps = headMeta and { Out = 0, TileScale = head / headMeta.H, Radius = 12, Keep = { Stroke = true } } or nil })
 	local tx = props.TitleX or 150
 	local title = ArtKit.text(header, props.Title or '', { Name = 'Title', Size = props.TitleSize or 52, X = tx, Y = props.TitleY or 0, W = props.TitleW or (W - tx - 110), H = head, Align = props.TitleAlign or 'Left', Gradient = props.TitleGradient, Z = z + 1, Fit = true, StrokeW = math.floor((props.TitleSize or 52) * 0.13) })
 	local content = new('ScrollingFrame', {

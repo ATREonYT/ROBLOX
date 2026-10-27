@@ -5,4 +5,9 @@ do
 	local Kit = require(game.ReplicatedStorage.Shared.UIKit)
 	Kit.Preloader = function(content, callback) callback(content, Enum.AssetFetchStatus.Success) end
 	Kit.IsLoaded = function() return true end
+	-- (round 3) the packed pictures (Shared/ImageLoader) count as drawn: the renderer draws their PNGs (hood/art/ui_owner,
+	-- hood/art/icons3d). In Studio they need Game Settings > Security > "Allow Mesh / Image APIs".
+	local Loader = require(game.ReplicatedStorage.Shared.ImageLoader)
+	Loader.Supported = true
+	Loader.make = function() return { Destroy = function() end }, {} end
 end

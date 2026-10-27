@@ -44,3 +44,14 @@ have it under `/opt/node22/lib/node_modules`). A slot in `compose.py` can be `no
 - **Vertical UIGridLayout** fills row by row.
 - **Motion**: only the state after the open animation. Tweens, pulses and particles need Studio or a video.
 - **Phone sizes**: only 1280x720. To check a phone, change the four sizes in `shoot.sh`, the same way.
+
+## The owner's pictures (round 3, Oct 27)
+- The windows wear pieces cut from the owner's mockup (`hood/tools/ui/cut_mockup.py` -> `hood/art/ui_owner/`) and
+  every item shows its real rendered picture (`hood/tools/ui/render_items.sh` -> `hood/art/icons3d/`). Both are packed
+  into Luau (`hood/tools/ui/pack_images.py` -> `Shared/Images/`) and drawn in game by `Shared/ImageLoader`
+  (EditableImage: no upload needed).
+- `prelude.luau` makes the loader count every packed picture as drawn; `dump.luau` writes which ones show (`packed`)
+  and their 9-slice; `index.html` draws them from the PNGs (9-slice as a CSS border-image, tiles as a repeat).
+- Only Studio shows whether Roblox actually draws them: Game Settings > Security > "Allow Mesh / Image APIs" must be on
+  (the place published), and the picture memory budget holds. Without them the windows fall back to their drawn look
+  and Output prints one `[HoodUI]` line naming the fix.
