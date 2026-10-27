@@ -29,6 +29,17 @@ return function(t)
 		t.expect.falsy(WI.unlocked(nil, 2))
 	end)
 
+	t.test("World 2's numbers climb from past World 1's boss, pay more and hit harder; World 1 keeps its own", function()
+		local B = require(RS.Shared.Config.Balance)
+		local W1, W2 = B.Worlds[1], B.Worlds[2]
+		t.expect.equal(B.World, 1); t.expect.equal(B.StagePower, W1.StagePower); t.expect.equal(B.LaneBoost, 1)
+		t.expect.equal(#W2.StagePower, 16); t.expect.equal(#W2.PadCash, 16)
+		t.expect.truthy(W2.StagePower[1] > W1.StagePower[16]); t.expect.truthy(W2.PadCash[1] > W1.PadCash[16])
+		for s = 2, 16 do t.expect.truthy(W2.StagePower[s] > W2.StagePower[s - 1] and W2.PadCash[s] > W2.PadCash[s - 1]) end
+		t.expect.truthy(W2.LaneBoost > 1)
+		t.expect.truthy(W2.StagePower[16] <= B.MaxSafeValue)
+	end)
+
 	t.test('a profile from before the worlds migrates and validates in World 1', function()
 		local d = Schema.new(); d.CurrentWorld = nil; d.Worlds = nil
 		Schema.migrate(d); Schema.validate(d)

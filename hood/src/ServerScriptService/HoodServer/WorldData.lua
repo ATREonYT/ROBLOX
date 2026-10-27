@@ -3,13 +3,14 @@
 -- Power, Cash, rebirths, guns and shoes carry over; a world's own progress (Waves: the best crew beaten, Goals: the goal
 -- chain's step, ClearedWalls: the gates passed) does not. The top-level fields always belong to data.CurrentWorld; the
 -- other worlds' sets wait in data.Worlds['W<id>']. Loading in another world swaps them (enter), so a saved profile is
--- always consistent whichever place saved it. Pure: ProfileSchema.migrate calls it with Shared/WorldInfo.current().
+-- always consistent whichever place saved it. A first visit's goals start unsynced (GoalRules.advance skips, unpaid,
+-- the goals already met: the lanes and guns you bring along). Pure: ProfileSchema.migrate calls it with Shared/WorldInfo.current().
 local WorldData = {}
 WorldData.Keys = { 'Waves', 'Goals', 'ClearedWalls' }
 
 local function fresh()
 	local okG, GoalRules = pcall(function() return require(game:GetService('ReplicatedStorage').Shared.GoalRules) end)
-	return { Waves = { Cleared = 0 }, Goals = { Step = 1, Synced = true, Chain = okG and GoalRules.Chain or 1 }, ClearedWalls = {} }
+	return { Waves = { Cleared = 0 }, Goals = { Step = 1, Synced = false, Chain = okG and GoalRules.Chain or 1 }, ClearedWalls = {} }
 end
 
 function WorldData.enter(data: any, world: number)

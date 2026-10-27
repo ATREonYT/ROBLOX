@@ -111,7 +111,7 @@ local function paintTracker(pop)
 		allDoneAt = allDoneAt or os.clock()
 		head.Text = 'ALL GOALS DONE!'
 		local where = player:GetAttribute('GoalWhere')
-		line.Text = type(where) == 'string' and where ~= '' and where or 'World 2 is coming soon'
+		line.Text = type(where) == 'string' and where ~= '' and where or ''
 		place(line.Text, nil)
 		tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and os.clock() - allDoneAt < 12
 		if tracker.Visible then task.delay(12.5, function() paintTracker(false) end) end

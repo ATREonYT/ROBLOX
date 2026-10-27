@@ -45,6 +45,19 @@ local NEED = {
 -- longer. Only World 1 is built; the sim's targets for the next ones.
 local WORLD_TARGETS = { 27, 40, 55, 70, 90 }
 
+-- World 2, Downtown (Oct 27; hood/docs/WORLD2.md): its own place, entered at about rebirth 9-10 (World 1's boss).
+-- Two new stages with each rebirth from 10 to 17 (a cycle's first stage 60% of the way up its need, the second at it),
+-- its ranges hit twice as hard (LaneBoost, Config/Skins), and the pads pay from 7K to 40K. The pacing sim (World 2
+-- section): its boss about 40 minutes after the door for a player who runs every new stage, about 60 for a casual one.
+local WORLD2 = {
+	StagePower = { 280000, 300000, 340000, 360000, 400000, 430000, 470000, 500000, 560000, 600000, 660000, 700000, 790000, 850000, 910000, 950000 },
+	PadCash = { 7000, 7900, 8800, 9900, 11100, 12500, 14100, 15800, 17700, 19900, 22400, 25100, 28200, 31700, 35600, 40000 },
+	LaneBoost = 2,
+}
+
+-- Each world is its own place (Config/Worlds); this server's world picks its stages, pads and lane boost.
+local WORLD = require(script.Parent.Parent.WorldInfo).current()
+
 local Balance = {
  -- The currency's name, in one place (brief 23: the reference's "Wins" are our Cash; the pads say "+20 Cash").
  CashName = 'Cash',
@@ -70,8 +83,11 @@ local Balance = {
  -- goons' HP: EnemyRules.maxHp = HpShots x the kind's weight x this). Oct 27 pacing: which rebirth brings which stage is
  -- under NEED above. The map builder reads this (code5/c_layout).
  StagePower = { 10, 60, 150, 350, 2400, 3500, 5500, 8000, 11000, 16000, 30000, 55000, 90000, 130000, 180000, 220000 },
+ -- (Oct 27) every world's numbers; StagePower, PadCash and LaneBoost here are this server's world's (set below)
+ Worlds = {},
  -- The pads (Shared/PadRules): the yellow Return pad's Cash per stage; the magenta pad pays PadRules.TenX times it.
  PadCash = PAD_CASH,
+ LaneBoost = 1, -- the ranges' multiplier boost in this world (Config/Skins applies it)
  -- Beating a stage's goons pays no Cash, the first time or any later run (WaveRules.reward / repeatReward): the pad at
  -- the end of the run is the one big number (CRITIC3: fewer, bigger Cash moments). Kept for readers of the old field.
  WaveCash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -102,5 +118,14 @@ end
 function Balance.stageCash(stage: any): number
  return type(stage) == 'number' and Balance.StageCash[stage] or 0
 end
+
+Balance.Worlds[1] = { StagePower = Balance.StagePower, PadCash = PAD_CASH, LaneBoost = 1 }
+Balance.Worlds[2] = WORLD2
+if Balance.Worlds[WORLD] then
+	Balance.StagePower = Balance.Worlds[WORLD].StagePower
+	Balance.PadCash = Balance.Worlds[WORLD].PadCash
+	Balance.LaneBoost = Balance.Worlds[WORLD].LaneBoost
+end
+Balance.World = WORLD
 
 return table.freeze(Balance)

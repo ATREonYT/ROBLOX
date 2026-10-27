@@ -68,12 +68,36 @@ GoalRules.List = {
 	lane('DoubleEnd', 'Range6', 1500),
 	lane('Ring', 'Ring', 2500, 'Stage 16, at %s'), -- FIGHTS30 (was 'Boss Yard, at %d rebirths')
 }
+-- (Oct 27) World 2, Downtown (its own place; Shared/WorldInfo): a fresh chain through its streets, up to the CEO. You
+-- arrive with your rebirths, guns and shoes, so it's only the new stages, the crews and the last lanes; the rewards are
+-- scaled to its pads (7K to 40K). A World 2 visitor's goals start unsynced (HoodServer/WorldData), so the lanes and guns
+-- they already have are skipped quietly.
+local okW, WorldInfo = pcall(function() return require(script.Parent.WorldInfo) end)
+GoalRules.World = okW and WorldInfo.current() or 1
+if GoalRules.World == 2 then
+	GoalRules.List = {
+		{ Id = 'Stage1', Text = 'Walk to Downtown Stage 1', Where = 'through the big doors ahead', Reward = 500, Need = { Stages = 1 } },
+		{ Id = 'Wave1', Text = 'Beat the Interns', Where = 'hold to shoot them', Reward = 750, Need = { Wave = 1 } },
+		{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 750, Need = { CashOuts = 1 } },
+		{ Id = 'Stage4', Text = 'Reach Stage 4', Where = 'beat each crew to open its gate', Reward = 1500, Need = { Stages = 4 } },
+		{ Id = 'Stage6', Text = 'Reach Stage 6', Where = 'past Security, into the tower', Reward = 2500, Need = { Stages = 6 } },
+		{ Id = 'Stage10', Text = 'Reach Stage 10', Where = 'up through the office floors', Reward = 4000, Need = { Stages = 10 } },
+		{ Id = 'Stage13', Text = 'Reach Stage 13', Where = 'the top floors', Reward = 6000, Need = { Stages = 13 } },
+		{ Id = 'Wave15', Text = 'Beat the Stage 15 crew', Where = 'before the rooftop', Reward = 8000, Need = { Wave = 15 } },
+		{ Id = 'BossYard', Text = 'Reach the rooftop', Where = 'Stage 16, past Stage 15', Reward = 10000, Need = { Stages = 16 } },
+		{ Id = 'BossWave', Text = 'Beat The CEO', Where = 'on the rooftop, Stage 16', Reward = 15000, Need = { Wave = 16 } },
+		lane('Speed', 'Range5', 12000),
+		lane('DoubleEnd', 'Range6', 20000),
+		lane('Ring', 'Ring', 30000, 'Stage 16, at %s'),
+	}
+end
 GoalRules.ById = {}
 for i, g in GoalRules.List do
 	g.Step = i
 	GoalRules.ById[g.Id] = g
 end
-GoalRules.AllDone = { Text = 'ALL GOALS DONE!', Where = 'World 2 is coming soon' }
+GoalRules.AllDone = GoalRules.World == 2 and { Text = 'ALL GOALS DONE!', Where = 'more worlds are coming soon' }
+	or { Text = 'ALL GOALS DONE!', Where = 'take the World 2 portal to Downtown' }
 -- The chain's version, saved with each profile's Goals (Chain). Older chains, by goal id (GoalRules.migrate moves a
 -- saved step to the same goal in this chain).
 GoalRules.Chain = 5 -- (5: Oct 27 pacing, the lanes spread over 50 rebirths; BAY 5 after the boss)
@@ -151,7 +175,7 @@ end
 function GoalRules.migrate(goals)
 	if type(goals) ~= 'table' then return goals end
 	local chain = type(goals.Chain) == 'number' and goals.Chain or 1
-	local old = GoalRules.Chains[chain]
+	local old = GoalRules.World == 1 and GoalRules.Chains[chain] -- (the old chains are World 1's)
 	if old then
 		local function map(step)
 			if type(step) ~= 'number' or step ~= step or step % 1 ~= 0 then return step end

@@ -30,12 +30,13 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - **Shared code:** `ReplicatedStorage/Shared` (rules modules are unit-tested); client code in `StarterPlayer/StarterPlayerScripts/HoodClient`; server in `ServerScriptService/HoodServer`.
 - **Robux items:** `Shared/Config/Products.lua`; the list to create on the website is `hood/MONETIZATION.md`.
 - **Pacing:** the owner wants World 1 to take 25-30 minutes and later worlds longer (Oct 27). `hood/tools/pacing/pacing.luau` simulates players on the real numbers (`Config/Balance`, `Guns`, `Skins`, `Shoes`); run it after any change to rebirth needs, stage Power, pad Cash, gun prices, lanes or walk speed, and try new numbers with `tune.luau` (both headers say how). World 1 now: 9 rebirths (the boss at about 30 min); the ladder goes on to 50 rebirths (about 4 h), lanes open at 2, 4, 7, 15, 30 and the Champ Ring at 50 (the owner: "more rebirths, up to like 50").
+- **Worlds:** each world is its own place running the same scripts; the map sets the workspace attribute `HoodWorld`, read by `Shared/WorldInfo`. `Config/Balance` picks that world's StagePower, PadCash and LaneBoost, and `GoalRules` its own goal chain. World 2 (Downtown, `hood/docs/WORLD2.md`): its boss about 40 min after the door (the sim's World 2 section).
 - **Place file:** `LUNE=<lune> sh hood/tools/place/build_place.sh` writes `hood/places/HoodEvolution.rbxl`. Rebuild it when committing map changes.
 
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (407 since the Oct 27 worlds);
+- unit: all pass (408 since the Oct 27 worlds);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - play_run: 82 checks / 0 failed;
