@@ -729,6 +729,34 @@ do
 end
 hum.MaxHealth, hum.Health = 100, 100
 
+-- (Oct 27, round 8) The tutorial's end: YOU'RE READY! lands within ~3 s even in a fight (the moment queue's priority),
+-- says what's next, and once it has played the HUD may bring in the offers (PlayerGui TutorialReady).
+do
+	local G = P.PlayerGui
+	local function ready()
+		local g = G:FindFirstChild('HoodGoals')
+		local gd = g and g:FindFirstChild('GoalDone', true)
+		local t = gd and gd:FindFirstChild('Title')
+		return t ~= nil and t.Text == "YOU'RE READY!", gd
+	end
+	P:SetAttribute('WaveCleared', 1)
+	P:SetAttribute('OnboardingStep', 'Run')
+	wall(0.3)
+	P:SetAttribute('WaveLeft', 4) -- (a fight on)
+	P:SetAttribute('OnboardingStep', 'Done')
+	local t0 = os.clock()
+	local seen, gd = false, nil
+	while os.clock() - t0 < 4 and not seen do wall(0.1); seen, gd = ready() end
+	local after = os.clock() - t0
+	local lead = gd and gd:FindFirstChild('Lead')
+	check('30 YOU\'RE READY!: within 3 s of the tutorial\'s end, in a fight, with "Next: train and beat Stage 2"', seen and after <= 3.5 and lead ~= nil and lead.Text == 'Next: train and beat Stage 2', ('%.1f s, "%s"'):format(after, tostring(lead and lead.Text)))
+	check('30 ... the offers wait for it', G:GetAttribute('TutorialReady') == false, tostring(G:GetAttribute('TutorialReady')))
+	local t1 = os.clock()
+	while os.clock() - t1 < 8 and G:GetAttribute('TutorialReady') ~= true do wall(0.2) end
+	check('30 ... and once it has played they may come', G:GetAttribute('TutorialReady') == true, tostring(G:GetAttribute('TutorialReady')))
+	P:SetAttribute('WaveLeft', 0)
+end
+
 print('[play] ' .. #CHECKS .. ' checks, ' .. #FAILS .. ' failed')
 if EXPORT then __fs.writeFile(EXPORT .. '/manifest.json', __serde.encode('json', SHOTS)) end
 return { checks = #CHECKS, failed = FAILS }

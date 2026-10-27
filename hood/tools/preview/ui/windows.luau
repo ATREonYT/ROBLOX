@@ -8,6 +8,9 @@ do
 	local ok0 = waitFor(function() return P.PlayerGui:FindFirstChild('HoodHUD') ~= nil and P.PlayerGui:FindFirstChild('HoodStore') ~= nil end, 30)
 	print('[ui] clients up: ' .. tostring(ok0))
 	wall(1)
+	-- (Oct 27, round 8) a fresh save's welcome has the screen to itself (every other screen waits): let it pass first
+	waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') == nil end, 12)
+	P:SetAttribute('FirstJoin', false)
 	-- progress: 4 rebirths (Skip Rebirth shows from 4), 45% of the way to the 5th, some Cash
 	local R = 4
 	local need = RebirthRules.need(R)

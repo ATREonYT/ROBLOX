@@ -19,6 +19,15 @@ return function(t)
 		t.expect.equal(MQ.pick(w, nil), nil)
 	end)
 
+	t.test('the moment queue: a higher Priority goes first among the ready ones (round 8: YOU\'RE READY!)', function()
+		local w = { { Ready = true }, { Ready = false, Priority = 9 }, { Ready = true, Priority = 5 }, { Ready = true, Priority = 5 } }
+		t.expect.equal(MQ.pick(w, { Active = false, Now = 10, CalmUntil = 0 }), 3) -- (the first of the highest that may start)
+		w[2].Ready = true
+		t.expect.equal(MQ.pick(w, { Active = false, Now = 10, CalmUntil = 0 }), 2)
+		t.expect.equal(MQ.pick(w, { Active = false, Now = 10, CalmUntil = 12 }), nil) -- (it still keeps the calm)
+		t.expect.equal(MQ.pick({ { Ready = true, Priority = 'x' }, { Ready = true } }, { Active = false, Now = 0, CalmUntil = 0 }), 1) -- (junk is 0)
+	end)
+
 	t.test('the tutorial: BAY 1 says why Power matters and boxes the Power count; Gun and Run talk without arrows', function()
 		local list, target = Tut.lines('Train', true, false)
 		t.expect.equal(#list, 2); t.expect.equal(list[1].Text, Tut.Steps.Train.InLane); t.expect.equal(list[1].Box, 'Power'); t.expect.equal(Tut.lineOf(list[1].Text), list[1]); t.expect.equal(list[2], Tut.Why.Power); t.expect.equal(target, nil)

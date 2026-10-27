@@ -275,6 +275,8 @@ end
 -- the gun itself turning slowly in the middle of the screen, "NEW GUN!", its name and what it does ("x2 POWER PER SHOT"),
 -- for a couple of seconds, in its turn in the moment queue (Shared/MomentQueue). The server's "Bought ..." notice says
 -- the same, so it is muted. It never blocks: no input is taken, the game runs under it. Reduced Motion: it doesn't turn.
+-- (Oct 27, round 8) It is one of our windows now: a solid navy panel (Kit.windowBody) with the yellow header bar, in
+-- the middle of the screen over a soft dark backdrop, not see-through text on a band.
 local RunService = game:GetService('RunService')
 local MomentQueue = require(RS.Shared.MomentQueue)
 local okStyle, TextStyle = pcall(require, RS.Shared.TextStyle)
@@ -294,30 +296,48 @@ local function reveal(gun)
 	local gui, spin
 	local ok, err = pcall(function()
 		gui = Kit.screen('HoodGunReveal', pg, 55)
+		gui.IgnoreGuiInset = true
+		gui.ScreenInsets = Enum.ScreenInsets.None
 		local root = gui:FindFirstChild('Root')
-		local card = Kit.new('Frame', { Name = 'Card', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36), Size = UDim2.fromOffset(560, 330), Parent = root })
-		local sc = Kit.new('UIScale', { Scale = 0.4, Parent = card })
-		local band = Kit.new('Frame', { Name = 'Band', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1.6, 0, 1, 0), BackgroundColor3 = Kit.hex('070912'), BackgroundTransparency = 0.35, BorderSizePixel = 0, Parent = card })
-		Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0), NumberSequenceKeypoint.new(0.75, 0), NumberSequenceKeypoint.new(1, 1) }), Parent = band })
-		local head = Kit.text({ Name = 'Head', Text = 'NEW GUN!', TextSize = 40, ZIndex = 3, Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 46), Parent = card })
+		local TS = game:GetService('TweenService')
+		-- the soft dark backdrop (it takes no input: the game runs under it)
+		local backdrop = Kit.new('Frame', { Name = 'Backdrop', BackgroundColor3 = Kit.hex('070912'), BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = gui })
+		root.ZIndex = 2
+		TS:Create(backdrop, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.45 }):Play()
+		-- the window: a solid navy body under a yellow header bar, centred
+		local W, H, HH = 520, 380, 64
+		local card = Kit.new('Frame', { Name = 'Card', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), ZIndex = 2, Parent = root })
+		local sc = Kit.new('UIScale', { Scale = 0.85, Parent = card })
+		local body = Kit.new('Frame', { Name = 'Body', BorderSizePixel = 0, Position = UDim2.fromOffset(0, HH - 14), Size = UDim2.new(1, 0, 1, -(HH - 14)), ZIndex = 2, Parent = card })
+		Kit.windowBody(body, W, H - HH + 14, { Outline = 5 })
+		local header = Kit.block({ Name = 'Header', Tone = 'headerYellow', Width = W, Height = HH, Outline = 5, OutlineColor = Kit.Skin.outline, Radius = Kit.Skin.headerCorner, Studs = 30, StudShade = 0.22, RimWidth = 4, ZIndex = 4 })
+		header.Parent = card
+		if Kit.headerBand then Kit.headerBand(header, 'headerYellow') end
+		local head = Kit.text({ Name = 'Head', Text = 'NEW GUN!', FontFace = Kit.Font.display, TextSize = 44, Stroke = Kit.Skin.outline, StrokeThickness = 5, ZIndex = 8, Position = UDim2.fromOffset(0, -2), Size = UDim2.fromScale(1, 1), Parent = header:FindFirstChild('Body') or header })
+		-- the gun turns in a dark well
+		local well = Kit.new('Frame', { Name = 'Well', BackgroundColor3 = Kit.Skin.well, BackgroundTransparency = 0.2, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, HH + 10), Size = UDim2.fromOffset(W - 60, 176), ZIndex = 5, Parent = card })
+		Kit.new('UICorner', { CornerRadius = UDim.new(0, 12), Parent = well })
 		local view
 		local models = gunModels()
 		if models and models.viewport then
 			local ok, vf = pcall(models.viewport, gun.Id, UDim2.fromOffset(300, 170))
 			if ok and vf then
 				view = vf
-				vf.AnchorPoint, vf.Position = Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 52)
-				vf.Parent = card
+				vf.AnchorPoint, vf.Position = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5)
+				vf.BackgroundTransparency = 1
+				vf.ZIndex = 6
+				vf.Parent = well
 			end
 		end
-		local nameLabel = Kit.text({ Name = 'GunName', Text = string.upper(gun.Name), TextSize = 34, ZIndex = 3, Position = UDim2.fromOffset(0, 226), Size = UDim2.new(1, 0, 0, 42), Parent = card })
-		local what = Kit.text({ Name = 'What', Text = 'x' .. tostring(gun.Multiplier) .. ' POWER PER SHOT', TextSize = 30, ZIndex = 3, Position = UDim2.fromOffset(0, 272), Size = UDim2.new(1, 0, 0, 38), Parent = card })
+		local nameLabel = Kit.text({ Name = 'GunName', Text = string.upper(gun.Name), TextSize = 34, ZIndex = 7, Position = UDim2.fromOffset(0, HH + 194), Size = UDim2.new(1, 0, 0, 42), Parent = card })
+		local what = Kit.text({ Name = 'What', Text = 'x' .. tostring(gun.Multiplier) .. ' POWER PER SHOT', TextSize = 30, ZIndex = 7, Position = UDim2.fromOffset(0, HH + 240), Size = UDim2.new(1, 0, 0, 38), Parent = card })
+		nameLabel.TextSize = Kit.fitSize and Kit.fitSize(nameLabel.Text, 34, W - 40, 18) or 34
 		if okStyle then
-			TextStyle.apply(head, 'price', { Shadow = true })
+			TextStyle.apply(head, 'white', { Thickness = 5 })
 			TextStyle.apply(nameLabel, 'white', { Shadow = true })
 			TextStyle.apply(what, 'gold', { Shadow = true })
 		end
-		game:GetService('TweenService'):Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		TS:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 		-- the gun turns, slowly (a third of a turn while it shows)
 		local meta = models and models.Meta and models.Meta[gun.Id]
 		local cam = view and select(2, pcall(function() return view.CurrentCamera end))
@@ -331,15 +351,11 @@ local function reveal(gun)
 			end)
 		end
 		task.wait(REVEAL_FOR)
-		local out = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		local TS = game:GetService('TweenService')
-		for _, d in card:GetDescendants() do
-			if d:IsA('TextLabel') then TS:Create(d, out, { TextTransparency = 1 }):Play() end
-			if d:IsA('UIStroke') then TS:Create(d, out, { Transparency = 1 }):Play() end
-			if d:IsA('ViewportFrame') then TS:Create(d, out, { ImageTransparency = 1 }):Play() end
-		end
-		TS:Create(band, out, { BackgroundTransparency = 1 }):Play()
-		task.wait(0.4)
+		-- out: the window shrinks away (Back In) while the backdrop clears
+		local out = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+		TS:Create(sc, out, { Scale = 0 }):Play()
+		TS:Create(backdrop, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { BackgroundTransparency = 1 }):Play()
+		task.wait(0.35)
 	end)
 	if spin then spin:Disconnect() end
 	if not ok then warn('[Armory] the new-gun moment: ' .. tostring(err)) end

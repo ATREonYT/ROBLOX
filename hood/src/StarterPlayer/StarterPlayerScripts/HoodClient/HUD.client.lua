@@ -103,6 +103,19 @@ local function times(x)
 	return 'x' .. string.format('%.1f', x)
 end
 local function quiet() return player:GetAttribute('OnboardingQuiet') == true end
+-- (Oct 27, round 8: "nothing pops up first") The first-join welcome (Welcome.client: PlayerGui HoodWelcome) has the
+-- screen to itself: the whole HUD waits, then fades in, staggered over 0.3 s. While FirstJoin is not known yet (10 s at
+-- most) it waits too, so a first join never flashes the HUD before its welcome. (40 s at most for a welcome that never
+-- says it ended.)
+local joinedAt = os.clock()
+local function welcomeHold()
+	local w = playerGui:GetAttribute('HoodWelcome')
+	if w == true then return true end
+	local first = player:GetAttribute('FirstJoin')
+	if first == true and w ~= false then return os.clock() - joinedAt < 40 end
+	if first == nil then return os.clock() - joinedAt < 10 end
+	return false
+end
 
 ---------------------------------------------------------------------------------------------- purchases
 local function toast(text, tone, sub) Toasts.say(text, tone, sub) end
@@ -328,7 +341,7 @@ do
 	local cr
 	cr, cashIcon, cashCount = row('Cash', C.Cash, 'Cash')
 	fillText(cashCount, Spec.Text.gold)
-	plus(cr, cashIcon, 15, function() openStore('Cash') end)
+	local cashPlus = plus(cr, cashIcon, 15, function() openStore('Cash') end)
 	-- MOCKUP30 BEGIN the user's HUD artboard draws Cash as a stat pill (dark, a green rim, the Cash caption over the
 	-- number); its look wins over the slot, the slot and its names stay (Counters.Cash, Value, Plus)
 	do
@@ -338,8 +351,11 @@ do
 		local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, Position = px(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = 2, Parent = pill })
 		Kit.corner(9).Parent = rim
 		Kit.stroke(hex('2CE04A'), 3, true).Parent = rim
-		label({ Name = 'Caption', Text = 'Cash', TextSize = 15, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, Position = px(C.Cash.TextX, -2), Size = px(120, 18), ZIndex = 4, Parent = cr })
+		label({ Name = 'Caption', Text = 'Cash', TextSize = 17, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, Position = px(C.Cash.TextX, -3), Size = px(120, 20), ZIndex = 4, Parent = cr })
 		cashCount.Position = cashCount.Position + UDim2.fromOffset(0, 7)
+		-- (Oct 27, round 8, CRITIC_OCT27 gap 9: between the icon and the number the lime plus read as "+25") the "buy
+		-- more" plus sits on the pill's right end, clear of the number
+		cashPlus.Position = UDim2.new(0, 2 + 224, 0.5, 0)
 	end
 	-- MOCKUP30 END
 	-- Friend Boost: "+10 % Power per friend here" (RetentionService's FriendBoost) and the green invite "+"
@@ -418,8 +434,8 @@ do
 		local f = Kit.new('Frame', { Name = 'Bar' .. i, BackgroundColor3 = hex('3AD83A'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 2 + i * 3, 0.5, 0), Size = px(3.4, h), ZIndex = 6, Parent = play })
 		if i == 0 then Kit.gradient(hex('7CFF6A'), hex('22B022'), 0.5).Parent = f end
 	end
-	autoState = label({ Name = 'State', Text = '?', TextSize = 13, StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Right, Position = px(24, 2), Size = px(B.AutoW - 30, 18), ZIndex = 7, Parent = auto.Body })
-	label({ Name = 'Word', Text = 'Auto Fight', TextSize = 12, StrokeThickness = 2.5, Position = px(0, B.AutoH - 22), Size = px(B.AutoW - 5, 16), ZIndex = 7, Parent = auto.Body })
+	autoState = label({ Name = 'State', Text = '?', TextSize = B.AutoText, StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Right, Position = px(26, 2), Size = px(B.AutoW - 32, 20), ZIndex = 7, Parent = auto.Body })
+	label({ Name = 'Word', Text = 'Auto Fight', TextSize = B.AutoText, StrokeThickness = 2.5, Position = px(0, B.AutoH - 24), Size = px(B.AutoW - 5, 20), ZIndex = 7, Parent = auto.Body })
 	local function paintAuto()
 		local owned = player:GetAttribute('Pass_AutoShoot') == true
 		local entry = Products.ByKey.AutoShoot
@@ -451,9 +467,12 @@ do
 		local holder, hit = Kit.blockButton({ Name = key, Tone = tone, Width = O.W, Height = O.H, Position = px(0, (i - 1) * O.Step), Radius = 6, RimWidth = 2, Outline = 3.5, Studs = 15, StudShade = 0.35, ZIndex = 9 - 2 * i })
 		holder.Parent = offers
 		-- (the reference's trophy / arm / winged shoe: big, centred behind the title and over the card's top edge)
-		local icon = Kit.icon3d(iconId, nil, { ZIndex = 11 - 2 * i, Place = { Rule = Spec.OfferArt, W = O.W, H = O.H, X0 = 3.5, Y0 = 3.5 } })
+		-- (Oct 27, round 8, CRITIC_OCT27 gap 8: centred behind the title, the title hid it) its own box at the card's right
+		-- end, over the top edge like the ref's; the title left of it
+		local OI = Spec.OfferIcon
+		local icon = Kit.icon3d(iconId, nil, { ZIndex = 11 - 2 * i, Place = Kit.inBox(OI.X, OI.Y, OI.W, OI.H, OI.Margin) })
 		icon.Parent = holder.Body
-		local head = label({ Name = 'Title', Text = title, TextSize = Kit.fitSize(title, O.TitleSize, O.W - 16, 16), StrokeThickness = 4.5, Position = px(2, -2), Size = UDim2.new(1, -4, 1, 0), ZIndex = 12 - 2 * i, Parent = holder.Body })
+		local head = label({ Name = 'Title', Text = title, TextSize = Kit.fitSize(title, O.TitleSize, OI.TitleW - 8, 18), StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(8, -2), Size = UDim2.new(0, OI.TitleW - 8, 1, 0), ZIndex = 12 - 2 * i, Parent = holder.Body })
 		-- (ROBUX, rule 27-28) the reference's "x2 Wins": white to light grey, a thick near-black outline, a dark foot; the
 		-- art bobs gently and a few stars twinkle round the card (ref_W01.0_spawn_view_north)
 		Sell.Style.apply(head, 'white', { Thickness = 4.5, Shadow = true })
@@ -527,6 +546,140 @@ local function arrive()
 		if c then i += 1 pop(c, 0.7, 0.04 * i) end
 	end
 end
+
+---------------------------------------------------------------------------------------------- the calm first screen
+-- (Oct 27, round 8: "teach each system when it first matters") Shared/HudReveal says which parts a player sees: a
+-- first-join kid starts with the Shop, the counters and the Power bar; Shoes, Skins, Items and Rebirth pop in when they
+-- first matter, each with a one-time "NEW!"; the Robux offers and the Friend Boost line slide in once, after the
+-- tutorial's YOU'RE READY!. A returning player sees everything. Each part is published as PlayerGui HudShown_<Part>.
+local Reveal = require(Shared.HudReveal)
+local revealShown = {}
+local revealObjs = {
+	Shoes = { column:FindFirstChild('Shoes') }, Skins = { column:FindFirstChild('Skins') }, Items = { column:FindFirstChild('Items') }, Rebirth = { column:FindFirstChild('Rebirth') },
+	Offers = { offers }, PowerPacks = { status:FindFirstChild('PowerPack1'), status:FindFirstChild('PowerPack2'), status:FindFirstChild('PowerPack3') },
+	AutoFight = { status:FindFirstChild('AutoShoot') }, StarterPack = { slots.StarterSlot }, FriendBoost = { counters:FindFirstChild('FriendBoost') },
+}
+local cheapestBox = 0
+do
+	local okS, ShoesCfg = pcall(require, Shared.Config.Shoes)
+	local okW, WorldInfo = pcall(require, Shared.WorldInfo)
+	local world = okW and WorldInfo.current() or 1
+	local best = math.huge
+	if okS and type(ShoesCfg.Boxes) == 'table' then
+		for _, b in ShoesCfg.Boxes do
+			if type(b.Price) == 'number' and (b.World or 1) == world and b.Price < best then best = b.Price end
+		end
+	end
+	cheapestBox = best < math.huge and best or 0
+end
+local doneAt = nil -- (when OnboardingStep turned Done: the offers come at the latest Reveal.ReadyWait s after it)
+local function revealState()
+	local first = player:GetAttribute('FirstJoin')
+	local step = player:GetAttribute('OnboardingStep')
+	if step == 'Done' then doneAt = doneAt or os.clock() else doneAt = nil end
+	local ready = playerGui:GetAttribute('TutorialReady') == true or (doneAt ~= nil and os.clock() - doneAt > Reveal.ReadyWait)
+	local passes = 0
+	for key in Products.Passes or {} do
+		if player:GetAttribute('Pass_' .. key) == true then passes += 1 end
+	end
+	local boosts = 0
+	local bq = player:GetAttribute('BoostQueue')
+	if type(bq) == 'string' and bq ~= '' then boosts += 1 end
+	if num('PowerBoost', 1) > 1 and math.max(num('BoostEnds', 0), num('PartyEnds', 0)) > os.time() then boosts += 1 end
+	local guns = player:GetAttribute('OwnedGuns')
+	local shoes = player:GetAttribute('ShoesOwned')
+	return {
+		Returning = first == false or (first == nil and os.clock() - joinedAt > 10),
+		TutorialDone = step == 'Done' and ready,
+		Cash = num('Cash', 0), CheapestBox = cheapestBox,
+		Shoes = (type(shoes) == 'string' and shoes ~= '') and 1 or 0, Boxes = num('BoxesOpened', 0), Unboxing = playerGui:GetAttribute('Unboxing') == true,
+		Guns = type(guns) == 'string' and (guns == '' and 0 or select(2, string.gsub(guns, ',', ',')) + 1) or 0,
+		Passes = passes, Boosts = boosts,
+		Power = num('Power', 0), RebirthNeed = num('RebirthNeed', 0), RebirthReady = player:GetAttribute('RebirthReady') == true, Rebirths = num('Rebirths', 0),
+	}
+end
+local function setPart(part, on)
+	for _, o in revealObjs[part] or {} do o.Visible = on end
+	playerGui:SetAttribute('HudShown_' .. part, on)
+end
+-- the one-time "NEW!" on a button that just came: gold, tilted over its top-left corner; it goes on the first press,
+-- or after 12 s (it pops in once: no blinking)
+local function newTag(button)
+	if not button or button:FindFirstChild('NewTag') then return end
+	-- (top-left: the top-right corner holds the Rebirth % pill and the Shoes count)
+	local tag = label({ Name = 'NewTag', Text = 'NEW!', TextSize = 20, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 14, 0, 4), Size = px(64, 24), Rotation = -12, ZIndex = 16, Parent = button })
+	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFB020')), Parent = tag })
+	button:SetAttribute('New', true)
+	local sc = Motion.scaleOf(tag)
+	sc.Scale = 0.3
+	Motion.tween(sc, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
+	local conn
+	local function drop()
+		if conn then conn:Disconnect(); conn = nil end
+		if not tag.Parent then return end
+		button:SetAttribute('New', false)
+		Motion.tween(sc, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Scale = 0 })
+		task.delay(0.25, function() tag:Destroy() end)
+	end
+	local hit = button:FindFirstChild('Hit', true)
+	if hit and hit:IsA('GuiButton') then conn = hit.Activated:Connect(drop) end
+	task.delay(12, drop)
+end
+local function popIn(g, delay)
+	local sc = Motion.scaleOf(g)
+	sc.Scale = 0.4
+	task.delay(delay, function() Motion.tween(sc, 0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 }) end)
+end
+-- (each card's own place is kept from its build, so a slide that starts while another is still running ends right)
+for _, c in offers:GetChildren() do
+	if c:IsA('GuiObject') then c:SetAttribute('RevealBase', c.Position) end
+end
+local function slideIn(frame, delay)
+	for k, c in frame:GetChildren() do
+		if c:IsA('GuiObject') then
+			local base = c:GetAttribute('RevealBase') or c.Position
+			c:SetAttribute('RevealBase', base)
+			c.Position = base + px(80, 0)
+			task.delay(delay + 0.08 * k, function() Motion.tween(c, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Position = base }) end)
+		end
+	end
+end
+local revealLive = false -- (false until the HUD has arrived: parts shown before that just arrive with it)
+local function showFresh(fresh, returning)
+	local n = 0
+	for _, part in fresh do
+		if not revealLive or returning then -- (a returning player's HUD is simply all there: no NEW!, no slide)
+			setPart(part, true)
+		else
+			n += 1
+			local delay = 0.15 * (n - 1)
+			task.spawn(function()
+				-- a button waits for the moment on screen to end (not for a box opening: its pair flies into Shoes)
+				local t0 = os.clock()
+				while os.clock() - t0 < 8 do
+					local m = playerGui:GetAttribute('HoodMoment')
+					if not (type(m) == 'string' and m ~= '') or playerGui:GetAttribute('Unboxing') == true then break end
+					task.wait(0.1)
+				end
+				setPart(part, true)
+				if part == 'Offers' then
+					slideIn(offers, delay)
+				else
+					for _, o in revealObjs[part] or {} do popIn(o, delay) end
+				end
+				if Reveal.isButton(part) then newTag(revealObjs[part][1]) end
+			end)
+		end
+	end
+end
+local function revealStep()
+	local ok, err = pcall(function()
+		local st = revealState()
+		showFresh(Reveal.step(revealShown, st), st.Returning)
+	end)
+	if not ok then warn('[HoodHUD] reveal: ' .. tostring(err)) end
+end
+for _, part in Reveal.All do setPart(part, false) end
 
 ---------------------------------------------------------------------------------------------- notices and moments
 -- Server notices are plain strings: a colour from what they say, and the reference's two lines when the line has a short
@@ -646,7 +799,7 @@ end
 -- (and while a Retention card, Before You Go! / Welcome back!, is up: PlayerGui HoodCard)
 local function paintEnabled()
 	local open, card = playerGui:GetAttribute('HoodWindow'), playerGui:GetAttribute('HoodCard')
-	gui.Enabled = not ((type(open) == 'string' and open ~= '') or (type(card) == 'string' and card ~= ''))
+	gui.Enabled = not ((type(open) == 'string' and open ~= '') or (type(card) == 'string' and card ~= '') or welcomeHold())
 end
 playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(paintEnabled)
 playerGui:GetAttributeChangedSignal('HoodCard'):Connect(paintEnabled)
@@ -1128,7 +1281,7 @@ do
 			f.LayoutScale.Scale = small
 		end
 		if phone then
-			column.Position = px(C.X, 60)
+			column.Position = px(C.X, 78) -- (round 8: the bigger grid's Shop "!" stays clear of the Spin wheel)
 			-- the counters: rank, rebirths and Cash one under the other beside the column, clear of the thumbstick
 			counters.AnchorPoint = Vector2.new(0, 0)
 			counters.Position = px(C.X + C.ShopW * small + 10, 60 + 60)
@@ -1167,11 +1320,12 @@ do
 		local word = status.AutoShoot.Body:FindFirstChild('Word')
 		if word then
 			word.Text = phone and 'Auto' or 'Auto Fight'
-			word.TextSize = phone and 18 or 12
+			word.TextSize = phone and 18 or B.AutoText
 		end
 		-- (brief 28) phones: no word under Kit.PhoneMinText dp
-		local floor = phone and k * small or nil
-		for _, box in { column, status, offers, counters } do Kit.textFloor(box, floor) end
+		-- (round 8, CRITIC_OCT27 gap 10) and on a computer no word under Spec.MinText screen px (17: ~12 px letters at 720)
+		local floor = k * small
+		for _, box in { column, status, offers, counters } do Kit.textFloor(box, floor, phone and Spec.PhoneMinText or Spec.MinText) end
 		Toasts.place()
 	end
 	gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(relayout)
@@ -1180,6 +1334,76 @@ do
 	refreshCounters()
 	refresh()
 	paintShines()
-	arrive()
+	-- (round 8) the calm first screen and the welcome: parts are shown by Shared/HudReveal; the HUD arrives once the
+	-- welcome is over (at once for a returning player), fading in group by group (0.06 s apart, 0.3 s each)
+	local function fadeIn(groups)
+		local recs = {}
+		local PROPS = { TextLabel = { 'TextTransparency', 'BackgroundTransparency' }, TextButton = { 'TextTransparency', 'BackgroundTransparency' }, ImageLabel = { 'ImageTransparency', 'BackgroundTransparency' }, ImageButton = { 'ImageTransparency', 'BackgroundTransparency' }, Frame = { 'BackgroundTransparency' }, UIStroke = { 'Transparency' } }
+		for gi, g in groups do
+			local list = g:GetDescendants()
+			table.insert(list, g)
+			for _, d in list do
+				local props = PROPS[d.ClassName]
+				if props then
+					for _, prop in props do
+						local v = d[prop]
+						if type(v) == 'number' and v < 1 then
+							table.insert(recs, { d, prop, v, 0.06 * (gi - 1) })
+							d[prop] = 1
+						end
+					end
+				end
+			end
+		end
+		local t, conn = 0, nil
+		conn = game:GetService('RunService').Heartbeat:Connect(function(dt)
+			local ok = pcall(function()
+				t += math.clamp(type(dt) == 'number' and dt or 1 / 60, 0, 0.1)
+				local all = true
+				for _, r in recs do
+					local a = math.clamp((t - r[4]) / 0.3, 0, 1)
+					if a < 1 then all = false end
+					a = 1 - (1 - a) * (1 - a)
+					local inst = r[1]
+					if inst[r[2]] ~= nil then inst[r[2]] = 1 + (r[3] - 1) * a end
+				end
+				if all then conn:Disconnect() end
+			end)
+			if not ok then conn:Disconnect(); for _, r in recs do pcall(function() r[1][r[2]] = r[3] end) end end
+		end)
+	end
+	revealStep()
+	local arrived = false
+	local function arrival()
+		if arrived or welcomeHold() then return end
+		arrived = true
+		local afterWelcome = player:GetAttribute('FirstJoin') == true
+		paintEnabled()
+		if afterWelcome then fadeIn({ column, counters, status, offers, slots.SpinSlot, slots.PlaytimeSlot, slots.StarterSlot, slots.MissionsSlot }) end
+		arrive()
+		revealLive = true
+		revealStep()
+		playerGui:SetAttribute('HudArrived', true)
+	end
+	for _, name in { 'HoodWelcome', 'Unboxing', 'TutorialReady' } do
+		playerGui:GetAttributeChangedSignal(name):Connect(function() paintEnabled(); arrival(); revealStep() end)
+	end
+	for _, name in { 'FirstJoin', 'OnboardingStep', 'Cash', 'ShoesOwned', 'BoxesOpened', 'OwnedGuns', 'Power', 'RebirthNeed', 'RebirthReady', 'Rebirths', 'BoostQueue', 'PowerBoost' } do
+		player:GetAttributeChangedSignal(name):Connect(function() paintEnabled(); arrival(); revealStep() end)
+	end
+	for key in Products.Passes or {} do player:GetAttributeChangedSignal('Pass_' .. key):Connect(revealStep) end
+	paintEnabled()
+	arrival()
+	task.spawn(function()
+		-- (the time-outs: a FirstJoin that never came, a welcome that never ended, a YOU'RE READY! that never played)
+		while true do
+			task.wait(1)
+			local ok, err = pcall(function()
+				if not arrived then paintEnabled(); arrival() end
+				revealStep()
+			end)
+			if not ok then warn('[HoodHUD] arrival: ' .. tostring(err)) end
+		end
+	end)
 	print('[HoodHUD] ready') -- (StudioCheck.client reads this and the start line to tell where a broken HUD stopped)
 end

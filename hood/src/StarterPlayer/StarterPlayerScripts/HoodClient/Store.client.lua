@@ -539,15 +539,14 @@ local function boxCard(rows, y, parent, over)
 	-- the real box, the WHOLE model (topper and sparkles too) framed to fill the card's left part and BOX_POP over it,
 	-- BOX_FOOT clear of its bottom: nothing is cut. Its camera looks down a little more (24 degrees) and nearly flat-on
 	-- (FOV 14), so a halo on top reads as a ring, not a bar.
-	local art = Kit.model3d('box', boxId, Vector2.new(left, BOX_H + BOX_POP - BOX_FOOT), { ZIndex = z, Whole = true, Fill = 0.99, MaxReach = 0.99, Overflow = 1, Pitch = 24, Fov = 14, Priority = 5, PreviewKind = 'boxhero' })
-	art.Position = px(-3, -BOX_POP - 3)
+	-- (Oct 27, round 8, CRITIC_OCT27 gap 7: the live 3D view showed as an empty dashed box wherever it didn't draw) the
+	-- box's own picture: Box_<id>, rendered from the game's box model (tools/blender/icons_hd.py over the part export),
+	-- packed through the alpha-bleed step; sharp at any size, and the same in the preview as in Studio
+	local art = Kit.icon3d('Box_' .. boxId, nil, { ZIndex = z, Place = Kit.inBox(-3, -BOX_POP - 3, left, BOX_H + BOX_POP - BOX_FOOT, 0.03) })
 	art.Parent = c.Body
 	local artHit = Kit.new('TextButton', { Name = 'ArtHit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = px(left, BOX_H), ZIndex = 34, Parent = c.Body })
-	Kit.model3dHover(art, artHit)
-	artHit.Activated:Connect(function()
-		Kit.model3dActive(art, 'tap', true)
-		task.delay(2, function() Kit.model3dActive(art, 'tap', false) end)
-	end)
+	artHit.MouseEnter:Connect(function() Motion.pop(art, 0.06) end)
+	artHit.Activated:Connect(function() Motion.pop(art, 0.12) end)
 	local right = CW - left - 14
 	local t = title(c.Body, (box and box.Name) or first.Title, 40, tone, { Position = px(left + right / 2, 2), Width = right })
 	if tone == 'storeMagenta' then gradient(t, hex('FFF6B0'), hex('F8CF4A')) end
@@ -563,15 +562,17 @@ local function boxCard(rows, y, parent, over)
 		end
 		local cy = 102
 		local tagsShown = 0 -- (how many of the row's name tags show: the title hides while any does)
-		local models = Kit.model3dRow('shoe', items, cell, pitch, { ZIndex = z + 1, Position = px(left + pitch / 2 - cell / 2, cy - cell / 2), Priority = 4 })
-		models.Parent = c.Body
+		-- (round 8, gap 7) each shoe's own picture (Shoe_<id>, rendered from its model like the box) over its rarity splat
 		for i, sid in box.Shoes do
 			local shoe = Shoes.ById and Shoes.ById[sid]
 			local secret = shoe and shoe.Rank == #(Shoes.Rarities or {})
 			local cx = left + (i - 0.5) * pitch
-			itemSplat(c.Body, cx, cy, cell * Kit.Studio.shoe.Fill, chanceColor(shoe):Lerp(Kit.toneOf(tone).base, 0.15), secret and 'rainbow' or nil, (i * 37) % 360, z, Kit.toneOf(tone).base)
+			itemSplat(c.Body, cx, cy, cell * 0.62, chanceColor(shoe):Lerp(Kit.toneOf(tone).base, 0.15), secret and 'rainbow' or nil, (i * 37) % 360, z, Kit.toneOf(tone).base)
+			local pic = Kit.icon3d('Shoe_' .. sid, nil, { ZIndex = z + 1, Place = Kit.inBox(cx - cell / 2, cy - cell / 2, cell, cell, 0.08) })
+			pic.Name = 'ShoePic_' .. sid
+			pic.Parent = c.Body
 			local hit = Kit.new('TextButton', { Name = 'Hit_' .. sid, Text = '', AutoButtonColor = false, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, cy + 12), Size = px(pitch, cell + 24), ZIndex = 34, Parent = c.Body })
-			Kit.model3dItemHover(models, i, hit)
+			hit.MouseEnter:Connect(function() Motion.pop(pic, 0.1) end)
 			local chance = type(box.Chances) == 'table' and box.Chances[i]
 			if chance then
 				local cl = label({ Name = 'Chance' .. i, Text = pctText(chance), TextSize = 22, StrokeThickness = 3.5, TextColor3 = secret and Color.white or chanceColor(shoe):Lerp(Color.white, 0.25), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, 152), Size = px(pitch + 10, 28), ZIndex = z + 3, Parent = c.Body })
@@ -591,10 +592,9 @@ local function boxCard(rows, y, parent, over)
 			hit.MouseLeave:Connect(function() show(false) end)
 			hit.Activated:Connect(function()
 				show(true)
-				Kit.model3dItemActive(models, i, 'tap', true)
+				Motion.pop(pic, 0.15)
 				task.delay(1.6, function()
 					if tag.Parent then show(false) end
-					Kit.model3dItemActive(models, i, 'tap', false)
 				end)
 			end)
 		end
@@ -621,9 +621,11 @@ local function boxCard(rows, y, parent, over)
 		local count = r.Count or 1
 		local w = (count == 1 and single) or bw
 		local whole = Products.savings(r.Key)
-		priceButton(layer, r, w, BTN_H, px(ox + x, oy + by), Vector2.zero, z + 2, BUNDLE_TONE[count], { Was = whole, TextSize = 28 })
-		label({ Name = 'Count' .. count, Text = 'x' .. count, TextSize = 24, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(ox + x, oy + by - 17), Size = px(50, 30), ZIndex = z + 6, Parent = layer })
-		saveBadge(layer, r.Key, px(ox + x + w, oy + by - 17), Vector2.new(1, 0.5), z + 6)
+		local btn = priceButton(layer, r, w, BTN_H, px(ox + x, oy + by), Vector2.zero, z + 2, BUNDLE_TONE[count], { Was = whole, TextSize = 28 })
+		-- (round 8, gap 7: "x3" drifted over the x8 button) the count and the SAVE badge belong to their own button: they
+		-- sit on it, so they move and press with it
+		label({ Name = 'Count' .. count, Text = 'x' .. count, TextSize = 24, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 2, 0, -17), Size = px(50, 30), ZIndex = z + 6, Parent = btn })
+		saveBadge(btn, r.Key, UDim2.new(1, 0, 0, -17), Vector2.new(1, 0.5), z + 6)
 		sections[r.Key] = c
 		x += w + gap
 	end

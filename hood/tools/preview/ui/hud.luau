@@ -6,6 +6,10 @@ do
 	local ok0 = waitFor(function() return P.PlayerGui:FindFirstChild('HoodHUD') ~= nil end, 30)
 	print('[ui] clients up: ' .. tostring(ok0))
 	wall(1)
+	-- (Oct 27, round 8) a fresh save gets the welcome and a calm first screen (Shared/HudReveal): let the welcome pass,
+	-- then draw a returning player's HUD, every part shown
+	waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') == nil end, 12)
+	P:SetAttribute('FirstJoin', false)
 	local R = 4
 	local need = RebirthRules.need(R)
 	data.Rebirths = R

@@ -7,7 +7,7 @@ local StarterGui = game:GetService('StarterGui')
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild('PlayerGui')
 
-local KEEP = { HoodUnboxing = true, HoodUnboxCinematic = true, HoodAutoStop = true, HoodHotTarget = true, HoodHUD = true, HoodLoading = true, HoodStudioCheck = true }
+local KEEP = { HoodUnboxing = true, HoodUnboxCinematic = true, HoodAutoStop = true, HoodHotTarget = true, HoodHUD = true, HoodLoading = true, HoodStudioCheck = true, HoodWelcome = true }
 local CORE = { Enum.CoreGuiType.Backpack, Enum.CoreGuiType.PlayerList }
 local hidden, coreWas = {}, {}
 local on = false
@@ -57,11 +57,13 @@ end
 
 local function sync()
 	local ok, err = pcall(function()
-		if playerGui:GetAttribute('Unboxing') == true then hide() else show() end
+		-- (Oct 27, round 8) the first-join welcome has the screen to itself too (HoodHUD waits for it by itself and fades in)
+		if playerGui:GetAttribute('Unboxing') == true or playerGui:GetAttribute('HoodWelcome') == true then hide() else show() end
 	end)
 	if not ok then warn('[CinematicHide] ' .. tostring(err)) end
 end
 playerGui:GetAttributeChangedSignal('Unboxing'):Connect(sync)
+playerGui:GetAttributeChangedSignal('HoodWelcome'):Connect(sync)
 sync()
 
 -- (Oct 27, release fixes) the HUD itself goes too: once its column, cards and bottom block have slid aside (UnboxingCalm,

@@ -8,6 +8,8 @@
 --       Size     'big' (default) | 'small'
 --       Ready    function() -> boolean: may it start now? (not in a fight, no window open...); it waits while false
 --       Timeout  seconds to wait at most (default 30); nil comes back when it ran out (the caller drops its moment)
+--       Priority number (default 0) or function() -> number: among the moments that may start, the highest goes first
+--                (round 8: the tutorial's "YOU'RE READY!" lands within ~3 s of its last step, ahead of a GOAL DONE)
 --   MomentQueue.release(token)                        the moment has left the screen: the calm starts now
 --   MomentQueue.mark(name, seconds, size?)            a moment that cannot wait (the fight's "CREW INCOMING!"): it takes
 --                                                     the screen now, for `seconds`, and the calm follows it
@@ -15,7 +17,7 @@
 --   MomentQueue.current() -> name | nil
 -- PlayerGui's attribute HoodMoment is the name of the moment on screen ('' when none): other scripts (the tutorial's
 -- hint, the level toasts) step aside for it, and the play-test tools read it.
--- The order is first come, first served, among the moments whose Ready says yes. A token never released (a script
+-- The order is the highest Priority first, then first come, first served, among the moments whose Ready says yes. A token never released (a script
 -- error) frees the screen after MaxHold seconds, so nothing can lock the queue.
 -- The pure part (gapAfter, pick) is unit-tested (UnitTest/Cases/Flow_Test).
 local MomentQueue = {}
@@ -29,15 +31,18 @@ function MomentQueue.gapAfter(size: string?): number
 	return size == 'small' and MomentQueue.Gap or MomentQueue.BigGap
 end
 
--- Which waiter starts now (pure): waiters = { { Ready = bool }, ... } in arrival order; state = { Active = bool,
--- Now = number, CalmUntil = number }. Returns the index, or nil when none may start yet.
+-- Which waiter starts now (pure): waiters = { { Ready = bool, Priority = number? }, ... } in arrival order; state =
+-- { Active = bool, Now = number, CalmUntil = number }. Returns the index of the Ready one with the highest Priority (the
+-- earliest of equals), or nil when none may start yet.
 function MomentQueue.pick(waiters: { any }, state: any): number?
 	if type(state) ~= 'table' or state.Active then return nil end
 	if type(state.Now) == 'number' and type(state.CalmUntil) == 'number' and state.Now < state.CalmUntil then return nil end
+	local best, bestP = nil, -math.huge
 	for i, w in waiters do
-		if w.Ready then return i end
+		local p = type(w.Priority) == 'number' and w.Priority or 0
+		if w.Ready and p > bestP then best, bestP = i, p end
 	end
-	return nil
+	return best
 end
 
 ---------------------------------------------------------------------------------------------- the live queue (client)
@@ -79,7 +84,7 @@ end
 
 function MomentQueue.acquire(name: string, opts: any?)
 	opts = type(opts) == 'table' and opts or {}
-	local me = { Name = tostring(name), Size = opts.Size == 'small' and 'small' or 'big', Ready = false, Fn = opts.Ready }
+	local me = { Name = tostring(name), Size = opts.Size == 'small' and 'small' or 'big', Ready = false, Fn = opts.Ready, PriorityOf = opts.Priority, Priority = 0 }
 	table.insert(waiters, me)
 	local deadline = now() + (type(opts.Timeout) == 'number' and opts.Timeout or 30)
 	while true do
@@ -88,6 +93,12 @@ function MomentQueue.acquire(name: string, opts: any?)
 			local ok, r = true, true
 			if type(w.Fn) == 'function' then ok, r = pcall(w.Fn) end
 			w.Ready = ok and r == true
+			local pr = w.PriorityOf
+			if type(pr) == 'function' then
+				local okP, v = pcall(pr)
+				pr = okP and v or 0
+			end
+			w.Priority = type(pr) == 'number' and pr or 0
 		end
 		local i = MomentQueue.pick(waiters, { Active = active ~= nil, Now = now(), CalmUntil = calmUntil })
 		if i and waiters[i] == me then

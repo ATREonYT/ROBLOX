@@ -105,6 +105,12 @@ for i, g in GoalRules.List do
 end
 GoalRules.AllDone = GoalRules.World == 2 and { Text = 'ALL GOALS DONE!', Where = 'more worlds are coming soon' }
 	or { Text = 'ALL GOALS DONE!', Where = 'take the World 2 portal to the Business District' }
+-- (Oct 27, round 8) The tutorial's "YOU'RE READY!" says what comes next, in one line: train, then beat the stage after
+-- the best one you have beaten (Stage 2 at the end of the tutorial). beaten: WaveCleared.
+function GoalRules.readyLine(beaten)
+	local n = (type(beaten) == 'number' and beaten == beaten) and math.floor(beaten) + 1 or 2
+	return 'Next: train and beat Stage ' .. math.max(2, n)
+end
 -- The chain's version, saved with each profile's Goals (Chain). Older chains, by goal id (GoalRules.migrate moves a
 -- saved step to the same goal in this chain).
 GoalRules.Chain = 5 -- (5: Oct 27 pacing, the lanes spread over 50 rebirths; BAY 5 after the boss)

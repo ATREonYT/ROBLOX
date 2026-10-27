@@ -146,6 +146,10 @@ local chime = Sound.new('rbxasset://sounds/electronicpingshort.wav', 0.55, gui)
 -- Other big banners (StageClear from the server, WAVE CLEARED, an unboxing) own the middle of the screen for a while.
 local busyUntil = 0
 local queue, running = {}, false
+-- (Oct 27, round 8) PlayerGui TutorialReady: false while the tutorial's YOU'RE READY! is due, true once it has played
+-- (or no tutorial ran this visit). HoodClient/HUD brings in the Robux offers then (Shared/HudReveal).
+local GoalRules = require(RS.Shared.GoalRules)
+local function readyDone() pcall(function() player.PlayerGui:SetAttribute('TutorialReady', true) end) end
 -- (brief 23) the moment's top (the goal line's place: the tracker hides while it is up), its widest, its height with and
 -- without the NEXT GOAL line, and how far its low place stays over the screen's bottom (the HUD's Power count and bar
 -- take the bottom ~175 design px); design px
@@ -230,7 +234,10 @@ local function moment(info, token)
 	local nextPlain = info.NextText or (type(liveNext) == 'string' and liveNext) or ''
 	local titleText = type(info.Title) == 'string' and info.Title or 'GOAL DONE!' -- (Oct 27, flow: the tutorial's "YOU'RE READY!")
 	local titleSize = info.Title and 34 or 26
-	local width = math.clamp(math.max(Kit.textWidth(titleText, titleSize), Kit.textWidth(cashText, 28) + 50, 460) + 20, 340, MOMENT_W)
+	-- (Oct 27, round 8) YOU'RE READY! leads with what comes next ("Next: train and beat Stage 2", GoalRules.readyLine)
+	-- right under its title, at once; its Cash goes to the second row
+	local leadText = type(info.Lead) == 'string' and info.Lead or nil
+	local width = math.clamp(math.max(Kit.textWidth(titleText, titleSize), Kit.textWidth(cashText, 28) + 50, leadText and Kit.textWidth(leadText, 28) or 0, 460) + 20, 340, MOMENT_W)
 	local x = UDim.new(0.5, 0)
 	if screen.Phone then
 		local l, r = 300, screen.W - 330
@@ -252,12 +259,20 @@ local function moment(info, token)
 	local cashIcon = Kit.icon3d('Cash', 44, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -6, 0.5, 0), ZIndex = 2 })
 	cashIcon.Parent = rewardRow
 	local reward = Kit.text({ Name = 'Reward', Text = cashText, TextSize = 28, Stroke = BLACK, StrokeThickness = 4, TextColor3 = Color.white, TextXAlignment = Enum.TextXAlignment.Left, Position = px(46, 0), Size = UDim2.new(1, -46, 1, 0), ZIndex = 2, Parent = rewardRow })
-	rewardRow.Visible = type(info.Reward) == 'number' and info.Reward > 0
+	local hasCash = type(info.Reward) == 'number' and info.Reward > 0
+	rewardRow.Visible = hasCash
+	local lead = nil
+	if leadText then
+		lead = goldText(Kit.text({ Name = 'Lead', Text = leadText, TextSize = 28, Stroke = BLACK, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 14 + 63), Size = px(width - 20, 38), ZIndex = 2, Parent = holder }))
+		lead.TextSize = Kit.fitSize(leadText, 28, width - 30, 16)
+		rewardRow.Position = UDim2.new(0.5, 0, 0, 14 + 127)
+		rewardRow.Visible = hasCash and whole
+	end
 	local nextHead = goldText(Kit.text({ Name = 'NextHead', Text = type(info.NextHead) == 'string' and info.NextHead or 'NEXT GOAL', TextSize = 24, Stroke = BLACK, StrokeThickness = 3.5, Position = px(0, 127), Size = UDim2.new(1, 0, 0, 28), Parent = holder }))
 	local nextLine = Kit.text({ Name = 'NextLine', Text = nextPlain, TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 14 + 127 + 49), Size = px(460, 36), Parent = holder })
 	nextLine.TextSize = Kit.fitSize(nextPlain, 26, 450, 14)
 	for _, t in { nextHead, nextLine } do
-		t.Visible = whole
+		t.Visible = whole and lead == nil
 		t.TextTransparency = 1
 		t:FindFirstChildOfClass('UIStroke').Transparency = 1
 	end
@@ -268,7 +283,11 @@ local function moment(info, token)
 			task.wait(0.1)
 			if not alive or not holder.Parent then break end
 			local y, w2 = momentPlace(cx, width)
-			nextLine.Visible, nextHead.Visible = w2, w2
+			if lead then
+				rewardRow.Visible = hasCash and w2
+			else
+				nextLine.Visible, nextHead.Visible = w2, w2
+			end
 			if math.abs(holder.Position.Y.Offset - y) > 1 then
 				TweenService:Create(holder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = UDim2.new(x.Scale, x.Offset, 0, y) }):Play()
 			end
@@ -278,7 +297,7 @@ local function moment(info, token)
 	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	-- A STAGE CLEARED or WAVE CLEARED banner arriving mid-moment takes the screen: this one steps aside at once and
 	-- plays again, whole, once that banner is gone.
-	local function interrupted() return busyUntil > os.clock() or fighting() or unboxing() end -- (LOOP: a fight starting too; brief 24: the unboxing moment)
+	local function interrupted() return busyUntil > os.clock() or (fighting() and not info.Ready) or unboxing() end -- (LOOP: a fight starting too; brief 24: the unboxing moment; round 8: YOU'RE READY! plays on in a fight)
 	local function hold(t)
 		local untilT = os.clock() + t
 		while os.clock() < untilT do
@@ -306,7 +325,7 @@ local function moment(info, token)
 	if not hold(2.9) then return stepAside() end
 	cashIcon.Visible = false
 	alive = false
-	fadeOut(holder, { title, reward, nextHead, nextLine }, back)
+	fadeOut(holder, { title, reward, nextHead, nextLine, lead }, back)
 	task.wait(0.45)
 	holder:Destroy()
 	holding = false
@@ -323,7 +342,10 @@ local function drain()
 		while #queue > 0 do
 			-- (LOOP) A banner owns the screen, or a fight is on (the goons and the "N LEFT" pill own it): wait.
 			local afterBox = false
-			while busyUntil > os.clock() or fighting() or unboxing() do
+			-- (Oct 27, round 8) the tutorial's YOU'RE READY! (queue[1].Ready) waits for no fight: it lands within ~3 s of
+			-- the tutorial's last step, as the next run begins, and goes ahead of anything else waiting (Priority)
+			local function frontReady() return queue[1] ~= nil and queue[1].Ready == true end
+			while busyUntil > os.clock() or (fighting() and not frontReady()) or unboxing() do
 				afterBox = afterBox or unboxing()
 				task.wait(0.1)
 			end
@@ -333,7 +355,7 @@ local function drain()
 			-- newest goal and NEXT GOAL, with all their Cash, so a stale "NEXT GOAL" never plays after it is done.
 			-- (Oct 27, flow) its turn in the one moment queue (Shared/MomentQueue): nothing else on screen, and a calm
 			-- after the last moment
-			local token = MomentQueue.acquire('GoalDone', { Ready = function() return not (busyUntil > os.clock() or fighting() or unboxing()) end, Timeout = 45 })
+			local token = MomentQueue.acquire('GoalDone', { Ready = function() return not (busyUntil > os.clock() or (fighting() and not frontReady()) or unboxing()) end, Priority = function() return frontReady() and 10 or 0 end, Timeout = 45 })
 			local info = table.remove(queue, 1)
 			-- (Oct 27, flow: a titled moment, YOU'RE READY! or SHOE BOXES!, is never merged; it has its own turn)
 			while info and info.Title == nil and #queue > 0 and queue[1].Title == nil do
@@ -341,7 +363,12 @@ local function drain()
 				newer.Reward = (tonumber(newer.Reward) or 0) + (tonumber(info.Reward) or 0)
 				info = newer
 			end
-			if info then moment(info, token) else MomentQueue.release(token) end
+			if info then
+				local whole = moment(info, token)
+				if info.Ready and whole then readyDone() end
+			else
+				MomentQueue.release(token)
+			end
 		end
 		running = false
 	end)
@@ -355,9 +382,14 @@ local function onStep()
 	if type(s) == 'string' and s ~= 'Done' then sawTutorial = true end
 	if s == 'Done' and sawTutorial and not readyShown then
 		readyShown = true
-		table.insert(queue, { Kind = 'Done', Title = "YOU'RE READY!", Reward = quietCash }) -- (NEXT GOAL: the one current when it shows)
+		pcall(function() player.PlayerGui:SetAttribute('TutorialReady', false) end)
+		-- (round 8) first in the queue, its own turn at once (Ready: no fight wait, Priority), with the line that says
+		-- what comes next
+		table.insert(queue, 1, { Kind = 'Done', Title = "YOU'RE READY!", Reward = quietCash, Ready = true, Lead = GoalRules.readyLine(player:GetAttribute('WaveCleared')) })
 		quietCash = 0
 		drain()
+	elseif s == 'Done' and not sawTutorial then
+		readyDone() -- (no tutorial this visit: nothing to wait for)
 	end
 end
 player:GetAttributeChangedSignal('OnboardingStep'):Connect(onStep)

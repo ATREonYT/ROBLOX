@@ -106,7 +106,9 @@ camFn = follow(0, -1)
 K = 0; resetClock()
 -- (Oct 27, flow) a fresh save is greeted: the welcome is up, and any input ends it at once with the camera given back
 do
-local welcomeUp = waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') ~= nil end, 4)
+local function hudOn() local h = P.PlayerGui:FindFirstChild('HoodHUD'); return h ~= nil and h.Enabled end
+local hudDuring = 0
+local welcomeUp = waitFor(function() if hudOn() then hudDuring += 1 end; return P.PlayerGui:FindFirstChild('HoodWelcome') ~= nil end, 4)
 check('first join: the welcome is up', welcomeUp)
 -- (Oct 27, flow r2) its camera glides inside the hall: no point of the glide inside a wall, a roof or a prop, and the kid
 -- in plain sight from each (the harness has no raycast: points along each line are tested against the map's parts)
@@ -145,10 +147,17 @@ do
 	check('first join: the welcome glides inside the hall, the kid in sight all the way', typeof(A) == 'Vector3' and blocked == 0, ('from %s to %s, %d points in a part %s'):format(tostring(A), tostring(B), blocked, where))
 end
 frame(0.3)
+if hudOn() then hudDuring += 1 end
+-- (Oct 27, round 8) the welcome has the screen to itself: the HUD waits, then fades back in once it ends
+check('first join: the HUD waits for the welcome', hudDuring == 0, hudDuring .. ' ticks on')
 __fireOn(UIS, 'InputBegan', { UserInputType = Enum.UserInputType.Keyboard, KeyCode = Enum.KeyCode.W }, false)
 local skipped, skipWall = waitFor(function() return P.PlayerGui:FindFirstChild('HoodWelcome') == nil end, 3)
 check('first join: any input ends the welcome at once, camera given back', skipped and skipWall <= 1 and workspace.CurrentCamera.CameraType ~= Enum.CameraType.Scriptable, ('%.2f s wall, camera %s'):format(skipWall, tostring(workspace.CurrentCamera.CameraType)))
+local back, backWall = waitFor(hudOn, 2)
+check('first join: the HUD comes back after the welcome', back and backWall <= 1, ('%.2f s wall'):format(backWall))
 end
+-- (round 8) a calm first screen: the Shop, the counters and the Power bar; no Robux offer, no Shoes/Items/Skins/Rebirth
+local function hudShown(part) return P.PlayerGui:GetAttribute('HudShown_' .. part) == true end
 settle(1.5)
 -- (Oct 27, flow: one voice) while the tutorial runs its hint says the step; the goal line waits
 local function hintText()
@@ -161,6 +170,11 @@ waitFor(function() return hintText() ~= '' end, 4)
 local line0 = goalLine()
 check('spawn: the tutorial says the step, the goal line waits', hintText() ~= '' and line0 == '', ('hint "%s", goal line "%s"'):format(hintText(), line0))
 check('spawn: counters are clean numbers', #badNumbers() == 0, table.concat(badNumbers(), ', '))
+do
+	local on = {}
+	for _, part in require(RS.Shared.HudReveal).All do if hudShown(part) then table.insert(on, part) end end
+	check('spawn: a calm first screen (no Robux offer, no Shoes, Items, Skins or Rebirth yet)', #on == 0 and P.PlayerGui:GetAttribute('HudShown_Offers') == false, 'shown: ' .. table.concat(on, ','))
+end
 
 ---------------------------------------------------------------------------------------------------------- 2. lane: every shot answers
 local okL, zp, ld = inLane('Starter')
@@ -287,6 +301,16 @@ settle(1.5)
 local mBefore = P:GetAttribute('RebirthMultiplier')
 local mNext = P:GetAttribute('RebirthNextMultiplier')
 check('rebirth ready shows', P:GetAttribute('RebirthReady') == true, 'need ' .. tostring(P:GetAttribute('RebirthNeed')))
+do
+	-- (round 8) the Rebirth button comes when the first rebirth is ready, with its one-time NEW!; by now the tutorial is
+	-- over, so its YOU'RE READY! has played and the Robux offers are in; the gun bought brought Skins
+	local col = P.PlayerGui.HoodHUD:FindFirstChild('Actions', true)
+	local rb = col and col:FindFirstChild('Rebirth')
+	waitFor(function() return hudShown('Rebirth') and rb ~= nil and rb.Visible end, 3)
+	check('the Rebirth button comes with the first rebirth ready, with NEW!', hudShown('Rebirth') and rb ~= nil and rb.Visible and rb:FindFirstChild('NewTag') ~= nil, ('shown %s, NEW! %s'):format(tostring(hudShown('Rebirth')), tostring(rb and rb:FindFirstChild('NewTag') ~= nil)))
+	waitFor(function() return hudShown('Offers') end, 8)
+	check('after YOU\'RE READY!: the Robux offers are in, and Skins (a second gun)', hudShown('Offers') and hudShown('PowerPacks') and hudShown('StarterPack') and hudShown('FriendBoost') and hudShown('Skins'), ('offers %s packs %s starter %s friend %s skins %s'):format(tostring(hudShown('Offers')), tostring(hudShown('PowerPacks')), tostring(hudShown('StarterPack')), tostring(hudShown('FriendBoost')), tostring(hudShown('Skins'))))
+end
 local mk = #_G.__toClient + 1
 RS.HoodNet.Rebirth:FireServer()
 local sawMoment = waitFor(function() local hud = P.PlayerGui:FindFirstChild('HoodHUD'); return hud ~= nil and hud:FindFirstChild('RebirthMoment', true) ~= nil end, 3)
