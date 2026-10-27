@@ -27,6 +27,12 @@ local V, C = Vector3.new, Color3.fromRGB
 local M = Enum.Material
 local S = Enum.SurfaceType
 local Props, PROPS_KIT, SKINS -- HoodProps (the Champ Ring), the helpers it borrows, Config.Skins: set in Build
+-- Config/Features (Oct 27: the World Boss is off for now): true when the game has that feature on (on when unknown).
+function V2.feature(name)
+	local ok, f = pcall(function() return require(ReplicatedStorage.Shared.Config.Features) end)
+	if not ok or type(f) ~= 'table' or f[name] == nil then return true end
+	return f[name] == true
+end
 
 V2.Origin = CFrame.new(2400, 0, 0)
 

@@ -13,6 +13,7 @@ local Schema = require(game.ServerScriptService.HoodServer.ProfileSchema)
 local Art = require(RS.Shared.SkinArt)
 local PadRules = require(RS.Shared.PadRules)
 _G.__screenSize = Vector2.new(1200, 617)
+require(game.ReplicatedStorage.Shared.Config.Features).WorldBoss = true -- (Oct 27: off in the game for now, a later update; this keeps it tested)
 local V2 = require(game.ServerStorage.TheBlockV2)
 V2.Build()
 local net = Instance.new('Folder'); net.Name = 'HoodNet'; net.Parent = RS

@@ -1349,8 +1349,10 @@ local function bossYard(ctx)
 	-- (brief 29, P3b) the Harbor Crew's warehouse (code5/f4_finale: no ring), and the World Boss pier and board
 	if V2.Finale then
 		local yard = V2.Finale.yard(ctx)
-		V2.Finale.arena(ctx)
-		V2.Finale.board(ctx)
+		if V2.feature('WorldBoss') then -- (Oct 27: the World Boss is a later update; Config/Features)
+			V2.Finale.arena(ctx)
+			V2.Finale.board(ctx)
+		end
 		return yard
 	end
 	local b = ctx:group('BossYard')

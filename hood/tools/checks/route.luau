@@ -197,7 +197,8 @@ if padPos then
 else
 	issue('no yellow pad for the stage just cleared')
 end
-untilStep('Gift', 4)
+local GIFT_ON = require(game.ReplicatedStorage.Shared.Config.Features).WelcomeGift == true -- (Oct 27: off for now)
+untilStep(GIFT_ON and 'Gift' or { 'Gun', 'Run' }, 4)
 mark('step_gift', tostring(stepNow()))
 wall(0.8)
 camFn = follow(0.35, -1)
@@ -213,7 +214,7 @@ if typeof(giftAt) == 'Vector3' then
 	mark('gift_opened', ('shoes opened %d, equipped %s'):format(data.Shoes and data.Shoes.Opened or 0, tostring(P:GetAttribute('ShoesEquipped'))))
 	waitFor(function() return P.PlayerGui:GetAttribute('Unboxing') ~= true end, 9)
 	mark('unboxing_over')
-else
+elseif GIFT_ON then
 	issue('no gift spot published on the Gift step')
 end
 untilStep({ 'Gun', 'Run' }, 4)

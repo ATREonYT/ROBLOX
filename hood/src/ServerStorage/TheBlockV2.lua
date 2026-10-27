@@ -27,6 +27,12 @@ local V, C = Vector3.new, Color3.fromRGB
 local M = Enum.Material
 local S = Enum.SurfaceType
 local Props, PROPS_KIT, SKINS -- HoodProps (the Champ Ring), the helpers it borrows, Config.Skins: set in Build
+-- Config/Features (Oct 27: the World Boss is off for now): true when the game has that feature on (on when unknown).
+function V2.feature(name)
+	local ok, f = pcall(function() return require(ReplicatedStorage.Shared.Config.Features) end)
+	if not ok or type(f) ~= 'table' or f[name] == nil then return true end
+	return f[name] == true
+end
 
 V2.Origin = CFrame.new(2400, 0, 0)
 
@@ -6252,7 +6258,7 @@ function Lobby.build(ctx, skins)
 	Lobby.corners(L)
 	Lobby.surroundings(L)
 	Lobby.stands(L)
-	Lobby.worldBoss(L)
+	if V2.feature('WorldBoss') then Lobby.worldBoss(L) end -- (Oct 27: a later update; Config/Features)
 	Lobby.decor(L)
 	if Lobby.extras then Lobby.extras(L) end -- (B31 PLAZA: the spin wheel stand, the spawn pad, the plaza's scenery)
 	return model
@@ -8821,8 +8827,10 @@ local function bossYard(ctx)
 	-- (brief 29, P3b) the Harbor Crew's warehouse (code5/f4_finale: no ring), and the World Boss pier and board
 	if V2.Finale then
 		local yard = V2.Finale.yard(ctx)
-		V2.Finale.arena(ctx)
-		V2.Finale.board(ctx)
+		if V2.feature('WorldBoss') then -- (Oct 27: the World Boss is a later update; Config/Features)
+			V2.Finale.arena(ctx)
+			V2.Finale.board(ctx)
+		end
 		return yard
 	end
 	local b = ctx:group('BossYard')
@@ -9595,7 +9603,7 @@ local Look = {}
 Look.Variant = 'P' -- (B31 PLAZA: the open plaza, rule 26; 'A' / 'B' were the slice's variants)
 Look.StudAlpha = 0.15 -- the stud texture's Transparency (B31 PLAZA, critic 1: the ref's walks and grass show their studs plainly, a lit patch's
 -- luminance spread 15-25 of 255; 0.45 measured 0.4, a dead fill)
-Look.Lighting = { P = 'HoodToy', A = 'HoodToy', B = 'HoodToy', off = 'HoodSun' }
+Look.Lighting = { P = 'Huzz', A = 'Huzz', B = 'Huzz', off = 'HoodSun' } -- (Oct 27: Huzz Valley's look; HoodToy before)
 -- Old colour (r,g,b) -> new colour, per variant. Keys are the hall's own colours (Lobby.Colors, Lobby.FieldColor and the
 -- shades the hall builder derives), measured by area in the B30 lobby (work31_LOOK/tools: 57% of its surface was studded).
 local function key(c) return string.format('%d,%d,%d', math.round(c.R * 255), math.round(c.G * 255), math.round(c.B * 255)) end

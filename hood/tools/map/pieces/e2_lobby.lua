@@ -2867,7 +2867,7 @@ function Lobby.build(ctx, skins)
 	Lobby.corners(L)
 	Lobby.surroundings(L)
 	Lobby.stands(L)
-	Lobby.worldBoss(L)
+	if V2.feature('WorldBoss') then Lobby.worldBoss(L) end -- (Oct 27: a later update; Config/Features)
 	Lobby.decor(L)
 	if Lobby.extras then Lobby.extras(L) end -- (B31 PLAZA: the spin wheel stand, the spawn pad, the plaza's scenery)
 	return model

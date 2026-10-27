@@ -19,6 +19,15 @@
 -- (OnboardingQuiet = true; StageService's 10x pad and LobbyService's Robux lanes check it). Purchases the player
 -- starts (a Store card, an E on a Robux box) are theirs to make.
 local OnboardingRules = {}
+local okF, Features = pcall(function() return require(script.Parent.Config.Features) end)
+-- (Oct 27, the owner: no free gift for now; Config/Features.WelcomeGift brings it back)
+local function giftOn() return okF and type(Features) == 'table' and Features.WelcomeGift == true end
+OnboardingRules.giftOn = giftOn
+-- Back in the lobby after beating a crew: where the gift waits. With the gift off, HoodServer/OnboardingService saves Gift = true
+-- here all the same ("home once"), so run 2 still ends the guidance.
+function OnboardingRules.cameHome(s)
+	return type(s) == 'table' and type(s.Beaten) == 'number' and s.Beaten >= 1 and not (type(s.WaveStage) == 'number' and s.WaveStage > 0)
+end
 
 OnboardingRules.QuietSeconds = 300 -- no automatic purchase prompts for a new player's first 5 minutes of play
 OnboardingRules.MaxSeconds = 3600 -- (Seconds stops counting here)
@@ -63,7 +72,7 @@ function OnboardingRules.step(s)
 		local need = num(s.Need) > 0 and num(s.Need) or 10
 		return num(s.Power) < need and 'Train' or 'Door'
 	end
-	if s.Gift ~= true then return 'Gift' end
+	if s.Gift ~= true and giftOn() then return 'Gift' end
 	local cost = s.GunCost
 	if num(s.Guns) < 2 and type(cost) == 'number' and num(s.Cash) >= cost then return 'Gun' end
 	return 'Run'

@@ -26,7 +26,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 
 ## How the code is built
 - **Map:** `hood/src/ServerStorage/TheBlockV2.lua` is GENERATED. Edit `hood/tools/map/pieces/*.lua`, then run `sh hood/tools/map/assemble.sh`. The order is in `pieces/ASSEMBLE.txt`.
-- **Lighting preset:** `HoodToy` in `ServerStorage/HoodLighting.lua`.
+- **Lighting preset:** `Huzz` in `ServerStorage/HoodLighting.lua` (Huzz Valley's look, Oct 27; applied at server start by `HoodServer/LookService`).
 - **Shared code:** `ReplicatedStorage/Shared` (rules modules are unit-tested); client code in `StarterPlayer/StarterPlayerScripts/HoodClient`; server in `ServerScriptService/HoodServer`.
 - **Robux items:** `Shared/Config/Products.lua`; the list to create on the website is `hood/MONETIZATION.md`.
 - **Pacing:** the owner wants World 1 to take 25-30 minutes and later worlds longer (Oct 27). `hood/tools/pacing/pacing.luau` simulates players on the real numbers (`Config/Balance`, `Guns`, `Skins`, `Shoes`); run it after any change to rebirth needs, stage Power, pad Cash, gun prices, lanes or walk speed, and try new numbers with `tune.luau` (both headers say how). World 1 now: 9 rebirths (the boss at about 30 min); the ladder goes on to 50 rebirths (about 4 h), lanes open at 2, 4, 7, 15, 30 and the Champ Ring at 50 (the owner: "more rebirths, up to like 50").
@@ -35,9 +35,9 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (399 since the Oct 26 lessons pass);
+- unit: all pass (403 since the Oct 27 animations);
 - integ_waves: no issues;
-- integ_lobby: walk cleared;
+- integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - play_run: 82 checks / 0 failed;
 - live_shoes and live_reveal: exit 0;
 - first30: 8 ok with 0 purchase prompts;

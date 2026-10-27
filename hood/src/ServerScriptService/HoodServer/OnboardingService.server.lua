@@ -120,6 +120,8 @@ local function check(player, dt)
 		end
 	end
 	Rules.tick(ob, dt)
+	-- (Oct 27: no free gift for now) home after the first crew counts as the gift's moment, so run 2 ends the guidance
+	if not ob.Gift and not Rules.giftOn() and Rules.cameHome(stateOf(player, data, ob)) then ob.Gift = true end
 	set(player, 'OnboardingQuiet', Rules.quietFor(ob))
 	local step = Rules.step(stateOf(player, data, ob))
 	if step == 'Done' and not ob.Done then

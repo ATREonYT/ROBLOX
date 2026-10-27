@@ -31,6 +31,7 @@
 -- Nothing here is limited or timed: no "Limited Stock", no made-up countdowns. (Brief 30: the one timer in the Store is the
 -- weekly Featured pack's, and it is real: Products.featuredAt rotates it by the clock for everyone.)
 local Balance = require(script.Parent.Balance)
+local FEATURES = require(script.Parent.Features)
 local Products = {}
 Products.Enabled = true -- master switch: false = every card says "Coming soon!"
 -- The Robux sign in text: U+E002, the character Roblox's own fonts draw as the Robux icon (written ⏣ in our docs; a
@@ -187,7 +188,7 @@ Products.Catalog = {
 	-- FIGHTS30 BEGIN (brief 30, FIGHTS: the revive screen and the World Boss timer; never in the Store's sections)
 	{ Key = 'Revive', Kind = 'Product', Section = 'Fight', Title = 'Revive!', Detail = 'Stand up where you fell with full HP', Price = 15, Art = 'icon:Shield', Tone = 'green', Wired = true },
 	{ Key = 'Revenge', Kind = 'Product', Section = 'Fight', Title = 'Revenge!', Detail = 'Stand up with full HP and knock out the crew', Price = 39, Art = 'icon:Skull', Tone = 'gold', Wired = true },
-	{ Key = 'WorldBossSkip', Kind = 'Product', Section = 'Fight', Title = 'Skip', Detail = 'The next World Boss lands now, for everyone here', Price = 25, Art = 'icon:Skull', Tone = 'blue', Wired = true },
+	{ Key = 'WorldBossSkip', Kind = 'Product', Section = 'Fight', Title = 'Skip', Detail = 'The next World Boss lands now, for everyone here', Price = 25, Art = 'icon:Skull', Tone = 'blue', Wired = FEATURES.WorldBoss == true }, -- (off with the World Boss: Config/Features)
 	-- FIGHTS30 END
 }
 Products.ByKey = {}

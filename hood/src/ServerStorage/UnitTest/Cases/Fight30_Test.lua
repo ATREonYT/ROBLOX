@@ -165,7 +165,9 @@ return function(t)
 		-- honest: real products with prices, a wired grant, no "limited" anything
 		for _, key in { 'Revive', 'Revenge', 'WorldBossSkip' } do
 			local e = Products.ByKey[key]
-			t.expect.truthy(e and e.Kind == 'Product' and e.Price > 0 and e.Wired and Products.DeveloperProducts[key] ~= nil)
+			t.expect.truthy(e and e.Kind == 'Product' and e.Price > 0 and Products.DeveloperProducts[key] ~= nil)
+			-- (Oct 27: the World Boss is off for now, so its SKIP is not sold: Config/Features)
+			t.expect.equal(e.Wired == true, key ~= 'WorldBossSkip' or require(RS.Shared.Config.Features).WorldBoss == true)
 		end
 		local bt = UI.bossTimer(root)
 		bt.set('COURT KING', 172)

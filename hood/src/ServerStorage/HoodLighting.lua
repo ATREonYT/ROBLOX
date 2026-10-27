@@ -117,6 +117,28 @@ L.Presets = {
 	-- its lit top, the shade a little blue), a bluer sky (Atmosphere) and real Terrain clouds. The grade keeps more
 	-- saturation than Huss's 0.12 (our map's colours lean on it) and Brightness stays under Huss's 1.4 a touch, so the
 	-- studded concrete floor stays mid-tone. Lamps stay faint (TheBlockV2's look pass caps every PointLight in the lobby).
+	-- Huzz (Oct 27, the owner: "copy the huzz valley games lighting, its really good, fix the sky block, make the lighting
+	-- the same"): Huzz Valley's own look, number for number (its Config/Look, huzz-valley/docs/notes/look-and-lighting.md):
+	-- even, cartoony light, a soft early-afternoon sun over a strong near-white sky fill (a cast shadow keeps about half
+	-- the sunlit floor's light), a gentle grade, Roblox's own sky painted a saturated blue by the Atmosphere, and real
+	-- white Terrain clouds. Any other Sky in the place (an old skybox) is set aside into the backup folder by Apply.
+	-- The game applies it when the server starts (HoodServer/LookService), so a place with older Lighting gets it too.
+	Huzz = {
+		technology = 'ShadowMap',
+		lighting = {
+			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.4, ExposureCompensation = 0.05,
+			Ambient = C(150, 150, 160), OutdoorAmbient = C(210, 210, 218),
+			ColorShift_Top = C(255, 252, 245), ColorShift_Bottom = C(0, 0, 0),
+			EnvironmentDiffuseScale = 1, EnvironmentSpecularScale = 0.4, ShadowSoftness = 0.6, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.22, Offset = 0.25, Haze = 0.3, Glare = 0, Color = C(178, 214, 255), Decay = C(85, 165, 245) },
+		grade = { Brightness = 0, Contrast = 0.05, Saturation = 0.12, TintColor = C(255, 254, 250) },
+		bloom = { Intensity = 0.4, Size = 24, Threshold = 1.6 },
+		rays = { Intensity = 0.03, Spread = 0.5 },
+		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 3000, CelestialBodiesShown = true },
+		clouds = { Cover = 0.4, Density = 0.75, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
 	HoodToy = {
 		technology = 'ShadowMap',
 		-- (B35, the owner: "make the lighting block better to fix the lighting look"; it read pale and hazy) the soldier
