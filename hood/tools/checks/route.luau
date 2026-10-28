@@ -128,11 +128,25 @@ local function flowTrack()
 	local tr = goals and goals:FindFirstChild('Goal', true)
 	if tr and tr:IsA('GuiObject') and visibleChainF(tr) and goals.Enabled and P:GetAttribute('OnboardingStep') ~= 'Done' then FL.goalLineInTut += 1 end
 	-- one guide at a time: the tutorial's arrows, the goal guide's arrow, the lobby's "TRAIN HERE" pointer
+	-- (Oct 28: the tutorial's way and the goals' are the same floating arrow now, HoodClient/GoalGuide: one guide whoever
+	-- asks for it; any old floor arrows of the tutorial's own would be a second)
 	local gs = {}
-	if G:GetAttribute('HoodGuide') == 'Tutorial' then table.insert(gs, 'Tutorial') end
 	local gg = workspace:FindFirstChild('HoodGoalGuide')
 	local shaft = gg and gg:FindFirstChild('ArrowShaft')
-	if shaft and shaft.Transparency < 0.5 then table.insert(gs, 'GoalGuide') end
+	if (shaft and shaft.Transparency < 0.5) or G:GetAttribute('HoodGuide') == 'Tutorial' then table.insert(gs, 'Arrow') end
+	if workspace:FindFirstChild('HoodTutorialLocal') then table.insert(gs, 'FloorArrows') end
+	if shaft and shaft.Transparency < 0.5 and G:GetAttribute('HoodGuide') == 'Tutorial' then FL.tutArrow = (FL.tutArrow or 0) + 1 end
+	-- (Oct 28) the loop over the tutorial (TRAIN > SHOOT > EARN > BUY > REBIRTH) and a cheer for each step done
+	local thg = G:FindFirstChild('HoodTutorialHint')
+	local loopRow = thg and thg:FindFirstChild('Loop', true)
+	if loopRow and loopRow.Visible then FL.loopSeen = true end
+	local cheerL = thg and thg:FindFirstChild('Cheer', true)
+	local cheerOn = cheerL ~= nil and cheerL.Visible and cheerL.Text ~= ''
+	if cheerOn and not FL.cheerWas then
+		FL.cheers = FL.cheers or {}
+		table.insert(FL.cheers, ('%.1f %s'):format(now, cheerL.Text))
+	end
+	FL.cheerWas = cheerOn
 	local nd = G:FindFirstChild('NextDestination')
 	if nd and nd.Adornee ~= nil and nd.Enabled ~= false then table.insert(gs, 'Lobby') end
 	if #gs > 1 then FL.guides2 += 1; FL.guidePair = FL.guidePair or ('%.1f %s %s (lobby pointer on %s)'):format(now, table.concat(gs, '+'), tostring(P:GetAttribute('OnboardingStep')), nd and nd.Adornee and nd.Adornee.Name or '-') end
@@ -483,6 +497,8 @@ local worst = math.huge
 for _, g in FL.gaps do worst = math.min(worst, g[1]) end
 fcheck('one voice: a calm of at least 1.5 s between two moments', worst >= 1.4, (#FL.gaps == 0 and 'no two moments' or ('%.2f s at the least, %d gaps'):format(worst, #FL.gaps)))
 fcheck('one guide at a time', FL.guides2 == 0, FL.guides2 .. ' ticks with two, first ' .. tostring(FL.guidePair))
+fcheck('tutorial: the one floating arrow shows its way', (FL.tutArrow or 0) > 0, (FL.tutArrow or 0) .. ' ticks')
+fcheck('tutorial: the loop is up, and its steps get a cheer', FL.loopSeen == true and #(FL.cheers or {}) >= 2, table.concat(FL.cheers or {}, ', '))
 fcheck('no level toast in the first minute', FL.levelToastEarly == 0, FL.levelToastEarly .. ' ticks')
 log(('[flow] %d checks / %d failed'):format(FLN, #FLF))
 log('[flow] moments: ' .. (function() local t = {}; for _, mm in FL.moments do table.insert(t, ('%s %.1f'):format(mm[1], mm[2])) end; return table.concat(t, ' | ') end)())

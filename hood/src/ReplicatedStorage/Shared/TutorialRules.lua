@@ -67,6 +67,33 @@ TutorialRules.Talk = {
 -- A WHY line stays up this long once typed (a plain line: HintHold) before the next one may take its place.
 TutorialRules.ReadHold = 2.2
 
+-- (Oct 28, the owner: "there isn't a well done core loop") THE LOOP, always in view over the tutorial's card: five
+-- chips, TRAIN > SHOOT > EARN > BUY > REBIRTH, the one you are on lit gold and the ones done green, so the first
+-- minutes read as one loop you go round, not a list of errands. Each tutorial step maps onto it; the rebirth lesson
+-- (the first time the Rebirth bar fills) is its last chip.
+TutorialRules.Loop = { 'TRAIN', 'SHOOT', 'EARN', 'BUY', 'REBIRTH' }
+local LOOP_OF = { Train = 1, Door = 2, Fight = 2, Cash = 3, Gift = 3, Gun = 4 }
+-- The loop's state for the server's OnboardingStep and the rebirth lesson's step (TutorialRules.lessonStep): the chip
+-- you are on (nil: none lit) and how many are done; nil, nil when the loop isn't shown (the tutorial is over and no
+-- lesson runs, or nothing is known yet).
+function TutorialRules.loopAt(onboardingStep, lessonStep)
+	if lessonStep == 'After' then return nil, 5 end
+	if lessonStep == 'Open' or lessonStep == 'Press' then return 5, 4 end
+	local i = type(onboardingStep) == 'string' and LOOP_OF[onboardingStep] or nil
+	if i then return i, i - 1 end
+	if onboardingStep == 'Run' then return nil, 4 end -- (bought: the first four done; REBIRTH comes when its bar fills)
+	return nil, nil
+end
+-- The celebration words, one per finished step, in turn (never the same twice running): short, loud and kind.
+TutorialRules.Cheers = { 'NICE!', 'GREAT!', 'AWESOME!', 'YOU GOT IT!', 'AMAZING!' }
+function TutorialRules.cheer(n)
+	local list = TutorialRules.Cheers
+	n = (type(n) == 'number' and n >= 1) and math.floor(n) or 1
+	return list[(n - 1) % #list + 1]
+end
+-- Seconds a step's celebration may wait for a busy screen (the unboxing, the new gun's moment) before it is dropped.
+TutorialRules.CheerWait = 8
+
 -- The lines for where you are, in order (each { Text, Box?, Why? }; the last one stays), and the arrows' target. The
 -- first line is worldHint's; BAY 1 adds the Power line; Gun and Run talk without arrows.
 function TutorialRules.lines(onboardingStep, inLane, touch)
@@ -425,7 +452,11 @@ TutorialRules.Hint = {
 	FadeOut = 0.2,
 	-- (Oct 27, flow r2: the critic's stills caught half-typed pills, "G", "Now go f") a new line shows whole at once: its
 	-- words fade in and the pill grows from PopFrom to full size over Pop seconds (no typewriter)
-	Pop = 0.16, PopFrom = 0.94,
+	Pop = 0.3, PopFrom = 0.62,
+	-- (Oct 28, the owner: "match the UI more ... more cartoony") the card is the mockup windows' navy card (Kit.Skin: a
+	-- top-lit navy face, a thick ink outline, a light rim and a soft drop) and pops in with a small overshoot (Back out)
+	-- from PopFrom; the words are TextStyle's white with its thick outline
+	Card = true, Outline = 4, Rim = 2, Drop = 5, CardCorner = 14,
 	-- (brief 32, FEEL) The WORLD steps' line (walk to BAY 1, the gate, the pad, the gift; no box): the compact strip, a little
 	-- lower. Filmed with the follow camera, the full box at 63 % sat on your own character (the reference's sits on its
 	-- soldier's legs, V4 7.0 s): here it clears your body and stays above the Power and Level row.

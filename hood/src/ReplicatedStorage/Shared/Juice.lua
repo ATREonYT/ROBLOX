@@ -9,6 +9,7 @@ local Debris = game:GetService('Debris')
 
 local Juice = {}
 local Fonts = require(script.Parent.Fonts)
+local TextStyle = require(script.Parent.TextStyle) -- (Oct 28: the pops are the UI's cartoon words)
 
 ---------------------------------------------------------------------------------------------- springs
 -- Semi-implicit spring step. f = frequency (Hz), z = damping ratio (1 = no overshoot, <1 = swings).
@@ -238,12 +239,14 @@ function Juice.popNumber(position, text, color, fontFace, opts)
 	t.TextColor3 = opts.fill or color or Color3.fromRGB(255, 194, 26)
 	local s = Instance.new('UIStroke')
 	s.Color = opts.stroke or Color3.fromRGB(28, 24, 48)
-	s.Thickness = opts.thickness or 2.5
+	s.Thickness = opts.thickness or 3.5 -- (Oct 28: TextStyle's thick outline, was 2.5)
 	s.Parent = t
+	TextStyle.world(t) -- (lit from the top, deeper at the foot, round joins)
 	scale.Parent = t
 	t.Parent = g
 	local drift = (math.random() - 0.5) * 1.5
-	TweenService:Create(scale, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	scale.Scale = 0.3
+	TweenService:Create(scale, TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play() -- (a bouncy pop with a small overshoot)
 	TweenService:Create(g, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = Vector3.new(drift, 3, 0) }):Play()
 	TweenService:Create(t, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.45), { TextTransparency = 1 }):Play()
 	TweenService:Create(s, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.45), { Transparency = 1 }):Play()
@@ -329,6 +332,7 @@ function Juice.combo(key, at, gain, opts)
 				t.FontFace = opts.fontFace or Fonts.Number -- (brief 28: the HUD's Montserrat Black)
 				local st = Instance.new('UIStroke')
 				st.Parent = t
+				TextStyle.world(t) -- (Oct 28: the UI's cartoon words)
 				t.Parent = holder
 				return t, st
 			end
@@ -342,10 +346,10 @@ function Juice.combo(key, at, gain, opts)
 		c.part.CFrame = CFrame.new(at)
 		c.number.TextColor3 = opts.fill or Color3.new(1, 1, 1)
 		c.numberStroke.Color = opts.stroke or color:Lerp(Color3.new(0, 0, 0), 0.65)
-		c.numberStroke.Thickness = opts.thickness or 3
+		c.numberStroke.Thickness = opts.thickness or 3.5
 		c.hits.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.25)
 		c.hitsStroke.Color = Color3.fromRGB(20, 18, 32)
-		c.hitsStroke.Thickness = 2
+		c.hitsStroke.Thickness = 2.5
 		c.format = opts.format or commas
 		c.total, c.from, c.count = 0, 0, 0
 		c.alive, c.parked = true, false

@@ -80,7 +80,25 @@ return function(t)
 		t.expect.falsy(FG.allowed(5, 5.5))
 		t.expect.falsy(FG.allowed(5, 5.99))
 		t.expect.truthy(FG.allowed(5, 6))
-		t.expect.truthy(Tut.Hint.Pop > 0 and Tut.Hint.Pop <= 0.25 and Tut.Hint.PopFrom >= 0.9 and Tut.Hint.PopFrom < 1)
+		-- (Oct 28: the owner's "more cartoony") the card pops in whole with a small overshoot, quick enough to read at once
+		t.expect.truthy(Tut.Hint.Pop >= 0.2 and Tut.Hint.Pop <= 0.4 and Tut.Hint.PopFrom >= 0.5 and Tut.Hint.PopFrom <= 0.8)
+	end)
+
+	t.test('the loop: TRAIN > SHOOT > EARN > BUY > REBIRTH over the tutorial, one chip lit, a cheer per step', function()
+		t.expect.equal(#Tut.Loop, 5)
+		local function at(s, l) local i, d = Tut.loopAt(s, l); return tostring(i) .. '/' .. tostring(d) end
+		t.expect.equal(at('Train'), '1/0'); t.expect.equal(at('Door'), '2/1'); t.expect.equal(at('Fight'), '2/1')
+		t.expect.equal(at('Cash'), '3/2'); t.expect.equal(at('Gift'), '3/2'); t.expect.equal(at('Gun'), '4/3')
+		t.expect.equal(at('Run'), 'nil/4'); t.expect.equal(at('Done'), 'nil/nil'); t.expect.equal(at(nil), 'nil/nil')
+		t.expect.equal(at('Done', 'Open'), '5/4'); t.expect.equal(at('Done', 'Press'), '5/4'); t.expect.equal(at('Done', 'After'), 'nil/5')
+		-- every server step of the tutorial is on the loop, in order (done never goes back)
+		local last = -1
+		for _, s in { 'Train', 'Door', 'Fight', 'Cash', 'Gift', 'Gun', 'Run' } do
+			local _, d = Tut.loopAt(s)
+			t.expect.truthy(d ~= nil and d >= last); last = d
+		end
+		t.expect.truthy(Tut.cheer(1) ~= Tut.cheer(2) and Tut.cheer(1) == Tut.cheer(#Tut.Cheers + 1) and Tut.cheer(nil) == Tut.cheer(1))
+		t.expect.truthy(Tut.CheerWait > 0 and Tut.CheerWait <= 10)
 	end)
 
 	t.test('the first crew is a little tougher, the rest as before', function()

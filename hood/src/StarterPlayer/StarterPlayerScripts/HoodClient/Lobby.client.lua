@@ -39,8 +39,10 @@ local function label(parent, name, textSize, color)
 	t.TextWrapped = true
 	local stroke = Instance.new('UIStroke')
 	stroke.Color = INK
-	stroke.Thickness = 2.5
+	stroke.Thickness = math.max(2.5, textSize * 0.14) -- (Oct 28: TextStyle's thick outline, was 2.5)
+	stroke.LineJoinMode = Enum.LineJoinMode.Round
 	stroke.Parent = t
+	pcall(function() require(RS.Shared.TextStyle).world(t) end) -- (lit from the top, like the UI's words)
 	t.Parent = parent
 	return t, stroke
 end

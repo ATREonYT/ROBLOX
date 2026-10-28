@@ -1,92 +1,131 @@
--- GoalGuide (Oct 27, the core loop: "make the core loop done well"): after the tutorial, a lasting and quiet guide to the
--- current goal, like the soldier game's: a chunky gold arrow bobbing over where to go (a lane, the next gate ahead of
--- you, the yellow pad, the ARMORY, the shoe boxes, the World 2 portal; Shared/GuideRules says which for the goal the
--- server publishes in GoalStep) and a trail of soft chevrons on the floor from just ahead of you to it, drifting on.
--- It stays out of the way: nothing during the tutorial (its own white arrows), while a window, a card, the unboxing or
--- the loading cover is up, in a fight, while you are down, or once you are there (GuideRules.Near; in the lane's box).
--- Local parts only (no collisions, no shadows, not hit by rays), one Heartbeat loop, each tick pcall'd and an error
--- reported once. Nothing flashes: the chevrons fade in and out over a second, the arrow only bobs.
+-- GoalGuide: the ONE guide arrow, from the first step of the tutorial to the last goal (Oct 28, the owner after playing
+-- in Studio: "the arrow isn't good ... make the arrows float ... more cartoony"; research pattern 9: one colour, one
+-- style, from spawn to the end of the first loop). Its look and its rules are Shared/GuideArrow:
+--   * a chunky gold 3D arrow with a thick ink outline, a light cap and a soft shine, floating over where to go with an
+--     eased bob and a gentle pulse, growing with the distance, kept clear of walls and ceilings, popping in with a
+--     small overshoot when it has somewhere new to point;
+--   * a trail of chunky gold chevrons (ink-edged) on the floor from a few studs ahead of you toward it, drifting on;
+--   * the edge pointer: while the arrow is off screen, a round badge at the screen's edge with a gold chevron points
+--     the way, bobbing toward it.
+-- Where it points: while the tutorial runs, what HoodClient/Tutorial publishes (PlayerGui GuideAt, and GuideVia when a
+-- lane or a wall is in the way of the straight line: the trail goes there first); after it, the current goal's place
+-- (Shared/GuideRules for the goal the server publishes in GoalStep: a lane, the next gate ahead of you, the yellow pad,
+-- the ARMORY, the shoe boxes, the World 2 portal).
+-- It stays out of the way while a window, a card, the unboxing, the welcome or the loading cover is up, in a fight,
+-- while you are down, and once you are there (GuideRules.Near; in the lane's box). Local parts only (no collisions, no
+-- shadows, not hit by rays), one Heartbeat loop, each tick pcall'd and an error reported once. Nothing flashes.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local RunService = game:GetService('RunService')
 local CollectionService = game:GetService('CollectionService')
 local GoalRules = require(RS.Shared.GoalRules)
 local GuideRules = require(RS.Shared.GuideRules)
+local GuideArrow = require(RS.Shared.GuideArrow)
 local TutorialRules = require(RS.Shared.TutorialRules)
 local ActiveMap = require(RS.Shared.ActiveMap)
+local Kit = require(RS.Shared.UIKit)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild('PlayerGui')
 local function attr(name) return player:GetAttribute(name) end
 local function num(v) return type(v) == 'number' and v == v and v or 0 end
 
-local GOLD, GOLD_TOP, INK = Color3.fromRGB(255, 196, 40), Color3.fromRGB(255, 236, 140), Color3.fromRGB(60, 34, 6)
-local ARROW_UP = 7 -- (studs over the target's floor point: clear of the stations' own labels)
--- (the trail: up to 12 chevrons from 4 studs ahead of you to 4 short of the target, 3.2 apart, drifting on at 2 studs a
+local COL = GuideArrow.Colors
+local UP = Vector3.new(0, 1, 0)
+-- (the trail: up to 12 chevrons from 4 studs ahead of you to 4 short of its end, 3.4 apart, drifting on at 2 studs a
 -- second; the far ones are clear of your own body in the camera behind you)
-local TRAIL = { Count = 12, From = 4, Gap = 3.2, Speed = 2, Short = 4 }
+local TRAIL = { Count = 12, From = 4, Gap = 3.4, Speed = 2, Short = 4 }
+local APPEAR = 0.35 -- seconds: the arrow's pop-in (0.45 -> a little over 1 -> 1)
 
 ---------------------------------------------------------------------------------------------- the parts
-local folder = Instance.new('Folder')
+local folder = Instance.new('Model') -- (a Model, so its Highlight outlines the arrow)
 folder.Name = 'HoodGoalGuide'
-local function part(class, name, size, color)
-	local p = Instance.new(class)
+local arrow = GuideArrow.build(folder)
+local trail = Instance.new('Model') -- (the chevrons: their own ink, no Highlight, so a fading one never shows a hard outline)
+trail.Name = 'HoodGoalTrail'
+local function bar(name, size, color)
+	local p = Instance.new('Part')
 	p.Name = name
 	p.Anchored, p.CanCollide, p.CastShadow = true, false, false
 	pcall(function() p.CanQuery, p.CanTouch = false, false end)
 	p.Size, p.Color, p.Material = size, color, Enum.Material.SmoothPlastic
 	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	p.Transparency = 1
-	p.Parent = folder
+	p.Parent = trail
 	return p
 end
--- the arrow: a block shaft over a head of two wedges, pointing down, with a dark back plate a hair behind (its outline)
-local arrow = {
-	Shaft = part('Part', 'ArrowShaft', Vector3.new(1.3, 1.9, 0.5), GOLD),
-	HeadL = part('WedgePart', 'ArrowHeadL', Vector3.new(0.5, 1.9, 1.6), GOLD),
-	HeadR = part('WedgePart', 'ArrowHeadR', Vector3.new(0.5, 1.9, 1.6), GOLD),
-	Cap = part('Part', 'ArrowCap', Vector3.new(1.3, 0.25, 0.52), GOLD_TOP),
-	BackShaft = part('Part', 'ArrowBackShaft', Vector3.new(1.65, 2.2, 0.3), INK),
-	BackL = part('WedgePart', 'ArrowBackL', Vector3.new(0.3, 2.35, 2.0), INK),
-	BackR = part('WedgePart', 'ArrowBackR', Vector3.new(0.3, 2.35, 2.0), INK),
-}
--- the chevrons: two flat bars each, a "^" pointing the way
+-- the chevrons: a "^" of two chunky gold bars each, on a slightly bigger ink "^" (its outline)
 local chevrons = {}
 for i = 1, TRAIL.Count do
 	chevrons[i] = {
-		L = part('Part', 'ChevronL' .. i, Vector3.new(0.5, 0.06, 1.6), GOLD),
-		R = part('Part', 'ChevronR' .. i, Vector3.new(0.5, 0.06, 1.6), GOLD),
+		L = bar('ChevronL' .. i, Vector3.new(0.62, 0.08, 1.8), COL.Fill),
+		R = bar('ChevronR' .. i, Vector3.new(0.62, 0.08, 1.8), COL.Fill),
+		InkL = bar('ChevronInkL' .. i, Vector3.new(0.98, 0.06, 2.16), COL.Ink),
+		InkR = bar('ChevronInkR' .. i, Vector3.new(0.98, 0.06, 2.16), COL.Ink),
 	}
 end
+local outline = nil
+pcall(function()
+	local hl = Instance.new('Highlight')
+	hl.Name = 'Outline'
+	hl.FillTransparency = 1
+	hl.OutlineColor = COL.Ink
+	hl.OutlineTransparency = 0
+	hl.DepthMode = Enum.HighlightDepthMode.Occluded
+	hl.Adornee = folder
+	hl.Enabled = false
+	hl.Parent = folder
+	outline = hl
+end)
 folder.Parent = workspace
+trail.Parent = workspace
 
 local shownAlpha = -1
 local function setArrowAlpha(a)
-	a = math.floor(a * 20 + 0.5) / 20
-	if a == shownAlpha then return end
-	shownAlpha = a
-	for name, p in arrow do
-		p.Transparency = 1 - a * ((name:sub(1, 4) == 'Back') and 0.85 or 1)
+	shownAlpha = GuideArrow.setAlpha(arrow, a, shownAlpha)
+	if outline then
+		local on = shownAlpha > 0
+		if outline.Enabled ~= on then outline.Enabled = on end
+		outline.OutlineTransparency = 1 - shownAlpha
 	end
 end
-local UP = Vector3.new(0, 1, 0)
--- Lays the arrow with its tip at `tip`, its face turned to `face` (a flat unit vector toward the camera). A wedge's
--- right angle sits at its local (-Y, +Z) corner: each half of the head has it at the top of the centre line, local +Y
--- pointing down to the tip and local -Z out to its side.
-local function wedge(pos, y, z) return CFrame.fromMatrix(pos, y:Cross(z), y, z) end
-local function layArrow(tip, face)
-	local right = UP:Cross(face).Unit
-	local function box(pos) return CFrame.fromMatrix(pos, right, UP) end
-	local headMid = tip + UP * 0.95
-	arrow.HeadL.CFrame = wedge(headMid - right * 0.8, -UP, right)
-	arrow.HeadR.CFrame = wedge(headMid + right * 0.8, -UP, -right)
-	arrow.Shaft.CFrame = box(tip + UP * 2.85)
-	arrow.Cap.CFrame = box(tip + UP * 3.92)
-	local back = -face * 0.42
-	arrow.BackShaft.CFrame = box(tip + UP * 2.85 + back)
-	arrow.BackL.CFrame = wedge(headMid - UP * 0.075 - right * 1.0 + back, -UP, right)
-	arrow.BackR.CFrame = wedge(headMid - UP * 0.075 + right * 1.0 + back, -UP, -right)
+local function hideChevrons()
+	for _, c in chevrons do
+		if c.L.Transparency < 1 then c.L.Transparency, c.R.Transparency, c.InkL.Transparency, c.InkR.Transparency = 1, 1, 1, 1 end
+	end
 end
+
+---------------------------------------------------------------------------------------------- the edge pointer
+local edgeGui = Instance.new('ScreenGui')
+edgeGui.Name = 'HoodGuideEdge'
+edgeGui.ResetOnSpawn, edgeGui.IgnoreGuiInset, edgeGui.DisplayOrder = false, true, 4
+edgeGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+pcall(function() edgeGui.ScreenInsets = Enum.ScreenInsets.None end)
+local E = GuideArrow.Edge
+local pointer = Kit.new('Frame', { Name = 'Pointer', AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(E.Size, E.Size), BackgroundTransparency = 1, Visible = false, Parent = edgeGui })
+local pointerPop = Kit.new('UIScale', { Name = 'Pop', Scale = 1, Parent = pointer })
+-- the badge: the UI's navy card face in a circle, a thick ink ring and a light rim (the mockup windows' look)
+local badge = Kit.new('Frame', { Name = 'Badge', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), BackgroundColor3 = Kit.Color.white, BorderSizePixel = 0, ZIndex = 2, Parent = pointer })
+Kit.corner(UDim.new(0.5, 0)).Parent = badge
+Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.Skin.bodyTop, Kit.Skin.bodyBase), Parent = badge })
+Kit.stroke(Kit.Skin.outline, 4, true).Parent = badge
+local rim = Kit.new('Frame', { Name = 'Rim', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -6, 1, -6), BackgroundTransparency = 1, ZIndex = 3, Parent = badge })
+Kit.corner(UDim.new(0.5, 0)).Parent = rim
+Kit.stroke(Kit.Skin.rim, 2, true, 0.1).Parent = rim
+-- the chevron ">" (two chunky gold bars, ink-edged), turned to point the way; the badge itself stays upright
+local needle = Kit.new('Frame', { Name = 'Needle', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 4, Parent = pointer })
+for side = -1, 1, 2 do
+	local b = Kit.new('Frame', { Name = 'Chevron', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 2, 0.5, side * 7), Size = UDim2.fromOffset(28, 11), Rotation = side * 42, BackgroundColor3 = Kit.Color.white, BorderSizePixel = 0, ZIndex = 5, Parent = needle })
+	Kit.corner(UDim.new(0.5, 0)).Parent = b
+	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(COL.Top, COL.Fill), Parent = b })
+	Kit.stroke(COL.Ink, 2.5, true).Parent = b
+end
+edgeGui.Parent = playerGui
+local edgeOn, edgeSince = false, 0
+local function hideEdge()
+	if edgeOn then edgeOn = false; pointer.Visible = false end
+end
+
 -- (Oct 27, flow: one guide at a time) PlayerGui HoodGoalGuide is true while this guide is up: the lobby's
 -- "TRAIN xN HERE" pointer steps aside for it.
 local up = nil
@@ -95,19 +134,31 @@ local function setUp(on)
 	up = on
 	playerGui:SetAttribute('HoodGoalGuide', on)
 end
+local shownKey = nil
 local function hideAll()
 	setArrowAlpha(0)
-	for _, c in chevrons do c.L.Transparency, c.R.Transparency = 1, 1 end
+	hideChevrons()
+	hideEdge()
+	shownKey = nil
 	setUp(false)
 end
 
----------------------------------------------------------------------------------------------- the floor
+---------------------------------------------------------------------------------------------- the floor, the walls
 local rayParams = (function()
 	local ok, r = pcall(function()
 		local p = RaycastParams.new()
 		p.FilterType = Enum.RaycastFilterType.Exclude
-		p.FilterDescendantsInstances = { folder }
+		p.FilterDescendantsInstances = { folder, trail }
 		pcall(function() p.RespectCanCollide = true end)
+		return p
+	end)
+	return ok and r or nil
+end)()
+local wallParams = (function() -- (walls and signs: anything you'd see the arrow cut into, CanCollide or not)
+	local ok, r = pcall(function()
+		local p = RaycastParams.new()
+		p.FilterType = Enum.RaycastFilterType.Exclude
+		p.FilterDescendantsInstances = { folder }
 		return p
 	end)
 	return ok and r or nil
@@ -115,13 +166,35 @@ end)()
 local function floorAt(p, feetY)
 	if not rayParams then return feetY end
 	local ok, hit = pcall(function()
-		local list = { folder }
+		local list = { folder, trail }
 		if player.Character then table.insert(list, player.Character) end
 		rayParams.FilterDescendantsInstances = list
 		return workspace:Raycast(Vector3.new(p.X, feetY + 3, p.Z), Vector3.new(0, -8, 0), rayParams)
 	end)
 	if ok and hit and math.abs(hit.Position.Y - feetY) <= 2.5 then return hit.Position.Y end
 	return feetY
+end
+-- The distance to the first solid, visible thing along dir from origin (nil: none), for GuideArrow.clear. See-through
+-- parts (trigger boxes, the labels' anchors, glass a kid sees through) are looked past.
+local function castFor()
+	if not wallParams then return nil end
+	return function(origin, dir)
+		local skip = { folder, trail }
+		if player.Character then table.insert(skip, player.Character) end
+		local goons = workspace:FindFirstChild('HoodGoons')
+		if goons then table.insert(skip, goons) end
+		for _ = 1, 4 do
+			local ok, hit = pcall(function()
+				wallParams.FilterDescendantsInstances = skip
+				return workspace:Raycast(origin, dir, wallParams)
+			end)
+			if not ok or not hit then return nil end
+			local inst = hit.Instance
+			if inst and inst:IsA('BasePart') and inst.Transparency < 0.6 then return (hit.Position - origin).Magnitude end
+			table.insert(skip, inst)
+		end
+		return nil
+	end
 end
 
 ---------------------------------------------------------------------------------------------- finding the target
@@ -162,11 +235,11 @@ local function boxOf(m, key)
 	boxes[key] = c
 	return c
 end
--- A small model (a shoe box): the arrow 2.5 studs over its top.
+-- A small model (a shoe box): the arrow's tip 2.5 studs over its top.
 local function overTop(m, key)
 	local b = boxOf(m, key)
 	if not b then return pivotOf(m) end
-	return Vector3.new(b.CFrame.Position.X, b.CFrame.Position.Y + b.Size.Y / 2 + 2.5 - ARROW_UP, b.CFrame.Position.Z)
+	return Vector3.new(b.CFrame.Position.X, b.CFrame.Position.Y + b.Size.Y / 2 + 2.5 - GuideArrow.Up, b.CFrame.Position.Z)
 end
 -- A big station (the ARMORY, the portal): the floor point on its edge nearest you, where you walk up to it, so the
 -- arrow stands at eye height in front of it, not high over its sign.
@@ -248,8 +321,7 @@ local function busy()
 	local w, card = playerGui:GetAttribute('HoodWindow'), playerGui:GetAttribute('HoodCard')
 	if (type(w) == 'string' and w ~= '') or (type(card) == 'string' and card ~= '') then return true end
 	if playerGui:GetAttribute('Unboxing') == true or playerGui:FindFirstChild('HoodLoading') then return true end
-	if TutorialRules.step(attr('OnboardingStep')) then return true end -- (the tutorial's own arrows)
-	if playerGui:GetAttribute('HoodGuide') == 'Tutorial' or playerGui:GetAttribute('HoodWelcome') == true then return true end -- (Oct 27, flow)
+	if playerGui:GetAttribute('HoodWelcome') == true then return true end -- (Oct 27, flow)
 	if num(attr('WaveLeft')) > 0 or attr('Downed') == true or attr('WorldBossFight') == true then return true end
 	return false
 end
@@ -257,57 +329,118 @@ local function inside(zone, p)
 	local local_ = zone.CFrame:PointToObjectSpace(p)
 	return math.abs(local_.X) <= zone.Size.X / 2 + 1 and math.abs(local_.Z) <= zone.Size.Z / 2 + 1
 end
+-- What to point at now: the floor point, where the trail goes first (nil: straight there), and a key that changes
+-- when the place does. nil: nothing to point at (or you are there).
+local function want(you)
+	if playerGui:GetAttribute('HoodGuide') == 'Tutorial' then
+		local at, via = playerGui:GetAttribute('GuideAt'), playerGui:GetAttribute('GuideVia')
+		if typeof(at) ~= 'Vector3' then return nil end
+		return at, typeof(via) == 'Vector3' and via or nil, 'Tutorial:' .. tostring(playerGui:GetAttribute('GuideKind'))
+	end
+	if TutorialRules.step(attr('OnboardingStep')) then return nil end -- (the tutorial's step with nothing to walk to: the fight)
+	local step = attr('GoalStep')
+	if type(step) ~= 'number' then return nil end
+	local goal = GoalRules.at(step)
+	local t = GuideRules.target(goal, { Rebirths = attr('Rebirths'), RunCleared = attr('RunCleared'), World = GoalRules.World })
+	if not t or not find[t.Kind] then return nil end
+	local at, zone = find[t.Kind](t, you)
+	if not at then return nil end
+	local dist = Vector3.new(at.X - you.X, 0, at.Z - you.Z).Magnitude
+	if (zone and inside(zone, you)) or (not zone and dist <= (GuideRules.Near[t.Kind] or 8)) then return nil end
+	return at, nil, t.Kind .. tostring(t.Stage or t.Station or '')
+end
 
 ---------------------------------------------------------------------------------------------- every frame
 local clock = 0
 local warned = false
+local appear = 0 -- seconds since the arrow last popped in
+local clearAt, clearFor, clearTip = -1, nil, nil -- (the clearance is looked at twice a second per place)
+local function backOut(x)
+	local c1 = 1.70158
+	local c3 = c1 + 1
+	return 1 + c3 * (x - 1) ^ 3 + c1 * (x - 1) ^ 2
+end
+local function edgeStep(dt, mid)
+	local cam = workspace.CurrentCamera
+	if not cam then hideEdge(); return end
+	local view = cam.ViewportSize
+	local sp = GuideArrow.project(cam.CFrame, cam.FieldOfView, view, mid)
+	local e = sp and GuideArrow.edge(sp, view) or nil
+	if not e then hideEdge(); return end
+	if not edgeOn then edgeOn, edgeSince = true, clock; pointer.Visible = true end
+	local still = attr('ReducedMotion') == true
+	local push = still and 0 or E.Push * (0.5 + 0.5 * math.sin((clock - edgeSince) * 2 * math.pi / E.Period))
+	local a = math.rad(e.Angle)
+	pointer.Position = UDim2.fromOffset(e.X + math.cos(a) * push, e.Y + math.sin(a) * push)
+	needle.Rotation = e.Angle
+	local s = math.clamp((clock - edgeSince) / 0.3, 0, 1)
+	pointerPop.Scale = still and 1 or (0.5 + 0.5 * backOut(s))
+end
 local function tick(dt)
 	clock += dt
 	local char = player.Character
 	local root = char and char:FindFirstChild('HumanoidRootPart')
-	local step = attr('GoalStep')
-	if not root or type(step) ~= 'number' or busy() then hideAll(); return end
-	local goal = GoalRules.at(step)
-	local t = GuideRules.target(goal, { Rebirths = attr('Rebirths'), RunCleared = attr('RunCleared'), World = GoalRules.World })
-	if not t or not find[t.Kind] then hideAll(); return end
+	if not root or busy() then hideAll(); return end
 	local you = root.CFrame.Position
-	local at, zone = find[t.Kind](t, you)
+	local at, via, key = want(you)
 	if not at then hideAll(); return end
+	-- (a gate: the arrow floats a few studs on your side of its line, never inside its barrier or its frame)
+	if key == 'Tutorial:Gate' or key:sub(1, 4) == 'Gate' then
+		local back = Vector3.new(you.X - at.X, 0, you.Z - at.Z)
+		if back.Magnitude > 4 then at += back.Unit * 3 end
+	end
 	local flat = Vector3.new(at.X - you.X, 0, at.Z - you.Z)
 	local dist = flat.Magnitude
-	local there = (zone and inside(zone, you)) or (not zone and dist <= (GuideRules.Near[t.Kind] or 8))
-	if there then hideAll(); return end
-	-- the arrow: bobbing over the target, turned to the camera
+	if dist <= 4 then hideAll(); return end -- (never on top of you)
+	if key ~= shownKey then shownKey, appear, clearFor = key, 0, nil end
+	appear += dt
+	-- the arrow: floating over the target, turned to the camera, clear of walls and ceilings
 	local cam = workspace.CurrentCamera
 	local face = cam and (cam.CFrame.Position - at) or -flat
 	face = Vector3.new(face.X, 0, face.Z)
 	if face.Magnitude < 0.01 then face = Vector3.new(0, 0, 1) end
+	face = face.Unit
 	local still = attr('ReducedMotion') == true
-	local bob = still and 0 or 0.5 * math.sin(clock * 2 * math.pi / 1.3)
-	layArrow(at + UP * (ARROW_UP + bob), face.Unit)
-	setArrowAlpha(1)
+	local bob, pulse = GuideArrow.motion(clock, still)
+	local base = GuideArrow.scaleFor(dist)
+	if clearFor ~= key or clock - clearAt >= 0.5 then
+		clearAt, clearFor = clock, key
+		clearTip = GuideArrow.clear(at, base, face, castFor())
+	end
+	local pop = still and 1 or (0.45 + 0.55 * backOut(math.clamp(appear / APPEAR, 0, 1)))
+	local k = base * pulse * pop
+	local tip = (clearTip or (at + UP * GuideArrow.Up)) + UP * bob
+	GuideArrow.lay(arrow, tip, face, k)
+	setArrowAlpha(math.clamp(appear / 0.2, 0, 1))
 	setUp(true)
-	-- the trail: chevrons on the floor along the straight line to it, drifting on, fading in by you and out by it
+	edgeStep(dt, tip + UP * (GuideArrow.height(k) * 0.5))
+	-- the trail: chevrons on the floor along the straight line to it (to the waypoint first), drifting on, fading in by
+	-- you and out at its end
+	local goal = via or at
+	local gflat = Vector3.new(goal.X - you.X, 0, goal.Z - you.Z)
+	local gdist = gflat.Magnitude
 	local feetY = you.Y - 3
-	local dir = dist > 0.01 and flat.Unit or Vector3.new(0, 0, -1)
+	local dir = gdist > 0.01 and gflat.Unit or Vector3.new(0, 0, -1)
 	local right = dir:Cross(UP).Unit
 	local shift = still and 0 or (clock * TRAIL.Speed) % TRAIL.Gap
-	local stop = dist - TRAIL.Short
+	local stop = gdist - (via and 0 or TRAIL.Short)
 	for i, c in chevrons do
 		local d = TRAIL.From + (i - 2) * TRAIL.Gap + shift -- (the first one is coming in from behind the start)
 		local a = math.min((d - TRAIL.From) / TRAIL.Gap, (stop - d) / TRAIL.Gap, 1)
-		a = math.clamp(a, 0, 1) * (0.85 - 0.3 * math.clamp(d / 40, 0, 1))
+		a = math.clamp(a, 0, 1) * (0.95 - 0.3 * math.clamp(d / 44, 0, 1))
 		if a <= 0.02 then
-			c.L.Transparency, c.R.Transparency = 1, 1
+			c.L.Transparency, c.R.Transparency, c.InkL.Transparency, c.InkR.Transparency = 1, 1, 1, 1
 		else
 			local p = Vector3.new(you.X, 0, you.Z) + dir * d
 			local y = floorAt(p, feetY) + 0.16 -- (clear of the floor's painted paths and tiles)
-			local tip = Vector3.new(p.X, y, p.Z)
-			for side, bar in { [1] = c.L, [-1] = c.R } do
+			local tipAt = Vector3.new(p.X, y, p.Z)
+			for side, pair in { [1] = { c.L, c.InkL }, [-1] = { c.R, c.InkR } } do
 				local arm = (-dir + right * side * 0.85).Unit
-				local mid = tip + arm * 0.62
-				bar.CFrame = CFrame.lookAt(mid, mid + arm)
-				bar.Transparency = 1 - a
+				local mid = tipAt + arm * 0.7
+				pair[1].CFrame = CFrame.lookAt(mid, mid + arm)
+				pair[2].CFrame = CFrame.lookAt(mid - UP * 0.04, mid - UP * 0.04 + arm)
+				pair[1].Transparency = 1 - a
+				pair[2].Transparency = 1 - a * 0.9
 			end
 		end
 	end

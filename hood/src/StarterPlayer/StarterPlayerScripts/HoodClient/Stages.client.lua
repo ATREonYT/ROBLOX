@@ -454,13 +454,23 @@ local function showBanner(title, detail, color, detailColor)
 	back.AnchorPoint = Vector2.new(0.5, 0.5)
 	back.Position = UDim2.fromScale(0.5, 0.5)
 	back.Size = UDim2.new(1, 16 * k, 1, 12 * k)
-	back.BackgroundColor3 = C(16, 19, 30)
-	back.BackgroundTransparency = 0.4
+	-- (Oct 28, the owner: "match the UI more") the mockup windows' navy card: top-lit, a thick ink outline
+	back.BackgroundColor3 = Color3.new(1, 1, 1)
+	back.BackgroundTransparency = 0.06
 	back.BorderSizePixel = 0
 	back.ZIndex = 0
+	local backFill = Instance.new('UIGradient')
+	backFill.Rotation = 90
+	backFill.Color = ColorSequence.new(C(38, 49, 90), C(26, 34, 64))
+	backFill.Parent = back
 	local backCorner = Instance.new('UICorner')
 	backCorner.CornerRadius = UDim.new(0, 12 * k)
 	backCorner.Parent = back
+	local backEdge = Instance.new('UIStroke')
+	backEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	backEdge.Color = C(11, 14, 28)
+	backEdge.Thickness = math.max(2, 3.5 * k)
+	backEdge.Parent = back
 	back.Parent = holder
 	local t = Instance.new('TextLabel')
 	t.Name = 'Title'
@@ -488,6 +498,7 @@ local function showBanner(title, detail, color, detailColor)
 	d.TextColor3 = detailColor or C(90, 255, 120)
 	d.Parent = holder
 	local dStroke = stroke(d, C(0, 0, 0), 3.5 * k)
+	pcall(function() require(RS.Shared.TextStyle).world(d) end) -- (lit from the top like the UI's words)
 	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	task.delay(1.8, function()
 		if banner ~= holder then return end
@@ -496,6 +507,7 @@ local function showBanner(title, detail, color, detailColor)
 		for _, x in { t, d } do TweenService:Create(x, fade, { TextTransparency = 1 }):Play() end
 		for _, x in { tStroke, dStroke } do TweenService:Create(x, fade, { Transparency = 1 }):Play() end
 		TweenService:Create(back, fade, { BackgroundTransparency = 1 }):Play()
+		TweenService:Create(backEdge, fade, { Transparency = 1 }):Play()
 		task.delay(0.45, function() if banner == holder then holder:Destroy(); banner = nil end end)
 	end)
 end

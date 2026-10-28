@@ -96,4 +96,53 @@ function TextStyle.apply(label, name, opts)
 	return label
 end
 
+-- (Oct 28, the owner after playing in Studio: "make the text shown to the user on the screen match the UI more ... more
+-- cartoony") The same look for words whose colour a script owns and changes (a lane's price, Locked / Unlocked, a
+-- "+N" pop in its lane's colour, the world's signs): their fill keeps its TextColor3 but is lit from the top and
+-- deeper at its foot (a UIGradient that multiplies it: white -> Foot), their outline joins round, and on screen the
+-- outline is TextStyle's thick one (TextStyle.outlineFor the words' height in px). Shadow twins (attribute ShadowOf)
+-- stay flat ink. Returns the label.
+TextStyle.Foot = Color3.fromRGB(196, 196, 204) -- (the fill's foot: about 77 % of its colour)
+function TextStyle.world(label)
+	if typeof(label) ~= 'Instance' or not (label:IsA('TextLabel') or label:IsA('TextButton')) then return label end
+	if label:GetAttribute('ShadowOf') or label.Name:sub(-6) == 'Shadow' then return label end
+	if not label:FindFirstChildOfClass('UIGradient') then
+		local g = Instance.new('UIGradient')
+		g.Name = 'TextFill'
+		g.Rotation = 90
+		g.Color = ColorSequence.new(Color3.new(1, 1, 1), TextStyle.Foot)
+		g.Parent = label
+	end
+	local s = label:FindFirstChildOfClass('UIStroke')
+	if s then s.LineJoinMode = Enum.LineJoinMode.Round end
+	label:SetAttribute('Cartoon', true)
+	return label
+end
+-- The outline for words `h` px tall on screen: about 13 % of their height, never under 2 px nor over 7 px.
+function TextStyle.outlineFor(h)
+	if type(h) ~= 'number' or h ~= h then return 2 end
+	return math.clamp(h * 0.13, 2, 7)
+end
+-- A bouncy pop-in for a GuiObject (its own UIScale 'Pop' from `from` to a little over 1 and back, Back out, over
+-- `seconds`); ReducedMotion players get none. Returns the tween or nil.
+function TextStyle.pop(gui, from, seconds)
+	if typeof(gui) ~= 'Instance' or not gui:IsA('GuiObject') then return nil end
+	local ok, tw = pcall(function()
+		local Players = game:GetService('Players')
+		local me = Players.LocalPlayer
+		local sc = gui:FindFirstChild('Pop')
+		if not (sc and sc:IsA('UIScale')) then
+			sc = Instance.new('UIScale')
+			sc.Name = 'Pop'
+			sc.Parent = gui
+		end
+		if me and me:GetAttribute('ReducedMotion') == true then sc.Scale = 1 return nil end
+		sc.Scale = from or 0.5
+		local t = game:GetService('TweenService'):Create(sc, TweenInfo.new(seconds or 0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+		t:Play()
+		return t
+	end)
+	return ok and tw or nil
+end
+
 return TextStyle

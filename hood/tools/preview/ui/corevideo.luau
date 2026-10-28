@@ -84,8 +84,12 @@ do
 		if cam then cam.CFrame = CFrame.lookAt(Vector3.new(p.X - math.sin(yaw) * 12, 9.2, p.Z - math.cos(yaw) * 12), Vector3.new(p.X + math.sin(yaw), 3.4, p.Z + math.cos(yaw))) end
 		frame(1 / 30)
 		local parts = {}
-		local g = workspace:FindFirstChild('HoodGoalGuide')
-		for _, b in g and g:GetChildren() or {} do
+		local kids = {} -- (the arrow, and its trail of chevrons: their own Model since Oct 28)
+		for _, name in { 'HoodGoalGuide', 'HoodGoalTrail' } do
+			local g = workspace:FindFirstChild(name)
+			for _, b in g and g:GetChildren() or {} do table.insert(kids, b) end
+		end
+		for _, b in kids do
 			if b:IsA('BasePart') and b.Transparency < 0.99 then
 				table.insert(parts, { n = b.Name, k = b.ClassName, s = { b.Size.X, b.Size.Y, b.Size.Z }, cf = { b.CFrame:GetComponents() }, c = { b.Color.R, b.Color.G, b.Color.B }, m = 'SmoothPlastic', t = b.Transparency, shadow = false, sh = b:IsA('Part') and 'Block' or nil })
 			end

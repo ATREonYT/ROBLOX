@@ -10,6 +10,7 @@ local RunService = game:GetService('RunService')
 local CollectionService = game:GetService('CollectionService')
 local ActiveMap = require(RS.Shared.ActiveMap)
 local LabelFade = require(RS.Shared.LabelFade)
+local TextStyle = require(RS.Shared.TextStyle)
 
 local active = ActiveMap.wait(20)
 if not active then return end
@@ -34,9 +35,23 @@ local function linkShadow(sh)
 		src:GetPropertyChangedSignal(prop):Connect(copy)
 	end
 end
+-- (Oct 28, the owner: "make the text ... match the UI more ... more cartoony") Every floating word and sign in the map
+-- gets the UI's cartoon look (TextStyle.world: lit from the top, deeper at the foot, round outline joins), and a
+-- floating word's outline grows with its size on screen (TextStyle.outlineFor), so a near sign has the UI's thick
+-- outline and a far one stays crisp. Not the gates' GateSign (Stages grows it) and not the drop shadows.
+local cartoon = {} -- { label, ... } floating words whose outline follows their size (dropped once gone)
+local function styleWord(x)
+	if x:GetAttribute('Cartoon') or x:GetAttribute('ShadowOf') then return end
+	local bb = x:FindFirstAncestorOfClass('BillboardGui')
+	if bb and bb.Name == 'GateSign' then return end
+	if not (bb or x:FindFirstAncestorOfClass('SurfaceGui')) then return end
+	TextStyle.world(x)
+	if bb and x:FindFirstChildOfClass('UIStroke') then table.insert(cartoon, x) end
+end
 local function consider(x)
 	if x:IsA('BillboardGui') then fader:add(x) end
 	if x:IsA('TextLabel') and x.Parent then
+		pcall(styleWord, x)
 		if x:GetAttribute('ShadowOf') then linkShadow(x) end
 		local twin = x.Parent:FindFirstChild(x.Name .. 'Shadow')
 		if twin and twin:IsA('TextLabel') and twin:GetAttribute('ShadowOf') == x.Name then linkShadow(twin) end
@@ -56,6 +71,35 @@ CollectionService:GetInstanceAddedSignal(LabelFade.Tag):Connect(tagged)
 
 local DECIDE = 0.1
 local since = DECIDE -- (the first frame decides at once)
+local OUTLINE_EVERY = 0.3
+local warnedOutline = false
+local outlineSince = 0
+local function outlines()
+	local i = 1
+	while i <= #cartoon do
+		local x = cartoon[i]
+		if x.Parent == nil then
+			cartoon[i] = cartoon[#cartoon]
+			cartoon[#cartoon] = nil
+		else
+			i += 1
+			local bb = x:FindFirstAncestorOfClass('BillboardGui')
+			if bb and bb.Enabled and x.Visible then
+				local h = x.AbsoluteSize.Y
+				local okB, tb = pcall(function() return x.TextBounds end)
+				if okB and typeof(tb) == 'Vector2' and tb.Y > 0 then h = math.min(h, tb.Y) else h *= 0.8 end
+				local want = TextStyle.outlineFor(h)
+				local st = x:FindFirstChildOfClass('UIStroke')
+				if st and math.abs(st.Thickness - want) > 0.25 then
+					st.Thickness = want
+					local twin = x.Parent and x.Parent:FindFirstChild(x.Name .. 'Shadow')
+					local ts = twin and twin:FindFirstChildOfClass('UIStroke')
+					if ts then ts.Thickness = want end
+				end
+			end
+		end
+	end
+end
 local profile = debug and debug.profilebegin and debug.profileend -- (the MicroProfiler shows it as LabelFade)
 RunService.Heartbeat:Connect(function(dt)
 	local cam = workspace.CurrentCamera
@@ -71,5 +115,11 @@ RunService.Heartbeat:Connect(function(dt)
 		fader:decide(cf, h / (2 * math.tan(math.rad(cam.FieldOfView) / 2)))
 	end
 	fader:step(math.min(dt, 0.1), cf)
+	outlineSince += dt
+	if outlineSince >= OUTLINE_EVERY then
+		outlineSince = 0
+		local ok, err = pcall(outlines)
+		if not ok and not warnedOutline then warnedOutline = true; warn('[LabelFade] ' .. tostring(err)) end
+	end
 	if profile then debug.profileend() end
 end)

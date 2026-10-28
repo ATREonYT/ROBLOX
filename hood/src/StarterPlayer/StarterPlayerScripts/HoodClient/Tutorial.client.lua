@@ -1,13 +1,14 @@
 -- The quick tutorial on your screen (brief 30, TUTORIAL; the rules and every measured number are Shared/TutorialRules; the
 -- world steps come from HoodServer/OnboardingService's player attribute OnboardingStep). No cutscene, no intro, nothing
 -- blocks input: everything here lets clicks and touches through.
---   * The WORLD steps (BAY 1, Stage 1's gate, the fight, the yellow pad, the welcome gift): the hint at the bottom centre
---     and the user's straight white arrows on the floor, every one pointing exactly at the target's centre, laid on the
---     straight line from you to it and fixed to the target, so they lie still while you walk over them and swing
---     smoothly when you step aside. One straight leg at a time: when a lane, a wall or a stand blocks the straight line,
---     the first leg goes to the lobby's spawn (the hub), and the hall's doorway is a leg on the way to the gate. No box
---     and no dim here: the reference's box only ever frames UI. Once the server moves past the gift (Gun, Run, Done)
---     the arrows are destroyed for good.
+--   * The WORLD steps (BAY 1, Stage 1's gate, the fight, the yellow pad, the welcome gift): the hint card under your
+--     character and (Oct 28) the one floating guide arrow over the target, drawn by HoodClient/GoalGuide from what this
+--     publishes (PlayerGui GuideAt / GuideVia / GuideKind). One straight leg at a time: when a lane, a wall or a stand
+--     blocks the straight line, the trail goes to the lobby's spawn (the hub) first. No box and no dim here: the
+--     reference's box only ever frames UI. Once the server moves past the gift (Gun, Run, Done) the goal's own target
+--     takes over.
+--   * THE LOOP (Oct 28, the owner: "there isn't a well done core loop"): TRAIN > SHOOT > EARN > BUY > REBIRTH as chips
+--     at the top centre while the tutorial and the rebirth lesson run, and a cheer with confetti for each one done.
 --   * The ONE boxed lesson, the reference's craft: the first rebirth. When the Rebirth bar first fills, a dark mask with a
 --     hole dims the world and the rest of the HUD; a white rounded box locks on to the HUD's Rebirth button ("Open
 --     REBIRTH!"), then to the window's Rebirth button ("Click REBIRTH!"; the hint docks just over it there, so the
@@ -15,7 +16,8 @@
 --     the same GUI inset as the button's ScreenGui, with the hover/press pops and a window's opening spring taken out
 --     (TutorialRules.restRect), so it never drifts, breathes or jumps; it waits (no box at all) until the button is on
 --     screen and still, and follows a resize or a turn of the phone by locking on again.
---   * The HINT: a dark rounded box, bold white words with the key word yellow, the whole line at once (a short fade and grow).
+--   * The HINT: (Oct 28) the mockup windows' navy card, TextStyle's white words with the key word yellow, the whole line at
+--     once, popping in with a small overshoot.
 -- It stays out of the way of everything else that owns the screen: the loading cover, a window (but the lesson's own),
 -- the unboxing, the rank-up screen, the returning player's cards and offers; the lesson waits until you are in the lobby.
 local Players = game:GetService('Players')
@@ -24,6 +26,7 @@ local RunService = game:GetService('RunService')
 local CollectionService = game:GetService('CollectionService')
 local UserInputService = game:GetService('UserInputService')
 local Kit = require(RS.Shared.UIKit)
+local TextStyle = require(RS.Shared.TextStyle)
 local Rules = require(RS.Shared.TutorialRules)
 local ActiveMap = require(RS.Shared.ActiveMap)
 local okSkins, Skins = pcall(require, RS.Shared.Config.Skins)
@@ -45,18 +48,69 @@ local hintGui, hintRoot, hintFit = Kit.screen('HoodTutorialHint', nil, 10)
 hintGui.IgnoreGuiInset = true
 pcall(function() hintGui.ScreenInsets = Enum.ScreenInsets.None end)
 local hint = Kit.new('Frame', { Name = 'Hint', AnchorPoint = V2(0.5, 0.5), Position = UDim2.fromScale(0.5, H.Y), Size = px(H.W, H.H), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, Visible = false, Parent = hintRoot })
-local face = Kit.new('Frame', { Name = 'Face', Size = UDim2.fromScale(1, 1), BackgroundColor3 = hex(H.Fill), BackgroundTransparency = H.FillT, BorderSizePixel = 0, Active = false, ZIndex = 2, Parent = hint })
-Kit.corner(H.Corner).Parent = face
-local faceEdge = Kit.stroke(hex('737480'), H.Edge, true)
+-- (Oct 28, the owner: "make the text shown to the user on the screen match the UI more ... more cartoony") the card is
+-- the mockup windows' navy card: a top-lit navy face (Kit.Skin), a thick ink outline, a light rim inside it, a soft
+-- light band on its top half and a drop under it; the words are TextStyle's white with its thick ink outline.
+local face = Kit.new('Frame', { Name = 'Face', Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE, BackgroundTransparency = 0, BorderSizePixel = 0, Active = false, ZIndex = 2, Parent = hint })
+Kit.corner(H.CardCorner).Parent = face
+Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.Skin.bodyTop, Kit.Skin.bodyBase), Parent = face })
+local faceEdge = Kit.stroke(Kit.Skin.outline, H.Outline, true)
 faceEdge.Parent = face
--- (the black ring just outside the light edge: a frame the edge's size with its own 1 px stroke)
-local ring = Kit.new('Frame', { Name = 'Ring', AnchorPoint = V2(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 2 * H.Edge, 1, 2 * H.Edge), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 1, Parent = hint })
-Kit.corner(H.Corner + H.Edge).Parent = ring
-local ringEdge = Kit.stroke(BLACK, 1, true)
-ringEdge.Parent = ring
-local hintText = Kit.text({ Name = 'Text', Text = '', TextSize = H.TextSize, Stroke = BLACK, StrokeThickness = math.max(2, H.TextSize * 0.1), RichText = true, Position = px(0, -1), Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = face })
+local rimFrame = Kit.new('Frame', { Name = 'Rim', AnchorPoint = V2(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -2 * H.Rim, 1, -2 * H.Rim), BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 2, Parent = face })
+Kit.corner(H.CardCorner - H.Rim).Parent = rimFrame
+local ringEdge = Kit.stroke(Kit.Skin.rim, H.Rim, true, 0.15)
+ringEdge.Parent = rimFrame
+local gloss = Kit.new('Frame', { Name = 'Gloss', Position = px(H.Rim + 1, H.Rim + 1), Size = UDim2.new(1, -2 * H.Rim - 2, 0.48, 0), BackgroundColor3 = WHITE, BackgroundTransparency = 0, BorderSizePixel = 0, Active = false, ZIndex = 2, Parent = face })
+Kit.corner(H.CardCorner - H.Rim - 1).Parent = gloss
+Kit.new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new(0.86, 1), Parent = gloss })
+local drop = Kit.new('Frame', { Name = 'Drop', Position = px(0, H.Drop), Size = UDim2.fromScale(1, 1), BackgroundColor3 = Kit.Skin.outline, BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 1, Parent = face })
+Kit.corner(H.CardCorner).Parent = drop
+local hintText = Kit.text({ Name = 'Text', Text = '', TextSize = H.TextSize, RichText = true, Position = px(0, -1), Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = face })
+TextStyle.apply(hintText, 'white')
 local hintStroke = hintText:FindFirstChildOfClass('UIStroke')
-local hintPop = Kit.new('UIScale', { Name = 'HintPop', Scale = 1, Parent = face }) -- (a new line's short grow, H.Pop)
+local hintPop = Kit.new('UIScale', { Name = 'HintPop', Scale = 1, Parent = face }) -- (a new line's pop with a small overshoot, H.Pop)
+
+---------------------------------------------------------------------------------------------- the loop (over the card)
+-- (Oct 28, the owner: "there isn't a well done core loop") TRAIN > SHOOT > EARN > BUY > REBIRTH as five chips at the
+-- top centre, where the goal line sits once the tutorial is over (it waits while the tutorial runs), like a
+-- simulator's quest bar (TutorialRules.loopAt): done ones green, the one you are on gold, a little bigger and
+-- breathing, the rest navy. A finished step gets its celebration: a cheer word pops under the loop and a burst of
+-- confetti bits flies out of the chip just done (no flash).
+local CHIP_W, CHIP_H, CHIP_GAP, CHIP_TEXT = 86, 30, 8, 16
+local LOOP_Y = 64 -- (design px from the very top: under Roblox's top bar)
+local loopRow = Kit.new('Frame', { Name = 'Loop', AnchorPoint = V2(0.5, 0), Position = UDim2.new(0.5, 0, 0, LOOP_Y), Size = px(#Rules.Loop * (CHIP_W + CHIP_GAP) - CHIP_GAP, CHIP_H), BackgroundTransparency = 1, Active = false, Visible = false, ZIndex = 4, Parent = hintRoot })
+local CHIP_TONE = {
+	done = { Kit.hex('92F64E'), Kit.hex('2FBE1E'), Kit.hex('0E3A06') },
+	now = { Kit.hex('FFEA5C'), Kit.hex('F7B400'), Kit.hex('5A3A00') },
+	later = { Kit.Skin.bodyTop, Kit.Skin.bodyBase, Kit.Skin.outline },
+}
+local chips = {}
+for i, word in Rules.Loop do
+	local holder = Kit.new('Frame', { Name = 'Chip' .. i, AnchorPoint = V2(0.5, 0.5), Position = px((i - 1) * (CHIP_W + CHIP_GAP) + CHIP_W / 2, CHIP_H / 2), Size = px(CHIP_W, CHIP_H), BackgroundColor3 = WHITE, BorderSizePixel = 0, Active = false, ZIndex = 4, Parent = loopRow })
+	Kit.corner(UDim.new(0.5, 0)).Parent = holder
+	local grad = Kit.new('UIGradient', { Rotation = 90, Parent = holder })
+	local edge = Kit.stroke(BLACK, 3, true)
+	edge.Parent = holder
+	local label = Kit.text({ Name = 'Word', Text = word, TextSize = CHIP_TEXT, Position = px(0, -1), Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = holder })
+	TextStyle.apply(label, 'white', { Thickness = 2.5 })
+	local pop = Kit.new('UIScale', { Name = 'Pop', Scale = 1, Parent = holder })
+	chips[i] = { Holder = holder, Grad = grad, Edge = edge, Label = label, Pop = pop, State = nil, PopAt = -1 }
+end
+-- the cheer word and the confetti (both over the loop, in the hint's own screen)
+local cheerText = Kit.text({ Name = 'Cheer', Text = '', TextSize = 46, AnchorPoint = V2(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, LOOP_Y + CHIP_H + 44), Size = px(420, 56), ZIndex = 8, Parent = hintRoot })
+TextStyle.apply(cheerText, 'gold', { Thickness = 5 })
+local cheerStroke = cheerText:FindFirstChildOfClass('UIStroke')
+local cheerPop = Kit.new('UIScale', { Name = 'Pop', Scale = 1, Parent = cheerText })
+cheerText.Visible = false
+local BITS = { Kit.hex('FFD21F'), Kit.hex('5CE01E'), Kit.hex('2EC4F0'), Kit.hex('FF6BD6'), Kit.hex('FF9A1F'), WHITE }
+local bits = {}
+for i = 1, 18 do
+	local b = Kit.new('Frame', { Name = 'Confetti', AnchorPoint = V2(0.5, 0.5), Size = px(9, 14), BackgroundColor3 = BITS[(i - 1) % #BITS + 1], BorderSizePixel = 0, Active = false, Visible = false, ZIndex = 7, Parent = hintRoot })
+	Kit.corner(2).Parent = b
+	Kit.stroke(BLACK, 1.5, true).Parent = b
+	bits[i] = { Frame = b, Life = 0 }
+end
+local cheer = { Pending = nil, At = -1, Count = 0, Done = nil, Since = 0 }
 
 ---------------------------------------------------------------------------------------------- the box and the dim
 -- Unscaled pixels in a ScreenGui that takes the inset settings of the boxed button's ScreenGui, so a rect read from the
@@ -102,74 +156,22 @@ badgeEdge.Parent = badge
 local badgeText = Kit.text({ Name = 'N', Text = '1', TextSize = 14, Stroke = hex('06231F'), StrokeThickness = 1.5, Size = UDim2.fromScale(1, 1), Position = px(0, -0.5), ZIndex = 5, Parent = badge })
 local badgeStroke = badgeText:FindFirstChildOfClass('UIStroke')
 
----------------------------------------------------------------------------------------------- the white arrows (world)
-local world -- the HoodTutorialLocal folder, made when the first arrow is needed, destroyed when the tutorial is over
-local arrows = {}
-local over = false -- (the world tutorial is over for good: no arrows ever again)
-local function part(parent, class, name, size, color, material)
-	local p = Instance.new(class)
-	p.Name = name
-	p.Anchored, p.CanCollide, p.CastShadow = true, false, false
-	pcall(function() p.CanQuery, p.CanTouch = false, false end)
-	p.Size, p.Color, p.Material = size, color, material
-	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
-	p.Transparency = 1
-	p.Parent = parent
-	return p
+---------------------------------------------------------------------------------------------- the guide arrow (world)
+-- (Oct 28, the owner: "the arrow isn't good ... make the arrows float") No floor arrows of our own any more: the one
+-- floating guide arrow (HoodClient/GoalGuide, Shared/GuideArrow) shows the tutorial's way too. This publishes where:
+-- PlayerGui GuideAt (the target's floor point), GuideVia (the hub, when a lane or a wall is in the way of the straight
+-- line: the trail goes there first) and GuideKind, while HoodGuide = 'Tutorial'.
+local over = false -- (the world tutorial is over for good: nothing published ever again)
+local published = { At = nil, Via = nil, Kind = nil }
+local function snap(v) -- (a tenth of a stud: no attribute churn while you stand still)
+	if typeof(v) ~= 'Vector3' then return nil end
+	return Vector3.new(math.floor(v.X * 10 + 0.5) / 10, math.floor(v.Y * 10 + 0.5) / 10, math.floor(v.Z * 10 + 0.5) / 10)
 end
-local T = 0.05 -- (studs: the arrow's thickness)
-local E = 0.12 -- (studs: the dark rim around it)
-local SHAFT_LEN = A.Length - A.HeadLength
-local function makeArrow(i)
-	local m = Instance.new('Model')
-	m.Name = 'GroundArrow' .. i
-	local white, ink = Color3.new(1, 1, 1), Color3.fromRGB(20, 22, 30)
-	local half = A.HeadWidth / 2
-	local rimHalf, rimLen = half + 1.5 * E, A.HeadLength + 2.56 * E
-	local a = {
-		Model = m,
-		Shaft = part(m, 'Part', 'Shaft', Vector3.new(A.ShaftWidth, T, SHAFT_LEN + 0.06), white, Enum.Material.Neon),
-		HeadR = part(m, 'WedgePart', 'HeadR', Vector3.new(T, half, A.HeadLength), white, Enum.Material.Neon),
-		HeadL = part(m, 'WedgePart', 'HeadL', Vector3.new(T, half, A.HeadLength), white, Enum.Material.Neon),
-		RimShaft = part(m, 'Part', 'RimShaft', Vector3.new(A.ShaftWidth + 2 * E, T, SHAFT_LEN + 2 * E), ink, Enum.Material.SmoothPlastic),
-		RimR = part(m, 'WedgePart', 'RimR', Vector3.new(T, rimHalf, rimLen), ink, Enum.Material.SmoothPlastic),
-		RimL = part(m, 'WedgePart', 'RimL', Vector3.new(T, rimHalf, rimLen), ink, Enum.Material.SmoothPlastic),
-		Alpha = -1,
-	}
-	m.Parent = world
-	return a
-end
--- Lays arrow `a` flat at `at` (its centre, on the floor at height y), pointing along `fwd` (unit, flat).
-local UP = Vector3.new(0, 1, 0)
-local function layArrow(a, at, fwd, y)
-	local right = fwd:Cross(UP).Unit
-	local c = Vector3.new(at.X, y + T / 2 + 0.03, at.Z)
-	local tip = c + fwd * (A.Length / 2)
-	local half = A.HeadWidth / 2
-	local headMid = tip - fwd * (A.HeadLength / 2)
-	local shaftMid = tip - fwd * (A.HeadLength + SHAFT_LEN / 2) + fwd * 0.03
-	a.Shaft.CFrame = CFrame.fromMatrix(shaftMid, right, UP, -fwd)
-	a.HeadR.CFrame = CFrame.fromMatrix(headMid + right * (half / 2), -UP, right, -fwd)
-	a.HeadL.CFrame = CFrame.fromMatrix(headMid - right * (half / 2), UP, -right, -fwd)
-	-- the rim: the same shapes grown by E, a hair lower
-	local low = Vector3.new(0, -0.025, 0)
-	local rimHalf, rimLen = half + 1.5 * E, A.HeadLength + 2.56 * E
-	local rimTip = tip + fwd * (1.56 * E)
-	local rimMid = rimTip - fwd * (rimLen / 2)
-	a.RimShaft.CFrame = CFrame.fromMatrix(shaftMid - fwd * 0.03 + low, right, UP, -fwd)
-	a.RimR.CFrame = CFrame.fromMatrix(rimMid + right * (rimHalf / 2) + low, -UP, right, -fwd)
-	a.RimL.CFrame = CFrame.fromMatrix(rimMid - right * (rimHalf / 2) + low, UP, -right, -fwd)
-end
-local function fadeArrow(a, alpha)
-	alpha = math.floor(alpha * 20 + 0.5) / 20 -- (steps of 5 %: no property churn every frame)
-	if a.Alpha == alpha then return end
-	a.Alpha = alpha
-	local w, k = 1 - alpha, 1 - alpha * 0.55
-	a.Shaft.Transparency, a.HeadR.Transparency, a.HeadL.Transparency = w, w, w
-	a.RimShaft.Transparency, a.RimR.Transparency, a.RimL.Transparency = k, k, k
-end
-local function hideArrows(from)
-	for i = from or 1, #arrows do fadeArrow(arrows[i], 0) end
+local function publish(at, via, kind)
+	at, via = snap(at), snap(via)
+	if at ~= published.At then published.At = at; playerGui:SetAttribute('GuideAt', at) end
+	if via ~= published.Via then published.Via = via; playerGui:SetAttribute('GuideVia', via) end
+	if kind ~= published.Kind then published.Kind = kind; playerGui:SetAttribute('GuideKind', kind) end
 end
 local function newParams()
 	return try(function()
@@ -179,15 +181,7 @@ local function newParams()
 		return r
 	end)
 end
-local rayParams = newParams()
 local sightParams = newParams()
--- The floor under a point near your feet' height (ignores tops of things more than a step above or below).
-local function floorAt(p, feetY)
-	if not rayParams then return feetY end
-	local hit = try(function() return workspace:Raycast(Vector3.new(p.X, feetY + 3, p.Z), Vector3.new(0, -8, 0), rayParams) end)
-	if hit and math.abs(hit.Position.Y - feetY) <= 2.5 then return hit.Position.Y end
-	return feetY
-end
 
 ---------------------------------------------------------------------------------------------- targets (named, never coordinates)
 local active = ActiveMap.get()
@@ -660,9 +654,11 @@ local function setHintAlpha(a)
 	if hintState.Alpha == a and hint.Visible == (a > 0) then return end
 	hintState.Alpha = a
 	hint.Visible = a > 0
-	face.BackgroundTransparency = 1 - (1 - H.FillT) * a
+	face.BackgroundTransparency = 1 - a
 	faceEdge.Transparency = 1 - a
-	ringEdge.Transparency = 1 - a
+	ringEdge.Transparency = 1 - 0.85 * a
+	gloss.BackgroundTransparency = 1 - a
+	drop.BackgroundTransparency = 1 - 0.5 * a
 	hintText.TextTransparency = 1 - a
 	if hintStroke then hintStroke.Transparency = 1 - a end
 end
@@ -718,18 +714,15 @@ local function sayHint(text, now)
 		local size = Rules.hintSize(text, function(s, ts) return Kit.textWidth(s, ts) end)
 		if hintText.TextSize ~= size then
 			hintText.TextSize = size
-			if hintStroke then hintStroke.Thickness = math.max(2, size * 0.1) end
+			if hintStroke then hintStroke.Thickness = math.max(2.5, size * 0.14) end -- (TextStyle's thick outline)
 		end
 	end
 end
 
 ---------------------------------------------------------------------------------------------- the frame
 local clock = 0 -- (the frame clock: every animation runs on it, so a long frame never skips the lock-on)
-local you -- your smoothed flat position (the arrows' line starts here)
 local lesson = { Step = nil, Shown = 0, GaveUp = false, AfterLeft = 0, Rebirths = num(attr('Rebirths')) }
 local lock = { Key = nil, Pos = nil, Size = nil, Settle = 0, LastPos = nil, LastSize = nil, At = nil, Badge = nil }
-local worldShown = nil
-local rayFor = nil -- (the character the floor rays leave out, set once per character)
 local endedAt = nil
 local leg = { At = -1, Kind = nil, Hub = false, Passed = {} }
 local fight = { Since = nil, Left = nil } -- (brief 32: when the Fight step began, and the crew standing then)
@@ -834,6 +827,112 @@ local function stepFocus(info, key)
 	return true
 end
 
+local function backOut(x)
+	local c1 = 1.70158
+	local c3 = c1 + 1
+	return 1 + c3 * (x - 1) ^ 3 + c1 * (x - 1) ^ 2
+end
+
+-- The loop over the screen and each step's cheer (see "the loop" above). A cheer waits for a free screen (no popup,
+-- window, unboxing, moment or stage banner) for Rules.CheerWait seconds at most.
+local loopAlpha, loopDrawn = 0, -1 -- (the loop's opacity; the opacity last drawn, -1: draw again)
+local function setLoopAlpha(a)
+	a = math.clamp(a, 0, 1)
+	loopAlpha = a
+	a = math.floor(a * 20 + 0.5) / 20
+	if a == loopDrawn then return end
+	loopDrawn = a
+	loopRow.Visible = a > 0
+	for _, c in chips do
+		c.Holder.BackgroundTransparency = 1 - a
+		c.Edge.Transparency = 1 - a
+		c.Label.TextTransparency = 1 - a * (c.State == 'later' and 0.65 or 1)
+		local ls = c.Label:FindFirstChildOfClass('UIStroke')
+		if ls then ls.Transparency = 1 - a * (c.State == 'later' and 0.65 or 1) end
+	end
+end
+local function stageBanner()
+	local fb = playerGui:FindFirstChild('StageFeedback')
+	return fb ~= nil and (fb:FindFirstChild('Banner') ~= nil or fb:FindFirstChild('CashPop') ~= nil)
+end
+local function loopStep(dt, now, stepName, lessonStep, busyScreen)
+	local cur, done = Rules.loopAt(stepName, lessonStep)
+	if done ~= nil then
+		if cheer.Done ~= nil and done > cheer.Done then cheer.Pending, cheer.Since = done, now end
+		cheer.Done = done
+	end
+	local moment = playerGui:GetAttribute('GoalMoment')
+	local free = not busyScreen and window() == '' and not (type(moment) == 'string' and moment ~= '') and not stageBanner()
+	-- the chips
+	for i, c in chips do
+		local state = (done and i <= done) and 'done' or (i == cur and 'now') or 'later'
+		if c.State ~= state then
+			c.State = state
+			local tone = CHIP_TONE[state]
+			c.Grad.Color = ColorSequence.new(tone[1], tone[2])
+			c.Edge.Color = tone[3]
+			loopDrawn = -1 -- (the label's dimming follows the state)
+		end
+		local still = attr('ReducedMotion') == true
+		local s = 1
+		if state == 'now' and not still then s = 1.08 + 0.03 * math.sin(now * 2 * math.pi / 1.2) end
+		local pt = now - c.PopAt
+		if pt >= 0 and pt < 0.45 then s *= 1 + 0.32 * math.sin(math.pi * pt / 0.45) end
+		if math.abs(c.Pop.Scale - s) > 0.002 then c.Pop.Scale = s end
+	end
+	local show = done ~= nil and free
+	setLoopAlpha(loopAlpha + (show and dt or -dt) / 0.2)
+	-- a cheer waiting: it plays once the screen is free and the loop is up, or is dropped
+	if cheer.Pending then
+		if now - cheer.Since > Rules.CheerWait then
+			cheer.Pending = nil
+		elseif free and loopAlpha >= 1 then
+			local chip = cheer.Pending
+			cheer.Pending = nil
+			cheer.Count += 1
+			cheer.At = now
+			cheerText.Text = Rules.cheer(cheer.Count)
+			cheerText.Visible = true
+			if chips[chip] then chips[chip].PopAt = now end
+			-- the confetti: out of the chip just done, up and round, falling under its own weight
+			local cx = (chip - 1) * (CHIP_W + CHIP_GAP) + CHIP_W / 2 - loopRow.Size.X.Offset / 2
+			for i, b in bits do
+				local a = math.rad(-90 + (i - (#bits + 1) / 2) * (150 / #bits) + (math.random() - 0.5) * 14)
+				local speed = 170 + math.random() * 150
+				b.X, b.Y = cx, LOOP_Y + CHIP_H / 2
+				b.VX, b.VY = math.cos(a) * speed, math.sin(a) * speed
+				b.Spin, b.Rot = (math.random() - 0.5) * 720, math.random() * 360
+				b.Life = 1.15
+				b.Frame.Visible = true
+			end
+		end
+	end
+	-- the cheer word: pops in with an overshoot, holds, rises a little as it fades
+	if cheerText.Visible then
+		local t = now - cheer.At
+		local still = attr('ReducedMotion') == true
+		cheerPop.Scale = still and 1 or (0.4 + 0.6 * backOut(math.clamp(t / 0.35, 0, 1)))
+		local fade = math.clamp((t - 1.3) / 0.4, 0, 1)
+		cheerText.Position = UDim2.new(0.5, 0, 0, LOOP_Y + CHIP_H + 44 - 14 * fade)
+		cheerText.TextTransparency = fade
+		if cheerStroke then cheerStroke.Transparency = fade end
+		if t >= 1.7 then cheerText.Visible = false end
+	end
+	for _, b in bits do
+		if b.Life > 0 then
+			b.Life -= dt
+			b.VY += 560 * dt
+			b.X += b.VX * dt
+			b.Y += b.VY * dt
+			b.Rot += b.Spin * dt
+			b.Frame.Position = UDim2.new(0.5, math.floor(b.X + 0.5), 0, math.floor(b.Y + 0.5))
+			b.Frame.Rotation = b.Rot
+			b.Frame.BackgroundTransparency = math.clamp(1 - b.Life / 0.4, 0, 1)
+			if b.Life <= 0 then b.Frame.Visible = false end
+		end
+	end
+end
+
 local popupAt, popupWas = -1, false
 local function onFrame(dt)
 	dt = math.clamp(type(dt) == 'number' and dt or 1 / 60, 0, 0.1)
@@ -905,7 +1004,7 @@ local function onFrame(dt)
 	end
 	local want = text ~= nil
 	if want then
-		-- (Oct 27, flow r2) the whole line at once, its words fading in as the pill grows a little: no half-typed words
+		-- (Oct 27, flow r2) the whole line at once; (Oct 28) the card pops in with a small overshoot as its words fade in
 		if hintState.Typed ~= -2 then
 			hintState.Typed = -2
 			hintText.Text = Rules.rich(hintState.Text)
@@ -913,7 +1012,7 @@ local function onFrame(dt)
 		setHintAlpha(hintState.Alpha + dt / H.FadeIn)
 		local e = math.clamp((now - hintState.Since) / H.Pop, 0, 1)
 		local k = 1 - (1 - e) ^ 3
-		hintPop.Scale = H.PopFrom + (1 - H.PopFrom) * k
+		hintPop.Scale = (attr('ReducedMotion') == true) and 1 or (H.PopFrom + (1 - H.PopFrom) * backOut(e))
 		hintText.TextTransparency = 1 - hintState.Alpha * k
 		if hintStroke then hintStroke.Transparency = 1 - hintState.Alpha * k end
 	else
@@ -921,17 +1020,19 @@ local function onFrame(dt)
 		setHintAlpha(hintState.Alpha - dt / H.FadeOut)
 	end
 
-	-------------------------------------------------------------- the arrows
+	-------------------------------------------------------------- the loop and the cheers
+	pcall(loopStep, dt, now, stepName, lessonStep, busyScreen)
+
+	-------------------------------------------------------------- the guide arrow's target
 	if over then return end
 	if worldStep then endedAt = nil
 	elseif stepName ~= nil and stepName ~= '' then
-		-- past the gift (Gun, Run, Done): a beat later the arrows go for good
+		-- past the gift (Gun, Run, Done): a beat later the tutorial's targets go for good (the goal's take over)
 		endedAt = endedAt or now
 		if now - endedAt > 1 then
 			over = true
+			publish(nil)
 			setGuide(false)
-			if world then world:Destroy() end
-			world, arrows = nil, {}
 			return
 		end
 	end
@@ -940,17 +1041,16 @@ local function onFrame(dt)
 	local hum = c and c:FindFirstChildOfClass('Humanoid')
 	local _, target = Rules.worldHint(stepName, stepName == 'Train' and inLane(), false)
 	local alive = hum == nil or hum.Health > 0
-	-- (the arrows are in the world: a popup over the screen leaves them be; a window or the unboxing puts them away)
+	-- (the arrow is in the world: a popup over the screen leaves it be; a window or the unboxing puts it away)
 	local aim = (target and rootPart and alive and not unboxing() and window() == '') and Target[target] and Target[target](rootPart.Position) or nil
 	if not aim then
-		if world then hideArrows() end
-		worldShown = nil
+		publish(nil)
 		setGuide(false)
 		return
 	end
 	local feetY = rootPart.Position.Y - ((hum and hum.HipHeight or 2) + rootPart.Size.Y / 2)
 	-- one straight leg at a time (TutorialRules.pickLeg): the target, or the hub first when a lane, a wall or a stand is
-	-- in the way; looked at twice a second, so the arrows never flick
+	-- in the way; looked at twice a second, so the trail never flicks
 	if now - leg.At >= 0.5 or leg.Kind ~= target then
 		leg.At, leg.Kind = now, target
 		local knee = Vector3.new(rootPart.Position.X, feetY + 1.6, rootPart.Position.Z)
@@ -959,53 +1059,19 @@ local function onFrame(dt)
 		if leg.Passed[target] then h = nil end -- (a waypoint once passed is never a leg again for this target)
 		local cands = { aim }
 		if h then table.insert(cands, h) end
-		if sightParams then sightParams.FilterDescendantsInstances = { c, world, workspace:FindFirstChild('HoodGoons') } end
+		if sightParams then sightParams.FilterDescendantsInstances = { c, workspace:FindFirstChild('HoodGoons'), workspace:FindFirstChild('HoodGoalGuide'), workspace:FindFirstChild('HoodGoalTrail') } end
 		local pick = Rules.pickLeg(knee, cands, function(p) return clearTo(knee, p) end, leg.Hub and h or nil)
 		leg.Hub = h ~= nil and pick == h
 	end
-	if leg.Hub and hub() then aim = hub() end
-	local flat = Vector3.new(rootPart.Position.X, 0, rootPart.Position.Z)
-	local shownKey = target .. (leg.Hub and '>hub' or '')
-	if not you or (flat - you).Magnitude > 8 or worldShown ~= shownKey then
-		you = flat -- (a teleport, a new target or a new leg: start from where you are)
-	else
-		you = you:Lerp(flat, 1 - math.exp(-dt / A.Smooth))
-	end
-	worldShown = shownKey
-	local list, dir = Rules.arrows(Vector3.new(you.X, feetY, you.Z), aim)
-	if #list == 0 then
-		if world then hideArrows() end
+	local via = (leg.Hub and hub()) or nil
+	local near = Vector3.new(aim.X - rootPart.Position.X, 0, aim.Z - rootPart.Position.Z).Magnitude <= A.Hide
+	if near and not via then
+		publish(nil)
 		setGuide(false)
 		return
 	end
+	publish(aim, via, target)
 	setGuide(true)
-	if not world then
-		world = Instance.new('Folder')
-		world.Name = 'HoodTutorialLocal'
-		world.Parent = workspace
-		rayFor = nil
-	end
-	if rayParams and rayFor ~= c then rayParams.FilterDescendantsInstances = { c, world }; rayFor = c end
-	for i, p in list do
-		local a = arrows[i]
-		if not a then
-			a = makeArrow(i)
-			arrows[i] = a
-		end
-		-- (an arrow is laid again only when its spot or the line's direction moved: they are anchored to the target, so
-		-- most frames move none of them; the floor under it is looked for again only a step away or a step up)
-		local moved = not a.At or (p.At - a.At).Magnitude > 0.02 or dir:Dot(a.Dir) < 0.99999
-		if not a.FloorAt or (p.At - a.FloorAt).Magnitude > 0.3 or math.abs(feetY - a.Feet) > 0.5 then
-			a.Y, a.FloorAt, a.Feet = floorAt(p.At, feetY), p.At, feetY
-			moved = true
-		end
-		if moved then
-			layArrow(a, p.At, dir, a.Y)
-			a.At, a.Dir = p.At, dir
-		end
-		fadeArrow(a, p.Alpha)
-	end
-	hideArrows(#list + 1)
 end
 
 RunService.Heartbeat:Connect(onFrame)
