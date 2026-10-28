@@ -853,7 +853,12 @@ local function setLoopAlpha(a)
 end
 local function stageBanner()
 	local fb = playerGui:FindFirstChild('StageFeedback')
-	return fb ~= nil and (fb:FindFirstChild('Banner') ~= nil or fb:FindFirstChild('CashPop') ~= nil)
+	if fb ~= nil and (fb:FindFirstChild('Banner') ~= nil or fb:FindFirstChild('CashPop') ~= nil) then return true end
+	-- (the fight's own top centre: "N LEFT", CLEAR! and CREW INCOMING! sit where the loop does)
+	local waves = playerGui:FindFirstChild('HoodWaves')
+	local left = waves and waves:FindFirstChild('WaveLeft', true)
+	if left and left:IsA('GuiObject') and left.Visible then return true end
+	return waves ~= nil and waves:FindFirstChild('CrewIncoming', true) ~= nil
 end
 local function loopStep(dt, now, stepName, lessonStep, busyScreen)
 	local cur, done = Rules.loopAt(stepName, lessonStep)

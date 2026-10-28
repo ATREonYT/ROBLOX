@@ -33,7 +33,9 @@ GuideArrow.Bob = { Amp = 0.55, Period = 1.4 } -- studs up and down; seconds a cy
 GuideArrow.Pulse = { Amp = 0.06, Period = 1.4, Lag = 0.25 } -- a share of its size; it swells just after the top of the bob
 GuideArrow.Grow = { From = 1, To = 1.8, Near = 18, Far = 70 } -- its scale over the distance to you
 GuideArrow.Clear = { Ceiling = 1.0, Wall = 0.7, Lowest = 2.5 } -- studs kept from a ceiling and a wall; the tip never under Lowest
-GuideArrow.Edge = { Margin = 74, Size = 66, Push = 7, Period = 0.9, OnScreenPad = 24 } -- px
+-- px; Box: the pointer runs round a box this share of the screen out from its middle (X, Y), clear of the HUD's
+-- columns at the sides and its bars at the foot
+GuideArrow.Edge = { Box = Vector2.new(0.36, 0.3), Size = 66, Push = 7, Period = 0.9, OnScreenPad = 24 }
 
 ---------------------------------------------------------------------------------------------- pure rules
 -- The bob (studs) and the size factor at time t (seconds); still = ReducedMotion (no bob, no pulse).
@@ -123,11 +125,10 @@ function GuideArrow.project(camCF, fov, view, point)
 end
 -- The edge pointer for a world point seen at `sp` (WorldToViewportPoint's x, y; z <= 0 when it is behind you) on a
 -- `view` sized screen (px). Returns nil while the point is well on screen, else { X, Y, Angle (degrees, 0 = pointing
--- right, clockwise) }: on the screen's edge (Edge.Margin in from it) on the line from the centre toward the point.
-function GuideArrow.edge(sp, view, margin)
+-- right, clockwise) }: on the edge of the box Edge.Box round the middle, on the line from the centre toward the point.
+function GuideArrow.edge(sp, view)
 	if typeof(sp) ~= 'Vector3' or typeof(view) ~= 'Vector2' or view.X < 2 or view.Y < 2 then return nil end
 	local E = GuideArrow.Edge
-	margin = margin or E.Margin
 	local behind = sp.Z <= 0
 	local pad = E.OnScreenPad
 	if not behind and sp.X >= pad and sp.X <= view.X - pad and sp.Y >= pad and sp.Y <= view.Y - pad then return nil end
@@ -137,7 +138,7 @@ function GuideArrow.edge(sp, view, margin)
 	if behind and math.abs(dy) < 1 and math.abs(dx) < 1 then dx, dy = 0, 1 end
 	if behind then dy = math.max(dy, math.abs(dx) * 0.35) end -- (behind you: it points down and round, the way to turn)
 	if math.abs(dx) < 1e-6 and math.abs(dy) < 1e-6 then dx = 1 end
-	local hx, hy = math.max(1, cx - margin), math.max(1, cy - margin)
+	local hx, hy = math.max(1, view.X * E.Box.X), math.max(1, view.Y * E.Box.Y)
 	local t = math.min(hx / math.max(math.abs(dx), 1e-6), hy / math.max(math.abs(dy), 1e-6))
 	return { X = cx + dx * t, Y = cy + dy * t, Angle = math.deg(math.atan2(dy, dx)) }
 end

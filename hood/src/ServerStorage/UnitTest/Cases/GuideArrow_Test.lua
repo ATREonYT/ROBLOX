@@ -61,7 +61,7 @@ return function(t)
 		-- a ceiling right on top of it: never lower than Clear.Lowest
 		local squashed = GA.clear(at, 1, V(0, 0, 1), function(_, dir) if dir.Y > 0 then return 1 end return nil end)
 		t.expect.near(squashed.Y, GA.Clear.Lowest, 1e-6)
-		-- a wall 1 stud to its right (+X when facing +Z is -X... use the arrow's own right): pushed away from it
+		-- a wall 1 stud to the arrow's own right: pushed away from it
 		local right = V(0, 1, 0):Cross(V(0, 0, 1)).Unit
 		local pushed = GA.clear(at, 1, V(0, 0, 1), function(_, dir)
 			if dir.Y == 0 and dir.Unit:Dot(right) > 0.9 then return 1 end
@@ -87,12 +87,15 @@ return function(t)
 	t.test('the edge pointer: none while the arrow is on screen, else on the edge toward it', function()
 		local view = Vector2.new(1280, 720)
 		t.expect.equal(GA.edge(V(640, 300, 20), view), nil)
+		local bx, by = 1280 * GA.Edge.Box.X, 720 * GA.Edge.Box.Y
 		local r = GA.edge(V(2000, 360, 20), view) -- (far off to the right)
-		t.expect.near(r.X, 1280 - GA.Edge.Margin, 0.5); t.expect.near(r.Y, 360, 0.5); t.expect.near(r.Angle, 0, 0.5)
+		t.expect.near(r.X, 640 + bx, 0.5); t.expect.near(r.Y, 360, 0.5); t.expect.near(r.Angle, 0, 0.5)
 		local l = GA.edge(V(-500, 360, 20), view)
-		t.expect.near(l.X, GA.Edge.Margin, 0.5); t.expect.near(math.abs(l.Angle), 180, 0.5)
+		t.expect.near(l.X, 640 - bx, 0.5); t.expect.near(math.abs(l.Angle), 180, 0.5)
 		local up = GA.edge(V(640, -900, 20), view)
-		t.expect.near(up.Y, GA.Edge.Margin, 0.5); t.expect.near(up.Angle, -90, 0.5)
+		t.expect.near(up.Y, 360 - by, 0.5); t.expect.near(up.Angle, -90, 0.5)
+		-- clear of the HUD: never in the outer columns or at the very foot
+		t.expect.truthy(640 - bx >= 150 and 360 + by <= 600)
 		-- behind you: it points down and round (never at the middle of the screen)
 		local b = GA.edge(V(640, 360, -5), view)
 		t.expect.truthy(b ~= nil and b.Y > 360 and b.Angle > 0)
@@ -101,7 +104,7 @@ return function(t)
 		-- inside the view's frame: always
 		for _, sp in { V(5000, 4000, 3), V(-5000, -4000, 3), V(100, 9000, -3) } do
 			local e = GA.edge(sp, view)
-			t.expect.truthy(e.X >= GA.Edge.Margin - 0.5 and e.X <= 1280 - GA.Edge.Margin + 0.5 and e.Y >= GA.Edge.Margin - 0.5 and e.Y <= 720 - GA.Edge.Margin + 0.5)
+			t.expect.truthy(e.X >= 640 - bx - 0.5 and e.X <= 640 + bx + 0.5 and e.Y >= 360 - by - 0.5 and e.Y <= 360 + by + 0.5)
 		end
 		t.expect.equal(GA.edge(nil, view), nil)
 	end)
