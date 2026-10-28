@@ -59,7 +59,7 @@ local GATE = {
 	edge = C(255, 176, 196), -- the haze's lit lip along the top and its side edges
 	-- The frame: studded concrete in three tones, dark recesses, a hazard beam with a darker lip.
 	pillarW = 4, beamH = 3,
-	stone = C(160, 162, 172), stoneDark = C(116, 118, 130), stoneLight = C(190, 192, 200), recess = C(62, 66, 80),
+	stone = C(160, 162, 172), stoneDark = C(176, 178, 190), stoneLight = C(190, 192, 200), recess = C(62, 66, 80),
 	hazard = C(250, 204, 40), hazardDark = C(36, 38, 46), hazardLip = C(196, 146, 28),
 	steel = C(70, 74, 90), bolt = C(156, 160, 172), -- the plates clamping the beam to the pillars
 	track = C(58, 66, 98), trackGlow = C(255, 96, 128), -- the emitter track along the foot and its glowing line

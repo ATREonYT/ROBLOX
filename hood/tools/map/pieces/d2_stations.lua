@@ -39,8 +39,10 @@ local Stations = {}
 -- purple, blue, cyan, green, yellow), each the one its theme's props and effects already suit (the name picks them),
 -- so the colour alone tells the bays apart from across the hall.
 local function hue(name, base, text)
-	return { name = name, rim = base:Lerp(C(0, 0, 0), 0.45), rimTop = base:Lerp(C(255, 255, 255), 0.35), mat = base,
-		frame = base:Lerp(C(0, 0, 0), 0.12), groove = base:Lerp(C(0, 0, 0), 0.22), trim = base:Lerp(C(0, 0, 0), 0.45),
+	-- (Oct 28, the owner: "too many shades": the rim, groove and trim only a touch darker than the hue, so a bay reads
+	-- as one flat bright colour; was 45% toward black)
+	return { name = name, rim = base:Lerp(C(0, 0, 0), 0.2), rimTop = base:Lerp(C(255, 255, 255), 0.35), mat = base,
+		frame = base:Lerp(C(0, 0, 0), 0.06), groove = base:Lerp(C(0, 0, 0), 0.1), trim = base:Lerp(C(0, 0, 0), 0.2),
 		wallCap = base:Lerp(C(255, 255, 255), 0.5), text = text or base:Lerp(C(255, 255, 255), 0.2), glow = base:Lerp(C(255, 255, 255), 0.3) }
 end
 Stations.Themes = {

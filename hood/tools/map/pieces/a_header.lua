@@ -64,19 +64,22 @@ local P = {
 	-- ground and facades (HoodSun v4: sun (0.50, 0.80, 0.33); vertical faces are lifted more than the picture's own
 	-- Color3s would be, since this sun is higher than the picture's).
 	st = {
-		road = C(120, 126, 142), dash = C(255, 243, 50), walk = C(160, 172, 190), grass = C(38, 212, 92),
-		brick = C(203, 118, 85), trim = C(199, 177, 175), band = C(182, 196, 222), roof = C(102, 136, 180),
+		-- (Oct 28, the owner: "too many shades ... make this cartoony"; ref_W01's path is a light lavender stone between
+		-- bright grass) the road the ref path's lavender, not a mid blue-grey; the sidewalks a paler cut of it
+		road = C(172, 168, 208), dash = C(255, 243, 50), walk = C(210, 212, 232), grass = C(38, 212, 92),
+		brick = C(218, 120, 80), trim = C(236, 214, 200), band = C(190, 206, 236), roof = C(92, 150, 222),
 		glassA = C(162, 204, 250), glassB = C(190, 218, 243), mullion = C(44, 86, 142),
-		fence = { C(229, 122, 63), C(143, 79, 71), C(192, 100, 64), C(143, 79, 71) }, -- light, dark, mid, dark
-		lamp = C(74, 104, 160), lampGlow = C(255, 244, 196),
+		fence = { C(229, 122, 63), C(204, 104, 66), C(229, 122, 63), C(204, 104, 66) }, -- (Oct 28: two flat tones, no dark planks)
+		lamp = C(70, 128, 220), lampGlow = C(255, 244, 196),
 		leaf = C(32, 250, 56), trunk = C(97, 90, 103), hedge = C(26, 196, 70), dumpster = C(14, 190, 78),
 		petal = C(30, 70, 156), petalEye = C(250, 232, 70), stem = C(40, 180, 82), garbage = C(230, 130, 46),
-		-- Second and third tones (developer-level shading: every surface in 2-3 shades of its colour).
-		brickDark = C(166, 97, 71), brickDeep = C(187, 102, 71), brickLight = C(217, 136, 95), sill = C(233, 210, 200),
-		trimDark = C(159, 141, 142), roofDark = C(76, 100, 138),
-		gutter = C(110, 118, 136), roadDark = C(100, 106, 122), kerbStone = C(184, 192, 206), walkJoint = C(132, 142, 160),
-		grassDark = C(28, 176, 76), grassEdge = C(24, 160, 70), leafDark = C(26, 214, 48), lampDark = C(56, 80, 130),
-		lampLight = C(104, 138, 194), plankDark = C(104, 56, 48), dumpsterDark = C(10, 150, 60), manhole = C(70, 74, 84),
+		-- Second and third tones. (Oct 28, the owner: "there are too many shades ... remove the shades": each colour is
+		-- now one flat tone, or a lighter cut of it; the darker cuts that shaded every surface are gone.)
+		brickDark = C(218, 120, 80), brickDeep = C(218, 120, 80), brickLight = C(230, 140, 96), sill = C(240, 222, 212),
+		trimDark = C(236, 214, 200), roofDark = C(92, 150, 222),
+		gutter = C(172, 168, 208), roadDark = C(172, 168, 208), kerbStone = C(228, 230, 242), walkJoint = C(196, 198, 222),
+		grassDark = C(38, 212, 92), grassEdge = C(38, 212, 92), leafDark = C(32, 250, 56), lampDark = C(70, 128, 220),
+		lampLight = C(120, 168, 236), plankDark = C(192, 100, 64), dumpsterDark = C(14, 190, 78), manhole = C(150, 154, 176),
 	},
 	-- Its cross-section, measured from the picture (studs from the centre line, heights from the road top):
 	-- road |x| < road, sidewalk to road + walk (top at kerb), grass to front, the plank fence at fence, building

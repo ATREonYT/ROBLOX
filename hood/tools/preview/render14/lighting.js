@@ -58,12 +58,12 @@ export const LIGHTING_PRESETS = {
   // PlusOne (Oct 27, the owner: "keep the colours vibrant, but don't make the lighting so bright, it hurts my eyes"):
   // Huzz with less fill and exposure, no haze, more grade saturation (copied from HoodLighting.lua's PlusOne).
   PlusOne: P(
-    { technology: 'ShadowMap', ClockTime: 13, GeographicLatitude: 23, Brightness: 1.6, ExposureCompensation: -0.15,
-      Ambient: [132, 128, 122], OutdoorAmbient: [176, 172, 168], ColorShift_Top: [255, 248, 236], ColorShift_Bottom: [0, 0, 0],
-      EnvironmentDiffuseScale: 0.8, EnvironmentSpecularScale: 0.3, ShadowSoftness: 0.45, GlobalShadows: true },
+    { technology: 'ShadowMap', ClockTime: 13, GeographicLatitude: 23, Brightness: 1.15, ExposureCompensation: -0.1,
+      Ambient: [168, 164, 160], OutdoorAmbient: [168, 164, 160], ColorShift_Top: [255, 248, 236], ColorShift_Bottom: [0, 0, 0],
+      EnvironmentDiffuseScale: 0.5, EnvironmentSpecularScale: 0.2, ShadowSoftness: 1, GlobalShadows: false },
     { Density: 0.15, Offset: 0.3, Haze: 0, Glare: 0, Color: [170, 210, 255], Decay: [80, 160, 245] },
-    { Brightness: 0, Contrast: 0.12, Saturation: 0.45, TintColor: [255, 255, 255] },
-    { Intensity: 0.25, Size: 24, Threshold: 2 },
+    { Brightness: 0, Contrast: 0.08, Saturation: 0.5, TintColor: [255, 255, 255] },
+    { Intensity: 0.2, Size: 24, Threshold: 2 },
     { Cover: 0.4, Density: 0.75, Color: [255, 255, 255] },
     { SunAngularSize: 14 }),
   // HoodSun20: LIGHT2's HoodSun (BRIEF20-22), what the user's Studio showed on 2026-10-10 (brief/ref23/ours_studio_spawn.png): the same sun direction and ColorShift_Top, a little more sun

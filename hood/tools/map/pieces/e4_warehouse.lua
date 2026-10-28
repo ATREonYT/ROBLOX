@@ -34,9 +34,11 @@ Lobby.WHColors = { -- (Oct 27 round 3, the owner picked the Oct 13 warehouse, "E
 	floorA = C(238, 202, 152), floorB = C(226, 190, 142), -- (lobby round 2, the critic: the pale beige read lavender under the
 	-- blue sky fill and grey from above; S ~0.35 so it lands warm)
 	 grass = Lobby.Bright.floor,
-	brick = C(206, 112, 72), brickLight = C(218, 128, 84), skirt = C(142, 64, 48), trim = C(240, 216, 176),
-	steel = C(66, 82, 132), steelLight = C(98, 116, 170), slat = C(176, 184, 198), slatDark = C(146, 154, 170),
-	drum = C(84, 92, 112), lamp = C(255, 236, 170),
+	-- (Oct 28, the owner: "too many shades ... remove the shades, we need to make this cartoony": one brick tone and a
+	-- bright red skirting instead of three browns; the steel a clear toy blue instead of navy, no darker cuts)
+	brick = C(222, 118, 70), brickLight = C(222, 118, 70), skirt = C(222, 84, 64), trim = C(246, 226, 188),
+	steel = C(58, 132, 232), steelLight = C(110, 172, 246), slat = C(196, 206, 222), slatDark = C(196, 206, 222),
+	drum = C(120, 150, 210), lamp = C(255, 236, 170),
 	red = C(214, 70, 60), blue = C(60, 128, 214), teal = C(40, 172, 160), yellow = C(250, 196, 50),
 }
 -- (tutorial targets: gate 1 is reached through the north loading door; its arrows pass the doorway first)

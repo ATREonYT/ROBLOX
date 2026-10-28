@@ -1211,12 +1211,12 @@ Lobby.Dais = (function()
 		-- box i stands at x = First - (i - 1) * Pitch (left to right from the hall), all on the one row; the top of each
 		-- box's art ArtTop over the deck (PremiumTop for a Robux box: the featured eggs of the reference's row)
 		-- (LOBBY5 r3, CRITIC3: the Robux boxes' toppers bob up ~0.7, so both land at 6.3: under 7 with the bob)
-		First = 15, Pitch = 10, RowZ = rowZ, Back = back, BackH = 3.2, HeadY = 14.6, HeadH = 4.2, ArtTop = 6.1, PremiumTop = 6.1, -- (B31: 5-stud boxes)
+		First = 15, Pitch = 10, RowZ = rowZ, Back = back, BackH = 3.2, HeadY = 14.6, HeadH = 4.2, ArtTop = 7.8, PremiumTop = 7.8, -- (Oct 28, the owner: "some of the crate models are too small": ~6.6-stud boxes, over a character's head like the reference's eggs; B31: 5)
 		-- (B30) the premium box's slot: a wider pedestal, taller art, a wider fit; Slots: the row's x positions, left to right
 		-- from the hall, the premium one in the third
-		TopR = 3.9, TopArt = 6.6, TopWide = 7.6, Slots = { 16.5, 6, -5, -16 },
+		TopR = 3.9, TopArt = 9.0, TopWide = 11.5, Slots = { 16.5, 6, -5, -16 },
 		-- (B30 final, ref_W23.0_egg_row: a box's width of floor between boxes; the premium on a raised studded plinth)
-		Fit = 6.6, Plinth = 1.2,
+		Fit = 8.4, Plinth = 1.2, -- (Oct 28: a box is ~1.35 times as wide as tall, so the width sets its size: 8.4 wide, ~6 tall; slots 10.5+ apart)
 	}
 end)()
 -- The stand-in until Config.Shoes.boxesForWorld exists: the two cheapest Cash boxes, then the two Robux boxes.
@@ -1997,6 +1997,7 @@ end
 -- else the Part build, fitted so its largest side is `size`, its bottom centre at c, turning 40 deg/s and bobbing 0.3
 -- about its own middle (ref_product_pads). Returns the model and its height.
 Lobby.ItemSize = 5
+Lobby.SaleItemSize = 6.6 -- (Oct 28, the owner: "crate models are too small": a sale chest's widest side, its wings; its body ~4 wide)
 function Lobby.showcase(c, meshId, size, build, spin)
 	local holder, model = c:group('Item')
 	local IM = Lobby.itemMeshes()
@@ -2133,7 +2134,7 @@ function Lobby.boxPadStand(c, boxId, key, tone, tag, special, lift)
 	-- the chest hovering over the pad, turning and bobbing (B31: 5 studs, ItemMeshes' Box_<Id> or BoxModels' chest)
 	local foot = padTop + 1.0
 	local BoxModels = Lobby.sharedModule('Models', 'BoxModels')
-	local box, tall = Lobby.showcase(g:at(CFrame.new(0, foot, 0)), 'Box_' .. boxId, Lobby.ItemSize, function()
+	local box, tall = Lobby.showcase(g:at(CFrame.new(0, foot, 0)), 'Box_' .. boxId, Lobby.SaleItemSize, function()
 		local ok, m = pcall(BoxModels.build, boxId, 1, CFrame.new())
 		return ok and m or nil
 	end, 30)

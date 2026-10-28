@@ -66,10 +66,11 @@ Armory.LabelW, Armory.LabelH = 6.0, 2.7 -- the nameplate's size (B31: the price 
 -- every top edge, in the hall floor's lavender family.
 Armory.Tone = {
 	-- (B34 fix round: warm greys and cream instead of the cold lavender, on the east quadrant's green field)
-	deck = C(214, 204, 190), tread = C(222, 212, 198), trim = C(240, 232, 220), face = C(150, 132, 118),
-	kick = C(118, 102, 92), riser = C(178, 164, 150), wall = C(176, 160, 146), band = C(136, 118, 104),
-	pilaster = C(222, 212, 198), pad = C(228, 220, 208), padLip = C(244, 238, 228), plinth = C(130, 112, 100),
-	apron = C(196, 188, 176), kerb = C(98, 86, 78), kerbTop = C(132, 116, 104),
+	-- (Oct 28, the owner: "too many shades": the bands, kicks and kerbs a light warm stone, not brown-grey)
+	deck = C(214, 204, 190), tread = C(222, 212, 198), trim = C(240, 232, 220), face = C(200, 184, 166),
+	kick = C(188, 172, 156), riser = C(196, 184, 170), wall = C(204, 190, 174), band = C(196, 180, 162),
+	pilaster = C(222, 212, 198), pad = C(228, 220, 208), padLip = C(244, 238, 228), plinth = C(190, 174, 158),
+	apron = C(206, 198, 186), kerb = C(186, 170, 154), kerbTop = C(204, 190, 174),
 	matRim = C(244, 246, 255),
 }
 

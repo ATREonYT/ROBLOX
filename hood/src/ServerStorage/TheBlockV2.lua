@@ -64,19 +64,22 @@ local P = {
 	-- ground and facades (HoodSun v4: sun (0.50, 0.80, 0.33); vertical faces are lifted more than the picture's own
 	-- Color3s would be, since this sun is higher than the picture's).
 	st = {
-		road = C(120, 126, 142), dash = C(255, 243, 50), walk = C(160, 172, 190), grass = C(38, 212, 92),
-		brick = C(203, 118, 85), trim = C(199, 177, 175), band = C(182, 196, 222), roof = C(102, 136, 180),
+		-- (Oct 28, the owner: "too many shades ... make this cartoony"; ref_W01's path is a light lavender stone between
+		-- bright grass) the road the ref path's lavender, not a mid blue-grey; the sidewalks a paler cut of it
+		road = C(172, 168, 208), dash = C(255, 243, 50), walk = C(210, 212, 232), grass = C(38, 212, 92),
+		brick = C(218, 120, 80), trim = C(236, 214, 200), band = C(190, 206, 236), roof = C(92, 150, 222),
 		glassA = C(162, 204, 250), glassB = C(190, 218, 243), mullion = C(44, 86, 142),
-		fence = { C(229, 122, 63), C(143, 79, 71), C(192, 100, 64), C(143, 79, 71) }, -- light, dark, mid, dark
-		lamp = C(74, 104, 160), lampGlow = C(255, 244, 196),
+		fence = { C(229, 122, 63), C(204, 104, 66), C(229, 122, 63), C(204, 104, 66) }, -- (Oct 28: two flat tones, no dark planks)
+		lamp = C(70, 128, 220), lampGlow = C(255, 244, 196),
 		leaf = C(32, 250, 56), trunk = C(97, 90, 103), hedge = C(26, 196, 70), dumpster = C(14, 190, 78),
 		petal = C(30, 70, 156), petalEye = C(250, 232, 70), stem = C(40, 180, 82), garbage = C(230, 130, 46),
-		-- Second and third tones (developer-level shading: every surface in 2-3 shades of its colour).
-		brickDark = C(166, 97, 71), brickDeep = C(187, 102, 71), brickLight = C(217, 136, 95), sill = C(233, 210, 200),
-		trimDark = C(159, 141, 142), roofDark = C(76, 100, 138),
-		gutter = C(110, 118, 136), roadDark = C(100, 106, 122), kerbStone = C(184, 192, 206), walkJoint = C(132, 142, 160),
-		grassDark = C(28, 176, 76), grassEdge = C(24, 160, 70), leafDark = C(26, 214, 48), lampDark = C(56, 80, 130),
-		lampLight = C(104, 138, 194), plankDark = C(104, 56, 48), dumpsterDark = C(10, 150, 60), manhole = C(70, 74, 84),
+		-- Second and third tones. (Oct 28, the owner: "there are too many shades ... remove the shades": each colour is
+		-- now one flat tone, or a lighter cut of it; the darker cuts that shaded every surface are gone.)
+		brickDark = C(218, 120, 80), brickDeep = C(218, 120, 80), brickLight = C(230, 140, 96), sill = C(240, 222, 212),
+		trimDark = C(236, 214, 200), roofDark = C(92, 150, 222),
+		gutter = C(172, 168, 208), roadDark = C(172, 168, 208), kerbStone = C(228, 230, 242), walkJoint = C(196, 198, 222),
+		grassDark = C(38, 212, 92), grassEdge = C(38, 212, 92), leafDark = C(32, 250, 56), lampDark = C(70, 128, 220),
+		lampLight = C(120, 168, 236), plankDark = C(192, 100, 64), dumpsterDark = C(14, 190, 78), manhole = C(150, 154, 176),
 	},
 	-- Its cross-section, measured from the picture (studs from the centre line, heights from the road top):
 	-- road |x| < road, sidewalk to road + walk (top at kerb), grass to front, the plank fence at fence, building
@@ -929,8 +932,10 @@ local Stations = {}
 -- purple, blue, cyan, green, yellow), each the one its theme's props and effects already suit (the name picks them),
 -- so the colour alone tells the bays apart from across the hall.
 local function hue(name, base, text)
-	return { name = name, rim = base:Lerp(C(0, 0, 0), 0.45), rimTop = base:Lerp(C(255, 255, 255), 0.35), mat = base,
-		frame = base:Lerp(C(0, 0, 0), 0.12), groove = base:Lerp(C(0, 0, 0), 0.22), trim = base:Lerp(C(0, 0, 0), 0.45),
+	-- (Oct 28, the owner: "too many shades": the rim, groove and trim only a touch darker than the hue, so a bay reads
+	-- as one flat bright colour; was 45% toward black)
+	return { name = name, rim = base:Lerp(C(0, 0, 0), 0.2), rimTop = base:Lerp(C(255, 255, 255), 0.35), mat = base,
+		frame = base:Lerp(C(0, 0, 0), 0.06), groove = base:Lerp(C(0, 0, 0), 0.1), trim = base:Lerp(C(0, 0, 0), 0.2),
 		wallCap = base:Lerp(C(255, 255, 255), 0.5), text = text or base:Lerp(C(255, 255, 255), 0.2), glow = base:Lerp(C(255, 255, 255), 0.3) }
 end
 Stations.Themes = {
@@ -2547,10 +2552,11 @@ Armory.LabelW, Armory.LabelH = 6.0, 2.7 -- the nameplate's size (B31: the price 
 -- every top edge, in the hall floor's lavender family.
 Armory.Tone = {
 	-- (B34 fix round: warm greys and cream instead of the cold lavender, on the east quadrant's green field)
-	deck = C(214, 204, 190), tread = C(222, 212, 198), trim = C(240, 232, 220), face = C(150, 132, 118),
-	kick = C(118, 102, 92), riser = C(178, 164, 150), wall = C(176, 160, 146), band = C(136, 118, 104),
-	pilaster = C(222, 212, 198), pad = C(228, 220, 208), padLip = C(244, 238, 228), plinth = C(130, 112, 100),
-	apron = C(196, 188, 176), kerb = C(98, 86, 78), kerbTop = C(132, 116, 104),
+	-- (Oct 28, the owner: "too many shades": the bands, kicks and kerbs a light warm stone, not brown-grey)
+	deck = C(214, 204, 190), tread = C(222, 212, 198), trim = C(240, 232, 220), face = C(200, 184, 166),
+	kick = C(188, 172, 156), riser = C(196, 184, 170), wall = C(204, 190, 174), band = C(196, 180, 162),
+	pilaster = C(222, 212, 198), pad = C(228, 220, 208), padLip = C(244, 238, 228), plinth = C(190, 174, 158),
+	apron = C(206, 198, 186), kerb = C(186, 170, 154), kerbTop = C(204, 190, 174),
 	matRim = C(244, 246, 255),
 }
 
@@ -4696,12 +4702,12 @@ Lobby.Dais = (function()
 		-- box i stands at x = First - (i - 1) * Pitch (left to right from the hall), all on the one row; the top of each
 		-- box's art ArtTop over the deck (PremiumTop for a Robux box: the featured eggs of the reference's row)
 		-- (LOBBY5 r3, CRITIC3: the Robux boxes' toppers bob up ~0.7, so both land at 6.3: under 7 with the bob)
-		First = 15, Pitch = 10, RowZ = rowZ, Back = back, BackH = 3.2, HeadY = 14.6, HeadH = 4.2, ArtTop = 6.1, PremiumTop = 6.1, -- (B31: 5-stud boxes)
+		First = 15, Pitch = 10, RowZ = rowZ, Back = back, BackH = 3.2, HeadY = 14.6, HeadH = 4.2, ArtTop = 7.8, PremiumTop = 7.8, -- (Oct 28, the owner: "some of the crate models are too small": ~6.6-stud boxes, over a character's head like the reference's eggs; B31: 5)
 		-- (B30) the premium box's slot: a wider pedestal, taller art, a wider fit; Slots: the row's x positions, left to right
 		-- from the hall, the premium one in the third
-		TopR = 3.9, TopArt = 6.6, TopWide = 7.6, Slots = { 16.5, 6, -5, -16 },
+		TopR = 3.9, TopArt = 9.0, TopWide = 11.5, Slots = { 16.5, 6, -5, -16 },
 		-- (B30 final, ref_W23.0_egg_row: a box's width of floor between boxes; the premium on a raised studded plinth)
-		Fit = 6.6, Plinth = 1.2,
+		Fit = 8.4, Plinth = 1.2, -- (Oct 28: a box is ~1.35 times as wide as tall, so the width sets its size: 8.4 wide, ~6 tall; slots 10.5+ apart)
 	}
 end)()
 -- The stand-in until Config.Shoes.boxesForWorld exists: the two cheapest Cash boxes, then the two Robux boxes.
@@ -5482,6 +5488,7 @@ end
 -- else the Part build, fitted so its largest side is `size`, its bottom centre at c, turning 40 deg/s and bobbing 0.3
 -- about its own middle (ref_product_pads). Returns the model and its height.
 Lobby.ItemSize = 5
+Lobby.SaleItemSize = 6.6 -- (Oct 28, the owner: "crate models are too small": a sale chest's widest side, its wings; its body ~4 wide)
 function Lobby.showcase(c, meshId, size, build, spin)
 	local holder, model = c:group('Item')
 	local IM = Lobby.itemMeshes()
@@ -5618,7 +5625,7 @@ function Lobby.boxPadStand(c, boxId, key, tone, tag, special, lift)
 	-- the chest hovering over the pad, turning and bobbing (B31: 5 studs, ItemMeshes' Box_<Id> or BoxModels' chest)
 	local foot = padTop + 1.0
 	local BoxModels = Lobby.sharedModule('Models', 'BoxModels')
-	local box, tall = Lobby.showcase(g:at(CFrame.new(0, foot, 0)), 'Box_' .. boxId, Lobby.ItemSize, function()
+	local box, tall = Lobby.showcase(g:at(CFrame.new(0, foot, 0)), 'Box_' .. boxId, Lobby.SaleItemSize, function()
 		local ok, m = pcall(BoxModels.build, boxId, 1, CFrame.new())
 		return ok and m or nil
 	end, 30)
@@ -6499,14 +6506,16 @@ return {
 	-- the special-sale spots, one each side of the spine before the door (ref_W01's "MOST OP!" showcase), turned to where
 	-- you land. Filled for now with the Robux shoe offers (Lobby.saleSpot); the owner's renders will dress them later.
 	Sales = {
-		{ Name = 'West', Box = 'Grail', Key = 'ShoeBoxGrail', x = -11.6, z = 43, Scale = 0.75, Tone = C(236, 90, 200), Tag = 'NEW' },
-		{ Name = 'East', Box = 'GrailBundle', Key = 'GrailBundle', x = 11.6, z = 43, Scale = 0.75, Tone = C(176, 96, 255), Special = '3 PAIRS' },
+		{ Name = 'West', Box = 'Grail', Key = 'ShoeBoxGrail', x = -11.6, z = 43, Scale = 1, Tone = C(236, 90, 200), Tag = 'NEW' },
+		{ Name = 'East', Box = 'GrailBundle', Key = 'GrailBundle', x = 11.6, z = 43, Scale = 1, Tone = C(176, 96, 255), Special = '3 PAIRS' },
 	},
 	-- the open band before the door, over the zones' north edges (the reference's chests before the exit): the CODES
 	-- chest (west), the group chest and the spin wheel (east)
 	-- (lobby round 1: the door's mouth stays clear; the group chest alone NW, the CODES booth and the spin wheel on one
 	-- plinth NE, each 45+ off the spine, like the reference's chests either side of the exit)
-	Group = { codes = { 56, 15 }, chest = { -62, 14 }, scale = 0.62 },
+	-- (Oct 28, the owner: "some of the crate models are too small": the chests at full size, ~5 studs tall, like the
+	-- reference's chests either side of the exit; were 0.62, about 3)
+	Group = { codes = { 56, 15 }, chest = { -62, 14 }, scale = 1 },
 	World2 = { x = -58, z = 103, look = Lobby.Centre, scale = 0.85 }, -- (Oct 27: past the dais's west end, its own path) -- (SW, facing the crossing; Oct 27 round 2, the owner: "put the second world portal closer ... easy for the players to see": just off the south walk under the training block, like the reference's)
 	WorldBoss = { x = 68, z = 80, look = Lobby.Centre }, -- (SE, facing the crossing; off for now)
 	-- (SE) the three boards side by side in one row past the dais's east end, 15 apart, each facing the crossing, at the
@@ -7299,9 +7308,11 @@ Lobby.WHColors = { -- (Oct 27 round 3, the owner picked the Oct 13 warehouse, "E
 	floorA = C(238, 202, 152), floorB = C(226, 190, 142), -- (lobby round 2, the critic: the pale beige read lavender under the
 	-- blue sky fill and grey from above; S ~0.35 so it lands warm)
 	 grass = Lobby.Bright.floor,
-	brick = C(206, 112, 72), brickLight = C(218, 128, 84), skirt = C(142, 64, 48), trim = C(240, 216, 176),
-	steel = C(66, 82, 132), steelLight = C(98, 116, 170), slat = C(176, 184, 198), slatDark = C(146, 154, 170),
-	drum = C(84, 92, 112), lamp = C(255, 236, 170),
+	-- (Oct 28, the owner: "too many shades ... remove the shades, we need to make this cartoony": one brick tone and a
+	-- bright red skirting instead of three browns; the steel a clear toy blue instead of navy, no darker cuts)
+	brick = C(222, 118, 70), brickLight = C(222, 118, 70), skirt = C(222, 84, 64), trim = C(246, 226, 188),
+	steel = C(58, 132, 232), steelLight = C(110, 172, 246), slat = C(196, 206, 222), slatDark = C(196, 206, 222),
+	drum = C(120, 150, 210), lamp = C(255, 236, 170),
 	red = C(214, 70, 60), blue = C(60, 128, 214), teal = C(40, 172, 160), yellow = C(250, 196, 50),
 }
 -- (tutorial targets: gate 1 is reached through the north loading door; its arrows pass the doorway first)
@@ -7774,7 +7785,7 @@ local GATE = {
 	edge = C(255, 176, 196), -- the haze's lit lip along the top and its side edges
 	-- The frame: studded concrete in three tones, dark recesses, a hazard beam with a darker lip.
 	pillarW = 4, beamH = 3,
-	stone = C(160, 162, 172), stoneDark = C(116, 118, 130), stoneLight = C(190, 192, 200), recess = C(62, 66, 80),
+	stone = C(160, 162, 172), stoneDark = C(176, 178, 190), stoneLight = C(190, 192, 200), recess = C(62, 66, 80),
 	hazard = C(250, 204, 40), hazardDark = C(36, 38, 46), hazardLip = C(196, 146, 28),
 	steel = C(70, 74, 90), bolt = C(156, 160, 172), -- the plates clamping the beam to the pillars
 	track = C(58, 66, 98), trackGlow = C(255, 96, 128), -- the emitter track along the foot and its glowing line
@@ -10102,6 +10113,29 @@ function Look.softStuds(root)
 	root:SetAttribute('SoftStudParts', parts)
 	root:SetAttribute('SoftStudTextures', textures)
 end
+-- (Oct 28, the owner in Studio: "the map isn't good, there are too many shades ... remove the shades, we need to make
+-- this cartoony") The +1 games' flat toy look: no colour on the map darker than Look.MinV (HSV value) unless it is ink
+-- (value under Look.InkV: hazard stripes, tyres, outlines, which stay black on purpose). A dark cut of a colour (a navy
+-- girder, a brown kick, a deep rim) comes up to the same hue and saturation at MinV, so the darker shades of one colour
+-- merge into fewer, brighter flat tones. Untouched: the owner's meshes (MeshParts keep their own colours), Neon, glass,
+-- see-through parts, anything carrying words (a SurfaceGui's board keeps its contrast) and the named holes (Void).
+-- Both worlds, after every other pass (g_build). The lighting has no shadows either (HoodLighting PlusOne).
+Look.MinV = 0.6
+Look.InkV = 0.2
+function Look.cartoon(root)
+	local lifted = 0
+	for _, p in root:GetDescendants() do
+		if p:IsA('BasePart') and not p:IsA('MeshPart') and p.Transparency < 0.05 and p.Material ~= M.Neon
+			and p.Material ~= M.Glass and not p:FindFirstChildOfClass('SurfaceGui') and not string.find(p.Name, 'Void') then
+			local h, s, v = p.Color:ToHSV()
+			if v >= Look.InkV and v < Look.MinV then
+				p.Color = Color3.fromHSV(h, s, Look.MinV)
+				lifted += 1
+			end
+		end
+	end
+	root:SetAttribute('CartoonLifted', lifted)
+end
 V2.Look = Look
 V2.Stations = Stations
 ---------------------------------------------------------------------------------------------- z-fighting
@@ -10253,6 +10287,7 @@ function V2.Build()
 	for _ = 1, 2 do lifted += resolveCoplanar(root) end -- (a lift can land on a third part's plane: more passes settle the chains)
 	root:SetAttribute('FaceFightsLifted', lifted)
 	Look.softStuds(root) -- (Oct 27 round 5) the faint studs outside the lobby too, both worlds (x_look)
+	Look.cartoon(root) -- (Oct 28) no dark shades: every dark cut of a colour up to Look.MinV, both worlds (x_look)
 	root.Parent = workspace
 	local count = 0
 	for _, d in root:GetDescendants() do if d:IsA('BasePart') then count += 1 end end

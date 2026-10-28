@@ -275,5 +275,28 @@ function Look.softStuds(root)
 	root:SetAttribute('SoftStudParts', parts)
 	root:SetAttribute('SoftStudTextures', textures)
 end
+-- (Oct 28, the owner in Studio: "the map isn't good, there are too many shades ... remove the shades, we need to make
+-- this cartoony") The +1 games' flat toy look: no colour on the map darker than Look.MinV (HSV value) unless it is ink
+-- (value under Look.InkV: hazard stripes, tyres, outlines, which stay black on purpose). A dark cut of a colour (a navy
+-- girder, a brown kick, a deep rim) comes up to the same hue and saturation at MinV, so the darker shades of one colour
+-- merge into fewer, brighter flat tones. Untouched: the owner's meshes (MeshParts keep their own colours), Neon, glass,
+-- see-through parts, anything carrying words (a SurfaceGui's board keeps its contrast) and the named holes (Void).
+-- Both worlds, after every other pass (g_build). The lighting has no shadows either (HoodLighting PlusOne).
+Look.MinV = 0.6
+Look.InkV = 0.2
+function Look.cartoon(root)
+	local lifted = 0
+	for _, p in root:GetDescendants() do
+		if p:IsA('BasePart') and not p:IsA('MeshPart') and p.Transparency < 0.05 and p.Material ~= M.Neon
+			and p.Material ~= M.Glass and not p:FindFirstChildOfClass('SurfaceGui') and not string.find(p.Name, 'Void') then
+			local h, s, v = p.Color:ToHSV()
+			if v >= Look.InkV and v < Look.MinV then
+				p.Color = Color3.fromHSV(h, s, Look.MinV)
+				lifted += 1
+			end
+		end
+	end
+	root:SetAttribute('CartoonLifted', lifted)
+end
 V2.Look = Look
 V2.Stations = Stations

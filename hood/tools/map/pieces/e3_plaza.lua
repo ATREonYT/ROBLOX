@@ -127,14 +127,16 @@ return {
 	-- the special-sale spots, one each side of the spine before the door (ref_W01's "MOST OP!" showcase), turned to where
 	-- you land. Filled for now with the Robux shoe offers (Lobby.saleSpot); the owner's renders will dress them later.
 	Sales = {
-		{ Name = 'West', Box = 'Grail', Key = 'ShoeBoxGrail', x = -11.6, z = 43, Scale = 0.75, Tone = C(236, 90, 200), Tag = 'NEW' },
-		{ Name = 'East', Box = 'GrailBundle', Key = 'GrailBundle', x = 11.6, z = 43, Scale = 0.75, Tone = C(176, 96, 255), Special = '3 PAIRS' },
+		{ Name = 'West', Box = 'Grail', Key = 'ShoeBoxGrail', x = -11.6, z = 43, Scale = 1, Tone = C(236, 90, 200), Tag = 'NEW' },
+		{ Name = 'East', Box = 'GrailBundle', Key = 'GrailBundle', x = 11.6, z = 43, Scale = 1, Tone = C(176, 96, 255), Special = '3 PAIRS' },
 	},
 	-- the open band before the door, over the zones' north edges (the reference's chests before the exit): the CODES
 	-- chest (west), the group chest and the spin wheel (east)
 	-- (lobby round 1: the door's mouth stays clear; the group chest alone NW, the CODES booth and the spin wheel on one
 	-- plinth NE, each 45+ off the spine, like the reference's chests either side of the exit)
-	Group = { codes = { 56, 15 }, chest = { -62, 14 }, scale = 0.62 },
+	-- (Oct 28, the owner: "some of the crate models are too small": the chests at full size, ~5 studs tall, like the
+	-- reference's chests either side of the exit; were 0.62, about 3)
+	Group = { codes = { 56, 15 }, chest = { -62, 14 }, scale = 1 },
 	World2 = { x = -58, z = 103, look = Lobby.Centre, scale = 0.85 }, -- (Oct 27: past the dais's west end, its own path) -- (SW, facing the crossing; Oct 27 round 2, the owner: "put the second world portal closer ... easy for the players to see": just off the south walk under the training block, like the reference's)
 	WorldBoss = { x = 68, z = 80, look = Lobby.Centre }, -- (SE, facing the crossing; off for now)
 	-- (SE) the three boards side by side in one row past the dais's east end, 15 apart, each facing the crossing, at the

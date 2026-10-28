@@ -148,18 +148,22 @@ L.Presets = {
 	-- (Lobby round 2, the critic: play frames measured darker and duller than ref_W01, mean 114-122 against 139-146,
 	-- saturation 0.48-0.58 against 0.63-0.71: exposure -0.3 to -0.15, grade saturation 0.35 to 0.45, and a slightly warm
 	-- ambient so the warehouse floor under the closed roof reads warm, not lavender. Never past the ref's ~145 / 1% white.)
+	-- (Oct 28, the owner in Studio: "there are too many shades ... remove the shades, we need to make this cartoony") No
+	-- shadows at all: GlobalShadows off (Ambient lights everything evenly, inside the roofed hall as outside; the roof,
+	-- girders and overhangs throw nothing), a high warm Ambient, a gentler sun so its faces don't flare, saturation 0.5.
+	-- Preview: the spawn view ~145, under 1% near white. The map's own dark cuts are lifted too (x_look Look.cartoon).
 	PlusOne = {
 		technology = 'ShadowMap',
 		lighting = {
-			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.6, ExposureCompensation = -0.15,
-			Ambient = C(132, 128, 122), OutdoorAmbient = C(176, 172, 168),
+			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.15, ExposureCompensation = -0.1,
+			Ambient = C(168, 164, 160), OutdoorAmbient = C(168, 164, 160),
 			ColorShift_Top = C(255, 248, 236), ColorShift_Bottom = C(0, 0, 0),
-			EnvironmentDiffuseScale = 0.8, EnvironmentSpecularScale = 0.3, ShadowSoftness = 0.45, GlobalShadows = true,
+			EnvironmentDiffuseScale = 0.5, EnvironmentSpecularScale = 0.2, ShadowSoftness = 1, GlobalShadows = false,
 		},
 		atmosphere = { Density = 0.15, Offset = 0.3, Haze = 0, Glare = 0, Color = C(170, 210, 255), Decay = C(80, 160, 245) },
-		grade = { Brightness = 0, Contrast = 0.12, Saturation = 0.45, TintColor = C(255, 255, 255) },
-		bloom = { Intensity = 0.25, Size = 24, Threshold = 2 },
-		rays = { Intensity = 0.03, Spread = 0.5 },
+		grade = { Brightness = 0, Contrast = 0.08, Saturation = 0.5, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.2, Size = 24, Threshold = 2 },
+		rays = { Intensity = 0, Spread = 0.5 },
 		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 3000, CelestialBodiesShown = true },
 		clouds = { Cover = 0.4, Density = 0.75, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),

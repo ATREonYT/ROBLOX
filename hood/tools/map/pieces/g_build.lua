@@ -147,6 +147,7 @@ function V2.Build()
 	for _ = 1, 2 do lifted += resolveCoplanar(root) end -- (a lift can land on a third part's plane: more passes settle the chains)
 	root:SetAttribute('FaceFightsLifted', lifted)
 	Look.softStuds(root) -- (Oct 27 round 5) the faint studs outside the lobby too, both worlds (x_look)
+	Look.cartoon(root) -- (Oct 28) no dark shades: every dark cut of a colour up to Look.MinV, both worlds (x_look)
 	root.Parent = workspace
 	local count = 0
 	for _, d in root:GetDescendants() do if d:IsA('BasePart') then count += 1 end end
