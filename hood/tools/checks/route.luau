@@ -140,6 +140,13 @@ local function flowTrack()
 	local thg = G:FindFirstChild('HoodTutorialHint')
 	local loopRow = thg and thg:FindFirstChild('Loop', true)
 	if loopRow and loopRow.Visible then FL.loopSeen = true end
+	-- (and it keeps off the fight's counter, N LEFT / CLEAR!, at the same top centre: the HUD's slot holds it)
+	local fightTop = false
+	for _, g in { G:FindFirstChild('HoodHUD'), G:FindFirstChild('HoodWaves') } do
+		local wl = g and g:FindFirstChild('WaveLeft', true)
+		if wl and wl:IsA('GuiObject') and wl.Visible and visibleChainF(wl) then fightTop = true end
+	end
+	if fightTop and loopRow and loopRow.Visible then FL.loopOverFight = (FL.loopOverFight or 0) + 1 end
 	local cheerL = thg and thg:FindFirstChild('Cheer', true)
 	local cheerOn = cheerL ~= nil and cheerL.Visible and cheerL.Text ~= ''
 	if cheerOn and not FL.cheerWas then
@@ -499,6 +506,7 @@ fcheck('one voice: a calm of at least 1.5 s between two moments', worst >= 1.4, 
 fcheck('one guide at a time', FL.guides2 == 0, FL.guides2 .. ' ticks with two, first ' .. tostring(FL.guidePair))
 fcheck('tutorial: the one floating arrow shows its way', (FL.tutArrow or 0) > 0, (FL.tutArrow or 0) .. ' ticks')
 fcheck('tutorial: the loop is up, and its steps get a cheer', FL.loopSeen == true and #(FL.cheers or {}) >= 2, table.concat(FL.cheers or {}, ', '))
+fcheck('tutorial: the loop keeps off the fight\'s N LEFT / CLEAR!', (FL.loopOverFight or 0) <= 3, (FL.loopOverFight or 0) .. ' ticks together (its 0.2 s fade at most)')
 fcheck('no level toast in the first minute', FL.levelToastEarly == 0, FL.levelToastEarly .. ' ticks')
 log(('[flow] %d checks / %d failed'):format(FLN, #FLF))
 log('[flow] moments: ' .. (function() local t = {}; for _, mm in FL.moments do table.insert(t, ('%s %.1f'):format(mm[1], mm[2])) end; return table.concat(t, ' | ') end)())

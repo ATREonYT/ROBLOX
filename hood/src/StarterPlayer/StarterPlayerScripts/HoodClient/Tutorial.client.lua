@@ -855,10 +855,19 @@ local function stageBanner()
 	local fb = playerGui:FindFirstChild('StageFeedback')
 	if fb ~= nil and (fb:FindFirstChild('Banner') ~= nil or fb:FindFirstChild('CashPop') ~= nil) then return true end
 	-- (the fight's own top centre: "N LEFT", CLEAR! and CREW INCOMING! sit where the loop does)
+	-- (the counter pill is docked into the HUD's top-centre slot, FightUI.dock: found once, looked for again a second
+	-- after a miss, never searched for every frame)
+	local left = lookup('WaveLeft', function()
+		for _, name in { 'HoodHUD', 'HoodWaves' } do
+			local g = playerGui:FindFirstChild(name)
+			local w = g and g:FindFirstChild('WaveLeft', true)
+			if w and w:IsA('GuiObject') then return w end
+		end
+		return nil
+	end, 1)
+	if left and left.Visible and left:IsDescendantOf(playerGui) then return true end
 	local waves = playerGui:FindFirstChild('HoodWaves')
-	local left = waves and waves:FindFirstChild('WaveLeft', true)
-	if left and left:IsA('GuiObject') and left.Visible then return true end
-	return waves ~= nil and waves:FindFirstChild('CrewIncoming', true) ~= nil
+	return waves ~= nil and waves:FindFirstChild('CrewIncoming') ~= nil
 end
 local function loopStep(dt, now, stepName, lessonStep, busyScreen)
 	local cur, done = Rules.loopAt(stepName, lessonStep)
@@ -867,7 +876,8 @@ local function loopStep(dt, now, stepName, lessonStep, busyScreen)
 		cheer.Done = done
 	end
 	local moment = playerGui:GetAttribute('GoalMoment')
-	local free = not busyScreen and window() == '' and not (type(moment) == 'string' and moment ~= '') and not stageBanner()
+	local banner = stageBanner()
+	local free = not busyScreen and window() == '' and not (type(moment) == 'string' and moment ~= '') and not banner
 	-- the chips
 	for i, c in chips do
 		local state = (done and i <= done) and 'done' or (i == cur and 'now') or 'later'
@@ -886,7 +896,8 @@ local function loopStep(dt, now, stepName, lessonStep, busyScreen)
 		if math.abs(c.Pop.Scale - s) > 0.002 then c.Pop.Scale = s end
 	end
 	local show = done ~= nil and free
-	setLoopAlpha(loopAlpha + (show and dt or -dt) / 0.2)
+	-- (a banner or the fight's counter takes the top centre: the loop steps out of its way at once, no fade)
+	setLoopAlpha(banner and 0 or (loopAlpha + (show and dt or -dt) / 0.2))
 	-- a cheer waiting: it plays once the screen is free and the loop is up, or is dropped
 	if cheer.Pending then
 		if now - cheer.Since > Rules.CheerWait then
