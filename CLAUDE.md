@@ -36,7 +36,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (442 since the Oct 27 2x and 4x Luck passes);
+- unit: all pass (449 since the Oct 28 guide arrow round);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - city_contracts: 215 checks / 0 failed;
@@ -47,7 +47,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - play_run: 86 checks / 0 failed (it buys a gun and checks the goal moves on);
 - core_loop: 57 checks / 0 failed (the HUD hidden in the welcome and revealed when each part first matters, at most one white flash a second on a busy lane, the first-join welcome, its clear glide and its skip, one moment at a time, lane feedback, the goal guide arrow, step on/off, the goal after a purchase, a rebirth and each locked lane, big-number counters);
 - live_shoes and live_reveal: exit 0;
-- first30: 8 ok with 0 purchase prompts, and `[flow] 20 checks / 0 failed` (a quiet tutorial, one voice at a time);
+- first30: 8 ok with 0 purchase prompts, and `[flow] 23 checks / 0 failed` (a quiet tutorial, one voice at a time);
 - finale_play: 18/0;
 - wb_play: 10/0. It's timing-sensitive under heavy CPU load; re-run alone before calling it a failure.
 
