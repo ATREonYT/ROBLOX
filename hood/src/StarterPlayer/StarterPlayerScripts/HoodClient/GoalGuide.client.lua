@@ -360,6 +360,8 @@ local function backOut(x)
 	local c3 = c1 + 1
 	return 1 + c3 * (x - 1) ^ 3 + c1 * (x - 1) ^ 2
 end
+local HudBoxes = require(RS.Shared.HudBoxes)
+local hudBoxes, boxesAt = {}, -1
 local function edgeStep(dt, mid)
 	local cam = workspace.CurrentCamera
 	if not cam then hideEdge(); return end
@@ -367,6 +369,13 @@ local function edgeStep(dt, mid)
 	local sp = GuideArrow.project(cam.CFrame, cam.FieldOfView, view, mid)
 	local e = sp and GuideArrow.edge(sp, view) or nil
 	if not e then hideEdge(); return end
+	-- (off the HUD's buttons: their boxes looked at twice a second)
+	if clock - boxesAt >= 0.5 or clock < boxesAt then
+		boxesAt = clock
+		local okB, boxes = pcall(HudBoxes.get, playerGui, 4)
+		hudBoxes = okB and boxes or {}
+	end
+	e.X, e.Y = GuideArrow.clearOf(e.X, e.Y, E.Size / 2 + E.Push, hudBoxes, view)
 	if not edgeOn then edgeOn, edgeSince = true, clock; pointer.Visible = true end
 	local still = attr('ReducedMotion') == true
 	local push = still and 0 or E.Push * (0.5 + 0.5 * math.sin((clock - edgeSince) * 2 * math.pi / E.Period))

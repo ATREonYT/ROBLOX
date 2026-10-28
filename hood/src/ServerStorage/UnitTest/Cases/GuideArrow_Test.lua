@@ -108,4 +108,16 @@ return function(t)
 		end
 		t.expect.equal(GA.edge(nil, view), nil)
 	end)
+	t.test('the edge pointer slides off the HUD buttons, toward the centre', function()
+		local view = Vector2.new(1280, 720)
+		-- (the Shop button's box on a computer, and the pointer where the round 9 still put it)
+		local shop = { x0 = 16, y0 = 159, x1 = 232, y1 = 233 }
+		local x, y = GA.clearOf(175, 195, 40, { shop }, view)
+		t.expect.truthy(x - 40 >= shop.x1 or y - 40 >= shop.y1 or y + 40 <= shop.y0)
+		t.expect.truthy(x > 175 and x < 640) -- (inward, along the line to the centre)
+		local x2, y2 = GA.clearOf(175, 195, 40, {}, view)
+		t.expect.equal(x2, 175); t.expect.equal(y2, 195) -- (no HUD: its own spot)
+		local x3, y3 = GA.clearOf(175, 195, 40, { { x0 = 300, y0 = 300, x1 = 400, y1 = 400 } }, view)
+		t.expect.equal(x3, 175); t.expect.equal(y3, 195) -- (a button elsewhere: its own spot)
+	end)
 end

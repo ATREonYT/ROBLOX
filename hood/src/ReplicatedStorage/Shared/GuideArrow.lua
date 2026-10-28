@@ -143,6 +143,24 @@ function GuideArrow.edge(sp, view)
 	return { X = cx + dx * t, Y = cy + dy * t, Angle = math.deg(math.atan2(dy, dx)) }
 end
 
+-- (Oct 28: on a computer the pointer sat on the Shop button) Keeps the pointer (a square `half` px each way round x, y)
+-- off the HUD's buttons (boxes { x0, y0, x1, y1 }, HudBoxes): it slides from its spot on the edge toward the screen's
+-- centre until it is clear. Returns x, y (its own spot when nothing is in the way, or nowhere is clear).
+function GuideArrow.clearOf(x, y, half, boxes, view)
+	if type(boxes) ~= 'table' or #boxes == 0 or typeof(view) ~= 'Vector2' then return x, y end
+	local cx, cy = view.X / 2, view.Y / 2
+	for i = 0, 20 do
+		local t = i / 20
+		local px, py = x + (cx - x) * t, y + (cy - y) * t
+		local hit = false
+		for _, b in boxes do
+			if px + half > b.x0 and px - half < b.x1 and py + half > b.y0 and py - half < b.y1 then hit = true; break end
+		end
+		if not hit then return px, py end
+	end
+	return x, y
+end
+
 ---------------------------------------------------------------------------------------------- the parts (client)
 -- Makes the arrow's parts in `parent` (a Model: its Highlight outlines them). Returns { [name] = part }.
 function GuideArrow.build(parent)

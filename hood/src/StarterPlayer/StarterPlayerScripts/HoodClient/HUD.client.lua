@@ -1281,7 +1281,8 @@ do
 			f.LayoutScale.Scale = small
 		end
 		if phone then
-			column.Position = px(C.X, 78) -- (round 8: the bigger grid's Shop "!" stays clear of the Spin wheel)
+			column.Position = px(C.X, 84) -- (round 8: the bigger grid's Shop "!" stays clear of the Spin wheel; Oct 28: 84, its
+			-- "Ready" ran 4 px into the Shop button at 78)
 			-- the counters: rank, rebirths and Cash one under the other beside the column, clear of the thumbstick
 			counters.AnchorPoint = Vector2.new(0, 0)
 			counters.Position = px(C.X + C.ShopW * small + 10, 60 + 60)
@@ -1290,8 +1291,9 @@ do
 			-- and the Starter Pack (135) side by side on top, Missions under Playtime, the offer cards under the Starter Pack
 			-- (their pictures poke ~13 over a card), each at least 4 px clear of the next
 			slots.StarterSlot.Position = UDim2.new(1, -82, 0, 0)
-			slots.PlaytimeSlot.Position = UDim2.new(1, -214, 0, 0)
-			slots.MissionsSlot.Position = UDim2.new(1, -214, 0, 112)
+			-- (Oct 28: at -214 Missions ran 4 px into the offer cards; -222 leaves 4 clear)
+			slots.PlaytimeSlot.Position = UDim2.new(1, -222, 0, 0)
+			slots.MissionsSlot.Position = UDim2.new(1, -222, 0, 112)
 			offers.Position = UDim2.new(1, -Spec.Offers.Right, 0, 142)
 		else
 			column.Position = px(C.X, C.Y)

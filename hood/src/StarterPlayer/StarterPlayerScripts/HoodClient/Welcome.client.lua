@@ -4,7 +4,8 @@
 --   * the camera starts in front of the Stage 1 gate, inside the hall, looking back down it at you, and glides down to its usual place
 --     behind you (Duration seconds, eased in and out);
 --   * "WELCOME TO THE BLOCK," and your name, in the game's title style (Shared/TextStyle: Montserrat Black, the thick dark
---     outline, the gold and white fills), on a soft dark band;
+--     outline, the gold and white fills), on the UI's navy card (Oct 28: on a see-through band the world's own signs
+--     showed through the words);
 --   * then the camera is yours again, and the tutorial's first line types in.
 -- ANY input (a key, a click, a touch, a pad button) ends it at once: the camera snaps back and the words fade. Nothing is
 -- sold, nothing is timed against you, no flash. Sound stays off (the owner's call, Config/Sound).
@@ -47,10 +48,24 @@ if not root then playerGui:SetAttribute('HoodWelcome', false); return end
 ---------------------------------------------------------------------------------------------- the words
 local gui, groot, fit = Kit.screen('HoodWelcome', nil, 60)
 gui.IgnoreGuiInset = true
-local band = Kit.new('Frame', { Name = 'Band', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), Size = UDim2.new(1, 0, 0, 190), BackgroundColor3 = Kit.hex('070912'), BackgroundTransparency = 1, BorderSizePixel = 0, Parent = groot })
-Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.45), NumberSequenceKeypoint.new(0.8, 0.45), NumberSequenceKeypoint.new(1, 1) }), Parent = band })
 local holder = Kit.new('Frame', { Name = 'Words', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), Size = UDim2.fromOffset(900, 170), Parent = groot })
 local scale = Kit.new('UIScale', { Scale = 0.6, Parent = holder })
+-- (Oct 28) the backing: the mockup windows' navy card, as the tutorial's hint (a top-lit navy face, a thick ink outline,
+-- a light rim inside it, a soft light band on its top half, an ink drop under it). It is solid, so no sign or label of
+-- the world behind ever mixes with the words.
+local CARD = { Pad = 26, Corner = 22, Outline = 5, Rim = 3, Drop = 7 }
+local drop = Kit.new('Frame', { Name = 'CardDrop', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, CARD.Drop), Size = UDim2.new(1, CARD.Pad, 1, 0), BackgroundColor3 = Kit.Skin.outline, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 1, Parent = holder })
+Kit.corner(CARD.Corner).Parent = drop
+local card = Kit.new('Frame', { Name = 'Card', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, CARD.Pad, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 1, Parent = holder })
+Kit.corner(CARD.Corner).Parent = card
+Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.Skin.bodyTop, Kit.Skin.bodyBase), Parent = card })
+Kit.stroke(Kit.Skin.outline, CARD.Outline, true).Parent = card
+local rim = Kit.new('Frame', { Name = 'CardRim', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -2 * CARD.Rim, 1, -2 * CARD.Rim), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 1, Parent = card })
+Kit.corner(CARD.Corner - CARD.Rim).Parent = rim
+Kit.stroke(Kit.Skin.rim, CARD.Rim, true, 0.15).Parent = rim
+local gloss = Kit.new('Frame', { Name = 'CardGloss', Position = UDim2.fromOffset(CARD.Rim + 1, CARD.Rim + 1), Size = UDim2.new(1, -2 * CARD.Rim - 2, 0.46, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 1, Parent = card })
+Kit.corner(CARD.Corner - CARD.Rim - 1).Parent = gloss
+Kit.new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new(0.86, 1), Parent = gloss })
 local title = Kit.text({ Name = 'Title', Text = 'WELCOME TO THE BLOCK,', TextSize = 58, ZIndex = 3, Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, 0, 0, 72), Parent = holder })
 TextStyle.apply(title, 'gold', { Shadow = true }) -- (ZIndex 3: over its drop shadow, which TextStyle puts at ZIndex - 1)
 local name = player.DisplayName ~= '' and player.DisplayName or player.Name
@@ -59,7 +74,9 @@ who.TextScaled = true -- (a long name shrinks to fit; the outline is given, so n
 Kit.new('UITextSizeConstraint', { MaxTextSize = 50, MinTextSize = 20, Parent = who })
 TextStyle.apply(who, 'white', { Shadow = true, Thickness = 6 })
 local function wordsAlpha(a) -- 0 hidden .. 1 shown
-	band.BackgroundTransparency = 1 - a
+	card.BackgroundTransparency = 1 - a
+	gloss.BackgroundTransparency = 1 - a
+	drop.BackgroundTransparency = 1 - 0.5 * a
 	for _, d in holder:GetDescendants() do
 		local k = (d:IsA('TextLabel') and d.Name:find('Shadow$') or (d.Parent and d.Parent.Name:find('Shadow$'))) and 0.75 or 1 -- (the drop shadow stays see-through)
 		if d:IsA('TextLabel') then d.TextTransparency = 1 - a * k end

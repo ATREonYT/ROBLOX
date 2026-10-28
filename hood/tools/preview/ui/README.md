@@ -78,6 +78,10 @@ have it under `/opt/node22/lib/node_modules`). A slot in `compose.py` can be `no
   prints what overlaps or runs off the screen (`hud.layout.json`: each screen's top-level blocks, as the box around
   their painted parts). The harness doesn't run Extras' fills of the right column, so those three slots are drawn as
   magenta stand-ins of their size. Roblox's own thumbstick and jump button aren't drawn.
+- `SCENE=hudtutorial` (Oct 28): a fresh save's screen at the spawn, the tutorial's card and loop strip up, with the
+  same overlap list, plus `welcome.png` (the welcome's words 1.6 s in). The harness has no GUI layout of its own
+  (AbsolutePosition reads 0), so what keeps clear of the HUD at run time (`Shared/HudBoxes`: the guide's edge pointer,
+  the world's words under the buttons) can't move here: an overlap with `HoodGuideEdge/Pointer` is the preview's.
 - `FALLBACK=1` makes Roblox refuse every packed picture (as without "Allow Mesh / Image APIs"): the windows must show
   their old drawn look, and Output one `[HoodUI]` line.
 - `windows.luau` presses each window's real X after its picture and prints `[ui] <name> open: N painted / closed by

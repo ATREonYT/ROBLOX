@@ -17,6 +17,9 @@
 --   FadeHold            true: fade out whatever the distance (HoodClient/Lobby: your own lane and its neighbours while
 --                       you stand in its box)
 --   FadeOff             true: left alone
+-- (Oct 28) A label under one of the HUD's buttons fades out too (the HUD keep-out: HoodClient/LabelFade passes the
+-- buttons' boxes to decide), so a world word never runs under a button and reads half hidden ("1x Power" behind the
+-- Spin wheel read "1x [wheel]wer"). It comes back once it is clear of them.
 -- The fades run at a steady rate (in 0.3 s, out 0.4 s), so a camera jump never flickers; a fade-in that ends whole
 -- gets the pop. MaxDistance is set to the band's end plus a margin, so the engine stops drawing a label soon after it
 -- has faded. LabelFade owns each label's Size and the transparencies of its texts, outlines, frames and images.
@@ -147,6 +150,30 @@ function LabelFade.declutter(rows)
 	end
 end
 
+-- The HUD keep-out: r { x0, x1, y0, y1, area } a label's box on screen, keep { { x0, x1, y0, y1 }, ... } the HUD
+-- buttons' boxes (the same pixels: from the screen's centre, y up). Wanted out once more than UNDER_HUD of its area is
+-- under the buttons, back once under UNDER_HUD_SHOW, after HIDE_PASSES / SHOW_PASSES decisions running, as declutter.
+-- Sets and returns e.underHud.
+LabelFade.UNDER_HUD, LabelFade.UNDER_HUD_SHOW = 0.1, 0.03
+function LabelFade.underHud(e, r, keep)
+	local covered = 0
+	for _, o in keep do
+		local ix = math.max(0, math.min(r.x1, o.x1) - math.max(r.x0, o.x0))
+		local iy = math.max(0, math.min(r.y1, o.y1) - math.max(r.y0, o.y0))
+		covered += ix * iy
+	end
+	local want = r.area > 0 and covered > r.area * (e.underHud and LabelFade.UNDER_HUD_SHOW or LabelFade.UNDER_HUD)
+	if e.underHud == nil then
+		e.underHud, e.hudFlips = want, 0
+	elseif want ~= e.underHud then
+		e.hudFlips = (e.hudFlips or 0) + 1
+		if e.hudFlips >= (want and LabelFade.HIDE_PASSES or LabelFade.SHOW_PASSES) then e.underHud, e.hudFlips = want, 0 end
+	else
+		e.hudFlips = 0
+	end
+	return e.underHud
+end
+
 -- Where a label hangs: its Adornee's or parent part's (or attachment's) position plus StudsOffsetWorldSpace.
 local function worldOffset(gui)
 	local ok, v = pcall(function() return gui.StudsOffsetWorldSpace end)
@@ -265,8 +292,10 @@ function Fader:remove(gui, keep)
 end
 function Fader:get(gui) return self.entries[gui] end
 
--- The 10 Hz pass. cam: the camera's CFrame; focal: pixels per stud at one stud's depth (viewport height / 2tan(fov/2)).
-function Fader:decide(cam, focal)
+-- The 10 Hz pass. cam: the camera's CFrame; focal: pixels per stud at one stud's depth (viewport height / 2tan(fov/2));
+-- keep (optional): the HUD buttons' boxes on screen (LabelFade.underHud).
+function Fader:decide(cam, focal, keep)
+	local keepOn = type(keep) == 'table' and #keep > 0
 	self.ticks += 1
 	local poll = self.ticks % 10 == 0
 	local eye = cam.Position
@@ -311,7 +340,8 @@ function Fader:decide(cam, focal)
 		e.shrinkT = LabelFade.shrink(d, cfg.Shrink, cfg.ShrinkMin)
 		e.live = (e.band > 0 and e.band < 1) or (cfg.Shrink ~= nil and cfg.Shrink > 0 and d < cfg.Shrink)
 		e.hold = gui:GetAttribute('FadeHold') == true
-		if cfg.Group and not e.hold and e.band > 0.05 then
+		local row = nil -- (its box on screen, when something needs it)
+		if not e.hold and e.band > 0.05 and (cfg.Group or keepOn) then
 			local p = cam:PointToObjectSpace(pos) + gui.StudsOffset
 			local depth = -p.Z
 			if depth > 1 then
@@ -319,19 +349,29 @@ function Fader:decide(cam, focal)
 				local w = (s.X.Scale * e.shrinkT / depth) * focal + s.X.Offset * e.shrinkT
 				local h = (s.Y.Scale * e.shrinkT / depth) * focal + s.Y.Offset * e.shrinkT
 				local cx, cy = p.X / depth * focal, p.Y / depth * focal
+				row = { e = e, depth = depth, x0 = cx - w / 2, x1 = cx + w / 2, y0 = cy - h / 2, y1 = cy + h / 2, area = w * h }
+			end
+		end
+		if cfg.Group and not e.hold and e.band > 0.05 then
+			if row then
 				groups[cfg.Group] = groups[cfg.Group] or {}
-				table.insert(groups[cfg.Group], { e = e, depth = depth, x0 = cx - w / 2, x1 = cx + w / 2, y0 = cy - h / 2, y1 = cy + h / 2, area = w * h })
+				table.insert(groups[cfg.Group], row)
 			else
 				e.hidden, e.flips = false, 0 -- (beside or behind the camera: nothing covers it)
 			end
 		elseif not cfg.Group then
 			e.hidden = nil
 		end -- (held or faded by the distance: it keeps its last declutter decision for when it comes back)
+		if not keepOn or (not row and not e.hold and e.band > 0.05) then
+			e.underHud, e.hudFlips = nil, 0 -- (no HUD here, or off the screen: nothing of the HUD covers it)
+		elseif row then
+			LabelFade.underHud(e, row, keep)
+		end
 	end
 	for _, rows in groups do LabelFade.declutter(rows) end
 	for _, e in self.entries do
 		if not e.off and e.band then
-			e.target = (e.hold or e.hidden) and 0 or e.band
+			e.target = (e.hold or e.hidden or e.underHud) and 0 or e.band
 			if e.fresh then
 				-- First sight: shown as it should be, no fade (no burst of pops when the map loads).
 				e.fresh = false
@@ -359,7 +399,7 @@ function Fader:step(dt, cam)
 				local d = (pos - eye).Magnitude
 				e.band = LabelFade.band(d, cfg.Near, cfg.Far)
 				e.shrinkT = LabelFade.shrink(d, cfg.Shrink, cfg.ShrinkMin)
-				e.target = (e.hold or e.hidden) and 0 or e.band
+				e.target = (e.hold or e.hidden or e.underHud) and 0 or e.band
 				if e.target ~= e.a or e.shrinkT ~= e.s then e.still = false end
 			end
 		end

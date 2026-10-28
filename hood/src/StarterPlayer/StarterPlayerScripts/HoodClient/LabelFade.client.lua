@@ -100,6 +100,22 @@ local function outlines()
 		end
 	end
 end
+-- (Oct 28: the Spin wheel sat on a lane's "1x Power" sign, which read "1x [wheel]wer") the HUD keep-out: the boxes of the
+-- HUD's shown buttons (each block of HoodHUD's Root: the Spin wheel, the Shop column, the counters, the offer cards, the
+-- bottom bar), in the fader's pixels (from the screen's centre, y up), looked at twice a second. A world label under
+-- one fades out until it is clear (LabelFade.underHud).
+local playerGui = game:GetService('Players').LocalPlayer:WaitForChild('PlayerGui')
+local HudBoxes = require(RS.Shared.HudBoxes)
+local KEEP_EVERY, KEEP_PAD = 0.5, 4
+local keep, keepSince, warnedKeep = {}, KEEP_EVERY, false
+local function hudBoxes(vp)
+	local out = {}
+	local cx, cy = vp.X / 2, vp.Y / 2
+	for _, b in HudBoxes.get(playerGui, KEEP_PAD) do
+		table.insert(out, { x0 = b.x0 - cx, x1 = b.x1 - cx, y0 = cy - b.y1, y1 = cy - b.y0 })
+	end
+	return out
+end
 local profile = debug and debug.profilebegin and debug.profileend -- (the MicroProfiler shows it as LabelFade)
 RunService.Heartbeat:Connect(function(dt)
 	local cam = workspace.CurrentCamera
@@ -108,11 +124,17 @@ RunService.Heartbeat:Connect(function(dt)
 	dt = dt or 1 / 60
 	since += dt
 	local cf = cam.CFrame
+	keepSince += dt
 	if since >= DECIDE then
 		since = 0
 		local vp = cam.ViewportSize
 		local h = (vp and vp.Y > 100) and vp.Y or 720 -- (ViewportSize can read 1 x 1 for a frame at startup)
-		fader:decide(cf, h / (2 * math.tan(math.rad(cam.FieldOfView) / 2)))
+		if keepSince >= KEEP_EVERY then
+			keepSince = 0
+			local okK, boxes = pcall(hudBoxes, (vp and vp.Y > 100) and vp or Vector2.new(1280, 720))
+			if okK then keep = boxes elseif not warnedKeep then warnedKeep = true; warn('[LabelFade] ' .. tostring(boxes)) end
+		end
+		fader:decide(cf, h / (2 * math.tan(math.rad(cam.FieldOfView) / 2)), keep)
 	end
 	fader:step(math.min(dt, 0.1), cf)
 	outlineSince += dt

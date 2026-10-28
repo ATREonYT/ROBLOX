@@ -63,7 +63,8 @@ ringEdge.Parent = rimFrame
 local gloss = Kit.new('Frame', { Name = 'Gloss', Position = px(H.Rim + 1, H.Rim + 1), Size = UDim2.new(1, -2 * H.Rim - 2, 0.48, 0), BackgroundColor3 = WHITE, BackgroundTransparency = 0, BorderSizePixel = 0, Active = false, ZIndex = 2, Parent = face })
 Kit.corner(H.CardCorner - H.Rim - 1).Parent = gloss
 Kit.new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new(0.86, 1), Parent = gloss })
-local drop = Kit.new('Frame', { Name = 'Drop', Position = px(0, H.Drop), Size = UDim2.fromScale(1, 1), BackgroundColor3 = Kit.Skin.outline, BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 1, Parent = face })
+local drop = Kit.new('Frame', { Name = 'Drop', Position = px(0, H.Drop), Size = UDim2.fromScale(1, 1), BackgroundColor3 = Kit.Skin.outline, BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, ZIndex = 1, Parent = hint })
+-- (the drop is the face's sibling, under it: a child of the face would be drawn over the face, ZIndexBehavior Sibling)
 Kit.corner(H.CardCorner).Parent = drop
 local hintText = Kit.text({ Name = 'Text', Text = '', TextSize = H.TextSize, RichText = true, Position = px(0, -1), Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = face })
 TextStyle.apply(hintText, 'white')
@@ -77,7 +78,10 @@ local hintPop = Kit.new('UIScale', { Name = 'HintPop', Scale = 1, Parent = face 
 -- breathing, the rest navy. A finished step gets its celebration: a cheer word pops under the loop and a burst of
 -- confetti bits flies out of the chip just done (no flash).
 local CHIP_W, CHIP_H, CHIP_GAP, CHIP_TEXT = 86, 30, 8, 16
-local LOOP_Y = 64 -- (design px from the very top: under Roblox's top bar)
+-- (Oct 28: at 64, under Roblox's top bar, the strip sat on the Stage 1 gate's sign, straight ahead of the spawn) up in
+-- the top bar's own row, whose middle Roblox leaves free (its buttons sit at the left and right ends): over the roof, off
+-- the gate and its sign
+local LOOP_Y = 14 -- (design px from the very top of the screen)
 local loopRow = Kit.new('Frame', { Name = 'Loop', AnchorPoint = V2(0.5, 0), Position = UDim2.new(0.5, 0, 0, LOOP_Y), Size = px(#Rules.Loop * (CHIP_W + CHIP_GAP) - CHIP_GAP, CHIP_H), BackgroundTransparency = 1, Active = false, Visible = false, ZIndex = 4, Parent = hintRoot })
 local CHIP_TONE = {
 	done = { Kit.hex('92F64E'), Kit.hex('2FBE1E'), Kit.hex('0E3A06') },
