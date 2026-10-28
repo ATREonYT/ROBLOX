@@ -177,8 +177,11 @@ local function cashOut(player, pad)
 	if autoPaid[player] and autoPaid[player][pad.Stage] then
 		-- already paid by Auto Collect: no second payment, just the trip back
 		autoPaid[player] = nil
-		teleport(player, 'Lobby', 'pad')
-		stay[player] = nil
+		cinematic:FireClient(player, { Kind = 'CashOutGo' })
+		task.delay(StageRules.DipFor, function()
+			teleport(player, 'Lobby', 'pad')
+			stay[player] = nil
+		end)
 		return
 	end
 	if not Runs.claim(player, pad.Stage) then return end
@@ -190,9 +193,14 @@ local function cashOut(player, pad)
 	player:SetAttribute('BestCashOut', math.max(tonumber(player:GetAttribute('BestCashOut')) or 0, pad.Stage))
 	player:SetAttribute('CashOuts', cashOuts[player])
 	Data.push(player)
-	teleport(player, 'Lobby', 'pad')
-	stay[player] = nil
-	cinematic:FireClient(player, { Kind = 'CashOut', Stage = pad.Stage, Reward = reward, TenX = tenX })
+	-- (Oct 28, the feel round: no hard cuts) the screen dips to night blue first (HoodClient/Stages), the trip back
+	-- happens under it, and it lifts on the lobby with the Cash joining your balance
+	cinematic:FireClient(player, { Kind = 'CashOutGo' })
+	task.delay(StageRules.DipFor, function()
+		teleport(player, 'Lobby', 'pad')
+		stay[player] = nil
+		cinematic:FireClient(player, { Kind = 'CashOut', Stage = pad.Stage, Reward = reward, TenX = tenX })
+	end)
 end
 
 -- You are on a pad (its Touched or the poll). One action a stay.

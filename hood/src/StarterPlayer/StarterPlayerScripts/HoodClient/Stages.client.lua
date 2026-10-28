@@ -637,8 +637,13 @@ end
 
 -- A pad paid out (you are back in the lobby): the Cash just joins the balance (HUD.client ticks the counter; brief 29: no
 -- big "+10 Cash" in the middle of the screen any more), with a small gold burst over you.
+-- (Oct 28, the feel round: no hard cuts) A pad's trip back: the screen dips to night blue (CashOutGo, Shared/ScreenDip),
+-- the server moves you under it (StageRules.DipFor), and it lifts on the lobby (CashOut).
+local dip = require(RS.Shared.ScreenDip)
 Net.get('Cinematic').OnClientEvent:Connect(function(info)
+	if type(info) == 'table' and info.Kind == 'CashOutGo' then dip.close() return end
 	if type(info) ~= 'table' or info.Kind ~= 'CashOut' then return end
+	task.delay(0.05, dip.open)
 	local gold = C(255, 214, 40)
 	task.delay(0.15, function()
 		local character = player.Character
@@ -646,6 +651,8 @@ Net.get('Cinematic').OnClientEvent:Connect(function(info)
 		if not root then return end
 		Juice.burst(root.Position + Vector3.new(0, 2, 0), gold, 2)
 		if Juice.shards then pcall(Juice.shards, root.Position + Vector3.new(0, 3, 0), gold, 'confetti') end
+		-- (Oct 28, the feel round) the Cash flies into your counter as the dip lifts
+		pcall(function() require(RS.Shared.FightJuice).orbs(root.Position + Vector3.new(0, 2.5, 0), 6, 'Cash') end)
 	end)
 end)
 

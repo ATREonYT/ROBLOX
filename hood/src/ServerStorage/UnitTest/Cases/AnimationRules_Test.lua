@@ -25,9 +25,9 @@ return function(t)
 		t.expect.equal(A.apply(nil), 0)
 	end)
 
-	t.test('every move in the config has its Animate slot, and the config holds only ids or blanks', function()
+	t.test('every move in the config has its Animate slot (or is a fight move), and the config holds only ids or blanks', function()
 		for move, v in A.Config do
-			t.expect.truthy(A.Slots[move] ~= nil)
+			t.expect.truthy(A.Slots[move] ~= nil or A.FightMoves[move] == true) -- (Oct 28: Punch, Kick are played by CharMotion)
 			t.expect.truthy(v == '' or A.id(v) ~= nil)
 		end
 	end)

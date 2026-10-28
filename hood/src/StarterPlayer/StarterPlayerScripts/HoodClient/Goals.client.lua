@@ -108,6 +108,28 @@ local function fighting()
 	return (type(left) == 'number' and left > 0) or os.clock() < clearUntil
 end
 local allDoneAt = nil
+-- (Oct 28, the feel round: nothing pops in) the goal line eases in when it comes back (a fight over, a moment gone):
+-- its words fade up over 0.25 s and it settles from a touch small; it still steps aside at once
+local function show(on)
+	if on and not tracker.Visible then
+		local info = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		for _, d in tracker:GetDescendants() do
+			local prop = (d:IsA('TextLabel') and 'TextTransparency') or (d:IsA('UIStroke') and 'Transparency') or (d:IsA('ImageLabel') and 'ImageTransparency') or nil
+			if prop then
+				local base = d:GetAttribute('FadeBase')
+				if type(base) ~= 'number' then
+					base = d[prop]
+					d:SetAttribute('FadeBase', base)
+				end
+				d[prop] = 1
+				TweenService:Create(d, info, { [prop] = base }):Play()
+			end
+		end
+		trackerScale.Scale = 0.94
+		TweenService:Create(trackerScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	end
+	tracker.Visible = on
+end
 local function paintTracker(pop)
 	local step, text, reward = player:GetAttribute('GoalStep'), player:GetAttribute('GoalText'), player:GetAttribute('GoalReward')
 	if type(step) ~= 'number' or type(text) ~= 'string' then
@@ -122,7 +144,7 @@ local function paintTracker(pop)
 		local where = player:GetAttribute('GoalWhere')
 		line.Text = type(where) == 'string' and where ~= '' and where or ''
 		place(line.Text, nil)
-		tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and not tutorialOn() and os.clock() - allDoneAt < 12
+		show(not holding and not fighting() and not unboxing() and not boardUp() and not tutorialOn() and os.clock() - allDoneAt < 12)
 		if tracker.Visible then task.delay(12.5, function() paintTracker(false) end) end
 		return
 	end
@@ -130,7 +152,7 @@ local function paintTracker(pop)
 	head.Text = 'NEXT GOAL'
 	line.Text = text
 	place(text, '+' .. Format.compact(reward))
-	tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and not tutorialOn()
+	show(not holding and not fighting() and not unboxing() and not boardUp() and not tutorialOn())
 	if pop and tracker.Visible then
 		trackerScale.Scale = 1.15
 		TweenService:Create(trackerScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()

@@ -5,6 +5,7 @@
 --   AnimationRules.apply(animate)   points the Animate script's Animations at the pack's moves (only the ones with an id);
 --                                   returns how many it changed. Animate watches its values and reloads by itself.
 --   AnimationRules.track(animator, move)  a looped AnimationTrack of a move for an NPC's Animator (nil without an id)
+--   AnimationRules.oneShot(animator, move) a fight move (Punch, Kick) played once at Action priority (nil without an id)
 local AnimationRules = {}
 local okC, Config = pcall(function() return require(script.Parent.Config.Animations) end)
 AnimationRules.Config = okC and type(Config) == 'table' and Config or {}
@@ -19,6 +20,9 @@ AnimationRules.Slots = {
 	Climb = { climb = { 'ClimbAnim' } },
 	Swim = { swim = { 'Swim' }, swimidle = { 'SwimIdle' } },
 }
+
+-- (Oct 28, the feel round) moves Roblox's Animate script doesn't play: CharMotion.melee plays them (AnimationRules.oneShot)
+AnimationRules.FightMoves = { Punch = true, Kick = true }
 
 function AnimationRules.id(v: any): string?
 	if type(v) == 'number' then
@@ -67,6 +71,19 @@ function AnimationRules.track(animator: Instance?, move: string, config: any?): 
 	local ok, track = pcall(function() return (animator :: any):LoadAnimation(anim) end)
 	if not ok or not track then return nil end
 	track.Looped = move ~= 'Jump'
+	return track
+end
+
+-- (Oct 28, the feel round) a fight move played once over everything else (Punch, Kick): nil without an id
+function AnimationRules.oneShot(animator: Instance?, move: string, config: any?): any
+	local id = AnimationRules.moveId(move, config)
+	if not id or typeof(animator) ~= 'Instance' or not animator:IsA('Animator') then return nil end
+	local anim = Instance.new('Animation')
+	anim.AnimationId = id
+	local ok, track = pcall(function() return (animator :: any):LoadAnimation(anim) end)
+	if not ok or not track then return nil end
+	track.Looped = false
+	pcall(function() track.Priority = Enum.AnimationPriority.Action end)
 	return track
 end
 

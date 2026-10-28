@@ -98,7 +98,7 @@ local function flowTrack()
 		table.insert(up, 'GoalDone:' .. tt)
 		local wv = G:FindFirstChild('HoodWaves')
 		local sh = wv and wv:FindFirstChild('ShootHint', true)
-		if sh and sh.Visible then FL.shootOverMoment = (FL.shootOverMoment or 0) + 1 end
+		if sh and sh.Visible and sh.TextTransparency < 0.5 then FL.shootOverMoment = (FL.shootOverMoment or 0) + 1 end -- (Oct 28: it fades out; only a readable line counts)
 		if tt == "YOU'RE READY!" then
 			FL.ready = true
 			FL.readyAt = FL.readyAt or K

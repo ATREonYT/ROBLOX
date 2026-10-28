@@ -151,7 +151,7 @@ function FightFX.gain(at, amount, opts)
 		if old and old.Parent then old:Destroy() end
 	end
 	local k = opts.melee and 1.12 or 1
-	local g, p = board('GainFX', at, 2.3 * k, 0.86 * k, 0.75, true)
+	local g, p = board('GainFX', at, 2.3 * k, 0.86 * k, 0.8, true)
 	table.insert(gains, p)
 	local h, scale = holder(g, 0.45)
 	local text = '+' .. (opts.text or (function()
@@ -191,10 +191,16 @@ function FightFX.gain(at, amount, opts)
 	img.Parent = h
 	-- pop 0.45 -> 1.1 -> 1 (0.14 s), rise 1 stud over 0.6 s (about 4 % of the screen from the play camera, r3: matched to
 	-- W 9.3-12.3 s and 31.4-32.5 s), fade out from 0.42 s
-	tween(scale, 0.14, { Scale = 1 }, Enum.EasingStyle.Back)
+	-- (Oct 28, the feel round, the owner: "the nice effects that they use") it pops bigger (0.3 -> 1.25 -> 1, a swing's
+	-- bigger still) and arcs: out to the side (opts.drift, studs) and up 1.4 studs on an eased curve, then fades
+	scale.Scale = 0.3
+	local peak = opts.melee and 1.35 or 1.22
+	local up = tween(scale, 0.1, { Scale = peak }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	if up then up.Completed:Once(function() tween(scale, 0.12, { Scale = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut) end) end
+	local drift = typeof(opts.drift) == 'Vector3' and opts.drift or Vector3.new((math.random() - 0.5) * 0.3, 0, 0)
 	g.StudsOffsetWorldSpace = Vector3.new(0, 0, 0)
-	tween(g, 0.6, { StudsOffsetWorldSpace = Vector3.new((math.random() - 0.5) * 0.3, 1.0, 0) }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	fadeAll(h, 1, 0.2, 0.42)
+	tween(g, 0.65, { StudsOffsetWorldSpace = drift + Vector3.new(0, 1.4, 0) }, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+	fadeAll(h, 1, 0.22, 0.45)
 	return g
 end
 

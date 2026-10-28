@@ -25,6 +25,7 @@
 local Players = game:GetService('Players')
 local RunService = game:GetService('RunService')
 local JointSpring = require(script.Parent.JointSpring)
+local okAR, AnimationRules = pcall(require, script.Parent.AnimationRules)
 
 local CharMotion = {}
 local A = CFrame.Angles
@@ -79,10 +80,46 @@ function CharMotion.shot(power)
 	state.last = os.clock()
 	state.vel += CharMotion.Kick * (power or 1)
 end
+-- (Oct 28, the feel round) the owner's fight moves (Config/Animations Punch, Kick) when their ids are set: swings go
+-- Punch, Punch, Kick; the drawn swings stand in for any move without one. Returns 'Animation' or 'Drawn'.
+CharMotion.MeleeMoves = { 'Punch', 'Punch', 'Kick' }
+function CharMotion.meleeMove(n)
+	return CharMotion.MeleeMoves[((n or 1) - 1) % #CharMotion.MeleeMoves + 1]
+end
+local tracks = {} -- (this character's loaded fight moves; false: that move has no id)
+local function playMove(move)
+	if not okAR or not AnimationRules.oneShot then return false end
+	local c = state.char
+	local hum = c and c:FindFirstChildOfClass('Humanoid')
+	local animator = hum and hum:FindFirstChildOfClass('Animator')
+	if not animator then return false end
+	local tr = tracks[move]
+	if tr == nil then
+		tr = AnimationRules.oneShot(animator, move) or false
+		tracks[move] = tr
+	end
+	if not tr then return false end
+	local ok = pcall(function() tr:Play(0.05, 1, 1.15) end)
+	if ok then
+		local len = 0.45
+		pcall(function() if tr.Length > 0 then len = tr.Length / 1.15 end end)
+		state.animUntil = os.clock() + len
+	end
+	return ok
+end
 function CharMotion.melee(n)
+	if playMove(CharMotion.meleeMove(n)) then
+		state.swing = -10
+		return 'Animation'
+	end
 	state.last = os.clock()
 	state.swing = os.clock()
 	state.swingN = ((n or 1) - 1) % #CharMotion.Swings + 1
+	return 'Drawn'
+end
+-- (Oct 28, the feel round) hit-stop: the swing holds the frame it landed on for `seconds` (the goon holds it too)
+function CharMotion.hitStop(seconds)
+	if os.clock() - state.swing < CharMotion.SwingTime then state.swing += math.clamp(seconds or 0, 0, 0.15) end
 end
 function CharMotion.hurt(power)
 	state.hurtV += 9 * (power or 1)
@@ -162,6 +199,7 @@ local function bind(character)
 	state.springs = JointSpring.new()
 	state.char = character
 	state.hips = {}
+	table.clear(tracks)
 	if not character then return end
 	for _, d in character:GetDescendants() do
 		if d:IsA('Motor6D') and table.find(NAMES, d.Name) then state.joints[d.Name] = d end
@@ -209,6 +247,8 @@ function CharMotion.start()
 			state.hurt = math.clamp(state.hurt + state.hurtV * dt, -0.3, 0.9)
 			state.downW += ((state.down and 1 or 0) - state.downW) * (1 - math.exp(-12 * dt))
 			local pose, want = CharMotion.target({ sinceShot = os.clock() - state.last, fight = fighting(player), armed = armed(c) })
+			-- (Oct 28) one of the owner's fight moves is playing: our layer steps aside for it
+			if os.clock() < (state.animUntil or 0) then want = 0 end
 			-- (brief 30) the breath and the run's counter-swing, under the hold and the ready stance
 			-- (how fast you move, from where your root was last frame: walking reads ~0.5, running 1)
 			local r = c:FindFirstChild('HumanoidRootPart')

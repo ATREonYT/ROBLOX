@@ -138,6 +138,7 @@ local function node(inst)
 	end
 	return n
 end
+__uiNode = node -- (firstvideo.luau: a BillboardGui's contents, laid on the screen where the camera sees it)
 __uiDump = function(gui, path)
 	__fs.writeFile(path, __serde.encode('json', node(gui)))
 end

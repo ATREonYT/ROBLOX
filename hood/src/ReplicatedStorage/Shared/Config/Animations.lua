@@ -13,4 +13,8 @@ return {
 	Fall = '',
 	Climb = '',
 	Swim = '',
+	-- (Oct 28, the feel round) your fight moves: a swing at a goon in contact plays Punch, Punch, Kick in turn
+	-- (CharMotion.melee); while one is empty, the drawn swing (CharMotion.Swings) stands in
+	Punch = '',
+	Kick = '',
 }

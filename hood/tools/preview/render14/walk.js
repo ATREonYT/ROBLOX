@@ -84,7 +84,7 @@ function avatar(x, z, yaw, k, y0 = 0) {
       const f = CAMS.frames[i] || CAMS.frames[i - 1];
       data.parts.length = base;
       data.parts.push(...avatar(f.a[0] - 2400, f.a[2], f.a[3] + Math.PI, i, f.a[1] - 3.12));
-      data.parts.push(...(f.p || []));
+      data.parts.push(...(Array.isArray(f.p) ? f.p : [])); // (an empty list arrives as {} from Lune's JSON)
       await page.evaluate(([dd, o]) => window.loadScene(dd, o), [data, { time: 3 + i / FPS, bloom: true, lighting: process.env.LIGHTING || 'PlusOne', lights: 24 }]);
       const url = await page.evaluate(c => window.shoot(c), { name: 'f' + i, pos: f.c, look: f.l, fov: 70 });
       fs.writeFileSync(path.join(outDir, 'f_' + String(i).padStart(4, '0') + '.png'), Buffer.from(url.split(',')[1], 'base64'));

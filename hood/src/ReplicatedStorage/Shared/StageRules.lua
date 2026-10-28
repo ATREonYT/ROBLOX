@@ -82,6 +82,8 @@ StageRules.Trips = {
 	{ Target = 'Stage1', Text = 'Stage 1', Caption = 'Start a run' },
 }
 StageRules.TripLand = 12 -- a Stage 1 trip lands this far past the gate's line
+-- (Oct 28, the feel round) a pad's trip back waits this long while the screen dips (HoodClient/Stages): no hard cut
+StageRules.DipFor = 0.24
 
 -- Where a trip goes: 'Lobby' -> 'Lobby'; 'Stage1' -> the Stage 1 gate (you land TripLand past it), or nil, 'locked' on a
 -- map without gates; anything else (the retired 'Furthest' too) -> nil, 'unknown'. StageService and TravelService

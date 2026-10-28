@@ -152,7 +152,8 @@ roblox.implementMethod("CollectionService", "GetTagged", function(self, tag)
 end)
 roblox.implementMethod("Players", "GetPlayers", function(self) return self:GetChildren() end)
 -- (armory brief6) Debris and RunService.Heartbeat for the client's celebration; the test steps Heartbeat itself.
-roblox.implementMethod("Debris", "AddItem", function(self, inst, t) task.delay(t or 10, function() pcall(function() inst:Destroy() end) end) end)
+-- (Oct 28) on the recorder's frame clock when there is one (ui/firstvideo.luau: a 0.2 s effect lives 6 frames, not 0.2 s of a slow dump)
+roblox.implementMethod("Debris", "AddItem", function(self, inst, t) (_G.__vtask or task).delay(t or 10, function() pcall(function() inst:Destroy() end) end) end)
 roblox.implementProperty("RunService", "Heartbeat", function(self) return instSignal(self, "Heartbeat") end)
 -- (MECHANICS) server and client scripts in one DataModel: remotes deliver both ways (FireServer runs the server's
 -- handlers with the LocalPlayer), GUI/input/descendant events are recordable signals, sounds and tool equips are

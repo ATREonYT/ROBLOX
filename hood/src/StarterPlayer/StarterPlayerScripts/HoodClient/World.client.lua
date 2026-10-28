@@ -84,8 +84,12 @@ for i, trip in StageRules.Trips do
 	holder.Parent = card.Body
 	label({ Name = 'Caption', Text = trip.Caption, TextSize = 18, StrokeThickness = 2.5, TextColor3 = hex('E8FBFF'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, 2), Size = px(176, 22), ZIndex = 33, Parent = holder })
 	Motion.button(holder, function()
-		Net.get('Travel'):FireServer(trip.Target, 1)
 		close()
+		-- (Oct 28, the feel round: no hard cuts) the trip happens under a short dip to night blue (Shared/ScreenDip)
+		local ScreenDip = require(RS.Shared.ScreenDip)
+		ScreenDip.close(1)
+		task.delay(ScreenDip.In + 0.02, function() Net.get('Travel'):FireServer(trip.Target, 1) end)
+		task.delay(ScreenDip.In + 0.4, ScreenDip.open)
 	end)
 end
 

@@ -5,9 +5,10 @@
 #   2. the screens drawn see-through (video.js), the hall drawn by render14 from the recorded cameras (walk.js CAMS=, at
 #      30 / VSTEP fps: a 3D frame takes ~11 s), the two laid together by ffmpeg -> <out>/first40.mp4.
 #   LUNE=<lune> sh hood/tools/preview/ui/firstvideo.sh <out>       (from the repo root; render14 needs `npm install` first)
-# Options: VFRAMES (1200), VSTEP (6: the hall at 5 fps), JOBS (3 render14 browsers at once), SKIP3D=1 (screens only,
-# over a plain backdrop). What it can't show: billboards over the world (the gate signs, "+1 POWER"), the kid's real
-# avatar and animations (a blocky stand-in), particles, and sound (off in the game anyway).
+# Options: VFRAMES (1200), VSTEP (6: the hall at 5 fps), VFROM (0: game frames to skip first, e.g. 300 starts at 10 s), JOBS (3 render14 browsers at once), SKIP3D=1 (screens only,
+# over a plain backdrop). (Oct 28) The world's billboards the scripts add (the fight's "+N", hit marks, stars, the
+# goons' tags) are drawn on a screen layer under the HUD, projected through the game camera. What it can't show: the
+# kid's real avatar and animations (a blocky stand-in), the real R15 goons, particles, Highlights and sound.
 set -e
 L=${LUNE:-lune}
 D=$(cd "$(dirname "$0")" && pwd)
@@ -18,7 +19,7 @@ mkdir -p "$O"; O=$(cd "$O" && pwd)
 VFRAMES=${VFRAMES:-1200}; VSTEP=${VSTEP:-6}; JOBS=${JOBS:-3}
 S=$O/scenario.luau
 N=$(grep -n "^-------.*0\. spawn" "$T/feel_base.luau" | head -1 | cut -d: -f1)
-{ echo "UI_OUT = '$O'; VFRAMES = $VFRAMES; VSTEP = $VSTEP"; cat "$D/dump.luau" "$D/prelude.luau" "$D/firstvideo.luau"
+{ echo "UI_OUT = '$O'; VFRAMES = $VFRAMES; VSTEP = $VSTEP; VFROM = ${VFROM:-0}"; cat "$D/dump.luau" "$D/prelude.luau" "$D/firstvideo.luau"
   head -$((N - 1)) "$T/feel_base.luau" | sed \
     -e "s/__screenSize = Vector2.new(1200, 617)/__screenSize = Vector2.new(1280, 662)/" \
     -e "s/__fullSize = Vector2.new(1200, 675)/__fullSize = Vector2.new(1280, 720)/" \
