@@ -36,7 +36,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 ## Checks (must all pass before every commit)
 `LUNE=<path to lune> sh hood/tools/checks/run_checks.sh`. The expected result:
 - check_locals: 0 failing;
-- unit: all pass (451 since the Oct 28 HUD overlap round);
+- unit: all pass (461 since the Oct 28 feel and shoe polish rounds);
 - integ_waves: no issues;
 - integ_lobby: walk cleared (teleports 0 while the World Boss is off);
 - city_contracts: 215 checks / 0 failed;
@@ -50,6 +50,7 @@ A kids' Roblox simulator in Luau, modelled on "+1 Soldier Evolution" with a hood
 - first30: 8 ok with 0 purchase prompts, and `[flow] 23 checks / 0 failed` (a quiet tutorial, one voice at a time);
 - finale_play: 18/0;
 - wb_play: 10/0. It's timing-sensitive under heavy CPU load; re-run alone before calling it a failure.
+- core_loop and first30 time against the real clock: in this cloud container (Oct 28) they miss by a few tenths of a second even on the untouched code (2-5 lane timing checks, the first-gun hint 5 ticks against 3). Compare against the base on the same machine before calling a failure yours.
 
 Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio needed).
 
