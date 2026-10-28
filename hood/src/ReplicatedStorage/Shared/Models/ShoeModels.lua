@@ -44,6 +44,12 @@
 -- foot; only the tongue (flagged `shaft`) rides the lower leg on R15, so it stays in front of the shin when the ankle
 -- bends.
 -- Part budget: <= 60 per shoe (a worn or follower pair <= 120). Now 36..57 (World 1), 46..57 (the later worlds).
+--
+-- (Oct 28, the owner: "keep the form, I mean just make them visibly look a bit better") Every shoe keeps its shape,
+-- proportions and colours; a last pass (polish, below) gives them a cleaner finish: soft edges (blocks and wedges built
+-- as Shared/RoundMesh's rounded meshes when they're ready, else the same Parts), a clean finish with gloss by rarity,
+-- contrast where two neighbouring colours were nearly the same, glossy laces, a sole line where a shoe has no stripe or
+-- seam, and no z-fighting.
 local ShoeModels = {}
 
 -- (brief 30) the World 1 shoes' part rows (Shared/Models/ShoeParts, generated); nil if that module is missing
@@ -66,6 +72,17 @@ do
 	end)
 	ItemMeshes = ok and type(m) == 'table' and m or nil
 end
+
+-- (Oct 28) the rounded blocks and wedges (Shared/RoundMesh); nil if that module is missing
+local RoundMesh
+do
+	local ok, m = pcall(function()
+		local node = script.Parent.Parent:FindFirstChild('RoundMesh')
+		return node and require(node)
+	end)
+	RoundMesh = ok and type(m) == 'table' and m or nil
+end
+ShoeModels.RoundMesh = RoundMesh
 
 local V, C = Vector3.new, Color3.fromRGB
 local CF, ANG = CFrame.new, CFrame.Angles
@@ -104,6 +121,8 @@ local KIND = {
 	-- (brief 28) the rarity ladder's finishes
 	rubber = { Enum.Material.SmoothPlastic, 0.15, 0, true }, -- a glossy rubber toe cap: a highlight band in the 3/4
 	silver = { Enum.Material.Metal, 0.35, 0, true }, -- polished silver (Epic's heel counter)
+	-- (Oct 28) the polish's top finish: Legendary and up (a clear coat that catches the sky)
+	lacquer = { Enum.Material.SmoothPlastic, 0.09, 0, true },
 }
 ShoeModels.Kinds = KIND
 local GOLD_LIFT = Color3.fromRGB(255, 232, 120)
@@ -1358,15 +1377,193 @@ local function fromRows(rows)
 	return list
 end
 
+---------------------------------------------------------------------------------------------- polish (Oct 28)
+-- The last pass over a shoe's specs, World 1 rows and recipes alike (see the header): the same pieces, the same places
+-- and the same colours, a cleaner finish. Runs once per shoe (the specs are cached).
+local SHARP = { Lining = true, HeelTabHole = true, Seam = true } -- (inner and hairline pieces keep crisp edges)
+-- (the line: LINE high, LINE_OUT wider than the sole, shifted SHIFT outward: proud on the outer side, the toe and the
+-- heel, and tucked inside the sole on the inner side, where the two shoes meet)
+local LINE, LINE_OUT, SHIFT, GROW = 0.026, 0.0065, 0.00725, 0.008
+ShoeModels.SoleLine = { Height = LINE, Out = LINE_OUT }
+local function near(a, b, t)
+	return math.abs(a.R - b.R) + math.abs(a.G - b.G) + math.abs(a.B - b.B) < (t or 0.12)
+end
+-- one readable step away from a colour: darker on a light one, lighter on a dark one
+local function step(c, t)
+	if lum(c) > 0.45 then return dark(c, t) end
+	return light(c, t)
+end
+local function first(list, name)
+	for _, s in list do
+		if s.name == name then return s end
+	end
+	return nil
+end
+-- The piece's local axis that stands upright (1 X, 2 Y, 3 Z) and its sign, or nil if none does.
+local function upright(cf)
+	for k, v in { cf.RightVector, cf.UpVector, cf.LookVector } do
+		if math.abs(v.Y) > 0.95 then return k, v.Y > 0 and 1 or -1 end
+	end
+	return nil
+end
+local function along(v, k) return k == 1 and v.X or k == 2 and v.Y or v.Z end
+local function setAlong(v, k, x)
+	return V(k == 1 and x or v.X, k == 2 and x or v.Y, k == 3 and x or v.Z)
+end
+
+-- A thin band round the midsole (its Sole, SoleToe and SoleHeel pieces, a little proud of them) in the shoe's trim
+-- colour, for the shoes whose sole has no stripe or seam yet; only within the part budget, and only whole.
+local function soleLine(list)
+	if first(list, 'Stripe') or first(list, 'Seam') or first(list, 'SoleLine') then return end
+	local sole = first(list, 'Sole')
+	if not sole then return end
+	local bands = {}
+	for _, s in list do
+		if s.name == 'Sole' or s.name == 'SoleToe' or s.name == 'SoleHeel' then
+			local k, sign = upright(s.cf)
+			-- (a wedge can only be sliced along its own X: the same triangle all the way through)
+			if not k or (s.cls == 'WedgePart' and k ~= 1) then return end
+			local h = along(s.size, k)
+			local size = s.size + V(LINE_OUT, LINE_OUT, LINE_OUT)
+			size = setAlong(size, k, LINE)
+			local axis = ({ s.cf.RightVector, s.cf.UpVector, s.cf.LookVector })[k] * sign
+			local cf = s.cf + axis * (h * 0.12) + V(SHIFT, 0, 0)
+			table.insert(bands, { cls = s.cls, shape = s.shape, name = 'SoleLine', size = size, cf = cf, kind = 'smooth', shaft = s.shaft })
+		end
+	end
+	if #bands == 0 or #list + #bands > 60 then return end
+	-- the trim colour: the heel tab's, else the outsole's, else a step off the midsole
+	local colour
+	for _, name in { 'HeelTab', 'Outsole' } do
+		local s = first(list, name)
+		if s and s.kind ~= 'neon' and not near(s.color, sole.color, 0.3) then
+			colour = s.color
+			break
+		end
+	end
+	colour = colour or step(sole.color, 0.3)
+	for _, b in bands do
+		b.color = colour
+		table.insert(list, b)
+	end
+end
+
+-- Contrast where two neighbouring colours were nearly the same: laces on their bed (tone on tone, so the design
+-- stays), a light outsole under the same light midsole (a step darker, like rubber).
+local function contrast(list, d)
+	local bed = first(list, 'Eyestay') or first(list, 'Quarter')
+	if bed and not d.rainbowLaces then
+		for _, s in list do
+			if (s.name == 'Lace' or s.name == 'LaceBow') and near(s.color, bed.color) then s.color = step(bed.color, 0.24) end
+		end
+	end
+	local sole = first(list, 'Sole')
+	if sole and lum(sole.color) > 0.45 then
+		for _, s in list do
+			if string.sub(s.name, 1, 7) == 'Outsole' and s.kind ~= 'neon' and near(s.color, sole.color) then
+				s.color = dark(sole.color, 0.22)
+			end
+		end
+	end
+end
+
+-- The finish by rarity: no grainy Plastic or Fabric (clean, matte); Rare and up a light gloss, Legendary and up a
+-- lacquer; laces glossy on every shoe (a highlight along each bar).
+local function finish(list, rarity)
+	for _, s in list do
+		if s.kind == 'plastic' or s.kind == 'fabric' then s.kind = 'smooth' end
+		if s.kind == 'smooth' and not SHARP[s.name] then
+			if rarity >= 4 then
+				s.kind = 'lacquer'
+			elseif rarity >= 2 or s.name == 'Lace' or s.name == 'LaceBow' then
+				s.kind = 'gloss'
+			end
+		end
+	end
+end
+
+-- No z-fighting: where two blocks of different colour or finish share a face plane (same side, overlapping), the
+-- smaller one grows a hair (GROW) across that plane, so it is drawn cleanly on top.
+local function tidy(list)
+	local blocks = {}
+	for _, s in list do
+		if s.cls == 'Part' and s.shape == 'Block' and not s.mesh then table.insert(blocks, s) end
+	end
+	local grown = 0
+	for i = 1, #blocks do
+		for j = i + 1, #blocks do
+			local a, b = blocks[i], blocks[j]
+			if a.color == b.color and a.kind == b.kind then continue end
+			local _, _, _, r00, r01, r02, r10, r11, r12, r20, r21, r22 = a.cf:ToObjectSpace(b.cf):GetComponents()
+			local R = { { r00, r01, r02 }, { r10, r11, r12 }, { r20, r21, r22 } }
+			local aligned = true
+			for k = 1, 3 do
+				for m = 1, 3 do
+					local x = math.abs(R[k][m])
+					if x > 1e-3 and x < 0.999 then aligned = false end
+				end
+			end
+			if not aligned then continue end
+			local c = a.cf:PointToObjectSpace(b.cf.Position)
+			local ha = { a.size.X / 2, a.size.Y / 2, a.size.Z / 2 }
+			local hbs = { b.size.X / 2, b.size.Y / 2, b.size.Z / 2 }
+			local hb, cb, mOf = {}, { c.X, c.Y, c.Z }, {}
+			for k = 1, 3 do
+				hb[k] = 0
+				for m = 1, 3 do
+					if math.abs(R[k][m]) > 0.5 then hb[k] += hbs[m]; mOf[k] = m end
+				end
+			end
+			for k = 1, 3 do
+				local flush = math.abs(ha[k] - (cb[k] + hb[k])) < 0.0025 or math.abs(-ha[k] - (cb[k] - hb[k])) < 0.0025
+				if not flush then continue end
+				local area = 1
+				for o = 1, 3 do
+					if o ~= k then area *= math.max(0, math.min(ha[o], cb[o] + hb[o]) - math.max(-ha[o], cb[o] - hb[o])) end
+				end
+				if area <= 1e-4 then continue end
+				if a.size.X * a.size.Y * a.size.Z <= b.size.X * b.size.Y * b.size.Z then
+					a.size = setAlong(a.size, k, along(a.size, k) + GROW)
+				else
+					b.size = setAlong(b.size, mOf[k], along(b.size, mOf[k]) + GROW)
+				end
+				grown += 1
+			end
+		end
+	end
+	return grown
+end
+
+-- Which pieces get soft edges when RoundMesh is ready: blocks and wedges big enough to show it.
+local function markRound(list)
+	for _, s in list do
+		local box = s.cls == 'Part' and s.shape == 'Block' and not s.mesh
+		if (box or s.cls == 'WedgePart') and not SHARP[s.name] and math.max(s.size.X, s.size.Y, s.size.Z) >= 0.08 then
+			s.round = true
+		end
+	end
+end
+
+-- (tidy before the sole line: the line is proud of the sole on purpose)
+local function polish(list, d)
+	tidy(list)
+	soleLine(list)
+	contrast(list, d)
+	finish(list, d.rarity)
+	markRound(list)
+	return list
+end
+ShoeModels._polish = { near = near, tidy = tidy }
+
 -- Specs are cached per id (they're plain data and never change): a World 1 shoe's from its rows, another's from the
--- recipe.
+-- recipe, then polished.
 local cache = {}
 local function specs(id)
 	local d = resolve(id)
 	local list = cache[d.Id]
 	if not list then
 		local rows = ShoeParts and ShoeParts.Shoes[d.Id]
-		list = rows and fromRows(rows) or recipe(d)
+		list = polish(rows and fromRows(rows) or recipe(d), d)
 		cache[d.Id] = list
 	end
 	return list, d
@@ -1390,7 +1587,11 @@ local MIN = 0.01
 -- Make one part from a spec. `cf` is final (world or host-relative), `size` final.
 local function makePart(spec, cf, size)
 	local p
-	if spec.cls == 'WedgePart' then
+	-- (Oct 28) the rounded mesh of a block or wedge, when RoundMesh is ready
+	local round = spec.round and RoundMesh and RoundMesh.ready() and RoundMesh.make(spec.cls == 'WedgePart' and 'RoundWedge' or 'RoundBox')
+	if round then
+		p = round
+	elseif spec.cls == 'WedgePart' then
 		p = Instance.new('WedgePart')
 	else
 		p = Instance.new('Part')
@@ -1410,15 +1611,17 @@ local function makePart(spec, cf, size)
 	p.Transparency = spec.transp or k[3]
 	-- small pieces, glow and glass cast no shadow (cheaper, cleaner)
 	p.CastShadow = k[4] and math.max(size.X, size.Y, size.Z) > 0.3
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
+	if not round then
+		p.TopSurface = Enum.SurfaceType.Smooth
+		p.BottomSurface = Enum.SurfaceType.Smooth
+	end
 	p.Anchored = true
 	p.CanCollide = false
 	p.CanTouch = false
 	p.CanQuery = false
 	p.Massless = true
 	if spec.shaft then p:SetAttribute('Shaft', true) end
-	if spec.studsBottom then p.BottomSurface = Enum.SurfaceType.Studs end
+	if spec.studsBottom and not round then p.BottomSurface = Enum.SurfaceType.Studs end
 	if spec.mesh then
 		local mesh = Instance.new('SpecialMesh')
 		mesh.MeshType = Enum.MeshType.Sphere
@@ -1564,7 +1767,7 @@ local wornState = InstanceMap.new()
 -- Weld the pair onto a character. R15: shoe body to Left/RightFoot, the shaft (collar, tongue, ankle panel) to
 -- Left/RightLowerLeg. R6: everything to the bottom of Left/Right Leg. Scaled per axis to the real parts.
 -- opts.noFx: skip the rarity effects. Returns cleanup() (also called by wearing another pair).
-function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean?, fxDensity: number? }?): () -> ()
+local function wearNow(character: Model, id: string, opts: { noFx: boolean?, fxDensity: number? }?): () -> ()
 	opts = opts or {}
 	local list, d = specs(id)
 	local old = wornState[character]
@@ -1669,6 +1872,27 @@ function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean?, f
 	return cleanup
 end
 
+-- (Oct 28) A pair put on before the rounded meshes are ready is put on again (rounded) when they are; the cleanup
+-- returned always takes off whichever is on.
+function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean?, fxDensity: number? }?): () -> ()
+	local current = wearNow(character, id, opts)
+	if not (RoundMesh and RoundMesh.Ready and RoundMesh.state() == 'building') then return current end
+	local conn
+	pcall(function()
+		conn = RoundMesh.Ready:Connect(function()
+			if conn then conn:Disconnect() end
+			if wornState[character] == current and character.Parent then
+				local ok, again = pcall(wearNow, character, id, opts)
+				if ok then current = again end
+			end
+		end)
+	end)
+	return function()
+		if conn then conn:Disconnect() end
+		current()
+	end
+end
+
 ---------------------------------------------------------------------------------------------- effects
 -- The rarity effects live in Shared/ShoeFX (brief 24: one ladder for worn shoes, followers and the reveal's data).
 -- ShoeModels only adds each shoe's own theme (its box's, or a definition's `fx` override) and the worn feet.
@@ -1757,5 +1981,8 @@ for _, id in ShoeModels.AllIds do
 		return nil
 	end })
 end
+
+-- (Oct 28) the rounded meshes are made in the background (on each client; RoundMesh says where else)
+if RoundMesh then pcall(RoundMesh.start) end
 
 return ShoeModels

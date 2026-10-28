@@ -3,7 +3,7 @@
 # offline from the game's own models (render14: the harness builds them, three.js draws them on a transparent
 # background), then framed like the other icons (fit_icons.py: 512 canvas, content centred, longer side 86%).
 #   LUNE=<lune> sh hood/tools/ui/render_items.sh [out dir]        (from the repo root; npm install in render14 first)
-#   ALL=true ... renders every shoe and box again, not only the missing ones.
+#   ALL=true ... renders every shoe and box again, not only the missing ones; ONLY='Shoe_Comet Shoe_Wave' only those.
 set -e
 L=${LUNE:-lune}
 D=$(cd "$(dirname "$0")" && pwd)
@@ -14,6 +14,7 @@ O=$(cd "$O" && pwd)
 SNIP="VIEWS = '$O/views.json'
 ICONS = '$R/hood/art/icons3d'
 ALL = ${ALL:-false}
+ONLY = '${ONLY:-}'
 $(cat "$D/items_scene.luau")"
 T=$R/hood/tools/preview/render14/tools
 (cd "$T" && timeout 900 "$L" run harness.luau "$R/hood/src" "$O/scene.json" "$SNIP" 2>&1 | grep -a "items\|rror" | head -20)

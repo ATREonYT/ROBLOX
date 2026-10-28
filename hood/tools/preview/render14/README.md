@@ -27,6 +27,8 @@ python3 $T/sbs.py out/shots/spawn.png hood/docs/refs/ref_W01.0_spawn_view_north.
   Each frame takes about 11 s; `START`/`END` render a chunk, so three chunks can run side by side.
 - `tools/lobby_metrics.luau`: the lobby's numbers (distances from the spawn, labels readable from it, empty floor share,
   design models tilted). Run it after a build through the harness.
+- `round` links `hood/art/models/round` (the shoes' rounding meshes, Shared/RoundMesh): `ui/items_scene.luau` injects
+  MeshPart templates whose `PreviewMesh` names these OBJs, so shoe pictures show the soft edges.
 - `tools/fake_items.luau`: fakes `ReplicatedStorage.HoodItemMeshes` the way the Studio import leaves it, so builders take
   the design path and the renderer draws the GLB meshes.
 

@@ -67,6 +67,15 @@ The BoxKit models in `models/icons.py` stay as the live in-game fallback (`IconM
 PNG reuse another model through `ALIASES` (written as `M.Alias` in IconModels.lua). `export_luau.py` keeps every
 id already in `M.Images`, including keys the upload tool added.
 
+Soft edges for the shoes (Oct 28): `export_round_meshes.py` makes the two rounding meshes (RoundBox, RoundWedge, size 1)
+into `Shared/Models/RoundMeshData.lua` (for the game, Shared/RoundMesh) and `hood/art/models/round/*.obj` (render14 draws
+them through its `round` link). Uploading them is optional: `hood/tools/studio/upload_round_meshes.lua` in Studio's
+command bar prints the ids for `Config/RoundMeshIds.lua`; until then each client builds them in game (Game Settings >
+Security > "Allow Mesh / Image APIs"), and without either the shoes keep their sharp Part blocks.
+```sh
+$PY hood/tools/blender/export_round_meshes.py
+```
+
 ## Getting the models into Roblox Studio
 
 1. **Parts (the main path).** Rojo syncs `src/ReplicatedStorage/Shared/Models/*.lua`. In game code:

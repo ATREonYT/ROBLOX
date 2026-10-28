@@ -2,11 +2,26 @@
 -- hood/art/icons3d yet (shoes as pairs, shoe boxes closed) side by side in an empty Workspace, from the same builders the
 -- game uses (Shared/Models ShoeModels.pair, BoxModels.build), and writes a camera view per item to VIEWS for render14's
 -- shoot.js. Globals set in front of this chunk: VIEWS (the views file), ICONS (hood/art/icons3d), ALL (true: every
--- item again, not only the missing ones).
+-- item again, not only the missing ones), ONLY (a space-separated list of names, e.g. 'Shoe_Comet Shoe_Wave': only
+-- those; empty: all).
+-- (Oct 28) Shoes are drawn as they look once Shared/RoundMesh is ready: its rounded blocks and wedges, from the OBJs
+-- in hood/art/models/round (render14's `round` link).
 local RS = game:GetService('ReplicatedStorage')
 local ShoeModels = require(RS.Shared.Models.ShoeModels)
 local BoxModels = require(RS.Shared.Models.BoxModels)
 local Shoes = require(RS.Shared.Config.Shoes)
+local RoundMesh = require(RS.Shared.RoundMesh)
+local templates = {}
+for _, name in RoundMesh.Names do
+	local p = Instance.new('MeshPart')
+	p.Name = name
+	p:SetAttribute('PreviewMesh', 'round/' .. name .. '.obj')
+	p:SetAttribute('PreviewMeshSize', Vector3.one)
+	templates[name] = p
+end
+RoundMesh.inject(templates)
+local only = {}
+for name in string.gmatch(ONLY or '', '%S+') do only[name] = true end
 local views = {}
 local x = 0
 local CORNERS = { Vector3.new(-1, -1, -1), Vector3.new(1, 1, 1), Vector3.new(-1, 1, -1), Vector3.new(1, -1, 1), Vector3.new(1, 1, -1), Vector3.new(-1, -1, 1), Vector3.new(1, -1, -1), Vector3.new(-1, 1, 1) }
@@ -47,6 +62,7 @@ for id in Shoes.ById do table.insert(need, 'Shoe_' .. id) end
 for k, b in Shoes.Boxes do table.insert(need, 'Box_' .. tostring(type(b) == 'table' and b.Id or k)) end
 table.sort(need)
 for _, name in need do
+	if next(only) and not only[name] then continue end
 	if not ALL and __fs.isFile(ICONS .. '/' .. name .. '.png') then continue end
 	local kind, id = string.match(name, '^(%a+)_(.+)$')
 	local ok, m = pcall(function()
