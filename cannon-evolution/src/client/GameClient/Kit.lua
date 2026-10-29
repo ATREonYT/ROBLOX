@@ -244,6 +244,17 @@ function Kit.button(props)
 	Kit.corner(props.Radius or 10, btn)
 	Kit.stroke(props.StrokeSize or 3, nil, btn)
 	local grad = Kit.gradient(colors[1], colors[2], btn)
+	-- darker lip along the bottom so the button reads as a pressable toy
+	local lip = new("Frame", {
+		Name = "Lip",
+		BackgroundColor3 = colors[2]:Lerp(Color3.new(0, 0, 0), 0.35),
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 6),
+		Position = UDim2.new(0, 0, 1, -6),
+		ZIndex = props.ZIndex or 1,
+		Parent = btn,
+	})
+	Kit.corner(props.Radius or 10, lip)
 	-- glossy top highlight
 	local shine = new("Frame", {
 		Name = "Gloss",

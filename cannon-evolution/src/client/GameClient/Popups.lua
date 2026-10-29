@@ -256,19 +256,66 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Offline earnings + Before You Go
 	-----------------------------------------------------------------------
-	local function bigStatPopup(title, titleColor, subtitle, columns)
-		local _, holder, close = modal(760, 520)
-		Kit.text({ Text = title, Size = 84, StrokeSize = 5, Color = titleColor, FrameSize = UDim2.new(1, 0, 0, 100), ZIndex = 75, Parent = holder })
-		Kit.text({ Text = subtitle, Size = 40, FrameSize = UDim2.new(1, 0, 0, 50), Position = UDim2.fromOffset(0, 100), ZIndex = 75, Parent = holder })
+	-- Big stat popups (Welcome Back, Before You Go) wait their turn so they never stack
+	local statQueue, statBusy = {}, false
+	local function nextStat()
+		if statBusy or #statQueue == 0 then
+			return
+		end
+		statBusy = true
+		local job = table.remove(statQueue, 1)
+		local title, titleColor, subtitle, columns = job[1], job[2], job[3], job[4]
+		local _, holder, closeModal = modal(760, 540)
+		local function close()
+			closeModal()
+			task.delay(0.25, function()
+				statBusy = false
+				nextStat()
+			end)
+		end
+		-- toy card: hard shadow, navy body, yellow header strip, thick ink outline
+		local shadow = new("Frame", {
+			BackgroundColor3 = Kit.Colors.Outline,
+			BackgroundTransparency = 0.35,
+			Size = UDim2.new(1, 0, 1, -40),
+			Position = UDim2.fromOffset(0, 48),
+			ZIndex = 71,
+			Parent = holder,
+		})
+		Kit.corner(22, shadow)
+		local card = new("Frame", {
+			BackgroundColor3 = Kit.Colors.Body,
+			Size = UDim2.new(1, 0, 1, -40),
+			Position = UDim2.fromOffset(0, 40),
+			ZIndex = 72,
+			Parent = holder,
+		})
+		Kit.corner(22, card)
+		Kit.stroke(5, nil, card)
+		Kit.gradient(Kit.Colors.Body, Kit.Colors.BodyDark, card)
+		local header = new("Frame", {
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			Size = UDim2.new(1, 0, 0, 96),
+			ZIndex = 73,
+			Parent = card,
+		})
+		Kit.corner(22, header)
+		Kit.gradient(Kit.Colors.HeaderTop, Kit.Colors.HeaderBottom, header)
+		Kit.text({ Text = title, Size = 68, StrokeSize = 5, Color = titleColor, FrameSize = UDim2.new(1, 0, 0, 96), Position = UDim2.fromOffset(0, -46), ZIndex = 76, Parent = card })
+		Kit.text({ Text = subtitle, Size = 34, FrameSize = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 46), ZIndex = 76, Parent = card })
 		for i, col in ipairs(columns) do
 			local x = #columns == 1 and 0.5 or (i == 1 and 0.27 or 0.73)
-			Kit.text({ Text = col.Top, Size = 36, Color = Kit.Colors.Yellow, FrameSize = UDim2.fromOffset(340, 40), Position = UDim2.new(x, 0, 0, 175), Anchor = Vector2.new(0.5, 0), ZIndex = 75, Parent = holder })
-			Kit.rays(holder, { Size = UDim2.fromOffset(240, 240), Position = UDim2.new(x, 0, 0, 300), Color = Kit.Colors.Yellow, Transparency = 0.7, ZIndex = 72 })
-			local icon = Kit.icon(col.Icon, { Size = UDim2.fromOffset(150, 150), Position = UDim2.new(x, 0, 0, 300), Anchor = Vector2.new(0.5, 0.5), ZIndex = 74, Parent = holder })
+			Kit.text({ Text = col.Top, Size = 32, Color = Kit.Colors.Yellow, FrameSize = UDim2.fromOffset(340, 40), Position = UDim2.new(x, 0, 0, 112), Anchor = Vector2.new(0.5, 0), ZIndex = 75, Parent = card })
+			Kit.rays(card, { Size = UDim2.fromOffset(220, 220), Position = UDim2.new(x, 0, 0, 236), Color = Kit.Colors.Yellow, Transparency = 0.7, ZIndex = 73 })
+			local icon = Kit.icon(col.Icon, { Size = UDim2.fromOffset(130, 130), Position = UDim2.new(x, 0, 0, 236), Anchor = Vector2.new(0.5, 0.5), ZIndex = 74, Parent = card })
 			Kit.bob(icon, 6, 2)
-			Kit.text({ Text = col.Bottom, Size = 40, FrameSize = UDim2.fromOffset(340, 46), Position = UDim2.new(x, 0, 0, 380), Anchor = Vector2.new(0.5, 0), ZIndex = 75, Parent = holder })
+			Kit.text({ Text = col.Bottom, Size = 38, FrameSize = UDim2.fromOffset(340, 46), Position = UDim2.new(x, 0, 0, 310), Anchor = Vector2.new(0.5, 0), ZIndex = 75, Parent = card })
 		end
 		okButton(holder, close)
+	end
+	local function bigStatPopup(title, titleColor, subtitle, columns)
+		table.insert(statQueue, { title, titleColor, subtitle, columns })
+		nextStat()
 	end
 
 	Remotes.OfflineEarnings.OnClientEvent:Connect(function(power, seconds)
@@ -297,12 +344,12 @@ return function(ctx)
 	-- Launch result banner
 	-----------------------------------------------------------------------
 	Remotes.LaunchResult.OnClientEvent:Connect(function(distance, cash, gems, isBest)
-		local text = "🎯 " .. Config.Format(distance) .. " m!  +" .. Config.Format(cash) .. " 💵"
+		local text = Config.Format(distance) .. " m!  +$" .. Config.Format(cash)
 		if gems > 0 then
-			text ..= "  +" .. gems .. " 💎"
+			text ..= "  +" .. gems .. " Gems"
 		end
 		if isBest then
-			text = "🏆 NEW BEST! " .. text
+			text = "NEW BEST! " .. text
 		end
 		Popups.Notify(text, isBest and Kit.Colors.Yellow or Color3.new(1, 1, 1))
 	end)

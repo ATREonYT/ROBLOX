@@ -53,9 +53,9 @@ Config.AUTO_LAUNCH_INTERVAL = 4 -- seconds between launches with Auto Launch on
 ---------------------------------------------------------------------------
 -- Rebirth: needs Power AND Cash, resets both (and upgrades stay).
 ---------------------------------------------------------------------------
-Config.REBIRTH_POWER_BASE = 500
-Config.REBIRTH_CASH_BASE = 150
-Config.REBIRTH_GROWTH = 2.5
+Config.REBIRTH_POWER_BASE = 100 -- first rebirth in about a minute and a half of training
+Config.REBIRTH_CASH_BASE = 50
+Config.REBIRTH_GROWTH = 3.2 -- R1 ~1 min, R5 ~10 min, R10 ~1.5 h, R12 ~3.5 h of training
 Config.REBIRTH_POWER_BONUS = 0.5 -- +50% Power per shot per rebirth
 Config.REBIRTH_CASH_BONUS = 0.25 -- +25% Cash per rebirth
 

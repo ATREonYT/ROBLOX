@@ -1337,7 +1337,7 @@ local function onPlayerAdded(player)
 	-- Offline earnings
 	if data.LastOnline > 0 then
 		local away = math.min(os.time() - data.LastOnline, Config.OFFLINE_MAX_HOURS * 3600)
-		if away > 120 then
+		if away > 600 then -- only after 10+ minutes away
 			local earned = math.floor(Config.PowerPerMinute(data, hasPass(player, "VIP")) / 60 * away * Config.OFFLINE_RATE)
 			if earned > 0 then
 				data.Power += earned
