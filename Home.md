@@ -22,6 +22,10 @@ The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 ## AI Video Library
 - [[AI Video Library/00 Start Here|Start here]]: the best Roblox + AI dev videos, from setup to building, VFX, animation, UI, audio and business
 
+## LihFolk Vault V2 (Roblox knowledge base)
+- [[LihFolk/LihFolk Vault V2/000 Home|LihFolk home]]: 1,400 notes from scripting to VFX, UI, modelling, monetization and teardowns of top games
+- [[LihFolk/LihFolk Vault V2/ROUTER|Router]]: which note answers which question
+
 ## Build guides
 - [[GAME-FEEL|Game feel]] and [[VFX-ITEMS|item VFX]]
 - [[CLAUDE|How we build with Claude (general rules)]]

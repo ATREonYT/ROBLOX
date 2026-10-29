@@ -61,6 +61,7 @@ This file loads in every session, so keep it short. Each game folder has its own
   - `business-evolution/`: +1 Business Evolution.
   - `hood/`: Hood (From the Block), an earlier game the owner isn't happy with. **Don't use it as the example to copy** for look, feel or structure; only lift a specific piece when asked. Its own notes are in `hood/CLAUDE.md`.
   - `plus-one-speed/`, `snatch-a-brainrot/`, `steal-an-egg/`: small single-script prototypes. Leave them alone unless asked.
+  - `LihFolk/`: LihFolk Vault V2, a third-party Roblox knowledge base (notes in `LihFolk/LihFolk Vault V2/`, start from its `ROUTER.md`; skills and Luau systems in `LihFolk/skills/`). Treat it as reference, check it against the owner's rules here.
   - `AI Video Library/`, `new-game-kit/`, `GAME-FEEL.md`, `VFX-ITEMS.md`, `reports/`, `research_notes/`: shared knowledge for every new game.
 - **Getting the owner's Studio work:** they paste `tools/export-for-claude.lua` into Studio's Command Bar and send the `ServerStorage > ClaudeExport > PartN` text.
 - In Studio, saves run in ProfileStore **Mock** mode, so progress resets on Stop. That is on purpose.
