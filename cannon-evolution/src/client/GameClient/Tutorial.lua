@@ -385,7 +385,8 @@ return function(ctx)
 
 	local function drawArrows(target)
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if not (root and target) or player:GetAttribute("Launching") then
+		-- no line while you fly or while you're locked on a training pad (the jump hint shows instead)
+		if not (root and target) or player:GetAttribute("Launching") or State.Training ~= nil then
 			hideArrows()
 			return
 		end
@@ -422,8 +423,14 @@ return function(ctx)
 				dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.xAxis
 				local hit = workspace:Raycast(p + Vector3.new(0, 3, 0), Vector3.new(0, -12, 0), rayParams)
 				local pos = Vector3.new(p.X, (hit and hit.Position.Y or p.Y - 2.5) + LIFT, p.Z)
-				-- face the camera: the arrow's flat side turns toward you around its pointing direction
 				local toCam = camPos - pos
+				if toCam.Magnitude < 9 then
+					-- right under the camera an arrow fills the screen: skip it
+					arms[1].CFrame = HIDDEN
+					arms[2].CFrame = HIDDEN
+					continue
+				end
+				-- face the camera: the arrow's flat side turns toward you around its pointing direction
 				local normal = toCam - dir * toCam:Dot(dir)
 				normal = normal.Magnitude > 0.01 and normal.Unit or Vector3.yAxis
 				local side = dir:Cross(normal)

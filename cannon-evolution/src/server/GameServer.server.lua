@@ -79,9 +79,15 @@ local function withRetries(fn)
 	return false
 end
 
+-- Studio test switch: set the attribute FreshSaveTest on Workspace to play as a brand-new player.
+-- Your real save is neither loaded nor overwritten while it's on.
+local function freshSaveTest()
+	return IS_STUDIO and workspace:GetAttribute("FreshSaveTest") == true
+end
+
 local function save(player)
 	local profile = profiles[player]
-	if not (profile and profile.Loaded) then
+	if not (profile and profile.Loaded) or freshSaveTest() then
 		return
 	end
 	profile.Data.LastOnline = os.time()
@@ -1148,7 +1154,7 @@ end
 
 local function refreshLeaderboards()
 	for player, profile in pairs(profiles) do
-		if profile.Loaded then
+		if profile.Loaded and not freshSaveTest() then
 			for _, board in ipairs(Config.LEADERBOARDS) do
 				-- ordered stores hold integers below 2^53, so store log10 to fit
 				-- numbers of any size while keeping the order
@@ -1322,6 +1328,9 @@ local function onPlayerAdded(player)
 	if not ok then
 		player:Kick("Couldn't load your data. Please rejoin!")
 		return
+	end
+	if freshSaveTest() then
+		stored = nil
 	end
 	local data = reconcile(type(stored) == "table" and stored or {}, Config.DefaultData)
 	profiles[player] = { Data = data, Loaded = true, JoinTime = os.clock(), PlaytimeClaimed = {}, Passes = {} }
