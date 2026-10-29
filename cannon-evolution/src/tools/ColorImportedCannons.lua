@@ -49,7 +49,8 @@ local function paint(model, key)
 	models += 1
 	for _, d in ipairs(model:GetDescendants()) do
 		if d:IsA("MeshPart") then
-			local c = map[d.Name] or (d.Parent and map[(d.Parent.Name:gsub("_Node$", ""))])
+			-- Studio renames repeated meshes Studs2, Studs3...: fall back to the base name
+			local c = map[d.Name] or (d.Parent and map[(d.Parent.Name:gsub("_Node$", ""))]) or map[(d.Name:gsub("%d+$", ""))]
 			if c then
 				d.Color = Color3.fromHex(c[1])
 				d.Material = c[2] and Enum.Material.Neon or Enum.Material.SmoothPlastic
