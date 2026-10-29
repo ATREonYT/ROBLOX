@@ -24,6 +24,23 @@ return function(ctx)
 	local side = new("Frame", { Name = "Side", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 10), Size = UDim2.fromOffset(188, 350), Parent = hud })
 	local left = new("Frame", { Name = "Menu", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = side })
 
+	-- "ONLY [R$] 25" style price: a small Robux icon in front of the number
+	local function robuxPrice(parent, text, size, color, props)
+		local row = new("Frame", { Name = "Price", BackgroundTransparency = 1, AnchorPoint = props.Anchor or Vector2.new(0.5, 0), Position = props.Position, Size = UDim2.fromOffset(0, size + 4), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 8, Parent = parent })
+		local list = Kit.list(row, 3, true, Enum.HorizontalAlignment.Center)
+		list.VerticalAlignment = Enum.VerticalAlignment.Center
+		if props.Prefix then
+			local pre = Kit.text({ Text = props.Prefix, Size = size, Color = color, Order = 1, ZIndex = 8, Parent = row })
+			pre.AutomaticSize = Enum.AutomaticSize.X
+			pre.Size = UDim2.new(0, 0, 1, 0)
+		end
+		Kit.icon("Robux", { Size = UDim2.fromOffset(size, size), Order = 2, ZIndex = 9, Parent = row })
+		local label = Kit.text({ Text = text, Size = size, Color = color, Order = 3, ZIndex = 8, Parent = row })
+		label.AutomaticSize = Enum.AutomaticSize.X
+		label.Size = UDim2.new(0, 0, 1, 0)
+		return label
+	end
+
 	local function pressable(btn, icon)
 		local s = Kit.scale(btn)
 		btn.MouseEnter:Connect(function()
@@ -116,6 +133,7 @@ return function(ctx)
 	local autoGrad = autoBtn:FindFirstChildOfClass("UIGradient")
 	Kit.text({ Text = "AUTO LAUNCH", Size = 34, StrokeSize = 3.5, FrameSize = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 4), ZIndex = 8, Parent = autoBtn })
 	local autoSub = Kit.text({ Text = "", Size = 24, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 44), ZIndex = 8, Parent = autoBtn })
+	local autoPrice = robuxPrice(autoBtn, tostring(Config.Passes.AutoLaunch.Price), 24, Kit.Colors.Yellow, { Prefix = "ONLY", Position = UDim2.new(0.5, 0, 0, 42) })
 	pressable(autoBtn)
 	autoBtn.Activated:Connect(function()
 		Kit.playSound("Click")
@@ -138,7 +156,7 @@ return function(ctx)
 		Kit.movingPattern(card, { Lite = true, Texture = "StudTile", Speed = 0, ImageTransparency = 0.8, ZIndex = 5, Radius = 12 })
 		Kit.icon(pass.Icon, { Size = UDim2.fromOffset(76, 76), Position = UDim2.fromScale(0.5, 0.45), Anchor = Vector2.new(0.5, 0.5), Rotation = -10, ZIndex = 6, Parent = card })
 		Kit.text({ Text = string.upper(pass.Name), Size = 32, StrokeSize = 3.5, FrameSize = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 8), ZIndex = 8, Parent = card })
-		Kit.text({ Text = "ONLY " .. Kit.priceText("Robux", pass.Price), Size = 26, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 56), ZIndex = 8, Parent = card })
+		robuxPrice(card, tostring(pass.Price), 26, Kit.Colors.Yellow, { Prefix = "ONLY", Position = UDim2.new(0.5, 0, 0, 54) })
 		pressable(card)
 		card.Activated:Connect(function()
 			Kit.playSound("Click")
@@ -209,7 +227,7 @@ return function(ctx)
 		Kit.movingPattern(card, { Lite = true, Texture = "StudTile", Speed = 0, ImageTransparency = 0.8, ZIndex = 5, Radius = 12 })
 		Kit.icon("Power", { Size = UDim2.fromOffset(54, 54), Position = UDim2.fromScale(0.5, 0.45), Anchor = Vector2.new(0.5, 0.5), Rotation = 20, ZIndex = 6, Parent = card })
 		local label = Kit.text({ Text = "", Size = 40, StrokeSize = 4, FrameSize = UDim2.new(1, 0, 1, -8), ZIndex = 8, Parent = card })
-		Kit.text({ Text = Kit.priceText("Robux", product.Price), Size = 20, Color = Color3.fromRGB(130, 255, 130), AlignX = Enum.TextXAlignment.Right, FrameSize = UDim2.new(1, -10, 0, 22), Position = UDim2.new(1, -8, 1, 6), Anchor = Vector2.new(1, 1), ZIndex = 9, Parent = card })
+		robuxPrice(card, tostring(product.Price), 20, Color3.fromRGB(130, 255, 130), { Position = UDim2.new(1, -6, 1, 8), Anchor = Vector2.new(1, 1) })
 		pressable(card)
 		card.Activated:Connect(function()
 			Kit.playSound("Click")
@@ -334,7 +352,8 @@ return function(ctx)
 			card.Visible = State.Passes[key] ~= true
 		end
 		local owned = State.Passes.AutoLaunch == true
-		autoSub.Text = owned and (State.AutoLaunch and "ON" or "OFF") or ("ONLY " .. Kit.priceText("Robux", Config.Passes.AutoLaunch.Price))
+		autoSub.Text = owned and (State.AutoLaunch and "ON" or "OFF") or ""
+		autoPrice.Parent.Visible = not owned
 
 		local rewards = claimableRewards(data)
 		badges.Rewards:Set(rewards > 0 and tostring(rewards) or nil)

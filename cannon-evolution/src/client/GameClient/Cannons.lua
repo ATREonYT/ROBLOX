@@ -17,7 +17,7 @@ return function(ctx)
 		Secret = Color3.fromRGB(40, 40, 50),
 	}
 
-	local panel = Kit.panel({ Title = "Cannons", Icon = "Evolve", Size = UDim2.fromOffset(820, 560) })
+	local panel = Kit.panel({ Title = "Cannons", Icon = "Cannon", Size = UDim2.fromOffset(820, 560) })
 	local body = panel.Body
 	local info = Kit.text({ Text = "", Size = 22, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 48), ZIndex = 24, Parent = body })
 	local scroll = Kit.scrolling({ Parent = body, Position = UDim2.fromOffset(0, 78), Size = UDim2.new(1, 0, 1, -78), ZIndex = 24 })

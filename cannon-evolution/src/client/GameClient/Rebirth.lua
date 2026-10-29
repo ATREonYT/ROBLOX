@@ -51,7 +51,12 @@ return function(ctx)
 	end })
 	Kit.rainbowFill(skip.Gradient)
 	Kit.shine(skip.Instance, 2.5)
-	Kit.text({ Text = Kit.priceText("Robux", Config.Products.SkipRebirth.Price), Size = 15, FrameSize = UDim2.fromOffset(80, 18), Position = UDim2.new(0.5, 0, 1, 4), Anchor = Vector2.new(0.5, 0), ZIndex = 40, Parent = skip.Instance })
+	local price = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, 3), Size = UDim2.fromOffset(0, 18), AutomaticSize = Enum.AutomaticSize.X, ZIndex = 40, Parent = skip.Instance })
+	Kit.list(price, 2, true, Enum.HorizontalAlignment.Center).VerticalAlignment = Enum.VerticalAlignment.Center
+	Kit.icon("Robux", { Size = UDim2.fromOffset(16, 16), Order = 1, ZIndex = 41, Parent = price })
+	local priceText = Kit.text({ Text = tostring(Config.Products.SkipRebirth.Price), Size = 16, Order = 2, ZIndex = 41, Parent = price })
+	priceText.AutomaticSize = Enum.AutomaticSize.X
+	priceText.Size = UDim2.new(0, 0, 1, 0)
 
 	local function refresh()
 		local data = State.Data
