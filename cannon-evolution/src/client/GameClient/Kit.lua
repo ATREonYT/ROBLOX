@@ -20,10 +20,12 @@ Kit.Colors = {
 	Outline = Color3.fromRGB(5, 10, 16),
 	Body = Color3.fromRGB(4, 30, 48),
 	BodyDark = Color3.fromRGB(1, 16, 26),
-	Rim = Color3.fromRGB(18, 53, 76),
-	Card = Color3.fromRGB(14, 34, 52),
-	CardDark = Color3.fromRGB(2, 15, 23),
-	CardEdge = Color3.fromRGB(49, 81, 104),
+	Rim = Color3.fromRGB(0, 100, 205),
+	Card = Color3.fromRGB(1, 18, 31),
+	CardDark = Color3.fromRGB(3, 36, 62),
+	CardEdge = Color3.fromRGB(0, 107, 220)
+	BarEdge = Color3.fromRGB(45, 165, 245),
+	BarBack = Color3.fromRGB(16, 35, 51),,
 	HeaderTop = Color3.fromRGB(255, 240, 0),
 	HeaderBottom = Color3.fromRGB(254, 179, 1),
 	Green = Color3.fromRGB(110, 240, 20),
@@ -969,7 +971,7 @@ function Kit.inset(props)
 	})
 	Kit.corner((props.Radius or 14) - 4, inner)
 	Kit.gradient(Kit.Colors.Card, Kit.Colors.CardDark, inner)
-	new("UIStroke", { Thickness = 2.5, Color = Kit.Colors.CardEdge, Parent = inner })
+	new("UIStroke", { Thickness = 3, Color = Kit.Colors.CardEdge, Parent = inner })
 	return outer, inner
 end
 
@@ -1055,7 +1057,7 @@ end
 function Kit.progress(props)
 	local bar = new("Frame", {
 		Name = "Progress",
-		BackgroundColor3 = Kit.Colors.BodyDark,
+		BackgroundColor3 = Kit.Colors.BarBack,
 		Size = props.Size or UDim2.new(1, 0, 0, 22),
 		Position = props.Position or UDim2.new(),
 		AnchorPoint = props.Anchor or Vector2.zero,
@@ -1064,7 +1066,7 @@ function Kit.progress(props)
 		Parent = props.Parent,
 	})
 	Kit.corner(11, bar)
-	new("UIStroke", { Thickness = 2.5, Color = Kit.Colors.CardEdge, Parent = bar })
+	new("UIStroke", { Thickness = 3, Color = Kit.Colors.BarEdge, Parent = bar })
 	local fill = new("Frame", {
 		Name = "Fill",
 		BackgroundColor3 = Color3.new(1, 1, 1),

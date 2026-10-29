@@ -15,14 +15,17 @@ return function(ctx)
 
 	-- have >> need
 	local function valueRow(x, y, icon)
-		Kit.icon(icon, { Size = UDim2.fromOffset(56, 56), Position = UDim2.new(x, 0, 0, y), ZIndex = 26, Parent = card })
-		return Kit.text({ Text = "", Size = 40, StrokeSize = 3.5, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.3, -70, 0, 56), Position = UDim2.new(x, 70, 0, y), ZIndex = 26, Parent = card })
+		Kit.icon(icon, { Size = UDim2.fromOffset(64, 64), Position = UDim2.new(x, 0, 0, y - 4), ZIndex = 26, Parent = card })
+		return Kit.text({ Text = "", Size = 50, StrokeSize = 4, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.28, -72, 0, 56), Position = UDim2.new(x, 72, 0, y), ZIndex = 26, Parent = card })
 	end
-	local havePower = valueRow(0.08, 14, "Power")
-	local haveCash = valueRow(0.08, 74, "Cash")
+	local havePower = valueRow(0.12, 14, "Power")
+	local haveCash = valueRow(0.12, 74, "Cash")
 	local needPower = valueRow(0.6, 14, "Power")
 	local needCash = valueRow(0.6, 74, "Cash")
-	Kit.icon("Chevrons", { Size = UDim2.fromOffset(72, 72), Position = UDim2.new(0.5, -8, 0, 32), Anchor = Vector2.new(0.5, 0), ZIndex = 26, Parent = card })
+	local chevrons = Kit.icon("Chevrons", { Size = UDim2.fromOffset(80, 80), Position = UDim2.new(0.5, -10, 0, 28), Anchor = Vector2.new(0.5, 0), ZIndex = 26, Parent = card })
+	if chevrons:IsA("TextLabel") then
+		chevrons.TextColor3 = Color3.fromRGB(40, 170, 250)
+	end
 
 	Kit.text({
 		Text = "Every rebirth: +" .. math.floor(Config.REBIRTH_POWER_BONUS * 100) .. "% Power, +" .. math.floor(Config.REBIRTH_CASH_BONUS * 100) .. "% Cash, new cannons and worlds",
