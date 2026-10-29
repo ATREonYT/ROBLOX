@@ -7,7 +7,7 @@ return function(ctx)
 	local Kit, Config, State = ctx.Kit, ctx.Config, ctx.State
 	local new = Kit.new
 
-	local panel = Kit.panel({ Title = "Upgrades", Icon = "Evolve", Size = UDim2.fromOffset(780, 470) })
+	local panel = Kit.panel({ Title = "Upgrades", Icon = "Evolve", Size = UDim2.fromOffset(780, 440) })
 	local body = panel.Body
 	-- grid of upgrade tiles like the mockup (design/cannon_ui_panels.zip, upgrades.png)
 	local holder = new("Frame", { Name = "Tiles", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 54), Size = UDim2.new(1, 0, 1, -54), ZIndex = 23, Parent = body })

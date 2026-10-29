@@ -40,7 +40,7 @@ return function(ctx)
 	for i, world in ipairs(Config.Worlds) do
 		local c = Kit.card({ Name = "World" .. world.Id, Color = world.Color:Lerp(Color3.new(1, 1, 1), 0.15), Color2 = world.Color:Lerp(Color3.new(0, 0, 0), 0.3), Size = UDim2.fromOffset(160, 300), Order = i, StrokeSize = 4, Parent = scroll, ZIndex = 24 })
 		Kit.movingPattern(c, { Lite = true, Texture = "StudTile", Speed = 0, ImageTransparency = 0.82, ZIndex = 24 })
-		Kit.text({ Text = world.Name, Size = 28, StrokeSize = 3.5, Scaled = true, MaxSize = 28, FrameSize = UDim2.new(1, -10, 0, 34), Position = UDim2.new(0.5, 0, 0, 8), Anchor = Vector2.new(0.5, 0), ZIndex = 27, Parent = c })
+		Kit.text({ Text = world.Name, Size = 28, StrokeSize = 3.5, Scaled = true, MaxSize = 28, FrameSize = UDim2.new(1, -10, 0, 34), Position = UDim2.new(0.5, 0, 0, 8), Anchor = Vector2.new(0.5, 0), ZIndex = 33, Parent = c })
 		local icon = Kit.icon("World", { Size = UDim2.fromOffset(112, 112), Position = UDim2.fromScale(0.5, 0.47), Anchor = Vector2.new(0.5, 0.5), ZIndex = 26, Parent = c })
 		local shade = new("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, Size = UDim2.fromScale(1, 1), ZIndex = 28, Parent = c })
 		Kit.corner(12, shade)
