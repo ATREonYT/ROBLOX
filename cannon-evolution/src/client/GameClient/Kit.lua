@@ -16,16 +16,20 @@ local Kit = {}
 
 Kit.Font = Enum.Font.FredokaOne
 Kit.Colors = {
-	Outline = Color3.fromRGB(22, 22, 38),
-	Body = Color3.fromRGB(34, 44, 78),
-	BodyDark = Color3.fromRGB(24, 31, 58),
-	Card = Color3.fromRGB(48, 60, 100),
-	HeaderTop = Color3.fromRGB(255, 226, 70),
-	HeaderBottom = Color3.fromRGB(255, 178, 20),
-	Green = Color3.fromRGB(95, 215, 60),
-	GreenDark = Color3.fromRGB(40, 155, 30),
-	Red = Color3.fromRGB(235, 55, 55),
-	RedDark = Color3.fromRGB(170, 25, 30),
+	-- measured from Alex's UI kit (design/cannon_ui_assets_v2.zip)
+	Outline = Color3.fromRGB(5, 10, 16),
+	Body = Color3.fromRGB(4, 30, 48),
+	BodyDark = Color3.fromRGB(1, 16, 26),
+	Rim = Color3.fromRGB(18, 53, 76),
+	Card = Color3.fromRGB(14, 34, 52),
+	CardDark = Color3.fromRGB(2, 15, 23),
+	CardEdge = Color3.fromRGB(49, 81, 104),
+	HeaderTop = Color3.fromRGB(255, 240, 0),
+	HeaderBottom = Color3.fromRGB(254, 179, 1),
+	Green = Color3.fromRGB(110, 240, 20),
+	GreenDark = Color3.fromRGB(10, 175, 25),
+	Red = Color3.fromRGB(252, 31, 47),
+	RedDark = Color3.fromRGB(202, 3, 34),
 	Blue = Color3.fromRGB(70, 160, 255),
 	BlueDark = Color3.fromRGB(30, 95, 210),
 	Purple = Color3.fromRGB(170, 80, 255),
@@ -45,7 +49,7 @@ local FALLBACK = {
 	Robux = utf8.char(0xE002), Lucky = "🍀", TripleOpen = "🎲", ExtraEquip = "🎒", AutoCollect = "🧲", VIP = "👑",
 	DoublePower = "⚡", DoubleCash = "💵", TenXCash = "💰", PotionRed = "🧪",
 	PotionGold = "🧪", BoostBundle = "🧪", SpinWheel = "🎡", PlaytimeGift = "⏰", StarterCrate = "📦",
-	Delete = "🗑️", Favorite = "⭐", Search = "🔍", Arrow = "➡️", RebirthSkip = "⏩", RebirthSign = "🔄", Sneaker = "👟",
+	Delete = "🗑️", Favorite = "⭐", Search = "🔍", Arrow = "➡️", RebirthSkip = "⏩", Chevrons = "»", RebirthSign = "🔄", Sneaker = "👟",
 	Skull = "💀", XP = "⭐", Gem = "💎", Settings = "⚙️", BlockParty = "🧊", Shield = "🛡️", PowerPack1 = "⚡", PowerPack2 = "⚡", PowerPack3 = "⚡",
 }
 
@@ -850,9 +854,19 @@ function Kit.panel(props)
 		Parent = props.Parent,
 	})
 	Kit.corner(18, frame)
-	Kit.stroke(5, nil, frame)
+	Kit.stroke(6, nil, frame)
 	Kit.gradient(Kit.Colors.Body, Kit.Colors.BodyDark, frame)
-	Kit.movingPattern(frame, { Texture = "StudTile", Speed = 10, ImageTransparency = 0.85, Transparency = 0.6, ZIndex = 20, Radius = 18 })
+	-- thin lighter rim just inside the black outline
+	local rim = new("Frame", {
+		Name = "Rim",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(2, 2),
+		Size = UDim2.new(1, -4, 1, -4),
+		ZIndex = 20,
+		Parent = frame,
+	})
+	Kit.corner(16, rim)
+	new("UIStroke", { Thickness = 3, Color = Kit.Colors.Rim, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = rim })
 
 	local header = new("Frame", {
 		Name = "Header",
@@ -862,9 +876,8 @@ function Kit.panel(props)
 		Parent = frame,
 	})
 	Kit.corner(18, header)
-	Kit.stroke(5, nil, header)
+	Kit.stroke(6, nil, header)
 	Kit.gradient(Kit.Colors.HeaderTop, Kit.Colors.HeaderBottom, header)
-	Kit.movingPattern(header, { Texture = "StudTile", Speed = 14, ImageTransparency = 0.7, Color = Color3.fromRGB(255, 255, 255), ZIndex = 21, Radius = 18 })
 
 	if props.Icon then
 		local icon = Kit.icon(props.Icon, {
@@ -932,6 +945,32 @@ function Kit.panel(props)
 			title.Text = t
 		end,
 	}
+end
+
+-- Dark inner card from the kit: black outline, light blue edge, navy fill
+function Kit.inset(props)
+	local outer = new("Frame", {
+		Name = props.Name or "Inset",
+		BackgroundColor3 = Kit.Colors.Outline,
+		Size = props.Size or UDim2.fromScale(1, 1),
+		Position = props.Position or UDim2.new(),
+		AnchorPoint = props.Anchor or Vector2.zero,
+		ZIndex = props.ZIndex or 22,
+		Parent = props.Parent,
+	})
+	Kit.corner(props.Radius or 14, outer)
+	local inner = new("Frame", {
+		Name = "Fill",
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Position = UDim2.fromOffset(5, 5),
+		Size = UDim2.new(1, -10, 1, -10),
+		ZIndex = (props.ZIndex or 22) + 1,
+		Parent = outer,
+	})
+	Kit.corner((props.Radius or 14) - 4, inner)
+	Kit.gradient(Kit.Colors.Card, Kit.Colors.CardDark, inner)
+	new("UIStroke", { Thickness = 2.5, Color = Kit.Colors.CardEdge, Parent = inner })
+	return outer, inner
 end
 
 -- Pill tabs. Returns { Frame, Select(name), Current }
@@ -1025,7 +1064,7 @@ function Kit.progress(props)
 		Parent = props.Parent,
 	})
 	Kit.corner(11, bar)
-	Kit.stroke(2.5, nil, bar)
+	new("UIStroke", { Thickness = 2.5, Color = Kit.Colors.CardEdge, Parent = bar })
 	local fill = new("Frame", {
 		Name = "Fill",
 		BackgroundColor3 = Color3.new(1, 1, 1),
@@ -1035,7 +1074,7 @@ function Kit.progress(props)
 	})
 	Kit.corner(11, fill)
 	Kit.gradient(props.Color or Kit.Colors.Green, props.Color2 or Kit.Colors.GreenDark, fill)
-	local label = Kit.text({ Text = "", Size = 16, Scaled = true, MaxSize = 16, FrameSize = UDim2.new(1, -8, 0.85, 0), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = (props.ZIndex or 24) + 2, Parent = bar })
+	local label = Kit.text({ Text = "", Size = 22, Scaled = true, MaxSize = 22, FrameSize = UDim2.new(1, -8, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = (props.ZIndex or 24) + 2, Parent = bar })
 	return {
 		Frame = bar,
 		Set = function(_, alpha, text)
