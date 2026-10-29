@@ -97,15 +97,15 @@ for i, id in ipairs(EGGS) do
 	glow.Brightness = 1.2
 	glow.Parent = base
 	local board = Instance.new("BillboardGui")
-	board.Size = UDim2.fromOffset(220, 80)
+	board.Size = UDim2.fromScale(7, 2.6) -- sized in studs, so neighbouring signs never overlap from afar
 	board.StudsOffsetWorldSpace = Vector3.new(0, 11.5, 0)
 	board.LightInfluence = 0
 	board.MaxDistance = 120
 	board.Adornee = base
 	board.Parent = stand
 	label(board, egg.Name, Color3.new(1, 1, 1), UDim2.fromScale(1, 0.55))
-	local price = egg.Currency == "Cash" and ("💵 " .. Config.Format(egg.Price))
-		or egg.Currency == "Gems" and ("💎 " .. Config.Format(egg.Price))
+	local price = egg.Currency == "Cash" and ("$" .. Config.Format(egg.Price))
+		or egg.Currency == "Gems" and (Config.Format(egg.Price) .. " Gems")
 		or "R$"
 	label(board, price, Color3.fromRGB(120, 255, 120), UDim2.fromScale(1, 0.45)).Position = UDim2.fromScale(0, 0.55)
 	stand.PrimaryPart = base

@@ -101,6 +101,7 @@ return function(ctx)
 		Kit.list(buttons, 12, true)
 		local function eggButton(order, label, priceText, color, icon, onClick, rainbow)
 			local b = Kit.button({ Text = priceText, Icon = icon, Color = color, Size = UDim2.fromOffset(170, 58), TextSize = 28, IconSize = 28, Order = order, ZIndex = 30, Parent = buttons, OnClick = onClick })
+			b.Instance.Name = "EggBuy" .. order -- the tutorial points at EggBuy1
 			Kit.text({ Text = label, Size = 22, FrameSize = UDim2.fromOffset(100, 24), Position = UDim2.fromOffset(-6, -16), AlignX = Enum.TextXAlignment.Left, ZIndex = 35, Parent = b.Instance })
 			if rainbow then
 				Kit.rainbowFill(b.Gradient)

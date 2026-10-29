@@ -162,6 +162,13 @@ return function(ctx)
 		local menu = main and main:FindFirstChild("Menu", true)
 		return menu and menu:FindFirstChild(name)
 	end
+	local function eggBuyButton()
+		local panel = ctx.Panels.Pets
+		if not (panel and panel.Frame.Visible) then
+			return nil
+		end
+		return panel.Frame:FindFirstChild("EggBuy1", true)
+	end
 	local function rebirthPanelButton()
 		local panel = ctx.Panels.Rebirth
 		if not (panel and panel.Frame.Visible) then
@@ -218,6 +225,12 @@ return function(ctx)
 				return #data.Pets > 0 and 1 or 0, 1
 			end,
 			Target = eggStand,
+			Point = eggBuyButton,
+			-- after the hatch reveal, close the egg menu so the next step is in view
+			DoneDelay = 4,
+			Done = function()
+				ctx.CloseIf("Pets")
+			end,
 		},
 		{
 			Label = function(data)
@@ -248,6 +261,10 @@ return function(ctx)
 			end,
 			Point = function()
 				return rebirthPanelButton() or menuButton("Rebirth")
+			end,
+			-- clear the menu away so the TUTORIAL COMPLETE screen has the stage to itself
+			Done = function()
+				ctx.Close()
 			end,
 		},
 	}
@@ -291,12 +308,13 @@ return function(ctx)
 	local ring = new("Frame", { Name = "Ring", BackgroundTransparency = 1, Visible = false, ZIndex = 10, Parent = gui })
 	Kit.corner(14, ring)
 	local ringStroke = Kit.stroke(4, Kit.Colors.Yellow, ring)
-	local pointer = Kit.text({ Text = "⬆", Size = 56, Color = Kit.Colors.Yellow, StrokeSize = 4, FrameSize = UDim2.fromOffset(70, 70), Anchor = Vector2.new(0.5, 0), ZIndex = 11, Parent = gui })
+	-- your Arrow icon (points right) turned to point up; falls back to an emoji until the icons are uploaded
+	local pointer = Kit.icon("Arrow", { Size = UDim2.fromOffset(64, 64), Anchor = Vector2.new(0.5, 0), Rotation = -90, ZIndex = 11, Parent = gui })
 	pointer.Visible = false
 
 	-- bouncing arrow over the world target
 	local marker = new("BillboardGui", { Name = "TutorialMarker", Size = UDim2.fromOffset(90, 90), AlwaysOnTop = true, LightInfluence = 0, Enabled = false, Parent = gui })
-	Kit.text({ Text = "⬇", Size = 80, Color = Kit.Colors.Yellow, StrokeSize = 4, Parent = marker })
+	Kit.icon("Arrow", { Size = UDim2.fromScale(1, 1), Rotation = 90, Parent = marker })
 
 	-----------------------------------------------------------------------
 	-- Arrow line: white arrowheads with a dark outline, floating a little
@@ -815,7 +833,9 @@ return function(ctx)
 	local lastHave = nil
 
 	-- the bar slides down into place for a new step
+	local questLow = false -- the bar drops to the bottom of the screen while a menu is open
 	local function showStep()
+		questLow = false
 		lastHave = nil
 		launchBase = nil
 		route = nil
@@ -845,6 +865,10 @@ return function(ctx)
 		questGrad.Color = ColorSequence.new(Kit.Colors.Green, Kit.Colors.GreenDark)
 		Kit.pop(quest, 1.12)
 		local finished = step
+		local done = STEPS[finished].Done
+		if done then
+			task.delay(STEPS[finished].DoneDelay or 0, done)
+		end
 		step = nil -- pause while the bar flashes green
 		ring.Visible = false
 		pointer.Visible = false
@@ -924,11 +948,13 @@ return function(ctx)
 		local button = s.Point and s.Point()
 		if button and button.Parent and button.AbsoluteSize.X > 0 then
 			local pad = 8
-			ring.Position = UDim2.fromOffset(button.AbsolutePosition.X - pad, button.AbsolutePosition.Y - pad)
+			-- AbsolutePosition is measured from the screen corner, Position from this gui's corner
+			local at = button.AbsolutePosition - gui.AbsolutePosition
+			ring.Position = UDim2.fromOffset(at.X - pad, at.Y - pad)
 			ring.Size = UDim2.fromOffset(button.AbsoluteSize.X + pad * 2, button.AbsoluteSize.Y + pad * 2)
 			ringStroke.Transparency = 0.5 - math.sin(os.clock() * 6) * 0.5
 			ring.Visible = true
-			pointer.Position = UDim2.fromOffset(button.AbsolutePosition.X + button.AbsoluteSize.X / 2, button.AbsolutePosition.Y + button.AbsoluteSize.Y + 6 + math.abs(math.sin(os.clock() * 5)) * 10)
+			pointer.Position = UDim2.fromOffset(at.X + button.AbsoluteSize.X / 2, at.Y + button.AbsoluteSize.Y + 10 + math.abs(math.sin(os.clock() * 5)) * 10)
 			pointer.Visible = true
 		else
 			ring.Visible = false
@@ -941,6 +967,17 @@ return function(ctx)
 			return
 		end
 		acc = 0
+		local anyOpen = false
+		for _, panel in pairs(ctx.Panels) do
+			if panel.Frame and panel.Frame.Visible then
+				anyOpen = true
+				break
+			end
+		end
+		if anyOpen ~= questLow then
+			questLow = anyOpen
+			Kit.tween(quest, 0.3, { Position = anyOpen and UDim2.new(0.5, 0, 1, -78) or UDim2.new(0.5, 0, 0, QUEST_Y) }, Enum.EasingStyle.Back)
+		end
 		local have, goal = s.Count(data)
 		questText.Text = s.Label(data) .. " (" .. Config.Format(have) .. "/" .. Config.Format(goal) .. ")"
 		if lastHave and have > lastHave then
