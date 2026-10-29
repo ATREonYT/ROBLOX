@@ -1,0 +1,56 @@
+-- Main menu (design/pages/12): a left-side list of every window. Screens that aren't built yet say so.
+local UI = script.Parent.Parent
+local Theme = require(UI.Theme)
+local Kit = require(UI.Kit)
+local ShopStyle = require(UI.ShopStyle)
+local Toast = require(UI.Toast)
+local ModalManager = require(UI.ModalManager)
+
+local C = Theme.Colors
+local new = Kit.new
+
+local MainMenu = {}
+
+local W = 199 -- measured on reference 12 (275 tall with its 6 rows; one row is 38)
+MainMenu.Entries = {
+	{ Key = "Shop", Text = "Shop", Icon = "ShopCart" },
+	{ Key = "Index", Text = "Index", Icon = "CollectionBook" },
+	{ Key = "Tiers", Text = "Tiers", Icon = "TierCrown" },
+	{ Key = "Inventory", Text = "Inventory", Icon = "InventoryBackpack" }, -- (was Dances: owner, Oct 21; Dances is its tab. His backpack tile, Oct 22)
+	{ Key = "Progression", Text = "Progression", Icon = "RewardsTrophy" },
+	{ Key = "Settings", Text = "Settings", Icon = "SettingsGear" },
+	{ Key = "HowToPlay", Text = "How to Play", Icon = "Players" },
+}
+
+-- Opens a screen by key, or explains that it isn't built yet.
+local H = 47 + #MainMenu.Entries * 38
+
+function MainMenu.go(key: string, arg: any?)
+	if not ModalManager.open(key, arg) then Toast.show(key .. " is coming in the next build.") end
+end
+
+function MainMenu.build(parent: Instance)
+	local window = Kit.window({ Name = "Menu", Title = "MENU", Icon = "MainMenuLines", Width = W, Height = H, HeaderHeight = 40, TitleX = 46, TitleSize = 26, TitleWidth = 84, StudsTo = 158, CloseSize = Vector2.new(30, 30), PanelColor = C.MenuPanel, Parent = parent, OnClose = function() ModalManager.close() end })
+	-- A side panel: it opens in the HUD's side-button spot, centred on the left edge, and the buttons slide away
+	-- under it; the game stays in view. (A position moved in Studio is kept.)
+	if not Kit.reused(window.Holder) then
+		window.Holder.AnchorPoint = Vector2.new(0, 0.5)
+		window.Holder.Position = UDim2.new(0, 12, 0.5, 0)
+	end
+	local rows = {}
+	for i, e in MainMenu.Entries do
+		-- each row its own bright colour, as the lobby's side buttons (owner, Oct 21: "more vibrant and colorful")
+		local b = Kit.button({ Name = e.Key, Style = ShopStyle.vivid(e.Key), Text = "", Position = UDim2.fromOffset(9, 45 + (i - 1) * 38), Size = UDim2.fromOffset(W - 17, 34), Corner = 6, RimThickness = 2.5, Parent = window.Panel })
+		b.Instance:FindFirstChild("Content"):Destroy()
+		Kit.icon(e.Icon, { Name = "Icon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(30, 30), Parent = b.Instance })
+		ShopStyle.chunky({ Name = "Label", Text = e.Text, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(48, 0), Size = UDim2.new(1, -72, 1, 0), Parent = b.Instance }, 2)
+		ShopStyle.chunky({ Name = "Chevron", Text = ">", TextSize = 28, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -28, 0, 0), Size = UDim2.fromOffset(20, 34), Parent = b.Instance }, 2)
+		b.onClick(function() MainMenu.go(e.Key) end)
+		if i == 1 then window.FirstRow = b.Instance end
+		table.insert(rows, b.Instance)
+	end
+	ModalManager.register("Menu", { window = window, side = true, firstSelect = function() return window.FirstRow end, items = function() return rows end })
+	return window
+end
+
+return MainMenu

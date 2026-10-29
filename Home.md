@@ -19,7 +19,19 @@ The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 - [[hood/docs/research/LOBBY_AUDIT|Lobby audit]]
 - [[hood/docs/research/OUR_FIRST_10_MIN|Our first 10 minutes]]
 
+## AI Video Library
+- [[AI Video Library/00 Start Here|Start here]]: the best Roblox + AI dev videos, from setup to building, VFX, animation, UI, audio and business
+
+## Build guides
+- [[GAME-FEEL|Game feel]] and [[VFX-ITEMS|item VFX]]
+- [[huzz-valley/ROOT-CLAUDE|How we build with Claude (general rules)]]
+
+## +1 Cannon Evolution
+- [[cannon-evolution/README|Setup]] and [[reports/+1 Cannon Evolution build notes|build notes]]
+
 ## Other games
+- [[huzz-valley/README|Huzz Valley]]
+- [[business-evolution/README|+1 Business Evolution]]
 - [[plus-one-speed/README|+1 Speed]]
 - [[snatch-a-brainrot/README|Snatch a Brainrot]]
 - [[steal-an-egg/README|Steal an Egg]]

@@ -1,0 +1,358 @@
+--[[
+	Builds one lobby prop on its pad (owner, Oct 18: "implementing these objects into the lobby on top of the already
+	placed circles. Give it some VFX and make it look good just like in the pictures"; Config/LobbyProps).
+	Used by HuzzServer/LobbyPropService at game start and by the place build (tools/place/build_yours.luau), so his
+	Rojo-synced place and the downloaded build get the same thing. Everything new is made with the `api` table
+	(Roblox's or Lune's Instance, Vector2, Vector3, CFrame, Color3, ColorSequence(Keypoint), NumberSequence(Keypoint),
+	NumberRange, UDim, UDim2, Enum, Font: LobbyPropBuild.api(env) collects them).
+
+	Workspace > HuzzLobbyProps > LobbyProp (Model, tag HuzzLobbyProp; attributes Prop, Title, Line, Opens, Action,
+	Scale, Color, Glow: he can type another Title or Scale in Studio)
+	  Pad    an invisible part on the pad's top: the soft light under the prop (in its glow colour), a glow pool on
+	         the pad (three see-through circles), the title over the prop (BillboardGui "PropTitle": big bold letters in
+	         the prop's colour with a dark outline, like the reference's SHOP / LIKE REWARD, and a small line under it),
+	         and for a prop that opens a menu, a ProximityPrompt (attribute HuzzOpens).
+	  Prop   his model: the real meshes from ServerStorage > HuzzLobbyProps when he has set them up (SetupLobbyProps),
+	         else the stand-in made of plain parts (HuzzServer/LobbyPropShapes; attribute StandIn). Every part is welded
+	         to an invisible Root in the middle of the prop, so Gameplay/LobbyProps floats and turns it by moving the
+	         Root alone (on each screen). Sparkles rise from the Root's box; a ClickDetector opens the menu too.
+]]
+local LobbyPropBuild = {}
+
+local DARK = { 22, 14, 34 } -- the titles' outline (near black, a touch purple: Halloween)
+
+-- The datatypes the builder needs, from a table holding them (Roblox's globals, or Lune's roblox library).
+function LobbyPropBuild.api(env)
+	local out = {}
+	for _, k in { "Instance", "Vector2", "Vector3", "CFrame", "Color3", "ColorSequence", "ColorSequenceKeypoint", "NumberSequence",
+		"NumberSequenceKeypoint", "NumberRange", "UDim", "UDim2", "Enum", "Font" } do
+		out[k] = env[k]
+	end
+	return out
+end
+
+local function make(api, class: string, props: { [string]: any }, parent: any?)
+	local i = api.Instance.new(class)
+	for k, v in props do
+		i[k] = v
+	end
+	if parent then i.Parent = parent end
+	return i
+end
+
+-- The stand-in: his model as plain parts (blocks, balls, cylinders) in his colours, welded to `root`.
+function LobbyPropBuild.standIn(api, shape, scale: number, root, model)
+	local CFrame, Vector3 = api.CFrame, api.Vector3
+	local half = shape.size[2] / 2
+	for _, r in shape.parts do
+		local kind, x, y, z = r[1], r[2], r[3], r[4]
+		local size = Vector3.new(math.max(0.05, r[14] * scale), math.max(0.05, r[15] * scale), math.max(0.05, r[16] * scale))
+		local cf = root.CFrame * CFrame.new(x * scale, (y - half) * scale, z * scale)
+			* CFrame.new(0, 0, 0, r[5], r[8], r[11], r[6], r[9], r[12], r[7], r[10], r[13])
+		local p = make(api, "Part", {
+			Name = kind == "S" and "Ball" or (kind == "C" and "Cylinder" or "Block"),
+			Size = size, CFrame = cf, Anchored = false, CanCollide = false, CanTouch = false, CanQuery = true,
+			Massless = true, Color = api.Color3.fromRGB(tonumber(r[17]:sub(1, 2), 16), tonumber(r[17]:sub(3, 4), 16), tonumber(r[17]:sub(5, 6), 16)),
+			Material = r[18] == 1 and api.Enum.Material.Neon or api.Enum.Material.SmoothPlastic,
+			CastShadow = r[18] ~= 1,
+			TopSurface = api.Enum.SurfaceType.Smooth, BottomSurface = api.Enum.SurfaceType.Smooth,
+		}, model)
+		if kind == "C" then
+			p.Shape = api.Enum.PartType.Cylinder
+		elseif kind == "S" then
+			if math.abs(size.X - size.Y) < 0.02 and math.abs(size.Y - size.Z) < 0.02 then
+				p.Shape = api.Enum.PartType.Ball
+			else
+				make(api, "SpecialMesh", { MeshType = api.Enum.MeshType.Sphere }, p) -- (an egg shape: fills the part's box)
+			end
+		end
+		make(api, "WeldConstraint", { Part0 = root, Part1 = p }, p)
+	end
+end
+
+local function hexColour(api, h: string)
+	return api.Color3.fromRGB(tonumber(h:sub(1, 2), 16), tonumber(h:sub(3, 4), 16), tonumber(h:sub(5, 6), 16))
+end
+
+--[[
+	One prop on its pad. `spot` = LobbyLayout.propSpots row ({ at, Prop }), `config` = Config/LobbyProps, `shape` =
+	its LobbyPropShapes entry (sizes in .glb units), `real` = his set-up model or nil, `texture` = the sparkle picture.
+]]
+function LobbyPropBuild.make(api, spot, config, shape, real, texture: string)
+	local CFrame, Vector3, Color3 = api.CFrame, api.Vector3, api.Color3
+	local Enum = api.Enum
+	local cfg = config.Props[spot.Prop]
+	local scale = cfg.Scale or 2
+	local grow = cfg.Grow or 1 -- (its pad, glow, light and title: Config/LobbyProps Grow)
+	local size = Vector3.new(shape.size[1], shape.size[2], shape.size[3]) * scale
+	local glow = cfg.Glow or hexColour(api, shape.glow)
+	local lp = make(api, "Model", { Name = "LobbyProp" })
+	lp:SetAttribute("Prop", spot.Prop)
+	lp:SetAttribute("Title", cfg.Title)
+	if cfg.Line then lp:SetAttribute("Line", cfg.Line) end
+	if cfg.Opens then
+		lp:SetAttribute("Opens", cfg.Opens)
+		lp:SetAttribute("Action", cfg.Action or "Open")
+	end
+	lp:SetAttribute("Scale", scale)
+	if grow ~= 1 then lp:SetAttribute("Grow", grow) end
+	lp:SetAttribute("Color", cfg.Color)
+	lp:SetAttribute("Glow", glow)
+
+	-- the pad: light, glow pool, title, prompt
+	local pad = make(api, "Part", {
+		Name = "Pad", Size = Vector3.new(6 * grow, 0.2, 6 * grow), CFrame = spot.at * CFrame.new(0, 0.1, 0), Anchored = true,
+		CanCollide = false, CanTouch = false, CanQuery = false, Transparency = 1, CastShadow = false,
+	}, lp)
+	local lightAt = make(api, "Attachment", { Name = "LightAt", Position = Vector3.new(0, 0.9, 0) }, pad)
+	make(api, "PointLight", { Name = "PropLight", Color = glow, Brightness = config.Light.Brightness, Range = config.Light.Range * grow, Shadows = false }, lightAt)
+	local pool = make(api, "SurfaceGui", {
+		Name = "GlowPool", Face = Enum.NormalId.Top, CanvasSize = api.Vector2.new(240, 240), LightInfluence = 0,
+		AlwaysOnTop = false, ResetOnSpawn = false,
+	}, pad)
+	for i, ring in { { 1.0, 0.86 }, { 0.72, 0.76 }, { 0.44, 0.66 } } do -- (fainter, Oct 19: no pools of light)
+		local c = make(api, "Frame", {
+			Name = "Glow" .. i, AnchorPoint = api.Vector2.new(0.5, 0.5), Position = api.UDim2.fromScale(0.5, 0.5),
+			Size = api.UDim2.fromScale(ring[1], ring[1]), BackgroundColor3 = glow, BackgroundTransparency = ring[2],
+			BorderSizePixel = 0,
+		}, pool)
+		make(api, "UICorner", { CornerRadius = api.UDim.new(0.5, 0) }, c)
+	end
+	-- the title (over where the prop floats): letters TitleHeight studs tall a line, like the reference's SHOP / LIKE
+	-- REWARD, the small line under it; its bottom TitleAbove over the prop's highest bob
+	local lines = 1
+	for _ in string.gmatch(cfg.Title, "\n") do lines += 1 end
+	local titleH = lines * config.TitleHeight * grow * 1.15
+	local lineH = if cfg.Line then config.LineHeight * grow * 1.2 else 0
+	local bbH = titleH + lineH
+	local bb = make(api, "BillboardGui", {
+		Name = "PropTitle", Size = api.UDim2.fromScale(config.TitleWidth * grow, bbH), LightInfluence = 0, MaxDistance = config.TitleMaxDistance,
+		StudsOffsetWorldSpace = Vector3.new(0, config.Hover + size.Y + config.Bob + config.TitleAbove + bbH / 2, 0), ResetOnSpawn = false,
+		AlwaysOnTop = false,
+	}, pad)
+	local font = Enum.Font[config.TitleFont] or Enum.Font.GothamBlack
+	local title = make(api, "TextLabel", {
+		Name = "Title", BackgroundTransparency = 1, Size = api.UDim2.fromScale(1, titleH / bbH), Text = cfg.Title,
+		FontFace = api.Font.fromEnum(font), TextScaled = true, TextColor3 = cfg.Color,
+	}, bb)
+	make(api, "UIStroke", { Color = Color3.fromRGB(DARK[1], DARK[2], DARK[3]), Thickness = 3, LineJoinMode = Enum.LineJoinMode.Round }, title)
+	make(api, "UIGradient", { -- a soft white lift at the top of the letters (the reference's shine)
+		Rotation = 90,
+		Color = api.ColorSequence.new({
+			api.ColorSequenceKeypoint.new(0, cfg.Color:Lerp(Color3.new(1, 1, 1), 0.45)),
+			api.ColorSequenceKeypoint.new(0.45, cfg.Color),
+			api.ColorSequenceKeypoint.new(1, cfg.Color),
+		}),
+	}, title)
+	local line = make(api, "TextLabel", {
+		Name = "Line", BackgroundTransparency = 1, Position = api.UDim2.fromScale(0, titleH / bbH), Size = api.UDim2.fromScale(1, math.max(lineH, 0.01) / bbH),
+		Text = (cfg.Line and cfg.Line ~= "FreeSpin") and cfg.Line or "", FontFace = api.Font.fromEnum(Enum.Font.GothamBold), TextScaled = true,
+		TextColor3 = Color3.new(1, 1, 1),
+	}, bb)
+	make(api, "UIStroke", { Color = Color3.fromRGB(DARK[1], DARK[2], DARK[3]), Thickness = 1.5 }, line)
+	if cfg.Opens then
+		local prompt = make(api, "ProximityPrompt", {
+			Name = "PropPrompt", ActionText = cfg.Action or "Open", ObjectText = "", HoldDuration = 0,
+			MaxActivationDistance = 12, RequiresLineOfSight = false, KeyboardKeyCode = Enum.KeyCode.E,
+		}, pad)
+		prompt:SetAttribute("HuzzOpens", cfg.Opens)
+	end
+
+	-- the prop: Root in the middle of its box, his model (or the stand-in) welded to it, front to the plaza
+	local prop = make(api, "Model", { Name = "Prop" })
+	local root = make(api, "Part", {
+		Name = "Root", Size = size * 1.1, Anchored = true, CanCollide = false, CanTouch = false, CanQuery = false,
+		Transparency = 1, CastShadow = false,
+		CFrame = spot.at * CFrame.Angles(0, math.pi, 0) * CFrame.new(0, config.Hover + size.Y / 2, 0),
+	}, prop)
+	prop.PrimaryPart = root
+	if real then
+		for _, d in real:GetChildren() do
+			if d.Name ~= "Root" then d.Parent = prop end
+		end
+		local realRoot = real.PrimaryPart or real:FindFirstChild("Root")
+		-- his parts keep their places round his Root: move each by the same step onto ours, then scale
+		if realRoot then
+			for _, d in prop:GetDescendants() do
+				if d:IsA("BasePart") and d ~= root then
+					local rel = realRoot.CFrame:ToObjectSpace(d.CFrame)
+					d.Size = d.Size * scale
+					d.CFrame = root.CFrame * (rel - rel.Position + rel.Position * scale)
+					d.Anchored = false
+					for _, j in d:GetChildren() do
+						if j:IsA("WeldConstraint") or j:IsA("JointInstance") then j:Destroy() end
+					end
+					make(api, "WeldConstraint", { Part0 = root, Part1 = d }, d)
+				end
+			end
+		end
+		prop:SetAttribute("StandIn", false)
+	else
+		LobbyPropBuild.standIn(api, shape, scale, root, prop)
+		prop:SetAttribute("StandIn", true)
+	end
+	-- sparkles rising slowly from round the prop (steady, never a flash)
+	local sp = config.Sparkles
+	make(api, "ParticleEmitter", {
+		Name = "PropSparkles", Texture = texture, Rate = sp.Rate, Lifetime = api.NumberRange.new(sp.Lifetime * 0.7, sp.Lifetime),
+		Speed = api.NumberRange.new(0.3, 0.9), SpreadAngle = api.Vector2.new(25, 25), EmissionDirection = Enum.NormalId.Top,
+		Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+		Acceleration = Vector3.new(0, 0.4, 0), LightEmission = 1, LightInfluence = 0,
+		Color = api.ColorSequence.new(glow:Lerp(Color3.new(1, 1, 1), 0.35), glow),
+		Size = api.NumberSequence.new({ api.NumberSequenceKeypoint.new(0, 0), api.NumberSequenceKeypoint.new(0.25, sp.Size),
+			api.NumberSequenceKeypoint.new(0.75, sp.Size * 0.8), api.NumberSequenceKeypoint.new(1, 0) }),
+		Transparency = api.NumberSequence.new({ api.NumberSequenceKeypoint.new(0, 0.3), api.NumberSequenceKeypoint.new(0.6, 0.35),
+			api.NumberSequenceKeypoint.new(1, 1) }),
+		Rotation = api.NumberRange.new(0, 360), RotSpeed = api.NumberRange.new(-40, 40),
+	}, root)
+	if cfg.Opens then
+		make(api, "ClickDetector", { Name = "PropClick", MaxActivationDistance = 40 }, prop)
+	end
+	prop.Parent = lp
+	return lp
+end
+
+-- How far a part reaches from its centre along the flat direction `dir` (and its half height), however it is turned.
+local function reach(part, dir)
+	local cf, s = part.CFrame, part.Size
+	local r, u, l = cf.RightVector, cf.UpVector, cf.LookVector
+	local along = math.abs(r:Dot(dir)) * s.X / 2 + math.abs(u:Dot(dir)) * s.Y / 2 + math.abs(l:Dot(dir)) * s.Z / 2
+	local up = math.abs(r.Y) * s.X / 2 + math.abs(u.Y) * s.Y / 2 + math.abs(l.Y) * s.Z / 2
+	return along, up
+end
+
+-- His pad Model's reach from the spot along `dir` (its far edge), and its lowest point.
+local function padReach(spot, dir)
+	local far, bottom = 0, math.huge
+	for _, d in spot.pad:GetDescendants() do
+		if d:IsA("BasePart") then
+			local along, up = reach(d, dir)
+			far = math.max(far, math.abs((d.CFrame.Position - spot.at.Position):Dot(dir)) + along)
+			bottom = math.min(bottom, d.CFrame.Position.Y - up)
+		end
+	end
+	return far, bottom
+end
+
+--[[
+	The stands with a Grow in Config/LobbyProps made bigger before they are built (owner, Oct 20: "in general go make
+	the halloween shop objects bigger so they stand out more"): run on LobbyLayout.propSpots' rows, before
+	LobbyPropBuild.make. Each side's spots go from the middle of the plaza outwards (their Rank); a spot whose prop has
+	Grow gets his round pad Model (spot.pad) scaled Grow times round its foot (his model as it is, never redrawn) and,
+	when the bigger pad would reach the pad before it, moved outward along the row until it is config.GrowGap clear
+	of it. A spot without Grow never moves: should one be in the way, it stays and tests/LobbyLayout.spec says so.
+	Changes the spots (at: on the bigger pad's top) and his pad Models in place; returns { Prop, Shift, Grow }.
+]]
+function LobbyPropBuild.grow(api, spots, config)
+	local Vector3, CFrame = api.Vector3, api.CFrame
+	local sides = {}
+	for _, s in spots do
+		local side = table.find(config.ThreePads, s.Prop) and "three" or "two"
+		sides[side] = sides[side] or {}
+		table.insert(sides[side], s)
+	end
+	local out = {}
+	for _, list in sides do
+		table.sort(list, function(a, b) return (a.Rank or 0) < (b.Rank or 0) end)
+		local dir = nil
+		if #list >= 2 then
+			local d = list[#list].at.Position - list[1].at.Position
+			d = Vector3.new(d.X, 0, d.Z)
+			if d.Magnitude > 0.01 then dir = d.Unit end
+		end
+		local edge = nil -- (how far along the row the pad before this one reaches)
+		for _, s in list do
+			local cfg = config.Props[s.Prop]
+			local grow = cfg and cfg.Grow or 1
+			local here = dir and s.at.Position:Dot(dir) or 0
+			local far, bottom = 0, s.at.Position.Y
+			if dir and s.pad then far, bottom = padReach(s, dir) end
+			if grow ~= 1 and s.pad then
+				local shift = 0
+				if dir and edge then shift = math.max(0, edge + config.GrowGap + far * grow - here) end
+				local foot = Vector3.new(s.at.Position.X, bottom, s.at.Position.Z)
+				local move = (dir or Vector3.new(0, 0, 0)) * shift
+				for _, d in s.pad:GetDescendants() do
+					if d:IsA("BasePart") then
+						local rel = d.CFrame.Position - foot
+						d.Size = d.Size * grow
+						d.CFrame = CFrame.new(foot + move + rel * grow) * (d.CFrame - d.CFrame.Position)
+					end
+				end
+				local top = bottom + (s.at.Position.Y - bottom) * grow
+				s.at = CFrame.new(s.at.Position.X + move.X, top, s.at.Position.Z + move.Z) * (s.at - s.at.Position)
+				s.Grow = grow
+				here += shift
+				far *= grow
+				table.insert(out, { Prop = s.Prop, Shift = shift, Grow = grow })
+			end
+			edge = here + far
+		end
+	end
+	return out
+end
+
+--[[
+	Props saved before their Config Grow came in (a place saved with Workspace > HuzzLobbyProps from an older build, or
+	one he kept): the game doesn't build those again (LobbyPropService keeps what the place has, so he can drag them
+	and type another Title or Scale), so nothing ever made them bigger. Here each saved LobbyProp whose Config prop
+	has a Grow and that has no Grow attribute yet (never grown) is grown the same way a new one is: his pad under it
+	scaled by LobbyPropBuild.grow (moved outward only when it would reach the pad before it), then the LobbyProp built
+	again on the bigger pad by LobbyPropBuild.make with his attributes (Title, Line, Color, Glow, Opens, Action) and
+	its Scale times Grow (2.5 -> 3.75: Config's number; a Scale he typed grows by the same factor). Props without a
+	Grow, props already grown, and any he moved off its pad (more than 1.5 studs) are left exactly as they are.
+	`spots` = LobbyLayout.propSpots rows for the lobby the folder sits in; `real(key)` = his set-up model or nil.
+	Returns { { Prop, Shift, Grow, Scale } } for the props it grew.
+]]
+function LobbyPropBuild.growSaved(api, spots, folder, config, shapes, real, texture: string)
+	local CFrame, Vector3 = api.CFrame, api.Vector3
+	local function flat(v) return Vector3.new(v.X, 0, v.Z) end
+	local need = {}
+	for _, lp in folder:GetChildren() do
+		local key = lp:GetAttribute("Prop")
+		local cfg = type(key) == "string" and config.Props[key]
+		local pad = lp:FindFirstChild("Pad")
+		if cfg and (cfg.Grow or 1) ~= 1 and lp:GetAttribute("Grow") == nil and pad and shapes[key] then
+			for _, s in spots do
+				if s.Prop == key and (flat(s.at.Position) - flat(pad.CFrame.Position)).Magnitude <= 1.5 then
+					local propModel = lp:FindFirstChild("Prop")
+					local root = propModel and propModel:FindFirstChild("Root") -- (the prop's middle: where he dragged it)
+					local off = if root and root:IsA("BasePart") then (flat(root.CFrame.Position) - flat(pad.CFrame.Position)).Magnitude else 0
+					if off <= 1.5 then need[key] = { lp = lp, spot = s } end
+				end
+			end
+		end
+	end
+	if next(need) == nil then return {} end
+	-- grow only those pads: every other prop's Grow left out, so its pad stays as it is (LobbyPropBuild.grow still
+	-- reads its pad's reach to keep the grown one clear of it)
+	local only = table.clone(config)
+	only.Props = {}
+	for key, cfg in config.Props do
+		local c = table.clone(cfg)
+		if not need[key] then c.Grow = nil end
+		only.Props[key] = c
+	end
+	local out = {}
+	for _, m in LobbyPropBuild.grow(api, spots, only) do
+		local n = need[m.Prop]
+		if n then
+			local old, cfg = n.lp, config.Props[m.Prop]
+			local scale = (old:GetAttribute("Scale") or (cfg.Scale or 2) / m.Grow) * m.Grow
+			local mine = table.clone(config)
+			mine.Props = { [m.Prop] = {
+				Title = old:GetAttribute("Title") or cfg.Title, Line = old:GetAttribute("Line"), Scale = scale, Grow = m.Grow,
+				Color = old:GetAttribute("Color") or cfg.Color, Glow = old:GetAttribute("Glow") or cfg.Glow,
+				Opens = old:GetAttribute("Opens") or cfg.Opens, Action = old:GetAttribute("Action") or cfg.Action,
+			} }
+			local fresh = LobbyPropBuild.make(api, { at = n.spot.at, Prop = m.Prop }, mine, shapes[m.Prop], real and real(m.Prop), texture)
+			fresh.Name = old.Name
+			fresh.Parent = old.Parent
+			old:Destroy()
+			table.insert(out, { Prop = m.Prop, Shift = m.Shift, Grow = m.Grow, Scale = scale })
+		end
+	end
+	return out
+end
+
+return LobbyPropBuild

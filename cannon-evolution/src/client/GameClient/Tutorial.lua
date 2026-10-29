@@ -1,0 +1,954 @@
+--[[
+	Tutorial  (ModuleScript)
+	First-time guide:
+	  1. A short cutscene: a guide waves by the launch cannon, fires, the
+	     camera chases the ball through the worlds, then the guide talks to
+	     you and the camera glides over the training pads (Skip button).
+	  2. A quest bar at the top with a live count, e.g. TRAIN POWER (12/30).
+	  3. A line of white arrows flowing from you to the next thing to do
+	     (it follows a walkable path), and a pointer on the menu button when
+	     the step is in the UI.
+	  4. A TUTORIAL COMPLETE! screen after the first rebirth.
+	Each step finishes on its own when you do it, and progress is saved.
+
+	All words the player sees are in TEXT below, so they're easy to rewrite.
+]]
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local PathfindingService = game:GetService("PathfindingService")
+
+-- Everything the tutorial says.
+local TEXT = {
+	IntroLine1 = "My first shot? It barely reached the water.",
+	IntroLine2 = "Your turn. Start here.",
+	Skip = "Skip",
+	Tag = "TUTORIAL",
+	Train = "TRAIN POWER",
+	Launch = "LAUNCH",
+	Cash = "EARN CASH",
+	Hatch = "HATCH AN EGG",
+	Power = "GET REBIRTH POWER",
+	RebirthCash = "GET REBIRTH CASH",
+	Rebirth = "REBIRTH NOW",
+	JumpHint = "JUMP TO LEAVE TRAINING",
+	Complete = "TUTORIAL COMPLETE!",
+	CompleteSub = "Rebirth #1",
+	CompleteReward = "+50% POWER",
+	Continue = "Tap to continue",
+}
+
+-- The intro, shot for shot like the reference:
+--   A  the guide waves beside the launch cannon (camera circles slowly)
+--   B  the cannon fires and the camera chases the ball down the track,
+--      one big skip from world to world
+--   C  back in the lobby the guide talks to you (line 1)
+--   D  the camera glides over the training pads and back behind you (line 2)
+local TRACK_Z = -123 -- the launch cannon's line
+local WATER_Y = 5.4
+local MUZZLE = Vector3.new(-36.5, 13.4, -123) -- used if your cannon isn't placed yet
+local WAVE_TIME = 2.4
+local TALK_TIME = 4.6
+local PADS_TIME = 6
+-- the ball's run: { seconds, x }. Short skips at each world, a huge skip between.
+local CHASE = {
+	{ 0, -36.5 },
+	{ 1.3, -330 }, -- Sandy Shore
+	{ 2.4, -580 },
+	{ 3.6, -5450 }, -- Igloo Camp
+	{ 4.7, -5720 },
+	{ 5.9, -9480 }, -- Crystal Caverns
+	{ 7.2, -9780 },
+	{ 8.2, -9900 },
+}
+local ANIM = {
+	Idle = "rbxassetid://507766388",
+	Wave = "rbxassetid://507770239",
+	Point = "rbxassetid://507770453",
+}
+
+-- Studio only: set to true to watch the whole tutorial again on your own save
+local REPLAY_IN_STUDIO = false
+
+local TRAIN_GOAL = 30
+local LAUNCH_GOAL = 2
+
+-- Catmull-Rom spline through points: smooth speed and direction
+local function spline(points, t)
+	local n = #points - 1
+	local f = math.clamp(t, 0, 1) * n
+	local i = math.min(math.floor(f) + 1, n)
+	local u = f - (i - 1)
+	local p1, p2 = points[i], points[i + 1]
+	local p0 = points[i - 1] or (p1 + (p1 - p2))
+	local p3 = points[i + 2] or (p2 + (p2 - p1))
+	local u2, u3 = u * u, u * u * u
+	return 0.5 * ((2 * p1) + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u2 + (-p0 + 3 * p1 - 3 * p2 + p3) * u3)
+end
+
+local function smooth(t)
+	t = math.clamp(t, 0, 1)
+	return t * t * (3 - 2 * t)
+end
+
+-- Monotone cubic through { time, value } keys: never runs backwards, no
+-- sudden speed changes. Returns value and which segment it's in.
+local function monotone(keys)
+	local n = #keys
+	local d, m = {}, {}
+	for i = 1, n - 1 do
+		d[i] = (keys[i + 1][2] - keys[i][2]) / (keys[i + 1][1] - keys[i][1])
+	end
+	m[1], m[n] = d[1], d[n - 1]
+	for i = 2, n - 1 do
+		if d[i - 1] * d[i] <= 0 then
+			m[i] = 0
+		else
+			local h0, h1 = keys[i][1] - keys[i - 1][1], keys[i + 1][1] - keys[i][1]
+			local w1, w2 = 2 * h1 + h0, h1 + 2 * h0
+			m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i])
+		end
+	end
+	return function(t)
+		t = math.clamp(t, keys[1][1], keys[n][1])
+		local k = 1
+		while k < n - 1 and t > keys[k + 1][1] do
+			k += 1
+		end
+		local h = keys[k + 1][1] - keys[k][1]
+		local s = (t - keys[k][1]) / h
+		local s2, s3 = s * s, s * s * s
+		local v = (2 * s3 - 3 * s2 + 1) * keys[k][2] + (s3 - 2 * s2 + s) * h * m[k] + (-2 * s3 + 3 * s2) * keys[k + 1][2] + (s3 - s2) * h * m[k + 1]
+		return v, k
+	end
+end
+
+return function(ctx)
+	local Kit, Config, State = ctx.Kit, ctx.Config, ctx.State
+	local new = Kit.new
+	local player = ctx.Player
+
+	-----------------------------------------------------------------------
+	-- Where things are
+	-----------------------------------------------------------------------
+	local function stationPad(id)
+		local stations = workspace:FindFirstChild("TrainingStations")
+		local s = stations and stations:FindFirstChild("Station_" .. id)
+		return s and (s:FindFirstChild("Pad") or s.PrimaryPart)
+	end
+	local function bestStation(data)
+		local best = Config.Stations[1]
+		for _, s in ipairs(Config.Stations) do
+			local open = if s.Pass then State.Passes and State.Passes[s.Pass] else data.Rebirths >= s.Rebirths
+			if open and s.Gain > best.Gain then
+				best = s
+			end
+		end
+		return stationPad(best.Id)
+	end
+	local function launchZone()
+		return workspace:FindFirstChild("LaunchZone")
+	end
+	local function eggStand()
+		local stands = workspace:FindFirstChild("EggStands")
+		local s = stands and stands:FindFirstChild("StarterEgg")
+		return s and (s.PrimaryPart or s:FindFirstChildWhichIsA("BasePart", true))
+	end
+	local function mainGui()
+		return player.PlayerGui:FindFirstChild("MainUI")
+	end
+	local function menuButton(name)
+		local main = mainGui()
+		local menu = main and main:FindFirstChild("Menu", true)
+		return menu and menu:FindFirstChild(name)
+	end
+	local function rebirthPanelButton()
+		local panel = ctx.Panels.Rebirth
+		if not (panel and panel.Frame.Visible) then
+			return nil
+		end
+		return panel.Frame:FindFirstChild("RebirthButton", true)
+	end
+
+	-----------------------------------------------------------------------
+	-- Steps. Count returns (have, goal); Target is a part in the world;
+	-- Point is a UI button to point at instead.
+	-----------------------------------------------------------------------
+	local launchBase = nil
+	local STEPS = {
+		{
+			Label = function()
+				return TEXT.Train
+			end,
+			Count = function(data)
+				return math.min(math.floor(data.Power), TRAIN_GOAL), TRAIN_GOAL
+			end,
+			Target = function()
+				return stationPad(1)
+			end,
+		},
+		{
+			Label = function()
+				return TEXT.Launch
+			end,
+			Count = function(data)
+				launchBase = launchBase or data.TotalLaunches
+				return math.min(data.TotalLaunches - launchBase, LAUNCH_GOAL), LAUNCH_GOAL
+			end,
+			Target = launchZone,
+		},
+		{
+			Label = function()
+				return TEXT.Cash
+			end,
+			Count = function(data)
+				local price = Config.GetEgg("Starter").Price
+				if #data.Pets > 0 then
+					return price, price
+				end
+				return math.min(math.floor(data.Cash), price), price
+			end,
+			Target = launchZone,
+		},
+		{
+			Label = function()
+				return TEXT.Hatch
+			end,
+			Count = function(data)
+				return #data.Pets > 0 and 1 or 0, 1
+			end,
+			Target = eggStand,
+		},
+		{
+			Label = function(data)
+				local power = Config.RebirthCost(data.Rebirths)
+				return data.Power < power and TEXT.Power or TEXT.RebirthCash
+			end,
+			Count = function(data)
+				if data.Rebirths > 0 then
+					return 1, 1
+				end
+				local power, cash = Config.RebirthCost(0)
+				if data.Power < power then
+					return math.floor(data.Power), power
+				end
+				return math.min(math.floor(data.Cash), cash), cash
+			end,
+			Target = function(data)
+				local power = Config.RebirthCost(data.Rebirths)
+				return data.Power < power and bestStation(data) or launchZone()
+			end,
+		},
+		{
+			Label = function()
+				return TEXT.Rebirth
+			end,
+			Count = function(data)
+				return math.min(data.Rebirths, 1), 1
+			end,
+			Point = function()
+				return rebirthPanelButton() or menuButton("Rebirth")
+			end,
+		},
+	}
+
+	-----------------------------------------------------------------------
+	-- Screen
+	-----------------------------------------------------------------------
+	local gui = new("ScreenGui", { Name = "Tutorial", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 40, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Enabled = false, Parent = player.PlayerGui })
+	local holder = new("Frame", { Name = "Scaled", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = gui })
+	local uiScale = new("UIScale", { Parent = holder })
+	local function fit()
+		local cam = workspace.CurrentCamera
+		local s = math.min(cam.ViewportSize.X / 1280, cam.ViewportSize.Y / 720)
+		if s <= 0 then
+			return
+		end
+		uiScale.Scale = s
+		holder.Size = UDim2.fromScale(1 / s, 1 / s)
+	end
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
+	fit()
+
+	-- quest bar
+	local QUEST_Y = 108
+	local quest = new("Frame", { Name = "Quest", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(470, 50), Position = UDim2.new(0.5, 0, 0, QUEST_Y), AnchorPoint = Vector2.new(0.5, 0), Visible = false, ZIndex = 2, Parent = holder })
+	Kit.corner(12, quest)
+	Kit.stroke(3.5, nil, quest)
+	local questGrad = Kit.gradient(Kit.Colors.HeaderTop, Kit.Colors.HeaderBottom, quest)
+	local gloss = new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, Size = UDim2.new(1, -12, 0.42, 0), Position = UDim2.fromOffset(6, 4), ZIndex = 3, Parent = quest })
+	Kit.corner(8, gloss)
+	Kit.shine(quest, 4)
+	local tag = new("Frame", { Name = "Tag", BackgroundColor3 = Kit.Colors.Outline, Size = UDim2.fromOffset(112, 22), Position = UDim2.new(0.5, 0, 0, -12), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 5, Parent = quest })
+	Kit.corner(8, tag)
+	Kit.text({ Text = TEXT.Tag, Size = 15, Color = Kit.Colors.Yellow, Stroke = false, ZIndex = 6, Parent = tag })
+	local questText = Kit.text({ Text = "", Size = 28, Scaled = true, MaxSize = 28, StrokeSize = 3, FrameSize = UDim2.new(1, -24, 1, -10), Position = UDim2.new(0.5, 0, 0.5, 2), Anchor = Vector2.new(0.5, 0.5), ZIndex = 5, Parent = quest })
+	local questScale = Kit.scale(quest)
+	local jumpHint = Kit.text({ Text = TEXT.JumpHint, Size = 24, Color = Kit.Colors.Red, StrokeSize = 3, FrameSize = UDim2.new(1, 0, 0, 28), Position = UDim2.new(0.5, 0, 1, 6), Anchor = Vector2.new(0.5, 0), ZIndex = 5, Parent = quest })
+	jumpHint.Visible = false
+
+	-- pointer for UI steps: a pulsing ring around the button and a bouncing arrow under it
+	local ring = new("Frame", { Name = "Ring", BackgroundTransparency = 1, Visible = false, ZIndex = 10, Parent = gui })
+	Kit.corner(14, ring)
+	local ringStroke = Kit.stroke(4, Kit.Colors.Yellow, ring)
+	local pointer = Kit.text({ Text = "⬆", Size = 56, Color = Kit.Colors.Yellow, StrokeSize = 4, FrameSize = UDim2.fromOffset(70, 70), Anchor = Vector2.new(0.5, 0), ZIndex = 11, Parent = gui })
+	pointer.Visible = false
+
+	-- bouncing arrow over the world target
+	local marker = new("BillboardGui", { Name = "TutorialMarker", Size = UDim2.fromOffset(90, 90), AlwaysOnTop = true, LightInfluence = 0, Enabled = false, Parent = gui })
+	Kit.text({ Text = "⬇", Size = 80, Color = Kit.Colors.Yellow, StrokeSize = 4, Parent = marker })
+
+	-----------------------------------------------------------------------
+	-- Arrow line: white arrowheads with a dark outline, floating a little
+	-- off the floor, turned to face the camera, flowing toward the target
+	-- along a walkable path.
+	-----------------------------------------------------------------------
+	local ARROWS, SPACING, FLOW_SPEED, LIFT = 34, 2.6, 6, 1.6
+	local HIDDEN = CFrame.new(0, -500, 0)
+	local arrowFolder = new("Model", { Name = "TutorialArrows" })
+	new("Highlight", {
+		Adornee = arrowFolder, FillTransparency = 1, OutlineColor = Color3.fromRGB(30, 30, 50), OutlineTransparency = 0,
+		DepthMode = Enum.HighlightDepthMode.Occluded, Parent = arrowFolder,
+	})
+	local arrows = {}
+	for i = 1, ARROWS do
+		local arms = {}
+		for side = 1, 2 do
+			arms[side] = new("Part", {
+				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+				Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(245, 245, 250),
+				Size = Vector3.new(0.75, 0.15, 1.7), CFrame = HIDDEN, Parent = arrowFolder,
+			})
+		end
+		arrows[i] = arms
+	end
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+	local function hideArrows()
+		for _, arms in ipairs(arrows) do
+			arms[1].CFrame = HIDDEN
+			arms[2].CFrame = HIDDEN
+		end
+	end
+
+	-- path from you to the target, refreshed when you move or the target changes
+	local path = PathfindingService:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = true, WaypointSpacing = 6 })
+	local route = nil -- { points = {Vector3}, lengths = {cumulative}, total = n }
+	local routeFrom, routeTarget, routeAt, routeBusy = nil, nil, 0, false
+
+	local function setRoute(points)
+		local lengths, total = { 0 }, 0
+		for i = 2, #points do
+			total += (points[i] - points[i - 1]).Magnitude
+			lengths[i] = total
+		end
+		route = { points = points, lengths = lengths, total = total }
+	end
+
+	local function refreshRoute(from, target)
+		if routeBusy then
+			return
+		end
+		routeBusy = true
+		routeFrom, routeTarget, routeAt = from, target, os.clock()
+		local goal = target.Position
+		task.spawn(function()
+			local ok = pcall(function()
+				path:ComputeAsync(from, goal)
+			end)
+			if ok and path.Status == Enum.PathStatus.Success then
+				local points = {}
+				for _, w in ipairs(path:GetWaypoints()) do
+					table.insert(points, w.Position)
+				end
+				points[1] = from
+				setRoute(points)
+			else
+				setRoute({ from, Vector3.new(goal.X, from.Y, goal.Z) })
+			end
+			routeBusy = false
+		end)
+	end
+
+	local function pointOnRoute(d)
+		local pts, lens = route.points, route.lengths
+		for i = 2, #pts do
+			if d <= lens[i] then
+				local seg = lens[i] - lens[i - 1]
+				local u = seg > 0 and (d - lens[i - 1]) / seg or 0
+				return pts[i - 1]:Lerp(pts[i], u), (pts[i] - pts[i - 1])
+			end
+		end
+		return pts[#pts], pts[#pts] - pts[#pts - 1]
+	end
+
+	local function drawArrows(target)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not (root and target) or player:GetAttribute("Launching") then
+			hideArrows()
+			return
+		end
+		if arrowFolder.Parent ~= workspace then
+			arrowFolder.Parent = workspace
+		end
+		local from = root.Position
+		if target ~= routeTarget or not routeFrom or (from - routeFrom).Magnitude > 4 or os.clock() - routeAt > 2 then
+			refreshRoute(from, target)
+		end
+		if not route then
+			hideArrows()
+			return
+		end
+		-- start the line at you even between path refreshes
+		route.points[1] = from
+		local total = route.total
+		local flatGap = Vector3.new(target.Position.X - from.X, 0, target.Position.Z - from.Z).Magnitude
+		if flatGap < 7 or total < 7 then
+			hideArrows()
+			return
+		end
+		local camPos = workspace.CurrentCamera.CFrame.Position
+		rayParams.FilterDescendantsInstances = { player.Character, arrowFolder, workspace:FindFirstChild("MyCannon") }
+		local phase = (os.clock() * FLOW_SPEED) % SPACING
+		for i, arms in ipairs(arrows) do
+			local d = 2.5 + (i - 1) * SPACING + phase
+			if d > total - 2 then
+				arms[1].CFrame = HIDDEN
+				arms[2].CFrame = HIDDEN
+			else
+				local p, seg = pointOnRoute(d)
+				local dir = Vector3.new(seg.X, 0, seg.Z)
+				dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.xAxis
+				local hit = workspace:Raycast(p + Vector3.new(0, 3, 0), Vector3.new(0, -12, 0), rayParams)
+				local pos = Vector3.new(p.X, (hit and hit.Position.Y or p.Y - 2.5) + LIFT, p.Z)
+				-- face the camera: the arrow's flat side turns toward you around its pointing direction
+				local toCam = camPos - pos
+				local normal = toCam - dir * toCam:Dot(dir)
+				normal = normal.Magnitude > 0.01 and normal.Unit or Vector3.yAxis
+				local side = dir:Cross(normal)
+				local base = CFrame.fromMatrix(pos, side, normal)
+				-- grow in near you and shrink near the target
+				local s = math.clamp(math.min((d - 2.5) / 4, (total - 2 - d) / 4), 0, 1)
+				local k = 0.35 + 0.65 * s
+				arms[1].Size = Vector3.new(0.75 * k, 0.15, 1.7 * k)
+				arms[2].Size = arms[1].Size
+				arms[1].CFrame = base * CFrame.new(0.5 * k, 0, 0.5 * k) * CFrame.Angles(0, math.rad(45), 0)
+				arms[2].CFrame = base * CFrame.new(-0.5 * k, 0, 0.5 * k) * CFrame.Angles(0, math.rad(-45), 0)
+			end
+		end
+	end
+
+	-----------------------------------------------------------------------
+	-- Intro cutscene
+	-----------------------------------------------------------------------
+	local function loadGuide()
+		local template = ReplicatedStorage:FindFirstChild("TutorialGuide")
+		if not template then
+			return nil
+		end
+		local guide = template:Clone()
+		for _, d in ipairs(guide:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.Anchored = d.Name == "HumanoidRootPart"
+				d.CanCollide = false
+				d.CanTouch = false
+				d.CanQuery = false
+			elseif d:IsA("Script") or d:IsA("LocalScript") then
+				d:Destroy()
+			end
+		end
+		local hum = guide:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		end
+		guide.Parent = workspace
+		local animator = hum and (hum:FindFirstChildOfClass("Animator") or new("Animator", { Parent = hum }))
+		local tracks = {}
+		local function play(name, looped)
+			if not animator then
+				return
+			end
+			if not tracks[name] then
+				local ok, track = pcall(function()
+					return animator:LoadAnimation(new("Animation", { AnimationId = ANIM[name] }))
+				end)
+				tracks[name] = ok and track or false
+			end
+			local track = tracks[name]
+			if track then
+				track.Looped = looped or false
+				track:Play(0.25)
+			end
+		end
+		return guide, play
+	end
+
+	local function stand(guide, pos, lookAt)
+		local root = guide:FindFirstChild("HumanoidRootPart")
+		local hum = guide:FindFirstChildOfClass("Humanoid")
+		local height = hum and hum.HipHeight + (root and root.Size.Y / 2 or 1) or 3
+		guide:PivotTo(CFrame.lookAt(Vector3.new(pos.X, pos.Y + height, pos.Z), Vector3.new(lookAt.X, pos.Y + height, lookAt.Z)))
+	end
+
+	local function splashAt(pos, big)
+		local ringPart = new("Part", {
+			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+			Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = Color3.fromRGB(220, 245, 255),
+			Size = Vector3.new(0.2, 2, 2), Transparency = 0.25,
+			CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)), Parent = workspace,
+		})
+		local size = big and 26 or 10
+		Kit.tween(ringPart, 0.5, { Size = Vector3.new(0.2, size, size), Transparency = 1 })
+		task.delay(0.6, function()
+			ringPart:Destroy()
+		end)
+	end
+
+	local function playIntro()
+		local cam = workspace.CurrentCamera
+		local char = player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if not (root and hum) then
+			return
+		end
+		local main = mainGui()
+		local walkSpeed, jumpPower = hum.WalkSpeed, hum.JumpPower
+		hum.WalkSpeed, hum.JumpPower = 0, 0
+		if main then
+			main.Enabled = false
+		end
+		local guide, play = loadGuide()
+
+		local intro = new("Frame", { Name = "Intro", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = holder })
+		local fade = new("Frame", { BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 22, Parent = intro })
+		local subtitle = Kit.text({ Text = "", Size = 34, StrokeSize = 3, Wrapped = true, FrameSize = UDim2.new(0.7, 0, 0, 90), Position = UDim2.new(0.5, 0, 1, -70), Anchor = Vector2.new(0.5, 1), ZIndex = 23, Parent = intro })
+		local function say(line)
+			subtitle.Text = line or ""
+			subtitle.TextTransparency = 1
+			subtitle.UIStroke.Transparency = 1
+			Kit.tween(subtitle, 0.25, { TextTransparency = 0 })
+			Kit.tween(subtitle.UIStroke, 0.25, { Transparency = 0 })
+		end
+
+		local skipped = false
+		Kit.button({ Text = TEXT.Skip, Color = "Gray", TextSize = 24, Size = UDim2.fromOffset(110, 44), Position = UDim2.new(1, -24, 1, -20), Anchor = Vector2.new(1, 1), ZIndex = 24, Parent = intro, OnClick = function()
+			skipped = true
+		end })
+
+		local function fadeThrough(midway)
+			Kit.tween(fade, 0.3, { BackgroundTransparency = 0 }, Enum.EasingStyle.Sine)
+			task.wait(0.32)
+			midway()
+			Kit.tween(fade, 0.35, { BackgroundTransparency = 1 }, Enum.EasingStyle.Sine)
+		end
+
+		-- where things are
+		local myCannon = workspace:FindFirstChild("MyCannon")
+		local muzzle = MUZZLE
+		local cannonPos = Vector3.new(-29, 8.45, TRACK_Z)
+		if myCannon then
+			local bore = myCannon:FindFirstChild("Bore", true)
+			local cf, size = myCannon:GetBoundingBox()
+			cannonPos = Vector3.new(cf.X, cf.Y - size.Y / 2, cf.Z)
+			if bore then
+				muzzle = bore.Position + Vector3.new(-1.5, 0, 0)
+			end
+		end
+		local facing = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
+		local feet = root.Position - Vector3.new(0, hum.HipHeight + root.Size.Y / 2, 0)
+		local head = root.Position + Vector3.new(0, 1.5, 0)
+		local endPos = head - facing * 13 + Vector3.new(0, 3.5, 0)
+		local endLook = head + facing * 20
+		cam.CameraType = Enum.CameraType.Scriptable
+		local fov = cam.FieldOfView
+
+		-- A: the guide waves beside the cannon
+		local guideSpot = cannonPos + Vector3.new(4, 0, 6.5)
+		if guide then
+			stand(guide, guideSpot, guideSpot + Vector3.new(10, 0, 4))
+			play("Idle", true)
+			play("Wave")
+		end
+		local t0 = os.clock()
+		local centre = guideSpot + Vector3.new(0, 3.2, 0)
+		while not skipped do
+			local u = (os.clock() - t0) / WAVE_TIME
+			if u >= 1 then
+				break
+			end
+			local a = math.rad(25 - 30 * smooth(u))
+			local offset = Vector3.new(math.cos(a), 0, math.sin(a)) * 11 + Vector3.new(0, 1.2, 0)
+			cam.CFrame = CFrame.lookAt(centre + offset, centre + Vector3.new(0, -0.3, 0))
+			RunService.RenderStepped:Wait()
+		end
+
+		-- B: fire, and chase the ball down the track
+		if not skipped then
+			local ball = new("Part", {
+				Name = "IntroBall", Shape = Enum.PartType.Ball, Size = Vector3.one * 2.8,
+				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false,
+				Material = Enum.Material.Metal, Color = Color3.fromRGB(45, 45, 52), CFrame = CFrame.new(muzzle), Parent = workspace,
+			})
+			local a0 = new("Attachment", { Position = Vector3.new(0, 0.9, 0), Parent = ball })
+			local a1 = new("Attachment", { Position = Vector3.new(0, -0.9, 0), Parent = ball })
+			new("Trail", {
+				Attachment0 = a0, Attachment1 = a1, Lifetime = 0.35, LightEmission = 0.7, FaceCamera = true,
+				Color = ColorSequence.new(Color3.fromRGB(255, 230, 120), Color3.fromRGB(255, 110, 50)),
+				Transparency = NumberSequence.new(0.1, 1), WidthScale = NumberSequence.new(1, 0.2), Parent = ball,
+			})
+			local flash = new("Part", {
+				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+				Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 200, 90),
+				Size = Vector3.one * 2, CFrame = CFrame.new(muzzle), Parent = workspace,
+			})
+			Kit.tween(flash, 0.25, { Size = Vector3.one * 8, Transparency = 1 })
+			task.delay(0.3, function()
+				flash:Destroy()
+			end)
+			Kit.playSound("Launch")
+
+			local xAt = monotone(CHASE)
+			local endT = CHASE[#CHASE][1]
+			local start = os.clock()
+			local lastSeg, lastX, camPos = 1, muzzle.X, nil
+			while not skipped do
+				local t = os.clock() - start
+				local x, seg = xAt(t)
+				-- each segment is one skip: tiny ones at the worlds, a huge one between
+				local from, to = CHASE[seg][2], CHASE[seg + 1][2]
+				local u = math.clamp((x - from) / (to - from), 0, 1)
+				local length = math.abs(to - from)
+				local height = seg == 1 and 40 or math.clamp(length * 0.03, 3, 150)
+				local y0 = seg == 1 and muzzle.Y or WATER_Y + 1.4
+				local y = y0 + (WATER_Y + 1.4 - y0) * u + height * 4 * u * (1 - u)
+				if seg ~= lastSeg then
+					splashAt(Vector3.new(from, WATER_Y + 0.2, TRACK_Z), length > 1000)
+					Kit.playSound("Skip")
+					lastSeg = seg
+				end
+				local p = Vector3.new(x, y, TRACK_Z)
+				ball.CFrame = CFrame.new(p) * CFrame.Angles(0, 0, x / 1.4)
+
+				-- chase camera: further back and wider when it's fast
+				local dt = math.max(RunService.RenderStepped:Wait(), 1 / 240)
+				local speed = math.abs(x - lastX) / dt
+				lastX = x
+				local fast = math.clamp(speed / 3000, 0, 1)
+				local want = p + Vector3.new(16 + fast * 14, 5 + fast * 6, 0)
+				camPos = camPos and camPos:Lerp(want, 0.35) or want
+				cam.CFrame = CFrame.lookAt(camPos, p + Vector3.new(-40, -2, 0))
+				cam.FieldOfView = fov + fast * 22
+				if t >= endT then
+					break
+				end
+			end
+			ball:Destroy()
+		end
+		cam.FieldOfView = fov
+
+		-- C: back in the lobby, the guide talks to you
+		local talkSpot = feet + facing * 6 + facing:Cross(Vector3.yAxis) * 1.5
+		local side = facing:Cross(Vector3.yAxis)
+		local mid = (feet + talkSpot) / 2 + Vector3.new(0, 3, 0)
+		local twoShot = CFrame.lookAt(mid + side * 11 + Vector3.new(0, 1.5, 0) - facing * 2, mid)
+		if not skipped then
+			fadeThrough(function()
+				if guide then
+					stand(guide, talkSpot, feet)
+					play("Point")
+				end
+				cam.CFrame = twoShot
+			end)
+			say(TEXT.IntroLine1)
+			local t1 = os.clock()
+			while not skipped and os.clock() - t1 < TALK_TIME do
+				local u = (os.clock() - t1) / TALK_TIME
+				cam.CFrame = twoShot * CFrame.new(-u * 2, 0, -u * 1.5) -- slow push in
+				RunService.RenderStepped:Wait()
+			end
+		end
+
+		-- D: over the training pads and back behind you
+		if not skipped then
+			say(TEXT.IntroLine2)
+			if guide then
+				play("Point")
+			end
+			local pad = stationPad(1)
+			local padPos = pad and pad.Position or (feet + facing * 30)
+			local startCF = cam.CFrame
+			local camPath = {
+				startCF.Position,
+				padPos + Vector3.new(14, 12, 18),
+				padPos + Vector3.new(-6, 9, 14),
+				endPos + Vector3.new(0, 4, 0) - facing * 6,
+				endPos,
+			}
+			local lookPath = {
+				mid,
+				padPos,
+				padPos + Vector3.new(-14, 0, 0),
+				head,
+				endLook,
+			}
+			local t2 = os.clock()
+			while not skipped do
+				local u = smooth((os.clock() - t2) / PADS_TIME)
+				cam.CFrame = CFrame.lookAt(spline(camPath, u), spline(lookPath, u))
+				if u >= 1 then
+					break
+				end
+				if guide and guide.Parent and u > 0.6 then
+					guide:Destroy() -- off screen by now
+				end
+				RunService.RenderStepped:Wait()
+			end
+		end
+
+		-- skipping fades straight back to you
+		if skipped then
+			fadeThrough(function()
+				cam.CFrame = CFrame.lookAt(endPos, endLook)
+			end)
+		end
+		if guide and guide.Parent then
+			guide:Destroy()
+		end
+		subtitle.Text = ""
+		cam.FieldOfView = fov
+		cam.CameraType = Enum.CameraType.Custom
+		if hum.Parent then
+			cam.CameraSubject = hum
+			hum.WalkSpeed, hum.JumpPower = walkSpeed, jumpPower
+		end
+		if main then
+			main.Enabled = true
+		end
+		for _, d in ipairs(intro:GetDescendants()) do
+			if d:IsA("TextButton") then
+				d.Visible = false
+			end
+		end
+		task.delay(0.4, function()
+			intro:Destroy()
+		end)
+	end
+
+	-----------------------------------------------------------------------
+	-- TUTORIAL COMPLETE!
+	-----------------------------------------------------------------------
+	local function playComplete()
+		local shade = new("TextButton", { Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 30, Parent = holder })
+		Kit.tween(shade, 0.4, { BackgroundTransparency = 0.45 })
+		local box = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(700, 420), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 31, Parent = shade })
+		Kit.rays(box, { Size = UDim2.fromOffset(640, 640), Position = UDim2.fromScale(0.5, 0.45), Color = Kit.Colors.Yellow, Transparency = 0.55, Speed = 30, ZIndex = 31 })
+		Kit.rays(box, { Size = UDim2.fromOffset(460, 460), Position = UDim2.fromScale(0.5, 0.45), Color = Color3.new(1, 1, 1), Transparency = 0.75, Speed = -18, ZIndex = 31 })
+		local title = Kit.text({ Text = TEXT.Complete, Size = 76, StrokeSize = 6, FrameSize = UDim2.new(1, 0, 0, 90), Position = UDim2.fromOffset(0, 40), ZIndex = 34, Parent = box })
+		new("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(255, 245, 140), Color3.fromRGB(255, 165, 20)), Rotation = 90, Parent = title })
+		title.Rotation = -3
+		local sub = Kit.text({ Text = TEXT.CompleteSub, Size = 34, FrameSize = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 140), ZIndex = 34, Parent = box })
+		local reward = Kit.text({ Text = TEXT.CompleteReward, Size = 84, StrokeSize = 6, Color = Kit.Colors.Green, FrameSize = UDim2.new(1, 0, 0, 100), Position = UDim2.fromOffset(0, 186), ZIndex = 34, Parent = box })
+		new("UIGradient", { Color = ColorSequence.new(Color3.fromRGB(170, 255, 120), Kit.Colors.GreenDark), Rotation = 90, Parent = reward })
+		local tap = Kit.text({ Text = TEXT.Continue, Size = 26, FrameSize = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 312), ZIndex = 34, Parent = box })
+		tap.TextTransparency = 1
+
+		-- pop in one after another
+		for i, label in ipairs({ title, sub, reward }) do
+			local s = Kit.scale(label)
+			s.Scale = 0
+			task.delay(0.18 * i, function()
+				Kit.tween(s, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
+				Kit.playSound("Open")
+			end)
+		end
+		Kit.animate(title, function(_, t)
+			if t > 1 then
+				Kit.scale(title).Scale = 1 + math.sin(t * 3) * 0.03
+			end
+		end)
+		task.delay(0.9, function()
+			Kit.animate(tap, function(_, t)
+				tap.TextTransparency = 0.25 + math.sin(t * 4) * 0.25
+			end)
+		end)
+		Kit.confetti(shade, 70)
+		Kit.playSound("Reward")
+
+		local closing = false
+		local function close()
+			if closing then
+				return
+			end
+			closing = true
+			Kit.tween(Kit.scale(box), 0.25, { Scale = 0.7 }, Enum.EasingStyle.Sine)
+			Kit.tween(shade, 0.3, { BackgroundTransparency = 1 })
+			for _, d in ipairs(box:GetDescendants()) do
+				if d:IsA("TextLabel") then
+					Kit.tween(d, 0.25, { TextTransparency = 1 })
+				elseif d:IsA("ImageLabel") then
+					Kit.tween(d, 0.25, { ImageTransparency = 1 })
+				end
+			end
+			task.delay(0.3, function()
+				shade:Destroy()
+				ctx.Open("Rewards")
+			end)
+		end
+		task.delay(0.9, function()
+			shade.Activated:Connect(close)
+		end)
+	end
+
+	-----------------------------------------------------------------------
+	-- Running the steps
+	-----------------------------------------------------------------------
+	local step = nil -- index into STEPS, nil while finished or switching
+	local lastHave = nil
+
+	-- the bar slides down into place for a new step
+	local function showStep()
+		lastHave = nil
+		launchBase = nil
+		route = nil
+		routeTarget = nil
+		quest.Visible = true
+		quest.Position = UDim2.new(0.5, 0, 0, QUEST_Y - 40)
+		questScale.Scale = 0.85
+		Kit.tween(quest, 0.4, { Position = UDim2.new(0.5, 0, 0, QUEST_Y) }, Enum.EasingStyle.Back)
+		Kit.tween(questScale, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
+		Kit.playSound("Open")
+	end
+
+	local function finish()
+		step = nil
+		ring.Visible = false
+		pointer.Visible = false
+		marker.Enabled = false
+		hideArrows()
+		arrowFolder.Parent = nil
+		Kit.tween(quest, 0.3, { Position = UDim2.new(0.5, 0, 0, QUEST_Y - 40) }, Enum.EasingStyle.Sine)
+		Kit.tween(questScale, 0.3, { Scale = 0 }, Enum.EasingStyle.Sine)
+	end
+
+	local function completeStep()
+		task.spawn(ctx.Request, "SetTutorial", step)
+		Kit.playSound("Reward")
+		questGrad.Color = ColorSequence.new(Kit.Colors.Green, Kit.Colors.GreenDark)
+		Kit.pop(quest, 1.12)
+		local finished = step
+		step = nil -- pause while the bar flashes green
+		ring.Visible = false
+		pointer.Visible = false
+		marker.Enabled = false
+		hideArrows()
+		task.delay(0.8, function()
+			if finished >= #STEPS then
+				finish()
+				task.delay(0.3, function()
+					questGrad.Color = ColorSequence.new(Kit.Colors.HeaderTop, Kit.Colors.HeaderBottom)
+				end)
+				playComplete()
+				return
+			end
+			-- slide out, swap, slide back in
+			Kit.tween(quest, 0.2, { Position = UDim2.new(0.5, 0, 0, QUEST_Y - 40) }, Enum.EasingStyle.Sine)
+			Kit.tween(questScale, 0.2, { Scale = 0.85 }, Enum.EasingStyle.Sine)
+			task.delay(0.2, function()
+				questGrad.Color = ColorSequence.new(Kit.Colors.HeaderTop, Kit.Colors.HeaderBottom)
+				step = finished + 1
+				local have, goal = STEPS[step].Count(State.Data)
+				questText.Text = STEPS[step].Label(State.Data) .. " (" .. Config.Format(have) .. "/" .. Config.Format(goal) .. ")"
+				showStep()
+			end)
+		end)
+	end
+
+	local started = false
+	local function start()
+		local data = State.Data
+		if started or not data then
+			return
+		end
+		started = true
+		local replay = REPLAY_IN_STUDIO and RunService:IsStudio()
+		local saved = replay and 0 or (data.Tutorial or 0)
+		if saved >= #STEPS then
+			return
+		end
+		gui.Enabled = true
+		fit()
+		task.spawn(function()
+			if saved == 0 and (replay or (data.TotalLaunches == 0 and data.Rebirths == 0)) then
+				task.wait(1.5) -- let the world load in
+				playIntro()
+			end
+			step = saved + 1
+			local have, goal = STEPS[step].Count(State.Data)
+			questText.Text = STEPS[step].Label(State.Data) .. " (" .. Config.Format(have) .. "/" .. Config.Format(goal) .. ")"
+			showStep()
+		end)
+	end
+
+	local acc = 0
+	RunService.RenderStepped:Connect(function(dt)
+		if not step then
+			return
+		end
+		local data = State.Data
+		if not data then
+			return
+		end
+		local s = STEPS[step]
+
+		-- where to look: a part in the world, or a button in the UI
+		local target = s.Target and s.Target(data)
+		drawArrows(target)
+		if target then
+			marker.Adornee = target
+			marker.StudsOffsetWorldSpace = Vector3.new(0, 8 + math.sin(os.clock() * 4) * 1.2, 0)
+			marker.Enabled = not player:GetAttribute("Launching")
+		else
+			marker.Enabled = false
+		end
+		-- still on a training pad when the step wants you somewhere else
+		jumpHint.Visible = State.Training ~= nil and step > 1 and s.Target ~= nil and step ~= 5
+		local button = s.Point and s.Point()
+		if button and button.Parent and button.AbsoluteSize.X > 0 then
+			local pad = 8
+			ring.Position = UDim2.fromOffset(button.AbsolutePosition.X - pad, button.AbsolutePosition.Y - pad)
+			ring.Size = UDim2.fromOffset(button.AbsoluteSize.X + pad * 2, button.AbsoluteSize.Y + pad * 2)
+			ringStroke.Transparency = 0.5 - math.sin(os.clock() * 6) * 0.5
+			ring.Visible = true
+			pointer.Position = UDim2.fromOffset(button.AbsolutePosition.X + button.AbsoluteSize.X / 2, button.AbsolutePosition.Y + button.AbsoluteSize.Y + 6 + math.abs(math.sin(os.clock() * 5)) * 10)
+			pointer.Visible = true
+		else
+			ring.Visible = false
+			pointer.Visible = false
+		end
+
+		-- the count, a few times a second
+		acc += dt
+		if acc < 0.15 then
+			return
+		end
+		acc = 0
+		local have, goal = s.Count(data)
+		questText.Text = s.Label(data) .. " (" .. Config.Format(have) .. "/" .. Config.Format(goal) .. ")"
+		if lastHave and have > lastHave then
+			Kit.pop(quest, 1.05)
+		end
+		lastHave = have
+		if have >= goal then
+			completeStep()
+		end
+	end)
+
+	State.Changed:Connect(function(what)
+		if what == nil then
+			start()
+		end
+	end)
+	start()
+end

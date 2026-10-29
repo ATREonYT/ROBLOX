@@ -1,0 +1,408 @@
+--[[
+	Practice Bot (owner picked "Yes, add bots": a round must work when you're alone). When a round has runners but
+	no catcher (one player in the server, or the only catcher left), a plain blocky catcher named "Practice Bot"
+	(Config/Round.Bot) joins: it waits in the middle like a catcher, then chases the nearest runner it may tag and
+	stabs within Reach, with a short breather after each stab so a kid can get away (it is also a little slower than
+	a sprinting runner, so the huss and a straight run beat it). It aims where a runner is going and hauls at them
+	from close by (owner, Oct 24: "make the bots better"). Round walls and props it follows a PathfindingService
+	path (worked out off the round's clock, so the round never waits for it). It is plainly a bot: its name tag says so, it is not a
+	player, it never wins a girl and is never paid; if it downs every runner, nobody wins that game.
+	RoundService drives it: spawn() at the line-up, setFrozen() with the catchers, step() while play is live,
+	remove() when a real catcher exists or the game ends. A runner's Banana Peel trips it too (trip(), PowerService);
+	a Smoke Bomb's cloud slows it (slow(), PowerService), and it loses an Invisible runner while they're faded (it
+	chases someone else or waits): so the owner feels the abilities testing alone (critic, Oct 20). The body is Roblox's default blocky one
+	(Players:CreateHumanoidModelFromDescription), so no asset IDs; its run and idle play from the IDs inside that
+	body's own Animate script (that LocalScript can't run on a model nobody owns). The sim swaps in a fake body
+	(PracticeBot.makeBody) to test the chase.
+]]
+local CollectionService = game:GetService("CollectionService")
+local PathfindingService = game:GetService("PathfindingService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local Config = require(ReplicatedStorage:WaitForChild("Shared").Config.Round)
+local KnifeService = require(script.Parent.KnifeService)
+local NameTags = require(script.Parent.NameTagService)
+
+local PracticeBot = {}
+
+local B = Config.Bot
+local model, humanoid, root = nil, nil, nil
+local home = nil -- where it waits (the middle of the field)
+local frozen = true
+local goAt, pauseUntil, nextThink = 0, 0, 0
+local stuckAt, stuckPos, dodgeUntil, dodgeTo = 0, nil, 0, nil -- (walked into a wall: step round it for a moment)
+local route, routeAt, routing, nextRoute = nil, 1, false, 0 -- a path round walls (PathfindingService waypoints)
+local routeFor = nil -- the runner the current path leads to
+local routeAsk = 0 -- bumped whenever a path in the works goes stale (moved, frozen, removed)
+local tracks = {} -- { run = AnimationTrack?, idle = AnimationTrack? }
+local warned = false
+
+-- The default blocky body, in grey with a red shirt so it reads as "not a real player" at a glance.
+function PracticeBot.makeBody(): Model
+	local desc = Instance.new("HumanoidDescription")
+	local skin, shirt, pants = Color3.fromRGB(150, 152, 160), Color3.fromRGB(205, 52, 66), Color3.fromRGB(40, 40, 56)
+	desc.HeadColor, desc.LeftArmColor, desc.RightArmColor = skin, skin, skin
+	desc.TorsoColor = shirt
+	desc.LeftLegColor, desc.RightLegColor = pants, pants
+	return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+end
+
+-- The run and idle from the body's own Animate script (taken out before it's in the world), played from the server
+-- once the body is in Workspace (LoadAnimation needs that), so they show for everyone.
+local function takeAnimations(m: Model): { [string]: Animation }
+	local animateScript = m:FindFirstChild("Animate")
+	local out = {}
+	for _, folder in { "run", "idle" } do
+		local f = animateScript and animateScript:FindFirstChild(folder)
+		local a = f and f:FindFirstChildOfClass("Animation")
+		if a and a.AnimationId ~= "" then out[folder] = a:Clone() end
+	end
+	if animateScript then animateScript:Destroy() end
+	return out
+end
+
+local function animate(h: Humanoid, anims: { [string]: Animation })
+	local animator = h:FindFirstChildOfClass("Animator") or Instance.new("Animator")
+	animator.Parent = h
+	for name, a in anims do
+		local ok, track = pcall(function() return animator:LoadAnimation(a) end)
+		if ok and track then
+			track.Looped = true
+			tracks[name] = track
+		end
+	end
+	if tracks.idle then tracks.idle:Play() end
+end
+
+-- It adapts to the kids playing it (Config.Bot MinSpeed / MaxSpeed / Step): slower after it wins a game, faster
+-- after it loses. Returns "slower" / "faster" when its speed changed (for the message line), else nil.
+local speed = B.Speed
+function PracticeBot.speed(): number
+	return speed
+end
+function PracticeBot.reset()
+	speed = B.Speed
+end
+function PracticeBot.position(): Vector3?
+	return if PracticeBot.active() then root.Position else nil
+end
+function PracticeBot.result(botWon: boolean): string?
+	local before = speed
+	local step = B.Step or 0
+	speed = math.clamp(speed + (if botWon then -step else step), B.MinSpeed or B.Speed, B.MaxSpeed or B.Speed)
+	if speed == before then
+		return nil
+	end
+	return if speed < before then "slower" else "faster"
+end
+
+-- The round's speed-up (Config/Round.SpeedUp, owner Oct 19: "speed goes up every round a very tiny bit"): the bot
+-- runs that much faster too, like every catcher. RoundService sets it at each round's start.
+local scale = 1
+
+local slowK, slowUntil = 1, 0 -- (a Smoke Bomb's cloud: PracticeBot.slow)
+local lungeUntil, nextLunge = 0, 0 -- (its haul at a runner: Config.Bot.Lunge)
+local function walkSpeed(): number
+	local t = os.clock()
+	local lunge = B.Lunge and t < lungeUntil
+	return speed * scale * (if t < slowUntil then slowK else 1) * (if lunge then B.Lunge.Boost else 1)
+end
+local function setSpeed(on: boolean)
+	if humanoid then humanoid.WalkSpeed = if on then walkSpeed() else 0 end
+	if not on and humanoid and root then humanoid:MoveTo(root.Position) end
+end
+
+function PracticeBot.setScale(k: number)
+	scale = if type(k) == "number" and k > 0 then k else 1
+	if humanoid and humanoid.WalkSpeed > 0 then
+		humanoid.WalkSpeed = walkSpeed() -- (below walkSpeed: above it, the name wasn't known yet)
+	end
+end
+
+function PracticeBot.active(): boolean
+	return model ~= nil and root ~= nil and root.Parent ~= nil
+end
+
+-- A slip on a runner's Banana Peel (HuzzServer/PowerService, Oct 20): it stands still and can't stab for `seconds`;
+-- every screen circles stars over its head (model attribute SlipUntil, server time), as on a player who slips.
+function PracticeBot.trip(seconds: number)
+	if not PracticeBot.active() then return end
+	pauseUntil = math.max(pauseUntil, os.clock() + seconds)
+	setSpeed(false)
+	model:SetAttribute("SlipUntil", Workspace:GetServerTimeNow() + seconds)
+end
+
+-- Inside a runner's Smoke Bomb cloud (HuzzServer/PowerService, Oct 20): it walks at `k` of its speed for `seconds`
+-- (PowerService renews it every frame it stays inside), as a catcher does.
+function PracticeBot.slow(k: number, seconds: number)
+	if not PracticeBot.active() then return end
+	slowK, slowUntil = math.clamp(k, 0.1, 1), os.clock() + seconds
+end
+
+-- Set by HuzzServer/PowerService: whether a spot is inside a Smoke Bomb cloud (it can't see a runner there).
+PracticeBot.cover = nil :: ((Vector3) -> boolean)?
+
+-- A runner it can't see: inside a smoke cloud, or faded by Invisible (character InvisibleFrom / InvisibleUntil, server time). It loses them
+-- for that long, as a player would lose a faint shimmer; they can still bump into it.
+local function hidden(target: BasePart): boolean
+	local c = target.Parent
+	if not c then return false end
+	local from, untilT = c:GetAttribute("InvisibleFrom"), c:GetAttribute("InvisibleUntil")
+	if PracticeBot.cover and PracticeBot.cover(target.Position) then return true end -- (in a smoke cloud)
+	if type(untilT) ~= "number" then return false end
+	local t = Workspace:GetServerTimeNow()
+	return t < untilT and (type(from) ~= "number" or t >= from)
+end
+
+-- Its body while it's in the round (for effects drawn on it), else nil.
+function PracticeBot.body(): Model?
+	return if PracticeBot.active() then model else nil
+end
+
+-- Brings the bot into the round at `at` (a CFrame in the middle). True when it's there.
+function PracticeBot.spawn(at: CFrame): boolean
+	home = at
+	if PracticeBot.active() then
+		PracticeBot.place(at)
+		return true
+	end
+	PracticeBot.remove()
+	local ok, m = pcall(PracticeBot.makeBody)
+	if not (ok and m) then
+		if not warned then
+			warned = true
+			warn("[Huzz] The Practice Bot couldn't be made: " .. tostring(m))
+		end
+		return false
+	end
+	local h = m:FindFirstChildOfClass("Humanoid")
+	local r = m:FindFirstChild("HumanoidRootPart")
+	if not (h and r) then
+		m:Destroy()
+		return false
+	end
+	m.Name = B.Name
+	h.DisplayName = B.Name
+	h.WalkSpeed = 0
+	pcall(function()
+		h.UseJumpPower, h.JumpPower = true, 0 -- (no jumping anywhere)
+		h:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+		h.BreakJointsOnDeath = false
+		h.MaxHealth, h.Health = math.huge, math.huge -- (nothing in the game hurts it)
+	end)
+	m:SetAttribute("HuzzRole", "Catcher")
+	m:SetAttribute("HuzzBot", true)
+	pcall(function() CollectionService:AddTag(m, "HuzzBot") end)
+	local okAnims, anims = pcall(takeAnimations, m)
+	-- a faint red outline, the same as players who catch (RoundHud draws theirs)
+	pcall(function()
+		local outline = Instance.new("Highlight")
+		outline.Name = "HuzzOutline"
+		outline.FillTransparency, outline.OutlineTransparency = 1, 0.55 -- (thin and see-through, as Huss Valley's; was 0.35)
+		outline.OutlineColor, outline.FillColor = Color3.fromRGB(235, 50, 60), Color3.fromRGB(235, 50, 60)
+		outline.DepthMode = Enum.HighlightDepthMode.Occluded
+		outline.Parent = m
+	end)
+	model, humanoid, root = m, h, r
+	m.Parent = Workspace
+	m:PivotTo(at)
+	if okAnims then pcall(animate, h, anims) end
+	pcall(function() r:SetNetworkOwner(nil) end) -- (the server moves it, so it never stutters between owners)
+	pcall(NameTags.bot, m, B.Name)
+	pcall(KnifeService.give, m) -- (catchers hold their knife in a round)
+	frozen = true
+	m:SetAttribute("HuzzFrozen", true)
+	setSpeed(false)
+	return true
+end
+
+function PracticeBot.place(at: CFrame)
+	home = at
+	route, nextRoute, routeAsk = nil, 0, routeAsk + 1 -- (an old path from where it was is no use now)
+	if PracticeBot.active() then model:PivotTo(at) end
+end
+
+-- Moves it without changing where it waits (pushed out of a safe zone: it keeps its post in the middle).
+function PracticeBot.nudge(at: CFrame)
+	route, nextRoute, routeAsk = nil, 0, routeAsk + 1
+	if PracticeBot.active() then model:PivotTo(at) end
+end
+
+-- Frozen with the catchers (line-up, the pick, the countdown); when it may go, it reacts a moment later.
+function PracticeBot.setFrozen(on: boolean)
+	if on == frozen then return end
+	frozen = on
+	if not on then goAt = os.clock() + B.Reaction end
+	route, nextRoute, routeAsk = nil, 0, routeAsk + 1
+	if model then model:SetAttribute("HuzzFrozen", on) end -- (the red screen glow ignores it only while it waits)
+	setSpeed(false)
+end
+
+function PracticeBot.remove()
+	if model then model:Destroy() end
+	model, humanoid, root = nil, nil, nil
+	table.clear(tracks)
+	frozen = true
+	route, routeAsk = nil, routeAsk + 1
+	lungeUntil, nextLunge = 0, 0
+end
+
+-- True when nothing solid stands between the bot and `to` (people don't count): then it just runs straight there.
+local function clearLine(to: Vector3): boolean
+	local ok, hit = pcall(function()
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		local skip = { model }
+		for _, p in Players:GetPlayers() do
+			if p.Character then table.insert(skip, p.Character) end
+		end
+		params.FilterDescendantsInstances = skip
+		params.RespectCanCollide = true -- (zone boxes and see-through props don't block it)
+		params.CollisionGroup = "Default"
+		local from = root.Position
+		local hit = Workspace:Raycast(from, to - from, params)
+		return hit and hit.Instance.CanCollide and hit.Instance.Transparency < 1 -- (invisible walls are the field's edge)
+	end)
+	return not (ok and hit)
+end
+
+-- Works out a way round whatever is in the way, without holding up the round (ComputeAsync waits).
+local function findRoute(to: Vector3)
+	if routing then return end
+	routing = true
+	local ask = routeAsk
+	task.spawn(function()
+		local ok, waypoints = pcall(function()
+			local path = PathfindingService:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = false })
+			path:ComputeAsync(root.Position, to)
+			return if path.Status == Enum.PathStatus.Success then path:GetWaypoints() else nil
+		end)
+		routing = false
+		if ok and waypoints and #waypoints > 1 and root and ask == routeAsk then
+			route, routeAt = waypoints, 2
+		end
+	end)
+end
+
+-- Seconds until it can meet a runner `rel` away moving at `v` (flat), running at `speed`: the soonest t with
+-- |rel + v t| = speed t; nil when it can't catch them up (they run away faster).
+local function meetIn(rel: Vector3, v: Vector3, speed: number): number?
+	local a = v:Dot(v) - speed * speed
+	local b = 2 * rel:Dot(v)
+	local c = rel:Dot(rel)
+	if math.abs(a) < 1e-6 then
+		return if b < 0 then -c / b else nil
+	end
+	local disc = b * b - 4 * a * c
+	if disc < 0 then return nil end
+	local r = math.sqrt(disc)
+	local t1, t2 = (-b - r) / (2 * a), (-b + r) / (2 * a)
+	local t = math.huge
+	if t1 > 0 then t = t1 end
+	if t2 > 0 and t2 < t then t = t2 end
+	return if t < math.huge then t else nil
+end
+
+-- One frame of play. targets = the runners it may chase (roots); stab(botRoot, targetRoot) tries a stab toward
+-- that runner and says if it hit someone (or a Shield took it). fallY: below this it has fallen off the field and goes back home.
+function PracticeBot.step(targets: { BasePart }, stab: (BasePart, BasePart?) -> boolean, fallY: number?)
+	if not PracticeBot.active() then return end
+	local now = os.clock()
+	if fallY and root.Position.Y < fallY and home then
+		model:PivotTo(home)
+	end
+	local moving = humanoid.WalkSpeed > 0
+	local go = not frozen and now >= goAt and now >= pauseUntil
+	if go ~= moving then setSpeed(go) end
+	if go and moving and humanoid.WalkSpeed ~= walkSpeed() then humanoid.WalkSpeed = walkSpeed() end -- (smoke, a lunge)
+	-- the run plays while it moves (sped up with its speed), the idle while it stands
+	if tracks.run then
+		local v = root.AssemblyLinearVelocity
+		local vel = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z).Magnitude else 0
+		if vel > 2 and not tracks.run.IsPlaying then
+			tracks.run:Play(0.2)
+		elseif vel <= 2 and tracks.run.IsPlaying then
+			tracks.run:Stop(0.2)
+		end
+		if tracks.run.IsPlaying then tracks.run:AdjustSpeed(math.clamp(vel / 16, 0.6, 1.8)) end
+	end
+	if not go then return end
+	local best, bestD = nil, math.huge
+	for _, t in targets do
+		local d = (t.Position - root.Position).Magnitude
+		if d < bestD and not hidden(t) then best, bestD = t, d end
+	end
+	local lunging = B.Lunge ~= nil and now < lungeUntil
+	if best and bestD <= B.Reach * speed / B.Speed * (if lunging then 1.3 else 1) then -- (its reach grows and shrinks with its speed, and a lunge reaches further)
+		-- (it stabs toward them: it runs at where they're going, so its facing may point past them)
+		local to = Vector3.new(best.Position.X, root.Position.Y, best.Position.Z)
+		if (to - root.Position).Magnitude > 0.1 then root.CFrame = CFrame.lookAt(root.Position, to) end
+		if stab(root, best) then
+			pauseUntil = now + B.Pause -- (a breather after each stab: kids get a chance to run)
+			-- (no halt here, on purpose: it would slide the bot ~2 studs on toward the kid it just stabbed, during
+			-- the breather; critic, Oct 20. Shared/Halt is for players letting go of a full run.)
+			setSpeed(false)
+			return
+		end
+	end
+	-- close enough with nothing in the way: a haul at them (Config.Bot.Lunge), aimed where they're going
+	local L = B.Lunge
+	if best and L and now >= nextLunge and bestD >= L.From and bestD <= L.To and clearLine(best.Position) then
+		lungeUntil, nextLunge = now + L.Time, now + L.Time + L.Cooldown
+		humanoid.WalkSpeed = walkSpeed()
+		local v = best.AssemblyLinearVelocity
+		local lead = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z) * math.min(L.Time, bestD / walkSpeed()) else Vector3.zero
+		humanoid:MoveTo(best.Position + lead)
+		nextThink = now + L.Time
+		return
+	end
+	if now < nextThink then return end
+	nextThink = now + B.Think
+	-- Hardly moved for a second while chasing (a wall or a prop in the way): sidestep for half a second.
+	if now >= stuckAt then
+		if best and stuckPos and (root.Position - stuckPos).Magnitude < 2 and now >= dodgeUntil then
+			local side = root.CFrame.RightVector * (if math.random() < 0.5 then -10 else 10)
+			dodgeTo, dodgeUntil = root.Position + side - root.CFrame.LookVector * 3, now + 0.5
+		end
+		stuckAt, stuckPos = now + 1, root.Position
+	end
+	if now < dodgeUntil and dodgeTo then
+		humanoid:MoveTo(dodgeTo)
+		return
+	end
+	-- Something solid between it and the runner: follow a path round it (refreshed every second).
+	if best ~= routeFor then -- (a different runner: the old path leads the wrong way)
+		route, nextRoute, routeAsk, routeFor = nil, 0, routeAsk + 1, best
+	end
+	local goal = if best then best.Position else if home then home.Position else nil
+	if goal and not clearLine(goal) then
+		if now >= nextRoute then
+			nextRoute = now + 1
+			findRoute(goal)
+		end
+		while route and route[routeAt] and Vector3.new(route[routeAt].Position.X - root.Position.X, 0, route[routeAt].Position.Z - root.Position.Z).Magnitude < 3 do
+			routeAt += 1
+		end
+		if route and route[routeAt] then
+			humanoid:MoveTo(route[routeAt].Position)
+			return
+		end
+	else
+		route = nil
+	end
+	if best then
+		-- aim at where they'll be by the time it gets there (at most Lead seconds ahead: the huss still fools it), so it
+		-- cuts across their way instead of trailing behind a faster runner
+		local v = best.AssemblyLinearVelocity
+		v = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z) else Vector3.zero
+		local rel = Vector3.new(best.Position.X - root.Position.X, 0, best.Position.Z - root.Position.Z)
+		local t = meetIn(rel, v, walkSpeed()) or B.Lead
+		humanoid:MoveTo(best.Position + v * math.min(t, B.Lead))
+	elseif home then
+		humanoid:MoveTo(home.Position) -- nobody to chase: back to the middle
+	end
+end
+
+return PracticeBot

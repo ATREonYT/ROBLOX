@@ -1,0 +1,208 @@
+--!strict
+--[[
+	The coin shop (owner's call: "make the coins usable"; they chose cosmetics): looks only, nothing that changes how
+	the game plays. Bought and worn on the server (ActionService "BuyWithCoins" / "Wear"); shown to everyone.
+	Every item is made from colours in code (no uploaded pictures needed), so all of it works today.
+	  Slot   Trail = a streak behind you as you run; Tag = your name's colour over your head; Knife = the catcher's knife.
+	  Colors two or three colours (a gradient); Rainbow = cycles through the colours.
+	  Price  coins. Tune freely; the earn rate is in Config/Round (coins per round) and the quests.
+	One item per slot is worn at a time; buying one wears it. Sunset Trail (a Robux cosmetic) is a Trail too.
+	NotForSale: won elsewhere (the Spin Knife is the Spin the Wheel's Legendary): never sold for coins, and the ITEMS
+	tab only shows it once you own it.
+	Rewards (owner: "unique perks for characters that you obtain, legendaries - mythics - secrets have better
+	looking cosmetics you can equip, that make you stand out; also add titles, like keeper of secrets"): never sold.
+	  Earn   what unlocks it: { Rarity = "Secret" } own a girl that rare; { Stat = "Heroes", Count = 10 } a counter
+	         in Stats (Config/Progression); { Girls = 10 } own that many girls. HuzzServer/RewardService grants it
+	         (on join and whenever your save changes) and wears it if that slot is empty.
+	  Rarity the colour the card and the title use (Config/Round.Rarities), shown on the card.
+	  Aura   a glow round your body (HuzzServer/CosmeticsService builds it, everyone sees it).
+	  Title  words over your name in the lobby (HuzzServer/NameTagService); your role shows there during a game.
+	Pose and Outfit are the Robux cosmetics' slots (Crown Pose, Midnight Outfit in Config/Products).
+	Knives: the owner's 30 models (see the Knives block below), shown in rarity order after the rewards.
+	Pass: the Game Pass knives (owner, Oct 18: "im going to make them into gamepasses shown with the character of the
+	  person playing, equipped with some exclusive knifes", then "here are the gamepass knives"): Pass = the
+	  Config/Products pass that gives it. Never sold for coins (NotForSale), shown in ITEMS only once you own it, and
+	  given only by HuzzServer/ShopService when Roblox says you own that pass. The lobby stands show them in your hand.
+]]
+export type Earn = { Rarity: string?, Stat: string?, Count: number?, Girls: number? }
+export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife" | "Aura" | "Title", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, NotForSale: boolean?, Unlock: string?, Earn: Earn?, Rarity: string?, Art: string?, Model: string?, Studs: number?, Wear: ("Back" | "Side")?, Wide: number?, Set: string?, Glow: Color3?, Pass: string? }
+
+local Products = require(script.Parent.Products)
+
+local rgb = Color3.fromRGB
+local hex = Color3.fromHex
+local CoinShop = {}
+
+CoinShop.Slots = { "Trail", "Tag", "Knife", "Aura", "Title", "Pose", "Outfit" }
+CoinShop.SlotNames = { Trail = "TRAIL", Tag = "NAME COLOUR", Knife = "KNIFE", Aura = "AURA", Title = "TITLE", Pose = "POSE", Outfit = "OUTFIT" }
+
+local LEGEND, MYTHIC = rgb(255, 190, 60), rgb(255, 84, 120)
+local SECRET = { rgb(150, 110, 255), rgb(255, 90, 200), rgb(90, 220, 255) }
+
+CoinShop.Items = {
+	-- Trails
+	{ Key = "MintTrail", Art = "ItemMintTrail", Slot = "Trail", Name = "Mint Trail", Price = 400, Colors = { rgb(140, 255, 210), rgb(60, 200, 160) }, Order = 1 },
+	{ Key = "OceanTrail", Art = "ItemOceanTrail", Slot = "Trail", Name = "Ocean Trail", Price = 750, Colors = { rgb(120, 220, 255), rgb(40, 110, 255) }, Order = 2 },
+	{ Key = "CandyTrail", Art = "ItemCandyTrail", Slot = "Trail", Name = "Candy Trail", Price = 1000, Colors = { rgb(255, 150, 210), rgb(170, 120, 255) }, Order = 3 },
+	-- the Starter Pack's own trail (Config/Products StarterPack; never sold for coins, shown once you own it)
+	{ Key = "StarterTrail", Slot = "Trail", Name = "Starter Trail", Price = 0, NotForSale = true, Pass = "StarterPack", Unlock = "Starter Pack", Colors = { rgb(255, 214, 90), rgb(255, 140, 60), rgb(255, 90, 160) }, Order = 4.5 },
+	{ Key = "GalaxyTrail", Art = "ItemGalaxyTrail", Slot = "Trail", Name = "Galaxy Trail", Price = 2500, Colors = { rgb(120, 90, 255), rgb(255, 90, 200), rgb(90, 220, 255) }, Rainbow = true, Order = 4 },
+	-- Name colours
+	{ Key = "TagPink", Art = "ItemPinkName", Slot = "Tag", Name = "Pink Name", Price = 300, Colors = { rgb(255, 130, 200), rgb(255, 130, 200) }, Order = 5 },
+	{ Key = "TagSky", Art = "ItemSkyName", Slot = "Tag", Name = "Sky Name", Price = 300, Colors = { rgb(110, 210, 255), rgb(110, 210, 255) }, Order = 6 },
+	{ Key = "TagLime", Art = "ItemLimeName", Slot = "Tag", Name = "Lime Name", Price = 300, Colors = { rgb(150, 245, 110), rgb(150, 245, 110) }, Order = 7 },
+	{ Key = "TagRainbow", Art = "ItemRainbowName", Slot = "Tag", Name = "Rainbow Name", Price = 1500, Colors = { rgb(255, 110, 110), rgb(255, 220, 90), rgb(110, 240, 140), rgb(110, 180, 255), rgb(200, 120, 255) }, Rainbow = true, Order = 8 },
+	-- Rewards from the girls you get (rarest first, so they lead the ITEMS tab) and from playing well.
+	{ Key = "TitleSecret", Slot = "Title", Name = "Keeper of Secrets", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = 16 },
+	{ Key = "AuraSecret", Art = "ItemVoidHalo", Slot = "Aura", Name = "Void Halo", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = 17 },
+	{ Key = "TrailSecret", Art = "ItemSecretComet", Slot = "Trail", Name = "Secret Comet", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = 18 },
+	{ Key = "TitleMythic", Slot = "Title", Name = "Mythic Charmer", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { MYTHIC, rgb(255, 170, 200) }, Order = 19 },
+	{ Key = "AuraMythic", Art = "ItemMythicBlaze", Slot = "Aura", Name = "Mythic Blaze", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { rgb(255, 150, 190), MYTHIC, rgb(150, 20, 70) }, Order = 20 },
+	{ Key = "TrailMythic", Art = "ItemMythicStreak", Slot = "Trail", Name = "Mythic Streak", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { rgb(255, 200, 220), MYTHIC, rgb(150, 20, 70) }, Order = 21 },
+	{ Key = "TitleLegend", Slot = "Title", Name = "Legend Hunter", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { LEGEND, rgb(255, 240, 190) }, Order = 22 },
+	{ Key = "AuraLegend", Art = "ItemLegendGlow", Slot = "Aura", Name = "Legend Glow", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { rgb(255, 245, 200), LEGEND, rgb(255, 130, 40) }, Order = 23 },
+	{ Key = "TrailLegend", Art = "ItemLegendStreak", Slot = "Trail", Name = "Legend Streak", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { rgb(255, 250, 220), LEGEND, rgb(255, 130, 40) }, Order = 24 },
+	{ Key = "TitleCollector", Slot = "Title", Name = "Girl Collector", Price = 0, Earn = { Girls = 10 }, Unlock = "Own 10 girls", Colors = { rgb(255, 150, 210), rgb(255, 150, 210) }, Order = 25 },
+	{ Key = "TitleHero", Slot = "Title", Name = "Huss Hero", Price = 0, Earn = { Stat = "Heroes", Count = 10 }, Unlock = "Make 10 hero runs", Colors = { rgb(91, 224, 122), rgb(91, 224, 122) }, Order = 26 },
+	{ Key = "TitleGuardian", Slot = "Title", Name = "Guardian", Price = 0, Earn = { Stat = "Rescues", Count = 25 }, Unlock = "Save 25 friends", Colors = { rgb(110, 210, 255), rgb(110, 210, 255) }, Order = 27 },
+	-- Knives (catchers hold theirs, everyone else wears one): the owner's own 30 models (design/knives/Knives,
+	-- baked by tools/knives/bake_knives.py into tools/knives/knives.json), Common to Mythic. Model = the .glb it comes
+	-- from; Studs = its length pommel to tip in the game; Wear = where it's worn (owner, Oct 19: "make the location
+	-- based on what knife/sword it is"): "Back" = diagonal across the back like a sword in a back sheath, "Side" =
+	-- at the right hip, blade down. Change any of them here. First picked from his .glb's measured length
+	-- (tools/knives/wear_table.luau): 3.0 studs or more (his swords, katanas, reapers, scythe) Back, shorter Side; Glow = its glowing parts' colour (effects: Shared/KnifeLook);
+	-- Colors = its blade and guard colours (the stand-in knife is painted in them until the owner's models are imported:
+	-- tools/knives/setup_knives.lua). Prices by rarity against the pay (25 coins a game, 50 a win): 200 / 500 / 1,000 /
+	-- 2,000 / 4,000 / 8,000. The quest knives (Unlock) and the Spin Knife (NotForSale) keep their keys and rules on the
+	-- model that fits: Rookie = Training Kunai, Hunter = Hunter's Hook, Moonlit = Hollow Moon, Spin = Celestial Edge.
+	-- Ice, Candy and Shadow Knife (sold before) are now Ice Shard, Sakura Blade and Shadow Cleaver, so saves keep them.
+	-- Shadow Cleaver is retired since Oct 25 (owner, 15:49: it looked one to one like the Game Pass Hollow Eclipse): no
+	-- crate gives it and it isn't sold; anyone who has it keeps it.
+	{ Key = "RustyShiv", Slot = "Knife", Name = "Rusty Shiv", Rarity = "Common", Price = 200, Model = "01_Common_Rusty_Shiv", Studs = 2.48, Wear = "Side", Art = "KnifeRustyShiv", Colors = { hex("8a7a6a"), hex("8a8a90") }, Order = 101 },
+	{ Key = "KitchenCleaver", Slot = "Knife", Name = "Kitchen Cleaver", Rarity = "Common", Price = 200, Model = "02_Common_Kitchen_Cleaver", Studs = 2.42, Wear = "Side", Art = "KnifeKitchenCleaver", Colors = { hex("a9adb3"), hex("8a8a90") }, Order = 102 },
+	{ Key = "RookieKnife", Slot = "Knife", Name = "Training Kunai", Rarity = "Common", Price = 0, Unlock = "Quest: Collect 15 Aura stars (chapter 2)", Model = "03_Common_Training_Kunai", Studs = 2.44, Wear = "Side", Art = "KnifeRookieKnife", Colors = { hex("5d636b"), hex("5d636b") }, Order = 103 },
+	{ Key = "FieldKnife", Slot = "Knife", Name = "Field Knife", Rarity = "Common", Price = 200, Model = "04_Common_Field_Knife", Studs = 2.57, Wear = "Side", Art = "KnifeFieldKnife", Colors = { hex("9aa0a6"), hex("444444") }, Order = 104 },
+	{ Key = "PlainTanto", Slot = "Knife", Name = "Plain Tanto", Rarity = "Common", Price = 200, Model = "05_Common_Plain_Tanto", Studs = 2.57, Wear = "Side", Art = "KnifePlainTanto", Colors = { hex("b0b4ba"), hex("3a3a3a") }, Order = 105 },
+	{ Key = "BoxCutter", Slot = "Knife", Name = "Box Cutter", Rarity = "Common", Price = 200, Model = "06_Common_Box_Cutter", Studs = 2.4, Wear = "Side", Art = "KnifeBoxCutter", Colors = { hex("c8ccd0"), hex("333333") }, Order = 106 },
+	{ Key = "BoneKnife", Slot = "Knife", Name = "Bone Knife", Rarity = "Common", Price = 200, Model = "07_Common_Bone_Knife", Studs = 2.45, Wear = "Side", Art = "KnifeBoneKnife", Colors = { hex("e8dcc0"), hex("8a8a90") }, Order = 107 },
+	{ Key = "ScoutDagger", Slot = "Knife", Name = "Scout Dagger", Rarity = "Common", Price = 200, Model = "08_Common_Scout_Dagger", Studs = 2.57, Wear = "Side", Art = "KnifeScoutDagger", Colors = { hex("9ca2a8"), hex("5a4a3a") }, Order = 108 },
+	{ Key = "JadeKunai", Slot = "Knife", Name = "Jade Kunai", Rarity = "Uncommon", Price = 500, Model = "09_Uncommon_Jade_Kunai", Studs = 2.51, Wear = "Side", Art = "KnifeJadeKunai", Colors = { hex("4fa37a"), hex("c9a640") }, Order = 109 },
+	{ Key = "CrimsonTanto", Slot = "Knife", Name = "Crimson Tanto", Rarity = "Uncommon", Price = 500, Model = "10_Uncommon_Crimson_Tanto", Studs = 2.68, Wear = "Side", Art = "KnifeCrimsonTanto", Colors = { hex("d8dade"), hex("b8231c") }, Order = 110 },
+	{ Key = "SerratedFang", Slot = "Knife", Name = "Serrated Fang", Rarity = "Uncommon", Price = 500, Model = "11_Uncommon_Serrated_Fang", Studs = 2.64, Wear = "Side", Art = "KnifeSerratedFang", Colors = { hex("9aa6b0"), hex("2c3e50") }, Order = 111 },
+	{ Key = "HunterKnife", Slot = "Knife", Name = "Hunter's Hook", Rarity = "Uncommon", Price = 0, Unlock = "Quest: Catch 10 runners (chapter 3)", Model = "12_Uncommon_Hunter_s_Hook", Studs = 2.56, Wear = "Side", Art = "KnifeHunterKnife", Colors = { hex("a0a6ad"), hex("5a3a1c") }, Order = 112 },
+	{ Key = "NightTanto", Slot = "Knife", Name = "Night Tanto", Rarity = "Uncommon", Price = 500, Model = "13_Uncommon_Night_Tanto", Studs = 2.66, Wear = "Side", Art = "KnifeNightTanto", Colors = { hex("2b2f36"), hex("111111") }, Order = 113 },
+	{ Key = "IceKnife", Slot = "Knife", Name = "Ice Shard", Rarity = "Uncommon", Price = 500, Glow = hex("a8d8f0"), Model = "14_Uncommon_Ice_Shard", Studs = 2.61, Wear = "Side", Art = "KnifeIceKnife", Colors = { hex("a8d8f0"), hex("a8d8f0") }, Order = 114 },
+	{ Key = "CopperCleaver", Slot = "Knife", Name = "Copper Cleaver", Rarity = "Uncommon", Price = 500, Model = "15_Uncommon_Copper_Cleaver", Studs = 2.53, Wear = "Side", Art = "KnifeCopperCleaver", Colors = { hex("b87333"), hex("b87333") }, Order = 115 },
+	{ Key = "SpiritKunai", Slot = "Knife", Name = "Spirit Kunai", Rarity = "Rare", Price = 1000, Glow = hex("4fd8ff"), Model = "16_Rare_Spirit_Kunai", Studs = 2.58, Wear = "Side", Art = "KnifeSpiritKunai", Colors = { hex("e8eef2"), hex("c9d4dc") }, Order = 116 },
+	{ Key = "ThunderFang", Slot = "Knife", Name = "Thunder Fang", Rarity = "Rare", Price = 1000, Glow = hex("fff6a0"), Model = "17_Rare_Thunder_Fang", Studs = 2.72, Wear = "Side", Art = "KnifeThunderFang", Colors = { hex("f0d040"), hex("d4a020") }, Order = 117 },
+	{ Key = "CandyKnife", Slot = "Knife", Name = "Sakura Blade", Rarity = "Rare", Price = 1000, Glow = hex("ff9ec4"), Model = "18_Rare_Sakura_Blade", Studs = 2.83, Wear = "Side", Art = "KnifeCandyKnife", Colors = { hex("f4f4f4"), hex("d4a020") }, Order = 118 },
+	{ Key = "VenomKris", Slot = "Knife", Name = "Venom Kris", Rarity = "Rare", Price = 1000, Glow = hex("b6ff5a"), Model = "19_Rare_Venom_Kris", Studs = 2.74, Wear = "Side", Art = "KnifeVenomKris", Colors = { hex("3f7a22"), hex("d4a020") }, Order = 119 },
+	{ Key = "FrostFang", Slot = "Knife", Name = "Frost Fang", Rarity = "Rare", Price = 1000, Glow = hex("7fd4ff"), Model = "20_Rare_Frost_Fang", Studs = 2.73, Wear = "Side", Art = "KnifeFrostFang", Colors = { hex("cfeaff"), hex("d4a020") }, Order = 120 },
+	{ Key = "EmberEdge", Slot = "Knife", Name = "Ember Edge", Rarity = "Rare", Price = 1000, Glow = hex("ff6a1a"), Model = "21_Rare_Ember_Edge", Studs = 2.72, Wear = "Side", Art = "KnifeEmberEdge", Colors = { hex("2a2224"), hex("d4a020") }, Order = 121 },
+	{ Key = "MoonlitKnife", Slot = "Knife", Name = "Hollow Moon", Rarity = "Epic", Price = 0, Unlock = "Quest: Win 10 games (chapter 4)", Glow = hex("9a4fff"), Model = "22_Epic_Hollow_Moon", Studs = 2.89, Wear = "Side", Art = "KnifeMoonlitKnife", Colors = { hex("1a1a22"), hex("d4a020") }, Order = 122 },
+	{ Key = "ShadowKnife", Slot = "Knife", Name = "Shadow Cleaver", Rarity = "Epic", Price = 0, NotForSale = true, Glow = hex("e8e8ff"), Model = "23_Epic_Shadow_Cleaver", Studs = 3.08, Wear = "Back", Art = "KnifeShadowKnife", Colors = { hex("141418"), hex("2a2a30") }, Order = 123 },
+	{ Key = "StormKunai", Slot = "Knife", Name = "Storm Kunai", Rarity = "Epic", Price = 2000, Glow = hex("6ad0ff"), Model = "24_Epic_Storm_Kunai", Studs = 2.82, Wear = "Side", Art = "KnifeStormKunai", Colors = { hex("2a3a6a"), hex("6ad0ff") }, Order = 124 },
+	{ Key = "BloodMoonTanto", Slot = "Knife", Name = "Blood Moon Tanto", Rarity = "Epic", Price = 2000, Glow = hex("ff2a3a"), Model = "25_Epic_Blood_Moon_Tanto", Studs = 2.98, Wear = "Side", Art = "KnifeBloodMoonTanto", Colors = { hex("e8e8e8"), hex("d4a020") }, Order = 125 },
+	{ Key = "TwinFang", Slot = "Knife", Name = "Twin Fang", Rarity = "Epic", Price = 2000, Glow = hex("3affb0"), Model = "26_Epic_Twin_Fang", Studs = 2.83, Wear = "Side", Art = "KnifeTwinFang", Colors = { hex("3a3a4a"), hex("d4a020") }, Order = 126 },
+	{ Key = "SolarReaper", Slot = "Knife", Name = "Solar Reaper", Rarity = "Legendary", Price = 4000, Glow = hex("ffb020"), Model = "27_Legendary_Solar_Reaper", Studs = 3.03, Wear = "Back", Art = "KnifeSolarReaper", Colors = { hex("fff2c0"), hex("d4a020") }, Order = 127 },
+	{ Key = "VoidFang", Slot = "Knife", Name = "Void Fang", Rarity = "Legendary", Price = 4000, Glow = hex("c04fff"), Model = "28_Legendary_Void_Fang", Studs = 3.07, Wear = "Back", Art = "KnifeVoidFang", Colors = { hex("0e0a16"), hex("d4a020") }, Order = 128 },
+	{ Key = "SpinKnife", Slot = "Knife", Name = "Celestial Edge", Rarity = "Legendary", Price = 0, NotForSale = true, Glow = hex("7fe8ff"), Model = "29_Legendary_Celestial_Edge", Studs = 3.21, Wear = "Back", Art = "KnifeSpinKnife", Colors = { hex("f8f8ff"), hex("d4a020") }, Order = 129 },
+	{ Key = "AbyssEclipse", Slot = "Knife", Name = "Abyss Eclipse", Rarity = "Mythic", Price = 8000, Glow = hex("ff2a3a"), Model = "30_Mythic_Abyss_Eclipse", Studs = 3.3, Wear = "Back", Art = "KnifeAbyssEclipse", Colors = { hex("08080c"), hex("d4a020") }, Order = 130 },
+	-- The 5 Game Pass knives (his design/knives/gamepass/Gamepass_Knives.glb, rarity "Exclusive": a tier above Mythic
+	-- with Mythic's calm effects, Shared/KnifeLook). Each is its own Game Pass (owner Oct 18: "these are going to be the
+	-- gamepasses users can buy"; Config/Products: Hunter Knife = Crimson Requiem, Moonlit = Hollow Eclipse, Sunrise =
+	-- Celestial Seraph, Inferno = Dragon's Maw, Frost = Frostbound Oath), Order = his card order; the lobby stands show
+	-- one each. Model = the file / node; baked like the 30 (tools/knives).
+	{ Key = "CelestialSeraph", Slot = "Knife", Name = "Celestial Seraph", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "SunriseKnifePass", Glow = hex("3ac0ff"), Model = "Gamepass_Knives/Celestial_Seraph", Studs = 3.18, Wear = "Back", Art = "KnifeCelestialSeraph", Colors = { hex("d4dde4"), hex("e8b830") }, Order = 133 },
+	{ Key = "CrimsonRequiem", Slot = "Knife", Name = "Crimson Requiem", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "HunterKnifePass", Glow = hex("ff3344"), Model = "Gamepass_Knives/Crimson_Requiem", Studs = 3.3, Wear = "Back", Art = "KnifeCrimsonRequiem", Colors = { hex("783b47"), hex("a8141f") }, Order = 131 },
+	{ Key = "HollowEclipse", Slot = "Knife", Name = "Hollow Eclipse", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "MoonlitKnifePass", Glow = hex("e4ecff"), Model = "Gamepass_Knives/Hollow_Eclipse", Studs = 3.3, Wear = "Back", Art = "KnifeHollowEclipse", Colors = { hex("27272f"), hex("2c2c34") }, Order = 132 },
+	{ Key = "DragonsMaw", Slot = "Knife", Name = "Dragon's Maw", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "InfernoKnifePass", Glow = hex("ff7a1a"), Model = "Gamepass_Knives/Dragons_Maw", Studs = 3.17, Wear = "Back", Art = "KnifeDragonsMaw", Colors = { hex("2a110d"), hex("2a110d") }, Order = 134 },
+	{ Key = "FrostboundOath", Slot = "Knife", Name = "Frostbound Oath", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "FrostKnifePass", Glow = hex("5ae6ff"), Model = "Gamepass_Knives/Frostbound_Oath", Studs = 3.21, Wear = "Back", Art = "KnifeFrostboundOath", Colors = { hex("aee6f9"), hex("d8dee8") }, Order = 135 },
+	-- His 18 Halloween knives (design/knives/halloween/Halloween_Knives.glb, owner Oct 19: "make it one to one"):
+	-- coin-shop knives like the 30, one group in three sets of 6 (Set: the pumpkin grove, the witches, the candy; his
+	-- rows), each set rising Common to Mythic in his order (dagger or shuriken first, the katana, reaper or scythe
+	-- last), on the same price ladder. Sold all year: no timers, no "limited" (kid-safe). Wide = how wide his sickles,
+	-- karambits and shurikens are for their length (Shared/KnifeLook.sane); Studs never blows a small one up past the
+	-- 30's own scale (tools/knives/bake_knives.py).
+	{ Key = "VineDagger", Slot = "Knife", Name = "Vine Dagger", Rarity = "Common", Price = 200, Set = "Pumpkin", Model = "Halloween_Knives/Vine_Dagger", Studs = 2.68, Wear = "Side", Art = "KnifeVineDagger", Colors = { hex("a5907b"), hex("664122") }, Order = 140 },
+	{ Key = "HarvestSickle", Slot = "Knife", Name = "Harvest Sickle", Rarity = "Uncommon", Price = 500, Set = "Pumpkin", Glow = hex("ffe0b0"), Model = "Halloween_Knives/Harvest_Sickle", Studs = 2.1, Wear = "Side", Wide = 0.96, Art = "KnifeHarvestSickle", Colors = { hex("b9a185"), hex("2e2a34") }, Order = 141 },
+	{ Key = "GourdCleaver", Slot = "Knife", Name = "Gourd Cleaver", Rarity = "Rare", Price = 1000, Set = "Pumpkin", Glow = hex("ffb030"), Model = "Halloween_Knives/Gourd_Cleaver", Studs = 2.7, Wear = "Side", Art = "KnifeGourdCleaver", Colors = { hex("f37a1f"), hex("f37a1f") }, Order = 142 },
+	{ Key = "ThornKarambit", Slot = "Knife", Name = "Thorn Karambit", Rarity = "Epic", Price = 2000, Set = "Pumpkin", Glow = hex("ff8a1e"), Model = "Halloween_Knives/Thorn_Karambit", Studs = 1.68, Wear = "Side", Wide = 0.77, Art = "KnifeThornKarambit", Colors = { hex("331f13"), hex("2a4a1a") }, Order = 143 },
+	{ Key = "PumpkinKingKatana", Slot = "Knife", Name = "Pumpkin King Katana", Rarity = "Legendary", Price = 4000, Set = "Pumpkin", Glow = hex("ff8a1e"), Model = "Halloween_Knives/Pumpkin_King_Katana", Studs = 3.27, Wear = "Back", Art = "KnifePumpkinKingKatana", Colors = { hex("824c1d"), hex("e86a14") }, Order = 144 },
+	{ Key = "JacksReaper", Slot = "Knife", Name = "Jack's Reaper", Rarity = "Mythic", Price = 8000, Set = "Pumpkin", Glow = hex("ff8a1e"), Model = "Halloween_Knives/Jack_s_Reaper", Studs = 3.3, Wear = "Back", Art = "KnifeJacksReaper", Colors = { hex("331f13"), hex("331f13") }, Order = 145 },
+	{ Key = "HexShuriken", Slot = "Knife", Name = "Hex Shuriken", Rarity = "Common", Price = 200, Set = "Witch", Model = "Halloween_Knives/Hex_Shuriken", Studs = 1.21, Wear = "Side", Wide = 1.01, Art = "KnifeHexShuriken", Colors = { hex("3c2157"), hex("3c2157") }, Order = 146 },
+	{ Key = "PotionDagger", Slot = "Knife", Name = "Potion Dagger", Rarity = "Uncommon", Price = 500, Set = "Witch", Glow = hex("8aff4a"), Model = "Halloween_Knives/Potion_Dagger", Studs = 2.65, Wear = "Side", Art = "KnifePotionDagger", Colors = { hex("3c2157"), hex("7a3cc8") }, Order = 147 },
+	{ Key = "ToadstoolSickle", Slot = "Knife", Name = "Toadstool Sickle", Rarity = "Rare", Price = 1000, Set = "Witch", Glow = hex("8aff4a"), Model = "Halloween_Knives/Toadstool_Sickle", Studs = 2.41, Wear = "Side", Wide = 0.8, Art = "KnifeToadstoolSickle", Colors = { hex("2f1649"), hex("7a3cc8") }, Order = 148 },
+	{ Key = "MoonlitCleaver", Slot = "Knife", Name = "Moonlit Cleaver", Rarity = "Epic", Price = 2000, Set = "Witch", Glow = hex("fff6c0"), Model = "Halloween_Knives/Moonlit_Cleaver", Studs = 2.78, Wear = "Side", Art = "KnifeMoonlitCleaver", Colors = { hex("2b1e5e"), hex("2b1e5e") }, Order = 149 },
+	{ Key = "CovenKatana", Slot = "Knife", Name = "Coven Katana", Rarity = "Legendary", Price = 4000, Set = "Witch", Glow = hex("c86aff"), Model = "Halloween_Knives/Coven_Katana", Studs = 3.27, Wear = "Back", Art = "KnifeCovenKatana", Colors = { hex("5f3b81"), hex("bcc2d0") }, Order = 150 },
+	{ Key = "GrandWitchScythe", Slot = "Knife", Name = "Grand Witch Scythe", Rarity = "Mythic", Price = 8000, Set = "Witch", Glow = hex("8aff4a"), Model = "Halloween_Knives/Grand_Witch_Scythe", Studs = 3.3, Wear = "Back", Art = "KnifeGrandWitchScythe", Colors = { hex("2f1649"), hex("2e2a34") }, Order = 151 },
+	{ Key = "GumdropDagger", Slot = "Knife", Name = "Gumdrop Dagger", Rarity = "Common", Price = 200, Set = "Candy", Glow = hex("ffcf3a"), Model = "Halloween_Knives/Gumdrop_Dagger", Studs = 2.61, Wear = "Side", Art = "KnifeGumdropDagger", Colors = { hex("ffb5d6"), hex("7ae8c0") }, Order = 152 },
+	{ Key = "PeppermintShuriken", Slot = "Knife", Name = "Peppermint Shuriken", Rarity = "Uncommon", Price = 500, Set = "Candy", Model = "Halloween_Knives/Peppermint_Shuriken", Studs = 1.15, Wear = "Side", Wide = 1.35, Art = "KnifePeppermintShuriken", Colors = { hex("f48d8f"), hex("f48d8f") }, Order = 153 },
+	{ Key = "TaffyKarambit", Slot = "Knife", Name = "Taffy Karambit", Rarity = "Rare", Price = 1000, Set = "Candy", Glow = hex("ffd0e8"), Model = "Halloween_Knives/Taffy_Karambit", Studs = 1.68, Wear = "Side", Wide = 0.76, Art = "KnifeTaffyKarambit", Colors = { hex("ddcecb"), hex("ff7ab0") }, Order = 154 },
+	{ Key = "CupcakeCleaver", Slot = "Knife", Name = "Cupcake Cleaver", Rarity = "Epic", Price = 2000, Set = "Candy", Glow = hex("fff6f0"), Model = "Halloween_Knives/Cupcake_Cleaver", Studs = 2.73, Wear = "Side", Art = "KnifeCupcakeCleaver", Colors = { hex("6a3a1e"), hex("6a3a1e") }, Order = 155 },
+	{ Key = "SugarRushKatana", Slot = "Knife", Name = "Sugar Rush Katana", Rarity = "Legendary", Price = 4000, Set = "Candy", Glow = hex("fff0ff"), Model = "Halloween_Knives/Sugar_Rush_Katana", Studs = 3.27, Wear = "Back", Art = "KnifeSugarRushKatana", Colors = { hex("d4d6d1"), hex("e8b070") }, Order = 156 },
+	{ Key = "CandyReaper", Slot = "Knife", Name = "Candy Reaper", Rarity = "Mythic", Price = 8000, Set = "Candy", Glow = hex("5ad8ff"), Model = "Halloween_Knives/Candy_Reaper", Studs = 3.3, Wear = "Back", Art = "KnifeCandyReaper", Colors = { hex("e4a843"), hex("e4a843") }, Order = 157 },
+	-- His four reward knives (design/knives/rewards/Reward_Knives.glb; owner, Oct 24 06:38: "one knife for exmaple
+	-- rewarded for inviting 5 friends, one knife to be at day 7 of daily logins, another to be in the progression,
+	-- another to be in the wheel"): never sold, each only from its reward (Unlock says which).
+	{ Key = "ThousandBlossom", Slot = "Knife", Name = "Thousand Blossom", Rarity = "Legendary", Price = 0, NotForSale = true, Unlock = "Invite 5 friends", Set = "Reward", Glow = hex("ff8ac4"), Model = "Reward_Knives/Thousand_Blossom", Studs = 3.27, Wear = "Back", Art = "KnifeThousandBlossom", Colors = { hex("d7c5d7"), hex("2a2430") }, Order = 158 },
+	{ Key = "StormfangChokuto", Slot = "Knife", Name = "Stormfang Chokuto", Rarity = "Mythic", Price = 0, NotForSale = true, Unlock = "Day 7 of daily rewards", Set = "Reward", Glow = hex("5ac8ff"), Model = "Reward_Knives/Stormfang_Chokuto", Studs = 3.27, Wear = "Back", Art = "KnifeStormfangChokuto", Colors = { hex("abb3be"), hex("d8dee8") }, Order = 159 },
+	{ Key = "BrokenWrath", Slot = "Knife", Name = "Broken Wrath", Rarity = "Legendary", Price = 0, NotForSale = true, Unlock = "Level 10 reward", Set = "Reward", Glow = hex("ff2a3a"), Model = "Reward_Knives/Broken_Wrath", Studs = 2.93, Wear = "Side", Art = "KnifeBrokenWrath", Colors = { hex("514f59"), hex("e8b830") }, Order = 160 },
+	{ Key = "InvertedHex", Slot = "Knife", Name = "Inverted Hex", Rarity = "Legendary", Price = 0, NotForSale = true, Unlock = "Spin the Wheel", Set = "Reward", Glow = hex("9b5cff"), Model = "Reward_Knives/Inverted_Hex", Studs = 2.86, Wear = "Side", Art = "KnifeInvertedHex", Colors = { hex("332e41"), hex("9b5cff") }, Order = 161 },
+} :: { Item }
+
+local byKey: { [string]: Item } = {}
+for _, item in CoinShop.Items do
+	assert(not byKey[item.Key], "duplicate coin item " .. item.Key)
+	byKey[item.Key] = item
+end
+
+function CoinShop.get(key: string): Item?
+	return byKey[key]
+end
+
+-- The items a Game Pass gives (Pass = its Config/Products key), in shop order.
+function CoinShop.passItems(passKey: string): { Item }
+	local out = {}
+	for _, item in CoinShop.Items do
+		if item.Pass == passKey then table.insert(out, item) end
+	end
+	table.sort(out, function(a, b) return a.Order < b.Order end)
+	return out
+end
+
+-- What to give a save for the passes it owns (owned: { [passKey] = true }, checked with Roblox by ShopService):
+-- the keys it doesn't have yet. Pure, so the spec checks it.
+function CoinShop.passGrants(cosmetics: { [string]: any }, owned: { [string]: boolean }): { string }
+	local out = {}
+	for _, item in CoinShop.Items do
+		if item.Pass and owned[item.Pass] == true and not cosmetics[item.Key] then table.insert(out, item.Key) end
+	end
+	return out
+end
+
+-- A ColorSequence through the item's colours (for trails, name gradients and previews).
+function CoinShop.sequence(item: Item): ColorSequence
+	local keys = {}
+	local n = #item.Colors
+	for i, c in item.Colors do
+		table.insert(keys, ColorSequenceKeypoint.new(if n == 1 then 0 else (i - 1) / (n - 1), c))
+	end
+	if n == 1 then table.insert(keys, ColorSequenceKeypoint.new(1, item.Colors[1])) end
+	return ColorSequence.new(keys)
+end
+
+-- What's worn in a slot, from a save (or the client's copy of it): Wear[slot] when you own it, "" = taken off,
+-- and nil = never chosen, so an owned Robux cosmetic for that slot (Config/Products) is worn.
+function CoinShop.worn(data: { [string]: any }, slot: string): string?
+	local owned = data.Cosmetics or {}
+	local key = (data.Wear or {})[slot]
+	if key == "" then return nil end
+	if key ~= nil then return if owned[key] then key else nil end
+	for _, p in Products.Cosmetics do
+		if p.Slot == slot and owned[p.Key] then return p.Key end
+	end
+	return nil
+end
+
+return CoinShop

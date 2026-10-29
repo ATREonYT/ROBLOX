@@ -1,0 +1,19 @@
+{
+  "Panel": "#253D59",
+  "PanelTransparency": 0.2,
+  "Header": "#8363C4",
+  "HeaderTransparency": 0.05,
+  "InactiveTab": "#30466D",
+  "SelectedTab": "#F8C56E",
+  "Action": "#8C88CC",
+  "ActionHover": "#9C99DB",
+  "ActionPressed": "#7773B5",
+  "Disabled": "#66728E",
+  "Text": "#F4F3FA",
+  "DarkText": "#182542",
+  "Border": "#536985",
+  "SelectedBorder": "#F2CB69",
+  "Close": "#D82B57",
+  "Progress": "#F4C45F",
+  "reference_note": "Approximate implementation targets; approved-ui.png is authoritative. Native font and transparency must be calibrated in Studio."
+}
