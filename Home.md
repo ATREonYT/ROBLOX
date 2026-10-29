@@ -2,9 +2,9 @@
 
 The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 
-## +1 Hood Evolution
+## +1 Hood Evolution (older game, not the example to copy)
 - [[hood/docs/RULES|Your rules for the game]]
-- [[CLAUDE|How the game is built, and lessons learned]]
+- [[hood/CLAUDE|How the game is built, and lessons learned]]
 - [[hood/RELEASE|Release checklist]]
 - [[hood/MONETIZATION|Robux items to create]]
 - [[hood/docs/WORLD2|World 2 plan]]
@@ -24,7 +24,7 @@ The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 
 ## Build guides
 - [[GAME-FEEL|Game feel]] and [[VFX-ITEMS|item VFX]]
-- [[huzz-valley/ROOT-CLAUDE|How we build with Claude (general rules)]]
+- [[CLAUDE|How we build with Claude (general rules)]]
 
 ## +1 Cannon Evolution
 - [[cannon-evolution/README|Setup]] and [[reports/+1 Cannon Evolution build notes|build notes]]
