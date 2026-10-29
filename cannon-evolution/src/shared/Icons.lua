@@ -16,6 +16,7 @@ return {
 	Cannon = "",
 	CannonBall = "",
 	CannonBalls = "",
+	Caustics = "",
 	Cash = "",
 	CashLarge = "",
 	CashMedium = "",

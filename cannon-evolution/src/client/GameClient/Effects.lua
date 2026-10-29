@@ -775,6 +775,40 @@ return function(ctx)
 	end)
 
 	-----------------------------------------------------------------------
+	-- Water: Stone Skipping style light lines drifting over the ocean
+	-----------------------------------------------------------------------
+	local ocean = workspace:FindFirstChild("map1b") and workspace.map1b:FindFirstChild("Ocean", true)
+	if ocean and Icons.Caustics and Icons.Caustics ~= "" then
+		local layers = {}
+		for _, p in ipairs(ocean:GetDescendants()) do
+			if p:IsA("MeshPart") then
+				for i, size in ipairs({ 34, 21 }) do
+					table.insert(layers, {
+						Speed = i == 1 and 2.2 or -1.6,
+						Texture = new("Texture", {
+							Name = "Caustics" .. i,
+							Texture = Icons.Caustics,
+							Face = Enum.NormalId.Top,
+							StudsPerTileU = size,
+							StudsPerTileV = size,
+							Transparency = i == 1 and 0.35 or 0.6,
+							Parent = p,
+						}),
+					})
+				end
+			end
+		end
+		local t = 0
+		RunService.Heartbeat:Connect(function(dt)
+			t += dt
+			for _, l in ipairs(layers) do
+				l.Texture.OffsetStudsU = t * l.Speed
+				l.Texture.OffsetStudsV = t * l.Speed * 0.4
+			end
+		end)
+	end
+
+	-----------------------------------------------------------------------
 	-- Settings
 	-----------------------------------------------------------------------
 	local music
