@@ -1,0 +1,32 @@
+diff --git a/hood/tools/map/pieces/d3_armory.lua b/hood/tools/map/pieces/d3_armory.lua
+index ffeaeb94..8a32ef08 100644
+--- a/hood/tools/map/pieces/d3_armory.lua
++++ b/hood/tools/map/pieces/d3_armory.lua
+@@ -33,21 +33,20 @@
+ local Armory = {}
+ 
+ Armory.Apron = { y = 0.4, front = 2.0, side = 1.6, back = 1.0, kerb = 0.8 } -- the island round the stand
+-Armory.HalfWidth = 18.4 -- the stand's half width (the stairs' outer edges) (B31 PLAZA: the whole stand 1.15x, read from the spawn)
++Armory.HalfWidth = 21.8 -- the stand's half width (the stairs' outer edges) (B31 PLAZA: the whole stand 1.15x, read from the spawn)
+ Armory.ApronHalf = Armory.HalfWidth + Armory.Apron.side
+ -- the tiers: each one's deck top and the z of its front wall (the first is the front deck, one riser over the apron)
+-Armory.Tiers = { { y = 1.2, z = 2.0 }, { y = 4.4, z = 9.5 }, { y = 7.6, z = 17.0 } }
++Armory.Tiers = { { y = 1.2, z = 2.0 }, { y = 4.4, z = 9.5 } }
+ Armory.TierDepth = 7.5
+-Armory.BackZ = 24.5 -- the top tier's back (the backdrop stands behind it)
++Armory.BackZ = 17.0 -- the top tier's back (the backdrop stands behind it)
+ Armory.BackT, Armory.BackH = 1.2, 3.4 -- the backdrop's thickness and its height over the top tier
+ Armory.Depth = Armory.BackZ + Armory.BackT + Armory.Apron.back
+-Armory.Top = Armory.Tiers[3].y + Armory.BackH
++Armory.Top = Armory.Tiers[#Armory.Tiers].y + Armory.BackH
+ -- the rows, front to back: the tier each stands on and x of each gun in Spacing units from the viewer's left (+X) to
+ -- the right; each row stands between the guns of the row in front
+ Armory.Rows = {
+-	{ tier = 1, xs = { 1, 0, -1 } },
+-	{ tier = 2, xs = { 1.5, 0.5, -0.5, -1.5 } },
+-	{ tier = 3, xs = { 1, 0, -1 } },
++	{ tier = 1, xs = { 2, 1, 0, -1, -2 } },
++	{ tier = 2, xs = { 2, 1, 0, -1, -2 } },
+ }
+ Armory.Spacing = 7.6 -- the pitch along a row (a pad and a 1.4-stud gap between the mats)
+ Armory.RowInset = 4.25 -- a row's pad centre behind its tier's front wall (1.2 of free deck in front of the mats)
