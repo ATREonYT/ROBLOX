@@ -1034,6 +1034,9 @@ local function purchase(player, kind, key)
 	if kind == "Pass" and hasPass(player, key) then
 		return false, "You already own this!"
 	end
+	if item.ComingSoon then
+		return false, "Coming soon!"
+	end
 	if item.Id > 0 then
 		if kind == "Pass" then
 			MarketplaceService:PromptGamePassPurchase(player, item.Id)
@@ -1114,7 +1117,7 @@ local function spawnOrb()
 end
 
 task.spawn(function()
-	while true do
+	while Config.ORB_COUNT > 0 do
 		if #orbFolder:GetChildren() < Config.ORB_COUNT then
 			spawnOrb()
 		end

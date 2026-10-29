@@ -279,7 +279,7 @@ Config.Passes = {
 	DoubleCash  = { Id = 0, Name = "2x Cash",     Icon = "DoubleCash",  Price = 399, Desc = "Double Cash from every launch" },
 	Lucky       = { Id = 0, Name = "Lucky",       Icon = "Lucky",       Price = 249, Desc = "2x Luck when hatching eggs" },
 	TripleOpen  = { Id = 0, Name = "Triple Open", Icon = "TripleOpen",  Price = 349, Desc = "Hatch 3 eggs at once" },
-	AutoCollect = { Id = 0, Name = "Auto Collect", Icon = "AutoCollect", Price = 349, Desc = "Collect orbs from far away" },
+	AutoCollect = { Id = 0, Name = "Auto Collect", Icon = "AutoCollect", Price = 349, Desc = "Collect orbs from far away", ComingSoon = true }, -- orbs are off, so it gives nothing yet
 	ExtraEquip  = { Id = 0, Name = "+2 Pets",     Icon = "ExtraEquip",  Price = 199, Desc = "Equip 2 more pets" },
 	VIP         = { Id = 0, Name = "VIP",         Icon = "VIP",         Price = 299, Desc = "Dragon Cannon station + 1.5x Gems" },
 	AutoLaunch  = { Id = 0, Name = "Auto Launch", Icon = "Trophy",      Price = 25,  Desc = "Launch automatically" },
@@ -324,7 +324,7 @@ Config.Featured = {
 ---------------------------------------------------------------------------
 -- Cash orbs around the lobby (Auto Collect gamepass pulls them in)
 ---------------------------------------------------------------------------
-Config.ORB_COUNT = 25
+Config.ORB_COUNT = 0 -- Alex asked to remove the orbs (Oct 29); set above 0 to bring them back
 Config.ORB_RESPAWN = 8
 Config.ORB_AUTO_RANGE = 60
 Config.ORB_GEM_CHANCE = 0.08
