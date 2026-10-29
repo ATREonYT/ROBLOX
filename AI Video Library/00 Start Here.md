@@ -26,6 +26,12 @@ A curated set of the best videos on building Roblox games with AI, split by disc
 - [[11 Creators to Follow]]
 - [[12 Official Docs & Tools]]
 
+### Cartoony / low-poly / kid appeal (added 2026-10-29)
+- [[13 Cartoony & Low-Poly Building]]: low-poly maps, terrain, trees, pets, cartoony lighting
+- [[14 Cartoony UI & Juice]]: front-page toy-style UI in Figma, shiny and bouncy buttons
+- [[15 Kid Appeal & Game Design]]: what makes kids click, stay and come back
+- [[16 Cartoony Kid-Appeal Checklist]]: ⭐ the one-page pre-launch checklist
+
 ## The 10-video crash course (watch in this order)
 
 1. ⭐ [How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)](https://www.youtube.com/watch?v=afuKhenJldY), SyphoDev. The most complete modern pipeline: Claude Code, skills, Studio MCP, Rojo, Open Cloud, AI images and 3D.
