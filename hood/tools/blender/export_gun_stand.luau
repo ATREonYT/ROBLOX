@@ -1,6 +1,7 @@
 -- export_gun_stand.luau: the whole lobby gun shop stand (its deck, the three tiers, stairs, backdrop and the 10 pads with
 -- their plates), with no guns, labels or effects, from the built place as hood/art/models/pedestal/GunStand.rbxm, plus
--- its parts as JSON for gun_pedestal_glb.py. Usage: lune run hood/tools/blender/export_gun_stand.luau <parts.json>
+-- its parts as JSON for gun_pedestal_glb.py. Usage: lune run hood/tools/blender/export_gun_stand.luau <parts.json> [out.rbxm]
+-- STAND_ONLY=1 leaves out the lobby deck under it and the island round it (the apron, its kerb and corners).
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 local serde = require("@lune/serde")
@@ -9,9 +10,13 @@ local Instance, CFrame = roblox.Instance, roblox.CFrame
 local game = roblox.deserializePlace(fs.readFile("hood/places/HoodEvolution.rbxl"))
 local lobby = game.Workspace.TheBlockV2.Lobby
 local DROP = { Display = true, LabelAnchor = true, FxCore = true, StateHazeSource = true }
+local standOnly = process.env.STAND_ONLY == "1"
+if standOnly then
+	for _, n in { "ArmoryApron", "ApronKerb", "ApronKerbTop", "ApronCorner", "ApronCornerCap" } do DROP[n] = true end
+end
 local model = Instance.new("Model")
 model.Name = "GunStand"
-for _, src in { lobby.GunDeck, lobby.Armory.Armory } do
+for _, src in standOnly and { lobby.Armory.Armory } or { lobby.GunDeck, lobby.Armory.Armory } do
 	local c = src:Clone()
 	for _, d in c:GetDescendants() do
 		if DROP[d.Name] or d.Name:match("^GunPoint_") or d:IsA("LuaSourceContainer") then d.Parent = nil end
@@ -44,6 +49,6 @@ for _, p in parts do
 end
 model.PrimaryPart = parts[1]
 fs.writeDir("hood/art/models/pedestal")
-fs.writeFile("hood/art/models/pedestal/GunStand.rbxm", roblox.serializeModel({ model }))
+fs.writeFile(process.args[2] or "hood/art/models/pedestal/GunStand.rbxm", roblox.serializeModel({ model }))
 fs.writeFile(process.args[1], serde.encode("json", rows))
 print(#rows, "parts", hi - lo)
