@@ -1,4 +1,5 @@
 # gun_pedestal_glb.py: parts.json (from export_gun_pedestal.luau) -> GunPedestal.glb and a preview picture.
+# Also takes export_gun_stand.luau's parts (the whole stand); the camera frames whatever it is given.
 # Usage: python3 hood/tools/blender/gun_pedestal_glb.py <parts.json> <out.glb> <preview.png>
 import json, math, sys
 import bpy
@@ -35,8 +36,13 @@ bpy.ops.export_scene.gltf(filepath=out, export_format='GLB')
 bpy.ops.object.light_add(type='SUN', rotation=(math.radians(50), 0, math.radians(30))); bpy.context.object.data.energy = 3
 w = bpy.data.worlds.new('w'); bpy.context.scene.world = w; w.use_nodes = True
 w.node_tree.nodes['Background'].inputs[0].default_value = (0.85, 0.88, 0.95, 1); w.node_tree.nodes['Background'].inputs[1].default_value = 1.0
-bpy.ops.object.camera_add(location=(-7.5, -7.5, 6.0)); cam = bpy.context.object
-cam.rotation_euler = Euler((math.radians(58), 0, math.radians(-45)))
+ext = max(max(abs(r['pos'][0]) + r['size'][0] / 2, abs(r['pos'][2]) + r['size'][2] / 2) for r in rows)
+top = max(r['pos'][1] for r in rows)
+# from the front (the stand faces Roblox -X in the lobby), a little to one side, looking down a little
+d = ext * 2.6
+bpy.ops.object.camera_add(location=(-d * 0.85, d * 0.45, top * 0.5 + d * 0.5)); cam = bpy.context.object
+tgt = bpy.data.objects.new('Target', None); bpy.context.scene.collection.objects.link(tgt); tgt.location = (0, 0, top * 0.35)
+tc = cam.constraints.new('TRACK_TO'); tc.target = tgt; tc.track_axis = 'TRACK_NEGATIVE_Z'; tc.up_axis = 'UP_Y'
 bpy.context.scene.camera = cam
 sc = bpy.context.scene; sc.render.engine = 'CYCLES'; sc.cycles.samples = 32; sc.cycles.device = 'CPU'
 sc.render.resolution_x = sc.render.resolution_y = 800; sc.render.filepath = png
