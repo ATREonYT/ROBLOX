@@ -66,7 +66,15 @@ return function(ctx)
 		for i, ball in ipairs(Config.Balls) do
 			local card, grad = Kit.card({ Button = true, Color = Kit.Colors.Purple, Order = i, Parent = scroll, ZIndex = 25 })
 			Kit.movingPattern(card, { Lite = true, Texture = "StudTile", Speed = 10, ImageTransparency = 0.8, ZIndex = 25 })
-			local art = drawBall(card, ball, 70, 50)
+			-- Alex's imported ball model where there is one (ReplicatedStorage.CannonBalls), a drawn ball otherwise
+			local balls = ReplicatedStorage:FindFirstChild("CannonBalls")
+			local model = ball.Model and balls and balls:FindFirstChild(ball.Id)
+			local art
+			if model then
+				art = Kit.viewport(card, model, { Size = UDim2.fromOffset(86, 86), Position = UDim2.new(0.5, 0, 0, 50), Spin = 30, ZIndex = 27 })
+			else
+				art = drawBall(card, ball, 70, 50)
+			end
 			if ball.CashBonus > 0 then
 				Kit.text({ Text = "+" .. math.floor(ball.CashBonus * 100 + 0.5) .. "% Cash", Size = 16, Color = Kit.Colors.Yellow, FrameSize = UDim2.fromOffset(110, 20), Position = UDim2.fromOffset(6, 4), AlignX = Enum.TextXAlignment.Left, ZIndex = 30, Parent = card })
 			end
