@@ -198,6 +198,63 @@ safely("TopBar", function()
 	bind("Coins", hud.TopBar.Coins)
 	bind("Gems", hud.TopBar.Gems)
 	bind("Rebirths", hud.TopBar.Rebirths)
+
+	-- Every gain is felt (vault note 14 §1 "something every second"): the pill bumps and a
+	-- "+N" rises under it. Gains closer than 0.15 s are added together, so taps never spam.
+	local BUMP = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	local RISE = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local readyAt: number? = if attr("DataReady") == true then os.clock() - 2 else nil
+	player:GetAttributeChangedSignal("DataReady"):Connect(function()
+		if attr("DataReady") == true then
+			readyAt = os.clock()
+		end
+	end)
+	local function gains(attrName: string, pill: any, color: Color3)
+		local scale = Instance.new("UIScale")
+		scale.Name = "GainBump"
+		scale.Parent = pill
+		local last = attr(attrName) or 0
+		local pending, flushing = 0, false
+		player:GetAttributeChangedSignal(attrName):Connect(function()
+			local now = attr(attrName) or 0
+			local delta = now - last
+			last = now
+			-- (the save loading in isn't a gain: balances arrive just after DataReady)
+			if delta <= 0 or readyAt == nil or os.clock() - readyAt < 1.5 then
+				return
+			end
+			pending += delta
+			if flushing then
+				return
+			end
+			flushing = true
+			task.delay(0.15, function()
+				flushing = false
+				local amount = pending
+				pending = 0
+				scale.Scale = 1.12
+				TweenService:Create(scale, BUMP, { Scale = 1 }):Play()
+				local pop = HudBuilder.Label("Gain", `+{Format.Short(amount)}`, 20, {
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = UDim2.new(0.5, math.random(-12, 12), 1, 2),
+					Size = UDim2.fromOffset(120, 24),
+					TextColor3 = color,
+					ZIndex = 5,
+					Parent = pill,
+				})
+				TweenService:Create(pop, RISE, { Position = pop.Position + UDim2.fromOffset(0, 18), TextTransparency = 1 }):Play()
+				local stroke = pop:FindFirstChildOfClass("UIStroke")
+				if stroke then
+					TweenService:Create(stroke, RISE, { Transparency = 1 }):Play()
+				end
+				task.delay(0.65, function()
+					pop:Destroy()
+				end)
+			end)
+		end)
+	end
+	gains("Coins", hud.TopBar.Coins, Color3.fromRGB(255, 226, 90))
+	gains("Gems", hud.TopBar.Gems, Color3.fromRGB(120, 210, 255))
 end)
 
 -- Tap -------------------------------------------------------------------------------

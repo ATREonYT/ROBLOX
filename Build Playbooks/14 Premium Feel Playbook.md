@@ -55,6 +55,7 @@ Config.HudStages = {
 - `Config.HudStages` lists the steps; each has a `DoneWhen = { attr = "Coins", atLeast = 50 }` rule, so a returning player resumes where they left off, and anyone with a rebirth gets the full HUD.
 - The client hides the staged pieces until the save loads, pops new ones in (0.25 s Back, 0.06 s apart), and gives the step's button a soft white rim that breathes once every 1.2 s (a glow, not a flash).
 - The Rebirth tile shows how close the next rebirth is ("94%").
+- Every Coins or Gems gain bumps its pill (1.12 → 1, 0.2 s Back), and a "+N" rises under it and fades over 0.6 s. Gains less than 0.15 s apart are added together, and the save loading in isn't shown as a gain. With income every second, something moves every second from the first frame.
 - The place build fails if a stage names a HUD piece that doesn't exist (exact case).
 - Picture: `new-game-kit/previews/hud-stages.png`; make your own with `lune run tools/preview/export.luau out.json Stage1`.
 - **Not yet:** the menu doesn't close up the gaps while pieces are hidden, and nothing has run in Studio yet. Cannon has its own version (`HUD.lua`, `applyStage`).
