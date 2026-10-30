@@ -1310,7 +1310,11 @@ task.spawn(function()
 		desc.HeadColor, desc.LeftArmColor, desc.RightArmColor = skin, skin, skin
 		desc.TorsoColor = Color3.fromRGB(13, 105, 172)
 		desc.LeftLegColor, desc.RightLegColor = Color3.fromRGB(164, 189, 71), Color3.fromRGB(164, 189, 71)
-		return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+		-- the Async name replaces the old one; fall back where Studio doesn't have it yet
+		local okAsync, model = pcall(function()
+			return Players:CreateHumanoidModelFromDescriptionAsync(desc, Enum.HumanoidRigType.R15)
+		end)
+		return okAsync and model or Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
 	end)
 	if ok and guide then
 		guide.Name = "TutorialGuide"
