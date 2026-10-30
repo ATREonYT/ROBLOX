@@ -10,7 +10,8 @@
 	   the world teleports. Mountains cast no shadow, so the lobby stays bright.
 	3. The river gets the Stone Skipping water look (bright turquoise, smooth), like BuildWater.
 	4. Moves one palm and the crate pile out of the training booths' way (tools/map/lobby_plan.json).
-	5. Invisible edge walls round the island and along the dock, so nobody falls off the map.
+	5. Invisible edge walls round the island and along the dock, so nobody falls off the map, and a calm
+	   sea round the whole map (walk-through), so past its edges there is no empty void.
 	6. Puts the old map (map1b), the Baseplate and StudTest2 in ServerStorage.OldMaps; nothing is deleted.
 
 	Then run BuildWorld1, BuildCannonBallStand and BuildLobbyExtras, which see the new map and
@@ -194,6 +195,32 @@ if river then
 		end
 	end
 end
+
+-- the open sea: the map is a chain of islands with nothing round it, so past its edges you saw a flat
+-- olive void. A calm sea just under the river fills it, and the lobby reads as a pirate island. Walk-
+-- through and not hit by rays, so the skips, teleports and fall-catch only ever see the river.
+local SEA_TOP, TILE = Config.Map.WaterY - 0.1, 2048
+local oldSea = workspace:FindFirstChild("MapSea")
+if oldSea then
+	oldSea:Destroy()
+end
+local sea = Instance.new("Folder")
+sea.Name = "MapSea"
+for x = -6, 11 do -- out to about 12,000 studs every way, so its edge is lost in the haze
+	for z = -6, 5 do
+		local p = Instance.new("Part")
+		p.Name = "Sea"
+		p.Anchored = true
+		p.Size = Vector3.new(TILE, 1, TILE)
+		p.Position = Vector3.new((x + 0.5) * TILE, SEA_TOP - 0.5, (z + 0.5) * TILE)
+		p.Color = Color3.fromRGB(10, 165, 215)
+		p.Material = Enum.Material.SmoothPlastic
+		p.Reflectance = 0.05
+		p.CanCollide, p.CanTouch, p.CanQuery, p.CastShadow = false, false, false, false
+		p.Parent = sea
+	end
+end
+sea.Parent = workspace
 
 -- 4. clear the booths' spot (offsets from tools/map/lobby_plan.json) -------------------------------
 local MOVES = {
