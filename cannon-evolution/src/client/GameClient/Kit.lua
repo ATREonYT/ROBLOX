@@ -910,7 +910,8 @@ function Kit.viewport(parent, model, props)
 	local radius = size.Magnitude / 2
 	local dist = radius / math.tan(math.rad(cam.FieldOfView / 2)) * (props.Zoom or 1.05)
 	local center = cf.Position
-	local yaw = props.Yaw or 35
+	-- 215 = a three-quarter view from the front: Roblox models face -Z, so the old 35 showed their backs (Studio test, Oct 30)
+	local yaw = props.Yaw or 215
 	local function place(angle)
 		local dir = CFrame.Angles(0, math.rad(angle), 0) * CFrame.Angles(math.rad(-15), 0, 0)
 		cam.CFrame = CFrame.new(center + dir:VectorToWorldSpace(Vector3.new(0, 0, dist)), center)
