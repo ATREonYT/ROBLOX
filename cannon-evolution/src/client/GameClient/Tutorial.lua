@@ -330,9 +330,9 @@ return function(ctx)
 	-- outline, floating on one straight line from you to the target (not on
 	-- the ground, Alex Oct 30), turned to face the camera, flowing forward.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED = 30, 1.15, 2.5 -- SPACING in dart lengths on screen; FLOW_SPEED darts a second
-	local LEN, HALF, NOTCH, THICK = 1.6, 0.8, 0.55, 0.12 -- dart length, half width, notch depth, thickness
-	local RIM = 1.22 -- each dart has its own dark copy behind it, this much bigger: its outline
+	local ARROWS, SPACING, FLOW_SPEED = 30, 1.05, 2.5 -- SPACING in dart lengths on screen; FLOW_SPEED darts a second
+	local LEN, HALF, NOTCH, THICK = 1.6, 0.95, 0.5, 0.12 -- dart length, half width, notch depth, thickness
+	local RIM = 1.3 -- each dart has its own dark copy behind it, this much bigger: its outline
 	local HIDDEN = CFrame.new(0, -500, 0)
 	local arrowFolder = new("Model", { Name = "TutorialArrows" })
 	-- each dart is two triangles (tip, barb, notch), each triangle two wedges, and the same again in dark
