@@ -18,7 +18,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local Config = require(game.ReplicatedStorage.GameConfig)
 
 local SIDE = -1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side
-local CANNON_HEIGHT = 5 -- studs; a default character is ~5
+local CANNON_HEIGHT = 6 -- studs; a default character is ~5
+local PLINTH = 1.2 -- the cannon stands on a plinth in its booth's colours, so it shows above the counter (Alex, Oct 30)
 local TARGET_DISTANCE = 12 -- muzzle to target
 
 local map = workspace.map1b.StoneSkipMap
@@ -589,20 +590,27 @@ for i, info in ipairs(order) do
 	local _, size = cannon:GetBoundingBox()
 	cannon:ScaleTo(cannon:GetScale() * CANNON_HEIGHT / size.Y)
 	_, size = cannon:GetBoundingBox()
+	local theme = THEMES[info.Id] or THEMES[1]
 	local cannonPos = standPos + fireDir * (2.5 + size.Z / 2)
+	local plinthCf = CFrame.lookAt(cannonPos, cannonPos + fireDir) + Vector3.new(0, floorY + PLINTH / 2 - cannonPos.Y, 0)
+	part({ Name = "Plinth", Size = Vector3.new(size.X + 1, PLINTH, size.Z + 0.6), CFrame = plinthCf, Color = dark(theme.Rim, 0.15), CanCollide = false, Parent = station })
+	part({ Name = "PlinthTop", Size = Vector3.new(size.X + 1.4, 0.3, size.Z + 1), CFrame = plinthCf + Vector3.new(0, PLINTH / 2 + 0.15, 0), Color = theme.Counter, CanCollide = false, Parent = station })
+	local glow = theme.Neon or theme.Edge
+	if glow then
+		part({ Name = "PlinthGlow", Size = Vector3.new(size.X + 1.1, 0.15, size.Z + 0.7), CFrame = plinthCf + Vector3.new(0, PLINTH / 2 - 0.15, 0), Color = glow, Material = Enum.Material.Neon, CanCollide = false, Parent = station })
+	end
 	-- imported cannons point their barrel along +Z, so face +Z at the target
 	cannon:PivotTo(CFrame.lookAt(cannonPos, cannonPos - fireDir))
 	local cf, sz = cannon:GetBoundingBox()
-	cannon:PivotTo(cannon:GetPivot() + Vector3.new(0, floorY - (cf.Position.Y - sz.Y / 2), 0))
+	cannon:PivotTo(cannon:GetPivot() + Vector3.new(0, floorY + PLINTH + 0.3 - (cf.Position.Y - sz.Y / 2), 0))
 	cannon.Parent = station
 
-	local muzzlePos = cannonPos + fireDir * (size.Z / 2) + Vector3.new(0, floorY + size.Y * 0.62 - cannonPos.Y, 0)
+	local muzzlePos = cannonPos + fireDir * (size.Z / 2) + Vector3.new(0, floorY + PLINTH + 0.3 + size.Y * 0.62 - cannonPos.Y, 0)
 	part({ Name = "Muzzle", Size = Vector3.one * 0.5, Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false, CFrame = CFrame.lookAt(muzzlePos, muzzlePos + fireDir), Parent = station })
 
 	local targetPos = muzzlePos + fireDir * TARGET_DISTANCE
 	local target = makeTarget(CFrame.lookAt(targetPos, targetPos - fireDir))
 	-- the booth's back wall holds the target now, so no legs; themed ring colours
-	local theme = THEMES[info.Id] or THEMES[1]
 	local ring = 0
 	for _, d in ipairs(target:GetChildren()) do
 		if d.Name == "Leg" then

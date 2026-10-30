@@ -5,13 +5,11 @@ Only a rough stand-in for Studio: no studs, particles, bloom or real lighting.""
 import json, math, sys
 from PIL import Image, ImageDraw, ImageFont
 
-data = json.load(open(sys.argv[1]))
 ORDER = ["Cannon01_Starter", "Cannon02_Iron", "Cannon03_Steel", "Cannon04_Heavy", "Cannon06_Industrial",
          "Cannon05_Golden", "Cannon19_Dragon", "Cannon09_Plasma", "Cannon07_Twin", "Cannon08_Rotary",
          "Cannon21_Toy", "Cannon22_Candy", "Cannon11_Frost", "Cannon12_Inferno", "Cannon13_Toxic",
          "Cannon23_Pumpkin", "Cannon24_Pirate", "Cannon14_Thunder", "Cannon10_Reactor", "Cannon25_Shark",
          "Cannon26_Robot", "Cannon15_Quantum", "Cannon27_Rainbow", "Cannon30_Galaxy", "Cannon31_Hacker"]
-names = [n for n in ORDER if n in data]
 
 def mat(cf):
     x, y, z, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf
@@ -97,17 +95,20 @@ def render(parts, size):
         d.polygon(q, fill=col, outline=tuple(max(0, c - 40) for c in col))
     return img
 
-T, COLS = 300, 5
-rows = math.ceil(len(names) / COLS)
-sheet = Image.new("RGB", (T * COLS, (T + 30) * rows), (25, 25, 32))
-dr = ImageDraw.Draw(sheet)
-try:
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
-except OSError:
-    font = None
-for i, n in enumerate(names):
-    x, y = (i % COLS) * T, (i // COLS) * (T + 30)
-    sheet.paste(render(data[n]["parts"], T), (x, y + 30))
-    dr.text((x + 8, y + 5), n.split("_", 1)[1] + "  (" + str(data[n]["particlesPerSecond"]) + " fx/s)", fill="white", font=font)
-sheet.save(sys.argv[2])
-print("saved", sys.argv[2])
+if __name__ == "__main__":
+    data = json.load(open(sys.argv[1]))
+    names = [n for n in ORDER if n in data]
+    T, COLS = 300, 5
+    rows = math.ceil(len(names) / COLS)
+    sheet = Image.new("RGB", (T * COLS, (T + 30) * rows), (25, 25, 32))
+    dr = ImageDraw.Draw(sheet)
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
+    except OSError:
+        font = None
+    for i, n in enumerate(names):
+        x, y = (i % COLS) * T, (i // COLS) * (T + 30)
+        sheet.paste(render(data[n]["parts"], T), (x, y + 30))
+        dr.text((x + 8, y + 5), n.split("_", 1)[1] + "  (" + str(data[n]["particlesPerSecond"]) + " fx/s)", fill="white", font=font)
+    sheet.save(sys.argv[2])
+    print("saved", sys.argv[2])
