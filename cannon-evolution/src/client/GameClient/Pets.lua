@@ -24,6 +24,20 @@ return function(ctx)
 		return f and f:FindFirstChild(name)
 	end
 
+	-- Alex's drawn pet/egg pictures (Icons "Pet_<key>" / "Egg_<id>") when uploaded,
+	-- otherwise the 3D model in a viewport
+	local function art(parent, iconName, m, props)
+		if Kit.hasImage(iconName) then
+			local img = Kit.icon(iconName, { Size = props.Size, Position = props.Position or UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = props.ZIndex, Parent = parent })
+			img.Name = "Art"
+			return img
+		end
+		if m then
+			return Kit.viewport(parent, m, props)
+		end
+		return nil
+	end
+
 	-----------------------------------------------------------------------
 	-- Eggs
 	-----------------------------------------------------------------------
@@ -47,11 +61,10 @@ return function(ctx)
 		Kit.text({ Text = priceLine, Size = 26, StrokeSize = 3, Color = Color3.fromRGB(255, 236, 120), AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.6, 0, 0, 30), Position = UDim2.new(0.38, 2, 0, 80), ZIndex = 30, Parent = show })
 
 		-- the egg, big, on the left
-		local art = new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(24, 30), Size = UDim2.new(0.34, 0, 1, -60), ZIndex = 25, Parent = show })
-		Kit.rays(art, { Size = UDim2.fromOffset(380, 380), Color = Color3.new(1, 1, 1), Transparency = 0.75, ZIndex = 25 })
-		local m = model("Eggs", egg.Model)
-		if m then
-			local vp = Kit.viewport(art, m, { Size = UDim2.fromScale(1, 1), Spin = 25, Zoom = 0.85, ZIndex = 27 })
+		local eggSpot = new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(24, 30), Size = UDim2.new(0.34, 0, 1, -60), ZIndex = 25, Parent = show })
+		Kit.rays(eggSpot, { Size = UDim2.fromOffset(380, 380), Color = Color3.new(1, 1, 1), Transparency = 0.75, ZIndex = 25 })
+		local vp = art(eggSpot, "Egg_" .. egg.Id, model("Eggs", egg.Model), { Size = UDim2.fromScale(0.9, 0.9), Spin = 25, Zoom = 0.85, ZIndex = 27 })
+		if vp then
 			Kit.bob(vp, 6, 1.8)
 		end
 
@@ -67,10 +80,7 @@ return function(ctx)
 			local petInfo = Config.Pets[entry[1]]
 			local rarity = Config.Rarities[petInfo.Rarity]
 			local cell = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(cellW, 170), LayoutOrder = i, ZIndex = 27, Parent = row })
-			local pm = model("Pets", entry[1])
-			if pm then
-				Kit.viewport(cell, pm, { Size = UDim2.fromOffset(cellW + 30, cellW + 30), Position = UDim2.new(0.5, 0, 0, 62), Spin = 35, Zoom = 0.8, ZIndex = 28 })
-			end
+			art(cell, "Pet_" .. entry[1], model("Pets", entry[1]), { Size = UDim2.fromOffset(cellW + 30, cellW + 30), Position = UDim2.new(0.5, 0, 0, 62), Spin = 35, Zoom = 0.8, ZIndex = 28 })
 			local chance = entry[2] / total * 100
 			local odds = Kit.text({ Text = (chance < 1 and string.format("%.1f", chance) or string.format("%d", math.floor(chance + 0.5))) .. "%", Size = 32, StrokeSize = 4, Color = (petInfo.Rarity == "Common" or petInfo.Rarity == "Uncommon" or petInfo.Rarity == "Secret" or petInfo.Rarity == "Mythic") and Color3.new(1, 1, 1) or rarity.Color, FrameSize = UDim2.new(1, 10, 0, 36), Position = UDim2.new(0.5, 0, 0, 122), Anchor = Vector2.new(0.5, 0), ZIndex = 30, Parent = cell })
 			if petInfo.Rarity == "Secret" or petInfo.Rarity == "Mythic" then
@@ -188,10 +198,7 @@ return function(ctx)
 				if selectedPet == pet.Id then
 					Kit.stroke(4, Kit.Colors.Yellow, cell)
 				end
-				local pm = model("Pets", pet.Name)
-				if pm then
-					Kit.viewport(cell, pm, { Size = UDim2.new(1, -8, 0, 70), Position = UDim2.new(0.5, 0, 0, 42), ZIndex = 27 })
-				else
+				if not art(cell, "Pet_" .. pet.Name, model("Pets", pet.Name), { Size = UDim2.fromOffset(78, 78), Position = UDim2.new(0.5, 0, 0, 42), ZIndex = 27 }) then
 					Kit.icon("Favorite", { Size = UDim2.fromOffset(54, 54), Position = UDim2.new(0.5, 0, 0, 40), Anchor = Vector2.new(0.5, 0.5), ZIndex = 27, Parent = cell })
 				end
 				Kit.text({ Text = "x" .. string.format("%.2f", 1 + petInfo.Boost):gsub("%.?0+$", ""), Size = 18, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0.5, 0, 1, -4), Anchor = Vector2.new(0.5, 1), ZIndex = 29, Parent = cell })
@@ -221,10 +228,7 @@ return function(ctx)
 		local petInfo = Config.Pets[pet.Name]
 		local rarity = Config.Rarities[petInfo.Rarity]
 		Kit.rays(side, { Size = UDim2.fromOffset(240, 240), Position = UDim2.new(0.5, 0, 0, 100), Color = rarity.Color, Transparency = 0.5, ZIndex = 25 })
-		local pm = model("Pets", pet.Name)
-		if pm then
-			Kit.viewport(side, pm, { Size = UDim2.fromOffset(160, 160), Position = UDim2.new(0.5, 0, 0, 100), Spin = 40, ZIndex = 27 })
-		end
+		art(side, "Pet_" .. pet.Name, model("Pets", pet.Name), { Size = UDim2.fromOffset(160, 160), Position = UDim2.new(0.5, 0, 0, 100), Spin = 40, ZIndex = 27 })
 		Kit.text({ Text = petInfo.Name, Size = 30, FrameSize = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 186), ZIndex = 28, Parent = side })
 		Kit.text({ Text = petInfo.Rarity, Size = 22, Color = rarity.Color, FrameSize = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 220), ZIndex = 28, Parent = side })
 		Kit.text({ Text = "+" .. Config.Format(petInfo.Boost * 100) .. "% Power", Size = 24, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 248), ZIndex = 28, Parent = side })
