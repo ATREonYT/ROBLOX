@@ -1,6 +1,9 @@
 --[[
 	Cannons panel: collection grid with rarity tabs. Click to buy / equip.
 	The equipped cannon multiplies Power from every shot.
+	The last tab, Balls, is the cannonball shop (the same balls as the stand in
+	the lobby): bought with Cash, each adds a Cash bonus to every launch. The
+	picked ball's card is green and the others purple, like the stand's pads.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -44,9 +47,83 @@ return function(ctx)
 		return "Free", "Green"
 	end
 
+	-- A drawn cannonball in the ball's own colours: the body, its band and a shine
+	local function drawBall(parent, ball, size, y)
+		local body = new("Frame", { Name = "Ball", BackgroundColor3 = ball.Color, Size = UDim2.fromOffset(size, size), Position = UDim2.new(0.5, 0, 0, y), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 27, Parent = parent })
+		Kit.corner(size, body)
+		Kit.stroke(3, nil, body)
+		local band = new("Frame", { Name = "Band", BackgroundColor3 = ball.Band, BorderSizePixel = 0, Size = UDim2.new(0.94, 0, 0, math.floor(size * 0.16)), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 28, Parent = body })
+		Kit.corner(6, band)
+		local shine = new("Frame", { Name = "Shine", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.45, Size = UDim2.fromOffset(math.floor(size * 0.24), math.floor(size * 0.16)), Position = UDim2.fromScale(0.3, 0.24), AnchorPoint = Vector2.new(0.5, 0.5), Rotation = -30, ZIndex = 29, Parent = body })
+		Kit.corner(size, shine)
+		return body
+	end
+
+	local ballCards = {} -- [id] = { Gradient, Text, Status, Ball }
+
+	local function buildBalls()
+		ballCards = {}
+		for i, ball in ipairs(Config.Balls) do
+			local card, grad = Kit.card({ Button = true, Color = Kit.Colors.Purple, Order = i, Parent = scroll, ZIndex = 25 })
+			Kit.movingPattern(card, { Lite = true, Texture = "StudTile", Speed = 10, ImageTransparency = 0.8, ZIndex = 25 })
+			local art = drawBall(card, ball, 70, 50)
+			if ball.CashBonus > 0 then
+				Kit.text({ Text = "+" .. math.floor(ball.CashBonus * 100 + 0.5) .. "% Cash", Size = 16, Color = Kit.Colors.Yellow, FrameSize = UDim2.fromOffset(110, 20), Position = UDim2.fromOffset(6, 4), AlignX = Enum.TextXAlignment.Left, ZIndex = 30, Parent = card })
+			end
+			Kit.text({ Text = ball.Name, Size = 22, Scaled = true, MaxSize = 22, FrameSize = UDim2.new(1, -8, 0, 24), Position = UDim2.new(0.5, 0, 0, 92), Anchor = Vector2.new(0.5, 0), ZIndex = 28, Parent = card })
+			local status = Kit.card({ Color = Kit.Colors.Green, Size = UDim2.new(1, -12, 0, 26), Position = UDim2.new(0.5, 0, 1, -6), Anchor = Vector2.new(0.5, 1), Radius = 8, StrokeSize = 2.5, ZIndex = 28, Parent = card })
+			local statusText = Kit.text({ Text = "", Size = 18, Scaled = true, MaxSize = 18, FrameSize = UDim2.new(1, -6, 1, -4), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 29, Parent = status })
+			card.Activated:Connect(function()
+				Kit.playSound("Click")
+				Kit.press(card, 0.9)
+				local data = State.Data
+				if data.EquippedBall == ball.Id then
+					return
+				end
+				local ok = ctx.Request(data.Balls[ball.Id] and "EquipBall" or "BuyBall", ball.Id)
+				if ok then
+					-- the new ball hops, like on the stand
+					Kit.tween(art, 0.12, { Position = UDim2.new(0.5, 0, 0, 38) }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+					task.delay(0.12, function()
+						Kit.tween(art, 0.3, { Position = UDim2.new(0.5, 0, 0, 50) }, Enum.EasingStyle.Bounce)
+					end)
+				end
+			end)
+			ballCards[ball.Id] = { Gradient = grad, Text = statusText, Status = status }
+		end
+	end
+
+	local function refreshBalls()
+		local data = State.Data
+		for _, ball in ipairs(Config.Balls) do
+			local c = ballCards[ball.Id]
+			if c then
+				local text, color
+				if data.EquippedBall == ball.Id then
+					text, color = "Equipped", "Green"
+				elseif data.Balls and data.Balls[ball.Id] then
+					text, color = "Equip", "Blue"
+				else
+					text, color = "$" .. Config.Format(ball.Price), data.Cash >= ball.Price and "Green" or "Gray"
+				end
+				c.Text.Text = text
+				c.Status:FindFirstChildOfClass("UIGradient").Color = ColorSequence.new(Kit.Colors[color], Kit.Colors[color .. "Dark"])
+				local picked = data.EquippedBall == ball.Id
+				c.Gradient.Color = ColorSequence.new(picked and Kit.Colors.Green or Kit.Colors.Purple, picked and Kit.Colors.GreenDark or Kit.Colors.PurpleDark)
+			end
+		end
+		local equipped = Config.GetBall(data.EquippedBall) or Config.Balls[1]
+		info.Text = "Ball: " .. equipped.Name .. "  •  +" .. math.floor(equipped.CashBonus * 100 + 0.5) .. "% Cash from every launch"
+	end
+
 	local function build()
 		Kit.clear(scroll)
 		cards = {}
+		ballCards = {}
+		if currentTab == "Balls" then
+			buildBalls()
+			return
+		end
 		local models = ReplicatedStorage:FindFirstChild("Cannons")
 		for i, cannon in ipairs(Config.Cannons) do
 			if currentTab == "All" or cannon.Tier == currentTab then
@@ -87,6 +164,10 @@ return function(ctx)
 		if not State.Data then
 			return
 		end
+		if currentTab == "Balls" then
+			refreshBalls()
+			return
+		end
 		for _, cannon in ipairs(Config.Cannons) do
 			local c = cards[cannon.Id]
 			if c then
@@ -102,7 +183,9 @@ return function(ctx)
 		info.Text = "Equipped: " .. equipped.Id .. " Cannon  •  x" .. equipped.Mult .. " Power"
 	end
 
-	local tabs = Kit.tabs({ Names = Config.CannonTabs, Parent = body, OnSelect = function(name)
+	local tabNames = table.clone(Config.CannonTabs)
+	table.insert(tabNames, "Balls")
+	local tabs = Kit.tabs({ Names = tabNames, Parent = body, OnSelect = function(name)
 		currentTab = name
 		build()
 		refresh()
