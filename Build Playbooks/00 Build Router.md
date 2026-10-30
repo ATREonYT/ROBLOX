@@ -13,6 +13,7 @@ updated: 2026-10-30
 
 Playbooks in this folder:
 - [[05 New Game Kit]]: the starter kit and how to start a game from it in 10 steps
+- [[Reference Gallery]]: the owner's reference pictures (HUDs, menus, lobbies, icons); give one with every UI or map prompt
 - [[01 Current Hits October 2026]]: what's on the charts now, grouped into game families
 - [[Blueprint - Egg Run]]: treadmill speed, biomes, grab eggs, base income, steal (Steal An Egg, Climb/Bike For Eggs)
 - [[Blueprint - Plus One Evolution]]: train one stat, launch or throw for distance, cash, worlds (our Cannon Evolution)

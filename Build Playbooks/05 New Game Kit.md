@@ -34,5 +34,7 @@ Back to [[00 Build Router]] · Rules it follows: [[02 Launch and Discovery Cheat
 | Big numbers | `src/Shared/Format.luau` | [[Big Numbers Precision and Formatting]] |
 | Cartoony HUD (saved in StarterGui) | `src/Shared/HudBuilder.luau`, `src/Client/KitClient.client.luau` | [[14 Cartoony UI & Juice]] |
 
+Restyle the HUD to the game's reference: [[Reference Gallery]].
+
 ## Status
 Runs offline in a stand-in Roblox; **not yet run in Studio**. Do the Studio smoke test in the README (step 4) on the first game made from it. Product, pass and icon ids are 0 until the owner creates them.
