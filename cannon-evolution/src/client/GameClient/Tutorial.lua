@@ -997,6 +997,18 @@ return function(ctx)
 	local step = nil -- index into STEPS, nil while finished or switching
 	local lastHave = nil
 
+	-- the flight's distance counter sits right where this bar is: step aside while you fly
+	local hidForFlight = false
+	player:GetAttributeChangedSignal("Launching"):Connect(function()
+		if player:GetAttribute("Launching") == true then
+			hidForFlight = quest.Visible
+			quest.Visible = false
+		elseif hidForFlight then
+			hidForFlight = false
+			quest.Visible = true
+		end
+	end)
+
 	-- the bar slides down into place for a new step
 	local questLow = false -- the bar drops to the bottom of the screen while a menu is open
 	local function showStep()
