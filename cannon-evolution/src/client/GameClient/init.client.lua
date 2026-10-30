@@ -44,7 +44,8 @@ end
 Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
 rescale()
 
--- Dim behind open panels (no blur: it made the whole screen look out of focus)
+-- Dim and a soft blur behind open panels (blur like the Stone Skipping menus, Oct 30)
+local blur = Kit.new("BlurEffect", { Name = "MenuBlur", Size = 0, Parent = workspace.CurrentCamera })
 local dim = Kit.new("TextButton", {
 	Name = "Dim",
 	Text = "",
@@ -89,6 +90,7 @@ function ctx.Close()
 	current = nil
 	Kit.tween(Kit.scale(panel.Frame), 0.15, { Scale = 0.6 })
 	Kit.tween(dim, 0.2, { BackgroundTransparency = 1 })
+	Kit.tween(blur, 0.2, { Size = 0 })
 	task.delay(0.15, function()
 		if current ~= panel then
 			panel.Frame.Visible = false
@@ -122,7 +124,8 @@ function ctx.Open(name, tab, arg)
 	end
 	current = panel
 	dim.Visible = true
-	Kit.tween(dim, 0.2, { BackgroundTransparency = 0.55 })
+	Kit.tween(dim, 0.2, { BackgroundTransparency = 0.7 })
+	Kit.tween(blur, 0.2, { Size = 10 })
 	panel.Frame.Visible = true
 	local s = Kit.scale(panel.Frame)
 	s.Scale = 0.6

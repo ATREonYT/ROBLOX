@@ -1,7 +1,9 @@
 --[[
-	Shop panel: Featured carousel, Gamepasses, Cash, Gems, Boosts, Cannons.
-	Every tile has a moving background (stripes/studs), shine sweep and
-	sparkles; the featured banner adds spinning rays and a rainbow outline.
+	Shop panel: one long scrolling page like the Stone Skipping shop in Alex's
+	recordings (Oct 30): Featured banner, then "~ Section ~" bars for
+	Gamepasses, Cannons, Power & Cash, Gems, Boosts and Codes. The HUD's
+	+ buttons jump straight to a section. Every tile keeps our moving
+	background, shine sweep and sparkles.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,7 +14,15 @@ return function(ctx)
 
 	local panel = Kit.panel({ Title = "Shop", Icon = "Shop", Size = UDim2.fromOffset(900, 580) })
 	local body = panel.Body
-	local content = new("Frame", { Name = "Content", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 52), Size = UDim2.new(1, 0, 1, -52), ZIndex = 22, Parent = body })
+	local _, card = Kit.inset({ Parent = body, ZIndex = 22 })
+	local content = Kit.scrolling({ Name = "Content", Parent = card, ZIndex = 24 })
+	content.ScrollBarThickness = 8
+	-- room for tile outlines (ScrollingFrame clips outside strokes)
+	content.UIPadding.PaddingLeft = UDim.new(0, 10)
+	content.UIPadding.PaddingRight = UDim.new(0, 14)
+	content.UIPadding.PaddingTop = UDim.new(0, 10)
+	content.UIPadding.PaddingBottom = UDim.new(0, 12)
+	Kit.list(content, 12)
 
 	local TILE_COLORS = {
 		DoublePower = Color3.fromRGB(255, 150, 30), DoubleCash = Color3.fromRGB(60, 190, 70), Lucky = Color3.fromRGB(40, 200, 150),
@@ -70,6 +80,7 @@ return function(ctx)
 	-- Featured
 	-----------------------------------------------------------------------
 	local featuredIndex = 1
+	local rebuild -- set below
 	local function buildFeatured(page)
 		local item = Config.Featured[featuredIndex]
 		local product = Config.Products[item.Product]
@@ -115,19 +126,7 @@ return function(ctx)
 				Position = dir < 0 and UDim2.new(0, 6, 0.5, 0) or UDim2.new(1, -6, 0.5, 0), Anchor = Vector2.new(dir < 0 and 0 or 1, 0.5),
 				TextSize = 34, ZIndex = 32, Parent = banner, OnClick = function()
 					featuredIndex = (featuredIndex - 1 + dir) % #Config.Featured + 1
-					panel.Show("Featured")
-				end,
-			})
-		end
-		-- row of gamepass tiles under the banner
-		local row = new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 272), Size = UDim2.new(1, 0, 0, 180), ZIndex = 25, Parent = page })
-		Kit.list(row, 10, true)
-		for i, key in ipairs({ "DoublePower", "DoubleCash", "Lucky", "TripleOpen", "AutoCollect" }) do
-			local pass = Config.Passes[key]
-			tile(row, {
-				Title = pass.Name, Icon = pass.Icon, Color = TILE_COLORS[key], Size = UDim2.fromOffset(160, 176), Order = i,
-				Price = pass.Price, Owned = State.Passes[key], OnBuy = function()
-					ctx.Request("Purchase", "Pass", key)
+					rebuild("Featured")
 				end,
 			})
 		end
@@ -137,9 +136,9 @@ return function(ctx)
 	-- Grid pages
 	-----------------------------------------------------------------------
 	local function gridPage(page, cell)
-		local scroll = Kit.scrolling({ Parent = page, ZIndex = 24 })
-		Kit.grid(scroll, cell or UDim2.fromOffset(196, 220), 12)
-		return scroll
+		page.AutomaticSize = Enum.AutomaticSize.Y
+		Kit.grid(page, cell or UDim2.fromOffset(196, 220), 12)
+		return page
 	end
 
 	local builders = {
@@ -227,25 +226,65 @@ return function(ctx)
 		end,
 	}
 
-	local tabs
-	local currentTab = "Featured"
-	function panel.Show(name)
-		currentTab = name
-		Kit.clear(content)
-		if State.Data then
-			builders[name](content)
-		end
+	builders.Codes = function(page)
+		page.Size = UDim2.new(1, 0, 0, 96)
+		local box = Kit.card({ Color = Kit.Colors.Purple, Color2 = Kit.Colors.PurpleDark, Size = UDim2.fromScale(1, 1), ZIndex = 25, Parent = page })
+		Kit.movingPattern(box, { Lite = true, Texture = "StudTile", Speed = 0, ImageTransparency = 0.8, ZIndex = 25 })
+		Kit.text({ Text = "Redeem codes for free Cash, Gems and boosts!", Size = 22, FrameSize = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 6), ZIndex = 27, Parent = box })
+		local input = new("TextBox", {
+			BackgroundColor3 = Color3.new(1, 1, 1), PlaceholderText = "Enter code here...", Text = "", Font = Kit.Font, TextSize = 24,
+			TextColor3 = Color3.fromRGB(40, 40, 50), ClearTextOnFocus = false, Size = UDim2.new(1, -190, 0, 46), Position = UDim2.fromOffset(14, 38), ZIndex = 27, Parent = box,
+		})
+		Kit.corner(10, input)
+		Kit.stroke(3, nil, input)
+		Kit.button({ Text = "Redeem", Color = "Green", Size = UDim2.fromOffset(150, 46), Position = UDim2.new(1, -14, 0, 38), Anchor = Vector2.new(1, 0), ZIndex = 27, Parent = box, OnClick = function()
+			if input.Text ~= "" and ctx.Request("RedeemCode", input.Text) then
+				input.Text = ""
+			end
+		end })
 	end
 
-	tabs = Kit.tabs({ Names = { "Featured", "Gamepasses", "Cash", "Gems", "Boosts", "Cannons" }, Parent = body, Size = UDim2.new(1, 0, 0, 42), OnSelect = panel.Show })
+	-- one long page: a "~ Title ~" bar, then that section's tiles
+	local SECTIONS = {
+		{ Key = "Featured" },
+		{ Key = "Gamepasses", Title = "Gamepasses" },
+		{ Key = "Cannons", Title = "Cannons" },
+		{ Key = "Cash", Title = "Power & Cash" },
+		{ Key = "Gems", Title = "Gems" },
+		{ Key = "Boosts", Title = "Boosts" },
+		{ Key = "Codes", Title = "Codes" },
+	}
+	local sections, bars = {}, {}
+	for i, sec in ipairs(SECTIONS) do
+		if sec.Title then
+			local bar = new("Frame", { Name = sec.Key .. "Bar", BackgroundColor3 = Kit.Colors.Outline, BackgroundTransparency = 0.35, Size = UDim2.new(1, 0, 0, 44), LayoutOrder = i * 2 - 1, ZIndex = 25, Parent = content })
+			Kit.corner(10, bar)
+			Kit.text({ Text = "~ " .. sec.Title .. " ~", Size = 32, StrokeSize = 3.5, FrameSize = UDim2.fromScale(1, 1), ZIndex = 26, Parent = bar })
+			bars[sec.Key] = bar
+		end
+		sections[sec.Key] = new("Frame", { Name = sec.Key, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 260), LayoutOrder = i * 2, ZIndex = 25, Parent = content })
+	end
+
+	function rebuild(key)
+		local page = sections[key]
+		Kit.clear(page)
+		if State.Data then
+			builders[key](page)
+		end
+	end
+	local function rebuildAll()
+		for _, sec in ipairs(SECTIONS) do
+			rebuild(sec.Key)
+		end
+	end
 
 	-- rotate the featured item every 8 seconds while open
 	task.spawn(function()
 		while true do
 			task.wait(8)
-			if panel.Frame.Visible and currentTab == "Featured" then
+			if panel.Frame.Visible then
 				featuredIndex = featuredIndex % #Config.Featured + 1
-				panel.Show("Featured")
+				rebuild("Featured")
 			end
 		end
 	end)
@@ -254,7 +293,15 @@ return function(ctx)
 	return {
 		Frame = panel.Frame,
 		OnOpen = function(tab)
-			tabs:Select(tab or "Featured")
+			-- jump to a section (the HUD's + buttons ask for Cash or Gems)
+			local target = tab and bars[tab]
+			task.defer(function()
+				if target then
+					content.CanvasPosition = Vector2.new(0, target.AbsolutePosition.Y - content.AbsolutePosition.Y + content.CanvasPosition.Y - 10)
+				else
+					content.CanvasPosition = Vector2.zero
+				end
+			end)
 		end,
 		Refresh = function()
 			-- rebuild only when ownership changes, so animations don't restart
@@ -262,9 +309,9 @@ return function(ctx)
 			for _, k in ipairs(Config.PassOrder) do
 				key ..= State.Passes[k] and "1" or "0"
 			end
-			if key ~= lastPasses then
+			if key ~= lastPasses and State.Data then
 				lastPasses = key
-				panel.Show(currentTab)
+				rebuildAll()
 			end
 		end,
 	}

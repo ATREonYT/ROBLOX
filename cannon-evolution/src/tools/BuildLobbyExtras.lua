@@ -142,20 +142,17 @@ local function titleCase(s)
 		return a:upper() .. b
 	end))
 end
-local function borderFace(p, normal, title, sub)
+-- one plain name per side, like the Stone Skipping area walls (Alex, Oct 30)
+local function borderFace(p, normal, title)
 	local sg = Instance.new("SurfaceGui")
 	sg.Face = normal
 	sg.LightInfluence = 0
 	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	sg.PixelsPerStud = 8
 	sg.Parent = p
-	local function line(text, y, h, color)
-		local l = label(sg, text, color, UDim2.fromScale(0.8, h))
-		l.Position = UDim2.fromScale(0.1, y)
-		l.UIStroke.Thickness = 5
-	end
-	line(title, 0.2, 0.32, Color3.new(1, 1, 1))
-	line(sub, 0.54, 0.16, Color3.fromRGB(255, 240, 170))
+	local l = label(sg, title, Color3.new(1, 1, 1), UDim2.fromScale(0.86, 0.3))
+	l.Position = UDim2.fromScale(0.07, 0.3)
+	l.UIStroke.Thickness = 6
 end
 
 local old = workspace:FindFirstChild("AreaBorders")
@@ -183,25 +180,25 @@ for _, area in ipairs(workspace.map1b.StoneSkipMap:GetChildren()) do
 		local entry = cf.Position - dir * half -- the side the ball comes in from
 		local pos = Vector3.new(entry.X, WATER_Y + HEIGHT / 2, -145)
 		local props = { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false }
-		local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = t[2], Material = Enum.Material.SmoothPlastic, Transparency = 0.6 })
+		local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = t[2], Material = Enum.Material.SmoothPlastic, Transparency = 0.35 })
 		for k, v in pairs(props) do
 			b[k] = v
 		end
-		b:SetAttribute("AreaName", t[1] .. " " .. areaName)
-		borderFace(b, Enum.NormalId.Right, t[1] .. " " .. areaName, t[3])
-		borderFace(b, Enum.NormalId.Left, t[1] .. " " .. areaName, t[3])
-		for _, z in ipairs({ -WIDTH / 2, WIDTH / 2 }) do
-			local post = part({ Name = "Post", Size = Vector3.new(1.2, HEIGHT, 1.2), CFrame = CFrame.new(pos + Vector3.new(0, 0, z)), Color = t[2], Material = Enum.Material.Neon, Parent = b })
-			for k, v in pairs(props) do
-				post[k] = v
-			end
-		end
-		local beam = part({ Name = "Beam", Size = Vector3.new(1.2, 1.2, WIDTH + 1.2), CFrame = CFrame.new(pos + Vector3.new(0, HEIGHT / 2, 0)), Color = t[2], Material = Enum.Material.Neon, Parent = b })
-		for k, v in pairs(props) do
-			beam[k] = v
-		end
+		b:SetAttribute("AreaName", areaName)
+		borderFace(b, Enum.NormalId.Right, areaName)
+		borderFace(b, Enum.NormalId.Left, areaName)
 		b.Parent = borders
 	end
+end
+-- no wall at the start: drop the one nearest the launch (Alex, Oct 30)
+local first
+for _, b in ipairs(borders:GetChildren()) do
+	if not first or b.Position:Dot(dir) < first.Position:Dot(dir) then
+		first = b
+	end
+end
+if first then
+	first:Destroy()
 end
 borders.Parent = workspace
 print("[BuildLobbyExtras] " .. #folder:GetChildren() .. " egg stands, " .. #borders:GetChildren() .. " area borders")
