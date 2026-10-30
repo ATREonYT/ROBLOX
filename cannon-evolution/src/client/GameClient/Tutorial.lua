@@ -330,7 +330,7 @@ return function(ctx)
 	-- outline, floating on one straight line from you to the target (not on
 	-- the ground, Alex Oct 30), turned to face the camera, flowing forward.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED = 30, 1.75, 5 -- tip to notch like the reference
+	local ARROWS, SPACING, FLOW_SPEED = 30, 1.15, 2.5 -- SPACING in dart lengths on screen; FLOW_SPEED darts a second
 	local LEN, HALF, NOTCH, THICK = 1.6, 0.8, 0.55, 0.12 -- dart length, half width, notch depth, thickness
 	local RIM = 1.22 -- each dart has its own dark copy behind it, this much bigger: its outline
 	local HIDDEN = CFrame.new(0, -500, 0)
@@ -420,40 +420,55 @@ return function(ctx)
 			hideArrows()
 			return
 		end
-		local camPos = workspace.CurrentCamera.CFrame.Position
-		local phase = (os.clock() * FLOW_SPEED) % SPACING
-		for i, wedges in ipairs(arrows) do
-			local d = 2.5 + (i - 1) * SPACING + phase
-			local pos, dir = pointOnRoute(d)
-			dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.xAxis
-			local toCam = camPos - pos
-			-- right under the camera an arrow fills the screen: skip it
-			if d > total - 2 or toCam.Magnitude < 6 then
-				for _, part in ipairs(wedges) do
-					part.CFrame = HIDDEN
+		local cam = workspace.CurrentCamera
+		local camCF = cam.CFrame
+		local camPos = camCF.Position
+		local focal = cam.ViewportSize.Y / (2 * math.tan(math.rad(cam.FieldOfView) / 2))
+		-- walk along the line and drop a dart every time the line has covered one dart length on screen,
+		-- so the chain reads tip to notch at every distance and never piles up when it runs away from you
+		local phase = (os.clock() * FLOW_SPEED) % 1
+		local placed, nextMark, progress = 0, phase, 0
+		local d, prevScreen = 2.5, nil
+		while d < total - 2 and placed < ARROWS do
+			local pos, seg = pointOnRoute(d)
+			local depth = (pos - camPos):Dot(camCF.LookVector)
+			local screen = depth > 0.5 and cam:WorldToViewportPoint(pos) or nil
+			if screen and prevScreen then
+				local gapPx = SPACING * LEN * focal / depth
+				progress += (Vector2.new(screen.X, screen.Y) - prevScreen).Magnitude / gapPx
+			end
+			prevScreen = screen and Vector2.new(screen.X, screen.Y) or nil
+			if screen and progress >= nextMark and (pos - camPos).Magnitude > 6 then
+				nextMark += 1
+				placed += 1
+				local wedges = arrows[placed]
+				local normal = (camPos - pos).Unit
+				local dir = seg.Magnitude > 0.01 and seg.Unit or Vector3.xAxis
+				-- flat to the screen like a sticker (as in the reference), pointing the way the line runs on screen
+				local flat = dir - normal * dir:Dot(normal)
+				if flat.Magnitude < 0.05 then
+					flat = Vector3.yAxis - normal * normal.Y
 				end
-				continue
+				dir = flat.Unit
+				local side = dir:Cross(normal)
+				-- grow in near you and shrink into the target
+				local k = 0.35 + 0.65 * math.clamp(math.min((d - 2.5) / 3, (total - 2 - d) / 3), 0, 1)
+				for layer = 0, 1 do
+					local r = layer == 0 and k or k * RIM
+					local c = pos - normal * (layer * THICK * 1.5) -- the dark copy sits just behind
+					local tip = c + dir * (LEN / 2 * r)
+					local tail = c - dir * (LEN / 2 * r)
+					local notch = tail + dir * (NOTCH * r)
+					local w = layer * 4
+					triangle(tip, tail + side * (HALF * r), notch, wedges[w + 1], wedges[w + 2])
+					triangle(tip, notch, tail - side * (HALF * r), wedges[w + 3], wedges[w + 4])
+				end
 			end
-			-- flat to the screen like a sticker (as in the reference), pointing the way the line runs on screen,
-			-- so the darts keep their shape even when the line runs away from you
-			local normal = toCam.Unit
-			local flat = dir - normal * dir:Dot(normal)
-			if flat.Magnitude < 0.05 then
-				flat = Vector3.yAxis - normal * normal.Y
-			end
-			dir = flat.Unit
-			local side = dir:Cross(normal)
-			-- grow in near you and shrink into the target
-			local k = 0.35 + 0.65 * math.clamp(math.min((d - 2.5) / 3, (total - 2 - d) / 3), 0, 1)
-			for layer = 0, 1 do
-				local r = layer == 0 and k or k * RIM
-				local c = pos - normal * (layer * THICK * 1.5) -- the dark copy sits just behind
-				local tip = c + dir * (LEN / 2 * r)
-				local tail = c - dir * (LEN / 2 * r)
-				local notch = tail + dir * (NOTCH * r)
-				local w = layer * 4
-				triangle(tip, tail + side * (HALF * r), notch, wedges[w + 1], wedges[w + 2])
-				triangle(tip, notch, tail - side * (HALF * r), wedges[w + 3], wedges[w + 4])
+			d += 0.15
+		end
+		for i = placed + 1, ARROWS do
+			for _, part in ipairs(arrows[i]) do
+				part.CFrame = HIDDEN
 			end
 		end
 	end
