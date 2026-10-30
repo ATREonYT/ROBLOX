@@ -436,8 +436,9 @@ return function(ctx)
 				local petModel = petsFolder and petsFolder:FindFirstChild(c.Key)
 				local view
 				if petModel then
-					-- facing the camera (no spin), so every pet in a big grid reads at a glance
-					view = Kit.viewport(c.Cell, petModel, { Size = UDim2.fromScale(0.9, 0.9), ZIndex = 75 })
+					-- face to camera (no spin), so every pet in a big grid reads at a glance;
+					-- Kit's default yaw looks at a model's back (+Z), its front is -Z
+					view = Kit.viewport(c.Cell, petModel, { Size = UDim2.fromScale(0.9, 0.9), Yaw = 215, ZIndex = 75 })
 				else
 					view = Kit.icon("Favorite", { Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 75, Parent = c.Cell })
 				end

@@ -55,7 +55,8 @@ return function(ctx)
 	local lowGraphics = false
 
 	-- one small dust emitter per walking pet, fired with Emit on each landing (vault VFX brief: Rate 0 + Emit)
-	local function addDust(m)
+	-- (called while the model sits at the origin, so feetY is the bottom of its box)
+	local function addDust(m, feetY)
 		local base = m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
 		if not base then
 			return nil
@@ -63,18 +64,20 @@ return function(ctx)
 		local att = Instance.new("Attachment")
 		att.Name = "PetDust"
 		att.Parent = base
+		-- at the feet, not inside the body, or the puffs never get out
+		att.WorldPosition = Vector3.new(base.Position.X, feetY + 0.2, base.Position.Z)
 		local e = Instance.new("ParticleEmitter")
 		e.Texture = DUST
 		e.Rate = 0
 		e.Lifetime = NumberRange.new(0.45, 0.7)
-		e.Speed = NumberRange.new(1.5, 3)
-		e.SpreadAngle = Vector2.new(80, 80)
+		e.Speed = NumberRange.new(3, 5)
+		e.SpreadAngle = Vector2.new(70, 70)
 		e.Acceleration = Vector3.new(0, 2, 0)
-		e.Drag = 4
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 1.9) })
-		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
-		e.Color = ColorSequence.new(Color3.fromRGB(205, 190, 160))
-		e.LightInfluence = 0.6
+		e.Drag = 3
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 2.4) })
+		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+		e.Color = ColorSequence.new(Color3.fromRGB(165, 140, 105))
+		e.LightInfluence = 0
 		e.LightEmission = 0
 		e.ZOffset = -0.5
 		e.Parent = att
@@ -130,7 +133,7 @@ return function(ctx)
 				m:PivotTo(CFrame.new())
 				local box, boxSize = m:GetBoundingBox()
 				local flying = FLYING[name] == true
-				local dust = not flying and addDust(m) or nil
+				local dust = not flying and addDust(m, box.Position.Y - boxSize.Y / 2) or nil
 				-- a pet that wasn't equipped last time pops in; the rest just carry on
 				seen[name] = (seen[name] or 0) + 1
 				local isNew = seen[name] > (before[name] or 0)
