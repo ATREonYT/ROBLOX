@@ -19,6 +19,16 @@ This file loads in every session, so keep it short. Each game folder has its own
   to the skin (its accent colour, a motif from its name, placed at its gem or edge). Scale by tier, as visible as the
   reference but no louder, and use only Roblox's built-in pictures.
 
+## Skills from the video library
+Before building, load the skill for the job (in `.claude/skills/`):
+- maps, props, lighting: `roblox-cartoony-building`
+- any UI: `roblox-cartoony-ui`
+- character animations: `roblox-ai-animation`
+- effects: `roblox-vfx`; Blender models: `blender-roblox-models`
+
+Step-by-step notes from 38 video transcripts: `AI Video Library/Video Notes/00 Video Notes Index.md`. Grep them; don't read them whole.
+Run `AI Video Library/16 Cartoony Kid-Appeal Checklist.md` before showing a new game.
+
 ## How we build
 1. **Golden slice first.** Build the smallest piece that proves the look and feel, get a yes, then roll it out. Full builds that miss waste days.
 2. **The reference is the authority.** Every visual change gets ONE side-by-side (ours next to the reference, same size and framing). Never say "matches" without that picture. Judge motion on a 30 fps video, not stills.

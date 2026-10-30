@@ -32,6 +32,9 @@ A curated set of the best videos on building Roblox games with AI, split by disc
 - [[15 Kid Appeal & Game Design]]: what makes kids click, stay and come back
 - [[16 Cartoony Kid-Appeal Checklist]]: ⭐ the one-page pre-launch checklist
 
+### Step-by-step video notes (from transcripts, added 2026-10-30)
+- [[00 Video Notes Index]]: 38 videos turned into steps, exact settings, prompts and gotchas
+
 ## The 10-video crash course (watch in this order)
 
 1. ⭐ [How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)](https://www.youtube.com/watch?v=afuKhenJldY), SyphoDev. The most complete modern pipeline: Claude Code, skills, Studio MCP, Rojo, Open Cloud, AI images and 3D.
