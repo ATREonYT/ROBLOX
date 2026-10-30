@@ -58,3 +58,7 @@ Hatch an Egg, Rebirth Power/Cash, Rebirth Now, then TUTORIAL COMPLETE! and Daily
 - Every word it shows is in the `TEXT` table at the top.
 - Set `REPLAY_IN_STUDIO = true` to watch it again on your own save in Studio.
 - The guide character is built by GameServer into ReplicatedStorage.TutorialGuide.
+
+## Pet and egg pictures
+
+Alex's drawn pictures (`design/egg_pet_ui_aligned.zip`) are in `icons/pets/<pet key>.png` and `icons/eggs/<egg id>.png`. Upload them and paste the ids into `Icons.lua` (`Pet_dog`, `Egg_Starter`, ...); the egg menu, hatch screen, reward popup and Pets inventory then show the picture instead of the 3D model. Matched by look; the less obvious ones: phoenix = red winged pet, void cube = purple crystal crown, shadow cube = dark purple cat, galaxy cube = purple ringed space cube, cosmo cube = blue ringed cube, golden wing = gold winged cube, royal cube = gold crown, corgi = orange and white pet, Woodland egg = green spotted, Nature egg = plant egg, Hacker egg = dark space egg, Secret egg = angel egg. Unused from the pack: octopus, jellyfish, cow, pig, wooden box, gold horned pet, lava egg, green scaly egg.
