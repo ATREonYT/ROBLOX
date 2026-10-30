@@ -34,12 +34,13 @@ local function rgb(r, g, b)
 	return Color3.fromRGB(r, g, b)
 end
 -- Body: carriage, Barrel, Ring: barrel rings and trim, Wheel, Hub, Neon: glowing rings
+-- The 8 station cannons take their booth's colours (BuildWorld1 THEMES) so each sits in its booth (Alex, Oct 30)
 local STYLES = {
-	Cannon01_Starter = { Body = rgb(150, 95, 55), Barrel = rgb(95, 100, 112), Ring = rgb(240, 190, 50), Wheel = rgb(110, 70, 40), Hub = rgb(240, 190, 50) },
-	Cannon02_Iron = { Body = rgb(75, 75, 88), Barrel = rgb(55, 58, 68), Ring = rgb(160, 160, 172), Wheel = rgb(40, 40, 46), Hub = rgb(160, 160, 172), Rivets = true },
+	Cannon01_Starter = { Body = rgb(150, 85, 50), Barrel = rgb(65, 115, 215), Ring = rgb(35, 70, 170), Wheel = rgb(120, 60, 35), Hub = rgb(240, 190, 50) },
+	Cannon02_Iron = { Body = rgb(30, 38, 110), Barrel = rgb(70, 74, 90), Ring = rgb(225, 45, 50), Wheel = rgb(25, 30, 95), Hub = rgb(225, 45, 50), Rivets = true },
 	Cannon03_Steel = { Body = rgb(55, 95, 160), Barrel = rgb(190, 200, 215), Ring = rgb(80, 150, 230), Wheel = rgb(45, 60, 85), Hub = rgb(225, 235, 245), Rivets = true, Fx = "glint" },
-	Cannon04_Heavy = { Body = rgb(45, 45, 55), Barrel = rgb(32, 32, 38), Ring = rgb(250, 195, 40), Wheel = rgb(35, 35, 40), Hub = rgb(250, 195, 40), Wheels = 4, Bore = 1.8, Fx = "smoke" },
-	Cannon06_Industrial = { Body = rgb(60, 60, 72), Barrel = rgb(250, 200, 40), Ring = rgb(30, 30, 36), Wheel = rgb(35, 35, 40), Hub = rgb(250, 200, 40), Wheels = 4, Hazard = true, Rivets = true, Fx = "sparks" },
+	Cannon04_Heavy = { Body = rgb(70, 30, 20), Barrel = rgb(40, 34, 34), Ring = rgb(250, 150, 40), Wheel = rgb(45, 25, 20), Hub = rgb(250, 165, 40), Wheels = 4, Bore = 1.8, Fx = "smoke" },
+	Cannon06_Industrial = { Body = rgb(95, 35, 175), Barrel = rgb(240, 85, 220), Ring = rgb(110, 40, 190), Wheel = rgb(60, 20, 110), Hub = rgb(255, 220, 245), Wheels = 4, Stripes = { rgb(240, 85, 220), rgb(255, 250, 255) }, Rivets = true, Fx = "sparks" },
 	Cannon05_Golden = { Body = rgb(160, 30, 40), Barrel = rgb(255, 200, 45), Ring = rgb(255, 240, 185), Wheel = rgb(120, 25, 30), Hub = rgb(255, 200, 45), Gems = true, Fx = "gold" },
 	Cannon19_Dragon = { Body = rgb(60, 25, 120), Barrel = rgb(120, 50, 200), Ring = rgb(255, 80, 220), Wheel = rgb(40, 20, 80), Hub = rgb(255, 80, 220), Neon = true, Spikes = true, Fx = "dragon" },
 	Cannon09_Plasma = { Body = rgb(28, 38, 50), Barrel = rgb(45, 60, 78), Ring = rgb(110, 255, 90), Wheel = rgb(25, 30, 40), Hub = rgb(110, 255, 90), Neon = true, Wheels = 4, Fx = "plasma" },
