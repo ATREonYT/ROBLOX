@@ -14,6 +14,8 @@
 --   HudStages.Arriving(stages, from, to, all)  -> names to pop in, in order
 --   HudStages.Spotlight(stages, stage)         -> name to light up (dim the rest), or nil
 --   HudStages.StageFor(stages, stepsDone, tutorialDone) -> stage number
+--   HudStages.StepsDone(stages, getAttr)       -> furthest step whose DoneWhen holds
+--   HudStages.Find(hud, "Menu.Eggs")           -> the element, or nil
 -- Status: covered by tests/HudStages.spec.luau (offline).
 
 local HudStages = {}
@@ -58,6 +60,27 @@ end
 function HudStages.Spotlight(stages: { Stage }, stage: number): string?
 	local s = stages[stage]
 	return if s then s.Spotlight else nil
+end
+
+-- The furthest step whose DoneWhen rule holds ({ attr = "Coins", atLeast = 50 }); a later step
+-- being done means the earlier ones are too, so a returning player resumes where they left off.
+function HudStages.StepsDone(stages: { any }, getAttr: (string) -> any): number
+	for i = #stages, 1, -1 do
+		local rule = stages[i].DoneWhen
+		if rule and (tonumber(getAttr(rule.attr)) or 0) >= rule.atLeast then
+			return i
+		end
+	end
+	return 0
+end
+
+-- Finds "Menu.Eggs" inside the HUD (names are case-sensitive in Roblox).
+function HudStages.Find(root: Instance, name: string): Instance?
+	local node: Instance? = root
+	for part in string.gmatch(name, "[^%.]+") do
+		node = if node then node:FindFirstChild(part) else nil
+	end
+	return node
 end
 
 -- stepsDone counts finished tutorial steps (0 at join). Anyone past the tutorial gets the full HUD.

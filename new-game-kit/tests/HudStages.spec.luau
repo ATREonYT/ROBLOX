@@ -2,6 +2,7 @@
 -- New Game Kit spec: HudStages (the HUD arrives a piece at a time during the tutorial).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HudStages = require(ReplicatedStorage:WaitForChild("Kit"):WaitForChild("HudStages"))
+local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local STAGES = {
 	{ Step = "Train", Show = { "PowerBar" } },
@@ -44,6 +45,32 @@ return function()
 			expect(HudStages.StageFor(STAGES, 2, false)).to.equal(3)
 			expect(HudStages.StageFor(STAGES, 9, false)).to.equal(4)
 			expect(HudStages.StageFor(STAGES, 0, true)).to.equal(4)
+		end)
+	end)
+	describe("the kit's own Config.HudStages", function()
+		it("ends on a show-everything stage", function()
+			expect(Config.HudStages[#Config.HudStages].Show).to.equal("*")
+		end)
+		it("walks a new player through the steps in order", function()
+			local a = {}
+			local function get(k)
+				return a[k]
+			end
+			local function stage()
+				return HudStages.StageFor(Config.HudStages, HudStages.StepsDone(Config.HudStages, get), (a.Rebirths or 0) > 0)
+			end
+			expect(stage()).to.equal(1)
+			expect(HudStages.Visible(Config.HudStages, stage(), "Menu.Shop")).to.equal(false)
+			a.Coins = 60
+			expect(stage()).to.equal(2)
+			a.Upgrade_Income = 1
+			expect(stage()).to.equal(3)
+			a.Discovered = 1
+			expect(stage()).to.equal(4)
+			expect(HudStages.Spotlight(Config.HudStages, stage())).to.equal("Menu.Rebirth")
+			a.Rebirths = 1
+			expect(stage()).to.equal(#Config.HudStages)
+			expect(HudStages.Visible(Config.HudStages, stage(), "Menu.Shop")).to.equal(true)
 		end)
 	end)
 end

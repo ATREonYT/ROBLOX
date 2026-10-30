@@ -51,7 +51,13 @@ Config.HudStages = {
 	{ Step = "Done",    Show = "*" },
 }
 ```
-Status: the module and its tests are in the kit; the kit's own HUD isn't wired to it yet (Cannon has its own version in `HUD.lua`, `applyStage`). Wire it the first time a new game is built from the kit.
+**Status (Oct 31): wired into the kit.** Every game started from `new-game-kit/` gets it with no prompt:
+- `Config.HudStages` lists the steps; each has a `DoneWhen = { attr = "Coins", atLeast = 50 }` rule, so a returning player resumes where they left off, and anyone with a rebirth gets the full HUD.
+- The client hides the staged pieces until the save loads, pops new ones in (0.25 s Back, 0.06 s apart), and gives the step's button a soft white rim that breathes once every 1.2 s (a glow, not a flash).
+- The Rebirth tile shows how close the next rebirth is ("94%").
+- The place build fails if a stage names a HUD piece that doesn't exist (exact case).
+- Picture: `new-game-kit/previews/hud-stages.png`; make your own with `lune run tools/preview/export.luau out.json Stage1`.
+- **Not yet:** the menu doesn't close up the gaps while pieces are hidden, and nothing has run in Studio yet. Cannon has its own version (`HUD.lua`, `applyStage`).
 
 ## 3. The grind rewards every second
 - **Split the goal into ~20 small levels** inside each run (Level 20 = enough to rebirth, the bar says MAX LEVEL). Level sizes grow slowly (curve 1.3): Stone Skipping's go 10, 10, 10, 12, 14, 15, 17, 19, 22 [M].
@@ -59,7 +65,7 @@ Status: the module and its tests are in the kit; the kit's own HUD isn't wired t
 - **A display only.** It changes nothing the player earns, so it never breaks the pacing sim.
 - **After a reset,** the first payoff crosses several levels at once. That's when the rebirth is felt.
 
-**Kit code:** `new-game-kit/src/Shared/Progression.luau`: `Progression.Level(have, goal)` gives the level, the progress inside it and the level size, `LevelsGained(before, after, goal)` counts levels crossed in one tick, and `Progression.Streak(1.5)` gives the [xN] count. Cannon's version is `Config.PowerLevel` [R].
+**Kit code** (for games whose grind stat isn't spent, like Power or Skill; the kit's own coins get spent, so it isn't wired there): `new-game-kit/src/Shared/Progression.luau`: `Progression.Level(have, goal)` gives the level, the progress inside it and the level size, `LevelsGained(before, after, goal)` counts levels crossed in one tick, and `Progression.Streak(1.5)` gives the [xN] count. Cannon's version is `Config.PowerLevel` [R].
 
 ## 4. Motion table (every UI piece moves the same way)
 Values from Cannon's `Kit.lua` and the new-game-kit client, which Alex approved by eye [R]. Use these and nothing else; a game feels premium when everything moves alike.
