@@ -13,8 +13,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
-local BALL_SIZE = 2.6
-local HOVER = 0.5 -- gap between the pad and the ball
+local FULL_BALL_SIZE = 2.6
+local FULL_HOVER = 0.5 -- gap between the pad and the ball
 local FADE = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 -- pad colours by part: [name] = { picked, not picked }; StateTop comes in a neon and a plain layer
@@ -37,20 +37,30 @@ return function(ctx)
 		warn("[BallStand] no CannonBallStand in Workspace")
 		return
 	end
+	-- the stand is built smaller on the new map (BuildCannonBallStand ScaleTo); everything on it follows
+	local k = stand:GetScale()
+	local BALL_SIZE, HOVER = FULL_BALL_SIZE * k, FULL_HOVER * k
 
-	-- pads in Config.Balls order: lower row first, left to right as you face the stand (it stands on
-	-- the -Z side facing +Z, so -X is on your left)
+	-- pads in Config.Balls order: lower row first, left to right as you face the stand. The lower row
+	-- is the front, so it tells which way the stand faces: facing +Z (old map) -X is on your left,
+	-- facing -Z (new map) +X is
 	local pads = {}
 	for _, p in ipairs(stand:GetChildren()) do
 		if p.Name == "PadBase" then
 			table.insert(pads, p)
 		end
 	end
+	local low, high
+	for _, p in ipairs(pads) do
+		low = (not low or p.Position.Y < low.Position.Y) and p or low
+		high = (not high or p.Position.Y > high.Position.Y) and p or high
+	end
+	local leftX = (low and high and low.Position.Z < high.Position.Z) and 1 or -1
 	table.sort(pads, function(a, b)
-		if math.abs(a.Position.Y - b.Position.Y) > 1 then
+		if math.abs(a.Position.Y - b.Position.Y) > k then
 			return a.Position.Y < b.Position.Y
 		end
-		return a.Position.X < b.Position.X
+		return a.Position.X * leftX > b.Position.X * leftX
 	end)
 
 	local function partsOn(pad)
@@ -58,7 +68,7 @@ return function(ctx)
 		for _, p in ipairs(stand:GetChildren()) do
 			if p:IsA("BasePart") and string.sub(p.Name, 1, 5) == "State" then
 				local d = p.Position - pad.Position
-				if math.abs(d.Y) < 1.5 and Vector2.new(d.X, d.Z).Magnitude < 3.2 then
+				if math.abs(d.Y) < 1.5 * k and Vector2.new(d.X, d.Z).Magnitude < 3.2 * k then
 					local key = p.Name == "StateTop" and p.Material == Enum.Material.Neon and "StateTopNeon" or p.Name
 					if PALETTE[key] then
 						table.insert(list, { Part = p, Colors = PALETTE[key] })
@@ -205,8 +215,8 @@ return function(ctx)
 		for _, slot in ipairs(slots) do
 			local isPicked = slot.Info.Id == picked
 			local h = t - slot.Hop
-			local hop = h < 0.6 and math.sin(h / 0.6 * math.pi) * 1.4 or 0
-			local y = math.sin(t * 2 + slot.Phase) * 0.15 + hop
+			local hop = h < 0.6 and math.sin(h / 0.6 * math.pi) * 1.4 * k or 0
+			local y = math.sin(t * 2 + slot.Phase) * 0.15 * k + hop
 			local spin = t * (isPicked and 1.6 or 0.5) + slot.Phase
 			slot.Model:PivotTo(CFrame.new(slot.Base + Vector3.new(0, y, 0)) * CFrame.Angles(0, spin, math.rad(12)))
 		end

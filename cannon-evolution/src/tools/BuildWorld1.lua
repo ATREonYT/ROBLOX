@@ -22,13 +22,26 @@ local CANNON_HEIGHT = 6 -- studs; a default character is ~5
 local PLINTH = 1.2 -- the cannon stands on a plinth in its booth's colours, so it shows above the counter (Alex, Oct 30)
 local TARGET_DISTANCE = 12 -- muzzle to target
 
-local map = workspace.map1b.StoneSkipMap
-local lobbyCf, lobbySize = map.Lobby:GetBoundingBox()
-local lobbyPos = lobbyCf.Position
+-- Alex's new map (Workspace.CannonMap, Oct 30) or the old one
+local newMap = workspace:FindFirstChild(Config.Map.Root)
+local lobbyPos, lobbySize
+if newMap then
+	lobbyPos, lobbySize = Config.Map.LobbyCenter, Config.Map.LobbySize
+else
+	local lobbyCf
+	lobbyCf, lobbySize = workspace.map1b.StoneSkipMap.Lobby:GetBoundingBox()
+	lobbyPos = lobbyCf.Position
+end
 
--- floor height of the lobby
-local hit = workspace:Raycast(lobbyPos + Vector3.new(0, 200, 0), Vector3.new(0, -400, 0))
-local floorY = hit and hit.Position.Y or lobbyPos.Y - lobbySize.Y / 2
+-- floor height under a point (the map only, nothing we build)
+local floorParams = RaycastParams.new()
+floorParams.FilterType = Enum.RaycastFilterType.Include
+floorParams.FilterDescendantsInstances = { newMap or workspace.map1b }
+local function floorAt(x, z, fallback)
+	local hit = workspace:Raycast(Vector3.new(x, 200, z), Vector3.new(0, -400, 0), floorParams)
+	return hit and hit.Position.Y or fallback
+end
+local floorY = floorAt(lobbyPos.X, lobbyPos.Z, lobbyPos.Y - lobbySize.Y / 2)
 
 -- Stations sit in a row along the lobby's long (X) axis, firing towards the side wall
 local fireDir = Vector3.new(0, 0, SIDE)
@@ -42,6 +55,26 @@ local ROW_END = lobbyPos.X - 10 + 15 * BOOTH_SCALE * 3.5 + 7 * BOOTH_SCALE -- fa
 local ROW_START = lobbyPos.X - lobbySize.X / 2 + 6
 local spacing = (ROW_END - ROW_START - 14 * BOOTH_SCALE) / (#Config.Stations - 1)
 local startX = ROW_START + 7 * BOOTH_SCALE
+-- where booth i stands: { stand point, firing direction }
+local function slot(i)
+	return Vector3.new(startX + (i - 1) * spacing, floorY, rowZ), fireDir
+end
+
+if newMap then
+	-- New map: mini booths (Alex: "miniature trainings, but not too small") on the grass to your left as
+	-- you face the dock, all opening towards the plaza. They zig-zag between a front and a back row so
+	-- every back booth faces a 9-stud walkway between two front ones (vault: paths 10 studs or so).
+	-- Booth 1 is at the east end, nearest the path to the dock; the VIP booth is the far west one.
+	-- The spots are checked against every rock, palm and fence in the map by tools/map/plan_check.py.
+	BOOTH_SCALE = 0.6
+	local PITCH, EAST_X, BACK_Z, FRONT_Z = 8.87, -37.7, -27.7, -13
+	fireDir = Vector3.new(0, 0, -1)
+	slot = function(i)
+		local x = EAST_X - (i - 1) * PITCH
+		local z = i % 2 == 1 and BACK_Z or FRONT_Z
+		return Vector3.new(x, floorAt(x, z, floorY), z), fireDir
+	end
+end
 
 local old = workspace:FindFirstChild("TrainingStations")
 if old then
@@ -542,7 +575,7 @@ for i, info in ipairs(order) do
 	station.Name = "Station_" .. info.Id
 	station:SetAttribute("StationId", info.Id)
 
-	local standPos = Vector3.new(startX + (i - 1) * spacing, floorY, rowZ)
+	local standPos = slot(i)
 	-- built at full size around this point, scaled to BOOTH_SCALE below
 	local standCf = CFrame.lookAt(standPos, standPos + fireDir)
 
@@ -577,6 +610,7 @@ for i, info in ipairs(order) do
 	cannon:ScaleTo(cannon:GetScale() * CANNON_HEIGHT / size.Y)
 	_, size = cannon:GetBoundingBox()
 	local theme = THEMES[info.Id] or THEMES[1]
+	local floorY = standPos.Y -- this booth's own floor
 	local cannonPos = standPos + fireDir * (2.5 + size.Z / 2)
 	local plinthCf = CFrame.lookAt(cannonPos, cannonPos + fireDir) + Vector3.new(0, floorY + PLINTH / 2 - cannonPos.Y, 0)
 	part({ Name = "Plinth", Size = Vector3.new(size.X + 1, PLINTH, size.Z + 0.6), CFrame = plinthCf, Color = dark(theme.Rim, 0.15), CanCollide = false, Parent = station })
@@ -628,6 +662,13 @@ local dirL = Config.LAUNCH_DIRECTION.Unit
 local edge = lobbyPos + dirL * (math.abs(dirL.X) * lobbySize.X / 2 + math.abs(dirL.Z) * lobbySize.Z / 2)
 local trackZ = lobbyPos.Z -- the middle of the water strip
 local cannonSpot = Vector3.new(edge.X, floorY, trackZ) - dirL * 8 -- your cannon's feet, nose at the water
+if newMap then
+	-- the end of the launch dock, nose over the river
+	local d = Config.Map.DockEnd
+	trackZ = d.Z
+	cannonSpot = Vector3.new(d.X, floorAt(d.X, d.Z, d.Y), d.Z)
+	floorY = cannonSpot.Y
+end
 local spotPart = workspace:FindFirstChild("MyCannonSpot") or part({ Name = "MyCannonSpot" })
 spotPart.Size = Vector3.new(1, 0.2, 1)
 spotPart.Transparency = 1
@@ -652,11 +693,11 @@ local old = workspace:FindFirstChild("LaunchZone")
 if old then
 	old:Destroy()
 end
-local zonePos = Vector3.new(cannonSpot.X, floorY + 0.1, trackZ) - dirL * 17
+local zonePos = Vector3.new(cannonSpot.X, floorY + 0.1, trackZ) - dirL * (newMap and 11 or 17)
 -- invisible now: no yellow floor (Alex, Oct 30); walking in still fires you
 local zone = part({
 	Name = "LaunchZone",
-	Size = Vector3.new(16, 0.2, 26),
+	Size = newMap and Vector3.new(8, 0.2, 10) or Vector3.new(16, 0.2, 26), -- new map: the dock is 11 wide
 	CFrame = CFrame.new(zonePos),
 	Color = Color3.fromRGB(255, 200, 40),
 	Transparency = 1,
@@ -688,6 +729,11 @@ boardText.Parent = board
 local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
 if spawn then
 	local p = Vector3.new(zonePos.X, floorY + 0.5, trackZ) - dirL * 30
+	if newMap then
+		-- on the compass plaza, facing the dock
+		local sp = Config.Map.Spawn
+		p = Vector3.new(sp.X, floorAt(sp.X, sp.Z, sp.Y) + 0.5, sp.Z)
+	end
 	spawn.CFrame = CFrame.lookAt(p, p + dirL)
 	spawn.Anchored = true
 end

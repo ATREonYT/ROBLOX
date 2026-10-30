@@ -23,12 +23,12 @@ local NAME = "CartoonStuds"
 local TILE = 2 -- studs per stud
 local SIDES = { Enum.NormalId.Top, Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }
 
-local map = workspace.map1b.StoneSkipMap
+-- the old map only: Alex's new low-poly island (CannonMap) keeps its own look, studs suit blocky parts
+local oldMap = workspace:FindFirstChild("map1b")
+local map = oldMap and oldMap:FindFirstChild("StoneSkipMap")
 local roots = {}
-if SCOPE == "all" then
-	table.insert(roots, map)
-else
-	table.insert(roots, map.Lobby)
+if map then
+	table.insert(roots, SCOPE == "all" and map or map.Lobby)
 end
 for _, n in ipairs({ "TrainingStations", "EggStands", "AreaBorders", "LaunchZone" }) do
 	if workspace:FindFirstChild(n) then

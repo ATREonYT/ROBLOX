@@ -42,7 +42,33 @@ Config.LAUNCH_BASE_SPEED = 180
 Config.LAUNCH_SPEED_PER_SQRT = 1.6
 Config.LAUNCH_MAX_SPEED = 1900
 Config.LAUNCH_ANGLE = 30
-Config.LAUNCH_DIRECTION = Vector3.new(-1, 0, 0) -- zones run along -X
+Config.LAUNCH_DIRECTION = Vector3.new(1, 0, 0) -- the river runs along +X from the dock (CannonMap)
+
+-- Alex's map (mapeg.glb, packed by tools/map/pack_map.py and imported as Workspace.CannonMap). Map units are
+-- studs and the tools keep its own coordinates, so these points are read straight off the model.
+Config.Map = {
+	Root = "CannonMap",
+	River = "03_River", -- the water meshes; flights skim their surface
+	Stages = "02_Stages", -- slices named <stage>_<nn>, e.g. 05_Shipwreck_Bay_03
+	Sky = "04_Sky_Kingdom",
+	WaterY = -0.5, -- the river's surface
+	LobbyCenter = Vector3.new(-56, 2, 0), -- the sand island inside the palisade
+	LobbySize = Vector3.new(100, 36, 80), -- lobby orbs fall somewhere in 80% of this, on open ground
+	Spawn = Vector3.new(-60, 2.5, 0), -- the compass plaza
+	DockEnd = Vector3.new(14, 2.5, 0), -- your cannon stands here, nose over the water
+	-- stage name and where it starts along the river (X), from the map; the area walls go here
+	StageStarts = {
+		{ "Meadow Pond", 0 }, { "Mushroom Grove", 100 }, { "Sandy Shore", 233 }, { "Lighthouse Point", 400 },
+		{ "Shipwreck Bay", 620 }, { "Skull Rock", 905 }, { "Red Mesa", 1276 }, { "Ancient Ruins", 1760 },
+		{ "Maple Woods", 2388 }, { "Fortress Walls", 3204 }, { "Igloo Camp", 4264 }, { "Aurora Peaks", 5644 },
+		{ "Crystal Caverns", 7436 }, { "Volcano Core", 9763 }, { "Sky Kingdom", 12780 },
+	},
+}
+-- the map's walkable floor pieces (sand, plaza, paths, dock), by their names from the map file
+function Config.Map.IsGround(name)
+	return string.find(name, "^Island_") ~= nil or string.find(name, "^Plaza_") ~= nil
+		or string.find(name, "^Path_") ~= nil or string.find(name, "^Dock_") ~= nil
+end
 Config.LAUNCH_COOLDOWN = 2
 Config.FLIGHT_TIMEOUT = 25
 Config.SKIP_FIRST_HOP = 0.2 -- first arc out of the cannon, as a share of the whole distance
@@ -109,17 +135,27 @@ function Config.UpgradeCost(upgrade, level)
 end
 
 ---------------------------------------------------------------------------
--- Worlds (teleports along the map). Zone = model name in StoneSkipMap.
+-- Worlds (teleports along the map). Zone = a stage name in Config.Map.StageStarts.
 ---------------------------------------------------------------------------
 Config.Worlds = {
-	{ Id = 1, Name = "Spawn",        Zone = "Lobby",                            Rebirths = 0,  Color = Color3.fromRGB(110, 200, 90) },
-	{ Id = 2, Name = "Pirate Cove",  Zone = "Pirate_Cove_1_SHIPWRECK_BAY",      Rebirths = 1,  Color = Color3.fromRGB(70, 140, 210) },
-	{ Id = 3, Name = "Desert",       Zone = "Desert_Canyon_1_RED_MESA",         Rebirths = 3,  Color = Color3.fromRGB(220, 150, 70) },
-	{ Id = 4, Name = "Autumn",       Zone = "Autumn_Fortress_1_MAPLE_WOODS",    Rebirths = 5,  Color = Color3.fromRGB(220, 110, 50) },
-	{ Id = 5, Name = "Snow",         Zone = "Frozen_Valley_1_IGLOO_CAMP",       Rebirths = 8,  Color = Color3.fromRGB(150, 210, 255) },
-	{ Id = 6, Name = "Lava",         Zone = "Volcanic_Island_1_CRYSTAL_CAVERNS", Rebirths = 10, Color = Color3.fromRGB(230, 70, 40) },
-	{ Id = 7, Name = "Sky Kingdom",  Zone = "Sky_Kingdom",                      Rebirths = 15, Color = Color3.fromRGB(255, 220, 120) },
+	{ Id = 1, Name = "Spawn",        Zone = "Lobby",           Rebirths = 0,  Color = Color3.fromRGB(110, 200, 90) },
+	{ Id = 2, Name = "Pirate Cove",  Zone = "Shipwreck Bay",   Rebirths = 1,  Color = Color3.fromRGB(70, 140, 210) },
+	{ Id = 3, Name = "Desert",       Zone = "Red Mesa",        Rebirths = 3,  Color = Color3.fromRGB(220, 150, 70) },
+	{ Id = 4, Name = "Autumn",       Zone = "Maple Woods",     Rebirths = 5,  Color = Color3.fromRGB(220, 110, 50) },
+	{ Id = 5, Name = "Snow",         Zone = "Igloo Camp",      Rebirths = 8,  Color = Color3.fromRGB(150, 210, 255) },
+	{ Id = 6, Name = "Lava",         Zone = "Volcano Core",    Rebirths = 10, Color = Color3.fromRGB(230, 70, 40) },
+	{ Id = 7, Name = "Sky Kingdom",  Zone = "Sky Kingdom",     Rebirths = 15, Color = Color3.fromRGB(255, 220, 120) },
 }
+
+-- where a stage starts along the river, or nil
+function Config.StageStart(name)
+	for _, st in ipairs(Config.Map.StageStarts) do
+		if st[1] == name then
+			return st[2]
+		end
+	end
+	return nil
+end
 
 ---------------------------------------------------------------------------
 -- Pets. Boost = multiplier added to Power (0.1 = +10%).

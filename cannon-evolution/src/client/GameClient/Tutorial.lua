@@ -882,7 +882,8 @@ return function(ctx)
 				local pad = stationPad(1)
 				local padPos = pad and pad.Position or (feet + facing * 30)
 				-- the booths open towards the middle of the lobby, whichever side they stand on
-				local open = pad and padPos.Z > -144.27 and -1 or 1
+				local centreZ = workspace:FindFirstChild(Config.Map.Root) and Config.Map.LobbyCenter.Z or -144.27
+				local open = pad and padPos.Z > centreZ and -1 or 1
 				local startCF = cam.CFrame
 				local camPath = {
 					startCF.Position,

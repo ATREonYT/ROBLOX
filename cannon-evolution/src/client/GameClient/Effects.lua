@@ -327,8 +327,9 @@ return function(ctx)
 	local waterParams = RaycastParams.new()
 	waterParams.FilterType = Enum.RaycastFilterType.Include
 	local function waterAt(pos, fallback)
+		local newMap = workspace:FindFirstChild(Config.Map.Root)
 		local mapRoot = workspace:FindFirstChild("map1b")
-		local ocean = mapRoot and mapRoot:FindFirstChild("Ocean", true)
+		local ocean = newMap and newMap:FindFirstChild(Config.Map.River) or mapRoot and mapRoot:FindFirstChild("Ocean", true)
 		if not ocean then
 			return fallback
 		end
@@ -489,7 +490,7 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- the floor at the start of the water, behind the Launch Zone (BuildWorld1 places MyCannonSpot)
 	local spotPart = workspace:FindFirstChild("MyCannonSpot")
-	local MY_CANNON_SPOT = spotPart and spotPart.Position or Vector3.new(-145, 8.45, -144.25)
+	local MY_CANNON_SPOT = spotPart and spotPart.Position or Config.Map.DockEnd
 	local MY_CANNON_HEIGHT = 9
 	local myCannon = { Model = nil, Id = nil, Home = nil, Muzzle = nil }
 
@@ -665,7 +666,7 @@ return function(ctx)
 			d += len
 			len *= Config.SKIP_DECAY
 		end
-		local water = waterAt(pointAt(distance), 5.5)
+		local water = waterAt(pointAt(distance), workspace:FindFirstChild(Config.Map.Root) and Config.Map.WaterY or 5.5)
 		for i, h in ipairs(hops) do
 			h[4] = i == 1 and origin.Y or hops[i - 1][5]
 			h[5] = waterAt(pointAt(h[2]), water) + BALL_RADIUS
@@ -856,7 +857,9 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Water: Stone Skipping style light lines drifting over the ocean
 	-----------------------------------------------------------------------
-	local ocean = workspace:FindFirstChild("map1b") and workspace.map1b:FindFirstChild("Ocean", true)
+	local newMap = workspace:FindFirstChild(Config.Map.Root)
+	local ocean = newMap and newMap:FindFirstChild(Config.Map.River)
+		or workspace:FindFirstChild("map1b") and workspace.map1b:FindFirstChild("Ocean", true)
 	if ocean and Icons.Caustics and Icons.Caustics ~= "" then
 		local layers = {}
 		for _, p in ipairs(ocean:GetDescendants()) do

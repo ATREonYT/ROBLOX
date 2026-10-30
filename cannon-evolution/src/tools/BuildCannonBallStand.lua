@@ -271,11 +271,36 @@ for _, p in ipairs(model:GetChildren()) do
 	lo = Vector3.new(math.min(lo.X, p.Position.X), 0, math.min(lo.Z, p.Position.Z))
 	hi = Vector3.new(math.max(hi.X, p.Position.X), 0, math.max(hi.Z, p.Position.Z))
 end
-local move = CFrame.new(AT) * CFrame.Angles(0, math.pi, 0) * CFrame.new(-(lo + hi) / 2)
+local centre, turn = (lo + hi) / 2, math.pi
+-- New map (CannonMap): on your right as you face the dock, between the plaza and the pirate ship,
+-- facing the plaza. Its own stone deck is left out (the island is the floor) and it is built a little
+-- smaller so it fits between them; the spot is checked by tools/map/plan_check.py.
+local newMap = workspace:FindFirstChild("CannonMap")
+local NEW_SPOT, NEW_SCALE, BASE_Y = Vector3.new(-81.8, 0, 16.9), 0.78, 9.33 -- BASE_Y: the apron's underside
+local floor
+if newMap then
+	for _, p in ipairs(model:GetChildren()) do
+		if p.Name == "PlazaDeck" or p.Name == "PlazaKerb" then
+			p:Destroy()
+		end
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { newMap }
+	local hit = workspace:Raycast(NEW_SPOT + Vector3.new(0, 200, 0), Vector3.new(0, -400, 0), params)
+	floor = hit and hit.Position.Y or 2
+	AT = Vector3.new(NEW_SPOT.X, floor - BASE_Y, NEW_SPOT.Z)
+	centre, turn = Vector3.new(-125, 0, -106.7), 0 -- the apron's middle; it already faces -Z, the plaza
+end
+local move = CFrame.new(AT) * CFrame.Angles(0, turn, 0) * CFrame.new(-centre)
 for _, p in ipairs(model:GetChildren()) do
 	p.CFrame = move * p.CFrame
 end
 model.WorldPivot = move * model.WorldPivot
+if newMap then
+	model.WorldPivot = CFrame.new(NEW_SPOT.X, floor, NEW_SPOT.Z)
+	model:ScaleTo(NEW_SCALE) -- BallStand.lua reads this back with GetScale()
+end
 -- the pads' state parts start purple (the game turns the picked one green, BallStand.lua)
 local PURPLE = { StateGlow = Color3.fromRGB(190, 170, 255), StateMat = Color3.fromRGB(150, 130, 240), StateStrip = Color3.fromRGB(95, 55, 200), StateShade = Color3.fromRGB(75, 40, 165), StateTop = Color3.fromRGB(115, 75, 225) }
 for _, p in ipairs(model:GetChildren()) do
