@@ -172,6 +172,7 @@ dim.Activated:Connect(ctx.Close)
 local ANSWERED = {
 	BuyCannon = true, EquipCannon = true, BuyUpgrade = true, BuyBoost = true, ClaimMission = true,
 	ClaimDaily = true, ClaimPlaytime = true, EquipPet = true, EquipBest = true, RedeemCode = true, Teleport = true,
+	BuyBall = true, EquipBall = true,
 }
 function ctx.Request(action, ...)
 	local result, message = State.Request(action, ...)
