@@ -217,8 +217,8 @@ end
 -- Sounds live in Sfx (pooled, preloaded, one volume group per kind). Kit.Sounds stays empty on purpose: the
 -- Sound Effects setting goes through Sfx.setEnabled, not through per-sound volumes.
 Kit.Sounds = {}
-function Kit.playSound(name)
-	Sfx.play(name)
+function Kit.playSound(name, pitch) -- pitch: optional multiplier (map thread, rising skip sounds)
+	Sfx.play(name, pitch)
 end
 Kit.Sfx = Sfx
 
