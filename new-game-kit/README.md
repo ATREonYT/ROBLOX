@@ -55,6 +55,8 @@ Compared across our games (`cannon-evolution/`, `huzz-valley/`) and the October 
 | Leaderboards | All-time and weekly boards, budget-checked | `src/Server/Leaderboard.luau` |
 | Settings for phones and comfort | Saved toggles (flashes, shake, music, hide others' pets, low graphics); the game's effects read `Setting_<key>` | `src/Server/Settings.luau` |
 | Big readable numbers | 1.53K, 25.5M, 12T (never rounds up) | `src/Shared/Format.luau` |
+| Level-ups every second (premium) | The grind split into 20 small levels per run, with a Level Up! [xN] streak; display only | `src/Shared/Progression.luau` (not wired into the kit HUD yet) |
+| HUD revealed by the tutorial (premium) | Only the bar at join; each step brings its button, spotlit; the rest pops in after the first rebirth | `src/Shared/HudStages.luau` (not wired into the kit HUD yet) |
 
 **Not in the kit (build per game, see the blueprint):** the core action (launching, running, rolling, stealing),
 carrying and stealing between players, worlds and gates, trading, auto-roll, friend bonuses, group rewards,
@@ -75,7 +77,7 @@ music and sound assets.
 
 ## Folder map
 - `src/Server/`: one ModuleScript per system (`ServerScriptService/Kit`). `src/Main.server.luau` wires them in order.
-- `src/Shared/`: Net (remotes and validators), Odds, Format, HudBuilder, Signal, Janitor, RateLimit, Feedback (`ReplicatedStorage/Kit`).
+- `src/Shared/`: Net (remotes and validators), Odds, Format, HudBuilder, Signal, Janitor, RateLimit, Feedback, Progression, HudStages (`ReplicatedStorage/Kit`).
 - `src/Client/KitClient.client.luau`: the HUD's behaviour. `src/StarterGui/KitHUD.rbxm`: the HUD parts.
 - `src/Config/`: `GameConfig` (display-safe) and `GameSecrets` (server only).
 - `tests/`: specs. `tools/`: offline checks, play-through, place build, previews (`tools/preview/`), new-game script.

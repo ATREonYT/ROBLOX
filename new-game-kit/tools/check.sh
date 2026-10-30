@@ -7,4 +7,8 @@ LUNE=${LUNE:-lune}
 "$LUNE" run tools/test.luau || exit 1
 "$LUNE" run tools/sim.luau || exit 1
 "$LUNE" run tools/build_place.luau || exit 1
+# The repo-wide kid-safe check (vault note 14 §8), when this game sits in the repo
+if [ -f ../tools/kidsafe_check.py ]; then
+	python3 ../tools/kidsafe_check.py "$(basename "$(pwd)")" || exit 1
+fi
 echo "[check] all green"
