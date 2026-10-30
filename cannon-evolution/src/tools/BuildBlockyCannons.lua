@@ -72,15 +72,9 @@ local function make(name, s)
 	-- carriage
 	local body = P("Body", Vector3.new(2.6, 1, 3.8), CFrame.new(0, 1.5, -0.3), s.Body)
 	P("BodyTrim", Vector3.new(2.8, 0.3, 4), CFrame.new(0, 2.05, -0.3), dark(s.Body, 0.3))
-	local trail = Instance.new("WedgePart")
-	trail.Name = "Trail"
-	trail.Size = Vector3.new(1.8, 0.9, 2)
-	trail.CFrame = CFrame.new(0, 0.95, -3.1) * CFrame.Angles(0, math.pi, 0)
-	trail.Color = s.Body
-	trail.Material = Enum.Material.SmoothPlastic
-	trail.Anchored = true
-	trail.CanCollide = false
-	trail.Parent = m
+	-- stepped trail down to the ground behind
+	P("Trail", Vector3.new(1.8, 0.8, 1.2), CFrame.new(0, 1.2, -2.7), s.Body)
+	P("Trail", Vector3.new(1.4, 0.6, 1.1), CFrame.new(0, 0.6, -3.5), dark(s.Body, 0.2))
 	for _, x in ipairs({ -1, 1 }) do
 		-- stepped cheeks holding the barrel
 		P("Cheek", Vector3.new(0.45, 1.3, 2.6), CFrame.new(x * 1.05, 2.8, 0), s.Body)
