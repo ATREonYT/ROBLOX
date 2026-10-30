@@ -230,6 +230,15 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 				glow("Edge", Vector3.new(0.3, 0.2, L - 2), s * (W / 2 - 0.15), 0.62, (front + back) / 2, c)
 			end
 		end
+		if theme.Neon then
+			-- the top tiers also glow on the floor itself: a neon line just inside the floor's edge
+			local iw, il = W - 4.6, L - 4.6
+			for _, s in ipairs({ -1, 1 }) do
+				glow("FloorLine", Vector3.new(0.25, 0.08, il), s * iw / 2, 0.72, (front + back) / 2, c)
+			end
+			-- across the back only; the front already has its edge glow and the start mat
+			glow("FloorLine", Vector3.new(iw + 0.25, 0.08, 0.25), 0, 0.72, (front + back) / 2 + il / 2, c)
+		end
 	end
 
 	-- start mat: white outline and the two marks
