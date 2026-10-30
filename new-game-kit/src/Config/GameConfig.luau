@@ -127,8 +127,8 @@ Config.Daily = {
 
 Config.Rebirth = {
 	currency = "Coins",
-	baseCost = 10000,
-	growth = 1.5,
+	baseCost = 250, -- first rebirth ~1.5 min, each run ~1.5x longer (tools/pace.luau)
+	growth = 3.5,
 	bonusPerRebirth = 0.25,
 	maxBulk = 1000,
 }
@@ -136,7 +136,7 @@ Config.Rebirth = {
 -- Levels bought with Coins. "stat" upgrades are read with Upgrades.Value.
 Config.Upgrades = {
 	upgrades = {
-		Income = { name = "More Coins/s", currency = "Coins", baseCost = 50, growth = 1.35, maxLevel = 100, effect = { kind = "stat", perLevel = 1, base = 0 } },
+		Income = { name = "More Coins/s", currency = "Coins", baseCost = 100, growth = 1.35, maxLevel = 100, effect = { kind = "stat", perLevel = 1, base = 0 } },
 		CoinBoost = { name = "Coin Boost", currency = "Coins", baseCost = 200, growth = 1.6, maxLevel = 50, effect = { kind = "multiplier", currency = "Coins", perLevel = 0.1 } },
 		WalkSpeed = { name = "Walk Speed", currency = "Coins", baseCost = 100, growth = 1.5, maxLevel = 20, keepOnRebirth = false, effect = { kind = "stat", perLevel = 1, base = 16 } },
 	},
@@ -180,6 +180,20 @@ Config.Settings = {
 		HideOtherPets = false,
 		LowGraphics = false,
 	},
+}
+
+-- Pacing targets (seconds from join, a fresh save, a kid tapping 4 times a second), checked by
+-- tools/pace.luau within `tolerance` (vault note 12 §3, note 14 §7; Stone Skipping's first
+-- rebirth is at ~85 s). Tune the prices above until it passes.
+Config.Pacing = {
+	botTapsPerSecond = 4,
+	egg = "Basic",
+	firstPayoff = 1,
+	firstPurchase = 30,
+	firstHatch = 60,
+	rebirths = { 90, 240, 480, 840 }, -- each run about 1.5-1.8x longer than the last
+	tolerance = 0.3,
+	saveAt = 0.6,
 }
 
 -- The HUD arrives a piece at a time (vault note 14 §2, like Stone Skipping's tutorial):

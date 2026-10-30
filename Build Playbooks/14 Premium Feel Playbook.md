@@ -121,7 +121,11 @@ The target for each family's core feel. A build passes when each number is withi
 **Measure, don't guess:** to fill a [I] cell, record the hit (30 fps), sample it at 2–4 fps as in [[Teardown - Stone Skipping]], and put the number here with [M].
 
 ## 8. Checks that run on every build
-- **The kit's offline checks** (`sh tools/check.sh` in the game folder): unit specs, the pacing sim, the place build, then the kid-safe check.
+- **The kit's offline checks** (`sh tools/check.sh` in the game folder): unit specs, the systems sim, the **pacing check**, the place build (which also checks the HUD stage names), then the kid-safe check.
+- **Pacing check** (`tools/pace.luau`, new Oct 31): a bot that taps 4 times a second and buys sensibly plays the Config economy from a fresh save. It fails unless every beat in `Config.Pacing` lands on time: first payoff, purchase and hatch by their deadlines, and each rebirth within 30% of its target (90 s, 240 s, 480 s, 840 s from join).
+  - It caught the kit's own first rebirth at **18 minutes**, with later runs getting *shorter*.
+  - Retuned (rebirth 250 coins ×3.5 per rebirth, the first Income upgrade 100): the rebirths now land at 106, 262, 485 and 953 s, and every beat passes.
+  - It's a model of the server's formulas: change both together.
 - **Kid-safe check** (`python3 tools/kidsafe_check.py [game]` from the repo root, new Oct 31). It fails on:
   - more than one ProcessReceipt in a game, or one in client code;
   - a client granting on a purchase-finished event;
