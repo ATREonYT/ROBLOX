@@ -85,17 +85,21 @@ local function freshSaveTest()
 	return IS_STUDIO and workspace:GetAttribute("FreshSaveTest") == true
 end
 
+-- returns true once the data is safely stored (or there is nothing to store in the fresh-save test)
 local function save(player)
 	local profile = profiles[player]
-	if not (profile and profile.Loaded) or freshSaveTest() then
-		return
+	if not (profile and profile.Loaded) then
+		return false
+	end
+	if freshSaveTest() then
+		return true
 	end
 	profile.Data.LastOnline = os.time()
-	withRetries(function()
+	return (withRetries(function()
 		store:UpdateAsync("Player_" .. player.UserId, function()
 			return profile.Data
 		end)
-	end)
+	end))
 end
 
 ---------------------------------------------------------------------------
@@ -998,15 +1002,18 @@ MarketplaceService.ProcessReceipt = function(receipt)
 	if not profile then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	if profile.Data.Receipts[receipt.PurchaseId] then
-		return Enum.ProductPurchaseDecision.PurchaseGranted
+	-- answer "granted" only once the purchase is stored; a retry of a purchase already given but not yet
+	-- stored just tries the save again, so it is never given twice
+	if not profile.Data.Receipts[receipt.PurchaseId] then
+		local key = productById[receipt.ProductId]
+		if not key or not grantProduct(player, key) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		profile.Data.Receipts[receipt.PurchaseId] = true
 	end
-	local key = productById[receipt.ProductId]
-	if not key or not grantProduct(player, key) then
+	if not save(player) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	profile.Data.Receipts[receipt.PurchaseId] = true
-	save(player)
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
