@@ -32,8 +32,9 @@ local floorY = hit and hit.Position.Y or lobbyPos.Y - lobbySize.Y / 2
 -- Stations sit in a row along the lobby's long (X) axis, firing towards the side wall
 local fireDir = Vector3.new(0, 0, SIDE)
 local rowZ = lobbyPos.Z + SIDE * 8 -- stand points, just off the centre path
-local spacing = (lobbySize.X - 40) / (#Config.Stations - 1)
-local startX = lobbyPos.X - (lobbySize.X - 40) / 2
+-- booths stand side by side like Alex's pictures, the row centred in the lobby
+local spacing = 15
+local startX = lobbyPos.X - spacing * (#Config.Stations - 1) / 2
 
 local old = workspace:FindFirstChild("TrainingStations")
 if old then
@@ -261,7 +262,7 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 	end
 
 	-- back wall
-	local H = 10
+	local H = 14
 	local pz = back - 0.6
 	if theme.Style == "stall" then
 		-- wooden fair stall: planks, posts, bunting
@@ -500,7 +501,7 @@ table.sort(order, function(a, b)
 	local kb = b.Pass and math.huge or b.Rebirths
 	return ka < kb
 end)
-local boothWidth = math.min(13, spacing - 4)
+local boothWidth = spacing - 1
 
 for i, info in ipairs(order) do
 	local station = Instance.new("Model")
