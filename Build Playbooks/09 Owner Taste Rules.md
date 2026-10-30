@@ -19,6 +19,7 @@ Back to [[00 Build Router]] · Process: [[08 Few-Prompt Game Building with AI]]
 - **Mobile matters:** they ask whether it loads fast on phones. Keep part counts low (the Cannon map went from 9,162 to 187 pieces) and test the phone view.
 
 ## UI
+- **A minimal UI on first load, revealed step by step through the tutorial** (Oct 31, from the Stone Skipping recording). See [[13 Beat Stone Skipping - Tutorial, Pacing and Feel]].
 - **Small, premium buttons.** They asked for smaller ones twice on Huzz Valley, and the Cannon UI went 18% smaller (phones keep near full size). Start small.
 - **Their mockups and UI kits are the authority** (`<game>/design/`). Lay menus out like their pictures; use their kit colours and icons as they are.
 - **No emoji in the final UI**, only their icons. Emoji are a placeholder until the icon IDs are uploaded.
@@ -39,11 +40,14 @@ Back to [[00 Build Router]] · Process: [[08 Few-Prompt Game Building with AI]]
 - **Glow that grows with tier**, but bloom nearly off. No floating orbs (they turned them off).
 - **Water:** real ripple rings, not flat neon discs; turquoise water.
 - **Tutorial arrows like the reference:** a chain of white notched arrowheads with a thin dark outline, flat to the screen, floating straight to the target, evenly spaced.
+- **The launch: the ball flies upward, left to right across the screen** (Oct 31): a side-on flight camera, not a chase from behind.
 - **Area walls show only while you fly**, so their names don't stack in the lobby.
 
 ## Pace and progression
 - **The reference pace is the target.** Its first rebirth comes at ~85 s; Cannon's Config now aims at ~1.5 min of training (an earlier build took ~7 min). Hood's World 1 was set to 25–30 minutes on their call (Oct 27).
 - **"Coming soon" instead of fake features:** Auto Collect shows Coming soon until it's real.
+
+- **Pacing and power gain modelled on Stone Skipping** (Oct 31): something levels up about every second while training.
 
 ## Working with them
 - They write short messages and change direction. For a real direction change, ask ONE multiple-choice question; otherwise act, then report.

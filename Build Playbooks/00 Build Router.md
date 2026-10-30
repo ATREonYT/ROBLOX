@@ -24,6 +24,7 @@ Playbooks in this folder:
 - [[06 Beat the Hits - Polish Playbook]]: ⭐ the feel and polish spec (launch by phase, juice sizes, sound, HUD, onboarding numbers, feel test)
 - [[07 Borrow List - Game by Game]]: every good idea from Stone Skipping, Steal an Egg, the +1 family and Grow a Garden, with how to build it
 - [[Teardown - Stone Skipping]]: the +1 reference measured frame by frame (first 90 s, one throw, HUD, shop, retention)
+- [[13 Beat Stone Skipping - Tutorial, Pacing and Feel]]: ⭐ hide the UI until the tutorial needs it, a level-up every second, spotlight the one button, chained reward beats (Oct 31 recording)
 - [[08 Few-Prompt Game Building with AI]]: how to get a good game in a few prompts (what works, templates, self-checks)
 - [[09 Owner Taste Rules]]: the owner's calls on UI, sound, look and pace; load for every look/feel job
 - [[10 Map Design Playbook]]: ⭐ popular-quality maps from a short prompt (4 layout templates, 12-zone theme kit, scale numbers, build recipe, checklist)

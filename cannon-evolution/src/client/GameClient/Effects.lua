@@ -654,7 +654,9 @@ return function(ctx)
 		local flag = new("Part", props)
 		flag.Size, flag.Color = Vector3.new(3.6, 2.4, 0.15), Kit.Colors.Yellow
 		local flagAt = foot + Vector3.new(0, 10.6, 0) + Config.LAUNCH_DIRECTION.Unit:Cross(Vector3.yAxis) * 1.85
-		flag.CFrame = CFrame.lookAt(flagAt, flagAt + Config.LAUNCH_DIRECTION.Unit) -- faces the chase camera
+		-- faces the side-on flight camera, waving back from the pole
+		flagAt += Config.LAUNCH_DIRECTION.Unit * -1.85 - Config.LAUNCH_DIRECTION.Unit:Cross(Vector3.yAxis) * 1.85
+		flag.CFrame = CFrame.lookAt(flagAt, flagAt + Config.LAUNCH_DIRECTION.Unit:Cross(Vector3.yAxis))
 		local float = new("Part", props)
 		float.Shape, float.Size, float.Color = Enum.PartType.Cylinder, Vector3.new(0.6, 2.2, 2.2), Color3.fromRGB(240, 70, 60)
 		float.CFrame = CFrame.new(foot + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90))
@@ -688,6 +690,16 @@ return function(ctx)
 		return m
 	end
 
+	-- the side-on flight camera, in studs: how far off the ball's line, how far ahead of the ball it looks,
+	-- how high above the aim point it sits, and how high the ball climbs before the camera rises with it
+	local SIDE_DIST = 70
+	local SIDE_LEAD = 30
+	local SIDE_HEIGHT = 10
+	local SIDE_RISE = 26
+	local function smoothstep(x)
+		x = math.clamp(x, 0, 1)
+		return x * x * (3 - 2 * x)
+	end
 	Remotes.LaunchPlayer.OnClientEvent:Connect(function(owner, origin, distance, duration, cash, rareId)
 		local mine = owner == player
 		local settings = State.Data and State.Data.Settings
@@ -831,7 +843,7 @@ return function(ctx)
 		local bumpAt = -10
 		-- a new best gets a slow-motion finish: its last 0.4 s play at 0.4x (only then, so it stays special)
 		local slowFrom = (mine and best > 0 and reported > best) and duration - 0.4 or math.huge
-		local camPos = nil
+		local camLift = nil
 		local conn
 		conn = RunService.Heartbeat:Connect(function(dt)
 			local t = os.clock() - start
@@ -868,21 +880,29 @@ return function(ctx)
 			ball.CFrame = CFrame.new(p) * CFrame.Angles(0, 0, -dist / BALL_RADIUS)
 
 			if mine then
-				-- low chase camera, eased in so the first frame isn't a jump
-				local want = p - dir * 16 + Vector3.new(0, 4.5, 0)
-				-- the first half second the camera sits behind the cannon and the ball shoots away from it,
-				-- then it catches up (quick, but you see the launch); after that the usual tight chase
-				camPos = camPos or (origin - dir * 9 + Vector3.new(0, 5, 0))
-				camPos = camPos:Lerp(want, math.min(dt * math.min(12, 2 + t * 24), 1))
-				if t > 1.2 and (camPos - want).Magnitude > 40 then
-					camPos = want
-				end
+				-- side-on camera (Alex, Oct 31: "balls fly upward, left to right on screen"): it stands off the
+				-- river's bank and the ball drifts across the screen from the left third to the right third over
+				-- the flight while the water streams past. Along the river the camera is tied to the ball's
+				-- progress (no lag, so fast shots stay in frame). It only rises once the ball is SIDE_RISE studs
+				-- up, so the climb out of the cannon reads as going up the screen.
+				local side = dir:Cross(Vector3.yAxis).Unit
+				local lift = math.max(p.Y - water, 0)
+				camLift = camLift and camLift + (lift - camLift) * math.min(dt * 4, 1) or 0
+				local lead = SIDE_LEAD - SIDE_LEAD * 1.8 * smoothstep(u)
+				local aim = Vector3.new(p.X, water + math.max(camLift - SIDE_RISE, 0) + 3, p.Z) + dir * lead
+				local want = aim + side * SIDE_DIST + Vector3.new(0, SIDE_HEIGHT, 0)
+				-- for the first moment it holds beside the cannon and the ball shoots off to the right, then it
+				-- swings along and locks on
+				local startAim = Vector3.new(origin.X, water + 3, origin.Z) + dir * SIDE_LEAD
+				local startPos = startAim + side * SIDE_DIST + Vector3.new(0, SIDE_HEIGHT, 0)
+				local b = math.clamp((t - 0.3) / 0.5, 0, 1)
+				b = b * b * (3 - 2 * b)
 				local shake = Vector3.zero
 				if t < 0.25 then
 					local a = (1 - t / 0.25) * 0.5
 					shake = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * a
 				end
-				cam.CFrame = CFrame.lookAt(camPos + shake, p + dir * 40 + Vector3.new(0, 1, 0))
+				cam.CFrame = CFrame.lookAt(startPos:Lerp(want, b) + shake, startAim:Lerp(aim, b))
 
 				local shown = math.floor(dist)
 				if shown ~= lastShown then
