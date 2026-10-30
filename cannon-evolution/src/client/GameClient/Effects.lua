@@ -728,6 +728,10 @@ return function(ctx)
 			setSideMenu(false)
 			cam.CameraType = Enum.CameraType.Scriptable
 			Kit.playSound("Launch")
+			-- a small kick of the lens on the shot, back in a quarter second
+			local fov = cam.FieldOfView
+			cam.FieldOfView = fov + 7
+			TweenService:Create(cam, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { FieldOfView = fov }):Play()
 		end
 		splash(origin, true)
 
@@ -737,14 +741,20 @@ return function(ctx)
 		local conn
 		conn = RunService.Heartbeat:Connect(function(dt)
 			local u = math.clamp((os.clock() - start) / duration, 0, 1)
-			local dist = distance * (1 - (1 - u) ^ 2) -- fast out of the cannon, slows to a stop
+			-- a steady speed, slowing only at the end (Stone Skipping's throw keeps ~60 m/s and eases
+			-- out in its last second): constant to CRUISE, then the speed falls evenly to zero
+			local CRUISE = 0.8
+			local speed = 2 * distance / (1 + CRUISE)
+			local dist = u <= CRUISE and speed * u
+				or speed * CRUISE + speed * ((u - CRUISE) - (u - CRUISE) ^ 2 / (2 * (1 - CRUISE)))
 			while hops[hopIndex + 1] and dist >= hops[hopIndex][2] do
 				local done = hops[hopIndex]
 				hopIndex += 1
 				local p = pointAt(done[2])
 				splash(Vector3.new(p.X, done[5] - BALL_RADIUS + 0.2, p.Z), hopIndex == 2)
 				if mine then
-					Kit.playSound("Skip")
+					-- each skip a semitone higher than the last, up to seven (vault: rising pitch reads as a streak)
+					Kit.playSound("Skip", 2 ^ (math.min(hopIndex - 2, 7) / 12))
 					local share = math.floor(cash * done[2] / distance) - paid
 					if share > 0 then
 						paid += share
@@ -947,4 +957,6 @@ return function(ctx)
 
 	-- the cannonball stand in the lobby (its own module)
 	task.spawn(require(script.Parent.BallStand), ctx)
+	-- the LAUNCH button over your head in the Launch Zone (its own module)
+	task.spawn(require(script.Parent.LaunchButton), ctx)
 end

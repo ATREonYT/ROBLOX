@@ -694,7 +694,7 @@ if old then
 	old:Destroy()
 end
 local zonePos = Vector3.new(cannonSpot.X, floorY + 0.1, trackZ) - dirL * (newMap and 11 or 17)
--- invisible now: no yellow floor (Alex, Oct 30); walking in still fires you
+-- invisible now: no yellow floor (Alex, Oct 30); standing in it shows the LAUNCH button
 local zone = part({
 	Name = "LaunchZone",
 	Size = newMap and Vector3.new(8, 0.2, 10) or Vector3.new(16, 0.2, 26), -- new map: the dock is 11 wide
@@ -722,7 +722,7 @@ board.MaxDistance = 250
 board.Parent = zone
 local boardText = label:Clone()
 boardText.Rotation = 0
-boardText.Text = "WALK IN TO LAUNCH!"
+boardText.Text = "LAUNCH ZONE" -- stand here and the LAUNCH button pops up (LaunchButton.lua)
 boardText.Parent = board
 
 -- Spawn in the lobby, a short walk behind the Launch Zone, facing your cannon and the water

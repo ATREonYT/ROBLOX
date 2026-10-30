@@ -476,22 +476,19 @@ local function launch(player)
 	if hum then
 		hum.WalkSpeed = walkSpeed
 	end
-	-- step back out of the Launch Zone so walking in again throws again
-	if root and launchZone and (root.Position - launchZone.Position).Magnitude < 20 then
-		-- the zone's lobby side (the cannon and the water are on the other side), facing the cannon
-		local back = launchZone.Position - Config.LAUNCH_DIRECTION.Unit * (launchZone.Size.X / 2 + 6) + Vector3.new(0, 3, 0)
-		player.Character:PivotTo(CFrame.lookAt(back, back + Config.LAUNCH_DIRECTION.Unit))
-	end
+	-- you stay in the Launch Zone and the LAUNCH button comes back (Stone Skipping's THROW zone)
 	player:SetAttribute("Launching", false)
 end
 
-if launchZone then
-	launchZone.Touched:Connect(function(hit)
-		local player = Players:GetPlayerFromCharacter(hit.Parent)
-		if player and not training[player] and not player:GetAttribute("Launching") then
-			task.spawn(launch, player)
-		end
-	end)
+-- Like Stone Skipping's THROW zone: stand in the Launch Zone and press the LAUNCH button over your
+-- head (LaunchButton.lua). The server checks you really are in the zone.
+local function inLaunchZone(player)
+	local root = getRoot(player)
+	if not (root and launchZone) then
+		return false
+	end
+	local rel = launchZone.CFrame:PointToObjectSpace(root.Position)
+	return math.abs(rel.X) <= launchZone.Size.X / 2 + 2 and math.abs(rel.Z) <= launchZone.Size.Z / 2 + 2 and rel.Y > -3 and rel.Y < 10
 end
 
 -- Auto Launch gamepass
@@ -1273,6 +1270,13 @@ end)
 -- Request router
 ---------------------------------------------------------------------------
 local actions = {
+	Launch = function(player)
+		if training[player] or player:GetAttribute("Launching") or not inLaunchZone(player) then
+			return false
+		end
+		task.spawn(launch, player)
+		return true
+	end,
 	StopTraining = function(player)
 		stopTraining(player, true)
 		return true

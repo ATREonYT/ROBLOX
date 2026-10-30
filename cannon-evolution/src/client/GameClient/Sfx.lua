@@ -133,7 +133,8 @@ local function build(name)
 	return pool
 end
 
-function Sfx.play(name)
+-- pitch (optional) raises or lowers this one play, e.g. 2 ^ (n / 12) for n semitones up
+function Sfx.play(name, pitch)
 	local pool = pools[name]
 	if pool == nil then
 		pool = build(name)
@@ -155,9 +156,11 @@ function Sfx.play(name)
 	lastPlayed[name] = now
 	local s = pool.sounds[pool.next]
 	pool.next = pool.next % #pool.sounds + 1
+	local speed = pool.pitch
 	if pool.spread > 0 then
-		s.PlaybackSpeed = pool.pitch * (1 + (math.random() * 2 - 1) * pool.spread)
+		speed *= 1 + (math.random() * 2 - 1) * pool.spread
 	end
+	s.PlaybackSpeed = speed * (pitch or 1)
 	s.TimePosition = 0
 	s.Volume = pool.volume
 	s:Play()
