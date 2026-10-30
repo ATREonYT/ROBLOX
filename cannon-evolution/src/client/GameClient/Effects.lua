@@ -822,7 +822,7 @@ return function(ctx)
 			-- a punch of the lens on the shot (wide, then settles in half a second), so the launch feels fast
 			local fov = cam.FieldOfView
 			cam.FieldOfView = fov + 14
-			TweenService:Create(cam, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { FieldOfView = fov }):Play()
+			TweenService:Create(cam, TweenInfo.new(0.45, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { FieldOfView = fov }):Play()
 		end
 		splash(origin, true)
 
