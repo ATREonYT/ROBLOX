@@ -69,6 +69,10 @@ local FALLBACK = {
 }
 
 local GAP = 0.06 -- a button sound asked for again this soon is the same press
+-- The big "ta-da" sounds never stack: a rebirth that also unlocks a cannon would otherwise play two stings at once
+local STINGS = { Reward = true, Rebirth = true, Hatch = true }
+local STING_GAP = 1.5
+local lastSting = -math.huge
 local POOL = 3
 
 local folder = Instance.new("Folder")
@@ -123,6 +127,12 @@ function Sfx.play(name)
 	local now = os.clock()
 	if LEVEL[name] and LEVEL[name][3] == "Interface" and lastPlayed[name] and now - lastPlayed[name] < GAP then
 		return
+	end
+	if STINGS[name] then
+		if now - lastSting < STING_GAP then
+			return
+		end
+		lastSting = now
 	end
 	lastPlayed[name] = now
 	local s = pool.sounds[pool.next]
