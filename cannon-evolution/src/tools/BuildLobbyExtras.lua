@@ -61,10 +61,7 @@ for i, id in ipairs(EGGS) do
 	local stand = Instance.new("Model")
 	stand.Name = id .. "Egg"
 	stand:SetAttribute("EggId", id)
-	local base = part({ Name = "Base", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.2, 9, 9), CFrame = CFrame.new(pos + Vector3.new(0, 0.6, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(235, 235, 245), Material = Enum.Material.SmoothPlastic, Parent = stand })
-	part({ Name = "Ring", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.3, 9.6, 9.6), CFrame = base.CFrame * CFrame.new(-0.05, 0, 0), Color = EGG_COLORS[id], Material = Enum.Material.Neon, CanCollide = false, Parent = stand })
-	part({ Name = "Top", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.3, 7, 7), CFrame = CFrame.new(pos + Vector3.new(0, 1.3, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color = EGG_COLORS[id], Material = Enum.Material.SmoothPlastic, Parent = stand })
-
+	-- no pad or neon ring: the egg models bring their own stand (Alex, Oct 30)
 	local template = game.ReplicatedStorage.Eggs:FindFirstChild(egg.Model)
 	local eggModel
 	if template then
@@ -88,8 +85,9 @@ for i, id in ipairs(EGGS) do
 	end
 	eggModel.Name = "Egg"
 	local _, eggSize = eggModel:GetBoundingBox()
-	eggModel:PivotTo(CFrame.new(pos + Vector3.new(0, 2.2 + eggSize.Y / 2, 0)))
+	eggModel:PivotTo(CFrame.new(pos + Vector3.new(0, eggSize.Y / 2, 0)))
 	eggModel.Parent = stand
+	local base = eggModel:FindFirstChildWhichIsA("BasePart", true)
 
 	local glow = Instance.new("PointLight")
 	glow.Color = EGG_COLORS[id]
@@ -98,7 +96,7 @@ for i, id in ipairs(EGGS) do
 	glow.Parent = base
 	local board = Instance.new("BillboardGui")
 	board.Size = UDim2.fromScale(7, 2.6) -- sized in studs, so neighbouring signs never overlap from afar
-	board.StudsOffsetWorldSpace = Vector3.new(0, 11.5, 0)
+	board.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
 	board.LightInfluence = 0
 	board.MaxDistance = 120
 	board.Adornee = base

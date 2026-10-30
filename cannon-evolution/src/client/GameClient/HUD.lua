@@ -44,13 +44,13 @@ return function(ctx)
 	local function pressable(btn, icon)
 		local s = Kit.scale(btn)
 		btn.MouseEnter:Connect(function()
-			Kit.tween(s, 0.12, { Scale = 1.07 })
+			Kit.tween(s, 0.3, { Scale = 1.07 }, Enum.EasingStyle.Back)
 			if icon then
 				Kit.tween(icon, 0.12, { Rotation = -8 })
 			end
 		end)
 		btn.MouseLeave:Connect(function()
-			Kit.tween(s, 0.12, { Scale = 1 })
+			Kit.tween(s, 0.3, { Scale = 1 }, Enum.EasingStyle.Sine)
 			if icon then
 				Kit.tween(icon, 0.12, { Rotation = 0 })
 			end

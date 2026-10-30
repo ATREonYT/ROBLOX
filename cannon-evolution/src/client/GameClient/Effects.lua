@@ -646,7 +646,7 @@ return function(ctx)
 		if not stands then
 			return
 		end
-		-- eggs spin and bob over their stands
+		-- eggs turn slowly on their own stands (no bob: the stand stays on the floor)
 		local spinners = {}
 		for _, stand in ipairs(stands:GetChildren()) do
 			local egg = stand:FindFirstChild("Egg")
@@ -657,7 +657,7 @@ return function(ctx)
 		RunService.Heartbeat:Connect(function()
 			local t = os.clock()
 			for _, e in ipairs(spinners) do
-				e.Model:PivotTo(e.Home * CFrame.new(0, math.sin(t * 2 + e.Phase) * 0.5, 0) * CFrame.Angles(0, t * 0.8 + e.Phase, 0))
+				e.Model:PivotTo(e.Home * CFrame.Angles(0, t * 0.6 + e.Phase, 0))
 			end
 		end)
 		while true do

@@ -252,8 +252,20 @@ function Kit.button(props)
 	Kit.corner(props.Radius or 8, btn)
 	Kit.stroke(props.StrokeSize or 3, nil, btn)
 	local grad = Kit.gradient(colors[1], colors[2], btn)
-	-- flat studded face like the Stone Skipping buttons (no gloss, no lip)
+	-- flat studded face like the Stone Skipping buttons, with a thin darker
+	-- strip along the bottom so it still reads as pressable (cartoony-ui skill)
 	Kit.litePattern(btn, { Texture = "StudTile", ImageTransparency = 0.82, TileSize = 30, ZIndex = props.ZIndex or 1 })
+	local lip = new("Frame", {
+		Name = "Lip",
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.72,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 5),
+		Position = UDim2.new(0, 0, 1, -5),
+		ZIndex = props.ZIndex or 1,
+		Parent = btn,
+	})
+	Kit.corner(props.Radius or 8, lip)
 
 	local content = new("Frame", {
 		Name = "Content",
@@ -286,11 +298,12 @@ function Kit.button(props)
 	})
 
 	local s = Kit.scale(btn)
+	-- hover: 0.3 s Back out, leave: 0.3 s Sine out (cartoony-ui skill)
 	btn.MouseEnter:Connect(function()
-		Kit.tween(s, 0.12, { Scale = 1.05 })
+		Kit.tween(s, 0.3, { Scale = 1.05 }, Enum.EasingStyle.Back)
 	end)
 	btn.MouseLeave:Connect(function()
-		Kit.tween(s, 0.12, { Scale = 1 })
+		Kit.tween(s, 0.3, { Scale = 1 }, Enum.EasingStyle.Sine)
 	end)
 	btn.MouseButton1Down:Connect(function()
 		Kit.tween(s, 0.06, { Scale = 0.92 })

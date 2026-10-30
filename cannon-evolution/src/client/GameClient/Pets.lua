@@ -1,6 +1,6 @@
 --[[
-	Pets panel. "Eggs" tab: egg list + animated egg showcase with chances and
-	1 / 3 / 10 buttons. "Pets" tab: inventory with equip, equip best, delete.
+	Pets panel. "Eggs" tab: one studded egg card with its pets, their odds
+	and the 1 / 3 / 10 buttons; arrows step through the eggs. "Pets" tab: inventory with equip, equip best, delete.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,86 +27,68 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Eggs
 	-----------------------------------------------------------------------
+	-- one big studded card per egg, laid out like the Stone Skipping egg card
+	-- (references/image-10.webp): egg on the left, its pets in a row with the
+	-- odds under each in the rarity colour, buy buttons bottom right.
+	-- < > arrows step through the eggs.
 	local selectedEgg = "Starter"
 	local function buildEggs()
 		Kit.clear(content)
-		local list = Kit.scrolling({ Parent = content, Size = UDim2.new(0, 230, 1, 0), ZIndex = 24 })
-		Kit.list(list, 6)
-		for i, egg in ipairs(Config.Eggs) do
-			local row = Kit.card({ Button = true, Color = egg.Id == selectedEgg and Kit.Colors.Yellow or Kit.Colors.Card, Size = UDim2.new(1, -8, 0, 58), Order = i, Parent = list, ZIndex = 25 })
-			local m = model("Eggs", egg.Model)
-			if m then
-				Kit.viewport(row, m, { Size = UDim2.fromOffset(52, 52), Position = UDim2.fromOffset(32, 29), ZIndex = 26 })
-			else
-				Kit.text({ Text = "🥚", Scaled = true, Stroke = false, FrameSize = UDim2.fromOffset(44, 44), Position = UDim2.fromOffset(8, 7), ZIndex = 26, Parent = row })
-			end
-			Kit.text({ Text = egg.Name, Size = 22, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(1, -70, 1, 0), Position = UDim2.fromOffset(64, 0), ZIndex = 27, Parent = row })
-			row.Activated:Connect(function()
-				Kit.playSound("Click")
-				selectedEgg = egg.Id
-				buildEggs()
-			end)
-		end
-
 		local egg = Config.GetEgg(selectedEgg)
 		local color = EGG_COLORS[egg.Id] or Kit.Colors.Purple
-		local show = Kit.card({ Color = color, Color2 = color:Lerp(Color3.new(0, 0, 0), 0.6), Position = UDim2.fromOffset(242, 0), Size = UDim2.new(1, -242, 1, 0), ZIndex = 24, Parent = content })
-		Kit.movingPattern(show, { Texture = "Stripes", Speed = 30, ImageTransparency = 0.5, ZIndex = 24 })
-		if egg.Currency ~= "Cash" then
+		local show = Kit.card({ Color = color:Lerp(Color3.new(1, 1, 1), 0.1), Color2 = color:Lerp(Color3.new(0, 0, 0), 0.35), Size = UDim2.fromScale(1, 1), ZIndex = 24, Radius = 10, Parent = content })
+		Kit.litePattern(show, { Texture = "StudTile", ImageTransparency = 0.82, ZIndex = 24 })
+		if egg.Currency == "Robux" then
 			Kit.rainbowStroke(show, 4)
 		end
-		Kit.sparkles(show, 8)
-		Kit.text({ Text = string.upper(egg.Name), Size = 46, StrokeSize = 4, FrameSize = UDim2.new(1, 0, 0, 54), Position = UDim2.fromOffset(0, 6), ZIndex = 30, Parent = show })
+		Kit.sparkles(show, 6)
+		Kit.text({ Text = egg.Name, Size = 62, StrokeSize = 5, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.6, 0, 0, 70), Position = UDim2.new(0.38, 0, 0, 14), ZIndex = 30, Parent = show })
+		local priceLine = egg.Currency == "Robux" and "Exclusive egg" or ((egg.Currency == "Gems" and "Gems " or "$") .. Config.Format(egg.Price) .. " each")
+		Kit.text({ Text = priceLine, Size = 26, StrokeSize = 3, Color = Color3.fromRGB(255, 236, 120), AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.6, 0, 0, 30), Position = UDim2.new(0.38, 2, 0, 80), ZIndex = 30, Parent = show })
 
-		-- egg showcase (left half)
-		local art = new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 60), Size = UDim2.new(0.45, 0, 1, -150), ZIndex = 25, Parent = show })
-		Kit.rays(art, { Size = UDim2.fromOffset(360, 360), Color = Color3.new(1, 1, 1), Transparency = 0.65, ZIndex = 25 })
+		-- the egg, big, on the left
+		local art = new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(24, 30), Size = UDim2.new(0.34, 0, 1, -60), ZIndex = 25, Parent = show })
+		Kit.rays(art, { Size = UDim2.fromOffset(380, 380), Color = Color3.new(1, 1, 1), Transparency = 0.75, ZIndex = 25 })
 		local m = model("Eggs", egg.Model)
 		if m then
-			local vp = Kit.viewport(art, m, { Size = UDim2.fromScale(0.95, 0.95), Spin = 25, ZIndex = 27 })
+			local vp = Kit.viewport(art, m, { Size = UDim2.fromScale(1, 1), Spin = 25, Zoom = 0.85, ZIndex = 27 })
 			Kit.bob(vp, 6, 1.8)
-		else
-			local e = Kit.text({ Text = "🥚", Scaled = true, Stroke = false, FrameSize = UDim2.fromOffset(160, 160), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 27, Parent = art })
-			Kit.bob(e, 6, 1.8)
 		end
 
-		-- possible pets (right half)
-		local pets = Kit.card({ Color = Color3.fromRGB(255, 90, 90), Color2 = Color3.fromRGB(200, 40, 60), Position = UDim2.new(0.47, 0, 0, 62), Size = UDim2.new(0.51, 0, 1, -160), ZIndex = 26, Parent = show })
-		Kit.text({ Text = "Possible Pets", Size = 24, FrameSize = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 4), ZIndex = 28, Parent = pets })
-		local grid = new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(6, 34), Size = UDim2.new(1, -12, 1, -40), ZIndex = 27, Parent = pets })
-		Kit.grid(grid, UDim2.fromOffset(78, 88), 6)
+		-- its pets in a row, odds underneath in the rarity colour
+		local row = new("Frame", { BackgroundTransparency = 1, Position = UDim2.new(0.38, 0, 0, 122), Size = UDim2.new(0.6, 0, 0, 170), ZIndex = 27, Parent = show })
+		Kit.list(row, 6, true, Enum.HorizontalAlignment.Left)
 		local total = 0
 		for _, entry in ipairs(egg.Pets) do
 			total += entry[2]
 		end
+		local cellW = math.floor(math.min(118, 500 / #egg.Pets))
 		for i, entry in ipairs(egg.Pets) do
 			local petInfo = Config.Pets[entry[1]]
 			local rarity = Config.Rarities[petInfo.Rarity]
-			local cell, _ = Kit.card({ Color = rarity.Color, Order = i, Parent = grid, ZIndex = 28, Radius = 10, StrokeSize = 2.5 })
+			local cell = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(cellW, 170), LayoutOrder = i, ZIndex = 27, Parent = row })
 			local pm = model("Pets", entry[1])
 			if pm then
-				Kit.viewport(cell, pm, { Size = UDim2.new(1, -6, 0, 60), Position = UDim2.new(0.5, 0, 0, 33), Spin = 40, ZIndex = 29 })
-			else
-				Kit.icon("Favorite", { Size = UDim2.fromOffset(44, 44), Position = UDim2.new(0.5, 0, 0, 30), Anchor = Vector2.new(0.5, 0.5), ZIndex = 29, Parent = cell })
+				Kit.viewport(cell, pm, { Size = UDim2.fromOffset(cellW + 10, cellW + 10), Position = UDim2.new(0.5, 0, 0, 60), Spin = 35, Zoom = 0.9, ZIndex = 28 })
 			end
 			local chance = entry[2] / total * 100
-			Kit.text({ Text = (chance < 1 and string.format("%.1f", chance) or string.format("%d", math.floor(chance + 0.5))) .. "%", Size = 20, FrameSize = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0.5, 0, 1, -2), Anchor = Vector2.new(0.5, 1), ZIndex = 30, Parent = cell })
+			local odds = Kit.text({ Text = (chance < 1 and string.format("%.1f", chance) or string.format("%d", math.floor(chance + 0.5))) .. "%", Size = 32, StrokeSize = 4, Color = (petInfo.Rarity == "Common" or petInfo.Rarity == "Uncommon" or petInfo.Rarity == "Secret" or petInfo.Rarity == "Mythic") and Color3.new(1, 1, 1) or rarity.Color, FrameSize = UDim2.new(1, 10, 0, 36), Position = UDim2.new(0.5, 0, 0, 122), Anchor = Vector2.new(0.5, 0), ZIndex = 30, Parent = cell })
 			if petInfo.Rarity == "Secret" or petInfo.Rarity == "Mythic" then
-				Kit.rainbowStroke(cell, 2.5)
+				local g = new("UIGradient", { Parent = odds })
+				Kit.rainbowFill(g)
 			end
 		end
 
-		-- buy buttons
-		local buttons = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.new(1, -24, 0, 70), ZIndex = 28, Parent = show })
-		Kit.list(buttons, 12, true)
+		-- buy buttons, bottom right (x10 rainbow, x3 yellow, x1 green)
+		local buttons = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -22), Size = UDim2.new(0.6, 0, 0, 66), ZIndex = 28, Parent = show })
+		Kit.list(buttons, 14, true, Enum.HorizontalAlignment.Right)
 		local function eggButton(order, label, priceText, color, icon, onClick, rainbow)
-			local b = Kit.button({ Text = priceText, Icon = icon, Color = color, Size = UDim2.fromOffset(170, 58), TextSize = 28, IconSize = 28, Order = order, ZIndex = 30, Parent = buttons, OnClick = onClick })
+			local b = Kit.button({ Text = priceText, Icon = icon, Color = color, Size = UDim2.fromOffset(176, 62), TextSize = 32, IconSize = 32, Order = -order, ZIndex = 30, Parent = buttons, OnClick = onClick })
 			b.Instance.Name = "EggBuy" .. order -- the tutorial points at EggBuy1
-			Kit.text({ Text = label, Size = 22, FrameSize = UDim2.fromOffset(100, 24), Position = UDim2.fromOffset(-6, -16), AlignX = Enum.TextXAlignment.Left, ZIndex = 35, Parent = b.Instance })
+			Kit.text({ Text = label, Size = 28, StrokeSize = 3.5, FrameSize = UDim2.fromOffset(60, 28), Position = UDim2.fromOffset(-10, -20), AlignX = Enum.TextXAlignment.Left, ZIndex = 35, Parent = b.Instance })
 			if rainbow then
 				Kit.rainbowFill(b.Gradient)
 			end
-			Kit.shine(b.Instance, 3 + order * 0.4)
 			return b
 		end
 		if egg.Currency == "Robux" then
@@ -120,17 +102,37 @@ return function(ctx)
 				ctx.Request("Purchase", "Product", egg.Products[10])
 			end, true)
 		else
-			local symbol = egg.Currency == "Gems" and "💎 " or "💵 "
-			eggButton(1, "x1", symbol .. Config.Format(egg.Price), "Green", nil, function()
+			local icon = egg.Currency == "Gems" and "Gem" or "Cash"
+			eggButton(1, "x1", Config.Format(egg.Price), "Green", icon, function()
 				ctx.Request("Hatch", egg.Id, 1)
 			end)
-			eggButton(2, "x3", State.Passes.TripleOpen and (symbol .. Config.Format(egg.Price * 3)) or "Gamepass", "Yellow", nil, function()
-				if State.Passes.TripleOpen then
+			if State.Passes.TripleOpen then
+				eggButton(2, "x3", Config.Format(egg.Price * 3), "Yellow", icon, function()
 					ctx.Request("Hatch", egg.Id, 3)
-				else
+				end)
+			else
+				eggButton(2, "x3", "Unlock", "Yellow", "Robux", function()
 					ctx.Request("Purchase", "Pass", "TripleOpen")
-				end
-			end, true)
+				end)
+			end
+		end
+
+		-- step through the eggs
+		local index = 1
+		for i, e in ipairs(Config.Eggs) do
+			if e.Id == selectedEgg then
+				index = i
+			end
+		end
+		for _, dir in ipairs({ -1, 1 }) do
+			Kit.button({
+				Text = dir < 0 and "<" or ">", Color = "Dark", Size = UDim2.fromOffset(44, 70), TextSize = 36,
+				Position = dir < 0 and UDim2.new(0, -14, 0.5, 0) or UDim2.new(1, 14, 0.5, 0), Anchor = Vector2.new(dir < 0 and 0 or 1, 0.5),
+				ZIndex = 36, Parent = show, OnClick = function()
+					selectedEgg = Config.Eggs[(index - 1 + dir) % #Config.Eggs + 1].Id
+					buildEggs()
+				end,
+			})
 		end
 	end
 
