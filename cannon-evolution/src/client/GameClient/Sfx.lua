@@ -62,7 +62,7 @@ local FALLBACK = {
 }
 
 -- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
-local CUT = { Confirm = 0.9, Coin = 0.35 }
+local CUT = { Confirm = 0.9, Coin = 0.35, Splash = 1 } -- Splash: just the hit, not the long drip (Alex: "nothing long")
 
 local GAP = 0.06 -- a button sound asked for again this soon is the same press
 -- The big "ta-da" sounds never stack: a rebirth that also unlocks a cannon would otherwise play two stings at once
