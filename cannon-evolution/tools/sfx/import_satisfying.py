@@ -13,8 +13,12 @@ Sources (both free for commercial games, no credit needed):
     pack: "tactile elastic taps with a quick friendly rebound", made for kids, playful mobile and casual games.
     Measured (huzz-valley/tools/sfx/measure_sfx.py): soft 4 ms attacks, centroid 300-1000 Hz, almost nothing above
     4 kHz, every file the same loudness (-19 dB RMS) - warm and round, no hiss.
-  * Kenney (CC0) via soundcn: casino chips-collide-1 for Coin (a short real chip clink, 85 ms) and impact
-    impactSoft_heavy_000 for the cannon Shot (a deep soft "thoomp", 90 Hz).
+  * Kenney (CC0) via soundcn: casino chips-collide-1 for Coin (a short real chip clink, 85 ms).
+  * Shot (Alex, Oct 30: "make the shooting sound way better, like an actual cannon"): two Kenney sci-fi CC0 files
+    layered, like a real cannon: explosionCrunch_000 is the sharp "crack" at the front (2 ms attack), with its
+    hiss cut above 3.5 kHz; lowFrequency_explosion_001 is the deep "boom" body (91 Hz), with a small bass lift.
+    Cut to 0.8 s and faded from 0.35 s, so it's a quick punch and not a long rumble. Measured: 0% above 4 kHz,
+    centroid 117 Hz, peak under 0 dB. (The old soft impactSoft_heavy_000 thump didn't sound like a cannon.)
 """
 import os
 import subprocess
@@ -33,8 +37,9 @@ PICKS = {
     "Rebirth": ("uisfx", "rubber/level-up"),
     "Unlock": ("uisfx", "rubber/unlock"),
     "Coin": ("kenney", "kenney_casino-audio/chips-collide-1"),
-    "Shot": ("kenney", "kenney_impact-sounds/impactSoft_heavy_000"),
 }
+SHOT = [("kenney_sci-fi-sounds/explosionCrunch_000", "lowpass=f=3500,volume=0.6"),
+        ("kenney_sci-fi-sounds/lowFrequency_explosion_001", "bass=g=3:f=90,volume=0.36")]
 # GameClient/Sfx LEVEL (keep in step); the uisfx files sit ~6 dB under Kenney's, so their levels are higher
 LEVEL = {"Click": 0.6, "Hover": 0.25, "Open": 0.45, "Close": 0.4, "Confirm": 0.55, "Error": 0.5, "Tab": 0.5,
          "Reward": 0.6, "Rebirth": 0.6, "Unlock": 0.6, "Coin": 0.35, "Shot": 0.6}
@@ -74,6 +79,14 @@ def main():
         run(["ffmpeg", "-y", "-loglevel", "error", "-i", src_path(roots, kind, rel), "-af",
              "aformat=channel_layouts=mono", "-c:a", "libvorbis", "-q:a", "6", os.path.join(out, slot + ".ogg")])
         print("wrote", slot, "from", kind, rel)
+    inputs, parts = [], []
+    for i, (rel, af) in enumerate(SHOT):
+        inputs += ["-i", src_path(roots, "kenney", rel)]
+        parts.append(f"[{i}:a]aformat=channel_layouts=mono,{af}[s{i}]")
+    graph = ";".join(parts) + ";[s0][s1]amix=inputs=2:normalize=0,atrim=0:0.8,afade=t=out:st=0.35:d=0.45[o]"
+    run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", graph, "-map", "[o]", "-c:a", "libvorbis",
+         "-q:a", "6", os.path.join(out, "Shot.ogg")])
+    print("wrote Shot (crack + boom)")
     concat([(os.path.join(out, s + ".ogg"), LEVEL[s], g) for s, g in ORDER],
            os.path.join(game, "previews", "sounds-satisfying.ogg"))
     items = []
