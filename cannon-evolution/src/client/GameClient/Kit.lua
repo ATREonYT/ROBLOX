@@ -891,6 +891,22 @@ function Kit.viewport(parent, model, props)
 	local cam = new("Camera", { FieldOfView = 40, Parent = vp })
 	vp.CurrentCamera = cam
 	local cf, size = clone:GetBoundingBox()
+	-- FitLargest: frame the biggest part (a cannonball) and ignore small bits sticking out around it, so every
+	-- ball fills its card the same amount
+	if props.FitLargest then
+		local best, bestVolume = nil, 0
+		for _, d in ipairs(clone:GetDescendants()) do
+			if d:IsA("BasePart") then
+				local v = d.Size.X * d.Size.Y * d.Size.Z
+				if v > bestVolume then
+					best, bestVolume = d, v
+				end
+			end
+		end
+		if best then
+			cf, size = best.CFrame, best.Size
+		end
+	end
 	local radius = size.Magnitude / 2
 	local dist = radius / math.tan(math.rad(cam.FieldOfView / 2)) * (props.Zoom or 1.05)
 	local center = cf.Position

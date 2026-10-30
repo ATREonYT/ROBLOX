@@ -88,6 +88,16 @@ local ctx = {
 
 local current = nil
 
+-- The Power bar along the bottom steps aside while a panel is open, so it never sits on the panel's buttons (seen
+-- in Play, Oct 30)
+local function showHudBottom(on)
+	local hud = root:FindFirstChild("HUD")
+	local bar = hud and hud:FindFirstChild("PowerBar")
+	if bar then
+		bar.Visible = on
+	end
+end
+
 function ctx.Close()
 	if not current then
 		return
@@ -107,6 +117,7 @@ function ctx.Close()
 		end
 		if not current then
 			dim.Visible = false
+			showHudBottom(true)
 		end
 	end)
 end
@@ -139,6 +150,7 @@ function ctx.Open(name, tab, arg)
 	-- entrance: rises a little from below and pops past full size (Back Out, 0.26 s), from 0.75 not 0:
 	-- a big panel bouncing from nothing is too much (vault "UI Motion Language")
 	panel.Frame.Visible = true
+	showHudBottom(false)
 	local s = Kit.scale(panel.Frame)
 	s.Scale = 0.75
 	panel.Frame.Position = UDim2.fromScale(0.5, 0.6)
