@@ -436,7 +436,8 @@ return function(ctx)
 				local petModel = petsFolder and petsFolder:FindFirstChild(c.Key)
 				local view
 				if petModel then
-					view = Kit.viewport(c.Cell, petModel, { Size = UDim2.fromScale(0.9, 0.9), Spin = 50, ZIndex = 75 })
+					-- facing the camera (no spin), so every pet in a big grid reads at a glance
+					view = Kit.viewport(c.Cell, petModel, { Size = UDim2.fromScale(0.9, 0.9), ZIndex = 75 })
 				else
 					view = Kit.icon("Favorite", { Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 75, Parent = c.Cell })
 				end

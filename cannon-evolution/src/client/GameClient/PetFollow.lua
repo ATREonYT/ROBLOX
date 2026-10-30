@@ -66,14 +66,14 @@ return function(ctx)
 		local e = Instance.new("ParticleEmitter")
 		e.Texture = DUST
 		e.Rate = 0
-		e.Lifetime = NumberRange.new(0.35, 0.55)
+		e.Lifetime = NumberRange.new(0.45, 0.7)
 		e.Speed = NumberRange.new(1.5, 3)
 		e.SpreadAngle = Vector2.new(80, 80)
 		e.Acceleration = Vector3.new(0, 2, 0)
 		e.Drag = 4
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 1.1) })
-		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 1) })
-		e.Color = ColorSequence.new(Color3.fromRGB(235, 225, 205))
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 1.9) })
+		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+		e.Color = ColorSequence.new(Color3.fromRGB(205, 190, 160))
 		e.LightInfluence = 0.6
 		e.LightEmission = 0
 		e.ZOffset = -0.5
@@ -296,7 +296,7 @@ return function(ctx)
 					if landing ~= r.Landing then
 						r.Landing = landing
 						if r.Dust and r.Move > 0.6 and not lowGraphics then
-							r.Dust.Emitter:Emit(g == GAITS.hop and 4 or 2)
+							r.Dust.Emitter:Emit(g == GAITS.hop and 6 or 3)
 						end
 					end
 					local s = math.sin(r.Stride * 2)
