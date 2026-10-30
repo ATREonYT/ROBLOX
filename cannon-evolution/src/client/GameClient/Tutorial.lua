@@ -330,22 +330,21 @@ return function(ctx)
 	-- outline, floating on one straight line from you to the target (not on
 	-- the ground, Alex Oct 30), turned to face the camera, flowing forward.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED = 36, 1.75, 5 -- tip to notch like the reference, no overlap
-	local LEN, HALF, NOTCH, THICK = 1.6, 0.8, 0.55, 0.25 -- dart length, half width, notch depth, thickness
+	local ARROWS, SPACING, FLOW_SPEED = 30, 1.75, 5 -- tip to notch like the reference
+	local LEN, HALF, NOTCH, THICK = 1.6, 0.8, 0.55, 0.12 -- dart length, half width, notch depth, thickness
+	local RIM = 1.22 -- each dart has its own dark copy behind it, this much bigger: its outline
 	local HIDDEN = CFrame.new(0, -500, 0)
 	local arrowFolder = new("Model", { Name = "TutorialArrows" })
-	new("Highlight", {
-		Adornee = arrowFolder, FillTransparency = 1, OutlineColor = Color3.fromRGB(30, 30, 55), OutlineTransparency = 0,
-		DepthMode = Enum.HighlightDepthMode.Occluded, Parent = arrowFolder,
-	})
-	-- each dart is two triangles (tip, barb, notch), each triangle two wedges
+	-- each dart is two triangles (tip, barb, notch), each triangle two wedges, and the same again in dark
+	-- behind it; one shared Highlight outlined the whole chain as a single jagged shape
 	local arrows = {}
 	for i = 1, ARROWS do
 		local wedges = {}
-		for w = 1, 4 do
+		for w = 1, 8 do
 			wedges[w] = new("WedgePart", {
 				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-				Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(246, 246, 252), CFrame = HIDDEN, Parent = arrowFolder,
+				Material = Enum.Material.SmoothPlastic, CFrame = HIDDEN, Parent = arrowFolder,
+				Color = w <= 4 and Color3.fromRGB(246, 246, 252) or Color3.fromRGB(30, 30, 55),
 			})
 		end
 		arrows[i] = wedges
@@ -446,11 +445,16 @@ return function(ctx)
 			local side = dir:Cross(normal)
 			-- grow in near you and shrink into the target
 			local k = 0.35 + 0.65 * math.clamp(math.min((d - 2.5) / 3, (total - 2 - d) / 3), 0, 1)
-			local tip = pos + dir * (LEN / 2 * k)
-			local tail = pos - dir * (LEN / 2 * k)
-			local notch = tail + dir * (NOTCH * k)
-			triangle(tip, tail + side * (HALF * k), notch, wedges[1], wedges[2])
-			triangle(tip, notch, tail - side * (HALF * k), wedges[3], wedges[4])
+			for layer = 0, 1 do
+				local r = layer == 0 and k or k * RIM
+				local c = pos - normal * (layer * THICK * 1.5) -- the dark copy sits just behind
+				local tip = c + dir * (LEN / 2 * r)
+				local tail = c - dir * (LEN / 2 * r)
+				local notch = tail + dir * (NOTCH * r)
+				local w = layer * 4
+				triangle(tip, tail + side * (HALF * r), notch, wedges[w + 1], wedges[w + 2])
+				triangle(tip, notch, tail - side * (HALF * r), wedges[w + 3], wedges[w + 4])
+			end
 		end
 	end
 
