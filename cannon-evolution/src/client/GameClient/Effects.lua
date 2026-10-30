@@ -631,6 +631,29 @@ return function(ctx)
 		placeMyCannon(data.EquippedCannon)
 	end)
 
+	-- a yellow flag on the river where your best throw landed: pass it and it's a NEW BEST
+	local function bestMarker(pos, best)
+		local m = new("Model", { Name = "BestFlag" })
+		local base = waterAt(pos, workspace:FindFirstChild(Config.Map.Root) and Config.Map.WaterY or 5.5)
+		local foot = Vector3.new(pos.X, base, pos.Z) + Config.LAUNCH_DIRECTION.Unit:Cross(Vector3.yAxis) * 7 -- beside the ball's line
+		local props = { Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.SmoothPlastic, Parent = m }
+		local pole = new("Part", props)
+		pole.Shape, pole.Size, pole.Color = Enum.PartType.Cylinder, Vector3.new(12, 0.35, 0.35), Color3.fromRGB(250, 250, 250)
+		pole.CFrame = CFrame.new(foot + Vector3.new(0, 6, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		local flag = new("Part", props)
+		flag.Size, flag.Color = Vector3.new(3.6, 2.4, 0.15), Kit.Colors.Yellow
+		local flagAt = foot + Vector3.new(0, 10.6, 0) + Config.LAUNCH_DIRECTION.Unit:Cross(Vector3.yAxis) * 1.85
+		flag.CFrame = CFrame.lookAt(flagAt, flagAt + Config.LAUNCH_DIRECTION.Unit) -- faces the chase camera
+		local float = new("Part", props)
+		float.Shape, float.Size, float.Color = Enum.PartType.Cylinder, Vector3.new(0.6, 2.2, 2.2), Color3.fromRGB(240, 70, 60)
+		float.CFrame = CFrame.new(foot + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		local tag = new("BillboardGui", { Size = UDim2.fromOffset(170, 56), StudsOffset = Vector3.new(0, 8.5, 0), LightInfluence = 0, AlwaysOnTop = true, Adornee = pole, Parent = m })
+		Kit.text({ Text = "BEST", Size = 22, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0.45, 0), Parent = tag })
+		Kit.text({ Text = commas(best) .. " m", Size = 26, FrameSize = UDim2.new(1, 0, 0.55, 0), Position = UDim2.fromScale(0, 0.45), Parent = tag })
+		m.Parent = workspace
+		return m
+	end
+
 	Remotes.LaunchPlayer.OnClientEvent:Connect(function(owner, origin, distance, duration, cash)
 		local mine = owner == player
 		local settings = State.Data and State.Data.Settings
@@ -638,6 +661,10 @@ return function(ctx)
 			return
 		end
 		local dir = Config.LAUNCH_DIRECTION.Unit
+		-- your best so far, as a flag on the water (the server measures from this origin)
+		local best = mine and State.Data and State.Data.BestDistance or 0
+		local bestFlag = mine and best > 0 and bestMarker(origin + dir * best, best)
+		local passedBest = false
 		-- my shots leave my cannon's muzzle; land on the same spot the server chose
 		local landing = origin + dir * distance
 		local reported = distance -- what the counter counts up to
@@ -784,6 +811,11 @@ return function(ctx)
 					counter.Text = commas(math.floor(shown * reported / distance)) .. " m"
 					counterScale.Scale = 1 + 0.05 * math.sin(os.clock() * 22) * (1 - u)
 				end
+				if bestFlag and not passedBest and dist * reported / distance > best then
+					passedBest = true
+					popBanner("NEW BEST!", Kit.Colors.Yellow)
+					Kit.playSound("Unlock")
+				end
 				local b = borders[nextBorder]
 				if b and dist >= b.At then
 					nextBorder += 1
@@ -808,6 +840,9 @@ return function(ctx)
 				end
 				TweenService:Create(ball, TweenInfo.new(0.8), { Transparency = 1 }):Play()
 				Debris:AddItem(ball, Config.RETURN_DELAY + 1)
+				if bestFlag then
+					Debris:AddItem(bestFlag, Config.RETURN_DELAY + 0.5)
+				end
 			end
 		end)
 	end)
