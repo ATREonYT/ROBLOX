@@ -102,6 +102,9 @@ for i, id in ipairs(EGGS) do
 	eggModel.Name = "Egg"
 	local _, eggSize = eggModel:GetBoundingBox()
 	eggModel:PivotTo(CFrame.new(pos + Vector3.new(0, eggSize.Y / 2, 0)))
+	-- then sit it on the ground: an egg model's pivot isn't always its middle (they floated 3 studs up, Oct 30)
+	local box = eggModel:GetBoundingBox()
+	eggModel:PivotTo(eggModel:GetPivot() + Vector3.new(0, pos.Y - (box.Y - eggSize.Y / 2), 0))
 	eggModel.Parent = stand
 	local base = eggModel:FindFirstChildWhichIsA("BasePart", true)
 
