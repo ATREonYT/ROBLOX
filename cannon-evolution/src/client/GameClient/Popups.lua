@@ -227,7 +227,7 @@ return function(ctx)
 		end
 		okButton(holder, close, "AWESOME!")
 		Kit.confetti(shade, 60)
-		Kit.playSound("Reward")
+		Kit.playSound("Unlock")
 	end
 	function Popups.Unlocked(title, icon, line)
 		queueBig(function(done)

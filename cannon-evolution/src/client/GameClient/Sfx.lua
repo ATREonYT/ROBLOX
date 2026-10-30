@@ -44,6 +44,7 @@ local LEVEL = {
 	Reward = { 0.45, 0, "Effects" },
 	Hatch = { 0.4, 0, "Effects" },
 	Rebirth = { 0.4, 0, "Effects" },
+	Unlock = { 0.45, 0, "Effects" },
 	Shot = { 0.55, 0.04, "Effects" },
 	Launch = { 0.55, 0.03, "Effects" },
 	Skip = { 0.35, 0.08, "Effects" },
@@ -62,11 +63,15 @@ local FALLBACK = {
 }
 
 -- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
-local CUT = { Confirm = 0.9, Coin = 0.35, Splash = 1 } -- Splash: just the hit, not the long drip (Alex: "nothing long")
+-- Alex, Oct 30: "make the earned sounds just quick, nothing long". So rewards stop by 0.7 s at most.
+local CUT = { Confirm = 0.6, Coin = 0.35, Reward = 0.6, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
+
+-- slots that use another slot's sound until they have their own
+local BORROW = { Unlock = "Reward" }
 
 local GAP = 0.06 -- a button sound asked for again this soon is the same press
 -- The big "ta-da" sounds never stack: a rebirth that also unlocks a cannon would otherwise play two stings at once
-local STINGS = { Reward = true, Rebirth = true, Hatch = true }
+local STINGS = { Reward = true, Rebirth = true, Hatch = true, Unlock = true }
 local STING_GAP = 1.5
 local lastSting = -math.huge
 local POOL = 3
@@ -103,6 +108,9 @@ local lastPlayed = {}
 local function build(name)
 	local level = LEVEL[name] or { 0.4, 0, "Effects" }
 	local id = Config.Sounds and Config.Sounds[name]
+	if (not id or id == "") and BORROW[name] then
+		id = Config.Sounds[BORROW[name]] -- a slot without its own sound yet uses its sibling's
+	end
 	local volume, pitch = level[1], 1
 	if not id or id == "" then
 		local fb = FALLBACK[name]

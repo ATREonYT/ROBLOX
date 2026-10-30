@@ -451,6 +451,7 @@ Config.Sounds = {
 	Reward = "rbxassetid://1840076509", -- "Through the Roof (sting)", APMOfficial, 2.25 s: a playful organ sting
 	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
 	Rebirth = "rbxassetid://1840018171",
+	Unlock = "", -- "UNLOCKED!" popup: assets/sfx/Unlock.ogg once uploaded (until then it borrows Reward)
 	Coin = "rbxassetid://15675055424", -- "Roblox_UI_Cute_Pop" (by Roblox), 2.7 s: Sfx plays only its first 0.35 s
 	Shot = "", -- no cartoony cannon boom there (only sci-fi lasers): a low built-in thump until one is picked
 	Launch = "rbxassetid://9125805579", -- "Rising Whoosh Hissing Build Up Ascending Swo (SFX)", ProSoundEffects, 1.14 s
