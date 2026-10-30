@@ -614,6 +614,17 @@ return function(ctx)
 		})
 		smoke:Emit(18)
 		Debris:AddItem(flash, 1.5)
+		-- a ring of air blown out of the muzzle along the shot (Alex, Oct 30: "make the launching animation better")
+		local ring = new("Part", {
+			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+			Shape = Enum.PartType.Cylinder, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(255, 255, 255),
+			Transparency = 0.25, Size = Vector3.new(0.3, 3, 3),
+			CFrame = CFrame.lookAt(muzzle, muzzle + dir) * CFrame.Angles(0, math.rad(90), 0), Parent = workspace,
+		})
+		TweenService:Create(ring, TweenInfo.new(0.35, Enum.EasingStyle.Quad), {
+			Size = Vector3.new(0.1, 11, 11), Transparency = 1, CFrame = ring.CFrame + dir * 6,
+		}):Play()
+		Debris:AddItem(ring, 0.4)
 		return muzzle
 	end
 
@@ -808,10 +819,10 @@ return function(ctx)
 				popBanner(rare.Name .. "!  x" .. rare.Mult .. " CASH", rare.Color)
 				Kit.playSound("Unlock")
 			end
-			-- a small kick of the lens on the shot, back in a quarter second
+			-- a punch of the lens on the shot (wide, then settles in half a second), so the launch feels fast
 			local fov = cam.FieldOfView
-			cam.FieldOfView = fov + 7
-			TweenService:Create(cam, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { FieldOfView = fov }):Play()
+			cam.FieldOfView = fov + 14
+			TweenService:Create(cam, TweenInfo.new(0.5, Enum.EasingStyle.Quint), { FieldOfView = fov }):Play()
 		end
 		splash(origin, true)
 
@@ -859,11 +870,19 @@ return function(ctx)
 			if mine then
 				-- low chase camera, eased in so the first frame isn't a jump
 				local want = p - dir * 16 + Vector3.new(0, 4.5, 0)
-				camPos = camPos and camPos:Lerp(want, math.min(dt * 12, 1)) or want
-				if (camPos - want).Magnitude > 40 then
+				-- the first half second the camera sits behind the cannon and the ball shoots away from it,
+				-- then it catches up (quick, but you see the launch); after that the usual tight chase
+				camPos = camPos or (origin - dir * 9 + Vector3.new(0, 5, 0))
+				camPos = camPos:Lerp(want, math.min(dt * math.min(12, 2 + t * 24), 1))
+				if t > 1.2 and (camPos - want).Magnitude > 40 then
 					camPos = want
 				end
-				cam.CFrame = CFrame.lookAt(camPos, p + dir * 40 + Vector3.new(0, 1, 0))
+				local shake = Vector3.zero
+				if t < 0.25 then
+					local a = (1 - t / 0.25) * 0.5
+					shake = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * a
+				end
+				cam.CFrame = CFrame.lookAt(camPos + shake, p + dir * 40 + Vector3.new(0, 1, 0))
 
 				local shown = math.floor(dist)
 				if shown ~= lastShown then
