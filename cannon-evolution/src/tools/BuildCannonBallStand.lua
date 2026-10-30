@@ -276,5 +276,12 @@ for _, p in ipairs(model:GetChildren()) do
 	p.CFrame = move * p.CFrame
 end
 model.WorldPivot = move * model.WorldPivot
+-- the pads' state parts start purple (the game turns the picked one green, BallStand.lua)
+local PURPLE = { StateGlow = Color3.fromRGB(190, 170, 255), StateMat = Color3.fromRGB(150, 130, 240), StateStrip = Color3.fromRGB(95, 55, 200), StateShade = Color3.fromRGB(75, 40, 165), StateTop = Color3.fromRGB(115, 75, 225) }
+for _, p in ipairs(model:GetChildren()) do
+	if PURPLE[p.Name] then
+		p.Color = (p.Name == "StateTop" and p.Material == Enum.Material.Neon) and Color3.fromRGB(120, 80, 245) or PURPLE[p.Name]
+	end
+end
 model.Parent = workspace
 return #model:GetChildren() .. " parts"

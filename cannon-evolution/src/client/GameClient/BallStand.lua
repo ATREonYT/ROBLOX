@@ -20,12 +20,12 @@ local FADE = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out
 -- pad colours by part: [name] = { picked, not picked }; StateTop comes in a neon and a plain layer
 local GREEN, PURPLE = 1, 2
 local PALETTE = {
-	StateGlow = { Color3.fromRGB(150, 250, 172), Color3.fromRGB(205, 170, 255) },
-	StateMat = { Color3.fromRGB(116, 222, 146), Color3.fromRGB(175, 140, 245) },
-	StateStrip = { Color3.fromRGB(26, 156, 64), Color3.fromRGB(120, 55, 205) },
-	StateShade = { Color3.fromRGB(27, 153, 68), Color3.fromRGB(95, 40, 170) },
-	StateTopNeon = { Color3.fromRGB(64, 220, 104), Color3.fromRGB(170, 95, 255) },
-	StateTop = { Color3.fromRGB(64, 220, 104), Color3.fromRGB(150, 80, 235) },
+	StateGlow = { Color3.fromRGB(150, 250, 172), Color3.fromRGB(190, 170, 255) },
+	StateMat = { Color3.fromRGB(116, 222, 146), Color3.fromRGB(150, 130, 240) },
+	StateStrip = { Color3.fromRGB(26, 156, 64), Color3.fromRGB(95, 55, 200) },
+	StateShade = { Color3.fromRGB(27, 153, 68), Color3.fromRGB(75, 40, 165) },
+	StateTopNeon = { Color3.fromRGB(64, 220, 104), Color3.fromRGB(120, 80, 245) },
+	StateTop = { Color3.fromRGB(64, 220, 104), Color3.fromRGB(115, 75, 225) },
 }
 
 return function(ctx)
@@ -80,8 +80,9 @@ return function(ctx)
 				wrap.PrimaryPart = m
 				m = wrap
 			end
+			-- the ball itself BALL_SIZE tall; rings or bits round it may stick out a little
 			local _, size = m:GetBoundingBox()
-			m:ScaleTo(m:GetScale() * BALL_SIZE / math.max(size.X, size.Y, size.Z))
+			m:ScaleTo(m:GetScale() * math.min(BALL_SIZE / size.Y, BALL_SIZE * 1.6 / math.max(size.X, size.Z)))
 		else
 			-- cartoony stand-in: ball, a band round the middle, a cap on top and a soft shine
 			m = Instance.new("Model")
@@ -120,8 +121,8 @@ return function(ctx)
 		slot.Model.Parent = folder
 
 		-- name, bonus and price over the ball
-		local anchor = new("Part", { Name = "Label_" .. info.Id, Size = Vector3.one * 0.2, Transparency = 1, Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CFrame = CFrame.new(slot.Base + Vector3.new(0, BALL_SIZE / 2 + 1.4, 0)), Parent = folder })
-		local bb = new("BillboardGui", { Size = UDim2.fromScale(5, 2), LightInfluence = 0, MaxDistance = 70, Parent = anchor })
+		local anchor = new("Part", { Name = "Label_" .. info.Id, Size = Vector3.one * 0.2, Transparency = 1, Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CFrame = CFrame.new(slot.Base + Vector3.new(0, BALL_SIZE / 2 + 0.9, 0)), Parent = folder })
+		local bb = new("BillboardGui", { Size = UDim2.fromScale(3.6, 1.3), LightInfluence = 0, MaxDistance = 60, Parent = anchor })
 		local name = new("TextLabel", { Size = UDim2.fromScale(1, 0.45), BackgroundTransparency = 1, Font = Enum.Font.FredokaOne, TextScaled = true, Text = info.Name, TextColor3 = Color3.new(1, 1, 1), Parent = bb })
 		new("UIStroke", { Thickness = 2, Color = Color3.fromRGB(25, 15, 40), Parent = name })
 		slot.Status = new("TextLabel", { Size = UDim2.fromScale(1, 0.4), Position = UDim2.fromScale(0, 0.5), BackgroundTransparency = 1, Font = Enum.Font.FredokaOne, TextScaled = true, Text = "", TextColor3 = Kit.Colors.Yellow, Parent = bb })
