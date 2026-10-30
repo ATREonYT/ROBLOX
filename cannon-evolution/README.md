@@ -10,7 +10,7 @@ Everything lives in `src/`. I install it straight into your open Studio place wh
 | `src/shared/Icons.lua` | ReplicatedStorage > **Icons** (ModuleScript) |
 | `src/server/GameServer.server.lua` | ServerScriptService > **GameServer** (Script) |
 | `src/client/GameClient/init.client.lua` | StarterPlayerScripts > **GameClient** (LocalScript) |
-| `src/client/GameClient/*.lua` (all others) | ModuleScripts **inside** GameClient, same names (Kit, State, Popups, HUD, Effects, Shop, Cannons, Pets, Rebirth, Worlds, Upgrades, Missions, Rewards, Leaderboard, Settings) |
+| `src/client/GameClient/*.lua` (all others) | ModuleScripts **inside** GameClient, same names (Kit, Sfx, State, Popups, HUD, Effects, Shop, Cannons, Pets, Rebirth, Worlds, Upgrades, Missions, Rewards, Leaderboard, Settings) |
 | `src/tools/BuildLobbyExtras.lua` | Command Bar, once. Builds the 4 egg stands by the Grand Cannon and the see-through area borders along the track (already run) |
 | `src/tools/BuildRebirthSigns.lua` | Command Bar, once. Hangs a rebirth sign on the wall over each training area (rebirths needed, Power multiplier, locked/unlocked). Run it again after BuildWorld1, which brings back the old floating signs (already run) |
 | `src/tools/BuildCannonBallStand.lua` | Command Bar, once. The 2-tier cannonball pedestal on the right wall of the lobby, built part for part from `models/GunStand_2Tiers.glb` (already run) |
@@ -26,7 +26,7 @@ Everything lives in `src/`. I install it straight into your open Studio place wh
 
 1. **Gamepasses and products**: create them on the Creator Hub and paste the ids into `Config.Passes` and `Config.Products` in GameConfig. While an id is 0, purchases are free test buys in Studio and show "Soon" in the live game.
 2. **Icons**: upload `icons/*.png` (Asset Manager > Bulk Import) and paste each `rbxassetid://` into Icons.lua. Until then the UI shows emoji fallbacks and the moving backgrounds use gradient stripes.
-3. **Sounds** (optional): put ids in `Config.Sounds`.
+3. **Sounds**: the button sounds are in `assets/sfx/UI_*.ogg` (Kenney Interface Sounds, CC0; why each one: `tools/sfx/import_kenney.py`, listen: `previews/ui-sounds.ogg`). Upload them with Asset Manager > Bulk Import and paste each id into `Config.Sounds`. Until then Roblox's built-in sounds stand in, soft and low. Hatch already plays "Magic Burst 2" from Roblox's free licensed library.
 4. Game Settings > Security: turn on **Studio Access to API Services** so saving works in Studio.
 
 ## How launching works

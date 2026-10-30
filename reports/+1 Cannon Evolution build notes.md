@@ -54,3 +54,7 @@ Meadow Pond -152, Mushroom Grove -279, Sandy Shore -443, Lighthouse Point -659, 
 - Real cannon GLBs to replace the placeholders, the 5th egg, and the gamepass and product ids.
 - Upload the icons and paste the ids into Icons.lua.
 - Note: testing gave Alex's own save 2 rebirths and the Iron Cannon.
+
+## UI sounds and motion pass (Oct 30)
+- Sounds: `GameClient/Sfx` plays every sound by name (pooled, preloaded, Interface/Effects SoundGroups, the Sound Effects setting mutes both). Button sounds are 7 Kenney CC0 files in `assets/sfx` (picked by measurement, `tools/sfx/import_kenney.py`), waiting on Alex's upload; built-in stand-ins until then. Hatch = "Magic Burst 2" (Roblox licensed library, 9116384799). Shot/Launch/Skip/Coin/Reward/Rebirth still need licensed picks (search the Toolbox, creator ProSoundEffects or APMOfficial).
+- Motion (vault "UI Motion Language", "Squash Stretch", "Reward Moments"): panels enter 0.26 s Back from 0.75 and rising, exit 0.14 s Quad In; cards cascade in; buttons squash instantly and spring back with the label sinking onto the lip; numbers roll up with a green flash and coin tick; toasts pop with a tilt; reward prizes land one by one; eggs swell before they burst; badges pop when they appear; buy/claim answers Confirm or Error.

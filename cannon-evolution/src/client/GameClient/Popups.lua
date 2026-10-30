@@ -44,11 +44,17 @@ return function(ctx)
 			ZIndex = 81,
 			Parent = toasts,
 		})
-		Kit.pop(label, 1.3)
+		-- in: pops up from small with an overshoot and a little tilt that settles; out: lifts and fades
+		local s = Kit.scale(label)
+		s.Scale = 0.4
+		label.Rotation = -4
+		Kit.tween(s, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+		Kit.tween(label, 0.4, { Rotation = 0 }, Enum.EasingStyle.Elastic)
 		task.delay(2.6, function()
-			Kit.tween(label, 0.35, { TextTransparency = 1 })
-			Kit.tween(label:FindFirstChildOfClass("UIStroke"), 0.35, { Transparency = 1 })
-			task.wait(0.4)
+			Kit.tween(s, 0.3, { Scale = 0.85 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			Kit.tween(label, 0.3, { TextTransparency = 1 })
+			Kit.tween(label:FindFirstChildOfClass("UIStroke"), 0.3, { Transparency = 1 })
+			task.wait(0.35)
 			label:Destroy()
 		end)
 		if #toasts:GetChildren() > 6 then
@@ -88,7 +94,8 @@ return function(ctx)
 		s.Scale = 0.5
 		Kit.tween(s, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
 		local function close()
-			Kit.tween(s, 0.15, { Scale = 0.5 })
+			-- exit faster than the entrance, accelerating away, no overshoot (vault "UI Motion Language")
+			Kit.tween(s, 0.14, { Scale = 0.6 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 			Kit.tween(shade, 0.2, { BackgroundTransparency = 1 })
 			task.delay(0.2, function()
 				shade:Destroy()
@@ -130,6 +137,12 @@ return function(ctx)
 				Kit.bob(icon, 5, 2.5)
 			end
 			Kit.text({ Text = item.Text, Size = 24, Scaled = true, MaxSize = 26, FrameSize = UDim2.new(1, 20, 0, 40), Position = UDim2.new(0.5, 0, 1, 0), Anchor = Vector2.new(0.5, 1), ZIndex = 75, Parent = cell })
+			-- each prize lands one after another (title first, prizes, then the button: vault "Reward Moments")
+			local cs = Kit.scale(cell)
+			cs.Scale = 0
+			task.delay(0.15 + (i - 1) * 0.12, function()
+				Kit.tween(cs, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+			end)
 		end
 		okButton(holder, close)
 		Kit.playSound("Reward")
@@ -217,6 +230,12 @@ return function(ctx)
 			end
 			task.wait()
 		end
+		-- anticipation: the eggs swell for a beat, then burst (vault "Squash Stretch and Anticipation")
+		for _, c in ipairs(cells) do
+			c.Egg.Rotation = 0
+			Kit.tween(Kit.scale(c.Egg), 0.12, { Scale = 1.25 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		end
+		task.wait(0.12)
 		-- flash
 		local flash = new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0, Size = UDim2.fromScale(1, 1), ZIndex = 90, Parent = shade })
 		Kit.tween(flash, 0.5, { BackgroundTransparency = 1 })

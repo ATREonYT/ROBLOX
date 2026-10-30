@@ -399,11 +399,24 @@ Config.LEADERBOARDS = {
 Config.LEADERBOARD_REFRESH = 60
 
 -- Sound ids ("rbxassetid://123"). Empty = silent. Music loops in the lobby.
+-- Sound ids by name (GameClient/Sfx plays them). "" = Roblox's built-in stand-in plays (or nothing).
+-- Never invent an id: each one is either Alex's own upload or a page we read.
+-- Button sounds: upload cannon-evolution/assets/sfx/UI_*.ogg (Kenney Interface Sounds, CC0) with
+-- Asset Manager > Bulk Import, then paste each rbxassetid here.
 Config.Sounds = {
-	Click = "",
-	Open = "",
-	Hatch = "",
+	Click = "", -- UI_Click.ogg (Kenney drop_002): every button press
+	Hover = "", -- UI_Hover.ogg (Kenney select_002): mouse over a button, very quiet
+	Open = "", -- UI_Open.ogg (Kenney maximize_009): a panel opens
+	Close = "", -- UI_Close.ogg (Kenney minimize_009): a panel closes
+	Confirm = "", -- UI_Confirm.ogg (Kenney confirmation_001): buy, claim, equip
+	Error = "", -- UI_Error.ogg (Kenney error_007): can't afford / not yet
+	Tab = "", -- UI_Tab.ogg (Kenney switch_002): tabs and toggles
+	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
+	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
+	Hatch = "rbxassetid://9116384799",
 	Reward = "",
+	Rebirth = "",
+	Coin = "",
 	Shot = "",
 	Launch = "",
 	Skip = "",

@@ -6,6 +6,8 @@
 	boost timers and badges.
 ]]
 
+local RunService = game:GetService("RunService")
+
 return function(ctx)
 	local Kit, Config, State = ctx.Kit, ctx.Config, ctx.State
 	local new = Kit.new
@@ -280,13 +282,43 @@ return function(ctx)
 	-- Refresh
 	-----------------------------------------------------------------------
 	local shown = { Power = 0, Cash = 0, Gems = 0, Rebirths = 0 }
+	-- Numbers roll up to their new value instead of jumping (vault "Reward Moments": stats count up), with a pop,
+	-- a quick green flash on a gain and a soft coin tick for Cash and Gems. Losses (spending) snap straight down.
+	local rolling = {}
+	local baseColor = {}
+	local GAIN = Color3.fromRGB(150, 250, 25)
 	local function countUp(name, value, suffix)
 		local from = shown[name]
 		shown[name] = value
-		if value > from then
-			Kit.pop(amounts[name], 1.06)
+		local label = amounts[name]
+		local function show(v)
+			label.Text = Config.Format(math.floor(v + 0.5)) .. (suffix or "")
 		end
-		amounts[name].Text = Config.Format(value) .. (suffix or "")
+		if rolling[name] then
+			rolling[name]:Disconnect()
+			rolling[name] = nil
+		end
+		if value <= from or from == 0 then
+			show(value)
+			return
+		end
+		Kit.pop(label, 1.12)
+		baseColor[name] = baseColor[name] or label.TextColor3
+		local base = baseColor[name]
+		label.TextColor3 = GAIN
+		Kit.tween(label, 0.45, { TextColor3 = base })
+		if name == "Cash" or name == "Gems" then
+			Kit.playSound("Coin")
+		end
+		local start, dur = os.clock(), 0.45
+		rolling[name] = RunService.RenderStepped:Connect(function()
+			local a = math.min((os.clock() - start) / dur, 1)
+			show(from + (value - from) * (1 - (1 - a) ^ 3))
+			if a >= 1 then
+				rolling[name]:Disconnect()
+				rolling[name] = nil
+			end
+		end)
 	end
 
 	local function claimableRewards(data)

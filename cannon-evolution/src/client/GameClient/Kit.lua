@@ -13,6 +13,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local Icons = require(ReplicatedStorage:WaitForChild("Icons"))
+local Sfx = require(script.Parent:WaitForChild("Sfx"))
 
 local Kit = {}
 
@@ -213,12 +214,73 @@ function Kit.pop(inst, amount)
 	Kit.tween(s, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
 end
 
+-- Sounds live in Sfx (pooled, preloaded, one volume group per kind). Kit.Sounds stays empty on purpose: the
+-- Sound Effects setting goes through Sfx.setEnabled, not through per-sound volumes.
 Kit.Sounds = {}
 function Kit.playSound(name)
-	local sound = Kit.Sounds[name]
-	if sound then
-		sound:Play()
+	Sfx.play(name)
+end
+Kit.Sfx = Sfx
+
+-- Press feedback (vault "Squash Stretch and Anticipation"): jump straight to the squashed size, then spring back
+-- with an overshoot. Tweening INTO the squash reads soft and late.
+function Kit.press(inst, amount)
+	local s = Kit.scale(inst)
+	s.Scale = amount or 0.9
+	Kit.tween(s, 0.28, { Scale = 1 }, Enum.EasingStyle.Back) -- (also replaces any running hover tween)
+end
+
+-- Panel entrance (vault "UI Motion Language": hierarchy): the cards in a panel pop in one after another, top-left
+-- first, 25 ms apart, at most 12 of them so a big list never makes you wait.
+function Kit.cascade(container)
+	local items = {}
+	for _, d in ipairs(container:GetDescendants()) do
+		-- cards in a grid, or rows in a scrolling list; big enough to be a card (design pixels, not screen pixels)
+		local parent = d.Parent
+		local inLayout = parent and (parent:FindFirstChildOfClass("UIGridLayout") or (parent:IsA("ScrollingFrame") and parent:FindFirstChildOfClass("UIListLayout")))
+		local big = d:IsA("GuiObject") and (d.Size.X.Offset >= 60 or d.Size.X.Scale >= 0.2)
+		if inLayout and big and d.Visible then
+			table.insert(items, d)
+		end
 	end
+	table.sort(items, function(a, b)
+		local pa, pb = a.AbsolutePosition, b.AbsolutePosition
+		if math.abs(pa.Y - pb.Y) > 8 then
+			return pa.Y < pb.Y
+		end
+		return pa.X < pb.X
+	end)
+	for i = 1, math.min(#items, 12) do
+		local item = items[i]
+		local s = Kit.scale(item)
+		s.Scale = 0.7
+		task.delay(0.04 + (i - 1) * 0.025, function()
+			Kit.tween(s, 0.26, { Scale = 1 }, Enum.EasingStyle.Back)
+		end)
+	end
+end
+
+-- A very quiet hover tick on every button in a ScreenGui, including ones made later (one place, the
+-- cartoony-ui skill's "one script handles every button"). TextBoxes are skipped.
+function Kit.hoverSounds(screenGui)
+	-- on a phone a tap is also a "hover": no tick there, the click is enough
+	local UserInputService = game:GetService("UserInputService")
+	if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
+		return
+	end
+	local function hook(d)
+		if d:IsA("GuiButton") then
+			d.MouseEnter:Connect(function()
+				if d.Active and d.Visible then
+					Sfx.play("Hover")
+				end
+			end)
+		end
+	end
+	for _, d in ipairs(screenGui:GetDescendants()) do
+		hook(d)
+	end
+	screenGui.DescendantAdded:Connect(hook)
 end
 
 ---------------------------------------------------------------------------
@@ -305,15 +367,21 @@ function Kit.button(props)
 	btn.MouseLeave:Connect(function()
 		Kit.tween(s, 0.3, { Scale = 1 }, Enum.EasingStyle.Sine)
 	end)
+	-- press: straight to 0.9, then spring back past 1 (Back) and settle; the label sinks 2 px onto the lip
 	btn.MouseButton1Down:Connect(function()
-		Kit.tween(s, 0.06, { Scale = 0.92 })
+		Kit.tween(s, 0.03, { Scale = 0.9 }) -- (a tween, so it also stops a running hover tween)
+		content.Position = UDim2.fromOffset(0, 2)
 	end)
 	btn.MouseButton1Up:Connect(function()
-		Kit.tween(s, 0.15, { Scale = 1 }, Enum.EasingStyle.Back)
+		Kit.tween(s, 0.28, { Scale = 1 }, Enum.EasingStyle.Back)
+		Kit.tween(content, 0.12, { Position = UDim2.new() })
+	end)
+	btn.MouseLeave:Connect(function()
+		content.Position = UDim2.new()
 	end)
 	if props.OnClick then
 		btn.Activated:Connect(function()
-			Kit.playSound("Click")
+			Kit.playSound(props.Sound or "Click")
 			props.OnClick(btn)
 		end)
 	end
@@ -366,7 +434,7 @@ function Kit.menuButton(props)
 	end)
 	btn.Activated:Connect(function()
 		Kit.playSound("Click")
-		Kit.pop(btn, 0.85)
+		Kit.press(btn, 0.85)
 		if props.OnClick then
 			props.OnClick()
 		end
@@ -392,7 +460,12 @@ function Kit.badge(parent, color)
 	local label = Kit.text({ Text = "!", Size = 18, Scaled = true, MaxSize = 18, ZIndex = 11, Parent = b })
 	local api = {}
 	function api.Set(_, text)
-		b.Visible = text ~= nil and text ~= ""
+		local show = text ~= nil and text ~= ""
+		-- a badge that appears (or changes) pops, so a new "!" is noticed
+		if show and (not b.Visible or label.Text ~= tostring(text)) then
+			Kit.pop(b, 1.4)
+		end
+		b.Visible = show
 		label.Text = text or ""
 		b.Size = UDim2.fromOffset(math.max(28, #tostring(text or "") * 11 + 10), 28)
 	end
@@ -985,7 +1058,9 @@ function Kit.tabs(props)
 		Kit.text({ Text = name, Size = 20, Scaled = true, MaxSize = 20, FrameSize = UDim2.new(1, -8, 0.75, 0), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 25, Parent = tab })
 		api.Buttons[name] = { Button = tab, Gradient = grad }
 		tab.Activated:Connect(function()
-			Kit.playSound("Click")
+			if api.Current ~= name then
+				Kit.playSound("Tab")
+			end
 			api:Select(name)
 		end)
 	end

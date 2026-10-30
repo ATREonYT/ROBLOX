@@ -59,14 +59,17 @@ local dim = Kit.new("TextButton", {
 })
 
 ---------------------------------------------------------------------------
--- Sounds (fill ids in GameConfig.Sounds if you want them)
+-- Sounds: GameClient/Sfx (ids in GameConfig.Sounds; built-in stand-ins until
+-- they're uploaded). A quiet tick on hovering any button; the Sound Effects
+-- setting mutes them all.
 ---------------------------------------------------------------------------
-local soundIds = Config.Sounds or {}
-for name, id in pairs(soundIds) do
-	if id ~= "" then
-		Kit.Sounds[name] = Kit.new("Sound", { SoundId = id, Volume = 0.5, Parent = gui })
+Kit.hoverSounds(gui)
+State.Changed:Connect(function()
+	local s = State.Data and State.Data.Settings
+	if s then
+		Kit.Sfx.setEnabled(s.Sfx ~= false)
 	end
-end
+end)
 
 ---------------------------------------------------------------------------
 -- Panel manager
@@ -88,10 +91,14 @@ function ctx.Close()
 	end
 	local panel = current
 	current = nil
-	Kit.tween(Kit.scale(panel.Frame), 0.15, { Scale = 0.6 })
-	Kit.tween(dim, 0.2, { BackgroundTransparency = 1 })
-	Kit.tween(blur, 0.2, { Size = 0 })
-	task.delay(0.15, function()
+	-- exit: faster than the entrance, accelerating away, no overshoot (vault "UI Motion Language": 0.26 in,
+	-- 0.14 out; Back In on an exit reads as the panel refusing to close)
+	Kit.playSound("Close")
+	Kit.tween(Kit.scale(panel.Frame), 0.14, { Scale = 0.8 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	Kit.tween(panel.Frame, 0.14, { Position = UDim2.fromScale(0.5, 0.58) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	Kit.tween(dim, 0.18, { BackgroundTransparency = 1 })
+	Kit.tween(blur, 0.18, { Size = 0 })
+	task.delay(0.14, function()
 		if current ~= panel then
 			panel.Frame.Visible = false
 		end
@@ -126,10 +133,14 @@ function ctx.Open(name, tab, arg)
 	dim.Visible = true
 	Kit.tween(dim, 0.2, { BackgroundTransparency = 0.7 })
 	Kit.tween(blur, 0.2, { Size = 10 })
+	-- entrance: rises a little from below and pops past full size (Back Out, 0.26 s), from 0.75 not 0:
+	-- a big panel bouncing from nothing is too much (vault "UI Motion Language")
 	panel.Frame.Visible = true
 	local s = Kit.scale(panel.Frame)
-	s.Scale = 0.6
-	Kit.tween(s, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+	s.Scale = 0.75
+	panel.Frame.Position = UDim2.fromScale(0.5, 0.6)
+	Kit.tween(s, 0.26, { Scale = 1 }, Enum.EasingStyle.Back)
+	Kit.tween(panel.Frame, 0.26, { Position = UDim2.fromScale(0.5, 0.54) }, Enum.EasingStyle.Back)
 	Kit.playSound("Open")
 	if panel.OnOpen then
 		panel.OnOpen(tab, arg)
@@ -137,6 +148,7 @@ function ctx.Open(name, tab, arg)
 	if panel.Refresh then
 		panel.Refresh()
 	end
+	Kit.cascade(panel.Frame)
 end
 
 function ctx.Toggle(name, tab)
@@ -154,8 +166,21 @@ end
 dim.Activated:Connect(ctx.Close)
 
 -- Request + show the server's message
+-- Spending and claiming answer with a sound: a warm "yes" when the server
+-- agrees, a soft low "no" when it doesn't (can't afford, not yet); Rebirth
+-- gets its own sound. Hatch and purchases have their own moments.
+local ANSWERED = {
+	BuyCannon = true, EquipCannon = true, BuyUpgrade = true, BuyBoost = true, ClaimMission = true,
+	ClaimDaily = true, ClaimPlaytime = true, EquipPet = true, EquipBest = true, RedeemCode = true, Teleport = true,
+}
 function ctx.Request(action, ...)
-	return State.Request(action, ...)
+	local result, message = State.Request(action, ...)
+	if ANSWERED[action] then
+		Kit.playSound(result and "Confirm" or "Error")
+	elseif action == "Rebirth" then
+		Kit.playSound(result and "Rebirth" or "Error")
+	end
+	return result, message
 end
 
 ---------------------------------------------------------------------------
