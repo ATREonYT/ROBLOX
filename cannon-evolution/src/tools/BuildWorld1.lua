@@ -183,7 +183,7 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 	-- low side rails
 	for _, side in ipairs({ -1, 1 }) do
 		block("Rail", Vector3.new(0.9, 1.6, back - 2.2), at(side * (width / 2 - 0.45), 0.8, (back + 2.2) / 2), dark(theme.Main, 0.2))
-		block("RailTop", Vector3.new(1.1, 0.3, back - 2.2), at(side * (width / 2 - 0.45), 1.75, (back + 2.2) / 2), theme.Accent, false).Material = Enum.Material.Neon
+		block("RailTop", Vector3.new(1.1, 0.3, back - 2.2), at(side * (width / 2 - 0.45), 1.75, (back + 2.2) / 2), theme.Accent, false)
 	end
 	-- framed back wall behind the target
 	block("BackWall", Vector3.new(width, 10, 1), at(0, 5, back - 0.5), dark(theme.Main, 0.25))
@@ -192,7 +192,12 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 		block("Pillar", Vector3.new(1.5, 11.5, 1.5), at(side * (width / 2 - 0.75), 5.75, back - 0.75), theme.Main)
 	end
 	local header = block("Header", Vector3.new(width + 1, 2.2, 2), at(0, 11.4, back - 1), theme.Main)
-	block("HeaderTrim", Vector3.new(width + 1.2, 0.4, 2.2), at(0, 10.2, back - 1), theme.Accent, false).Material = Enum.Material.Neon
+	-- glow strips: neon, toned down so pale and yellow themes don't burn out
+	local glow = theme.Accent:Lerp(Color3.new(0, 0, 0), 0.35)
+	for _, side in ipairs({ -1, 1 }) do
+		block("GlowStrip", Vector3.new(0.4, 0.4, back - 2.2), at(side * (width / 2 - 1.05), 1.4, (back + 2.2) / 2), glow, false).Material = Enum.Material.Neon
+	end
+	block("HeaderTrim", Vector3.new(width + 1.2, 0.4, 2.2), at(0, 10.2, back - 1), glow, false).Material = Enum.Material.Neon
 	block("Crest", Vector3.new(width * 0.4, 1.2, 1.4), at(0, 13.1, back - 1), theme.Accent, false)
 	-- slow sparkles drifting up in front of the target, in the booth's accent colour
 	local fx = Instance.new("ParticleEmitter")
