@@ -892,11 +892,12 @@ function Kit.viewport(parent, model, props)
 	vp.CurrentCamera = cam
 	local cf, size = clone:GetBoundingBox()
 	-- FitLargest: frame the biggest part (a cannonball) and ignore small bits sticking out around it, so every
-	-- ball fills its card the same amount
+	-- ball fills its card the same amount. See-through parts (a glow shell or aura around Rainbow, Hacker and Galaxy)
+	-- don't count, or the solid ball inside comes out half size (Studio test, Oct 30)
 	if props.FitLargest then
 		local best, bestVolume = nil, 0
 		for _, d in ipairs(clone:GetDescendants()) do
-			if d:IsA("BasePart") then
+			if d:IsA("BasePart") and d.Transparency < 0.5 then
 				local v = d.Size.X * d.Size.Y * d.Size.Z
 				if v > bestVolume then
 					best, bestVolume = d, v
