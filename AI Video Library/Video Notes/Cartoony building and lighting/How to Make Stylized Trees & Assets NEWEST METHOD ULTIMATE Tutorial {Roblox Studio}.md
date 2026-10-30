@@ -80,3 +80,11 @@ Stylized, flat-looking anime-style trees from leaf-card planes in Blender (custo
 - The colored PointLight inside canopy plus blue under-light is a cheap way to get pretty cartoony foliage; keep range small for performance (inferred).
 - Use the ColorShift_Top yellow + dark blue ambient + lowered environment scales recipe as a daytime cartoony lighting preset.
 - Base-texture then hand-paint-edges workflow works for stylized rocks/props in steal-style bases (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[13 Cartoony & Low-Poly Building]] · [[04 Building, Maps & 3D Models]]
+- Playbooks: [[Blueprint - Egg Run]] · [[16 Cartoony Kid-Appeal Checklist]]
+- More in Cartoony building and lighting: [[How to Build PRO Roblox Maps!]] · [[How to Light a Low Poly Map (Roblox Studio)]] · [[How to Model a Low Poly Roblox Pet (Blender Tutorial)]] · [[How to make AMAZING Low Poly Roblox Models]] · [[How to make CARTOON LIGHTING in Roblox Studio]] · [[LOW-POLY TERRAIN TUTORIAL ROBLOX+BLENDER]] · [[Make Your Roblox Game Look 10x Better With Lighting]]
+<!-- related:end -->

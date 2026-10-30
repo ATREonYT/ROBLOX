@@ -71,3 +71,10 @@ Claude Code drives Blender in the background using a free "Roblox animation skil
 - Keep grab/steal animations short (about 0.33 to 0.7 s) so they feel snappy in steal-style games (inferred).
 - Animate only upper body for carrying/holding idles so default walk still works with brainrot carry poses (inferred).
 - Ask Claude to save every fix to the skill so quality compounds over time (as stated).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[06 Animation]]
+- More in Animation: [[FREE AI Mocap From Video To Roblox Studio - Works With ANY Character Tutorial]] · [[How to Make Animations in Roblox with AI (Claude Opus 5.5 + FREE ANIMATION SKILL)]]
+<!-- related:end -->

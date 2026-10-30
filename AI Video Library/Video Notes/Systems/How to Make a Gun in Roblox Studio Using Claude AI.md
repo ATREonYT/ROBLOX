@@ -67,3 +67,11 @@ Follow-up ideas: add a muzzle flash or a bullet drop.
 - Server-confirmed actions plus visual effects played only after confirmation is a good anti-exploit habit for steal games (inferred).
 - Copy the tap-the-counter-to-reload idea for mobile-friendly UI buttons in simulators (inferred).
 - Write long, specific prompts listing exact numbers (5 and 20 damage) and names of objects (fire, config) so Claude has nothing to guess.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[03 Scripting & Systems]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in Systems: [[Build an RPG in Roblox Studio With Claude MCP — HP Bars, XP System, Stats Panel & Enemy Spawner]]
+<!-- related:end -->

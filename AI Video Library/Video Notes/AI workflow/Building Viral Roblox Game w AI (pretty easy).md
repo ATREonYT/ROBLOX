@@ -63,3 +63,11 @@ Part 1 of "Bandit Beater": the creator describes a Blox Fruits-style bandit-beat
 - The video's "stronger every hit" plus XP multiplier from quests is a stacking-multiplier loop that maps directly to "+1 every hit/second" style progression (inferred).
 - Playtest after each milestone and feed bugs back in short prompts; do not batch many untested features.
 - A left-side menu column (attributes, map, quest, shop) is a ready HUD layout for a sim.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building a Viral Roblox Game w ONLY AI]] · [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]] · [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]] · [[How Big Studios Develop on Roblox]] · [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]] · [[How to make Roblox Games Using Claude]] · [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]] · [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+<!-- related:end -->

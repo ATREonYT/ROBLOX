@@ -20,6 +20,8 @@ This file loads in every session, so keep it short. Each game folder has its own
   reference but no louder, and use only Roblox's built-in pictures.
 
 ## Skills from the video library
+**New game or new system: open `Build Playbooks/00 Build Router.md` first.** It points each job (game type, system, look, launch) to the right blueprint, notes, skills and code to copy.
+
 Before building, load the skill for the job (in `.claude/skills/`):
 - maps, props, lighting: `roblox-cartoony-building`
 - any UI: `roblox-cartoony-ui`

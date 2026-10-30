@@ -59,3 +59,11 @@ No AI prompts. Commands, settings JSON and links are in the video description (n
 - Add Selene and StyLua to catch errors and format on save before AI-written code reaches Studio (inferred).
 - Use Git branches per feature (e.g. a new rebirth or steal mechanic) and commit restore points.
 - Use Wally packages such as ProfileService for saving data in simulators (video names it as a server-only package).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building Viral Roblox Game w AI (pretty easy)]] · [[Building a Viral Roblox Game w ONLY AI]] · [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]] · [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]] · [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]] · [[How to make Roblox Games Using Claude]] · [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]] · [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+<!-- related:end -->

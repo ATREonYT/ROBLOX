@@ -7,7 +7,7 @@ updated: 2026-10-29
 
 Back to [[00 Start Here]] · AI side: [[07 UI & GUI]] · Checklist: [[16 Cartoony Kid-Appeal Checklist]]
 
-Kids judge a game in seconds, and the UI is half of that. Front-page UI looks like **pressable toys**: thick outlines, a lit top, a darker lip, hard shadows and bounce on every press. The vault's written rules (token sheet, sizes, colors) are in `reports/Cartoony Roblox building UI and animation.md` under "Sticker UI beats template UI".
+Kids judge a game in seconds, and the UI is half of that. Front-page UI looks like **pressable toys**: thick outlines, a lit top, a darker lip, hard shadows and bounce on every press. The vault's written rules (token sheet, sizes, colors) are in [[Cartoony Roblox building UI and animation]] under "Sticker UI beats template UI".
 
 ## Designing the art (Figma)
 
@@ -45,7 +45,18 @@ Kids judge a game in seconds, and the UI is half of that. Front-page UI looks li
 
 ## Game feel outside the UI
 - [Make Game Impacts Feel JUICY (Camera Shake + Sound)](https://www.youtube.com/watch?v=z0-jU6cyYMM), SpeedTutor, 2026-09-04. This is **Unity**, but the principle carries over directly: every hit gets a shake + sound + flash on the same frame.
-- The vault's `GAME-FEEL.md` and `VFX-ITEMS.md` hold the Roblox-specific rules.
+- The vault's [[GAME-FEEL]] and [[VFX-ITEMS]] hold the Roblox-specific rules.
 
 ## Prompt for Claude when building UI
 > Build this screen as sticker/toy UI: opaque colored panels (no dark translucent glass), a 3–4 px dark outline (UIStroke) on everything, a lit top / darker bottom lip on buttons, a hard drop shadow, a chunky rounded font, one dominant yellow call-to-action, green = confirm, red = close. Every button scales down on press and bounces back (TweenService, Back easing). No emoji icons.
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[How To Make Simulator UI Buttons In Figma Roblox UI Tutorial]]
+- [[Make INSANE Roblox GUI Assets with AI! (GPT Image 2)]]
+- [[Make Your Roblox UI Buttons SUPER Smooth in 8 Minutes!]]
+- [[The Greatest Cartoony UI Tutorial on Roblox (w Figma)]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

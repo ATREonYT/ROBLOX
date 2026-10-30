@@ -42,3 +42,11 @@ None stated in the video.
 - Write a "simulator economy" skill describing +1 per second, rebirth scaling, and cost curves (inferred).
 - Always invoke the skill by name in the prompt to be sure it loads.
 - Keep one skill per area (UI, economy, steal mechanics) so each is small (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building Viral Roblox Game w AI (pretty easy)]] · [[Building a Viral Roblox Game w ONLY AI]] · [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]] · [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]] · [[How Big Studios Develop on Roblox]] · [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]] · [[How to make Roblox Games Using Claude]] · [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+<!-- related:end -->

@@ -7,7 +7,7 @@ updated: 2026-10-29
 
 Back to [[00 Start Here]]
 
-Run this before every launch. Each line links to where the detail lives. Numbers come from the vault's existing cartoony report (`reports/Cartoony Roblox building UI and animation.md`) unless noted; treat proposals there as starting points to tune on a phone.
+Run this before every launch. Each line links to where the detail lives. Numbers come from the vault's existing cartoony report ([[Cartoony Roblox building UI and animation]]) unless noted; treat proposals there as starting points to tune on a phone.
 
 ## Building
 - [ ] **SmoothPlastic** for most surfaces; textures sparingly

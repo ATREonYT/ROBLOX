@@ -67,3 +67,11 @@ No AI prompts. Skybox plugin ("Iris" per captions) with "afternoon Sky one"; lin
 - Raising EnvironmentDiffuseScale to 0.3 is a cheap way to brighten a map without washing out shadows.
 - Light ColorCorrection (0.05 / 0.1 / 0.15) adds pop to a +1 style game without heavy post-processing (inferred).
 - FogEnd 2500 hides far map edges in steal-style bases while keeping depth (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[13 Cartoony & Low-Poly Building]] · [[04 Building, Maps & 3D Models]]
+- Playbooks: [[Blueprint - Egg Run]] · [[16 Cartoony Kid-Appeal Checklist]]
+- More in Cartoony building and lighting: [[How to Build PRO Roblox Maps!]] · [[How to Light a Low Poly Map (Roblox Studio)]] · [[How to Make Stylized Trees & Assets NEWEST METHOD ULTIMATE Tutorial {Roblox Studio}]] · [[How to Model a Low Poly Roblox Pet (Blender Tutorial)]] · [[How to make AMAZING Low Poly Roblox Models]] · [[LOW-POLY TERRAIN TUTORIAL ROBLOX+BLENDER]] · [[Make Your Roblox Game Look 10x Better With Lighting]]
+<!-- related:end -->

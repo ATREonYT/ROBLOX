@@ -49,3 +49,11 @@ The actual prompts are not shown; they are in the creator's "Roblox Bible" (link
 - Generate a consistent set of simulator buttons and panels this way, then use them as ImageButton and ImageLabel assets (inferred).
 - Upscale to 2K but compress before upload, to keep Roblox asset size sensible (inferred).
 - Any image generator plus background remover works if you do not use this sponsor (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[07 UI & GUI]] · [[14 Cartoony UI & Juice]]
+- Playbooks: [[16 Cartoony Kid-Appeal Checklist]]
+- More in UI: [[How To Make Simulator UI Buttons In Figma Roblox UI Tutorial]] · [[Make Your Roblox UI Buttons SUPER Smooth in 8 Minutes!]] · [[The Greatest Cartoony UI Tutorial on Roblox (w Figma)]]
+<!-- related:end -->

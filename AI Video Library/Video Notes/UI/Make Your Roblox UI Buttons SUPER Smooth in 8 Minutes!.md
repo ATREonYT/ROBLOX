@@ -57,3 +57,11 @@ No AI prompts. Toolbox Audio search "click" for sounds.
 - Runtime-added inventory or pet buttons get hover/click sound automatically thanks to DescendantAdded.
 - Keep hover growth small (about a few percent) so layout does not jitter in UIListLayout (inferred).
 - Store tweens by name to also play them on purchase success (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[07 UI & GUI]] · [[14 Cartoony UI & Juice]]
+- Playbooks: [[16 Cartoony Kid-Appeal Checklist]]
+- More in UI: [[How To Make Simulator UI Buttons In Figma Roblox UI Tutorial]] · [[Make INSANE Roblox GUI Assets with AI! (GPT Image 2)]] · [[The Greatest Cartoony UI Tutorial on Roblox (w Figma)]]
+<!-- related:end -->

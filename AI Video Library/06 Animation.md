@@ -43,3 +43,13 @@ Three routes: **(A) the agent writes keyframes**, **(B) AI mocap from a video**,
 ## (C) Text-to-animation
 - [Roblox Animation Just Got Way Too Easy](https://www.youtube.com/watch?v=wFcqKc6hJaI), NOCAPMOCAP, 2026-01-13. Prompt to R15 animation, imported without Blender.
 - [Create AI animations without leaving Roblox Studio](https://www.youtube.com/watch?v=JcesNKhfOdg), NOCAPMOCAP, 2026-06-19. Creator Store plugin version.
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[FREE AI Mocap From Video To Roblox Studio - Works With ANY Character Tutorial]]
+- [[How to Make Animations in Roblox with AI (Claude Opus 5.5 + FREE ANIMATION SKILL)]]
+- [[How to Make Roblox Animations With AI (R6 + R15, Claude Opus 5.5)]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

@@ -38,3 +38,14 @@ Back to [[00 Start Here]]
 ## Monetization basics inside builds
 - Game passes, dev products and private servers: [Roblox's Billion-Dollar Opportunity](https://www.youtube.com/watch?v=PH-VrdPbZGU)
 - Simulator systems (pets, potions, codes, worlds): [Superbullet × Claude Opus 5.5](https://www.youtube.com/watch?v=6aYkVVIcm48)
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[I Made 4 Roblox Games with AI… Did I Get Rich?]]
+- [[My Roblox Game Made $43,292 (Here's Exactly How to Monetize Yours)]]
+- [[Roblox Game Design Explained Like You're 5 Yrs Old]]
+- [[Why 90% of Roblox Games Never Get Players]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

@@ -53,3 +53,10 @@ Claude can make R15/R6 combat animations straight into Studio over MCP. The bigg
 - For steal-style games: make a "grab and run" carry animation and a hit-reaction from one reference clip, and test on two dummies like he did (inferred).
 - Keep old animations aside instead of deleting them ("put them aside") so you can A/B them in-game.
 - Budget about 10 to 30 minutes of Claude time per new animation set when planning a +1 game's combat or emote pass.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[06 Animation]]
+- More in Animation: [[FREE AI Mocap From Video To Roblox Studio - Works With ANY Character Tutorial]] · [[How to Make Roblox Animations With AI (R6 + R15, Claude Opus 5.5)]]
+<!-- related:end -->

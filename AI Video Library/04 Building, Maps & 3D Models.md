@@ -44,3 +44,21 @@ Back to [[00 Start Here]]
 - [I Built a Procedural Roblox Building System Using Claude MCP in 1 Day](https://www.youtube.com/watch?v=hWPCGAI-imI), MrWonderHow
 - [Which AI Creates the Best Roblox Maps? Claude vs Gemini](https://www.youtube.com/watch?v=hxv0MGEcJug), MrAxell
 - Map generation from a prompt is also demoed in [01 Setup & Workflow](https://www.youtube.com/watch?v=a5Djoa_gUJs).
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[How To Connect Claude To Blender (Blender MCP Setup)]]
+- [[I Built a Roblox Pet RPG with Claude Opus 4 MCP + Roblox Studio MCP (Full Tutorial)]]
+- [[I Built a Roblox Vehicle Combat Builder Game Using Claude Opus 4.8 MCP + Roblox Studio AI]]
+- [[How to Build PRO Roblox Maps!]]
+- [[How to Light a Low Poly Map (Roblox Studio)]]
+- [[How to Make Stylized Trees & Assets NEWEST METHOD ULTIMATE Tutorial {Roblox Studio}]]
+- [[How to Model a Low Poly Roblox Pet (Blender Tutorial)]]
+- [[How to make AMAZING Low Poly Roblox Models]]
+- [[How to make CARTOON LIGHTING in Roblox Studio]]
+- [[LOW-POLY TERRAIN TUTORIAL ROBLOX+BLENDER]]
+- [[Make Your Roblox Game Look 10x Better With Lighting]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

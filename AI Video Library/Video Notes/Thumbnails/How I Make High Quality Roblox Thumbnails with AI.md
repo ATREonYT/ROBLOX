@@ -62,3 +62,9 @@ Study top thumbnails, copy the principles (readable faces, one fantasy, teased m
 - Use before/after or "Level 1 vs Level 999" concept for +1 progression sims (inferred).
 - Test every thumbnail on qptr.io mobile view before upload (inferred).
 - Plan a weekly rotation of 2 to 3 new thumbnails per game (as in the video) while watching click-through (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[08 Thumbnails, Icons & Marketing]]
+<!-- related:end -->

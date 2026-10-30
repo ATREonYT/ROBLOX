@@ -62,3 +62,11 @@ SyphoDev runs his Claude Code pipeline (/create-roblox-game skill) to build a Po
 - Ask for a research stage that checks similar games and invents original names (steal-style games: original brainrot characters).
 - Always attach screenshots to a feedback prompt and list each UI problem numerically (inferred).
 - Show catch/steal chance before the action to keep it readable (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building Viral Roblox Game w AI (pretty easy)]] · [[Building a Viral Roblox Game w ONLY AI]] · [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]] · [[How Big Studios Develop on Roblox]] · [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]] · [[How to make Roblox Games Using Claude]] · [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]] · [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+<!-- related:end -->

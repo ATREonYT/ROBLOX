@@ -76,3 +76,10 @@ Full pipeline for pets: ChatGPT reference art, then Meshy AI image-to-3D (multi-
 - Keep a Claude Project design doc with animation IDs and folder structure, and update it after each session.
 - Pet Glow VFX via duplicate neon mesh and Combat VFX folders is a cheap rarity-escalation pattern (inferred).
 - Starting-gold test constants in config make tuning quick.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[04 Building, Maps & 3D Models]]
+- More in 3D and Blender: [[How To Connect Claude To Blender (Blender MCP Setup)]] · [[I Built a Roblox Vehicle Combat Builder Game Using Claude Opus 4.8 MCP + Roblox Studio AI]]
+<!-- related:end -->

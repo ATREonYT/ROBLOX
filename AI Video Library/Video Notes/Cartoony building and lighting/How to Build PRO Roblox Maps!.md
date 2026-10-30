@@ -58,3 +58,11 @@ A one-hour timelapse of building a clicker/simulator game map: 250x250 grass bas
 - Cluster shop, eggs, wheel spin, leaderboard and the top monetized pet near spawn; put VIP in its own area.
 - Use Archimedes-style smooth curved paths and a fixed path angle for a consistent cartoony look (inferred for our simulator maps).
 - Build in order: layout, border wall, big filler, small filler, transitions, color accents (waterfall) to avoid monotone green (inferred for steal-style bases).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[13 Cartoony & Low-Poly Building]] · [[04 Building, Maps & 3D Models]]
+- Playbooks: [[Blueprint - Egg Run]] · [[16 Cartoony Kid-Appeal Checklist]]
+- More in Cartoony building and lighting: [[How to Light a Low Poly Map (Roblox Studio)]] · [[How to Make Stylized Trees & Assets NEWEST METHOD ULTIMATE Tutorial {Roblox Studio}]] · [[How to Model a Low Poly Roblox Pet (Blender Tutorial)]] · [[How to make AMAZING Low Poly Roblox Models]] · [[How to make CARTOON LIGHTING in Roblox Studio]] · [[LOW-POLY TERRAIN TUTORIAL ROBLOX+BLENDER]] · [[Make Your Roblox Game Look 10x Better With Lighting]]
+<!-- related:end -->

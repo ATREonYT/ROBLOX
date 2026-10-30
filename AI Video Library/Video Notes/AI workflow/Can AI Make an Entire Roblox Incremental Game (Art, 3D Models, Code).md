@@ -64,3 +64,11 @@ Explains the skills + MCP + API setup for Claude Code and runs it on an incremen
 - Keep the leaderboard as the social feature but add something that makes other players matter (the video's gap analysis).
 - Check lighting and plot visibility in a screenshot test after every generation pass (inferred).
 - Plan updates up front; the video notes games die without updates.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building Viral Roblox Game w AI (pretty easy)]] · [[Building a Viral Roblox Game w ONLY AI]] · [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]] · [[How Big Studios Develop on Roblox]] · [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]] · [[How to make Roblox Games Using Claude]] · [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]] · [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+<!-- related:end -->

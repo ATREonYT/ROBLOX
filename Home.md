@@ -2,6 +2,11 @@
 
 The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 
+## Build Playbooks (start here to build)
+- [[Build Playbooks/00 Build Router|Build Router]]: every job mapped to the right notes, skills and code
+- [[Build Playbooks/01 Current Hits October 2026|Current hits, Oct 2026]] and [[Build Playbooks/02 Launch and Discovery Cheat Sheet|launch cheat sheet]]
+- Blueprints: [[Build Playbooks/Blueprint - Egg Run|Egg Run]] · [[Build Playbooks/Blueprint - Plus One Evolution|+1 Evolution]] · [[Build Playbooks/Blueprint - Plus One Speed Escape|+1 Speed Escape]] · [[Build Playbooks/Blueprint - Roll and Place RNG|Roll and Place RNG]] · [[Build Playbooks/Blueprint - Anomaly Shift|Anomaly Shift]]
+
 ## +1 Hood Evolution (older game, not the example to copy)
 - [[hood/docs/RULES|Your rules for the game]]
 - [[hood/CLAUDE|How the game is built, and lessons learned]]
@@ -21,6 +26,7 @@ The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 
 ## AI Video Library
 - [[AI Video Library/00 Start Here|Start here]]: the best Roblox + AI dev videos, from setup to building, VFX, animation, UI, audio and business
+- [[AI Video Library/Video Notes/00 Video Notes Index|Video notes index]]: 38 videos turned into steps, settings and prompts
 
 ## LihFolk Vault V2 (Roblox knowledge base)
 - [[LihFolk/LihFolk Vault V2/000 Home|LihFolk home]]: 1,400 notes from scripting to VFX, UI, modelling, monetization and teardowns of top games

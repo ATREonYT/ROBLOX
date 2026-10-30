@@ -73,3 +73,19 @@ Get an AI agent controlling Roblox Studio. Do this once and every later section 
 - [How to Install Superbullet AI: Complete Setup Guide (v5)](https://www.youtube.com/watch?v=lRqkIJkGfKY), Superbullet Studios, 2026-02-13, 145K views
 - [Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development](https://www.youtube.com/watch?v=6aYkVVIcm48), SuperBullet, 2026-10-09. Turns a free Tap Simulator template into a full game with prebuilt systems (pets, quests, worlds, potions, codes) and Claude adapting them. **Very relevant for simulator-style games.**
 - [Build Roblox Games FASTER with AI: SuperbulletAI Tutorial](https://www.youtube.com/watch?v=vBvWF6VPWjU), Vanta ExE, 2026-07-01
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[Building Viral Roblox Game w AI (pretty easy)]]
+- [[Building a Viral Roblox Game w ONLY AI]]
+- [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]]
+- [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]]
+- [[How Big Studios Develop on Roblox]]
+- [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]]
+- [[How to make Roblox Games Using Claude]]
+- [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]]
+- [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

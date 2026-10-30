@@ -71,3 +71,10 @@ Full pipeline for a modular vehicle builder/combat prototype: ChatGPT concept ar
 - Meshy image-to-3D then adaptive remesh to about 6k tris for steal-game characters (inferred).
 - Keep a game design doc with phases in a Claude project so each prompt phase stays on scope.
 - Asset Manager bulk import plus pasting IDs into Claude to auto-build a selection or shop GUI (inferred for our Store UI).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[04 Building, Maps & 3D Models]]
+- More in 3D and Blender: [[How To Connect Claude To Blender (Blender MCP Setup)]] · [[I Built a Roblox Pet RPG with Claude Opus 4 MCP + Roblox Studio MCP (Full Tutorial)]]
+<!-- related:end -->

@@ -57,3 +57,10 @@ Install the Blender connector in Claude Desktop, install the Blender MCP add-on 
 - Iterate shapes conversationally, then export to Roblox as FBX (inferred; export not covered here).
 - Keep the hand-icon permissions on while working in real project files (inferred).
 - Good first test: ask Claude for a block-and-roof house, then a steal-game base plot piece (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[04 Building, Maps & 3D Models]]
+- More in 3D and Blender: [[I Built a Roblox Pet RPG with Claude Opus 4 MCP + Roblox Studio MCP (Full Tutorial)]] · [[I Built a Roblox Vehicle Combat Builder Game Using Claude Opus 4.8 MCP + Roblox Studio AI]]
+<!-- related:end -->

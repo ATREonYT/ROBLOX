@@ -8,7 +8,7 @@ updated: 2026-10-29
 Back to [[00 Start Here]] · Checklist: [[16 Cartoony Kid-Appeal Checklist]]
 
 > [!info] Pairs with the written research
-> The deep "why and exact numbers" is already in the vault: `reports/Cartoony Roblox building UI and animation.md`, `reports/Tiered props VFX and vibrant maps.md` and `research_notes/Cartoony Roblox building UI and animation/building_stylized_techniques.md`. This note is the **video** side: who to watch to see it done.
+> The deep "why and exact numbers" is already in the vault: [[Cartoony Roblox building UI and animation]], [[Tiered props VFX and vibrant maps]] and [[building_stylized_techniques]]. This note is the **video** side: who to watch to see it done.
 > ⭐ = must-watch. Entries were checked against their YouTube pages unless marked *unverified*.
 
 ## Low-poly maps & terrain
@@ -106,3 +106,18 @@ Back to [[00 Start Here]] · Checklist: [[16 Cartoony Kid-Appeal Checklist]]
 
 > [!warning] Older lighting videos use outdated settings
 > Roblox replaced `Lighting.Technology` in 2025 with `LightingStyle` (Soft / Realistic) + `PrioritizeLightingQuality`. Pre-2025 videos say "Future" or "ShadowMap". For cartoony games use **Soft + PrioritizeLightingQuality = true**. Exact preset values are in the vault's cartoony report (lighting section).
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[How to Build PRO Roblox Maps!]]
+- [[How to Light a Low Poly Map (Roblox Studio)]]
+- [[How to Make Stylized Trees & Assets NEWEST METHOD ULTIMATE Tutorial {Roblox Studio}]]
+- [[How to Model a Low Poly Roblox Pet (Blender Tutorial)]]
+- [[How to make AMAZING Low Poly Roblox Models]]
+- [[How to make CARTOON LIGHTING in Roblox Studio]]
+- [[LOW-POLY TERRAIN TUTORIAL ROBLOX+BLENDER]]
+- [[Make Your Roblox Game Look 10x Better With Lighting]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

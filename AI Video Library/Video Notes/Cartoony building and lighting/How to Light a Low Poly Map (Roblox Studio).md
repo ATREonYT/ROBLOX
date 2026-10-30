@@ -59,3 +59,11 @@ No AI prompts. Skybox free via the creator's Discord.
 - Max ShadowSoftness suits blocky cartoony bases (inferred for our style).
 - Pick one ambient hue per zone (orange for earthy, blue for ice) as a theme dial (inferred).
 - Keep post effects to Sky, ColorCorrection, Atmosphere for performance on mobile (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[13 Cartoony & Low-Poly Building]] · [[04 Building, Maps & 3D Models]]
+- Playbooks: [[Blueprint - Egg Run]] · [[16 Cartoony Kid-Appeal Checklist]]
+- More in Cartoony building and lighting: [[How to Build PRO Roblox Maps!]] · [[How to Make Stylized Trees & Assets NEWEST METHOD ULTIMATE Tutorial {Roblox Studio}]] · [[How to Model a Low Poly Roblox Pet (Blender Tutorial)]] · [[How to make AMAZING Low Poly Roblox Models]] · [[How to make CARTOON LIGHTING in Roblox Studio]] · [[LOW-POLY TERRAIN TUTORIAL ROBLOX+BLENDER]] · [[Make Your Roblox Game Look 10x Better With Lighting]]
+<!-- related:end -->

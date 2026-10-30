@@ -63,3 +63,11 @@ Build a "plus one" (+1 speed) game with Claude Code in small, separate requests 
 - Ask Claude for system ideas such as timed races with a second currency; a similar timed event could be added to steal-style games (inferred).
 - Have Claude model simple low-poly pads or props in Blender (treadmills = speed pads) and then wire the gameplay effect in a second prompt.
 - Budget usage by splitting requests: short mechanic prompts are cheap, UI and Blender prompts cost more.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building Viral Roblox Game w AI (pretty easy)]] · [[Building a Viral Roblox Game w ONLY AI]] · [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]] · [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]] · [[How Big Studios Develop on Roblox]] · [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]] · [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]] · [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+<!-- related:end -->

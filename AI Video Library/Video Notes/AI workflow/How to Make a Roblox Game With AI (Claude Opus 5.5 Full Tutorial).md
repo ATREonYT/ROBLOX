@@ -76,3 +76,11 @@ Instead of asking one AI to write everything as code, give Claude Code one *skil
 - For steal-a-brainrot style maps, run a reachability/raycast check (can you get there and back, fall length) on base plots and steal paths.
 - Use the phase-freeze method to verify short pickup/steal VFX bursts, and the depth-stack for consistent cartoony buttons.
 - Write every recurring bug as a rule in the skill so later sessions do not repeat it (inferred for our repo).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building Viral Roblox Game w AI (pretty easy)]] · [[Building a Viral Roblox Game w ONLY AI]] · [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]] · [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]] · [[How Big Studios Develop on Roblox]] · [[How to make Roblox Games Using Claude]] · [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]] · [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+<!-- related:end -->
