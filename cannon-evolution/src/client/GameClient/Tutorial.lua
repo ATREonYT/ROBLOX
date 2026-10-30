@@ -330,7 +330,7 @@ return function(ctx)
 	-- outline, floating on one straight line from you to the target (not on
 	-- the ground, Alex Oct 30), turned to face the camera, flowing forward.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED = 44, 1.35, 5
+	local ARROWS, SPACING, FLOW_SPEED = 36, 1.75, 5 -- tip to notch like the reference, no overlap
 	local LEN, HALF, NOTCH, THICK = 1.6, 0.8, 0.55, 0.25 -- dart length, half width, notch depth, thickness
 	local HIDDEN = CFrame.new(0, -500, 0)
 	local arrowFolder = new("Model", { Name = "TutorialArrows" })
