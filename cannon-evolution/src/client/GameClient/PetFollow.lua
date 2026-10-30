@@ -55,8 +55,8 @@ return function(ctx)
 	local lowGraphics = false
 
 	-- one small dust emitter per walking pet, fired with Emit on each landing (vault VFX brief: Rate 0 + Emit)
-	-- (called while the model sits at the origin, so feetY is the bottom of its box)
-	local function addDust(m, feetY)
+	-- (called while the model sits at the origin; box/size are its bounding box there)
+	local function addDust(m, box, size)
 		local base = m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
 		if not base then
 			return nil
@@ -64,8 +64,8 @@ return function(ctx)
 		local att = Instance.new("Attachment")
 		att.Name = "PetDust"
 		att.Parent = base
-		-- at the feet, not inside the body, or the puffs never get out
-		att.WorldPosition = Vector3.new(base.Position.X, feetY + 0.2, base.Position.Z)
+		-- at the heels, just behind the pet (it faces -Z), or the puffs stay hidden inside its body
+		att.WorldPosition = Vector3.new(box.Position.X, box.Position.Y - size.Y / 2 + 0.3, box.Position.Z + size.Z / 2 + 0.3)
 		local e = Instance.new("ParticleEmitter")
 		e.Texture = DUST
 		e.Rate = 0
@@ -133,7 +133,7 @@ return function(ctx)
 				m:PivotTo(CFrame.new())
 				local box, boxSize = m:GetBoundingBox()
 				local flying = FLYING[name] == true
-				local dust = not flying and addDust(m, box.Position.Y - boxSize.Y / 2) or nil
+				local dust = not flying and addDust(m, box, boxSize) or nil
 				-- a pet that wasn't equipped last time pops in; the rest just carry on
 				seen[name] = (seen[name] or 0) + 1
 				local isNew = seen[name] > (before[name] or 0)
