@@ -780,6 +780,7 @@ local function buyBall(player, id)
 	data.Cash -= ball.Price
 	data.Balls[id] = true
 	data.EquippedBall = id
+	player:SetAttribute("Ball", id) -- every client draws your launch with it
 	markDirty(player)
 	return true, ball.Name .. " Cannonball unlocked!"
 end
@@ -790,6 +791,7 @@ local function equipBall(player, id)
 		return false
 	end
 	data.EquippedBall = id
+	player:SetAttribute("Ball", id)
 	markDirty(player)
 	return true
 end
@@ -1380,6 +1382,7 @@ local function onPlayerAdded(player)
 	end
 	local data = reconcile(type(stored) == "table" and stored or {}, Config.DefaultData)
 	profiles[player] = { Data = data, Loaded = true, JoinTime = os.clock(), PlaytimeClaimed = {}, Passes = {} }
+	player:SetAttribute("Ball", data.EquippedBall)
 	loadPasses(player)
 	if not player.Parent then
 		profiles[player] = nil

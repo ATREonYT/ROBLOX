@@ -89,11 +89,7 @@ for i, id in ipairs(EGGS) do
 	eggModel.Parent = stand
 	local base = eggModel:FindFirstChildWhichIsA("BasePart", true)
 
-	local glow = Instance.new("PointLight")
-	glow.Color = EGG_COLORS[id]
-	glow.Range = 14
-	glow.Brightness = 1.2
-	glow.Parent = base
+	-- no PointLight: it washed the eggs out (Alex, Oct 30)
 	local board = Instance.new("BillboardGui")
 	board.Size = UDim2.fromScale(7, 2.6) -- sized in studs, so neighbouring signs never overlap from afar
 	board.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)

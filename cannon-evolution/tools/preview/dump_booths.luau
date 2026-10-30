@@ -146,6 +146,58 @@ local function encode(list, p, extra)
 end
 
 local out = {}
+-- the cannonball stand with a stand-in ball on each pad, coloured like BallStand.lua does
+-- (the first ball picked: green pad; the rest purple)
+do
+	local ok2, err2 = pcall(luau.load(fs.readFile("src/tools/BuildCannonBallStand.lua"), { debugName = "BuildCannonBallStand", environment = env }))
+	if not ok2 then
+		print("(stand) " .. tostring(err2))
+	end
+	local stand = workspace:FindFirstChild("CannonBallStand")
+	if stand then
+		local list, pads = {}, {}
+		for _, p in stand:GetChildren() do
+			if p.Name == "PadBase" then
+				table.insert(pads, p)
+			end
+		end
+		table.sort(pads, function(a, b)
+			if math.abs(a.CFrame.Position.Y - b.CFrame.Position.Y) > 1 then
+				return a.CFrame.Position.Y < b.CFrame.Position.Y
+			end
+			return a.CFrame.Position.X > b.CFrame.Position.X
+		end)
+		local GREEN, PURPLE = roblox.Color3.fromRGB(64, 220, 104), roblox.Color3.fromRGB(160, 90, 245)
+		for _, p in stand:GetChildren() do
+			if p:IsA("BasePart") then
+				if string.sub(p.Name, 1, 5) == "State" then
+					local d = p.CFrame.Position - pads[1].CFrame.Position
+					p.Color = (math.abs(d.Y) < 1.5 and roblox.Vector2.new(d.X, d.Z).Magnitude < 3.2) and GREEN or PURPLE
+				end
+				encode(list, p)
+			end
+		end
+		for i, pad in pads do
+			local b = config.Balls[i]
+			if b then
+				local c = pad.CFrame.Position + Vector3.new(0, pad.Size.Z / 2 + 0.5 + 1.3, 0)
+				local core = Instance.new("Part")
+				core.Shape = roblox.Enum.PartType.Ball
+				core.Size = Vector3.new(2.6, 2.6, 2.6)
+				core.CFrame = CFrame.new(c)
+				core.Color = b.Color
+				encode(list, core)
+				local band = Instance.new("Part")
+				band.Shape = roblox.Enum.PartType.Cylinder
+				band.Size = Vector3.new(0.45, 2.7, 2.7)
+				band.CFrame = CFrame.new(c) * CFrame.Angles(0, math.rad(90), 0)
+				band.Color = b.Band
+				encode(list, band)
+			end
+		end
+		out.stand = { parts = list, x = 0 }
+	end
+end
 -- the start of the water: your cannon (placed like Effects.placeMyCannon), the Launch Zone,
 -- and stand-in lobby floor and sea so the scene reads
 do

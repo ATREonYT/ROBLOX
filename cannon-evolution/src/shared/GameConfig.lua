@@ -276,7 +276,7 @@ end
 
 ---------------------------------------------------------------------------
 -- Cannonballs: shown on the stand in the lobby, one per pad (lower row first,
--- nearest the water first). Bought once with Cash, then picked; the picked one
+-- left to right). Bought once with Cash, then picked; the picked one
 -- is the ball your cannon fires and adds its Cash bonus to every launch (Alex, Oct 30).
 ---------------------------------------------------------------------------
 Config.Balls = {

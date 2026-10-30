@@ -36,8 +36,12 @@ local rowZ = lobbyPos.Z + SIDE * 21 -- stand points, set back so the booth front
 -- booths stand side by side like Alex's pictures, the row centred in the lobby
 -- booths are built full size, then each station is scaled down to BOOTH_SCALE so the row fits the lobby (Alex, Oct 30)
 local BOOTH_SCALE = 0.8
-local spacing = 15 * BOOTH_SCALE
-local startX = lobbyPos.X - 10 - spacing * (#Config.Stations - 1) / 2 -- 10 left keeps the VIP booth clear of the side building
+-- spaced out with a walkway between booths like the Stone Skipping pads (Alex, Oct 30): the row now
+-- runs from near the water's edge to where it used to end, by the side building at the far end
+local ROW_END = lobbyPos.X - 10 + 15 * BOOTH_SCALE * 3.5 + 7 * BOOTH_SCALE -- far edge of the old row
+local ROW_START = lobbyPos.X - lobbySize.X / 2 + 6
+local spacing = (ROW_END - ROW_START - 14 * BOOTH_SCALE) / (#Config.Stations - 1)
+local startX = ROW_START + 7 * BOOTH_SCALE
 
 local old = workspace:FindFirstChild("TrainingStations")
 if old then
@@ -513,38 +517,7 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 		fx.SpreadAngle = Vector2.new(20, 20)
 	end
 
-	-- coloured light from the back wall so the booth glows onto its floor, like the pictures
-	local lamp = blk("Glow", Vector3.new(0.5, 0.5, 0.5), 0, 6, pz - 2.5, WHITE)
-	lamp.Transparency = 1
-	local pl = Instance.new("PointLight")
-	pl.Color = (theme.Neon or theme.Edge or theme.Floor):Lerp(WHITE, 0.2)
-	pl.Brightness = theme.Neon and 2.2 or 1.3
-	pl.Range = 18
-	pl.Parent = lamp
-
-	-- small black "+N Power" label over the booth, like the pictures
-	local tag = blk("Tag", Vector3.new(0.5, 0.5, 0.5), 0, H + 4.2, pz, WHITE)
-	tag.Transparency = 1
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromScale(5, 1.2)
-	bb.MaxDistance = 150
-	bb.Parent = tag
-	local pill = Instance.new("TextLabel")
-	pill.Size = UDim2.fromScale(1, 1)
-	pill.BackgroundColor3 = rgb(15, 15, 20)
-	pill.BackgroundTransparency = 0.1
-	pill.Font = Enum.Font.FredokaOne
-	pill.TextScaled = true
-	pill.TextColor3 = theme.Neon or theme.Edge or WHITE
-	pill.Text = "+" .. Config.Format(info.Gain) .. " Power"
-	pill.Parent = bb
-	local cr = Instance.new("UICorner")
-	cr.CornerRadius = UDim.new(0.5, 0)
-	cr.Parent = pill
-	local pad = Instance.new("UIPadding")
-	pad.PaddingTop = UDim.new(0.15, 0)
-	pad.PaddingBottom = UDim.new(0.15, 0)
-	pad.Parent = pill
+	-- the rebirth sign over the booth (icon, rebirths, multiplier) comes from BuildRebirthSigns
 	for _, d in ipairs(m:GetDescendants()) do
 		if d:IsA("BasePart") then
 			d.Anchored = true
@@ -680,55 +653,36 @@ if old then
 	old:Destroy()
 end
 local zonePos = Vector3.new(cannonSpot.X, floorY + 0.1, trackZ) - dirL * 17
+-- invisible now: no yellow floor (Alex, Oct 30); walking in still fires you
 local zone = part({
 	Name = "LaunchZone",
 	Size = Vector3.new(16, 0.2, 26),
 	CFrame = CFrame.new(zonePos),
 	Color = Color3.fromRGB(255, 200, 40),
-	Material = Enum.Material.Neon,
-	Transparency = 0.15,
+	Transparency = 1,
 	CanCollide = false,
 	Parent = workspace,
 })
-local surface = Instance.new("SurfaceGui")
-surface.Face = Enum.NormalId.Top
-surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-surface.PixelsPerStud = 30
-surface.LightInfluence = 0
-surface.Parent = zone
 local label = Instance.new("TextLabel")
 label.BackgroundTransparency = 1
 label.Size = UDim2.fromScale(1, 1)
-label.Rotation = 90
 label.Font = Enum.Font.FredokaOne
-label.Text = "LAUNCH ZONE"
 label.TextScaled = true
 label.TextColor3 = Color3.new(1, 1, 1)
-label.Parent = surface
 local stroke = Instance.new("UIStroke")
-stroke.Thickness = 6
-stroke.Color = Color3.fromRGB(120, 60, 0)
+stroke.Thickness = 4
+stroke.Color = Color3.fromRGB(60, 30, 90)
 stroke.Parent = label
 local board = Instance.new("BillboardGui")
-board.Size = UDim2.fromOffset(260, 70)
-board.StudsOffset = Vector3.new(0, 9, 0)
+board.Size = UDim2.fromOffset(220, 50)
+board.StudsOffset = Vector3.new(0, 7, 0)
 board.LightInfluence = 0
 board.MaxDistance = 250
 board.Parent = zone
 local boardText = label:Clone()
 boardText.Rotation = 0
 boardText.Text = "WALK IN TO LAUNCH!"
-boardText.TextColor3 = Color3.fromRGB(255, 230, 90)
 boardText.Parent = board
-local sparkle = Instance.new("ParticleEmitter")
-sparkle.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-sparkle.Color = ColorSequence.new(Color3.fromRGB(255, 230, 90))
-sparkle.Rate = 12
-sparkle.Speed = NumberRange.new(3, 6)
-sparkle.Lifetime = NumberRange.new(1, 1.6)
-sparkle.EmissionDirection = Enum.NormalId.Top
-sparkle.Size = NumberSequence.new(0.8, 0)
-sparkle.Parent = zone
 
 -- Spawn in the lobby, a short walk behind the Launch Zone, facing your cannon and the water
 local spawn = workspace:FindFirstChildOfClass("SpawnLocation")

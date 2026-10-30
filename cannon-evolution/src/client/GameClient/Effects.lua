@@ -247,7 +247,7 @@ return function(ctx)
 				icon.Image = Icons[name]
 				icon.Fallback.Visible = false
 			end
-			table.insert(rebirthSigns, { Sign = sign, Status = card:FindFirstChild("Status") })
+			table.insert(rebirthSigns, { Sign = sign, Status = card:FindFirstChild("Status"), Icon = icon })
 		end
 	end
 	local lastUnlock = ""
@@ -267,6 +267,10 @@ return function(ctx)
 			if s.Status then
 				s.Status.BackgroundColor3 = open and Color3.fromRGB(70, 210, 90) or Color3.fromRGB(235, 60, 60)
 				s.Status.Text.Text = open and "✅ UNLOCKED" or "🔒 LOCKED"
+			end
+			-- the over-booth sign has no ribbon: a locked booth's icon is dimmed instead
+			if s.Icon and not s.Status then
+				s.Icon.ImageColor3 = open and Color3.new(1, 1, 1) or Color3.fromRGB(120, 120, 135)
 			end
 		end
 	end)
@@ -584,20 +588,28 @@ return function(ctx)
 			h[5] = waterAt(pointAt(h[2]), water) + BALL_RADIUS
 		end
 
+		-- the owner's picked cannonball from the stand (its colour and band)
+		local look = Config.GetBall(owner:GetAttribute("Ball")) or Config.Balls[1]
 		local ball = new("Part", {
 			Name = "Cannonball", Shape = Enum.PartType.Ball, Size = Vector3.one * BALL_RADIUS * 2,
 			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false,
-			Material = Enum.Material.Metal, Color = Color3.fromRGB(45, 45, 52), CFrame = CFrame.new(origin),
+			Material = Enum.Material.SmoothPlastic, Color = look.Color, CFrame = CFrame.new(origin),
 			Parent = workspace,
 		})
+		local band = new("Part", {
+			Name = "Band", Shape = Enum.PartType.Cylinder, Size = Vector3.new(BALL_RADIUS * 0.35, BALL_RADIUS * 2.08, BALL_RADIUS * 2.08),
+			CanCollide = false, CanQuery = false, CanTouch = false, Massless = true,
+			Material = Enum.Material.SmoothPlastic, Color = look.Band, CFrame = ball.CFrame * CFrame.Angles(0, math.rad(90), 0),
+			Parent = ball,
+		})
+		new("WeldConstraint", { Part0 = ball, Part1 = band, Parent = ball })
 		local a0 = new("Attachment", { Position = Vector3.new(0, 0.9, 0), Parent = ball })
 		local a1 = new("Attachment", { Position = Vector3.new(0, -0.9, 0), Parent = ball })
 		new("Trail", {
-			Attachment0 = a0, Attachment1 = a1, Lifetime = 0.45, LightEmission = 0.7, FaceCamera = true,
-			Color = ColorSequence.new(Color3.fromRGB(255, 230, 120), Color3.fromRGB(255, 110, 50)),
+			Attachment0 = a0, Attachment1 = a1, Lifetime = 0.45, LightEmission = 0.4, FaceCamera = true,
+			Color = ColorSequence.new(look.Band, look.Band:Lerp(look.Color, 0.5)),
 			Transparency = NumberSequence.new(0.1, 1), WidthScale = NumberSequence.new(1, 0.2), Parent = ball,
 		})
-		new("PointLight", { Color = Color3.fromRGB(255, 190, 90), Range = 12, Brightness = 1.5, Parent = ball })
 
 		local borders, nextBorder = {}, 1
 		local cam = workspace.CurrentCamera
@@ -908,4 +920,7 @@ return function(ctx)
 			applySettings()
 		end)
 	end)
+
+	-- the cannonball stand in the lobby (its own module)
+	task.spawn(require(script.Parent.BallStand), ctx)
 end
