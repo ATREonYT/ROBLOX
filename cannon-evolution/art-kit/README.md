@@ -4,9 +4,9 @@ Clear-background PNGs (512 px) to build gamepass and shop pictures from.
 Made by `tools/preview/render_icons.py` from the game's own cannon and ball data.
 
 - `cannons/`: all 25 cannons (Starter to Hacker).
-- `cannonballs/`: the 3 balls the game draws itself (Gold, Ruby, Frost).
-  Your own 7 balls (Wood, Stone, Steel, Neon, Rainbow, Hacker, Galaxy) are your models;
-  they get captured from Studio next.
+- `cannonballs/`: all 10 balls. Gold, Ruby and Frost are drawn by `render_icons.py`; your own 7
+  (Wood, Stone, Steel, Neon, Rainbow, Hacker, Galaxy) are Studio screenshots of your models, cut out by
+  `tools/preview/key_captures.py`. Their edges are cut from a screenshot, so they are a little softer than the drawn ones.
 - `contact-sheet.jpg`: everything on one page.
 
 ## Pictures the game still needs (512 px or more, clear background)

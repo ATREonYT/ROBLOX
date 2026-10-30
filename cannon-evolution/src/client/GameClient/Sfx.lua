@@ -47,6 +47,7 @@ local LEVEL = {
 	Shot = { 0.55, 0.04, "Effects" },
 	Launch = { 0.55, 0.03, "Effects" },
 	Skip = { 0.35, 0.08, "Effects" },
+	Splash = { 0.5, 0.05, "Effects" },
 }
 
 -- Roblox's own sounds standing in until ours are uploaded: { id, volume multiplier, pitch }. Only built-ins every

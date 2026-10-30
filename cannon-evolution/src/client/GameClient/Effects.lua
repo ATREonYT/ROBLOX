@@ -358,6 +358,47 @@ return function(ctx)
 		Debris:AddItem(ring, 0.8)
 	end
 
+	-- the ball's final landing: a tall foamy splash and three waves rolling out over the water (Alex, Oct 30).
+	-- Plain white parts, no neon, so nothing flashes
+	local function bigSplash(pos)
+		for i = 0, 2 do
+			task.delay(i * 0.22, function()
+				local wave = new("Part", {
+					Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+					Shape = Enum.PartType.Cylinder, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(235, 250, 255),
+					Size = Vector3.new(0.35, 4, 4), Transparency = 0.15,
+					CFrame = CFrame.new(pos + Vector3.new(0, 0.05 * i, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+					Parent = workspace,
+				})
+				local size = 30 - i * 6
+				TweenService:Create(wave, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Size = Vector3.new(0.12, size, size), Transparency = 1,
+				}):Play()
+				Debris:AddItem(wave, 1.4)
+			end)
+		end
+		local column = new("Part", {
+			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 1,
+			Size = Vector3.new(3, 0.2, 3), CFrame = CFrame.new(pos), Parent = workspace,
+		})
+		-- foam shooting up and falling back
+		new("ParticleEmitter", {
+			Texture = "rbxasset://textures/particles/smoke_main.dds", Color = ColorSequence.new(Color3.fromRGB(245, 252, 255)),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.5), NumberSequenceKeypoint.new(1, 4.5) }),
+			Speed = NumberRange.new(22, 34), SpreadAngle = Vector2.new(14, 14), Lifetime = NumberRange.new(0.8, 1.2),
+			Acceleration = Vector3.new(0, -55, 0), EmissionDirection = Enum.NormalId.Top, Rate = 0, Parent = column,
+		}):Emit(26)
+		-- droplets flying out to the sides
+		new("ParticleEmitter", {
+			Texture = "rbxasset://textures/particles/sparkles_main.dds", Color = ColorSequence.new(Color3.fromRGB(220, 245, 255)),
+			Size = NumberSequence.new(1.2, 0), Speed = NumberRange.new(16, 28), SpreadAngle = Vector2.new(60, 60),
+			Lifetime = NumberRange.new(0.6, 1), Acceleration = Vector3.new(0, -70, 0), EmissionDirection = Enum.NormalId.Top,
+			Rate = 0, Parent = column,
+		}):Emit(40)
+		Debris:AddItem(column, 2.5)
+	end
+
 	local function popBanner(text, color)
 		banner.Text = text
 		banner.TextColor3 = color
@@ -705,6 +746,12 @@ return function(ctx)
 					end
 					counterScale.Scale = 1.3
 					TweenService:Create(counterScale, TweenInfo.new(0.4, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+				end
+				local last = hops[#hops]
+				local stop = pointAt(distance)
+				bigSplash(Vector3.new(stop.X, last[5] - BALL_RADIUS + 0.2, stop.Z))
+				if mine then
+					Kit.playSound("Splash")
 				end
 				TweenService:Create(ball, TweenInfo.new(0.8), { Transparency = 1 }):Play()
 				Debris:AddItem(ball, Config.RETURN_DELAY + 1)

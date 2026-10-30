@@ -8,7 +8,7 @@
 	     rules: lock, hide, letterbox, cut on action, a wide after the big
 	     moment, and restore everything exactly, even if something fails.
 	  2. A quest bar at the top with a live count, e.g. TRAIN POWER (12/30).
-	  3. A line of white arrows flowing straight from you to the next thing to
+	  3. A line of chunky yellow arrows floating straight from you to the next thing to
 	     do, and a pointer on the menu button when the step is in the UI.
 	  4. A TUTORIAL COMPLETE! screen after the first rebirth.
 	Each step finishes on its own when you do it, and progress is saved.
@@ -325,15 +325,17 @@ return function(ctx)
 	Kit.icon("Arrow", { Size = UDim2.fromScale(1, 1), Rotation = 90, Parent = marker })
 
 	-----------------------------------------------------------------------
-	-- Arrow line: white arrowheads with a dark outline, floating a little
-	-- off the floor, turned to face the camera, flowing toward the target
-	-- along a walkable path.
+	-- Arrow line: chunky yellow cartoon chevrons with a thick dark outline,
+	-- floating in the air on one straight line from you to the target
+	-- (not on the ground, Alex Oct 30), bobbing in a wave as they flow.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED, LIFT = 34, 2.6, 6, 1.6
+	local ARROWS, SPACING, FLOW_SPEED = 30, 3, 6
+	local ARM, THICK = Vector3.new(0.95, 0.5, 2), 0.5 -- one arm of the chevron: width, thickness, length
+	local FILL, TIP = Color3.fromRGB(255, 214, 64), Color3.fromRGB(255, 240, 150)
 	local HIDDEN = CFrame.new(0, -500, 0)
 	local arrowFolder = new("Model", { Name = "TutorialArrows" })
 	new("Highlight", {
-		Adornee = arrowFolder, FillTransparency = 1, OutlineColor = Color3.fromRGB(30, 30, 50), OutlineTransparency = 0,
+		Adornee = arrowFolder, FillTransparency = 1, OutlineColor = Color3.fromRGB(40, 22, 10), OutlineTransparency = 0,
 		DepthMode = Enum.HighlightDepthMode.Occluded, Parent = arrowFolder,
 	})
 	local arrows = {}
@@ -342,24 +344,27 @@ return function(ctx)
 		for side = 1, 2 do
 			arms[side] = new("Part", {
 				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-				Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(245, 245, 250),
-				Size = Vector3.new(0.75, 0.15, 1.7), CFrame = HIDDEN, Parent = arrowFolder,
+				Material = Enum.Material.SmoothPlastic, Color = FILL, Size = ARM, CFrame = HIDDEN, Parent = arrowFolder,
 			})
 		end
+		-- a round knob where the arms meet, so the tip looks soft instead of a sharp corner
+		arms[3] = new("Part", {
+			Shape = Enum.PartType.Cylinder, Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+			Material = Enum.Material.SmoothPlastic, Color = TIP, Size = Vector3.new(THICK, 1.3, 1.3), CFrame = HIDDEN, Parent = arrowFolder,
+		})
 		arrows[i] = arms
 	end
-	local rayParams = RaycastParams.new()
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
 
 	local function hideArrows()
 		for _, arms in ipairs(arrows) do
-			arms[1].CFrame = HIDDEN
-			arms[2].CFrame = HIDDEN
+			for _, part in ipairs(arms) do
+				part.CFrame = HIDDEN
+			end
 		end
 	end
 
-	-- a straight line from you to the target: it points at one thing and never bends round
-	-- obstacles (Alex, Oct 30); the arrows still sit on the ground under it
+	-- a straight line through the air from you to the target: it points at one thing, never bends
+	-- round obstacles and never follows the ground (Alex, Oct 30)
 	local route = nil -- { points = {Vector3}, lengths = {cumulative}, total = n }
 
 	local function setRoute(points)
@@ -393,48 +398,43 @@ return function(ctx)
 		if arrowFolder.Parent ~= workspace then
 			arrowFolder.Parent = workspace
 		end
-		local from = root.Position
-		setRoute({ from, Vector3.new(target.Position.X, from.Y, target.Position.Z) })
+		local from = root.Position + Vector3.new(0, 0.5, 0)
+		setRoute({ from, target.Position })
 		local total = route.total
-		local flatGap = Vector3.new(target.Position.X - from.X, 0, target.Position.Z - from.Z).Magnitude
-		if flatGap < 7 or total < 7 then
+		if total < 7 then
 			hideArrows()
 			return
 		end
 		local camPos = workspace.CurrentCamera.CFrame.Position
-		rayParams.FilterDescendantsInstances = { player.Character, arrowFolder, workspace:FindFirstChild("MyCannon") }
-		local phase = (os.clock() * FLOW_SPEED) % SPACING
+		local t = os.clock()
+		local phase = (t * FLOW_SPEED) % SPACING
 		for i, arms in ipairs(arrows) do
 			local d = 2.5 + (i - 1) * SPACING + phase
-			if d > total - 2 then
-				arms[1].CFrame = HIDDEN
-				arms[2].CFrame = HIDDEN
-			else
-				local p, seg = pointOnRoute(d)
-				local dir = Vector3.new(seg.X, 0, seg.Z)
-				dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.xAxis
-				local hit = workspace:Raycast(p + Vector3.new(0, 3, 0), Vector3.new(0, -12, 0), rayParams)
-				local pos = Vector3.new(p.X, (hit and hit.Position.Y or p.Y - 2.5) + LIFT, p.Z)
-				local toCam = camPos - pos
-				if toCam.Magnitude < 9 then
-					-- right under the camera an arrow fills the screen: skip it
-					arms[1].CFrame = HIDDEN
-					arms[2].CFrame = HIDDEN
-					continue
+			local p, dir = pointOnRoute(d)
+			dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.xAxis
+			-- a soft wave runs down the line
+			local pos = p + Vector3.new(0, math.sin(d * 0.9 - t * 5) * 0.25, 0)
+			local toCam = camPos - pos
+			-- right under the camera an arrow fills the screen: skip it
+			if d > total - 2.5 or toCam.Magnitude < 9 then
+				for _, part in ipairs(arms) do
+					part.CFrame = HIDDEN
 				end
-				-- face the camera: the arrow's flat side turns toward you around its pointing direction
-				local normal = toCam - dir * toCam:Dot(dir)
-				normal = normal.Magnitude > 0.01 and normal.Unit or Vector3.yAxis
-				local side = dir:Cross(normal)
-				local base = CFrame.fromMatrix(pos, side, normal)
-				-- grow in near you and shrink near the target
-				local s = math.clamp(math.min((d - 2.5) / 4, (total - 2 - d) / 4), 0, 1)
-				local k = 0.35 + 0.65 * s
-				arms[1].Size = Vector3.new(0.75 * k, 0.15, 1.7 * k)
-				arms[2].Size = arms[1].Size
-				arms[1].CFrame = base * CFrame.new(0.5 * k, 0, 0.5 * k) * CFrame.Angles(0, math.rad(45), 0)
-				arms[2].CFrame = base * CFrame.new(-0.5 * k, 0, 0.5 * k) * CFrame.Angles(0, math.rad(-45), 0)
+				continue
 			end
+			-- face the camera: the arrow's flat side turns toward you around its pointing direction
+			local normal = toCam - dir * toCam:Dot(dir)
+			normal = normal.Magnitude > 0.01 and normal.Unit or Vector3.yAxis
+			local base = CFrame.fromMatrix(pos, dir:Cross(normal), normal)
+			-- pop in near you and shrink into the target
+			local s = math.clamp(math.min((d - 2.5) / 3, (total - 2.5 - d) / 3), 0, 1)
+			local k = (0.3 + 0.7 * s) * (1 + 0.06 * math.sin(t * 6 - d))
+			local arm = Vector3.new(ARM.X * k, ARM.Y, ARM.Z * k)
+			arms[1].Size, arms[2].Size = arm, arm
+			arms[1].CFrame = base * CFrame.new(0.55 * k, 0, 0.55 * k) * CFrame.Angles(0, math.rad(45), 0)
+			arms[2].CFrame = base * CFrame.new(-0.55 * k, 0, 0.55 * k) * CFrame.Angles(0, math.rad(-45), 0)
+			arms[3].Size = Vector3.new(THICK * 1.04, 1.25 * k, 1.25 * k)
+			arms[3].CFrame = base * CFrame.new(0, 0, -0.1 * k) * CFrame.Angles(0, 0, math.rad(90))
 		end
 	end
 
