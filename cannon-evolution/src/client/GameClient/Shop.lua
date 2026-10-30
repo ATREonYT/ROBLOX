@@ -90,14 +90,21 @@ return function(ctx)
 		Kit.rainbowStroke(banner, 4)
 		local art = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(0.42, 0, 1, 0), ZIndex = 26, Parent = banner })
 		Kit.rays(art, { Size = UDim2.fromOffset(420, 420), Color = Color3.new(1, 1, 1), Transparency = 0.7, ZIndex = 26 })
-		local model
+		local model, picture
 		if item.Model then
 			model = ReplicatedStorage:FindFirstChild("Cannons") and ReplicatedStorage.Cannons:FindFirstChild(item.Model)
 		elseif item.Egg then
 			local egg = Config.GetEgg(item.Egg)
-			model = ReplicatedStorage:FindFirstChild("Eggs") and ReplicatedStorage.Eggs:FindFirstChild(egg.Model)
+			if Kit.hasImage("Egg_" .. egg.Id) then
+				picture = "Egg_" .. egg.Id -- Alex's drawn egg, the same picture as everywhere else
+			else
+				model = ReplicatedStorage:FindFirstChild("Eggs") and ReplicatedStorage.Eggs:FindFirstChild(egg.Model)
+			end
 		end
-		if model then
+		if picture then
+			local ic = Kit.icon(picture, { Size = UDim2.fromOffset(200, 200), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 28, Parent = art })
+			Kit.bob(ic, 6, 1.6)
+		elseif model then
 			local vp = Kit.viewport(art, model, { Size = UDim2.fromScale(0.95, 0.95), Spin = 30, ZIndex = 28 })
 			Kit.bob(vp, 5, 1.6)
 		else
