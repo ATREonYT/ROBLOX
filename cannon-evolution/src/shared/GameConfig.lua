@@ -433,13 +433,16 @@ Config.LEADERBOARD_REFRESH = 60
 -- Button sounds: upload cannon-evolution/assets/sfx/UI_*.ogg (Kenney Interface Sounds, CC0) with
 -- Asset Manager > Bulk Import, then paste each rbxassetid here.
 Config.Sounds = {
-	Click = "", -- UI_Click.ogg (Kenney drop_002): every button press
-	Hover = "", -- UI_Hover.ogg (Kenney select_002): mouse over a button, very quiet
-	Open = "", -- UI_Open.ogg (Kenney maximize_009): a panel opens
-	Close = "", -- UI_Close.ogg (Kenney minimize_009): a panel closes
-	Confirm = "", -- UI_Confirm.ogg (Kenney confirmation_001): buy, claim, equip
-	Error = "", -- UI_Error.ogg (Kenney error_007): can't afford / not yet
-	Tab = "", -- UI_Tab.ogg (Kenney switch_002): tabs and toggles
+	-- Button sounds: Roblox's own "Roblox_UI_" set (by Roblox, public, no upload), found and load-checked in
+	-- Studio's Toolbox on Oct 30 after Alex found the built-in clicks harsh. The Kenney files in assets/sfx
+	-- (UI_*.ogg, CC0) are the alternative if uploaded.
+	Click = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s
+	Hover = "", -- silent: a tick on every hover was too much
+	Open = "rbxassetid://15675012262", -- "Roblox_UI_Whoosh_04", 0.35 s
+	Close = "rbxassetid://15675028888", -- "Roblox_UI_Whoosh_02", 0.49 s
+	Confirm = "rbxassetid://15675043410", -- "Roblox_UI_Tonal_Stinger", 1.47 s (Sfx plays its first 0.9 s)
+	Error = "rbxassetid://15675075163", -- "Roblox_UI_Delete", 0.61 s
+	Tab = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s
 	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
 	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
 	Hatch = "rbxassetid://9116384799",
@@ -448,7 +451,7 @@ Config.Sounds = {
 	Reward = "rbxassetid://1840076509", -- "Through the Roof (sting)", APMOfficial, 2.25 s: a playful organ sting
 	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
 	Rebirth = "rbxassetid://1840018171",
-	Coin = "", -- nothing short in the licensed library (only 1.7 s coin throws): soft built-in ping until one is picked
+	Coin = "rbxassetid://15675055424", -- "Roblox_UI_Cute_Pop" (by Roblox), 2.7 s: Sfx plays only its first 0.35 s
 	Shot = "", -- no cartoony cannon boom there (only sci-fi lasers): a low built-in thump until one is picked
 	Launch = "rbxassetid://9125805579", -- "Rising Whoosh Hissing Build Up Ascending Swo (SFX)", ProSoundEffects, 1.14 s
 	Skip = "rbxassetid://9120589933", -- "Water Splash Splashes Splats Light 5 (SFX)", ProSoundEffects, 0.41 s

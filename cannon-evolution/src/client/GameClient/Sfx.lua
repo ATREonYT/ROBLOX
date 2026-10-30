@@ -3,7 +3,7 @@
 	Plays the game's sounds by name: Sfx.play("Click"). Kit.playSound(name) calls this, so every older call works.
 
 	Where each sound comes from (GameConfig.Sounds holds the ids):
-	  * Button sounds (Click, Hover, Open, Close, Confirm, Error, Tab): Kenney "Interface Sounds" (CC0), the same
+	  * Button sounds: Roblox's own "Roblox_UI_" set (public, picked in the Toolbox Oct 30). Alternative: Kenney "Interface Sounds" (CC0), the same
 	    family Alex picked for Huzz Valley, in cannon-evolution/assets/sfx/UI_*.ogg. They need Alex's upload; until
 	    then they stay silent (or a licensed pick in GameConfig plays instead).
 	  * Hatch: "Magic Burst 2" from Roblox's free licensed library (Pro Sound Effects): public, plays as it is.
@@ -24,6 +24,7 @@
 local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
@@ -58,6 +59,9 @@ local THUD = "rbxasset://sounds/action_jump_land.mp3"
 local FALLBACK = {
 	Shot = { THUD, 1, 0.6 },
 }
+
+-- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
+local CUT = { Confirm = 0.9, Coin = 0.35 }
 
 local GAP = 0.06 -- a button sound asked for again this soon is the same press
 -- The big "ta-da" sounds never stack: a rebirth that also unlocks a cannon would otherwise play two stings at once
@@ -106,7 +110,7 @@ local function build(name)
 		end
 		id, volume, pitch = fb[1], level[1] * fb[2], fb[3]
 	end
-	local pool = { sounds = {}, next = 1, pitch = pitch, spread = level[2] }
+	local pool = { sounds = {}, next = 1, pitch = pitch, spread = level[2], volume = math.min(volume, 1) }
 	for i = 1, POOL do
 		local s = Instance.new("Sound")
 		s.Name = name .. i
@@ -146,7 +150,20 @@ function Sfx.play(name)
 		s.PlaybackSpeed = pool.pitch * (1 + (math.random() * 2 - 1) * pool.spread)
 	end
 	s.TimePosition = 0
+	s.Volume = pool.volume
 	s:Play()
+	local cut = CUT[name]
+	if cut then
+		task.delay(cut, function()
+			if s.IsPlaying and s.TimePosition >= cut - 0.05 then
+				local fade = TweenService:Create(s, TweenInfo.new(0.08), { Volume = 0 })
+				fade:Play()
+				fade.Completed:Wait()
+				s:Stop()
+				s.Volume = pool.volume
+			end
+		end)
+	end
 end
 
 -- The Sound Effects setting (off = both groups silent)
