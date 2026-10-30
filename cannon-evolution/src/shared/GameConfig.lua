@@ -75,6 +75,21 @@ Config.SKIP_FIRST_HOP = 0.2 -- first arc out of the cannon, as a share of the wh
 Config.SKIP_DECAY = 0.86 -- each skip is this much shorter than the last
 Config.RETURN_DELAY = 1 -- seconds on the landing before you're home; Stone Skipping's next throw is ~1 s after
 Config.MIN_LAUNCH_DISTANCE = 160 -- the first arc clears the lobby into the water
+-- Rare shots (vault "Beat the Hits", our take on Stone Skipping's Secret/Colossus throws): the server
+-- rolls them on every launch, free and never for sale. They multiply that launch's cash, and the
+-- ball flies with its own trail; a Mega Shot is announced to the whole server.
+Config.RareShots = {
+	{ Id = "Mega", Name = "MEGA SHOT", Chance = 1 / 1000, Mult = 25, Color = Color3.fromRGB(255, 120, 240) },
+	{ Id = "Golden", Name = "GOLDEN SHOT", Chance = 1 / 100, Mult = 5, Color = Color3.fromRGB(255, 205, 50) },
+}
+function Config.GetRareShot(id)
+	for _, r in ipairs(Config.RareShots) do
+		if r.Id == id then
+			return r
+		end
+	end
+	return nil
+end
 Config.CASH_PER_STUD = 0.25
 Config.GEM_CHANCE_PER_LAUNCH = 0.15 -- chance of a few bonus gems on landing
 Config.AUTO_LAUNCH_INTERVAL = 4 -- seconds between launches with Auto Launch on
@@ -82,7 +97,12 @@ Config.AUTO_LAUNCH_INTERVAL = 4 -- seconds between launches with Auto Launch on
 ---------------------------------------------------------------------------
 -- Rebirth: needs Power AND Cash, resets both (and upgrades stay).
 ---------------------------------------------------------------------------
-Config.REBIRTH_POWER_BASE = 100 -- first rebirth in about a minute and a half of training
+Config.REBIRTH_POWER_BASE = 100 -- rebirth 2 onwards: this times REBIRTH_GROWTH ^ rebirths
+-- The first rebirth ends the tutorial at about 90 s, like Stone Skipping's 85 s (vault teardown, Oct 30):
+-- the tutorial's 30 training shots are the Power, and the cash left after the Starter Egg (3 launches,
+-- at least 120, minus 100) is the Cash, so you rebirth right after your first hatch
+Config.REBIRTH_FIRST_POWER = 30
+Config.REBIRTH_FIRST_CASH = 20
 Config.REBIRTH_CASH_BASE = 50
 Config.REBIRTH_GROWTH = 3.2 -- R1 ~1 min, R5 ~10 min, R10 ~1.5 h, R12 ~3.5 h of training
 Config.REBIRTH_POWER_BONUS = 0.5 -- +50% Power per shot per rebirth
@@ -90,6 +110,9 @@ Config.REBIRTH_CASH_BONUS = 0.25 -- +25% Cash per rebirth
 
 function Config.RebirthCost(rebirths)
 	local g = Config.REBIRTH_GROWTH ^ rebirths
+	if rebirths == 0 then
+		return Config.REBIRTH_FIRST_POWER, Config.REBIRTH_FIRST_CASH
+	end
 	return math.floor(Config.REBIRTH_POWER_BASE * g), math.floor(Config.REBIRTH_CASH_BASE * g)
 end
 

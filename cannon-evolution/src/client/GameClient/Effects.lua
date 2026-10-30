@@ -654,7 +654,30 @@ return function(ctx)
 		return m
 	end
 
-	Remotes.LaunchPlayer.OnClientEvent:Connect(function(owner, origin, distance, duration, cash)
+	-- every 1,000 m an arch over the river with the distance on it; the ball flies under it
+	local function milestoneGate(pos, metres)
+		local m = new("Model", { Name = "Milestone" })
+		local dir = Config.LAUNCH_DIRECTION.Unit
+		local side = dir:Cross(Vector3.yAxis)
+		local base = waterAt(pos, workspace:FindFirstChild(Config.Map.Root) and Config.Map.WaterY or 5.5)
+		local props = { Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.SmoothPlastic, Parent = m }
+		local H, W = 16, 22
+		for _, k in ipairs({ -1, 1 }) do
+			local post = new("Part", props)
+			post.Size, post.Color = Vector3.new(1.6, H, 1.6), Color3.fromRGB(250, 250, 250)
+			post.CFrame = CFrame.lookAt(Vector3.new(pos.X, base + H / 2, pos.Z) + side * k * W / 2, Vector3.new(pos.X, base + H / 2, pos.Z) + side * k * W / 2 + dir)
+		end
+		local beam = new("Part", props)
+		beam.Size, beam.Color = Vector3.new(W + 3, 4, 1.2), Kit.Colors.Yellow
+		local top = Vector3.new(pos.X, base + H + 1.2, pos.Z)
+		beam.CFrame = CFrame.lookAt(top, top + dir)
+		local gui = new("SurfaceGui", { Face = Enum.NormalId.Back, LightInfluence = 0, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = 20, Parent = beam })
+		Kit.text({ Text = commas(metres) .. " m", Size = 64, StrokeSize = 5, Parent = gui })
+		m.Parent = workspace
+		return m
+	end
+
+	Remotes.LaunchPlayer.OnClientEvent:Connect(function(owner, origin, distance, duration, cash, rareId)
 		local mine = owner == player
 		local settings = State.Data and State.Data.Settings
 		if not mine and settings and settings.ShowPlayers == false then
@@ -665,6 +688,13 @@ return function(ctx)
 		local best = mine and State.Data and State.Data.BestDistance or 0
 		local bestFlag = mine and best > 0 and bestMarker(origin + dir * best, best)
 		local passedBest = false
+		local gates = {}
+		if mine then
+			for metres = 1000, distance - 200, 1000 do
+				table.insert(gates, { At = metres, Model = milestoneGate(origin + dir * metres, metres) })
+			end
+		end
+		local nextGate = 1
 		-- my shots leave my cannon's muzzle; land on the same spot the server chose
 		local landing = origin + dir * distance
 		local reported = distance -- what the counter counts up to
@@ -735,11 +765,30 @@ return function(ctx)
 		end
 		local a0 = new("Attachment", { Position = Vector3.new(0, 0.9, 0), Parent = ball })
 		local a1 = new("Attachment", { Position = Vector3.new(0, -0.9, 0), Parent = ball })
+		local rare = rareId and Config.GetRareShot(rareId)
+		local trailColor = ColorSequence.new(look.Band, look.Band:Lerp(look.Color, 0.5))
+		if rare and rare.Id == "Mega" then
+			trailColor = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 90, 90)), ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 210, 60)),
+				ColorSequenceKeypoint.new(0.5, Color3.fromRGB(90, 230, 120)), ColorSequenceKeypoint.new(0.75, Color3.fromRGB(80, 170, 255)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 110, 255)),
+			})
+		elseif rare then
+			trailColor = ColorSequence.new(rare.Color, Color3.fromRGB(255, 250, 200))
+		end
 		new("Trail", {
-			Attachment0 = a0, Attachment1 = a1, Lifetime = 0.45, LightEmission = 0.4, FaceCamera = true,
-			Color = ColorSequence.new(look.Band, look.Band:Lerp(look.Color, 0.5)),
-			Transparency = NumberSequence.new(0.1, 1), WidthScale = NumberSequence.new(1, 0.2), Parent = ball,
+			Attachment0 = a0, Attachment1 = a1, Lifetime = rare and 0.9 or 0.45, LightEmission = rare and 0.7 or 0.4, FaceCamera = true,
+			Color = trailColor,
+			Transparency = NumberSequence.new(0.1, 1), WidthScale = NumberSequence.new(rare and 1.6 or 1, 0.2), Parent = ball,
 		})
+		if rare then
+			-- a steady shower of sparkles behind the ball (built-in texture; steady, so no flashing)
+			new("ParticleEmitter", {
+				Texture = "rbxasset://textures/particles/sparkles_main.dds", Rate = 40, Lifetime = NumberRange.new(0.5, 0.9),
+				Speed = NumberRange.new(1, 3), SpreadAngle = Vector2.new(180, 180), Color = ColorSequence.new(rare.Color),
+				Size = NumberSequence.new(1.2, 0), LightEmission = 0.6, Parent = a0,
+			})
+		end
 
 		local borders, nextBorder = {}, 1
 		local cam = workspace.CurrentCamera
@@ -755,6 +804,10 @@ return function(ctx)
 			setSideMenu(false)
 			cam.CameraType = Enum.CameraType.Scriptable
 			Kit.playSound("Launch")
+			if rare then
+				popBanner(rare.Name .. "!  x" .. rare.Mult .. " CASH", rare.Color)
+				Kit.playSound("Unlock")
+			end
 			-- a small kick of the lens on the shot, back in a quarter second
 			local fov = cam.FieldOfView
 			cam.FieldOfView = fov + 7
@@ -764,10 +817,17 @@ return function(ctx)
 
 		local start = os.clock()
 		local hopIndex, lastShown, paid = 1, -1, 0
+		local bumpAt = -10
+		-- a new best gets a slow-motion finish: its last 0.4 s play at 0.4x (only then, so it stays special)
+		local slowFrom = (mine and best > 0 and reported > best) and duration - 0.4 or math.huge
 		local camPos = nil
 		local conn
 		conn = RunService.Heartbeat:Connect(function(dt)
-			local u = math.clamp((os.clock() - start) / duration, 0, 1)
+			local t = os.clock() - start
+			if t > slowFrom then
+				t = slowFrom + (t - slowFrom) * 0.4
+			end
+			local u = math.clamp(t / duration, 0, 1)
 			-- a steady speed, slowing only at the end (Stone Skipping's throw keeps ~60 m/s and eases
 			-- out in its last second): constant to CRUISE, then the speed falls evenly to zero
 			local CRUISE = 0.8
@@ -809,7 +869,15 @@ return function(ctx)
 				if shown ~= lastShown then
 					lastShown = shown
 					counter.Text = commas(math.floor(shown * reported / distance)) .. " m"
-					counterScale.Scale = 1 + 0.05 * math.sin(os.clock() * 22) * (1 - u)
+					-- a little wobble while it climbs, plus a bump each time you enter a new area
+					local kb = (os.clock() - bumpAt) / 0.3
+					local bump = kb < 1 and 0.12 * math.sin(kb * math.pi) or 0
+					counterScale.Scale = 1 + 0.05 * math.sin(os.clock() * 22) * (1 - u) + bump
+				end
+				local g = gates[nextGate]
+				if g and dist * reported / distance >= g.At then
+					nextGate += 1
+					Kit.playSound("Coin", 1 + math.min(nextGate, 8) * 0.04)
 				end
 				if bestFlag and not passedBest and dist * reported / distance > best then
 					passedBest = true
@@ -820,6 +888,7 @@ return function(ctx)
 				if b and dist >= b.At then
 					nextBorder += 1
 					popBanner(b.Name, b.Color:Lerp(Color3.new(1, 1, 1), 0.35))
+					bumpAt = os.clock()
 					Kit.playSound("Open")
 				end
 			end
@@ -842,6 +911,9 @@ return function(ctx)
 				Debris:AddItem(ball, Config.RETURN_DELAY + 1)
 				if bestFlag then
 					Debris:AddItem(bestFlag, Config.RETURN_DELAY + 0.5)
+				end
+				for _, g in ipairs(gates) do
+					Debris:AddItem(g.Model, Config.RETURN_DELAY + 0.5)
 				end
 			end
 		end)

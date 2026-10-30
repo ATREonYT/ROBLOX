@@ -444,9 +444,24 @@ local function launch(player)
 	local distance = math.floor(math.clamp(maxRange * (0.9 + math.random() * 0.1), Config.MIN_LAUNCH_DISTANCE, trackLength))
 	local duration = Config.FlightTime(distance)
 	local cash = cashFor(player, profile, distance)
+	local rare
+	for _, r in ipairs(Config.RareShots) do
+		if math.random() < r.Chance then
+			rare = r
+			break
+		end
+	end
+	if rare then
+		cash *= rare.Mult
+		if rare.Id == "Mega" then
+			for _, other in ipairs(Players:GetPlayers()) do
+				notify(other, player.DisplayName .. " fired a MEGA SHOT! x" .. rare.Mult .. " Cash", rare.Color)
+			end
+		end
+	end
 	local walkSpeed = hum.WalkSpeed
 	hum.WalkSpeed = 0
-	LaunchPlayer:FireAllClients(player, launchPoint.Position, distance, duration, cash)
+	LaunchPlayer:FireAllClients(player, launchPoint.Position, distance, duration, cash, rare and rare.Id)
 
 	local startTime = os.clock()
 	while player.Parent and os.clock() - startTime < duration + 0.2 do
