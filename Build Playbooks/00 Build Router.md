@@ -15,6 +15,8 @@ Playbooks in this folder:
 - [[Blueprint - Roll and Place RNG]]: roll units, place on plot, income, luck upgrades (Anime Dice, Sol's RNG)
 - [[Blueprint - Anomaly Shift]]: short horror-lite job shifts, spot what's wrong (Animal Hospital Anomaly)
 - [[02 Launch and Discovery Cheat Sheet]]: the 2026 algorithm, rules and launch checklist on one page
+- [[03 What's New on Roblox - RDC 2026 and October]]: every new Roblox feature, sorted into use now / coming soon
+- [[04 AI Tools Landscape October 2026]]: our AI stack, the official Studio MCP tool list, and 20+ third-party tools compared
 
 ## Pick a game
 
@@ -64,4 +66,5 @@ Playbooks in this folder:
 | Thumbnails and icon | [[Thumbnails and CTR Start Here]], [[08 Thumbnails, Icons & Marketing]] |
 | Retention and come-back hooks | [[Retention and Return Hooks]], [[Live Ops Deep Dive Start Here]] |
 | Money | [[10 Business, Monetization & Case Studies]], `LihFolk/skills/roblox-monetization-compliance/` |
-| AI workflow (MCP, Rojo, skills) | [[01 Setup & Workflow]], [[00 Video Notes Index]] |
+| AI workflow (MCP, Rojo, skills) | [[04 AI Tools Landscape October 2026]], [[01 Setup & Workflow]], [[00 Video Notes Index]] |
+| New Roblox features to use | [[03 What's New on Roblox - RDC 2026 and October]] |

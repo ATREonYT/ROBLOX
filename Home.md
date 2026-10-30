@@ -5,6 +5,7 @@ The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 ## Build Playbooks (start here to build)
 - [[Build Playbooks/00 Build Router|Build Router]]: every job mapped to the right notes, skills and code
 - [[Build Playbooks/01 Current Hits October 2026|Current hits, Oct 2026]] and [[Build Playbooks/02 Launch and Discovery Cheat Sheet|launch cheat sheet]]
+- [[Build Playbooks/03 What's New on Roblox - RDC 2026 and October|What's new on Roblox (RDC 2026, Oct)]] and [[Build Playbooks/04 AI Tools Landscape October 2026|AI tools landscape]]
 - Blueprints: [[Build Playbooks/Blueprint - Egg Run|Egg Run]] · [[Build Playbooks/Blueprint - Plus One Evolution|+1 Evolution]] · [[Build Playbooks/Blueprint - Plus One Speed Escape|+1 Speed Escape]] · [[Build Playbooks/Blueprint - Roll and Place RNG|Roll and Place RNG]] · [[Build Playbooks/Blueprint - Anomaly Shift|Anomaly Shift]]
 
 ## +1 Hood Evolution (older game, not the example to copy)
