@@ -21,7 +21,7 @@ return function(ctx)
 	local badges = {}
 
 	-- Left column (Effects hides "Side" during a launch, Tutorial finds "Menu")
-	local side = new("Frame", { Name = "Side", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 10), Size = UDim2.fromOffset(196, 372), Parent = hud })
+	local side = new("Frame", { Name = "Side", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, -34), Size = UDim2.fromOffset(196, 372), Parent = hud })
 	local left = new("Frame", { Name = "Menu", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = side })
 
 	-- "ONLY [R$] 25" style price: a small Robux icon in front of the number

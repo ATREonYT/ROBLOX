@@ -295,7 +295,8 @@ return function(ctx)
 		OnOpen = function(tab)
 			-- jump to a section (the HUD's + buttons ask for Cash or Gems)
 			local target = tab and bars[tab]
-			task.defer(function()
+			-- wait a moment so the freshly built grids have their real sizes
+			task.delay(0.1, function()
 				if target then
 					content.CanvasPosition = Vector2.new(0, target.AbsolutePosition.Y - content.AbsolutePosition.Y + content.CanvasPosition.Y - 10)
 				else
