@@ -81,7 +81,9 @@ local function run(root, transparency)
 	for i, p in ipairs(root:GetDescendants()) do
 		if p:IsA("BasePart") then
 			clear(p)
-			if not UNDO and p.Transparency < 0.5 and not skip(p) then
+			local plain = p.Material ~= Enum.Material.Neon and p.Material ~= Enum.Material.Glass
+				and not (p:IsA("Part") and p.Shape ~= Enum.PartType.Block)
+			if not UNDO and p.Transparency < 0.5 and plain and not skip(p) then
 				-- cannons placed in the booths get the softer cannon studs too
 				stud(p, p:FindFirstAncestor("Cannon") and 0.45 or transparency)
 				added += 1
