@@ -473,8 +473,9 @@ local function launch(player)
 	end
 	-- step back out of the Launch Zone so walking in again throws again
 	if root and launchZone and (root.Position - launchZone.Position).Magnitude < 20 then
-		local back = launchZone.Position + Config.LAUNCH_DIRECTION.Unit * (launchZone.Size.X / 2 + 6) + Vector3.new(0, 3, 0)
-		player.Character:PivotTo(CFrame.lookAt(back, back - Config.LAUNCH_DIRECTION.Unit))
+		-- the zone's lobby side (the cannon and the water are on the other side), facing the cannon
+		local back = launchZone.Position - Config.LAUNCH_DIRECTION.Unit * (launchZone.Size.X / 2 + 6) + Vector3.new(0, 3, 0)
+		player.Character:PivotTo(CFrame.lookAt(back, back + Config.LAUNCH_DIRECTION.Unit))
 	end
 	player:SetAttribute("Launching", false)
 end

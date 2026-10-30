@@ -1,9 +1,12 @@
 --[[
 	Tutorial  (ModuleScript)
 	First-time guide:
-	  1. A short cutscene: a guide waves by the launch cannon, fires, the
-	     camera chases the ball through the worlds, then the guide talks to
-	     you and the camera glides over the training pads (Skip button).
+	  1. A short cutscene at the start of the water: your cannon fires, the
+	     camera chases the ball far down the map (each area's name pops up),
+	     then the guide talks to you and the camera glides over the training
+	     booths (Skip button). Built to the vault's "Cameras and Cutscenes"
+	     rules: lock, hide, letterbox, cut on action, a wide after the big
+	     moment, and restore everything exactly, even if something fails.
 	  2. A quest bar at the top with a live count, e.g. TRAIN POWER (12/30).
 	  3. A line of white arrows flowing from you to the next thing to do
 	     (it follows a walkable path), and a pointer on the menu button when
@@ -20,8 +23,11 @@ local PathfindingService = game:GetService("PathfindingService")
 
 -- Everything the tutorial says.
 local TEXT = {
-	IntroLine1 = "My first shot? It barely reached the water.",
-	IntroLine2 = "Your turn. Start here.",
+	Speaker = "CAPTAIN BOOM",
+	IntroLine0 = "Welcome to Cannon Evolution!",
+	IntroLine1 = "This cannon can fire you across the whole sea!",
+	IntroLine2 = "Train your Power at the booths to fly further!",
+	IntroLine3 = "Then walk into the Launch Zone. Ready?",
 	Skip = "Skip",
 	Tag = "TUTORIAL",
 	Train = "TRAIN POWER",
@@ -38,28 +44,32 @@ local TEXT = {
 	Continue = "Tap to continue",
 }
 
--- The intro, shot for shot like the reference:
---   A  the guide waves beside the launch cannon (camera circles slowly)
---   B  the cannon fires and the camera chases the ball down the track,
---      one big skip from world to world
---   C  back in the lobby the guide talks to you (line 1)
---   D  the camera glides over the training pads and back behind you (line 2)
-local TRACK_Z = -123 -- the launch cannon's line
+-- The intro, shot by shot (vault "Cameras and Cutscenes": establish, action, aftermath, return):
+--   A  establish: a wide over the water looking back at your cannon and the guide
+--   B  fire: close on the cannon, a little wind-up shake, then cut on the shot
+--   C  chase: the ball skips far down the map; each area's name pops up as it passes
+--   D  aftermath: a high wide over the last splash
+--   E  back at the cannon the guide talks to you
+--   F  the camera glides over the training booths and back behind you
 local WATER_Y = 5.4
-local MUZZLE = Vector3.new(-36.5, 13.4, -123) -- used if your cannon isn't placed yet
-local WAVE_TIME = 2.4
-local TALK_TIME = 4.6
-local PADS_TIME = 6
--- the ball's run: { seconds, x }. Short skips at each world, a huge skip between.
+local ESTABLISH_TIME = 3.2
+local WINDUP_TIME = 0.9
+local AFTER_TIME = 1.8
+local TALK_TIME = 3.6
+local PADS_TIME = 5.5
+local MAX_TIME = 40 -- watchdog: the intro always hands control back by then
+-- the ball's run, as distance down the map from the muzzle: { seconds, studs }.
+-- Short skips at the near areas, then bigger and bigger ones to show the whole map.
 local CHASE = {
-	{ 0, -36.5 },
-	{ 1.3, -330 }, -- Sandy Shore
-	{ 2.4, -580 },
-	{ 3.6, -5450 }, -- Igloo Camp
-	{ 4.7, -5720 },
-	{ 5.9, -9480 }, -- Crystal Caverns
-	{ 7.2, -9780 },
-	{ 8.2, -9900 },
+	{ 0, 0 },
+	{ 1.2, 170 },
+	{ 2.1, 430 },
+	{ 3.1, 900 },
+	{ 4.2, 1800 },
+	{ 5.4, 3300 },
+	{ 6.6, 5200 },
+	{ 7.8, 7400 },
+	{ 8.6, 7600 },
 }
 local ANIM = {
 	Idle = "rbxassetid://507766388",
@@ -538,48 +548,110 @@ return function(ctx)
 		if not (root and hum) then
 			return
 		end
+		local StarterGui = game:GetService("StarterGui")
+		local dir = Config.LAUNCH_DIRECTION.Unit
+		local side = dir:Cross(Vector3.yAxis)
+
+		-- 1. lock and hide (restored exactly in finish below)
 		local main = mainGui()
 		local walkSpeed, jumpPower = hum.WalkSpeed, hum.JumpPower
+		local fov = cam.FieldOfView
+		local coreWasOn = StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.All)
 		hum.WalkSpeed, hum.JumpPower = 0, 0
 		if main then
 			main.Enabled = false
 		end
+		pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.All, false)
 		local guide, play = loadGuide()
 
 		local intro = new("Frame", { Name = "Intro", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = holder })
+		-- letterbox bars slide in
+		local barTop = new("Frame", { BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 0), ZIndex = 21, Parent = intro })
+		local barBottom = new("Frame", { BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0), ZIndex = 21, Parent = intro })
+		Kit.tween(barTop, 0.45, { Size = UDim2.fromScale(1, 0.11) })
+		Kit.tween(barBottom, 0.45, { Size = UDim2.fromScale(1, 0.11) })
 		local fade = new("Frame", { BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 22, Parent = intro })
-		local subtitle = Kit.text({ Text = "", Size = 34, StrokeSize = 3, Wrapped = true, FrameSize = UDim2.new(0.7, 0, 0, 90), Position = UDim2.new(0.5, 0, 1, -70), Anchor = Vector2.new(0.5, 1), ZIndex = 23, Parent = intro })
+
+		-- the guide's lines: a name tag and type-on text in the bottom bar
+		local speaker = Kit.text({ Text = TEXT.Speaker, Size = 22, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(0.7, 0, 0, 26), Position = UDim2.new(0.5, 0, 0.89, 6), Anchor = Vector2.new(0.5, 0), ZIndex = 23, Parent = intro })
+		speaker.Visible = false
+		local subtitle = Kit.text({ Text = "", Size = 32, StrokeSize = 3, Wrapped = true, FrameSize = UDim2.new(0.7, 0, 0, 44), Position = UDim2.new(0.5, 0, 0.89, 32), Anchor = Vector2.new(0.5, 0), ZIndex = 23, Parent = intro })
+		local sayId = 0
 		local function say(line)
+			sayId += 1
+			local id = sayId
+			speaker.Visible = line ~= nil
 			subtitle.Text = line or ""
-			subtitle.TextTransparency = 1
-			subtitle.UIStroke.Transparency = 1
-			Kit.tween(subtitle, 0.25, { TextTransparency = 0 })
-			Kit.tween(subtitle.UIStroke, 0.25, { Transparency = 0 })
+			subtitle.MaxVisibleGraphemes = 0
+			task.spawn(function()
+				for n = 1, #(line or "") do
+					if id ~= sayId then
+						return
+					end
+					subtitle.MaxVisibleGraphemes = n
+					task.wait(0.022)
+				end
+				subtitle.MaxVisibleGraphemes = -1
+			end)
+		end
+
+		-- big area name that pops in at the top while the ball passes
+		local card = Kit.text({ Text = "", Size = 54, StrokeSize = 4, FrameSize = UDim2.new(0.8, 0, 0, 64), Position = UDim2.new(0.5, 0, 0.14, 8), Anchor = Vector2.new(0.5, 0), ZIndex = 23, Parent = intro })
+		local cardScale = new("UIScale", { Scale = 1, Parent = card })
+		local function showCard(name, color)
+			card.Text = name
+			card.TextColor3 = color or Kit.Colors.White
+			card.TextTransparency = 0
+			card.UIStroke.Transparency = 0
+			cardScale.Scale = 1.6
+			Kit.tween(cardScale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+			task.delay(0.9, function()
+				if card.Text == name then
+					Kit.tween(card, 0.3, { TextTransparency = 1 })
+					Kit.tween(card.UIStroke, 0.3, { Transparency = 1 })
+				end
+			end)
 		end
 
 		local skipped = false
 		Kit.button({ Text = TEXT.Skip, Color = "Gray", TextSize = 24, Size = UDim2.fromOffset(110, 44), Position = UDim2.new(1, -24, 1, -20), Anchor = Vector2.new(1, 1), ZIndex = 24, Parent = intro, OnClick = function()
 			skipped = true
 		end })
-
-		local function fadeThrough(midway)
-			Kit.tween(fade, 0.3, { BackgroundTransparency = 0 }, Enum.EasingStyle.Sine)
-			task.wait(0.32)
-			midway()
-			Kit.tween(fade, 0.35, { BackgroundTransparency = 1 }, Enum.EasingStyle.Sine)
+		local diedConn = hum.Died:Connect(function()
+			skipped = true
+		end)
+		local started = os.clock()
+		local function running()
+			return not skipped and os.clock() - started < MAX_TIME
 		end
 
-		-- where things are
-		local myCannon = workspace:FindFirstChild("MyCannon")
-		local muzzle = MUZZLE
-		local cannonPos = Vector3.new(-29, 8.45, TRACK_Z)
+		local function fadeThrough(midway)
+			Kit.tween(fade, 0.25, { BackgroundTransparency = 0 }, Enum.EasingStyle.Sine)
+			task.wait(0.27)
+			midway()
+			Kit.tween(fade, 0.3, { BackgroundTransparency = 1 }, Enum.EasingStyle.Sine)
+		end
+
+		-- where things are: your cannon at the start of the water
+		local spot = workspace:FindFirstChild("MyCannonSpot")
+		local cannonPos = spot and spot.Position or Vector3.new(-145, 8.45, -144.25)
+		local trackZ = cannonPos.Z
+		local myCannon
+		for _ = 1, 20 do -- it's placed when your data loads
+			myCannon = workspace:FindFirstChild("MyCannon")
+			if myCannon then
+				break
+			end
+			task.wait(0.1)
+		end
+		local muzzle = cannonPos + dir * 7 + Vector3.new(0, 6.5, 0)
+		local cannonHome
 		if myCannon then
+			cannonHome = myCannon:GetPivot()
 			local bore = myCannon:FindFirstChild("Bore", true)
 			local cf, size = myCannon:GetBoundingBox()
 			cannonPos = Vector3.new(cf.X, cf.Y - size.Y / 2, cf.Z)
-			if bore then
-				muzzle = bore.Position + Vector3.new(-1.5, 0, 0)
-			end
+			muzzle = bore and bore.Position + dir * 1.5 or cf.Position + dir * size.X / 2
 		end
 		local facing = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
 		local feet = root.Position - Vector3.new(0, hum.HipHeight + root.Size.Y / 2, 0)
@@ -587,178 +659,269 @@ return function(ctx)
 		local endPos = head - facing * 13 + Vector3.new(0, 3.5, 0)
 		local endLook = head + facing * 20
 		cam.CameraType = Enum.CameraType.Scriptable
-		local fov = cam.FieldOfView
 
-		-- A: the guide waves beside the cannon
-		local guideSpot = cannonPos + Vector3.new(4, 0, 6.5)
-		if guide then
-			stand(guide, guideSpot, guideSpot + Vector3.new(10, 0, 4))
-			play("Idle", true)
-			play("Wave")
-		end
-		local t0 = os.clock()
-		local centre = guideSpot + Vector3.new(0, 3.2, 0)
-		while not skipped do
-			local u = (os.clock() - t0) / WAVE_TIME
-			if u >= 1 then
-				break
+		local function finish()
+			-- 4. restore exactly: camera, FOV, HUD, Roblox menus, movement
+			diedConn:Disconnect()
+			if myCannon and myCannon.Parent and cannonHome then
+				myCannon:PivotTo(cannonHome)
 			end
-			local a = math.rad(25 - 30 * smooth(u))
-			local offset = Vector3.new(math.cos(a), 0, math.sin(a)) * 11 + Vector3.new(0, 1.2, 0)
-			cam.CFrame = CFrame.lookAt(centre + offset, centre + Vector3.new(0, -0.3, 0))
-			RunService.RenderStepped:Wait()
-		end
-
-		-- B: fire, and chase the ball down the track
-		if not skipped then
-			local ball = new("Part", {
-				Name = "IntroBall", Shape = Enum.PartType.Ball, Size = Vector3.one * 2.8,
-				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false,
-				Material = Enum.Material.Metal, Color = Color3.fromRGB(45, 45, 52), CFrame = CFrame.new(muzzle), Parent = workspace,
-			})
-			local a0 = new("Attachment", { Position = Vector3.new(0, 0.9, 0), Parent = ball })
-			local a1 = new("Attachment", { Position = Vector3.new(0, -0.9, 0), Parent = ball })
-			new("Trail", {
-				Attachment0 = a0, Attachment1 = a1, Lifetime = 0.35, LightEmission = 0.7, FaceCamera = true,
-				Color = ColorSequence.new(Color3.fromRGB(255, 230, 120), Color3.fromRGB(255, 110, 50)),
-				Transparency = NumberSequence.new(0.1, 1), WidthScale = NumberSequence.new(1, 0.2), Parent = ball,
-			})
-			local flash = new("Part", {
-				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-				Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 200, 90),
-				Size = Vector3.one * 2, CFrame = CFrame.new(muzzle), Parent = workspace,
-			})
-			Kit.tween(flash, 0.25, { Size = Vector3.one * 8, Transparency = 1 })
-			task.delay(0.3, function()
-				flash:Destroy()
+			if guide and guide.Parent then
+				guide:Destroy()
+			end
+			cam.FieldOfView = fov
+			cam.CameraType = Enum.CameraType.Custom
+			if hum.Parent then
+				cam.CameraSubject = hum
+				hum.WalkSpeed, hum.JumpPower = walkSpeed, jumpPower
+			end
+			if main then
+				main.Enabled = true
+			end
+			pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.All, coreWasOn)
+			say(nil)
+			card.Text = ""
+			for _, d in ipairs(intro:GetDescendants()) do
+				if d:IsA("TextButton") then
+					d.Visible = false
+				end
+			end
+			Kit.tween(barTop, 0.35, { Size = UDim2.fromScale(1, 0) })
+			Kit.tween(barBottom, 0.35, { Size = UDim2.fromScale(1, 0) })
+			task.delay(0.4, function()
+				intro:Destroy()
 			end)
-			Kit.playSound("Launch")
-
-			local xAt = monotone(CHASE)
-			local endT = CHASE[#CHASE][1]
-			local start = os.clock()
-			local lastSeg, lastX, camPos = 1, muzzle.X, nil
-			while not skipped do
-				local t = os.clock() - start
-				local x, seg = xAt(t)
-				-- each segment is one skip: tiny ones at the worlds, a huge one between
-				local from, to = CHASE[seg][2], CHASE[seg + 1][2]
-				local u = math.clamp((x - from) / (to - from), 0, 1)
-				local length = math.abs(to - from)
-				local height = seg == 1 and 40 or math.clamp(length * 0.03, 3, 150)
-				local y0 = seg == 1 and muzzle.Y or WATER_Y + 1.4
-				local y = y0 + (WATER_Y + 1.4 - y0) * u + height * 4 * u * (1 - u)
-				if seg ~= lastSeg then
-					splashAt(Vector3.new(from, WATER_Y + 0.2, TRACK_Z), length > 1000)
-					Kit.playSound("Skip")
-					lastSeg = seg
-				end
-				local p = Vector3.new(x, y, TRACK_Z)
-				ball.CFrame = CFrame.new(p) * CFrame.Angles(0, 0, x / 1.4)
-
-				-- chase camera: further back and wider when it's fast
-				local dt = math.max(RunService.RenderStepped:Wait(), 1 / 240)
-				local speed = math.abs(x - lastX) / dt
-				lastX = x
-				local fast = math.clamp(speed / 3000, 0, 1)
-				local want = p + Vector3.new(16 + fast * 14, 5 + fast * 6, 0)
-				camPos = camPos and camPos:Lerp(want, 0.35) or want
-				cam.CFrame = CFrame.lookAt(camPos, p + Vector3.new(-40, -2, 0))
-				cam.FieldOfView = fov + fast * 22
-				if t >= endT then
-					break
-				end
-			end
-			ball:Destroy()
-		end
-		cam.FieldOfView = fov
-
-		-- C: back in the lobby, the guide talks to you
-		local talkSpot = feet + facing * 6 + facing:Cross(Vector3.yAxis) * 1.5
-		local side = facing:Cross(Vector3.yAxis)
-		local mid = (feet + talkSpot) / 2 + Vector3.new(0, 3, 0)
-		local twoShot = CFrame.lookAt(mid + side * 11 + Vector3.new(0, 1.5, 0) - facing * 2, mid)
-		if not skipped then
-			fadeThrough(function()
-				if guide then
-					stand(guide, talkSpot, feet)
-					play("Point")
-				end
-				cam.CFrame = twoShot
-			end)
-			say(TEXT.IntroLine1)
-			local t1 = os.clock()
-			while not skipped and os.clock() - t1 < TALK_TIME do
-				local u = (os.clock() - t1) / TALK_TIME
-				cam.CFrame = twoShot * CFrame.new(-u * 2, 0, -u * 1.5) -- slow push in
-				RunService.RenderStepped:Wait()
-			end
 		end
 
-		-- D: over the training pads and back behind you
-		if not skipped then
-			say(TEXT.IntroLine2)
+		-- 5. survive failure: whatever happens in the shots, finish() runs
+		local ok, err = pcall(function()
+			-- A: establish. Out over the water, looking back at your cannon and the guide
+			local guideSpot = cannonPos - dir * 2 + side * 6
 			if guide then
-				play("Point")
+				stand(guide, guideSpot, guideSpot + dir * 10 - side * 4)
+				play("Idle", true)
+				play("Wave")
 			end
-			local pad = stationPad(1)
-			local padPos = pad and pad.Position or (feet + facing * 30)
-			local startCF = cam.CFrame
-			local camPath = {
-				startCF.Position,
-				padPos + Vector3.new(14, 12, 18),
-				padPos + Vector3.new(-6, 9, 14),
-				endPos + Vector3.new(0, 4, 0) - facing * 6,
-				endPos,
-			}
-			local lookPath = {
-				mid,
-				padPos,
-				padPos + Vector3.new(-14, 0, 0),
-				head,
-				endLook,
-			}
-			local t2 = os.clock()
-			while not skipped do
-				local u = smooth((os.clock() - t2) / PADS_TIME)
-				cam.CFrame = CFrame.lookAt(spline(camPath, u), spline(lookPath, u))
+			say(TEXT.IntroLine0)
+			local focus = cannonPos + Vector3.new(0, 4, 0)
+			local t0 = os.clock()
+			while running() do
+				local u = smooth(math.min((os.clock() - t0) / ESTABLISH_TIME, 1))
+				-- a slow crane down from high over the sea to the cannon
+				local eye = focus + dir * (34 - 14 * u) + side * (16 - 6 * u) + Vector3.new(0, 18 - 12 * u, 0)
+				cam.CFrame = CFrame.lookAt(eye, focus - dir * 4)
 				if u >= 1 then
 					break
 				end
-				if guide and guide.Parent and u > 0.6 then
-					guide:Destroy() -- off screen by now
-				end
 				RunService.RenderStepped:Wait()
 			end
+
+			-- B: fire. Close on the cannon, a little wind-up shake, then the shot
+			if running() then
+				say(nil)
+				local closeEye = cannonPos - dir * 10 + side * 9 + Vector3.new(0, 7, 0)
+				local t1 = os.clock()
+				while running() do
+					local u = (os.clock() - t1) / WINDUP_TIME
+					if u >= 1 then
+						break
+					end
+					if myCannon and cannonHome then
+						local s = 0.12 * u
+						myCannon:PivotTo(cannonHome + Vector3.new((math.random() - 0.5) * s, 0, (math.random() - 0.5) * s))
+					end
+					cam.CFrame = CFrame.lookAt(closeEye - side * u * 1.5, muzzle)
+					cam.FieldOfView = fov - 8 * u
+					RunService.RenderStepped:Wait()
+				end
+			end
+			if running() and myCannon and cannonHome then
+				-- recoil, then settle back
+				myCannon:PivotTo(cannonHome - dir * 1.4)
+				task.delay(0.25, function()
+					if myCannon.Parent then
+						myCannon:PivotTo(cannonHome)
+					end
+				end)
+			end
+
+			-- C: chase the ball far down the map
+			if running() then
+				local ball = new("Part", {
+					Name = "IntroBall", Shape = Enum.PartType.Ball, Size = Vector3.one * 2.8,
+					Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false,
+					Material = Enum.Material.Metal, Color = Color3.fromRGB(45, 45, 52), CFrame = CFrame.new(muzzle), Parent = workspace,
+				})
+				local a0 = new("Attachment", { Position = Vector3.new(0, 0.9, 0), Parent = ball })
+				local a1 = new("Attachment", { Position = Vector3.new(0, -0.9, 0), Parent = ball })
+				new("Trail", {
+					Attachment0 = a0, Attachment1 = a1, Lifetime = 0.35, LightEmission = 0.7, FaceCamera = true,
+					Color = ColorSequence.new(Color3.fromRGB(255, 230, 120), Color3.fromRGB(255, 110, 50)),
+					Transparency = NumberSequence.new(0.1, 1), WidthScale = NumberSequence.new(1, 0.2), Parent = ball,
+				})
+				-- one muzzle flash (a single bright frame, well under the one-flash-a-second limit)
+				local flash = new("Part", {
+					Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+					Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 200, 90),
+					Size = Vector3.one * 2, CFrame = CFrame.new(muzzle), Parent = workspace,
+				})
+				new("PointLight", { Color = Color3.fromRGB(255, 180, 80), Range = 20, Brightness = 5, Parent = flash })
+				Kit.tween(flash, 0.3, { Size = Vector3.one * 9, Transparency = 1 })
+				task.delay(0.35, function()
+					flash:Destroy()
+				end)
+				Kit.playSound("Launch")
+
+				-- area names along the way, from the borders on the map
+				local areas = {}
+				local folder = workspace:FindFirstChild("AreaBorders")
+				for _, b in ipairs(folder and folder:GetChildren() or {}) do
+					if b:IsA("BasePart") then
+						table.insert(areas, { At = (b.Position - muzzle):Dot(dir), Name = b:GetAttribute("AreaName") or b.Name, Color = b.Color:Lerp(Color3.new(1, 1, 1), 0.35) })
+					end
+				end
+				table.sort(areas, function(x, y)
+					return x.At < y.At
+				end)
+				local nextArea = 1
+
+				local dAt = monotone(CHASE)
+				local endT = CHASE[#CHASE][1]
+				local start = os.clock()
+				local lastSeg, lastD, camPos = 1, 0, nil
+				local shake = 0.6
+				local p = muzzle
+				while running() do
+					local t = os.clock() - start
+					local d, seg = dAt(t)
+					-- each segment is one skip: short ones near the start, huge ones further out
+					local from, to = CHASE[seg][2], CHASE[seg + 1][2]
+					local u = math.clamp((d - from) / math.max(to - from, 1), 0, 1)
+					local length = to - from
+					local height = seg == 1 and 26 or math.clamp(length * 0.04, 4, 160)
+					local y0 = seg == 1 and muzzle.Y or WATER_Y + 1.4
+					local y = y0 + (WATER_Y + 1.4 - y0) * u + height * 4 * u * (1 - u)
+					if seg ~= lastSeg then
+						splashAt(Vector3.new(muzzle.X, WATER_Y + 0.2, trackZ) + dir * from, length > 1000)
+						Kit.playSound("Skip")
+						lastSeg = seg
+					end
+					p = Vector3.new(muzzle.X, y, trackZ) + dir * d
+					ball.CFrame = CFrame.new(p) * CFrame.fromAxisAngle(side, -d / 1.4)
+					while areas[nextArea] and d >= areas[nextArea].At do
+						showCard(areas[nextArea].Name, areas[nextArea].Color)
+						nextArea += 1
+					end
+
+					-- chase camera: behind and above, wider and higher when it's fast
+					local dt = math.max(RunService.RenderStepped:Wait(), 1 / 240)
+					local speed = math.abs(d - lastD) / dt
+					lastD = d
+					local fast = math.clamp(speed / 3000, 0, 1)
+					local want = p - dir * (18 + fast * 16) + side * (6 + fast * 8) + Vector3.new(0, 6 + fast * 10, 0)
+					camPos = camPos and camPos:Lerp(want, 0.3) or want
+					shake = math.max(shake - dt * 2, 0) -- a short kick right after the shot
+					local jolt = Vector3.new((math.random() - 0.5), (math.random() - 0.5), 0) * shake
+					cam.CFrame = CFrame.lookAt(camPos + jolt, p + dir * 40 - Vector3.new(0, 2, 0))
+					cam.FieldOfView = fov + fast * 22
+					if t >= endT then
+						break
+					end
+				end
+				ball:Destroy()
+
+				-- D: aftermath. A high wide over the last splash
+				if running() then
+					splashAt(Vector3.new(p.X, WATER_Y + 0.2, p.Z), true)
+					Kit.playSound("Skip")
+					local t3 = os.clock()
+					local base = Vector3.new(p.X, WATER_Y, p.Z)
+					while running() do
+						local u = smooth(math.min((os.clock() - t3) / AFTER_TIME, 1))
+						cam.FieldOfView = fov + 22 * (1 - u)
+						cam.CFrame = CFrame.lookAt(base - dir * (40 + 30 * u) + side * 25 + Vector3.new(0, 30 + 25 * u, 0), base)
+						if u >= 1 then
+							break
+						end
+						RunService.RenderStepped:Wait()
+					end
+				end
+			end
+			cam.FieldOfView = fov
+
+			-- E: back at the cannon, the guide talks to you
+			local talkSpot = feet + facing * 6 + facing:Cross(Vector3.yAxis) * 1.5
+			local sideF = facing:Cross(Vector3.yAxis)
+			local mid = (feet + talkSpot) / 2 + Vector3.new(0, 3, 0)
+			local twoShot = CFrame.lookAt(mid + sideF * 11 + Vector3.new(0, 1.5, 0) - facing * 2, mid)
+			if running() then
+				fadeThrough(function()
+					if guide then
+						stand(guide, talkSpot, feet)
+						play("Point")
+					end
+					cam.CFrame = twoShot
+				end)
+				local tTalk = os.clock()
+				for _, line in ipairs({ TEXT.IntroLine1, TEXT.IntroLine2 }) do
+					say(line)
+					local t1 = os.clock()
+					while running() and os.clock() - t1 < TALK_TIME / 2 + 0.6 do
+						local u = math.min((os.clock() - tTalk) / (TALK_TIME + 1.2), 1)
+						cam.CFrame = twoShot * CFrame.new(-u * 3, 0, -u * 2.5) -- slow push in
+						RunService.RenderStepped:Wait()
+					end
+				end
+			end
+
+			-- F: over the training booths and back behind you
+			if running() then
+				say(TEXT.IntroLine3)
+				if guide then
+					play("Point")
+				end
+				local pad = stationPad(1)
+				local padPos = pad and pad.Position or (feet + facing * 30)
+				local startCF = cam.CFrame
+				local camPath = {
+					startCF.Position,
+					padPos + Vector3.new(14, 12, 18),
+					padPos + Vector3.new(-6, 9, 14),
+					endPos + Vector3.new(0, 4, 0) - facing * 6,
+					endPos,
+				}
+				local lookPath = {
+					mid,
+					padPos,
+					padPos + Vector3.new(-14, 0, 0),
+					head,
+					endLook,
+				}
+				local t2 = os.clock()
+				while running() do
+					local u = smooth((os.clock() - t2) / PADS_TIME)
+					cam.CFrame = CFrame.lookAt(spline(camPath, u), spline(lookPath, u))
+					if u >= 1 then
+						break
+					end
+					if guide and guide.Parent and u > 0.6 then
+						guide:Destroy() -- off screen by now
+					end
+					RunService.RenderStepped:Wait()
+				end
+			end
+		end)
+		if not ok then
+			warn("[Tutorial] intro stopped early: " .. tostring(err))
 		end
 
-		-- skipping fades straight back to you
-		if skipped then
+		-- skipping (or a failure) fades straight back to you
+		if skipped or not ok or os.clock() - started >= MAX_TIME then
 			fadeThrough(function()
 				cam.CFrame = CFrame.lookAt(endPos, endLook)
 			end)
 		end
-		if guide and guide.Parent then
-			guide:Destroy()
-		end
-		subtitle.Text = ""
-		cam.FieldOfView = fov
-		cam.CameraType = Enum.CameraType.Custom
-		if hum.Parent then
-			cam.CameraSubject = hum
-			hum.WalkSpeed, hum.JumpPower = walkSpeed, jumpPower
-		end
-		if main then
-			main.Enabled = true
-		end
-		for _, d in ipairs(intro:GetDescendants()) do
-			if d:IsA("TextButton") then
-				d.Visible = false
-			end
-		end
-		task.delay(0.4, function()
-			intro:Destroy()
-		end)
+		finish()
 	end
 
 	-----------------------------------------------------------------------

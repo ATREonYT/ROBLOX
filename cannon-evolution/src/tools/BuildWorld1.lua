@@ -34,7 +34,9 @@ local floorY = hit and hit.Position.Y or lobbyPos.Y - lobbySize.Y / 2
 local fireDir = Vector3.new(0, 0, SIDE)
 local rowZ = lobbyPos.Z + SIDE * 21 -- stand points, set back so the booth fronts clear the spawn and launch zone
 -- booths stand side by side like Alex's pictures, the row centred in the lobby
-local spacing = 15
+-- booths are built full size, then each station is scaled down to BOOTH_SCALE so the row fits the lobby (Alex, Oct 30)
+local BOOTH_SCALE = 0.8
+local spacing = 15 * BOOTH_SCALE
 local startX = lobbyPos.X - 10 - spacing * (#Config.Stations - 1) / 2 -- 10 left keeps the VIP booth clear of the side building
 
 local old = workspace:FindFirstChild("TrainingStations")
@@ -560,7 +562,7 @@ table.sort(order, function(a, b)
 	local kb = b.Pass and math.huge or b.Rebirths
 	return ka < kb
 end)
-local boothWidth = spacing - 1
+local boothWidth = 14
 
 for i, info in ipairs(order) do
 	local station = Instance.new("Model")
@@ -568,6 +570,7 @@ for i, info in ipairs(order) do
 	station:SetAttribute("StationId", info.Id)
 
 	local standPos = Vector3.new(startX + (i - 1) * spacing, floorY, rowZ)
+	-- built at full size around this point, scaled to BOOTH_SCALE below
 	local standCf = CFrame.lookAt(standPos, standPos + fireDir)
 
 	local pad = part({
@@ -640,30 +643,43 @@ for i, info in ipairs(order) do
 	-- the booth's glow colour, used by the client for its shots and hit effects
 	station:SetAttribute("Accent", theme.Neon or theme.Edge or theme.Rim:Lerp(WHITE, 0.3))
 	station.PrimaryPart = pad
+	station:ScaleTo(BOOTH_SCALE)
 	station.Parent = folder
 end
 folder.Parent = workspace
 
--- Grand Cannon launch point
-local grand = map.Grand_Cannon
-local gcf, gsize = grand:GetBoundingBox()
+-- Launch from the start of the water (Alex, Oct 30): your cannon stands at the lobby's
+-- water edge, pointing down the long map, and the Launch Zone is right behind it so you
+-- walk up to your cannon. LaunchPoint is where everyone's ball leaves from.
+local dirL = Config.LAUNCH_DIRECTION.Unit
+local edge = lobbyPos + dirL * (math.abs(dirL.X) * lobbySize.X / 2 + math.abs(dirL.Z) * lobbySize.Z / 2)
+local trackZ = lobbyPos.Z -- the middle of the water strip
+local cannonSpot = Vector3.new(edge.X, floorY, trackZ) - dirL * 8 -- your cannon's feet, nose at the water
+local spotPart = workspace:FindFirstChild("MyCannonSpot") or part({ Name = "MyCannonSpot" })
+spotPart.Size = Vector3.new(1, 0.2, 1)
+spotPart.Transparency = 1
+spotPart.CanCollide = false
+spotPart.CanQuery = false
+spotPart.CanTouch = false
+spotPart.CFrame = CFrame.lookAt(cannonSpot, cannonSpot + dirL)
+spotPart.Parent = workspace
 local lp = workspace:FindFirstChild("LaunchPoint") or part({ Name = "LaunchPoint" })
 lp.Size = Vector3.new(6, 1, 6)
 lp.Transparency = 1
 lp.CanCollide = false
-lp.Position = gcf.Position + Vector3.new(0, gsize.Y / 2 + 4, 0)
+lp.Position = cannonSpot + dirL * 8 + Vector3.new(0, 6, 0)
 lp.Parent = workspace
 local oldPrompt = lp:FindFirstChildOfClass("ProximityPrompt")
 if oldPrompt then
 	oldPrompt:Destroy()
 end
 
--- Launch Zone: walk in and the Grand Cannon fires you (like Stone Skipping's Throw Zone)
+-- Launch Zone: right behind your cannon; walk in and it fires you (like Stone Skipping's Throw Zone)
 local old = workspace:FindFirstChild("LaunchZone")
 if old then
 	old:Destroy()
 end
-local zonePos = Vector3.new(gcf.Position.X - gsize.X / 2 - 14, floorY + 0.1, gcf.Position.Z)
+local zonePos = Vector3.new(cannonSpot.X, floorY + 0.1, trackZ) - dirL * 17
 local zone = part({
 	Name = "LaunchZone",
 	Size = Vector3.new(16, 0.2, 26),
@@ -714,11 +730,11 @@ sparkle.EmissionDirection = Enum.NormalId.Top
 sparkle.Size = NumberSequence.new(0.8, 0)
 sparkle.Parent = zone
 
--- Spawn in the lobby, on the centre path, facing the Grand Cannon
+-- Spawn in the lobby, a short walk behind the Launch Zone, facing your cannon and the water
 local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
 if spawn then
-	local p = Vector3.new(lobbyPos.X - lobbySize.X * 0.3, floorY + 0.5, lobbyPos.Z)
-	spawn.CFrame = CFrame.lookAt(p, p + Vector3.new(1, 0, 0))
+	local p = Vector3.new(zonePos.X, floorY + 0.5, trackZ) - dirL * 30
+	spawn.CFrame = CFrame.lookAt(p, p + dirL)
 	spawn.Anchored = true
 end
 

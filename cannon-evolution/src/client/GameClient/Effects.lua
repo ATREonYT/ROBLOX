@@ -400,7 +400,9 @@ return function(ctx)
 	-- to fire. Rebirth unlocks auto-equip the best one; the Cannons panel
 	-- changes it. Only this player sees their own cannon here.
 	-----------------------------------------------------------------------
-	local MY_CANNON_SPOT = Vector3.new(-29, 8.45, -123) -- floor beside the Launch Zone
+	-- the floor at the start of the water, behind the Launch Zone (BuildWorld1 places MyCannonSpot)
+	local spotPart = workspace:FindFirstChild("MyCannonSpot")
+	local MY_CANNON_SPOT = spotPart and spotPart.Position or Vector3.new(-145, 8.45, -144.25)
 	local MY_CANNON_HEIGHT = 9
 	local myCannon = { Model = nil, Id = nil, Home = nil, Muzzle = nil }
 

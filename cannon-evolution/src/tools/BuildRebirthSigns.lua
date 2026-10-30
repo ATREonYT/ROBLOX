@@ -9,9 +9,9 @@
 local Config = require(game.ReplicatedStorage.GameConfig)
 
 local WALL_Z = -202.3 -- the lobby wall behind the training targets
-local BOARD = Vector2.new(13, 26 / 3) -- fits the 15-stud booth spacing
+local BOARD = Vector2.new(11, 22 / 3) -- fits the 12-stud booth spacing
 local CENTRE_Y = 26
-local PPS = 600 / 13 -- SurfaceGui pixels per stud; keeps the 600 x 400 layout
+local PPS = 600 / 11 -- SurfaceGui pixels per stud; keeps the 600 x 400 layout
 
 local function new(class, props)
 	local i = Instance.new(class)
