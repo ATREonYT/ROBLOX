@@ -1,8 +1,10 @@
 --[[
 	Kit  (ModuleScript, child of GameClient)
-	UI building blocks in the style of the mockup: yellow header panels with a
-	red X, dark navy bodies, pill tabs, chunky outlined text, glossy buttons,
-	and the animated backgrounds (moving studs/stripes, spinning rays, rainbow
+	UI building blocks in the Stone Skipping style from Alex's recordings
+	(Oct 30): see-through dark panels with the title floating on the top edge,
+	a big icon on the corner and a red X; studded cards and buttons with thin
+	black outlines and square-ish corners; chunky outlined text; and the
+	animated backgrounds (moving studs/stripes, spinning rays, rainbow
 	outlines, shine sweeps, sparkles).
 ]]
 
@@ -16,20 +18,20 @@ local Kit = {}
 
 Kit.Font = Enum.Font.FredokaOne
 Kit.Colors = {
-	-- measured from Alex's UI kit (design/cannon_ui_assets_v2.zip)
-	Outline = Color3.fromRGB(5, 10, 16),
-	Body = Color3.fromRGB(4, 30, 48),
-	BodyDark = Color3.fromRGB(1, 16, 26),
-	Rim = Color3.fromRGB(0, 100, 205),
-	Card = Color3.fromRGB(1, 18, 31),
-	CardDark = Color3.fromRGB(3, 36, 62),
-	CardEdge = Color3.fromRGB(0, 107, 220),
-	BarEdge = Color3.fromRGB(45, 165, 245),
-	BarBack = Color3.fromRGB(16, 35, 51),
+	-- measured from Alex's Stone Skipping recordings (Oct 30): neutral greys,
+	-- see-through panels, black outlines
+	Outline = Color3.fromRGB(10, 10, 14),
+	Glass = Color3.fromRGB(26, 24, 32), -- panel body, shown 30% see-through
+	Body = Color3.fromRGB(34, 32, 40),
+	BodyDark = Color3.fromRGB(20, 19, 25),
+	Card = Color3.fromRGB(62, 60, 72),
+	CardDark = Color3.fromRGB(38, 36, 46),
+	BarEdge = Color3.fromRGB(10, 10, 14),
+	BarBack = Color3.fromRGB(215, 218, 226),
 	HeaderTop = Color3.fromRGB(255, 240, 0),
 	HeaderBottom = Color3.fromRGB(254, 179, 1),
-	Green = Color3.fromRGB(110, 240, 20),
-	GreenDark = Color3.fromRGB(10, 175, 25),
+	Green = Color3.fromRGB(150, 250, 25),
+	GreenDark = Color3.fromRGB(70, 200, 10),
 	Red = Color3.fromRGB(252, 31, 47),
 	RedDark = Color3.fromRGB(202, 3, 34),
 	Blue = Color3.fromRGB(70, 160, 255),
@@ -247,31 +249,11 @@ function Kit.button(props)
 		ZIndex = props.ZIndex or 1,
 		Parent = props.Parent,
 	})
-	Kit.corner(props.Radius or 10, btn)
+	Kit.corner(props.Radius or 8, btn)
 	Kit.stroke(props.StrokeSize or 3, nil, btn)
 	local grad = Kit.gradient(colors[1], colors[2], btn)
-	-- darker lip along the bottom so the button reads as a pressable toy
-	local lip = new("Frame", {
-		Name = "Lip",
-		BackgroundColor3 = colors[2]:Lerp(Color3.new(0, 0, 0), 0.35),
-		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 0, 6),
-		Position = UDim2.new(0, 0, 1, -6),
-		ZIndex = props.ZIndex or 1,
-		Parent = btn,
-	})
-	Kit.corner(props.Radius or 10, lip)
-	-- glossy top highlight
-	local shine = new("Frame", {
-		Name = "Gloss",
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		BackgroundTransparency = 0.75,
-		Size = UDim2.new(1, -8, 0.38, 0),
-		Position = UDim2.fromOffset(4, 3),
-		ZIndex = (props.ZIndex or 1) + 1,
-		Parent = btn,
-	})
-	Kit.corner(8, shine)
+	-- flat studded face like the Stone Skipping buttons (no gloss, no lip)
+	Kit.litePattern(btn, { Texture = "StudTile", ImageTransparency = 0.82, TileSize = 30, ZIndex = props.ZIndex or 1 })
 
 	local content = new("Frame", {
 		Name = "Content",
@@ -457,7 +439,7 @@ function Kit.movingPattern(parent, props)
 	Kit.corner(props.Radius or 12, group)
 	local texture = props.Texture or "StudTile"
 	local speed = props.Speed or 20 -- pixels/second
-	local tile = props.TileSize or 48
+	local tile = props.TileSize or 32
 	if Kit.hasImage(texture) then
 		local img = new("ImageLabel", {
 			BackgroundTransparency = 1,
@@ -522,7 +504,7 @@ function Kit.litePattern(parent, props)
 			ImageColor3 = props.Color or Color3.new(1, 1, 1),
 			ImageTransparency = props.ImageTransparency or 0.3,
 			ScaleType = Enum.ScaleType.Tile,
-			TileSize = UDim2.fromOffset(props.TileSize or 48, props.TileSize or 48),
+			TileSize = UDim2.fromOffset(props.TileSize or 32, props.TileSize or 32),
 			Size = UDim2.fromScale(1, 1),
 			ZIndex = props.ZIndex or 1,
 			Parent = parent,
@@ -848,46 +830,34 @@ function Kit.panel(props)
 	local frame = new("Frame", {
 		Name = props.Name or props.Title,
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.53),
+		Position = UDim2.fromScale(0.5, 0.54),
 		Size = props.Size or UDim2.fromOffset(640, 440),
-		BackgroundColor3 = Kit.Colors.Body,
+		BackgroundColor3 = Kit.Colors.Glass,
+		BackgroundTransparency = 0.3,
 		Visible = false,
 		ZIndex = 20,
 		Parent = props.Parent,
 	})
-	Kit.corner(18, frame)
-	Kit.stroke(6, nil, frame)
-	Kit.gradient(Kit.Colors.Body, Kit.Colors.BodyDark, frame)
-	-- thin lighter rim just inside the black outline
-	local rim = new("Frame", {
-		Name = "Rim",
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(2, 2),
-		Size = UDim2.new(1, -4, 1, -4),
-		ZIndex = 20,
-		Parent = frame,
-	})
-	Kit.corner(16, rim)
-	new("UIStroke", { Thickness = 3, Color = Kit.Colors.Rim, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = rim })
+	Kit.corner(10, frame)
+	Kit.stroke(3.5, nil, frame)
 
+	-- no header bar: the title floats on the top edge, the icon sits on the
+	-- top-left corner and the X on the top-right corner
 	local header = new("Frame", {
 		Name = "Header",
-		Size = UDim2.new(1, 0, 0, 62),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		ZIndex = 21,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, -40),
+		Size = UDim2.new(1, 0, 0, 72),
+		ZIndex = 24,
 		Parent = frame,
 	})
-	Kit.corner(18, header)
-	Kit.stroke(6, nil, header)
-	Kit.gradient(Kit.Colors.HeaderTop, Kit.Colors.HeaderBottom, header)
-
 	if props.Icon then
 		local icon = Kit.icon(props.Icon, {
-			Size = UDim2.fromOffset(84, 84),
-			Position = UDim2.new(0, -14, 0.5, -6),
+			Size = UDim2.fromOffset(112, 112),
+			Position = UDim2.new(0, -40, 0.5, 4),
 			Anchor = Vector2.new(0, 0.5),
-			Rotation = -10,
-			ZIndex = 25,
+			Rotation = -12,
+			ZIndex = 26,
 			Parent = header,
 		})
 		Kit.bob(icon, 3, 2)
@@ -895,12 +865,12 @@ function Kit.panel(props)
 	local title = Kit.text({
 		Name = "Title",
 		Text = props.Title,
-		Size = 44,
-		StrokeSize = 4,
-		AlignX = Enum.TextXAlignment.Left,
-		FrameSize = UDim2.new(1, -170, 1, 0),
-		Position = UDim2.fromOffset(props.Icon and 80 or 20, -2),
-		ZIndex = 24,
+		Size = 60,
+		StrokeSize = 5,
+		FrameSize = UDim2.new(1, -240, 1, 0),
+		Position = UDim2.new(0.5, 0, 0, 0),
+		Anchor = Vector2.new(0.5, 0),
+		ZIndex = 25,
 		Parent = header,
 	})
 
@@ -908,17 +878,17 @@ function Kit.panel(props)
 		Name = "Close",
 		Text = "",
 		AutoButtonColor = false,
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -10, 0.5, 0),
-		Size = UDim2.fromOffset(52, 52),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -6, 0, 44),
+		Size = UDim2.fromOffset(58, 58),
 		BackgroundColor3 = Color3.new(1, 1, 1),
-		ZIndex = 25,
+		ZIndex = 26,
 		Parent = header,
 	})
-	Kit.corner(10, close)
-	Kit.stroke(4, nil, close)
+	Kit.corner(14, close)
+	Kit.stroke(3.5, nil, close)
 	Kit.gradient(Kit.Colors.Red, Kit.Colors.RedDark, close)
-	Kit.text({ Text = "X", Size = 36, StrokeSize = 3.5, ZIndex = 26, Parent = close })
+	Kit.text({ Text = "X", Size = 38, StrokeSize = 3.5, ZIndex = 27, Parent = close })
 	local cs = Kit.scale(close)
 	close.MouseEnter:Connect(function()
 		Kit.tween(cs, 0.12, { Scale = 1.1 })
@@ -932,8 +902,8 @@ function Kit.panel(props)
 	local body = new("Frame", {
 		Name = "Body",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(14, 74),
-		Size = UDim2.new(1, -28, 1, -86),
+		Position = UDim2.fromOffset(12, 40),
+		Size = UDim2.new(1, -24, 1, -52),
 		ZIndex = 22,
 		Parent = frame,
 	})
@@ -949,29 +919,23 @@ function Kit.panel(props)
 	}
 end
 
--- Dark inner card from the kit: black outline, light blue edge, navy fill
+-- Content area inside a panel. Clear by default (the see-through panel shows
+-- through, like Stone Skipping); Tile = true gives a grey studded card.
 function Kit.inset(props)
 	local outer = new("Frame", {
 		Name = props.Name or "Inset",
-		BackgroundColor3 = Kit.Colors.Outline,
+		BackgroundTransparency = 1,
 		Size = props.Size or UDim2.fromScale(1, 1),
 		Position = props.Position or UDim2.new(),
 		AnchorPoint = props.Anchor or Vector2.zero,
 		ZIndex = props.ZIndex or 22,
 		Parent = props.Parent,
 	})
-	Kit.corner(props.Radius or 14, outer)
-	local inner = new("Frame", {
-		Name = "Fill",
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		Position = UDim2.fromOffset(5, 5),
-		Size = UDim2.new(1, -10, 1, -10),
-		ZIndex = (props.ZIndex or 22) + 1,
-		Parent = outer,
-	})
-	Kit.corner((props.Radius or 14) - 4, inner)
-	Kit.gradient(Kit.Colors.Card, Kit.Colors.CardDark, inner)
-	new("UIStroke", { Thickness = 3, Color = Kit.Colors.CardEdge, Parent = inner })
+	if not props.Tile then
+		return outer, outer
+	end
+	local inner = Kit.card({ Name = "Fill", Color = Kit.Colors.Card, Color2 = Kit.Colors.CardDark, Size = UDim2.fromScale(1, 1), ZIndex = (props.ZIndex or 22) + 1, Parent = outer })
+	Kit.litePattern(inner, { Texture = "StudTile", ImageTransparency = 0.88, TileSize = 30, ZIndex = (props.ZIndex or 22) + 1 })
 	return outer, inner
 end
 
@@ -1045,11 +1009,23 @@ function Kit.card(props)
 		card.Text = ""
 		card.AutoButtonColor = false
 	end
-	Kit.corner(props.Radius or 12, card)
-	Kit.stroke(props.StrokeSize or 3, nil, card)
+	local radius = props.Radius or 8
+	Kit.corner(radius, card)
+	Kit.stroke(props.StrokeSize or 3.5, nil, card)
 	local top = props.Color or Kit.Colors.Card
-	local bottom = props.Color2 or top:Lerp(Color3.new(0, 0, 0), 0.35)
+	local bottom = props.Color2 or top:Lerp(Color3.new(0, 0, 0), 0.25)
 	local grad = Kit.gradient(top, bottom, card)
+	-- lighter inner edge just inside the black outline (Stone Skipping cards)
+	local rim = new("Frame", {
+		Name = "Rim",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(3, 3),
+		Size = UDim2.new(1, -6, 1, -6),
+		ZIndex = props.ZIndex or 23,
+		Parent = card,
+	})
+	Kit.corner(math.max(radius - 3, 2), rim)
+	new("UIStroke", { Thickness = 3, Color = Color3.new(1, 1, 1), Transparency = 0.55, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = rim })
 	return card, grad
 end
 
@@ -1065,7 +1041,7 @@ function Kit.progress(props)
 		ZIndex = props.ZIndex or 24,
 		Parent = props.Parent,
 	})
-	Kit.corner(11, bar)
+	Kit.corner(6, bar)
 	new("UIStroke", { Thickness = 3, Color = Kit.Colors.BarEdge, Parent = bar })
 	local fill = new("Frame", {
 		Name = "Fill",
@@ -1074,8 +1050,9 @@ function Kit.progress(props)
 		ZIndex = (props.ZIndex or 24) + 1,
 		Parent = bar,
 	})
-	Kit.corner(11, fill)
+	Kit.corner(6, fill)
 	Kit.gradient(props.Color or Kit.Colors.Green, props.Color2 or Kit.Colors.GreenDark, fill)
+	Kit.litePattern(fill, { Texture = "StudTile", ImageTransparency = 0.8, TileSize = 30, ZIndex = (props.ZIndex or 24) + 1 })
 	local label = Kit.text({ Text = "", Size = 22, Scaled = true, MaxSize = 22, FrameSize = UDim2.new(1, -8, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = (props.ZIndex or 24) + 2, Parent = bar })
 	return {
 		Frame = bar,

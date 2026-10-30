@@ -21,7 +21,7 @@ return function(ctx)
 	local badges = {}
 
 	-- Left column (Effects hides "Side" during a launch, Tutorial finds "Menu")
-	local side = new("Frame", { Name = "Side", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 10), Size = UDim2.fromOffset(188, 350), Parent = hud })
+	local side = new("Frame", { Name = "Side", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 10), Size = UDim2.fromOffset(196, 372), Parent = hud })
 	local left = new("Frame", { Name = "Menu", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = side })
 
 	-- "ONLY [R$] 25" style price: a small Robux icon in front of the number
@@ -57,10 +57,10 @@ return function(ctx)
 		end)
 	end
 
-	local shopBtn = Kit.card({ Button = true, Name = "Shop", Color = Kit.Colors.Yellow, Color2 = Kit.Colors.YellowDark, Size = UDim2.fromOffset(180, 58), ZIndex = 5, StrokeSize = 4, Parent = left })
+	local shopBtn = Kit.card({ Button = true, Name = "Shop", Color = Kit.Colors.Yellow, Color2 = Kit.Colors.YellowDark, Size = UDim2.fromOffset(192, 62), ZIndex = 5, Radius = 12, Parent = left })
 	Kit.movingPattern(shopBtn, { Lite = true, Texture = "StudTile", Speed = 0, ImageTransparency = 0.8, ZIndex = 5, Radius = 12 })
-	local shopIcon = Kit.icon("Shop", { Size = UDim2.fromOffset(66, 66), Position = UDim2.new(0, -6, 0.5, 0), Anchor = Vector2.new(0, 0.5), Rotation = -8, ZIndex = 7, Parent = shopBtn })
-	Kit.text({ Text = "Shop", Size = 34, StrokeSize = 3.5, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(1, -70, 1, 0), Position = UDim2.fromOffset(66, -1), ZIndex = 8, Parent = shopBtn })
+	local shopIcon = Kit.icon("Shop", { Size = UDim2.fromOffset(86, 86), Position = UDim2.new(0, -14, 0.5, -4), Anchor = Vector2.new(0, 0.5), Rotation = -8, ZIndex = 7, Parent = shopBtn })
+	Kit.text({ Text = "Shop", Size = 40, StrokeSize = 4, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(1, -78, 1, 0), Position = UDim2.fromOffset(76, -1), ZIndex = 8, Parent = shopBtn })
 	pressable(shopBtn, shopIcon)
 	shopBtn.Activated:Connect(function()
 		Kit.playSound("Click")
@@ -79,9 +79,12 @@ return function(ctx)
 	}
 	for i, m in ipairs(grid) do
 		local col, row = (i - 1) % 2, math.floor((i - 1) / 2)
-		local card = Kit.card({ Button = true, Name = m[1], Color = Color3.fromRGB(70, 78, 98), Color2 = Color3.fromRGB(38, 44, 60), Size = UDim2.fromOffset(86, 86), Position = UDim2.fromOffset(col * 94, 66 + row * 94), ZIndex = 5, StrokeSize = 4, Parent = left })
-		local ic = Kit.icon(m[2], { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.5, 0.4), Anchor = Vector2.new(0.5, 0.5), ZIndex = 7, Parent = card })
-		Kit.text({ Text = m[1], Size = 21, Scaled = true, MaxSize = 21, FrameSize = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 0, 1, -1), Anchor = Vector2.new(0.5, 1), ZIndex = 8, Parent = card })
+		local card = Kit.card({ Button = true, Name = m[1], Color = Color3.fromRGB(60, 58, 70), Color2 = Color3.fromRGB(34, 32, 42), Size = UDim2.fromOffset(92, 92), Position = UDim2.fromOffset(col * 100, 72 + row * 100), ZIndex = 5, Radius = 12, Parent = left })
+		card.BackgroundTransparency = 0.3
+		card.Rim:Destroy()
+		-- big icon that fills the tile, name over its bottom edge (Stone Skipping)
+		local ic = Kit.icon(m[2], { Size = UDim2.fromScale(1.02, 1.02), Position = UDim2.fromScale(0.5, 0.42), Anchor = Vector2.new(0.5, 0.5), ZIndex = 7, Parent = card })
+		Kit.text({ Text = m[1], Size = 24, StrokeSize = 3.5, Scaled = true, MaxSize = 24, FrameSize = UDim2.new(1, 6, 0, 28), Position = UDim2.new(0.5, 0, 1, -2), Anchor = Vector2.new(0.5, 1), ZIndex = 8, Parent = card })
 		pressable(card, ic)
 		card.Activated:Connect(function()
 			Kit.playSound("Click")
@@ -100,10 +103,10 @@ return function(ctx)
 	local right = new("Frame", { Name = "Right", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 12), Size = UDim2.fromOffset(280, 64), Parent = hud })
 	Kit.list(right, 10, true, Enum.HorizontalAlignment.Right)
 	local function roundButton(name, icon, order, onClick)
-		local b = new("ImageButton", { Name = name, BackgroundColor3 = Color3.fromRGB(20, 24, 34), BackgroundTransparency = 0.1, Size = UDim2.fromOffset(60, 60), LayoutOrder = order, Parent = right })
-		Kit.corner(30, b)
-		Kit.stroke(3, nil, b)
-		local ic = Kit.icon(icon, { Size = UDim2.fromScale(0.72, 0.72), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 3, Parent = b })
+		local b = new("ImageButton", { Name = name, BackgroundColor3 = Kit.Colors.Glass, BackgroundTransparency = 0.3, Size = UDim2.fromOffset(66, 66), LayoutOrder = order, Parent = right })
+		Kit.corner(33, b)
+		Kit.stroke(3.5, nil, b)
+		local ic = Kit.icon(icon, { Size = UDim2.fromScale(0.95, 0.95), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 3, Parent = b })
 		pressable(b, ic)
 		b.Activated:Connect(function()
 			Kit.playSound("Click")
@@ -169,14 +172,14 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Bottom left: Rebirths, Cash, Gems
 	-----------------------------------------------------------------------
-	local stack = new("Frame", { Name = "Currencies", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 18, 1, -14), Size = UDim2.fromOffset(260, 200), Parent = hud })
+	local stack = new("Frame", { Name = "Currencies", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 18, 1, -14), Size = UDim2.fromOffset(260, 214), Parent = hud })
 	local stackList = Kit.list(stack, 4, false, Enum.HorizontalAlignment.Left)
 	stackList.VerticalAlignment = Enum.VerticalAlignment.Bottom
 	local amounts = {}
 	local function currency(name, icon, order, onPlus)
-		local row = new("Frame", { Name = name, BackgroundTransparency = 1, Size = UDim2.fromOffset(260, 60), LayoutOrder = order, Parent = stack })
-		Kit.icon(icon, { Size = UDim2.fromOffset(60, 60), ZIndex = 4, Parent = row })
-		local amount = Kit.text({ Text = "0", Size = 46, StrokeSize = 4, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(1, -110, 1, 0), Position = UDim2.fromOffset(68, 0), ZIndex = 3, Parent = row })
+		local row = new("Frame", { Name = name, BackgroundTransparency = 1, Size = UDim2.fromOffset(260, 66), LayoutOrder = order, Parent = stack })
+		Kit.icon(icon, { Size = UDim2.fromOffset(72, 72), Position = UDim2.fromOffset(-4, -3), ZIndex = 4, Parent = row })
+		local amount = Kit.text({ Text = "0", Size = 52, StrokeSize = 4.5, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(1, -110, 1, 0), Position = UDim2.fromOffset(74, 0), ZIndex = 3, Parent = row })
 		amount.AutomaticSize = Enum.AutomaticSize.X
 		amount.Size = UDim2.new(0, 0, 1, 0)
 		if onPlus then
@@ -203,11 +206,12 @@ return function(ctx)
 	local multText = Kit.text({ Text = "", Size = 32, StrokeSize = 3.5, Color = Color3.fromRGB(255, 236, 120), AlignX = Enum.TextXAlignment.Right, FrameSize = UDim2.new(0.4, 0, 0, 40), Position = UDim2.new(1, 0, 0, 2), Anchor = Vector2.new(1, 0), ZIndex = 3, Parent = bottom })
 
 	local barBack = new("Frame", { Name = "Bar", BackgroundColor3 = Color3.fromRGB(225, 232, 245), Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 58), ZIndex = 3, Parent = bottom })
-	Kit.corner(12, barBack)
-	Kit.stroke(4, nil, barBack)
+	Kit.corner(8, barBack)
+	Kit.stroke(3.5, nil, barBack)
 	Kit.movingPattern(barBack, { Lite = true, Texture = "StudTile", Speed = 0, ImageTransparency = 0.85, ZIndex = 3, Radius = 12 })
 	local barFill = new("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), ZIndex = 4, Parent = barBack })
-	Kit.corner(12, barFill)
+	Kit.corner(8, barFill)
+	Kit.litePattern(barFill, { Texture = "StudTile", ImageTransparency = 0.8, TileSize = 30, ZIndex = 4 })
 	Kit.gradient(Color3.fromRGB(70, 170, 255), Color3.fromRGB(20, 90, 220), barFill)
 	local barLeft = Kit.text({ Text = "", Size = 36, StrokeSize = 3.5, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.5, -16, 1, 0), Position = UDim2.fromOffset(16, -1), ZIndex = 6, Parent = barBack })
 	local barRight = Kit.text({ Text = "", Size = 30, StrokeSize = 3.5, AlignX = Enum.TextXAlignment.Right, FrameSize = UDim2.new(0.5, -16, 1, 0), Position = UDim2.new(1, -16, 0, -1), Anchor = Vector2.new(1, 0), ZIndex = 6, Parent = barBack })
@@ -220,12 +224,12 @@ return function(ctx)
 	}
 	for i, key in ipairs({ "PowerPack1", "PowerPack2", "PowerPack3" }) do
 		local product = Config.Products[key]
-		local card, grad = Kit.card({ Button = true, Name = key, Color = packColors[i][1], Color2 = packColors[i][2], Size = UDim2.new(1 / 3, -6, 0, 66), Position = UDim2.new((i - 1) / 3, (i - 1) * 3, 0, 110), ZIndex = 5, StrokeSize = 4, Parent = bottom })
+		local card, grad = Kit.card({ Button = true, Name = key, Color = packColors[i][1], Color2 = packColors[i][2], Size = UDim2.new(1 / 3, -6, 0, 66), Position = UDim2.new((i - 1) / 3, (i - 1) * 3, 0, 110), ZIndex = 5, Radius = 8, Parent = bottom })
 		if i == 3 then
 			Kit.rainbowFill(grad)
 		end
 		Kit.movingPattern(card, { Lite = true, Texture = "StudTile", Speed = 0, ImageTransparency = 0.8, ZIndex = 5, Radius = 12 })
-		Kit.icon("Power", { Size = UDim2.fromOffset(54, 54), Position = UDim2.fromScale(0.5, 0.45), Anchor = Vector2.new(0.5, 0.5), Rotation = 20, ZIndex = 6, Parent = card })
+		Kit.icon("Power", { Size = UDim2.fromOffset(84, 84), Position = UDim2.fromScale(0.5, 0.42), Anchor = Vector2.new(0.5, 0.5), Rotation = 20, ZIndex = 6, Parent = card })
 		local label = Kit.text({ Text = "", Size = 40, StrokeSize = 4, FrameSize = UDim2.new(1, 0, 1, -8), ZIndex = 8, Parent = card })
 		robuxPrice(card, tostring(product.Price), 20, Color3.fromRGB(130, 255, 130), { Position = UDim2.new(1, -6, 1, 8), Anchor = Vector2.new(1, 1) })
 		pressable(card)

@@ -21,7 +21,7 @@ return function(ctx)
 		Kit.clear(holder)
 		rows = {}
 		for i, up in ipairs(Config.Upgrades[current]) do
-			local tile, fill = Kit.inset({ Name = up.Id, Parent = holder, ZIndex = 24 })
+			local tile, fill = Kit.inset({ Name = up.Id, Tile = true, Parent = holder, ZIndex = 24 })
 			tile.LayoutOrder = i
 			Kit.icon(up.Icon, { Size = UDim2.fromOffset(66, 66), Position = UDim2.fromOffset(6, 6), ZIndex = 27, Parent = fill })
 			Kit.text({ Text = up.Name, Size = 26, StrokeSize = 3, Scaled = true, MaxSize = 26, AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(1, -84, 0, 28), Position = UDim2.fromOffset(78, 6), ZIndex = 27, Parent = fill })

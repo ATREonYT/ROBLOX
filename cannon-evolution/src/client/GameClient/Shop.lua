@@ -257,9 +257,9 @@ return function(ctx)
 	local sections, bars = {}, {}
 	for i, sec in ipairs(SECTIONS) do
 		if sec.Title then
-			local bar = new("Frame", { Name = sec.Key .. "Bar", BackgroundColor3 = Kit.Colors.Outline, BackgroundTransparency = 0.35, Size = UDim2.new(1, 0, 0, 44), LayoutOrder = i * 2 - 1, ZIndex = 25, Parent = content })
+			local bar = new("Frame", { Name = sec.Key .. "Bar", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 48), LayoutOrder = i * 2 - 1, ZIndex = 25, Parent = content })
 			Kit.corner(10, bar)
-			Kit.text({ Text = "~ " .. sec.Title .. " ~", Size = 32, StrokeSize = 3.5, FrameSize = UDim2.fromScale(1, 1), ZIndex = 26, Parent = bar })
+			Kit.text({ Text = "~ " .. sec.Title .. " ~", Size = 40, StrokeSize = 4.5, FrameSize = UDim2.fromScale(1, 1), ZIndex = 26, Parent = bar })
 			bars[sec.Key] = bar
 		end
 		sections[sec.Key] = new("Frame", { Name = sec.Key, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 260), LayoutOrder = i * 2, ZIndex = 25, Parent = content })
