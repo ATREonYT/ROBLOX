@@ -3,10 +3,12 @@
 
 	Roblox caps a MeshPart at 2048 studs a side. Two volcano pieces of CannonMap.glb were 3,028 studs long
 	(their big ground slabs run the whole stage), so Import 3D squashed them and the volcano stage got
-	holes (Alex, Oct 30: "why is there some parts of the map missing?"). tools/map/make_patch.py cut them
-	into pieces that fit (the props stay one piece, the long ground slabs become four); this puts those
-	pieces exactly where the old ones belong, with the old ones' look and collisions, and removes the
-	squashed ones. pack_map.py now cuts long pieces itself, so a fresh pack doesn't need this.
+	holes (Alex, Oct 30: "why is there some parts of the map missing?"). Two Aurora Peaks pieces are 1,760
+	long, which goes over the cap once the map is built 1.3x bigger (Config.Map.Scale). tools/map/make_patch.py
+	cut all four into pieces that fit (the props stay one piece, the long ground slabs become two or four);
+	this puts those pieces exactly where the old ones belong, at the map's current size, with the old ones'
+	look and collisions, and removes the old ones. pack_map.py now cuts long pieces itself, so a fresh pack
+	doesn't need this.
 ]]
 
 local Config = require(game.ReplicatedStorage.GameConfig)
@@ -16,16 +18,22 @@ local TAG = "[MapPatch]"
 -- from make_patch.py: where each new piece goes, in the file's units
 local PLAZA = { centre = Vector3.new(-60.0000, 2.1350, 0.0000), width = 18.7000 }
 local PIECES = { -- new piece = { replaces, centre, size }
+	["12_Aurora_Peaks_03"] = { "12_Aurora_Peaks_03", Vector3.new(6215.8410, 36.9158, 0.0000), Vector3.new(248.3179, 81.8315, 256.0000) },
+	["12_Aurora_Peaks_03_base1"] = { "12_Aurora_Peaks_03", Vector3.new(6096.0005, 11.1500, 8.0000), Vector3.new(880.0010, 14.3000, 113.6000) },
+	["12_Aurora_Peaks_03_base2"] = { "12_Aurora_Peaks_03", Vector3.new(6976.0005, 7.1500, 0.0000), Vector3.new(879.9990, 6.3000, 97.6000) },
+	["12_Aurora_Peaks_06"] = { "12_Aurora_Peaks_06", Vector3.new(6882.0000, 36.9360, 0.0000), Vector3.new(260.0000, 81.8720, 256.0000) },
+	["12_Aurora_Peaks_06_base1"] = { "12_Aurora_Peaks_06", Vector3.new(6096.0005, 7.1500, 0.0000), Vector3.new(880.0010, 6.3000, 97.6000) },
+	["12_Aurora_Peaks_06_base2"] = { "12_Aurora_Peaks_06", Vector3.new(6976.0005, 15.1500, 0.0000), Vector3.new(879.9990, 22.3000, 161.6000) },
 	["14_Volcano_Core_06"] = { "14_Volcano_Core_06", Vector3.new(10779.0981, 36.4841, 0.4960), Vector3.new(222.1963, 80.9683, 256.9919) },
 	["14_Volcano_Core_06_base1"] = { "14_Volcano_Core_06", Vector3.new(10142.3401, 3.9250, 0), Vector3.new(757.1255, 8.7500, 97.6000) },
-	["14_Volcano_Core_06_base2"] = { "14_Volcano_Core_06", Vector3.new(10899.4656, 10.9250, 0), Vector3.new(757.1255, 22.7500, 161.6000) },
+	["14_Volcano_Core_06_base2"] = { "14_Volcano_Core_06", Vector3.new(10899.4656, 10.9250, 0.0000), Vector3.new(757.1255, 22.7500, 161.6000) },
 	["14_Volcano_Core_06_base3"] = { "14_Volcano_Core_06", Vector3.new(11656.5911, 3.9250, 0), Vector3.new(757.1255, 8.7500, 97.6000) },
 	["14_Volcano_Core_06_base4"] = { "14_Volcano_Core_06", Vector3.new(12413.7146, 3.9250, 0), Vector3.new(757.1215, 8.7500, 97.6000) },
 	["14_Volcano_Core_11"] = { "14_Volcano_Core_11", Vector3.new(11732.0000, 36.4405, 0), Vector3.new(232.0000, 80.8809, 256.0000) },
-	["14_Volcano_Core_11_base1"] = { "14_Volcano_Core_11", Vector3.new(10142.3401, 3.9250, 0), Vector3.new(757.1255, 8.7500, 97.6000) },
-	["14_Volcano_Core_11_base2"] = { "14_Volcano_Core_11", Vector3.new(10899.4656, 3.9250, 0), Vector3.new(757.1255, 8.7500, 97.6000) },
-	["14_Volcano_Core_11_base3"] = { "14_Volcano_Core_11", Vector3.new(11656.5911, 3.9250, 0), Vector3.new(757.1255, 8.7500, 97.6000) },
-	["14_Volcano_Core_11_base4"] = { "14_Volcano_Core_11", Vector3.new(12413.7146, 3.9250, 0), Vector3.new(757.1215, 8.7500, 97.6000) },
+	["14_Volcano_Core_11_base1"] = { "14_Volcano_Core_11", Vector3.new(10142.3401, 3.9250, 0.0000), Vector3.new(757.1255, 8.7500, 97.6000) },
+	["14_Volcano_Core_11_base2"] = { "14_Volcano_Core_11", Vector3.new(10899.4656, 3.9250, 0.0000), Vector3.new(757.1255, 8.7500, 97.6000) },
+	["14_Volcano_Core_11_base3"] = { "14_Volcano_Core_11", Vector3.new(11656.5911, 3.9250, 0.0000), Vector3.new(757.1255, 8.7500, 97.6000) },
+	["14_Volcano_Core_11_base4"] = { "14_Volcano_Core_11", Vector3.new(12413.7146, 3.9250, 0.0000), Vector3.new(757.1215, 8.7500, 97.6000) },
 }
 
 local map = workspace:FindFirstChild(Config.Map.Root)
@@ -51,7 +59,7 @@ for _, c in ipairs(workspace:GetChildren()) do
 end
 if not patch then
 	local done = map:FindFirstChild("14_Volcano_Core_06_base1", true)
-	print(TAG, done and "already done: the volcano pieces are in place" or "no patch in Workspace: Import 3D map/MapPatch.glb first")
+	print(TAG, done and "already done: the long pieces are in place" or "no patch in Workspace: Import 3D map/MapPatch.glb first")
 	return
 end
 
@@ -81,10 +89,10 @@ if math.abs(math.sin(yaw)) > 0.5 then
 end
 local unturn = CFrame.Angles(0, -yaw, 0)
 
--- keep the old pieces' look and collisions, then take them out
+-- keep the old pieces' look and collisions, then take them out (only those whose new pieces came in)
 local looks = {}
-for _, info in pairs(PIECES) do
-	local old = map:FindFirstChild(info[1], true)
+for name, info in pairs(PIECES) do
+	local old = found[name] and map:FindFirstChild(info[1], true)
 	if old and old:IsA("MeshPart") and not looks[info[1]] then
 		looks[info[1]] = {
 			Anchored = old.Anchored, CanCollide = old.CanCollide, CanTouch = old.CanTouch, CanQuery = old.CanQuery,
@@ -121,4 +129,4 @@ for name, part in pairs(found) do
 	placed += 1
 end
 patch:Destroy()
-print(TAG, ("put %d volcano pieces in place (scale %.4f, turned %d degrees): the holes are filled"):format(placed, s, math.deg(-yaw)))
+print(TAG, ("put %d map pieces in place (scale %.4f, turned %d degrees): the holes are filled"):format(placed, s, math.deg(-yaw)))

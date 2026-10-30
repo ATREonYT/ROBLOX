@@ -1,12 +1,13 @@
 --[[
 	BuildWorld1  (run once in Studio's Command Bar, Edit mode)
 
-	Builds the World 1 training stations (7 + 1 gamepass) along the left side of the lobby,
-	each in a blocky booth copied from the two booth pictures Alex sent (Oct 30): stepped
-	floor, white start mat, hazard stripe, X-braced counter, themed back wall (wooden stall,
-	pixel steps, truss gantry or gold crown), lane props and effects, neon on the top tiers,
-	and a small "+N Power" label. Run BuildRebirthSigns and BuildCartoonyMap after it.
-	the Grand Cannon LaunchPoint and Launch Zone, and moves the SpawnLocation into the lobby.
+	Builds the training stations (5 + 1 gamepass, GameConfig) round the lobby, each an open
+	booth: a stepped floor in the booth's colours, white start mat, hazard stripe, the cannon on
+	its plinth and a target on its own stand, with neon edges on the top tiers. No back wall,
+	counter or lane props any more (Alex, Oct 30: "try removing the back wall of the training
+	zones and just keep the target and the cannon"). Run BuildRebirthSigns and BuildCartoonyMap
+	(the studs) after it. It also places the Grand Cannon LaunchPoint and Launch Zone, and
+	moves the SpawnLocation into the lobby.
 	Safe to re-run: it deletes and rebuilds Workspace.TrainingStations.
 
 	Cannon models: put the imported cannons in ReplicatedStorage > Cannons,
@@ -33,10 +34,19 @@ else
 	lobbyPos = lobbyCf.Position
 end
 
--- floor height under a point (the map only, nothing we build)
+-- floor height under a point (the map only, nothing we build; on the new map only its ground, never a palm or rock)
 local floorParams = RaycastParams.new()
 floorParams.FilterType = Enum.RaycastFilterType.Include
 floorParams.FilterDescendantsInstances = { newMap or workspace.map1b }
+if newMap then
+	local ground = {}
+	for _, p in ipairs(newMap:GetDescendants()) do
+		if p:IsA("BasePart") and Config.Map.IsGround(p.Name) then
+			table.insert(ground, p)
+		end
+	end
+	floorParams.FilterDescendantsInstances = ground
+end
 local function floorAt(x, z, fallback)
 	local hit = workspace:Raycast(Vector3.new(x, 200, z), Vector3.new(0, -400, 0), floorParams)
 	return hit and hit.Position.Y or fallback
@@ -61,18 +71,27 @@ local function slot(i)
 end
 
 if newMap then
-	-- New map: mini booths (Alex: "miniature trainings, but not too small") on the grass to your left as
-	-- you face the dock, all opening towards the plaza. They zig-zag between a front and a back row so
-	-- every back booth faces a 9-stud walkway between two front ones (vault: paths 10 studs or so).
-	-- Booth 1 is at the east end, nearest the path to the dock; the VIP booth is the far west one.
-	-- The spots are checked against every rock, palm and fence in the map by tools/map/plan_check.py.
-	BOOTH_SCALE = 0.6
-	local PITCH, EAST_X, BACK_Z, FRONT_Z = 8.87, -37.7, -27.7, -13
+	-- New map: six booths (Alex, Oct 30: "make like 5 or 6 so we can fit them better into the lobby") side by
+	-- side in one block on the north side of the plaza, like the training lanes in his reference game
+	-- ("put them into one spot and make them fit nicely like in the references"), all firing north towards
+	-- the palisade, with a 2.5-stud strip of ground between neighbours. Booth 1 is at the east end, nearest
+	-- the dock; the VIP booth is the west one. The block's middle is in the map file's units (Config.Map.At
+	-- moves it out with the map); checked against every rock, palm and fence by tools/map/plan_check.py.
+	BOOTH_SCALE = 0.75 -- bigger than the 8-booth rows' 0.6 (Alex: "miniature trainings, but not too small")
+	local MIDDLE, PITCH = Config.Map.At(-61, 0, -26), 14 * BOOTH_SCALE + 2.5 -- the middle stand point; booth width + gap
 	fireDir = Vector3.new(0, 0, -1)
+	local function x(i)
+		return MIDDLE.X - (i - (#Config.Stations + 1) / 2) * PITCH
+	end
+	-- one floor height for the whole block, so the booths line up: the highest ground under any of them
+	local blockY = -math.huge
+	for i = 1, #Config.Stations do
+		for _, z in ipairs({ MIDDLE.Z + 4, MIDDLE.Z, MIDDLE.Z - 10, MIDDLE.Z - 19 }) do
+			blockY = math.max(blockY, floorAt(x(i), z, floorY))
+		end
+	end
 	slot = function(i)
-		local x = EAST_X - (i - 1) * PITCH
-		local z = i % 2 == 1 and BACK_Z or FRONT_Z
-		return Vector3.new(x, floorAt(x, z, floorY), z), fireDir
+		return Vector3.new(x(i), blockY, MIDDLE.Z), fireDir
 	end
 end
 
@@ -111,7 +130,8 @@ local function placeholderCannon()
 	return m
 end
 
-local function makeTarget(cf)
+-- the target on its own wooden stand: two legs down to ground (the booth's floor top) and a foot
+local function makeTarget(cf, ground)
 	local m = Instance.new("Model")
 	m.Name = "Target"
 	local rings = {
@@ -134,15 +154,17 @@ local function makeTarget(cf)
 	end
 	-- invisible aim point; its front faces the cannon
 	part({ Name = "Center", Size = Vector3.one * 0.5, Transparency = 1, CanCollide = false, CFrame = cf * CFrame.new(0, 0, -0.5), Parent = m })
+	local h = cf.Position.Y - ground
 	for _, x in ipairs({ -1.6, 1.6 }) do
 		part({
-			Size = Vector3.new(0.5, cf.Position.Y - floorY, 0.5),
+			Size = Vector3.new(0.6, h, 0.6),
 			Color = Color3.fromRGB(110, 75, 45),
 			Material = Enum.Material.Wood,
-			CFrame = cf * CFrame.new(x, -(cf.Position.Y - floorY) / 2, 0.5),
+			CFrame = cf * CFrame.new(x, -h / 2, 0.55),
 			Parent = m,
 		}).Name = "Leg"
 	end
+	part({ Name = "Foot", Size = Vector3.new(4.6, 0.5, 1.6), Color = Color3.fromRGB(85, 55, 35), Material = Enum.Material.Wood, CFrame = cf * CFrame.new(0, 0.25 - h, 0.55), Parent = m })
 	m.PrimaryPart = m.Center
 	return m
 end
@@ -181,22 +203,19 @@ local function makeSign(cf, info)
 	return sign
 end
 
--- Booth looks, one per station Id, copied from Alex's two booth pictures (Oct 30):
--- the low tiers are matte (left picture), the high tiers glow with neon edges (right picture).
--- Style: "stall" wooden fair stall, "stepped" pixel-stepped back wall, "truss" metal
--- gantry, "crown" gold frame with a crown. Props: the extras in each lane.
+-- Booth looks, one per station Id (GameConfig), from Alex's two booth pictures (Oct 30): the low
+-- tiers are matte, the high tiers glow with neon edges. Rim and Floor colour the booth, Counter the
+-- cannon's plinth top, Rings the target.
 local function rgb(r, g, b)
 	return Color3.fromRGB(r, g, b)
 end
 local THEMES = {
-	[1] = { Rim = rgb(35, 70, 170), Floor = rgb(65, 115, 215), Counter = rgb(150, 75, 45), Frame = rgb(120, 60, 35), Panel = rgb(165, 90, 55), Style = "stall", Props = "fair" },
-	[2] = { Rim = rgb(25, 30, 95), Floor = rgb(225, 45, 50), Counter = rgb(25, 30, 95), Frame = rgb(25, 30, 95), Panel = rgb(30, 38, 110), Style = "stepped", Props = "targets", Edge = rgb(255, 60, 70) },
-	[3] = { Rim = rgb(110, 190, 240), Floor = rgb(170, 225, 250), Counter = rgb(60, 140, 220), Frame = rgb(225, 240, 255), Panel = rgb(140, 210, 245), Style = "truss", Props = "ice", Neon = rgb(80, 190, 255), Rings = { rgb(60, 160, 240), rgb(255, 255, 255), rgb(60, 160, 240), rgb(255, 255, 255) } },
-	[4] = { Rim = rgb(235, 120, 20), Floor = rgb(250, 165, 40), Counter = rgb(240, 150, 40), Frame = rgb(240, 130, 25), Panel = rgb(70, 30, 20), Style = "truss", Props = "stage", Edge = rgb(255, 150, 40) },
-	[5] = { Rim = rgb(215, 45, 200), Floor = rgb(240, 85, 220), Counter = rgb(110, 40, 190), Frame = rgb(225, 60, 210), Panel = rgb(95, 35, 175), Style = "truss", Props = "balloons", Neon = rgb(255, 110, 240) },
-	[6] = { Rim = rgb(235, 185, 25), Floor = rgb(255, 215, 60), Counter = rgb(240, 190, 40), Frame = rgb(250, 205, 45), Panel = rgb(90, 25, 25), Style = "crown", Props = "gold", Neon = rgb(255, 245, 210), Rings = { rgb(255, 200, 40), rgb(255, 225, 110), rgb(220, 40, 40), rgb(255, 200, 40) } },
-	[7] = { Rim = rgb(85, 30, 200), Floor = rgb(40, 20, 105), Counter = rgb(85, 30, 200), Frame = rgb(70, 25, 170), Panel = rgb(35, 15, 90), Style = "stepped", Props = "neon", Neon = rgb(255, 60, 230), Rings = { rgb(255, 60, 230), rgb(45, 15, 95), rgb(255, 60, 230), rgb(45, 15, 95) } },
-	[8] = { Rim = rgb(70, 215, 60), Floor = rgb(30, 110, 45), Counter = rgb(60, 190, 55), Frame = rgb(70, 215, 60), Panel = rgb(15, 60, 30), Style = "truss", Props = "toxic", Neon = rgb(110, 255, 90), Rings = { rgb(110, 255, 90), rgb(20, 70, 35), rgb(110, 255, 90), rgb(255, 255, 255) } },
+	[1] = { Rim = rgb(35, 70, 170), Floor = rgb(65, 115, 215), Counter = rgb(150, 75, 45) }, -- Starter: blue fair
+	[2] = { Rim = rgb(110, 190, 240), Floor = rgb(170, 225, 250), Counter = rgb(60, 140, 220), Neon = rgb(80, 190, 255), Rings = { rgb(60, 160, 240), rgb(255, 255, 255), rgb(60, 160, 240), rgb(255, 255, 255) } }, -- Steel: ice
+	[3] = { Rim = rgb(235, 120, 20), Floor = rgb(250, 165, 40), Counter = rgb(240, 150, 40), Edge = rgb(255, 150, 40) }, -- Heavy: orange stage
+	[4] = { Rim = rgb(235, 185, 25), Floor = rgb(255, 215, 60), Counter = rgb(240, 190, 40), Neon = rgb(255, 245, 210), Rings = { rgb(255, 200, 40), rgb(255, 225, 110), rgb(220, 40, 40), rgb(255, 200, 40) } }, -- Golden: gold
+	[5] = { Rim = rgb(70, 215, 60), Floor = rgb(30, 110, 45), Counter = rgb(60, 190, 55), Neon = rgb(110, 255, 90), Rings = { rgb(110, 255, 90), rgb(20, 70, 35), rgb(110, 255, 90), rgb(255, 255, 255) } }, -- Plasma: toxic green
+	[6] = { Rim = rgb(85, 30, 200), Floor = rgb(40, 20, 105), Counter = rgb(85, 30, 200), Neon = rgb(255, 60, 230), Rings = { rgb(255, 60, 230), rgb(45, 15, 95), rgb(255, 60, 230), rgb(45, 15, 95) } }, -- Dragon (VIP): neon purple
 }
 local function dark(c, a)
 	return c:Lerp(Color3.new(0, 0, 0), a or 0.3)
@@ -209,7 +228,7 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 	local m = Instance.new("Model")
 	m.Name = "Booth"
 	local W = width
-	local front, back = -6, targetZ + 1.8
+	local front, back = -6, targetZ + 2.2 -- room behind the target for its stand
 	local L = back - front
 	local function at(x, y, z)
 		return standCf * CFrame.new(x, y, -z)
@@ -223,37 +242,6 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 		p.CastShadow = false
 		return p
 	end
-	-- a thin bar between two booth points
-	local function bar(x0, y0, z0, x1, y1, z1, t, color, name)
-		local a, b = at(x0, y0, z0).Position, at(x1, y1, z1).Position
-		return part({ Name = name or "Bar", Size = Vector3.new(t, t, (b - a).Magnitude + t), CFrame = CFrame.lookAt((a + b) / 2, b), Color = color, Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = m })
-	end
-	local function round(name, d, len, x, y, z, color, upright)
-		local p = blk(name, Vector3.new(len, d, d), x, y, z, color)
-		p.Shape = Enum.PartType.Cylinder
-		p.CFrame = p.CFrame * (upright and CFrame.Angles(0, 0, math.rad(90)) or CFrame.Angles(0, math.rad(90), 0))
-		return p
-	end
-	local function ball(name, d, x, y, z, color)
-		local p = blk(name, Vector3.one * d, x, y, z, color)
-		p.Shape = Enum.PartType.Ball
-		return p
-	end
-	local function sparkles(parent, color, rate, size, texture, speed)
-		local fx = Instance.new("ParticleEmitter")
-		fx.Texture = texture or "rbxasset://textures/particles/sparkles_main.dds"
-		fx.Color = ColorSequence.new(color)
-		fx.LightEmission = 1
-		fx.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size), NumberSequenceKeypoint.new(1, 0) })
-		fx.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
-		fx.Lifetime = NumberRange.new(1.5, 2.5)
-		fx.Rate = rate
-		fx.Speed = NumberRange.new(speed or 1, (speed or 1) * 2)
-		fx.SpreadAngle = Vector2.new(180, 180)
-		fx.Parent = parent
-		return fx
-	end
-
 	-- floor: chunky stepped corners, a rim and the coloured floor on top
 	blk("Rim", Vector3.new(W, 0.6, L - 2), 0, 0.3, (front + back) / 2, theme.Rim, true)
 	blk("Rim", Vector3.new(W - 2, 0.6, L), 0, 0.3, (front + back) / 2, theme.Rim, true)
@@ -294,261 +282,8 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 		blk("Hazard", Vector3.new(0.45, 0.12, 0.5), x, 0.76, 1.0, rgb(250, 200, 30))
 	end
 
-	-- counter with an X-braced front and two little props on top
-	local cw = W - 3.6
-	blk("Counter", Vector3.new(cw, 1.8, 0.9), 0, 1.6, 1.75, theme.Counter, true)
-	blk("CounterTop", Vector3.new(cw + 0.3, 0.3, 1.2), 0, 2.65, 1.75, dark(theme.Counter, 0.2), true)
-	local segs = 3
-	for i = 0, segs - 1 do
-		local xa = -cw / 2 + i * cw / segs + 0.2
-		local xb = xa + cw / segs - 0.4
-		bar(xa, 0.9, 1.28, xb, 2.3, 1.28, 0.2, dark(theme.Counter, 0.45), "Brace")
-		bar(xa, 2.3, 1.28, xb, 0.9, 1.28, 0.2, dark(theme.Counter, 0.45), "Brace")
-	end
-	blk("AmmoBox", Vector3.new(1, 0.55, 0.6), -cw / 2 + 1, 3.08, 1.75, rgb(70, 110, 50))
-	blk("AmmoLid", Vector3.new(1.02, 0.12, 0.62), -cw / 2 + 1, 3.3, 1.75, rgb(240, 190, 40))
-	blk("Grip", Vector3.new(1.2, 0.25, 0.3), cw / 2 - 1, 2.93, 1.75, rgb(245, 200, 40))
-	for _, s in ipairs({ -1, 1 }) do
-		round("Grip", 0.5, 0.5, cw / 2 - 1 + s * 0.55, 3.05, 1.75, rgb(30, 30, 35), true)
-	end
-
-	-- back wall
-	local H = 14
-	local pz = back - 0.6
-	if theme.Style == "stall" then
-		-- wooden fair stall: planks, posts, bunting
-		for i = 0, math.floor(W - 2) - 1 do
-			blk("Plank", Vector3.new(1, H - 1.5, 0.4), -(W - 2) / 2 + 0.5 + i, (H - 1.5) / 2 + 0.6, pz, i % 2 == 0 and theme.Panel or dark(theme.Panel, 0.12), true)
-		end
-		for _, s in ipairs({ -1, 1 }) do
-			blk("Post", Vector3.new(0.8, H + 0.6, 0.8), s * (W / 2 - 0.9), (H + 0.6) / 2 + 0.6, pz - 0.2, theme.Frame, true)
-		end
-		blk("Rope", Vector3.new(W - 1.6, 0.12, 0.12), 0, H + 0.3, pz - 0.5, rgb(240, 230, 210))
-		local flagCols = { rgb(235, 60, 60), rgb(250, 200, 40), rgb(60, 140, 235), rgb(80, 200, 90) }
-		for i = 0, math.floor(W - 3) - 1 do
-			local f = blk("Flag", Vector3.new(0.7, 0.7, 0.1), -(W - 3) / 2 + 0.5 + i, H - 0.1, pz - 0.5, flagCols[i % 4 + 1])
-			f.CFrame = f.CFrame * CFrame.Angles(0, 0, math.rad(45))
-		end
-		-- side shelves with cans and bottles
-		for _, s in ipairs({ -1, 1 }) do
-			local sx = s * (W / 2 - 2.6)
-			blk("Shelf", Vector3.new(3, 0.3, 1.2), sx, 3.2, pz - 1, dark(theme.Panel, 0.25), true)
-			round("Can", 0.7, 0.9, sx - 0.8, 3.8, pz - 1, rgb(60, 180, 90), true)
-			round("Can", 0.7, 0.9, sx, 3.8, pz - 1, rgb(235, 60, 60), true)
-			round("Can", 0.7, 0.9, sx + 0.8, 3.8, pz - 1, rgb(60, 140, 235), true)
-			round("Can", 0.7, 0.9, sx - 0.4, 4.7, pz - 1, rgb(250, 200, 40), true)
-			round("Can", 0.7, 0.9, sx + 0.4, 4.7, pz - 1, rgb(235, 60, 60), true)
-		end
-	else
-		-- framed panel behind the target
-		blk("BackPanel", Vector3.new(W - 2.4, H - 1, 0.4), 0, (H - 1) / 2 + 0.6, pz, theme.Panel, true)
-		for _, s in ipairs({ -1, 1 }) do
-			blk("Pillar", Vector3.new(1.2, H + 0.6, 1.2), s * (W / 2 - 0.9), (H + 0.6) / 2 + 0.6, pz, theme.Frame, true)
-		end
-		blk("TopBeam", Vector3.new(W - 0.6, 1.2, 1.2), 0, H + 0.6, pz, theme.Frame, true)
-		if theme.Neon then
-			-- neon lines down the pillars and along the beam, like the right-hand picture
-			for _, s in ipairs({ -1, 1 }) do
-				glow("Neon", Vector3.new(0.25, H, 0.25), s * (W / 2 - 1.6), H / 2 + 0.6, pz - 0.65, theme.Neon)
-			end
-			glow("Neon", Vector3.new(W - 3, 0.25, 0.25), 0, H - 0.1, pz - 0.65, theme.Neon)
-		end
-	end
-	if theme.Style == "stepped" then
-		-- pixel steps on top of the wall
-		local y = H + 1.2
-		for i, w in ipairs({ W - 2.4, W - 5, W - 7.6 }) do
-			blk("Step", Vector3.new(w, 1, 1), 0, y + (i - 1), pz, theme.Frame, true)
-		end
-	elseif theme.Style == "truss" then
-		-- metal truss gantry over the back of the lane
-		local fz = back - 6.5
-		local t = 0.22
-		local c = theme.Frame
-		for _, s in ipairs({ -1, 1 }) do
-			local x = s * (W / 2 - 0.9)
-			for _, zz in ipairs({ fz }) do
-				for _, dx in ipairs({ -0.4, 0.4 }) do
-					bar(x + dx, 0.7, zz, x + dx, H + 1.2, zz, t, c, "Truss")
-				end
-				for y = 0.7, H, 1.6 do
-					bar(x - 0.4, y, zz, x + 0.4, y + 1.6, zz, t, c, "Truss")
-				end
-			end
-			-- top side beam back to the wall, with zig-zag braces
-			bar(x, H + 1.2, fz, x, H + 1.2, pz, t * 1.4, c, "Truss")
-			bar(x, H + 0.4, fz, x, H + 0.4, pz, t, c, "Truss")
-			local n = math.max(2, math.floor((pz - fz) / 1.6))
-			for i = 0, n - 1 do
-				local za = fz + i * (pz - fz) / n
-				local zb = za + (pz - fz) / n
-				bar(x, i % 2 == 0 and H + 0.4 or H + 1.2, za, x, i % 2 == 0 and H + 1.2 or H + 0.4, zb, t, c, "Truss")
-			end
-		end
-		-- front cross beam
-		bar(-(W / 2 - 0.9), H + 1.2, fz, W / 2 - 0.9, H + 1.2, fz, t * 1.4, c, "Truss")
-		bar(-(W / 2 - 0.9), H + 0.4, fz, W / 2 - 0.9, H + 0.4, fz, t, c, "Truss")
-		local n = math.floor((W - 1.8) / 1.6)
-		for i = 0, n - 1 do
-			local xa = -(W / 2 - 0.9) + i * (W - 1.8) / n
-			local xb = xa + (W - 1.8) / n
-			bar(xa, i % 2 == 0 and H + 0.4 or H + 1.2, fz, xb, i % 2 == 0 and H + 1.2 or H + 0.4, fz, t, c, "Truss")
-		end
-	elseif theme.Style == "crown" then
-		-- gold crown on top of the frame, with a blue and a red gem
-		local y = H + 1.6
-		blk("Crown", Vector3.new(4.2, 1, 1), 0, y, pz, rgb(255, 205, 40))
-		for i, x in ipairs({ -1.7, -0.6, 0.6, 1.7 }) do
-			blk("Crown", Vector3.new(0.7, i % 3 == 1 and 1.2 or 1.6, 0.7), x, y + 0.9, pz, rgb(255, 205, 40))
-		end
-		blk("Gem", Vector3.new(0.5, 0.5, 0.2), -0.8, y, pz - 0.55, rgb(60, 140, 255))
-		blk("Gem", Vector3.new(0.5, 0.5, 0.2), 0.8, y, pz - 0.55, rgb(235, 50, 60))
-	end
-
-	-- lane props
-	local laneZ = (2.6 + pz) / 2
-	if theme.Props == "fair" then
-		local tire = round("Tire", 1.8, 0.8, -(W / 2 - 2.3), 1.1, 3.6, rgb(30, 30, 35), true)
-		tire.CFrame = at(-(W / 2 - 2.3), 1.1, 3.6) * CFrame.Angles(0, 0, math.rad(90))
-		blk("Crate", Vector3.new(1.4, 0.9, 1), W / 2 - 2.3, 1.15, 3.8, rgb(200, 140, 70))
-		for i, c in ipairs({ rgb(235, 60, 60), rgb(60, 140, 235), rgb(80, 200, 90) }) do
-			round("Bottle", 0.35, 1, W / 2 - 2.8 + i * 0.35, 2.1, 3.8, c, true)
-		end
-		-- striped barrel and a bucket of balls
-		round("Barrel", 1.4, 1.8, -(W / 2 - 2.2), 1.6, 6.4, rgb(220, 50, 50), true)
-		round("Band", 1.45, 0.3, -(W / 2 - 2.2), 1.6, 6.4, WHITE, true)
-		blk("Bucket", Vector3.new(1.2, 0.8, 1.2), W / 2 - 2.2, 1.1, 6.6, rgb(60, 140, 235))
-		for i, c in ipairs({ rgb(250, 200, 40), rgb(235, 60, 60), WHITE }) do
-			ball("Ball", 0.5, W / 2 - 2.6 + i * 0.25, 1.7, 6.6 + (i % 2) * 0.2, c)
-		end
-	elseif theme.Props == "targets" then
-		for _, s in ipairs({ -1, 1 }) do
-			local x = s * (W / 2 - 2.4)
-			blk("Stand", Vector3.new(0.25, 2.6, 0.25), x, 2, pz - 1.2, rgb(30, 30, 40))
-			round("SmallTarget", 2, 0.25, x, 3.6, pz - 1.3, rgb(235, 55, 60))
-			round("SmallTarget", 1.3, 0.27, x, 3.6, pz - 1.3, WHITE)
-			round("SmallTarget", 0.6, 0.29, x, 3.6, pz - 1.3, rgb(235, 55, 60))
-		end
-		blk("Badge", Vector3.new(1.2, 1.2, 0.2), 0, H + 0.6, pz - 0.7, WHITE)
-	elseif theme.Props == "ice" then
-		local glass = { { -2.6, 3.4 }, { 2.4, 4.8 }, { -1.8, 6.2 }, { 2.9, 2.9 } }
-		for _, g in ipairs(glass) do
-			local p = blk("Ice", Vector3.new(1.3, 1.3, 1.3), g[1], 1.35, g[2], rgb(200, 240, 255))
-			p.Material = Enum.Material.Glass
-			p.Transparency = 0.35
-		end
-		-- tall ice pillars in the back corners and snow drifting down
-		for _, sx in ipairs({ -1, 1 }) do
-			local p = blk("IcePillar", Vector3.new(1.2, 4.5, 1.2), sx * (W / 2 - 2.2), 2.95, pz - 1.4, rgb(190, 235, 255))
-			p.Material = Enum.Material.Glass
-			p.Transparency = 0.3
-		end
-		sparkles(blk("Fx", Vector3.new(W - 3, 0.2, 4), 0, 1, laneZ, WHITE), rgb(200, 240, 255), 3, 0.5).Parent.Transparency = 1
-		local snow = sparkles(blk("Fx", Vector3.new(W - 3, 0.2, L - 6), 0, H, (front + back) / 2 + 2, WHITE), WHITE, 6, 0.3, "rbxasset://textures/particles/smoke_main.dds", 0.5)
-		snow.Parent.Transparency = 1
-		snow.EmissionDirection = Enum.NormalId.Bottom
-		snow.Acceleration = Vector3.new(0, -1.5, 0)
-		snow.Lifetime = NumberRange.new(4, 6)
-	elseif theme.Props == "stage" then
-		local sun = round("Sun", 4, 0.3, 0, 7.6, pz - 0.4, rgb(255, 210, 40))
-		sun.Material = Enum.Material.Neon
-		for _, s in ipairs({ -1, 1 }) do
-			for _, y in ipairs({ 4.2, 7.4 }) do
-				blk("Speaker", Vector3.new(1.6, 1.6, 0.8), s * (W / 2 - 2.4), y, pz - 0.6, rgb(30, 25, 25))
-				round("Cone", 1, 0.2, s * (W / 2 - 2.4), y, pz - 1.05, rgb(255, 200, 40))
-			end
-			local x = s * (W / 2 - 2.6)
-			round("Barrel", 1.5, 1.8, x, 1.6, 4.2, rgb(200, 40, 35), true)
-			round("Lid", 1.55, 0.15, x, 2.55, 4.2, rgb(255, 210, 120), true)
-			local smoke = sparkles(blk("Fx", Vector3.new(1, 0.2, 1), x, 2.7, 4.2, WHITE), rgb(255, 160, 60), 6, 2.2, "rbxasset://textures/particles/smoke_main.dds", 1.5)
-			smoke.Parent.Transparency = 1
-			smoke.LightEmission = 0.3
-			smoke.SpreadAngle = Vector2.new(15, 15)
-			smoke.EmissionDirection = Enum.NormalId.Top
-			smoke.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 1) })
-		end
-	elseif theme.Props == "balloons" then
-		local cols = { rgb(90, 190, 255), rgb(255, 120, 220), rgb(255, 220, 80) }
-		for i, b in ipairs({ { -2.6, 5.4, 6.8 }, { 2.7, 6.2, 7.6 }, { -3, 4.2, 6.6 } }) do
-			local x, y, z = b[1], b[3], pz - 1 - i * 0.5
-			ball("Balloon", 1.4, x, y, z, cols[i]).Material = Enum.Material.Glass
-			bar(x, y - 0.7, z, x * 0.8, 0.8, z - 1.5, 0.08, WHITE, "String")
-			blk("Weight", Vector3.new(0.5, 0.4, 0.5), x * 0.8, 0.9, z - 1.5, rgb(250, 200, 40))
-		end
-		for _, st in ipairs({ { -2, 8 }, { 2.4, 4.5 }, { 0.6, 9 } }) do
-			local p = blk("Star", Vector3.new(0.5, 0.5, 0.15), st[1], st[2], pz - 0.3, WHITE)
-			p.Material = Enum.Material.Neon
-			p.CFrame = p.CFrame * CFrame.Angles(0, 0, math.rad(45))
-		end
-		for i, b in ipairs({ { -(W / 2 - 1.6), 3.4, 3.4 }, { W / 2 - 1.6, 3.8, 3.2 } }) do
-			local col = i == 1 and rgb(120, 230, 120) or rgb(255, 160, 60)
-			ball("Balloon", 1.2, b[1], b[2] + 1.2, b[3], col).Material = Enum.Material.Glass
-			bar(b[1], b[2] + 0.6, b[3], b[1], 2.8, b[3] - 1.2, 0.08, WHITE, "String")
-		end
-		sparkles(blk("Fx", Vector3.new(W - 3, 0.2, 4), 0, 1, laneZ, WHITE), rgb(255, 170, 240), 3, 0.5).Parent.Transparency = 1
-	elseif theme.Props == "gold" then
-		-- coin stacks, a treasure chest, red laser lines on the dark panel and a gold sparkle shower
-		for i, c in ipairs({ { -(W / 2 - 2), 4.2, 3 }, { -(W / 2 - 2.8), 4.9, 2 }, { W / 2 - 2, 4.4, 4 } }) do
-			for k = 0, c[3] - 1 do
-				round("Coin", 1, 0.25, c[1], 0.85 + k * 0.27, c[2], k % 2 == 0 and rgb(255, 205, 40) or rgb(240, 180, 30), true)
-			end
-		end
-		blk("Chest", Vector3.new(2, 1.2, 1.3), W / 2 - 2.4, 1.3, 7.2, rgb(140, 75, 40))
-		blk("ChestLid", Vector3.new(2.1, 0.5, 1.4), W / 2 - 2.4, 2.1, 7.2, rgb(120, 60, 30))
-		blk("ChestTrim", Vector3.new(2.15, 0.2, 1.45), W / 2 - 2.4, 1.85, 7.2, rgb(255, 205, 40))
-		glow("ChestGlow", Vector3.new(1.6, 0.15, 1), W / 2 - 2.4, 2.4, 7.2, rgb(255, 225, 120))
-		for _, s in ipairs({ -1, 1 }) do
-			local a = bar(s * 1.2, 1, pz - 0.3, s * (W / 2 - 1.8), H - 1, pz - 0.3, 0.12, rgb(255, 40, 40), "Laser")
-			a.Material = Enum.Material.Neon
-			blk("GoldPile", Vector3.new(1.6, 0.6, 1.6), s * (W / 2 - 2.6), 1, laneZ, rgb(255, 205, 40))
-			blk("GoldPile", Vector3.new(1, 0.5, 1), s * (W / 2 - 2.6), 1.55, laneZ, rgb(255, 225, 90))
-		end
-		local fx = sparkles(blk("Fx", Vector3.new(W - 3, 0.2, 5), 0, H - 1, laneZ, WHITE), rgb(255, 215, 80), 10, 0.7)
-		fx.Parent.Transparency = 1
-		fx.EmissionDirection = Enum.NormalId.Bottom
-		fx.Acceleration = Vector3.new(0, -3, 0)
-	elseif theme.Props == "neon" then
-		for _, s in ipairs({ -1, 1 }) do
-			glow("NeonBox", Vector3.new(1.4, 1.4, 0.3), s * (W / 2 - 2.6), 2.8, pz - 0.5, theme.Neon)
-			blk("NeonBoxIn", Vector3.new(0.8, 0.8, 0.3), s * (W / 2 - 2.6), 2.8, pz - 0.6, theme.Panel)
-			blk("Leg", Vector3.new(0.3, 2, 0.3), s * (W / 2 - 2.6), 1.6, pz - 1.6, rgb(20, 10, 40))
-		end
-		sparkles(blk("Fx", Vector3.new(W - 3, 0.2, 4), 0, 1, laneZ, WHITE), theme.Neon, 3, 0.5).Parent.Transparency = 1
-	elseif theme.Props == "toxic" then
-		for i, o in ipairs({ { -2.8, 3.6, 1.6 }, { 2.6, 5.2, 1.2 }, { -2.2, 7.4, 1 }, { 2.9, 2.6, 0.8 } }) do
-			local b = ball("Orb", o[3], o[1], 0.7 + o[3] / 2, o[2], theme.Neon)
-			b.Material = Enum.Material.Neon
-		end
-		for _, s in ipairs({ -1, 1 }) do
-			round("Tank", 1.2, 3.4, s * (W / 2 - 2.2), 2.4, pz - 1.2, rgb(20, 40, 90), true)
-			local cap = round("TankGlow", 1.25, 0.4, s * (W / 2 - 2.2), 4.2, pz - 1.2, theme.Neon, true)
-			cap.Material = Enum.Material.Neon
-		end
-		-- glowing pipes along the lane sides and a toxic puddle
-		for _, sx in ipairs({ -1, 1 }) do
-			blk("Pipe", Vector3.new(0.5, 0.5, pz - 4), sx * (W / 2 - 1.3), 0.95, (pz + 3) / 2, rgb(30, 45, 70))
-			glow("PipeGlow", Vector3.new(0.52, 0.15, pz - 5), sx * (W / 2 - 1.3), 1.2, (pz + 3) / 2, theme.Neon)
-		end
-		glow("Puddle", Vector3.new(2.2, 0.06, 1.6), -2.2, 0.74, 6.8, theme.Neon)
-		local sign = blk("Warning", Vector3.new(1.6, 1.6, 0.15), W / 2 - 2, H - 1.5, pz - 0.4, rgb(250, 205, 30))
-		sign.CFrame = sign.CFrame * CFrame.Angles(0, 0, math.rad(45))
-		local sg = Instance.new("SurfaceGui")
-		sg.Face = Enum.NormalId.Back
-		sg.Parent = sign
-		local tl = Instance.new("TextLabel")
-		tl.BackgroundTransparency = 1
-		tl.Size = UDim2.fromScale(1, 1)
-		tl.Rotation = -45
-		tl.Text = "!"
-		tl.Font = Enum.Font.FredokaOne
-		tl.TextScaled = true
-		tl.TextColor3 = rgb(25, 25, 30)
-		tl.Parent = sg
-		local fx = sparkles(blk("Fx", Vector3.new(W - 3, 0.2, 5), 0, 1, laneZ, WHITE), theme.Neon, 6, 0.6)
-		fx.Parent.Transparency = 1
-		fx.EmissionDirection = Enum.NormalId.Top
-		fx.SpreadAngle = Vector2.new(20, 20)
-	end
+	-- the shot's lane: a darker strip from the cannon to the target's foot
+	blk("Lane", Vector3.new(5, 0.05, back - 2.8), 0, 0.72, (1.6 + back - 1.2) / 2, dark(theme.Floor, 0.12))
 
 	-- the rebirth sign over the booth (icon, rebirths, multiplier) comes from BuildRebirthSigns
 	for _, d in ipairs(m:GetDescendants()) do
@@ -575,7 +310,7 @@ for i, info in ipairs(order) do
 	station.Name = "Station_" .. info.Id
 	station:SetAttribute("StationId", info.Id)
 
-	local standPos = slot(i)
+	local standPos, fireDir = slot(i)
 	-- built at full size around this point, scaled to BOOTH_SCALE below
 	local standCf = CFrame.lookAt(standPos, standPos + fireDir)
 
@@ -629,13 +364,11 @@ for i, info in ipairs(order) do
 	part({ Name = "Muzzle", Size = Vector3.one * 0.5, Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false, CFrame = CFrame.lookAt(muzzlePos, muzzlePos + fireDir), Parent = station })
 
 	local targetPos = muzzlePos + fireDir * TARGET_DISTANCE
-	local target = makeTarget(CFrame.lookAt(targetPos, targetPos - fireDir))
-	-- the booth's back wall holds the target now, so no legs; themed ring colours
+	local target = makeTarget(CFrame.lookAt(targetPos, targetPos - fireDir), floorY + 0.7) -- stands on the booth floor
+	-- themed ring colours
 	local ring = 0
 	for _, d in ipairs(target:GetChildren()) do
-		if d.Name == "Leg" then
-			d:Destroy()
-		elseif d.Name == "Ring" and theme.Rings then
+		if d.Name == "Ring" and theme.Rings then
 			ring += 1
 			d.Color = theme.Rings[ring] or d.Color
 			if theme.Neon and ring % 2 == 1 then
@@ -697,7 +430,7 @@ local zonePos = Vector3.new(cannonSpot.X, floorY + 0.1, trackZ) - dirL * (newMap
 -- invisible now: no yellow floor (Alex, Oct 30); standing in it shows the LAUNCH button
 local zone = part({
 	Name = "LaunchZone",
-	Size = newMap and Vector3.new(8, 0.2, 10) or Vector3.new(16, 0.2, 26), -- new map: the dock is 11 wide
+	Size = newMap and Vector3.new(8, 0.2, 10 * Config.Map.Scale) or Vector3.new(16, 0.2, 26), -- new map: the dock is 11 wide in the file
 	CFrame = CFrame.new(zonePos),
 	Color = Color3.fromRGB(255, 200, 40),
 	Transparency = 1,

@@ -22,17 +22,15 @@ Config.SHOT_INTERVAL = 0.8
 Config.MIN_SHOT_INTERVAL = 0.35
 Config.STATION_LEAVE_COOLDOWN = 1.5
 
+-- Six booths (Alex, Oct 30: "make like 5 or 6 so we can fit them better into the lobby"): one every
+-- 3 rebirths, each about 4x the last, plus the VIP one. Ids are list positions.
 Config.Stations = {
-	{ Id = 1, Name = "Starter Cannon",    Model = "Cannon01_Starter",    Gain = 1,   Rebirths = 0 },
-	{ Id = 2, Name = "Iron Cannon",       Model = "Cannon02_Iron",       Gain = 3,   Rebirths = 2 },
-	{ Id = 3, Name = "Steel Cannon",      Model = "Cannon03_Steel",      Gain = 8,   Rebirths = 4 },
-	{ Id = 4, Name = "Heavy Cannon",      Model = "Cannon04_Heavy",      Gain = 20,  Rebirths = 6 },
-	{ Id = 5, Name = "Industrial Cannon", Model = "Cannon06_Industrial", Gain = 50,  Rebirths = 8 },
-	{ Id = 6, Name = "Golden Cannon",     Model = "Cannon05_Golden",     Gain = 125, Rebirths = 10 },
-	{ Id = 7, Name = "Dragon Cannon",     Model = "Cannon19_Dragon",     Gain = 40,  Rebirths = 0, Pass = "VIP" },
-	-- 8th station (Alex, Oct 30). Ids are list positions, so it goes after the VIP one;
-	-- BuildWorld1 still places the VIP booth last in the row.
-	{ Id = 8, Name = "Plasma Cannon",     Model = "Cannon09_Plasma",     Gain = 300, Rebirths = 12 },
+	{ Id = 1, Name = "Starter Cannon", Model = "Cannon01_Starter", Gain = 1,   Rebirths = 0 },
+	{ Id = 2, Name = "Steel Cannon",   Model = "Cannon03_Steel",   Gain = 5,   Rebirths = 3 },
+	{ Id = 3, Name = "Heavy Cannon",   Model = "Cannon04_Heavy",   Gain = 20,  Rebirths = 6 },
+	{ Id = 4, Name = "Golden Cannon",  Model = "Cannon05_Golden",  Gain = 80,  Rebirths = 9 },
+	{ Id = 5, Name = "Plasma Cannon",  Model = "Cannon09_Plasma",  Gain = 300, Rebirths = 12 },
+	{ Id = 6, Name = "Dragon Cannon",  Model = "Cannon19_Dragon",  Gain = 40,  Rebirths = 0, Pass = "VIP" },
 }
 
 ---------------------------------------------------------------------------
@@ -44,8 +42,8 @@ Config.LAUNCH_MAX_SPEED = 1900
 Config.LAUNCH_ANGLE = 30
 Config.LAUNCH_DIRECTION = Vector3.new(1, 0, 0) -- the river runs along +X from the dock (CannonMap)
 
--- Alex's map (mapeg.glb, packed by tools/map/pack_map.py and imported as Workspace.CannonMap). Map units are
--- studs and the tools keep its own coordinates, so these points are read straight off the model.
+-- Alex's map (mapeg.glb, packed by tools/map/pack_map.py and imported as Workspace.CannonMap). These points
+-- are read straight off the file (its units are studs), then scaled by Config.Map.Scale below.
 Config.Map = {
 	Root = "CannonMap",
 	River = "03_River", -- the water meshes; flights skim their surface
@@ -64,6 +62,24 @@ Config.Map = {
 		{ "Crystal Caverns", 7436 }, { "Volcano Core", 9763 }, { "Sky Kingdom", 12780 },
 	},
 }
+-- The whole map is built Scale times the file's size (Alex, Oct 30: "make the map a bit bigger, it feels
+-- small"). The points above are in the file's units, so they are scaled here; the build tools turn their
+-- own plan points into the world with Config.Map.At. Characters, booths and the stand keep their size.
+Config.Map.Scale = 1.3
+function Config.Map.At(x, y, z)
+	return Vector3.new(x, y, z) * Config.Map.Scale
+end
+do
+	local m, k = Config.Map, Config.Map.Scale
+	m.WaterY *= k
+	m.LobbyCenter *= k
+	m.LobbySize *= k
+	m.Spawn *= k
+	m.DockEnd *= k
+	for _, st in ipairs(m.StageStarts) do
+		st[2] *= k
+	end
+end
 -- the map's walkable floor pieces (sand, plaza, paths, dock), by their names from the map file
 function Config.Map.IsGround(name)
 	return string.find(name, "^Island_") ~= nil or string.find(name, "^Plaza_") ~= nil

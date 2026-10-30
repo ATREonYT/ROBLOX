@@ -272,11 +272,13 @@ for _, p in ipairs(model:GetChildren()) do
 	hi = Vector3.new(math.max(hi.X, p.Position.X), 0, math.max(hi.Z, p.Position.Z))
 end
 local centre, turn = (lo + hi) / 2, math.pi
--- New map (CannonMap): on your right as you face the dock, between the plaza and the pirate ship,
--- facing the plaza. Its own stone deck is left out (the island is the floor) and it is built a little
--- smaller so it fits between them; the spot is checked by tools/map/plan_check.py.
-local newMap = workspace:FindFirstChild("CannonMap")
-local NEW_SPOT, NEW_SCALE, BASE_Y = Vector3.new(-81.8, 0, 16.9), 0.78, 9.33 -- BASE_Y: the apron's underside
+-- New map (CannonMap): where Alex put it by hand (Oct 30), by the pirate ship, turned to face the plaza.
+-- Its own stone deck is left out (the island is the floor) and it is built a little smaller. The spot
+-- is in the map file's units, so it moves out with the map when Config.Map.Scale makes it bigger.
+local Config = require(game.ReplicatedStorage.GameConfig)
+local newMap = workspace:FindFirstChild(Config.Map.Root)
+local NEW_SPOT, NEW_TURN = Config.Map.At(-41.48, 0, 25.84), math.rad(37.2)
+local NEW_SCALE, BASE_Y = 0.78, 9.33 -- BASE_Y: the apron's underside
 local floor
 if newMap then
 	for _, p in ipairs(model:GetChildren()) do
@@ -290,7 +292,7 @@ if newMap then
 	local hit = workspace:Raycast(NEW_SPOT + Vector3.new(0, 200, 0), Vector3.new(0, -400, 0), params)
 	floor = hit and hit.Position.Y or 2
 	AT = Vector3.new(NEW_SPOT.X, floor - BASE_Y, NEW_SPOT.Z)
-	centre, turn = Vector3.new(-125, 0, -106.7), 0 -- the apron's middle; it already faces -Z, the plaza
+	centre, turn = Vector3.new(-125, 0, -106.7), NEW_TURN -- the apron's middle; turned from facing -Z
 end
 local move = CFrame.new(AT) * CFrame.Angles(0, turn, 0) * CFrame.new(-centre)
 for _, p in ipairs(model:GetChildren()) do
@@ -298,7 +300,7 @@ for _, p in ipairs(model:GetChildren()) do
 end
 model.WorldPivot = move * model.WorldPivot
 if newMap then
-	model.WorldPivot = CFrame.new(NEW_SPOT.X, floor, NEW_SPOT.Z)
+	model.WorldPivot = CFrame.new(NEW_SPOT.X, floor, NEW_SPOT.Z) * CFrame.Angles(0, NEW_TURN, 0)
 	model:ScaleTo(NEW_SCALE) -- BallStand.lua reads this back with GetScale()
 end
 -- the pads' state parts start purple (the game turns the picked one green, BallStand.lua)

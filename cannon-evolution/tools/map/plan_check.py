@@ -27,23 +27,44 @@ def load(path):
         out.append((n, m, v))
     return out
 
-def moved(plan, name, v):
+def place_moves(nodes, plan):
+    """BuildCannonMap moves a few map pieces out of the way: each group's middle goes to "to" (x, z)."""
+    out = list(nodes)
     for mv in plan["moves"]:
-        if name.startswith(tuple(mv["names"])):
-            return v + np.array([mv["offset"][0], 0, mv["offset"][1]])
-    return v
+        idx = [i for i, (n, _, _) in enumerate(out) if n.startswith(tuple(mv["names"]))]
+        if not idx:
+            continue
+        mid = np.mean([(out[i][2].min(0) + out[i][2].max(0)) / 2 for i in idx], axis=0)
+        step = np.array([mv["to"][0] - mid[0], 0, mv["to"][1] - mid[2]])
+        for i in idx:
+            n, m, v = out[i]
+            out[i] = (n, m, v + step)
+    return out
+
+def frame(r):
+    """A footprint is either a box on the axes (x and z ranges) or a turned one: its centre c, size
+    [width, length] and the way it faces, dir (booths fire along dir). Returns centre, side axis, forward axis, half sizes."""
+    if "c" in r:
+        f = np.array(r["dir"], float)
+        f /= np.linalg.norm(f)
+        return np.array(r["c"], float), np.array([-f[1], f[0]]), f, np.array(r["size"], float) / 2
+    c = np.array([sum(r["x"]) / 2, sum(r["z"]) / 2])
+    return c, np.array([1.0, 0]), np.array([0, 1.0]), np.array([abs(r["x"][1] - r["x"][0]), abs(r["z"][1] - r["z"][0])]) / 2
+
+def corners(r):
+    c, a, b, h = frame(r)
+    return [tuple(c + sa * h[0] * a + sb * h[1] * b) for sa, sb in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
 
 def check(nodes, plan):
     bad = 0
     for r in plan["footprints"]:
-        x0, x1 = sorted((r["x"][0], r["x"][1]))
-        z0, z1 = sorted((r["z"][0], r["z"][1]))
+        c, a, b, h = frame(r)
         hits = []
         for n, _, v in nodes:
             if n.startswith(GROUND):
                 continue
-            v = moved(plan, n, v)
-            inside = (v[:, 0] > x0) & (v[:, 0] < x1) & (v[:, 2] > z0) & (v[:, 2] < z1) & (v[:, 1] > 1.5)
+            d = v[:, [0, 2]] - c
+            inside = (np.abs(d @ a) < h[0]) & (np.abs(d @ b) < h[1]) & (v[:, 1] > 1.5)
             if inside.any():
                 hits.append(n)
         if hits:
@@ -60,7 +81,6 @@ def draw(nodes, plan, out):
     for n, m, v in nodes:
         if n.startswith("Mountains"):
             continue
-        v = moved(plan, n, v)
         a = np.asarray(m.visual.material.baseColorTexture.convert("RGB"))
         h, w = a.shape[:2]
         uv = m.visual.uv[m.faces].mean(1)
@@ -85,13 +105,14 @@ def draw(nodes, plan, out):
         d.line([P(*a), P(*b)], fill=(255, 60, 200), width=3)
     for r in plan["footprints"]:
         col = tuple(r.get("color", (255, 80, 80)))
-        d.rectangle([P(min(r["x"]), min(r["z"])), P(max(r["x"]), max(r["z"]))], outline=col, width=3)
-        d.text((P(min(r["x"]), min(r["z"]))[0] + 3, P(min(r["x"]), min(r["z"]))[1] + 3), r["name"], fill=col)
+        pts = [P(*p) for p in corners(r)]
+        d.line(pts + pts[:1], fill=col, width=3)
+        d.text((min(p[0] for p in pts) + 3, min(p[1] for p in pts) + 3), r["name"], fill=col)
     im.convert("RGB").save(out, quality=85)
 
 if __name__ == "__main__":
     plan = json.load(open(os.path.join(HERE, "lobby_plan.json")))
-    nodes = load(sys.argv[1])
+    nodes = place_moves(load(sys.argv[1]), plan)
     bad = check(nodes, plan)
     if len(sys.argv) > 2:
         draw(nodes, plan, sys.argv[2])

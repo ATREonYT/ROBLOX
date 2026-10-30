@@ -2,9 +2,10 @@
 	BuildCannonMap: paste into the Command Bar once, right after Import 3D of map/CannonMap.glb
 	(Avatar tab > Import 3D). Safe to run again.
 
-	1. Finds the imported map, names it CannonMap and puts it back at the file's own size and
-	   spot (the importer can scale it or drop it in front of the camera): the compass plaza is the
-	   yardstick, 18.8 studs across with its middle at (-60, 2.15, 0).
+	1. Finds the imported map, names it CannonMap and sizes and places it (the importer can scale it,
+	   turn it or drop it in front of the camera): the compass plaza is the yardstick, 18.8 studs across
+	   with its middle at (-60, 2.15, 0) in the file, all times Config.Map.Scale (1.3: Alex wanted the
+	   map bigger, Oct 30). Running it again after changing the scale resizes the map.
 	2. Collisions: sand, plaza, paths and dock you walk on; fences, rocks, towers, the ship and
 	   the crates are solid; palms, mountains and water are not. The far stages are solid too, for
 	   the world teleports. Mountains cast no shadow, so the lobby stays bright.
@@ -22,7 +23,8 @@ local Config = require(game.ReplicatedStorage.GameConfig)
 local ServerStorage = game:GetService("ServerStorage")
 
 local TAG = "[CannonMap]"
-local PLAZA_WIDTH, PLAZA_CENTRE = 18.8, Vector3.new(-60, 2.15, 0)
+-- the plaza in the file is 18.8 across with its middle at (-60, 2.15, 0); the map is built Config.Map.Scale times bigger
+local PLAZA_WIDTH, PLAZA_CENTRE = 18.8 * Config.Map.Scale, Config.Map.At(-60, 2.15, 0)
 
 -- 1. find it -----------------------------------------------------------------------------------
 local map
@@ -222,10 +224,11 @@ for x = -6, 11 do -- out to about 12,000 studs every way, so its edge is lost in
 end
 sea.Parent = workspace
 
--- 4. clear the booths' spot (offsets from tools/map/lobby_plan.json) -------------------------------
+-- 4. clear the booths' spot: each group's middle goes to a spot in the file's units (tools/map/lobby_plan.json) ---
 local MOVES = {
-	{ { "Trees_Palm_001" }, Vector3.new(37.7, 0, 21.05) }, -- next to the dock path
-	{ { "Props_Crate_001", "Props_Crate_002", "Props_Crate_003", "Props_Barrel_001", "Props_Barrel_002", "Props_Barrel_003", "Props_Treasure_Chest_001" }, Vector3.new(42.1, 0, 58.2) }, -- by the pirate ship
+	{ { "Trees_Palm_001" }, Vector2.new(-106, -31) }, -- by the west palisade, behind the VIP booth
+	{ { "Props_Crate_001", "Props_Crate_002", "Props_Crate_003", "Props_Barrel_001", "Props_Barrel_002", "Props_Treasure_Chest_001" }, Vector2.new(-16, -35) }, -- the north-east corner, by the dock
+	{ { "Props_Barrel_003" }, Vector2.new(-23, -30) },
 }
 local groundParams = RaycastParams.new()
 groundParams.FilterType = Enum.RaycastFilterType.Include
@@ -248,16 +251,17 @@ for _, move in ipairs(MOVES) do
 			table.insert(parts, p)
 		end
 	end
-	if #parts > 0 and not parts[1]:GetAttribute("MovedForBooths") then
+	if #parts > 0 then
 		local mid = Vector3.zero
 		for _, p in ipairs(parts) do
 			mid += p.Position / #parts
 		end
-		local before, after = groundY(mid), groundY(mid + move[2])
+		local spot = Config.Map.At(move[2].X, 0, move[2].Y)
+		local step = Vector3.new(spot.X - mid.X, 0, spot.Z - mid.Z) -- zero on a second run
+		local before, after = groundY(mid), groundY(mid + step)
 		local lift = (before and after) and Vector3.new(0, after - before, 0) or Vector3.zero
 		for _, p in ipairs(parts) do
-			p.CFrame += move[2] + lift
-			p:SetAttribute("MovedForBooths", true)
+			p.CFrame += step + lift
 		end
 	end
 end
@@ -283,7 +287,7 @@ local walls = Instance.new("Folder")
 walls.Name = "MapWalls"
 for i, a in ipairs(WALL) do
 	local b = WALL[i % #WALL + 1]
-	local pa, pb = Vector3.new(a[1], 0, a[2]), Vector3.new(b[1], 0, b[2])
+	local pa, pb = Config.Map.At(a[1], 0, a[2]), Config.Map.At(b[1], 0, b[2])
 	local mid = (pa + pb) / 2 + Vector3.new(0, (BOTTOM + TOP) / 2, 0)
 	local w = Instance.new("Part")
 	w.Name = "EdgeWall"

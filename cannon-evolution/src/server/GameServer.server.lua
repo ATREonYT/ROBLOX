@@ -832,7 +832,7 @@ local function teleportToWorld(player, worldId)
 	if not (startX and map) then
 		return false, "World not found"
 	end
-	local top = Vector3.new(startX + 40, 400, 60)
+	local top = Vector3.new(startX + 40 * Config.Map.Scale, 400, 60 * Config.Map.Scale)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { map:FindFirstChild(Config.Map.River), player.Character }

@@ -10,7 +10,7 @@ import sys
 import numpy as np
 from pack_map import read_glb, local_matrix, mesh_world, cap_span, write_glb
 
-TOO_LONG = 2000  # what Roblox squashed (its cap is 2048); pieces under it are left alone
+TOO_LONG = 1500  # over 2048 once the map is built 1.3x bigger (Config.Map.Scale); shorter pieces are left alone
 
 
 def main(src, dst):

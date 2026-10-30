@@ -63,14 +63,16 @@ local EGG_COLORS = {
 	Ocean = Color3.fromRGB(60, 160, 255),
 }
 local EGGS = { "Starter", "Woodland", "Nature", "Ocean" } -- the exclusive egg goes 5th
+local NEW_SPOTS = { Starter = Vector2.new(-87.74, 12.94), Woodland = Vector2.new(-95.13, 8.87), Nature = Vector2.new(-95.42, 0.64), Ocean = Vector2.new(-88.88, -4.75) }
 for i, id in ipairs(EGGS) do
 	local egg = Config.GetEgg(id)
 	local pos = Vector3.new(-34 - (#EGGS - i) * 16, floorY, -108)
 	if newMap then
-		-- new map: along the path from the spawn to the dock, on your right, so you pass them on the way
-		-- to launch (vault: eggs go on the way out of spawn)
-		local x, z = -44 + (i - 1) * 9, 13
-		pos = Vector3.new(x, floorAt(x, z), z)
+		-- new map: where Alex put them by hand (Oct 30), a curve on the west side of the plaza. In the
+		-- map file's units, so they move out with the map when Config.Map.Scale makes it bigger.
+		local spot = NEW_SPOTS[id]
+		local p = Config.Map.At(spot.X, 0, spot.Y)
+		pos = Vector3.new(p.X, floorAt(p.X, p.Z), p.Z)
 	end
 	local stand = Instance.new("Model")
 	stand.Name = id .. "Egg"
@@ -122,23 +124,17 @@ for i, id in ipairs(EGGS) do
 end
 folder.Parent = workspace
 
-local signPos = newMap and Vector3.new(-30.5, floorAt(-30.5, 13) + 13, 18) or Vector3.new(-58, floorY + 17, -100)
-local sign = part({ Name = "EggSign", Size = Vector3.new(30, 6, 0.6), CFrame = CFrame.lookAt(signPos, signPos + Vector3.new(0, 0, -1)), Color = Color3.fromRGB(255, 200, 60), Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = workspace })
-local signGui = Instance.new("SurfaceGui")
-signGui.Face = Enum.NormalId.Front
-signGui.LightInfluence = 0
-signGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-signGui.PixelsPerStud = 25
-signGui.Parent = sign
-label(signGui, "🥚 EGGS 🥚", Color3.new(1, 1, 1))
-if newMap then
-	-- on the open grass the sign needs legs: two wooden posts down to the ground, inside the sign
-	for _, side in ipairs({ -1, 1 }) do
-		local x = signPos.X + side * 12.5
-		local foot = floorAt(x, signPos.Z)
-		local top = signPos.Y - 3
-		part({ Name = "Post", Size = Vector3.new(0.9, top - foot, 0.9), CFrame = CFrame.new(x, (top + foot) / 2, signPos.Z + 0.75), Color = Color3.fromRGB(120, 80, 45), Material = Enum.Material.Wood, CanCollide = false, Parent = sign })
-	end
+-- the big EGGS sign: the old map only (Alex took it out of the new lobby, Oct 30)
+if not newMap then
+	local signPos = Vector3.new(-58, floorY + 17, -100)
+	local sign = part({ Name = "EggSign", Size = Vector3.new(30, 6, 0.6), CFrame = CFrame.lookAt(signPos, signPos + Vector3.new(0, 0, -1)), Color = Color3.fromRGB(255, 200, 60), Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = workspace })
+	local signGui = Instance.new("SurfaceGui")
+	signGui.Face = Enum.NormalId.Front
+	signGui.LightInfluence = 0
+	signGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	signGui.PixelsPerStud = 25
+	signGui.Parent = sign
+	label(signGui, "🥚 EGGS 🥚", Color3.new(1, 1, 1))
 end
 
 ---------------------------------------------------------------------------
@@ -195,7 +191,7 @@ local function addBorder(areaName, color, x, z)
 end
 if newMap then
 	-- one wall where each of the map's stages starts along the river (Config.Map.StageStarts)
-	WATER_Y, HEIGHT, WIDTH = Config.Map.WaterY, 34, 84
+	WATER_Y, HEIGHT, WIDTH = Config.Map.WaterY, 34 * Config.Map.Scale, 84 * Config.Map.Scale
 	local STAGE_COLORS = {
 		["Meadow Pond"] = Color3.fromRGB(110, 220, 90), ["Mushroom Grove"] = Color3.fromRGB(230, 90, 110),
 		["Sandy Shore"] = Color3.fromRGB(255, 215, 110), ["Lighthouse Point"] = Color3.fromRGB(240, 240, 255),
