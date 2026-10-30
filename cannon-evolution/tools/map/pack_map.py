@@ -10,6 +10,8 @@ import json, struct, sys
 import numpy as np
 
 MAX_TRIS = 12000
+MAX_SPAN = 1500  # Roblox caps a MeshPart at 2048 studs a side: Import 3D squashes a bigger mesh (Oct 30: two volcano pieces)
+LONG = 100  # a triangle longer than this along a slice is a big ground piece, cut into cells instead
 COMP = {5126: np.float32, 5125: np.uint32, 5123: np.uint16, 5121: np.uint8}
 NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}
 
@@ -91,6 +93,60 @@ def split(P, N, U, max_tris):
     return parts
 
 
+def clip(poly, axis, plane, sign):
+    """Keep the part of a polygon (corners are (P, N, U) tuples) where sign * (x - plane) >= 0."""
+    res = []
+    for i in range(len(poly)):
+        cur, nxt = poly[i], poly[(i + 1) % len(poly)]
+        dc, dn = sign * (cur[0][axis] - plane), sign * (nxt[0][axis] - plane)
+        if dc >= 0:
+            res.append(cur)
+        if (dc >= 0) != (dn >= 0):
+            t = dc / (dc - dn)
+            res.append(tuple(c + (n - c) * t for c, n in zip(cur, nxt)))
+    return res
+
+
+def cut_cells(P, N, U, axis, lo, cell):
+    """Cut triangles at planes every `cell` along `axis` (from lo): {cell number: (P, N, U)}."""
+    out = {}
+    for t in range(len(P) // 3):
+        tri = [(P[3 * t + i], N[3 * t + i], U[3 * t + i]) for i in range(3)]
+        xs = [v[0][axis] for v in tri]
+        for k in range(int((min(xs) - lo) // cell), int((max(xs) - lo) // cell) + 1):
+            poly = clip(clip(tri, axis, lo + k * cell, 1), axis, lo + (k + 1) * cell, -1)
+            for i in range(1, len(poly) - 1):
+                a, b, c = poly[0], poly[i], poly[i + 1]
+                if np.linalg.norm(np.cross(b[0] - a[0], c[0] - a[0])) < 1e-6:
+                    continue
+                bucket = out.setdefault(k, ([], [], []))
+                for v in (a, b, c):
+                    bucket[0].append(v[0]); bucket[1].append(v[1] / max(np.linalg.norm(v[1]), 1e-9)); bucket[2].append(v[2])
+    return {k: tuple(np.array(x) for x in b) for k, b in sorted(out.items())}
+
+
+def cap_span(P, N, U):
+    """A slice wider than MAX_SPAN on a side: keep its small pieces together, cut its long ground triangles into cells."""
+    span = P.max(0) - P.min(0)
+    if span.max() <= MAX_SPAN:
+        return [("", (P, N, U))]
+    axis = int(np.argmax(span))
+    X = P.reshape(-1, 3, 3)[:, :, axis]
+    long = (X.max(1) - X.min(1)) > LONG
+    pick = lambda m: (np.where(m)[0][:, None] * 3 + np.arange(3)).reshape(-1)
+    out = []
+    s = pick(~long)
+    if len(s):
+        assert (P[s].max(0) - P[s].min(0)).max() <= MAX_SPAN, "small pieces still too spread out"
+        out.append(("", (P[s], N[s], U[s])))
+    l = pick(long)
+    lo, hi = P[l][:, axis].min(), P[l][:, axis].max()
+    cell = (hi - lo) / np.ceil((hi - lo) / 1000) + 1e-3
+    for n, (k, part) in enumerate(cut_cells(P[l], N[l], U[l], axis, lo, cell).items()):
+        out.append((f"_base{n + 1}", part))
+    return out
+
+
 def main(src, dst):
     j, buf = read_glb(src)
     nodes = j["nodes"]
@@ -116,7 +172,8 @@ def main(src, dst):
             for path, (P, N, U) in items:
                 name = "_".join(path[1:]) if len(path) > 1 else path[0]
                 for k, part in enumerate(split(P, N, U, MAX_TRIS)):
-                    out.append((group, name + ("" if k == 0 else f"_{k + 1}"), *part))
+                    for suffix, piece in cap_span(*part):
+                        out.append((group, name + ("" if k == 0 else f"_{k + 1}") + suffix, *piece))
         else:
             # one bucket per stage (second level), packed along the track
             buckets = {}
@@ -126,7 +183,13 @@ def main(src, dst):
             for key, geos in buckets.items():
                 P = np.vstack([g[0] for g in geos]); N = np.vstack([g[1] for g in geos]); U = np.vstack([g[2] for g in geos])
                 for k, part in enumerate(split(P, N, U, MAX_TRIS)):
-                    out.append((group + "/" + key, f"{key}_{k + 1:02d}", *part))
+                    for suffix, piece in cap_span(*part):
+                        out.append((group + "/" + key, f"{key}_{k + 1:02d}{suffix}", *piece))
+    write_glb(out, j, buf, dst)
+
+
+def write_glb(out, j, buf, dst):
+    """out: (group, name, P, N, U) per piece; materials and the palette image come from the source file (j, buf)."""
 
     # write one GLB: a group node per top folder, a centred mesh node per piece
     blob = bytearray()
