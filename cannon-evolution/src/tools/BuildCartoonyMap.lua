@@ -1,54 +1,102 @@
 --[[
 	BuildCartoonyMap  (run in Studio's Command Bar, Edit mode)
 
-	Gives the map the studded "new Roblox game" look Alex asked for (Oct 30):
-	every flat surface you can stand on (grass, sand, paths, plaza, docks,
-	islands) gets the same square stud texture the UI uses, tinted to its own
-	colour so it reads as soft studs, not a grid. Walls, trees, rocks and
-	water are left alone. See .claude/skills/roblox-cartoony-building.
+	Stone Skipping look (Alex, Oct 30): classic round studs on every blocky
+	surface of the map, the training booths and the cannons. Trees, leaves,
+	water and see-through parts are left alone.
 
-	Safe to run again: it removes only its own "CartoonStuds" textures first.
-	The map's own "Studs" textures (6 per part, from the import) are never
-	touched: an earlier version deleted them by name (Oct 30).
+	Every texture it adds is named "CartoonStuds". A run first removes only
+	those, so it is safe to run again. Nothing else on a part is touched
+	(an earlier version deleted the map's own "Studs" textures, Oct 30).
 	Undo: run it with UNDO = true.
+
+	SCOPE: "lobby" studs only the lobby, booths and cannons (the golden slice);
+	"all" does the whole map.
 ]]
 
 local UNDO = false
+local SCOPE = "lobby"
 
-local Icons = require(game.ReplicatedStorage.Icons)
-local STUDS = Icons.StudTile
-local root = workspace.map1b.StoneSkipMap
+-- "Classic stud texture", already in this game's inventory (found with Studio's asset search)
+local STUDS = "rbxassetid://18878365966"
+local NAME = "CartoonStuds"
+local TILE = 2 -- studs per stud
+local SIDES = { Enum.NormalId.Top, Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }
+
+local map = workspace.map1b.StoneSkipMap
+local roots = {}
+if SCOPE == "all" then
+	table.insert(roots, map)
+else
+	table.insert(roots, map.Lobby)
+end
+for _, n in ipairs({ "TrainingStations", "EggStands", "AreaBorders", "LaunchZone" }) do
+	if workspace:FindFirstChild(n) then
+		table.insert(roots, workspace[n])
+	end
+end
+local cannonRoots = { game.ReplicatedStorage:FindFirstChild("Cannons") }
 
 local function skip(p)
 	local n = p:GetFullName():lower()
 	return n:find("ocean") or n:find("water") or n:find("river") or n:find("tree") or n:find("leaf")
-		or n:find("rock") or n:find("cliff") or n:find("wall") or n:find("tower") or n:find("roof")
-		or n:find("ship") or n:find("barrel") or n:find("crate") or n:find("cannon")
+		or n:find("leaves") or n:find("bush") or n:find("flower") or n:find("grass_tuft")
 end
 
-local added, removed = 0, 0
-for _, p in ipairs(root:GetDescendants()) do
-	if p:IsA("BasePart") then
-		for _, t in ipairs(p:GetChildren()) do
-			if t:IsA("Texture") and t.Name == "CartoonStuds" then
-				t:Destroy()
-				removed += 1
-			end
-		end
-		local s = p.Size
-		-- flat and big enough to walk on
-		local flat = s.Y < math.min(s.X, s.Z) * 0.35 and s.X * s.Z >= 64
-		if not UNDO and flat and not skip(p) and p.Transparency < 0.5 then
-			local t = Instance.new("Texture")
-			t.Name = "CartoonStuds"
-			t.Texture = STUDS
-			t.Face = Enum.NormalId.Top
-			t.StudsPerTileU = 4
-			t.StudsPerTileV = 4
-			t.Transparency = 0.8
-			t.Parent = p
-			added += 1
+local function clear(p)
+	for _, t in ipairs(p:GetChildren()) do
+		if t:IsA("Texture") and t.Name == NAME then
+			t:Destroy()
 		end
 	end
 end
-print("[BuildCartoonyMap] studs added to " .. added .. " surfaces, removed " .. removed)
+
+local function stud(p, transparency)
+	local s = p.Size
+	for _, face in ipairs(SIDES) do
+		-- the face's two lengths
+		local a, b
+		if face == Enum.NormalId.Top then
+			a, b = s.X, s.Z
+		elseif face == Enum.NormalId.Front or face == Enum.NormalId.Back then
+			a, b = s.X, s.Y
+		else
+			a, b = s.Z, s.Y
+		end
+		if a >= 1.5 and b >= 1.5 then
+			local t = Instance.new("Texture")
+			t.Name = NAME
+			t.Texture = STUDS
+			t.Face = face
+			t.StudsPerTileU = TILE
+			t.StudsPerTileV = TILE
+			t.Transparency = transparency
+			t.Parent = p
+		end
+	end
+end
+
+local added = 0
+local function run(root, transparency)
+	for i, p in ipairs(root:GetDescendants()) do
+		if p:IsA("BasePart") then
+			clear(p)
+			if not UNDO and p.Transparency < 0.5 and not skip(p) then
+				-- cannons placed in the booths get the softer cannon studs too
+				stud(p, p:FindFirstAncestor("Cannon") and 0.45 or transparency)
+				added += 1
+			end
+		end
+		if i % 1000 == 0 then
+			task.wait()
+		end
+	end
+end
+
+for _, r in ipairs(roots) do
+	run(r, 0)
+end
+for _, r in ipairs(cannonRoots) do
+	run(r, 0.45) -- softer on the cannons so their own colours and details stay
+end
+print("[BuildCartoonyMap] " .. (UNDO and "removed studs" or ("studded " .. added .. " parts")) .. " (" .. SCOPE .. ")")

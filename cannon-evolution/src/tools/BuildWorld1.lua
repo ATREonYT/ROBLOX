@@ -17,8 +17,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local Config = require(game.ReplicatedStorage.GameConfig)
 
 local SIDE = -1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side
-local CANNON_HEIGHT = 6 -- studs; a default character is ~5
-local TARGET_DISTANCE = 16 -- muzzle to target
+local CANNON_HEIGHT = 5 -- studs; a default character is ~5
+local TARGET_DISTANCE = 12 -- muzzle to target
 
 local map = workspace.map1b.StoneSkipMap
 local lobbyCf, lobbySize = map.Lobby:GetBoundingBox()
@@ -83,7 +83,7 @@ local function makeTarget(cf)
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(0.4, r[1], r[1]),
 			Color = r[2],
-			Material = Enum.Material.SmoothPlastic,
+			Material = i == #rings and Enum.Material.Neon or Enum.Material.SmoothPlastic, -- glowing bullseye
 			CanCollide = false,
 			CFrame = cf * CFrame.new(0, 0, -0.1 * i) * CFrame.Angles(0, math.rad(90), 0),
 			Parent = m,
@@ -183,17 +183,31 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 	-- low side rails
 	for _, side in ipairs({ -1, 1 }) do
 		block("Rail", Vector3.new(0.9, 1.6, back - 2.2), at(side * (width / 2 - 0.45), 0.8, (back + 2.2) / 2), dark(theme.Main, 0.2))
-		block("RailTop", Vector3.new(1.1, 0.3, back - 2.2), at(side * (width / 2 - 0.45), 1.75, (back + 2.2) / 2), theme.Accent, false)
+		block("RailTop", Vector3.new(1.1, 0.3, back - 2.2), at(side * (width / 2 - 0.45), 1.75, (back + 2.2) / 2), theme.Accent, false).Material = Enum.Material.Neon
 	end
 	-- framed back wall behind the target
-	block("BackWall", Vector3.new(width, 15, 1), at(0, 7.5, back - 0.5), dark(theme.Main, 0.25))
-	block("BackPanel", Vector3.new(width - 3.4, 11.5, 0.3), at(0, 7.5, back - 1.1), theme.Accent, false)
+	block("BackWall", Vector3.new(width, 10, 1), at(0, 5, back - 0.5), dark(theme.Main, 0.25))
+	local panel = block("BackPanel", Vector3.new(width - 3, 7.5, 0.3), at(0, 4.9, back - 1.1), theme.Accent, false)
 	for _, side in ipairs({ -1, 1 }) do
-		block("Pillar", Vector3.new(1.5, 17, 1.5), at(side * (width / 2 - 0.75), 8.5, back - 0.75), theme.Main)
+		block("Pillar", Vector3.new(1.5, 11.5, 1.5), at(side * (width / 2 - 0.75), 5.75, back - 0.75), theme.Main)
 	end
-	local header = block("Header", Vector3.new(width + 1, 2.6, 2), at(0, 16.2, back - 1), theme.Main)
-	block("HeaderTrim", Vector3.new(width + 1.2, 0.5, 2.2), at(0, 14.9, back - 1), theme.Accent, false)
-	block("Crest", Vector3.new(width * 0.45, 1.6, 1.6), at(0, 18.2, back - 1), theme.Accent, false)
+	local header = block("Header", Vector3.new(width + 1, 2.2, 2), at(0, 11.4, back - 1), theme.Main)
+	block("HeaderTrim", Vector3.new(width + 1.2, 0.4, 2.2), at(0, 10.2, back - 1), theme.Accent, false).Material = Enum.Material.Neon
+	block("Crest", Vector3.new(width * 0.4, 1.2, 1.4), at(0, 13.1, back - 1), theme.Accent, false)
+	-- slow sparkles drifting up in front of the target, in the booth's accent colour
+	local fx = Instance.new("ParticleEmitter")
+	fx.Name = "Sparkles"
+	fx.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	fx.Color = ColorSequence.new(theme.Accent:Lerp(Color3.new(1, 1, 1), 0.3))
+	fx.LightEmission = 1
+	fx.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) })
+	fx.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+	fx.Lifetime = NumberRange.new(1.5, 2.5)
+	fx.Rate = 4
+	fx.Speed = NumberRange.new(1, 2)
+	fx.SpreadAngle = Vector2.new(40, 40)
+	fx.EmissionDirection = Enum.NormalId.Back -- out of the panel, towards the player
+	fx.Parent = panel
 	local sg = Instance.new("SurfaceGui")
 	sg.Face = Enum.NormalId.Back -- faces the stand point
 	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
@@ -215,10 +229,11 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 	-- two lamp posts at the front corners, soft warm light
 	for _, side in ipairs({ -1, 1 }) do
 		block("LampPost", Vector3.new(0.9, 3.6, 0.9), at(side * (width / 2 + 0.8), 1.8, front + 0.5), Color3.fromRGB(200, 205, 225))
-		local cap = block("LampCap", Vector3.new(1.3, 0.7, 1.3), at(side * (width / 2 + 0.8), 3.95, front + 0.5), Color3.fromRGB(255, 250, 235), false)
+		local cap = block("LampCap", Vector3.new(1.3, 0.7, 1.3), at(side * (width / 2 + 0.8), 3.95, front + 0.5), theme.Accent:Lerp(Color3.new(1, 1, 1), 0.5), false)
+		cap.Material = Enum.Material.Neon
 		local light = Instance.new("PointLight")
-		light.Color = Color3.fromRGB(255, 235, 200)
-		light.Brightness = 0.7
+		light.Color = theme.Accent:Lerp(Color3.new(1, 1, 1), 0.4)
+		light.Brightness = 1.2
 		light.Range = 10
 		light.Parent = cap
 	end
@@ -234,7 +249,7 @@ table.sort(order, function(a, b)
 	local kb = b.Pass and math.huge or b.Rebirths
 	return ka < kb
 end)
-local boothWidth = math.min(14, spacing - 3)
+local boothWidth = math.min(11, spacing - 5) -- grass shows between booths
 
 for i, info in ipairs(order) do
 	local station = Instance.new("Model")
