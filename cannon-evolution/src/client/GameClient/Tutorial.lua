@@ -329,7 +329,7 @@ return function(ctx)
 	-- floating in the air on one straight line from you to the target
 	-- (not on the ground, Alex Oct 30), bobbing in a wave as they flow.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED = 30, 3, 6
+	local ARROWS, SPACING, FLOW_SPEED = 22, 4.2, 6
 	local ARM, THICK = Vector3.new(0.95, 0.5, 2), 0.5 -- one arm of the chevron: width, thickness, length
 	local FILL, TIP = Color3.fromRGB(255, 214, 64), Color3.fromRGB(255, 240, 150)
 	local HIDDEN = CFrame.new(0, -500, 0)
