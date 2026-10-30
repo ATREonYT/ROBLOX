@@ -93,6 +93,13 @@ return function(ctx)
 			-- the ball itself BALL_SIZE tall; rings or bits round it may stick out a little
 			local _, size = m:GetBoundingBox()
 			m:ScaleTo(m:GetScale() * math.min(BALL_SIZE / size.Y, BALL_SIZE * 1.6 / math.max(size.X, size.Z)))
+		elseif Kit.hasImage("Ball_" .. info.Id) then
+			-- no 3D model but Alex drew it: show the drawing, always facing you, at the ball's size
+			m = Instance.new("Model")
+			local core = new("Part", { Name = "Core", Size = Vector3.one * BALL_SIZE, Transparency = 1, Parent = m })
+			local bb = new("BillboardGui", { Name = "Picture", Size = UDim2.fromScale(BALL_SIZE * 1.25, BALL_SIZE * 1.25), LightInfluence = 0, MaxDistance = 120, Parent = core })
+			Kit.icon("Ball_" .. info.Id, { Size = UDim2.fromScale(1, 1), Parent = bb })
+			m.PrimaryPart = core
 		else
 			-- cartoony stand-in: ball, a band round the middle, a cap on top and a soft shine
 			m = Instance.new("Model")
