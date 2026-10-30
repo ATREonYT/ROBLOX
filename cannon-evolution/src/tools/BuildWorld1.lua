@@ -31,7 +31,7 @@ local floorY = hit and hit.Position.Y or lobbyPos.Y - lobbySize.Y / 2
 
 -- Stations sit in a row along the lobby's long (X) axis, firing towards the side wall
 local fireDir = Vector3.new(0, 0, SIDE)
-local rowZ = lobbyPos.Z + SIDE * 8 -- stand points, just off the centre path
+local rowZ = lobbyPos.Z + SIDE * 21 -- stand points, set back so the booth fronts clear the spawn and launch zone
 -- booths stand side by side like Alex's pictures, the row centred in the lobby
 local spacing = 15
 local startX = lobbyPos.X - spacing * (#Config.Stations - 1) / 2
