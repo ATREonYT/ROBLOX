@@ -443,12 +443,15 @@ Config.Sounds = {
 	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
 	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
 	Hatch = "rbxassetid://9116384799",
-	Reward = "",
-	Rebirth = "",
-	Coin = "",
-	Shot = "",
-	Launch = "",
-	Skip = "",
+	-- Roblox's free licensed library too (found with Studio's Toolbox search on Oct 30, each loaded in Studio;
+	-- picked by title and length, not yet heard by Alex: swap any one by changing its id):
+	Reward = "rbxassetid://1840076509", -- "Through the Roof (sting)", APMOfficial, 2.25 s: a playful organ sting
+	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
+	Rebirth = "rbxassetid://1840018171",
+	Coin = "", -- nothing short in the licensed library (only 1.7 s coin throws): soft built-in ping until one is picked
+	Shot = "", -- no cartoony cannon boom there (only sci-fi lasers): a low built-in thump until one is picked
+	Launch = "rbxassetid://9125805579", -- "Rising Whoosh Hissing Build Up Ascending Swo (SFX)", ProSoundEffects, 1.14 s
+	Skip = "rbxassetid://9120589933", -- "Water Splash Splashes Splats Light 5 (SFX)", ProSoundEffects, 0.41 s
 	Music = "",
 }
 

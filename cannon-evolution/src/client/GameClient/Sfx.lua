@@ -7,7 +7,8 @@
 	    family Alex picked for Huzz Valley, in cannon-evolution/assets/sfx/UI_*.ogg. They need Alex's upload; until
 	    then Roblox's own built-in sounds stand in (FALLBACK below), played low and soft.
 	  * Hatch: "Magic Burst 2" from Roblox's free licensed library (Pro Sound Effects): public, plays as it is.
-	  * Shot, Launch, Skip, Coin, Reward, Rebirth: built-in stand-ins until a licensed pick goes into GameConfig.
+	  * Launch, Skip, Reward, Rebirth: Roblox's licensed library too (picked in Studio's Toolbox, Oct 30).
+	  * Shot, Coin: built-in stand-ins until a licensed pick goes into GameConfig (none short enough was found).
 
 	Rules (vault: UI Motion Language, Sound Design Pitfalls; Huzz Valley's button notes):
 	  * Button sounds are never pitch-wobbled (the same press sounds the same); game sounds get a small spread so
@@ -40,7 +41,7 @@ local LEVEL = {
 	Coin = { 0.25, 0.03, "Effects" },
 	Reward = { 0.45, 0, "Effects" },
 	Hatch = { 0.4, 0, "Effects" },
-	Rebirth = { 0.5, 0, "Effects" },
+	Rebirth = { 0.4, 0, "Effects" },
 	Shot = { 0.55, 0.04, "Effects" },
 	Launch = { 0.55, 0.03, "Effects" },
 	Skip = { 0.35, 0.08, "Effects" },
