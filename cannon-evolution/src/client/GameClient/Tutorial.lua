@@ -435,9 +435,14 @@ return function(ctx)
 				end
 				continue
 			end
-			-- face the camera: the dart's flat side turns toward you around its pointing direction
-			local normal = toCam - dir * toCam:Dot(dir)
-			normal = normal.Magnitude > 0.01 and normal.Unit or Vector3.yAxis
+			-- flat to the screen like a sticker (as in the reference), pointing the way the line runs on screen,
+			-- so the darts keep their shape even when the line runs away from you
+			local normal = toCam.Unit
+			local flat = dir - normal * dir:Dot(normal)
+			if flat.Magnitude < 0.05 then
+				flat = Vector3.yAxis - normal * normal.Y
+			end
+			dir = flat.Unit
 			local side = dir:Cross(normal)
 			-- grow in near you and shrink into the target
 			local k = 0.35 + 0.65 * math.clamp(math.min((d - 2.5) / 3, (total - 2 - d) / 3), 0, 1)
