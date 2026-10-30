@@ -7,6 +7,8 @@ updated: 2026-10-30
 
 **Start here for any build.** Find the job, then open only what that row lists. Claude: grep the linked notes, don't read whole folders.
 
+**Then read the sector brief for your job** in [[Sector Briefs Index]] (8 briefs, verified against Roblox docs on 2026-10-30). Where an older note disagrees with a brief, the brief wins ([[Vault Corrections October 2026]]).
+
 Playbooks in this folder:
 - [[01 Current Hits October 2026]]: what's on the charts now, grouped into game families
 - [[Blueprint - Egg Run]]: treadmill speed, biomes, grab eggs, base income, steal (Steal An Egg, Climb/Bike For Eggs)

@@ -5,7 +5,7 @@ updated: 2026-10-30
 
 # 03 What's New on Roblox - RDC 2026 and October
 
-Back to [[00 Build Router]] · Older changes: [[Roblox Changes 2025-2026]], [[Engine and API Changes 2025-2026]], [[Discovery and Monetization Changes 2025-2026]]
+Back to [[00 Build Router]] · Verified detail per sector: [[Sector Briefs Index]] · Older changes: [[Roblox Changes 2025-2026]], [[Engine and API Changes 2025-2026]], [[Discovery and Monetization Changes 2025-2026]]
 
 Everything announced at RDC 2026 (September) and in the October 2026 weekly recaps, sorted by **what it means for our games**. "Late 2026" etc. are Roblox's own timings, not promises.
 
@@ -26,12 +26,12 @@ Sources: [RDC26: What We Announced (DevForum)](https://devforum.roblox.com/t/rdc
 | **Collision Summaries API** `BasePart:BindToCollisionSummaries` (contact points, normals, impact speeds) | Live | Better hit sounds, impact VFX and damage from real collisions (cannonballs, thrown food, ragdolls). |
 | **Text-to-speech auto-translation** (11 languages); `AudioTextToSpeech.AutoLocalize` defaults to true | Live | Free localisation of spoken tutorial lines. Set it to false where the original language matters. |
 | **Package overrides** | Studio beta | Reuse one shared system package across games while each game keeps local tweaks. |
-| **Upgraded UIShadow**: text, knockout, inset shadows, gradient fills | Studio beta (**can't publish while on**) | Prototype the cartoony UI look; don't ship with it until it leaves beta. |
+| **Upgraded UIShadow**: text, knockout, inset shadows, gradient fills (Oct 14); **upgraded UIGradient**: radial, conical, elliptical, TileMode (Sept 2) | Studio beta (**can't publish while on**) | Prototype the cartoony UI look; ship with plain UIShadow (live since June 2026) and Linear gradients only. |
 | **Texture Generation Quality mode**: 4K PBR (colour, roughness, metal) | Beta | `/generate_texture` in Assistant with a mesh selected. Cartoony games usually want flat colour; use it for hero props. |
 | **`if local` / `if const`** Luau syntax | Studio beta | Don't use in shipped code until it's live. |
 | **Animation Graph State Machines + Luau Expressions** | Studio beta | Locomotion and attack states without script glue. Watch, don't ship yet. |
 | **SLIM debug tints** (streaming, LOD, transcoder view modes) | Studio beta | Find why a map loads slowly on phones. |
-| **Studio Assistant**: planning mode, builds from prompts with Cube, tests and self-corrects, **built-in MCP client** | Live (2026) | See [[Roblox Studio Assistant]] and [[Roblox Studio MCP Server]]. Third-party agent integration (Claude, Cursor, Codex) is on the roadmap. |
+| **Studio Assistant**: planning mode, builds from prompts with Cube, tests and self-corrects; a built-in MCP client was reported by press but isn't confirmed in Roblox docs | Live (2026) | See [[Roblox Studio Assistant]] and [[Roblox Studio MCP Server]]. Third-party agent integration (Claude, Cursor, Codex) is on the roadmap. |
 | **4D generation** (Cube): Car-5 and Body-1 schemas; players generate working objects in-game | Beta | A "generate your own car/pet" feature. In early access it showed 64% longer playtime (Wish Master). |
 | **Makeup creation in-experience** (70% revenue share after recouping the advance) | Live | Only for avatar-creator games. |
 | **Friends chat tab, voice typing** | Live | Nothing to build; more players can coordinate with friends. |
@@ -40,7 +40,7 @@ Sources: [RDC26: What We Announced (DevForum)](https://devforum.roblox.com/t/rdc
 
 - **Play in Chrome from a link**, with no app install. Every TikTok/YouTube link becomes a one-tap play. Make sure the first 60 s work with a mouse and keyboard on a laptop.
 - **Pre-roll video ads** while the game loads: Roblox serves them and shares revenue, with no code. Plus subscribers don't see them. Free money for kid games, but keep the loading screen short.
-- **Developer push notifications** for opted-in players ("your egg hatched", "your base was raided"). A strong come-back tool; ask for opt-in after the first win, not at join.
+- **Developer push notifications**: announced for turn-based and async games ("it's your turn"); not in the docs yet. Today's experience notifications reach only opted-in players 13+, at most one per day. Whether "your egg hatched" style alerts will be allowed is unknown. See [[Brief - Game Design, Retention and Growth]].
 - **Turn-based multiplayer notifications** (Studio beta in October, full release by year end).
 - **Scene Generator**: a text prompt + reference image gives a scene layout to refine in Studio. Use it for first-pass map blocking, then the `roblox-cartoony-building` skill.
 - **NPC Dynamic Behavior**: NPCs built from Studio prompts, versioned and reusable, including NPCs that playtest games.

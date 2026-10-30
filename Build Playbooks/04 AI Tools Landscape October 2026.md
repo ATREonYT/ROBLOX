@@ -5,7 +5,7 @@ updated: 2026-10-30
 
 # 04 AI Tools Landscape October 2026
 
-Back to [[00 Build Router]] · Deep notes: [[Roblox Studio MCP Server]], [[Roblox Studio Assistant]], [[Built-In Studio MCP vs Community MCP Servers - Migration Guide]], [[Evaluating AI Tools - A Practical Rubric]], [[01 Setup & Workflow]]
+Back to [[00 Build Router]] · Full workflow brief: [[Brief - AI Workflow, Tooling and Testing]] · Deep notes: [[Roblox Studio MCP Server]], [[Roblox Studio Assistant]], [[Built-In Studio MCP vs Community MCP Servers - Migration Guide]], [[Evaluating AI Tools - A Practical Rubric]], [[01 Setup & Workflow]]
 
 ## Our stack (keep it)
 1. **Claude Code + Roblox's official Studio MCP server** for anything inside Studio: read/edit scripts, run Luau, playtest, simulate player input, take screenshots, generate meshes and procedural models.
@@ -18,12 +18,12 @@ Third-party "AI game makers" mostly do the same thing with their own credits. Th
 - Studio: Assistant > … > Manage MCP Servers > turn on **Enable Studio as MCP server**, then Quick connect your client.
 - Or the JSON config: `"Roblox_Studio": { "command": "/Applications/RobloxStudio.app/Contents/MacOS/StudioMCP" }`.
 - Green dot under "Enable Studio as MCP server" = connected. Restart both apps if not.
-- Tools (Oct 2026): `script_read`, `multi_edit`, `script_search` (10 results), `script_grep` (50), `generate_mesh`, `generate_material`, `generate_procedural_model`, `search_asset`, `insert_asset`, `upload_image`, `store_image`, `subagent` (explore / playtest), `search_game_tree`, `inspect_instance`, `execute_luau`, `start_stop_play`, `get_console_output`, `screen_capture`, `character_navigation`, `user_keyboard_input`, `user_mouse_input`, `http_get` (Roblox docs only), `skill`, `list_roblox_studios`.
+- Tools (Oct 2026): `script_read`, `multi_edit`, `script_search` (10 results), `script_grep` (50), `generate_mesh`, `generate_material`, `generate_procedural_model`, `wait_job_finished`, `search_asset`, `insert_asset`, `upload_image`, `store_image`, `subagent` (explore / playtest), `search_game_tree`, `inspect_instance`, `execute_luau`, `get_studio_state`, `start_stop_play`, `get_console_output`, `screen_capture`, `character_navigation`, `user_keyboard_input`, `user_mouse_input`, `http_get` (Roblox docs only), `skill`, `list_roblox_studios`.
 - Every call takes a `studio_id` (from `list_roblox_studios`). Connected clients can change your place, so connect only tools you trust.
 - Source: [Connect to the Roblox Studio MCP server](https://create.roblox.com/docs/studio/mcp), read 2026-10-30.
 
 ## Roblox's own AI (built into Studio)
-- **Assistant**: planning mode (asks questions, writes an editable plan), builds with Cube, playtests and self-corrects, has a built-in MCP client, and can use your own Anthropic/OpenAI/Gemini key. Procedural models are capped at 50 per 24 hours.
+- **Assistant**: planning mode (asks questions, writes an editable plan), builds with Cube, playtests and self-corrects, has creator-authored Skills (July 2026; Claude Code can read them through the MCP `skill` tool), and can use your own Anthropic/OpenAI/Gemini key. Procedural models are capped at 50 per 24 hours.
 - **Cube 3D / 4D generation**: text to mesh; 4D adds working behaviour (Car-5, Body-1 schemas, beta).
 - **Texture Generation Quality mode**: 4K PBR (beta, Oct 2026).
 - **Scene Generator** and **NPC Dynamic Behavior**: late 2026. See [[03 What's New on Roblox - RDC 2026 and October]].
