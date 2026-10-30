@@ -8,7 +8,7 @@
 	     rules: lock, hide, letterbox, cut on action, a wide after the big
 	     moment, and restore everything exactly, even if something fails.
 	  2. A quest bar at the top with a live count, e.g. TRAIN POWER (12/30).
-	  3. A line of chunky yellow arrows floating straight from you to the next thing to
+	  3. A chain of white arrows floating straight from you to the next thing to
 	     do, and a pointer on the menu button when the step is in the UI.
 	  4. A TUTORIAL COMPLETE! screen after the first rebirth.
 	Each step finishes on its own when you do it, and progress is saved.
@@ -325,39 +325,55 @@ return function(ctx)
 	Kit.icon("Arrow", { Size = UDim2.fromScale(1, 1), Rotation = 90, Parent = marker })
 
 	-----------------------------------------------------------------------
-	-- Arrow line: chunky yellow cartoon chevrons with a thick dark outline,
-	-- floating in the air on one straight line from you to the target
-	-- (not on the ground, Alex Oct 30), bobbing in a wave as they flow.
+	-- Arrow line, matched to Alex's Stone Skipping recording: a tight chain
+	-- of white arrowheads (a dart with a notch at the back) with a thin dark
+	-- outline, floating on one straight line from you to the target (not on
+	-- the ground, Alex Oct 30), turned to face the camera, flowing forward.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED = 22, 4.2, 6
-	local ARM, THICK = Vector3.new(0.95, 0.5, 2), 0.5 -- one arm of the chevron: width, thickness, length
-	local FILL, TIP = Color3.fromRGB(255, 214, 64), Color3.fromRGB(255, 240, 150)
+	local ARROWS, SPACING, FLOW_SPEED = 44, 1.35, 5
+	local LEN, HALF, NOTCH, THICK = 1.6, 0.8, 0.55, 0.25 -- dart length, half width, notch depth, thickness
 	local HIDDEN = CFrame.new(0, -500, 0)
 	local arrowFolder = new("Model", { Name = "TutorialArrows" })
 	new("Highlight", {
-		Adornee = arrowFolder, FillTransparency = 1, OutlineColor = Color3.fromRGB(40, 22, 10), OutlineTransparency = 0,
+		Adornee = arrowFolder, FillTransparency = 1, OutlineColor = Color3.fromRGB(30, 30, 55), OutlineTransparency = 0,
 		DepthMode = Enum.HighlightDepthMode.Occluded, Parent = arrowFolder,
 	})
+	-- each dart is two triangles (tip, barb, notch), each triangle two wedges
 	local arrows = {}
 	for i = 1, ARROWS do
-		local arms = {}
-		for side = 1, 2 do
-			arms[side] = new("Part", {
+		local wedges = {}
+		for w = 1, 4 do
+			wedges[w] = new("WedgePart", {
 				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-				Material = Enum.Material.SmoothPlastic, Color = FILL, Size = ARM, CFrame = HIDDEN, Parent = arrowFolder,
+				Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(246, 246, 252), CFrame = HIDDEN, Parent = arrowFolder,
 			})
 		end
-		-- a round knob where the arms meet, so the tip looks soft instead of a sharp corner
-		arms[3] = new("Part", {
-			Shape = Enum.PartType.Cylinder, Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-			Material = Enum.Material.SmoothPlastic, Color = TIP, Size = Vector3.new(THICK, 1.3, 1.3), CFrame = HIDDEN, Parent = arrowFolder,
-		})
-		arrows[i] = arms
+		arrows[i] = wedges
+	end
+
+	-- a flat triangle a, b, c from two wedges, THICK deep
+	local function triangle(a, b, c, w1, w2)
+		local ab, ac, bc = b - a, c - a, c - b
+		local abd, acd, bcd = ab:Dot(ab), ac:Dot(ac), bc:Dot(bc)
+		if abd > acd and abd > bcd then
+			c, a = a, c
+		elseif acd > bcd and acd > abd then
+			a, b = b, a
+		end
+		ab, ac, bc = b - a, c - a, c - b
+		local right = ac:Cross(ab).Unit
+		local up = bc:Cross(right).Unit
+		local back = bc.Unit
+		local height = math.abs(ab:Dot(up))
+		w1.Size = Vector3.new(THICK, height, math.abs(ab:Dot(back)))
+		w1.CFrame = CFrame.fromMatrix((a + b) / 2, right, up, back)
+		w2.Size = Vector3.new(THICK, height, math.abs(ac:Dot(back)))
+		w2.CFrame = CFrame.fromMatrix((a + c) / 2, -right, up, -back)
 	end
 
 	local function hideArrows()
-		for _, arms in ipairs(arrows) do
-			for _, part in ipairs(arms) do
+		for _, wedges in ipairs(arrows) do
+			for _, part in ipairs(wedges) do
 				part.CFrame = HIDDEN
 			end
 		end
@@ -398,7 +414,7 @@ return function(ctx)
 		if arrowFolder.Parent ~= workspace then
 			arrowFolder.Parent = workspace
 		end
-		local from = root.Position + Vector3.new(0, 0.5, 0)
+		local from = root.Position
 		setRoute({ from, target.Position })
 		local total = route.total
 		if total < 7 then
@@ -406,35 +422,30 @@ return function(ctx)
 			return
 		end
 		local camPos = workspace.CurrentCamera.CFrame.Position
-		local t = os.clock()
-		local phase = (t * FLOW_SPEED) % SPACING
-		for i, arms in ipairs(arrows) do
+		local phase = (os.clock() * FLOW_SPEED) % SPACING
+		for i, wedges in ipairs(arrows) do
 			local d = 2.5 + (i - 1) * SPACING + phase
-			local p, dir = pointOnRoute(d)
+			local pos, dir = pointOnRoute(d)
 			dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.xAxis
-			-- a soft wave runs down the line
-			local pos = p + Vector3.new(0, math.sin(d * 0.9 - t * 5) * 0.25, 0)
 			local toCam = camPos - pos
 			-- right under the camera an arrow fills the screen: skip it
-			if d > total - 2.5 or toCam.Magnitude < 9 then
-				for _, part in ipairs(arms) do
+			if d > total - 2 or toCam.Magnitude < 6 then
+				for _, part in ipairs(wedges) do
 					part.CFrame = HIDDEN
 				end
 				continue
 			end
-			-- face the camera: the arrow's flat side turns toward you around its pointing direction
+			-- face the camera: the dart's flat side turns toward you around its pointing direction
 			local normal = toCam - dir * toCam:Dot(dir)
 			normal = normal.Magnitude > 0.01 and normal.Unit or Vector3.yAxis
-			local base = CFrame.fromMatrix(pos, dir:Cross(normal), normal)
-			-- pop in near you and shrink into the target
-			local s = math.clamp(math.min((d - 2.5) / 3, (total - 2.5 - d) / 3), 0, 1)
-			local k = (0.3 + 0.7 * s) * (1 + 0.06 * math.sin(t * 6 - d))
-			local arm = Vector3.new(ARM.X * k, ARM.Y, ARM.Z * k)
-			arms[1].Size, arms[2].Size = arm, arm
-			arms[1].CFrame = base * CFrame.new(0.55 * k, 0, 0.55 * k) * CFrame.Angles(0, math.rad(45), 0)
-			arms[2].CFrame = base * CFrame.new(-0.55 * k, 0, 0.55 * k) * CFrame.Angles(0, math.rad(-45), 0)
-			arms[3].Size = Vector3.new(THICK * 1.04, 1.25 * k, 1.25 * k)
-			arms[3].CFrame = base * CFrame.new(0, 0, -0.1 * k) * CFrame.Angles(0, 0, math.rad(90))
+			local side = dir:Cross(normal)
+			-- grow in near you and shrink into the target
+			local k = 0.35 + 0.65 * math.clamp(math.min((d - 2.5) / 3, (total - 2 - d) / 3), 0, 1)
+			local tip = pos + dir * (LEN / 2 * k)
+			local tail = pos - dir * (LEN / 2 * k)
+			local notch = tail + dir * (NOTCH * k)
+			triangle(tip, tail + side * (HALF * k), notch, wedges[1], wedges[2])
+			triangle(tip, notch, tail - side * (HALF * k), wedges[3], wedges[4])
 		end
 	end
 
