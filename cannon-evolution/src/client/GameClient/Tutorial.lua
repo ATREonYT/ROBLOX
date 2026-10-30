@@ -8,9 +8,8 @@
 	     rules: lock, hide, letterbox, cut on action, a wide after the big
 	     moment, and restore everything exactly, even if something fails.
 	  2. A quest bar at the top with a live count, e.g. TRAIN POWER (12/30).
-	  3. A line of white arrows flowing from you to the next thing to do
-	     (it follows a walkable path), and a pointer on the menu button when
-	     the step is in the UI.
+	  3. A line of white arrows flowing straight from you to the next thing to
+	     do, and a pointer on the menu button when the step is in the UI.
 	  4. A TUTORIAL COMPLETE! screen after the first rebirth.
 	Each step finishes on its own when you do it, and progress is saved.
 
@@ -19,7 +18,6 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local PathfindingService = game:GetService("PathfindingService")
 
 -- Everything the tutorial says.
 local TEXT = {
@@ -360,10 +358,9 @@ return function(ctx)
 		end
 	end
 
-	-- path from you to the target, refreshed when you move or the target changes
-	local path = PathfindingService:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = true, WaypointSpacing = 6 })
+	-- a straight line from you to the target: it points at one thing and never bends round
+	-- obstacles (Alex, Oct 30); the arrows still sit on the ground under it
 	local route = nil -- { points = {Vector3}, lengths = {cumulative}, total = n }
-	local routeFrom, routeTarget, routeAt, routeBusy = nil, nil, 0, false
 
 	local function setRoute(points)
 		local lengths, total = { 0 }, 0
@@ -372,31 +369,6 @@ return function(ctx)
 			lengths[i] = total
 		end
 		route = { points = points, lengths = lengths, total = total }
-	end
-
-	local function refreshRoute(from, target)
-		if routeBusy then
-			return
-		end
-		routeBusy = true
-		routeFrom, routeTarget, routeAt = from, target, os.clock()
-		local goal = target.Position
-		task.spawn(function()
-			local ok = pcall(function()
-				path:ComputeAsync(from, goal)
-			end)
-			if ok and path.Status == Enum.PathStatus.Success then
-				local points = {}
-				for _, w in ipairs(path:GetWaypoints()) do
-					table.insert(points, w.Position)
-				end
-				points[1] = from
-				setRoute(points)
-			else
-				setRoute({ from, Vector3.new(goal.X, from.Y, goal.Z) })
-			end
-			routeBusy = false
-		end)
 	end
 
 	local function pointOnRoute(d)
@@ -422,15 +394,7 @@ return function(ctx)
 			arrowFolder.Parent = workspace
 		end
 		local from = root.Position
-		if target ~= routeTarget or not routeFrom or (from - routeFrom).Magnitude > 4 or os.clock() - routeAt > 2 then
-			refreshRoute(from, target)
-		end
-		if not route then
-			hideArrows()
-			return
-		end
-		-- start the line at you even between path refreshes
-		route.points[1] = from
+		setRoute({ from, Vector3.new(target.Position.X, from.Y, target.Position.Z) })
 		local total = route.total
 		local flatGap = Vector3.new(target.Position.X - from.X, 0, target.Position.Z - from.Z).Magnitude
 		if flatGap < 7 or total < 7 then
@@ -1004,7 +968,6 @@ return function(ctx)
 		lastHave = nil
 		launchBase = nil
 		route = nil
-		routeTarget = nil
 		quest.Visible = true
 		quest.Position = UDim2.new(0.5, 0, 0, QUEST_Y - 40)
 		questScale.Scale = 0.85
