@@ -34,7 +34,7 @@ local fireDir = Vector3.new(0, 0, SIDE)
 local rowZ = lobbyPos.Z + SIDE * 21 -- stand points, set back so the booth fronts clear the spawn and launch zone
 -- booths stand side by side like Alex's pictures, the row centred in the lobby
 local spacing = 15
-local startX = lobbyPos.X - spacing * (#Config.Stations - 1) / 2
+local startX = lobbyPos.X - 10 - spacing * (#Config.Stations - 1) / 2 -- 10 left keeps the VIP booth clear of the side building
 
 local old = workspace:FindFirstChild("TrainingStations")
 if old then
