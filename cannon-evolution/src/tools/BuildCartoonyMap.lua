@@ -7,7 +7,9 @@
 	colour so it reads as soft studs, not a grid. Walls, trees, rocks and
 	water are left alone. See .claude/skills/roblox-cartoony-building.
 
-	Safe to run again: it removes its own "Studs" textures first.
+	Safe to run again: it removes only its own "CartoonStuds" textures first.
+	The map's own "Studs" textures (6 per part, from the import) are never
+	touched: an earlier version deleted them by name (Oct 30).
 	Undo: run it with UNDO = true.
 ]]
 
@@ -28,7 +30,7 @@ local added, removed = 0, 0
 for _, p in ipairs(root:GetDescendants()) do
 	if p:IsA("BasePart") then
 		for _, t in ipairs(p:GetChildren()) do
-			if t:IsA("Texture") and t.Name == "Studs" then
+			if t:IsA("Texture") and t.Name == "CartoonStuds" then
 				t:Destroy()
 				removed += 1
 			end
@@ -38,7 +40,7 @@ for _, p in ipairs(root:GetDescendants()) do
 		local flat = s.Y < math.min(s.X, s.Z) * 0.35 and s.X * s.Z >= 64
 		if not UNDO and flat and not skip(p) and p.Transparency < 0.5 then
 			local t = Instance.new("Texture")
-			t.Name = "Studs"
+			t.Name = "CartoonStuds"
 			t.Texture = STUDS
 			t.Face = Enum.NormalId.Top
 			t.StudsPerTileU = 4
