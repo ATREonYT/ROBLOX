@@ -42,6 +42,16 @@ if not map then
 	error(TAG .. " no imported map in Workspace: Import 3D map/CannonMap.glb first")
 end
 map.Name = Config.Map.Root
+-- Import 3D nests the file's own root inside the model (CannonMap > CannonMap > 01_Lobby...): lift the
+-- groups up a level so the game finds CannonMap.03_River and the rest
+for _, inner in ipairs(map:GetChildren()) do
+	if inner:IsA("Model") and inner.Name == map.Name and not inner:FindFirstChildWhichIsA("BasePart") then
+		for _, g in ipairs(inner:GetChildren()) do
+			g.Parent = map
+		end
+		inner:Destroy()
+	end
+end
 
 local function plazaBox()
 	local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
