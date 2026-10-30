@@ -766,6 +766,35 @@ local function equipCannon(player, id)
 end
 
 ---------------------------------------------------------------------------
+-- Cannonballs (Cash, picked on the lobby stand)
+---------------------------------------------------------------------------
+local function buyBall(player, id)
+	local data = profiles[player].Data
+	local ball = Config.GetBall(id)
+	if not ball or data.Balls[id] then
+		return false
+	end
+	if data.Cash < ball.Price then
+		return false, "Not enough Cash!"
+	end
+	data.Cash -= ball.Price
+	data.Balls[id] = true
+	data.EquippedBall = id
+	markDirty(player)
+	return true, ball.Name .. " Cannonball unlocked!"
+end
+
+local function equipBall(player, id)
+	local data = profiles[player].Data
+	if not (Config.GetBall(id) and data.Balls[id]) then
+		return false
+	end
+	data.EquippedBall = id
+	markDirty(player)
+	return true
+end
+
+---------------------------------------------------------------------------
 -- Worlds
 ---------------------------------------------------------------------------
 local function teleportToWorld(player, worldId)
@@ -1224,6 +1253,8 @@ local actions = {
 	DeletePet = deletePet,
 	BuyCannon = buyCannon,
 	EquipCannon = equipCannon,
+	BuyBall = buyBall,
+	EquipBall = equipBall,
 	Teleport = teleportToWorld,
 	ClaimMission = claimMission,
 	ClaimDaily = claimDaily,

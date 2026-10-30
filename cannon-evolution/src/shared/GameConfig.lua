@@ -275,6 +275,32 @@ function Config.GetCannon(id)
 end
 
 ---------------------------------------------------------------------------
+-- Cannonballs: shown on the stand in the lobby, one per pad (lower row first,
+-- nearest the water first). Bought once with Cash, then picked; the picked one
+-- is the ball your cannon fires and adds its Cash bonus to every launch (Alex, Oct 30).
+---------------------------------------------------------------------------
+Config.Balls = {
+	{ Id = "Classic",  Name = "Classic",  Price = 0,         CashBonus = 0,    Color = Color3.fromRGB(55, 60, 75),    Band = Color3.fromRGB(255, 200, 60) },
+	{ Id = "Bronze",   Name = "Bronze",   Price = 500,       CashBonus = 0.05, Color = Color3.fromRGB(190, 110, 55),  Band = Color3.fromRGB(255, 220, 150) },
+	{ Id = "Silver",   Name = "Silver",   Price = 2500,      CashBonus = 0.1,  Color = Color3.fromRGB(200, 210, 225), Band = Color3.fromRGB(90, 160, 255) },
+	{ Id = "Gold",     Name = "Gold",     Price = 10000,     CashBonus = 0.15, Color = Color3.fromRGB(255, 200, 40),  Band = Color3.fromRGB(255, 255, 255) },
+	{ Id = "Ruby",     Name = "Ruby",     Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
+	{ Id = "Emerald",  Name = "Emerald",  Price = 250000,    CashBonus = 0.3,  Color = Color3.fromRGB(40, 200, 110),  Band = Color3.fromRGB(190, 255, 210) },
+	{ Id = "Ocean",    Name = "Ocean",    Price = 1000000,   CashBonus = 0.4,  Color = Color3.fromRGB(40, 140, 240),  Band = Color3.fromRGB(150, 240, 255) },
+	{ Id = "Frost",    Name = "Frost",    Price = 5000000,   CashBonus = 0.5,  Color = Color3.fromRGB(190, 235, 255), Band = Color3.fromRGB(70, 180, 255) },
+	{ Id = "Magma",    Name = "Magma",    Price = 25000000,  CashBonus = 0.75, Color = Color3.fromRGB(60, 25, 25),    Band = Color3.fromRGB(255, 120, 30) },
+	{ Id = "Galaxy",   Name = "Galaxy",   Price = 100000000, CashBonus = 1,    Color = Color3.fromRGB(70, 30, 140),   Band = Color3.fromRGB(255, 110, 240) },
+}
+
+function Config.GetBall(id)
+	for _, b in ipairs(Config.Balls) do
+		if b.Id == id then
+			return b
+		end
+	end
+end
+
+---------------------------------------------------------------------------
 -- Robux: gamepasses and developer products (paste ids from Creator Hub)
 ---------------------------------------------------------------------------
 Config.Passes = {
@@ -438,6 +464,8 @@ Config.DefaultData = {
 	NextPetUid = 1,
 	Cannons = { Starter = true },
 	EquippedCannon = "Starter",
+	Balls = { Classic = true },
+	EquippedBall = "Classic",
 	Boosts = {}, -- [boostId] = seconds remaining
 	Products = {}, -- owned product grants that are permanent (cannons), plus receipt ids
 	Stats = { Shots = 0, Launches = 0, Hatches = 0, CashEarned = 0, Rebirths = 0 },
@@ -480,7 +508,8 @@ function Config.PowerMultiplier(data)
 end
 
 function Config.CashMultiplier(data)
-	return (1 + data.Rebirths * Config.REBIRTH_CASH_BONUS) * (1 + Config.Level(data, "Cash") * 0.10)
+	local ball = Config.GetBall(data.EquippedBall)
+	return (1 + data.Rebirths * Config.REBIRTH_CASH_BONUS) * (1 + Config.Level(data, "Cash") * 0.10) * (1 + (ball and ball.CashBonus or 0))
 end
 
 function Config.ShotInterval(data)
