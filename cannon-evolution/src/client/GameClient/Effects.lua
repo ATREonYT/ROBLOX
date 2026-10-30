@@ -434,8 +434,29 @@ return function(ctx)
 		flightGui.Enabled = false
 		setSideMenu(true)
 	end
+	-- the area walls only show while you fly: from the lobby they stacked up behind your cannon and
+	-- their names printed on top of the cannon's sign (play-test, Oct 30)
+	local function showBorders(on)
+		local folder = workspace:FindFirstChild("AreaBorders")
+		for _, b in ipairs(folder and folder:GetChildren() or {}) do
+			if b:IsA("BasePart") then
+				b.LocalTransparencyModifier = on and 0 or 1
+				for _, g in ipairs(b:GetChildren()) do
+					if g:IsA("SurfaceGui") then
+						g.Enabled = on
+					end
+				end
+			end
+		end
+	end
+	task.spawn(function()
+		workspace:WaitForChild("AreaBorders", 30)
+		showBorders(player:GetAttribute("Launching") == true)
+	end)
 	player:GetAttributeChangedSignal("Launching"):Connect(function()
-		if not player:GetAttribute("Launching") then
+		local on = player:GetAttribute("Launching") == true
+		showBorders(on)
+		if not on then
 			endFlight()
 		end
 	end)
