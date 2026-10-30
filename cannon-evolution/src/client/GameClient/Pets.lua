@@ -56,20 +56,20 @@ return function(ctx)
 		end
 
 		-- its pets in a row, odds underneath in the rarity colour
-		local row = new("Frame", { BackgroundTransparency = 1, Position = UDim2.new(0.38, 0, 0, 122), Size = UDim2.new(0.6, 0, 0, 170), ZIndex = 27, Parent = show })
+		local row = new("Frame", { BackgroundTransparency = 1, Position = UDim2.new(0.38, 0, 0, 122), Size = UDim2.new(0.56, 0, 0, 170), ZIndex = 27, Parent = show })
 		Kit.list(row, 6, true, Enum.HorizontalAlignment.Left)
 		local total = 0
 		for _, entry in ipairs(egg.Pets) do
 			total += entry[2]
 		end
-		local cellW = math.floor(math.min(118, 500 / #egg.Pets))
+		local cellW = math.floor(math.min(118, 470 / #egg.Pets))
 		for i, entry in ipairs(egg.Pets) do
 			local petInfo = Config.Pets[entry[1]]
 			local rarity = Config.Rarities[petInfo.Rarity]
 			local cell = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(cellW, 170), LayoutOrder = i, ZIndex = 27, Parent = row })
 			local pm = model("Pets", entry[1])
 			if pm then
-				Kit.viewport(cell, pm, { Size = UDim2.fromOffset(cellW + 10, cellW + 10), Position = UDim2.new(0.5, 0, 0, 60), Spin = 35, Zoom = 0.9, ZIndex = 28 })
+				Kit.viewport(cell, pm, { Size = UDim2.fromOffset(cellW + 30, cellW + 30), Position = UDim2.new(0.5, 0, 0, 62), Spin = 35, Zoom = 0.8, ZIndex = 28 })
 			end
 			local chance = entry[2] / total * 100
 			local odds = Kit.text({ Text = (chance < 1 and string.format("%.1f", chance) or string.format("%d", math.floor(chance + 0.5))) .. "%", Size = 32, StrokeSize = 4, Color = (petInfo.Rarity == "Common" or petInfo.Rarity == "Uncommon" or petInfo.Rarity == "Secret" or petInfo.Rarity == "Mythic") and Color3.new(1, 1, 1) or rarity.Color, FrameSize = UDim2.new(1, 10, 0, 36), Position = UDim2.new(0.5, 0, 0, 122), Anchor = Vector2.new(0.5, 0), ZIndex = 30, Parent = cell })
