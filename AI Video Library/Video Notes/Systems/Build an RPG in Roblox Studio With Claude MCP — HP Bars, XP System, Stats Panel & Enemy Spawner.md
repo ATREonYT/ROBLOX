@@ -52,3 +52,11 @@ Short architecture walkthrough: Claude writes Lua directly into Studio through t
 - XP = base x level^1.5 is a ready progression curve for rebirth/level gates.
 - Billboard bars, floating damage numbers and "+XP" text are cheap feedback for steal/brainrot games (inferred).
 - Server-authoritative stats mirrored as attributes, client HUD tweens them: a safe pattern for exploit resistance.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[03 Scripting & Systems]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in Systems: [[How to Make a Gun in Roblox Studio Using Claude AI]]
+<!-- related:end -->

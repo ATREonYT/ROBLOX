@@ -50,3 +50,11 @@ None stated in the video (no AI prompts).
 - Add a "+" icon beside the cash/stat counter and world-placed product NPCs near spawn and base (inferred for steal-a-brainrot style games).
 - Keep permanent 2x cash and VIP as game passes; make 2x offline earnings a consumable.
 - Playtest by watching someone for 5 minutes to find the next product (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[10 Business, Monetization & Case Studies]] · [[15 Kid Appeal & Game Design]]
+- Playbooks: [[01 Current Hits October 2026]] · [[02 Launch and Discovery Cheat Sheet]]
+- More in Game design and business: [[I Made 4 Roblox Games with AI… Did I Get Rich?]] · [[Roblox Game Design Explained Like You're 5 Yrs Old]] · [[Why 90% of Roblox Games Never Get Players]]
+<!-- related:end -->

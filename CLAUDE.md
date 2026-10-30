@@ -20,6 +20,9 @@ This file loads in every session, so keep it short. Each game folder has its own
   reference but no louder, and use only Roblox's built-in pictures.
 
 ## Skills from the video library
+**New game: start from `new-game-kit/`** (`sh new-game-kit/tools/new_game.sh <folder> <PlaceName>`, then its `README.md` and `CLAUDE.md`). **New game or new system: open `Build Playbooks/00 Build Router.md` first.** It points each job (game type, system, look, launch) to the right blueprint, notes, skills and code to copy.
+Then read the matching brief in `Build Playbooks/Sector Briefs/` (verified Oct 30, 2026); where an older note disagrees, the brief wins.
+
 Before building, load the skill for the job (in `.claude/skills/`):
 - maps, props, lighting: `roblox-cartoony-building`
 - any UI: `roblox-cartoony-ui`

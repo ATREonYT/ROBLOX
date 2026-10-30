@@ -63,3 +63,10 @@ Claude (Opus 4.7) generates an animated ice slash mesh and 16-frame texture sequ
 - Use "freeze 2 seconds" style status effects for steal-game defense tools (inferred).
 - Add bloom (post-processing) as the last step for punchy VFX, then test at night.
 - Ask Claude to automate the ID pasting by giving it a module with a table of asset IDs, then fill it once.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[05 VFX]]
+- More in VFX: [[Claude MCP + Codex Help me create Roblox Skill Cutscene in Minutes Roblox Studio MCP]] · [[How I Made Anime Dragon Skill in Roblox Studio Using Claude MCP]] · [[How to Make VFX in Roblox with AI (Claude Opus 5.5 + FREE SKILL)]]
+<!-- related:end -->

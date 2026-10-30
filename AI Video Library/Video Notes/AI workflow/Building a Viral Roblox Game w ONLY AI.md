@@ -63,3 +63,11 @@ Part 2 of the "Bandit Beater" series (Blox Fruits-style bandit-beating RPG). The
 - Tier colouring of enemies (green to red) is an easy readable difficulty system for any zone-based sim or steal game (inferred).
 - Hand-build the world layout yourself, then ask Claude to map spawn/zones onto it: the video's split of human world layout and AI placement worked well.
 - For a +1 style sim, a gamble/roll shop island for gear (swords) is the creator's planned core loop (inferred application).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building Viral Roblox Game w AI (pretty easy)]] · [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]] · [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]] · [[How Big Studios Develop on Roblox]] · [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]] · [[How to make Roblox Games Using Claude]] · [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]] · [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+<!-- related:end -->

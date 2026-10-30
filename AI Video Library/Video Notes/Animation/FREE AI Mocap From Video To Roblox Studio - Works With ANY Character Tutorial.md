@@ -48,3 +48,10 @@ None stated in the video (no AI text prompts). Tools named: Marionette, Marionet
 - Use the same FBX-animation import flow for a unique "steal" grab or run animation (inferred).
 - Combine with Blender retargeting so one mocap clip works across several character rigs in a simulator (inferred).
 - Free tier with unlimited renders means cheap iteration on emotes for a +1 reward animation (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[06 Animation]]
+- More in Animation: [[How to Make Animations in Roblox with AI (Claude Opus 5.5 + FREE ANIMATION SKILL)]] · [[How to Make Roblox Animations With AI (R6 + R15, Claude Opus 5.5)]]
+<!-- related:end -->

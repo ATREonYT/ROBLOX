@@ -69,3 +69,10 @@ Claude was also used for the dragon anim controller script, NPC combat controlle
 - Let Claude generate base R15 animations from a text description with named markers, then trigger VFX and scripts from marker signals.
 - Welded mist/aura folders triggered by a marker suit rebirth or purchase bursts in simulators (inferred).
 - Trail with Attachment0/1, lifetime 0.5, is a simple speed-trail for +1 speed games (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[05 VFX]]
+- More in VFX: [[Claude MCP + Codex Help me create Roblox Skill Cutscene in Minutes Roblox Studio MCP]] · [[Claude Opus 4.7 Just Built My Roblox VFX… (Ice Slash Effect Tutorial)]] · [[How to Make VFX in Roblox with AI (Claude Opus 5.5 + FREE SKILL)]]
+<!-- related:end -->

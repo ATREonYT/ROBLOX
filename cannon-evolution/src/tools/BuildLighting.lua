@@ -30,7 +30,7 @@ end
 
 Lighting.ClockTime = 16.9
 Lighting.GeographicLatitude = 20
-Lighting.Brightness = 3.2
+Lighting.Brightness = 2.6
 Lighting.ExposureCompensation = 0
 Lighting.Ambient = Color3.fromRGB(125, 100, 115)
 Lighting.OutdoorAmbient = Color3.fromRGB(160, 125, 110)
@@ -56,19 +56,21 @@ atmo.Density = 0.36
 atmo.Offset = 0.2
 atmo.Color = Color3.fromRGB(255, 160, 100)
 atmo.Decay = Color3.fromRGB(255, 110, 160)
-atmo.Glare = 0.25
-atmo.Haze = 1.3
+atmo.Glare = 0
+atmo.Haze = 0.5
 
 local cc = get("ColorCorrectionEffect", "Warmth")
 cc.Saturation = 0.3
 cc.Contrast = 0.1
-cc.Brightness = 0.02
+cc.Brightness = 0
 cc.TintColor = Color3.fromRGB(255, 244, 228)
 
+-- neon stays bright but no glow spills round it, and the haze no longer washes out the eggs (Alex, Oct 30)
 local bloom = get("BloomEffect", "Bloom")
-bloom.Intensity = 0.6
-bloom.Size = 24
-bloom.Threshold = 0.95
+-- a little more bloom so the booths' neon glows like Alex's booth pictures; the threshold keeps it on neon only
+bloom.Intensity = 0.15
+bloom.Size = 8
+bloom.Threshold = 1.6
 
 local rays = get("SunRaysEffect", "SunRays")
 rays.Intensity = 0.03

@@ -47,3 +47,11 @@ No AI prompts. Plugin names not clearly audible.
 - Gradient plus stroke plus inner shadow gives the chunky simulator button look for shop and rebirth buttons.
 - Use the white-stroke black-fill text as a readable label for currency counters (inferred).
 - Tag-based Figma to Studio export could speed up consistent menu sets (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[07 UI & GUI]] · [[14 Cartoony UI & Juice]]
+- Playbooks: [[16 Cartoony Kid-Appeal Checklist]]
+- More in UI: [[Make INSANE Roblox GUI Assets with AI! (GPT Image 2)]] · [[Make Your Roblox UI Buttons SUPER Smooth in 8 Minutes!]] · [[The Greatest Cartoony UI Tutorial on Roblox (w Figma)]]
+<!-- related:end -->

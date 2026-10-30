@@ -53,3 +53,11 @@ No AI prompts. Table of examples:
 - Apply pressure-valve design: safe zones that release tension in steal-style maps (inferred).
 - Use restock timers (every 5 minutes) for eggs/shop stock to drive return visits and urgency (inferred).
 - Fill all blocks before building: fantasy, unique mechanic, core loop "leave base, get thing", RNG timing, tension, progression (+1 speed/strength) and collection (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[10 Business, Monetization & Case Studies]] · [[15 Kid Appeal & Game Design]]
+- Playbooks: [[01 Current Hits October 2026]] · [[02 Launch and Discovery Cheat Sheet]]
+- More in Game design and business: [[I Made 4 Roblox Games with AI… Did I Get Rich?]] · [[My Roblox Game Made $43,292 (Here's Exactly How to Monetize Yours)]] · [[Why 90% of Roblox Games Never Get Players]]
+<!-- related:end -->

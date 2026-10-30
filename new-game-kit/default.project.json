@@ -1,0 +1,40 @@
+{
+  "name": "NewGame",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Kit": {
+        "$path": "src/Shared"
+      },
+      "GameConfig": {
+        "$path": "src/Config/GameConfig.luau"
+      }
+    },
+    "ServerScriptService": {
+      "Kit": {
+        "$path": "src/Server"
+      },
+      "Main": {
+        "$path": "src/Main.server.luau"
+      }
+    },
+    "ServerStorage": {
+      "GameSecrets": {
+        "$path": "src/Config/GameSecrets.luau"
+      }
+    },
+    "StarterGui": {
+      "KitHUD": {
+        "$path": "src/StarterGui/KitHUD.rbxm"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "KitClient": {
+          "$path": "src/Client/KitClient.client.luau"
+        },
+        "$className": "StarterPlayerScripts"
+      }
+    }
+  }
+}

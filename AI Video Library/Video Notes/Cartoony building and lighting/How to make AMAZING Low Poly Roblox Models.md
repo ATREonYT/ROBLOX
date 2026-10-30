@@ -57,3 +57,11 @@ Beginner Blender walkthrough for a low poly asset pack: rock (icosphere), grass 
 - Build a small reusable cartoony prop pack (rocks, grass, trees, ground chunks) with 8-vertex cylinders and 3-vertex cones for cheap, consistent map decoration.
 - Import with Anchored on and recolor in Studio so one mesh serves many biome colors (inferred).
 - Use the low vertex counts as a mesh budget for map filler in simulators with many repeated props (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[13 Cartoony & Low-Poly Building]] · [[04 Building, Maps & 3D Models]]
+- Playbooks: [[Blueprint - Egg Run]] · [[16 Cartoony Kid-Appeal Checklist]]
+- More in Cartoony building and lighting: [[How to Build PRO Roblox Maps!]] · [[How to Light a Low Poly Map (Roblox Studio)]] · [[How to Make Stylized Trees & Assets NEWEST METHOD ULTIMATE Tutorial {Roblox Studio}]] · [[How to Model a Low Poly Roblox Pet (Blender Tutorial)]] · [[How to make CARTOON LIGHTING in Roblox Studio]] · [[LOW-POLY TERRAIN TUTORIAL ROBLOX+BLENDER]] · [[Make Your Roblox Game Look 10x Better With Lighting]]
+<!-- related:end -->

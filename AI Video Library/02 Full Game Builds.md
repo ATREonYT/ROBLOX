@@ -58,3 +58,19 @@ Watch someone take a game from idea to playable with AI. Steal the order of oper
 ## Smaller / beginner
 - [I Made a Roblox Pet Game Using ONLY Claude AI! (MCP Connection Tutorial)](https://www.youtube.com/watch?v=0sJs9zsR1Dw), Justi, 2026-06-27. Obby + pets + economy + DataStore.
 - [How To Make An ENTIRE Roblox Game With AI](https://www.youtube.com/watch?v=D2zYdQ5L6Qo), Cencu, 2024-03-02. The older ChatGPT + Midjourney + DALL-E era; useful for the art-direction ideas only.
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[Building Viral Roblox Game w AI (pretty easy)]]
+- [[Building a Viral Roblox Game w ONLY AI]]
+- [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]]
+- [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]]
+- [[How Big Studios Develop on Roblox]]
+- [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]]
+- [[How to make Roblox Games Using Claude]]
+- [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]]
+- [[Superbullet × Claude Opus 5.5 Is INSANE for Roblox Development]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

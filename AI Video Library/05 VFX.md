@@ -39,3 +39,14 @@ Back to [[00 Start Here]]
 
 ## Foundations (no AI, but makes your prompts better)
 - Roblox's official [Intro to VFX art curriculum](https://create.roblox.com/docs/tutorials/curriculums/artist): learn the vocabulary (beams, trails, flipbooks, attachments) so you can tell the agent exactly what to build.
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[Claude MCP + Codex Help me create Roblox Skill Cutscene in Minutes Roblox Studio MCP]]
+- [[Claude Opus 4.7 Just Built My Roblox VFX… (Ice Slash Effect Tutorial)]]
+- [[How I Made Anime Dragon Skill in Roblox Studio Using Claude MCP]]
+- [[How to Make VFX in Roblox with AI (Claude Opus 5.5 + FREE SKILL)]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

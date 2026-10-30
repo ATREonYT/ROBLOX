@@ -29,3 +29,11 @@ CTR decides whether the algorithm gives you players. These are the fastest wins 
 ## Promotion
 - Short-clip promotion is covered in [Roblox's Billion-Dollar Opportunity](https://www.youtube.com/watch?v=PH-VrdPbZGU) (Raman Makkar AI).
 - Paid-ad testing is covered in [I Tried Making a Viral Roblox Game With AI](https://www.youtube.com/watch?v=xxeNaxrfRVs) (LanceyPoo).
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[How I Make High Quality Roblox Thumbnails with AI]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

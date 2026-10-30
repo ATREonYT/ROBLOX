@@ -61,3 +61,10 @@ Most other values were not stated.
 - Explicitly state "everything must move" in VFX prompts so auras are never static.
 - Use the quality levels idea for tiered auras, one per rarity or rebirth tier (inferred).
 - Tell Claude which VFX tools and the repo's roblox-vfx skill are available so it uses them instead of inventing (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[05 VFX]]
+- More in VFX: [[Claude MCP + Codex Help me create Roblox Skill Cutscene in Minutes Roblox Studio MCP]] · [[Claude Opus 4.7 Just Built My Roblox VFX… (Ice Slash Effect Tutorial)]] · [[How I Made Anime Dragon Skill in Roblox Studio Using Claude MCP]]
+<!-- related:end -->

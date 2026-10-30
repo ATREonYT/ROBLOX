@@ -33,3 +33,14 @@ Two halves: **UI art** (buttons, frames, icons) from image models, and **UI layo
 
 > [!tip] Pattern
 > Generate a style sheet image first (palette, button style, font), then ask the agent to build every screen against it. Skills from [[01 Setup & Workflow]] are where you store that style guide.
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[How To Make Simulator UI Buttons In Figma Roblox UI Tutorial]]
+- [[Make INSANE Roblox GUI Assets with AI! (GPT Image 2)]]
+- [[Make Your Roblox UI Buttons SUPER Smooth in 8 Minutes!]]
+- [[The Greatest Cartoony UI Tutorial on Roblox (w Figma)]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

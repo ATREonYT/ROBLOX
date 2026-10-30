@@ -64,3 +64,11 @@ A creator made four Roblox games over five months using AI for all the Lua. Resu
 - Gate test data: add a studio-test switch so playtests never touch real saves; handle player leaving mid-load.
 - Use collection/progression with random events (weather 10x multiplier) and raids for steal-style loops.
 - Do not rely on ad spend: this creator lost money; invest in originality and retention (like ratio improved with a fresh concept).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[10 Business, Monetization & Case Studies]] · [[15 Kid Appeal & Game Design]]
+- Playbooks: [[01 Current Hits October 2026]] · [[02 Launch and Discovery Cheat Sheet]]
+- More in Game design and business: [[My Roblox Game Made $43,292 (Here's Exactly How to Monetize Yours)]] · [[Roblox Game Design Explained Like You're 5 Yrs Old]] · [[Why 90% of Roblox Games Never Get Players]]
+<!-- related:end -->

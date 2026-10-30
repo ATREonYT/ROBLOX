@@ -69,3 +69,11 @@ Starting from Super Bullet's free Tap Simulator template, the creator feeds Clau
 - Show the next area's price through a gate or across a gap and place machines beside the main route, as the Pet Simulator research found.
 - Finish with a fresh-session QA pass asking whether systems agree about what a player has unlocked.
 - Use an admin panel from the start to test gated content without grinding.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[01 Setup & Workflow]] · [[02 Full Game Builds]]
+- Playbooks: [[Blueprint - Plus One Evolution]]
+- More in AI workflow: [[Building Viral Roblox Game w AI (pretty easy)]] · [[Building a Viral Roblox Game w ONLY AI]] · [[Can AI Make an Entire Roblox Creature Capture Game (3D Models, Map, Code)]] · [[Can AI Make an Entire Roblox Incremental Game (Art, 3D Models, Code)]] · [[How Big Studios Develop on Roblox]] · [[How to Make a Roblox Game With AI (Claude Opus 5.5 Full Tutorial)]] · [[How to make Roblox Games Using Claude]] · [[Roblox Studio Has Custom Skills Now (Here's How To Make One)]]
+<!-- related:end -->

@@ -30,6 +30,9 @@ Config.Stations = {
 	{ Id = 5, Name = "Industrial Cannon", Model = "Cannon06_Industrial", Gain = 50,  Rebirths = 8 },
 	{ Id = 6, Name = "Golden Cannon",     Model = "Cannon05_Golden",     Gain = 125, Rebirths = 10 },
 	{ Id = 7, Name = "Dragon Cannon",     Model = "Cannon19_Dragon",     Gain = 40,  Rebirths = 0, Pass = "VIP" },
+	-- 8th station (Alex, Oct 30). Ids are list positions, so it goes after the VIP one;
+	-- BuildWorld1 still places the VIP booth last in the row.
+	{ Id = 8, Name = "Plasma Cannon",     Model = "Cannon09_Plasma",     Gain = 300, Rebirths = 12 },
 }
 
 ---------------------------------------------------------------------------
@@ -272,6 +275,32 @@ function Config.GetCannon(id)
 end
 
 ---------------------------------------------------------------------------
+-- Cannonballs: shown on the stand in the lobby, one per pad (lower row first,
+-- left to right). Bought once with Cash, then picked; the picked one
+-- is the ball your cannon fires and adds its Cash bonus to every launch (Alex, Oct 30).
+---------------------------------------------------------------------------
+Config.Balls = {
+	{ Id = "Classic",  Name = "Classic",  Price = 0,         CashBonus = 0,    Color = Color3.fromRGB(55, 60, 75),    Band = Color3.fromRGB(255, 200, 60) },
+	{ Id = "Bronze",   Name = "Bronze",   Price = 500,       CashBonus = 0.05, Color = Color3.fromRGB(190, 110, 55),  Band = Color3.fromRGB(255, 220, 150) },
+	{ Id = "Silver",   Name = "Silver",   Price = 2500,      CashBonus = 0.1,  Color = Color3.fromRGB(200, 210, 225), Band = Color3.fromRGB(90, 160, 255) },
+	{ Id = "Gold",     Name = "Gold",     Price = 10000,     CashBonus = 0.15, Color = Color3.fromRGB(255, 200, 40),  Band = Color3.fromRGB(255, 255, 255) },
+	{ Id = "Ruby",     Name = "Ruby",     Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
+	{ Id = "Emerald",  Name = "Emerald",  Price = 250000,    CashBonus = 0.3,  Color = Color3.fromRGB(40, 200, 110),  Band = Color3.fromRGB(190, 255, 210) },
+	{ Id = "Ocean",    Name = "Ocean",    Price = 1000000,   CashBonus = 0.4,  Color = Color3.fromRGB(40, 140, 240),  Band = Color3.fromRGB(150, 240, 255) },
+	{ Id = "Frost",    Name = "Frost",    Price = 5000000,   CashBonus = 0.5,  Color = Color3.fromRGB(190, 235, 255), Band = Color3.fromRGB(70, 180, 255) },
+	{ Id = "Magma",    Name = "Magma",    Price = 25000000,  CashBonus = 0.75, Color = Color3.fromRGB(60, 25, 25),    Band = Color3.fromRGB(255, 120, 30) },
+	{ Id = "Galaxy",   Name = "Galaxy",   Price = 100000000, CashBonus = 1,    Color = Color3.fromRGB(70, 30, 140),   Band = Color3.fromRGB(255, 110, 240) },
+}
+
+function Config.GetBall(id)
+	for _, b in ipairs(Config.Balls) do
+		if b.Id == id then
+			return b
+		end
+	end
+end
+
+---------------------------------------------------------------------------
 -- Robux: gamepasses and developer products (paste ids from Creator Hub)
 ---------------------------------------------------------------------------
 Config.Passes = {
@@ -396,11 +425,24 @@ Config.LEADERBOARDS = {
 Config.LEADERBOARD_REFRESH = 60
 
 -- Sound ids ("rbxassetid://123"). Empty = silent. Music loops in the lobby.
+-- Sound ids by name (GameClient/Sfx plays them). "" = Roblox's built-in stand-in plays (or nothing).
+-- Never invent an id: each one is either Alex's own upload or a page we read.
+-- Button sounds: upload cannon-evolution/assets/sfx/UI_*.ogg (Kenney Interface Sounds, CC0) with
+-- Asset Manager > Bulk Import, then paste each rbxassetid here.
 Config.Sounds = {
-	Click = "",
-	Open = "",
-	Hatch = "",
+	Click = "", -- UI_Click.ogg (Kenney drop_002): every button press
+	Hover = "", -- UI_Hover.ogg (Kenney select_002): mouse over a button, very quiet
+	Open = "", -- UI_Open.ogg (Kenney maximize_009): a panel opens
+	Close = "", -- UI_Close.ogg (Kenney minimize_009): a panel closes
+	Confirm = "", -- UI_Confirm.ogg (Kenney confirmation_001): buy, claim, equip
+	Error = "", -- UI_Error.ogg (Kenney error_007): can't afford / not yet
+	Tab = "", -- UI_Tab.ogg (Kenney switch_002): tabs and toggles
+	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
+	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
+	Hatch = "rbxassetid://9116384799",
 	Reward = "",
+	Rebirth = "",
+	Coin = "",
 	Shot = "",
 	Launch = "",
 	Skip = "",
@@ -422,6 +464,8 @@ Config.DefaultData = {
 	NextPetUid = 1,
 	Cannons = { Starter = true },
 	EquippedCannon = "Starter",
+	Balls = { Classic = true },
+	EquippedBall = "Classic",
 	Boosts = {}, -- [boostId] = seconds remaining
 	Products = {}, -- owned product grants that are permanent (cannons), plus receipt ids
 	Stats = { Shots = 0, Launches = 0, Hatches = 0, CashEarned = 0, Rebirths = 0 },
@@ -464,7 +508,8 @@ function Config.PowerMultiplier(data)
 end
 
 function Config.CashMultiplier(data)
-	return (1 + data.Rebirths * Config.REBIRTH_CASH_BONUS) * (1 + Config.Level(data, "Cash") * 0.10)
+	local ball = Config.GetBall(data.EquippedBall)
+	return (1 + data.Rebirths * Config.REBIRTH_CASH_BONUS) * (1 + Config.Level(data, "Cash") * 0.10) * (1 + (ball and ball.CashBonus or 0))
 end
 
 function Config.ShotInterval(data)

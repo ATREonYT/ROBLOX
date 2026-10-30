@@ -69,3 +69,10 @@ Builds an anime-style skill cutscene (charge skill plus storm skill) by promptin
 - Neon-material swap trick for rarity glow: toggle a glowing variant of a brainrot's accessory per tier in a steal game (inferred).
 - Use the black-and-white ink impact frame flashed via ImageLabel for a "legendary steal" or boss-kill moment (inferred).
 - Keep the conversation-paste handoff in mind when switching between Claude and Codex mid-project.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[05 VFX]]
+- More in VFX: [[Claude Opus 4.7 Just Built My Roblox VFX… (Ice Slash Effect Tutorial)]] · [[How I Made Anime Dragon Skill in Roblox Studio Using Claude MCP]] · [[How to Make VFX in Roblox with AI (Claude Opus 5.5 + FREE SKILL)]]
+<!-- related:end -->

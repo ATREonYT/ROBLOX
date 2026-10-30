@@ -30,8 +30,8 @@ What makes kids click, stay and come back. Pair with [[10 Business, Monetization
 - The vault already has `steal-an-egg/` and `snatch-a-brainrot/` projects; check those first.
 
 ## Already in the vault (read these)
-- `reports/Cartoony Roblox building UI and animation.md`, section **"Retention, not spectacle, now decides who earns"**. Since June 2026 Roblox's algorithm scores games on **return days, early bounce and playtime (capped at 60 min) over 28 days**, not clicks. The 2025 mega-hits lost over 99% of their peak players.
-- `research_notes/Front page feel and gamey stages/plus_one_and_steal_games.md`, covering +1 and steal-game patterns.
+- [[Cartoony Roblox building UI and animation]], section **"Retention, not spectacle, now decides who earns"**. Since June 2026 Roblox's algorithm scores games on **return days, early bounce and playtime (capped at 60 min) over 28 days**, not clicks. The 2025 mega-hits lost over 99% of their peak players.
+- [[plus_one_and_steal_games]], covering +1 and steal-game patterns.
 
 ## What kids respond to (synthesis)
 1. **Understand it in 10 seconds:** one big obvious action, and a thumbnail that shows it.
@@ -42,3 +42,14 @@ What makes kids click, stay and come back. Pair with [[10 Business, Monetization
 6. **Show off:** leaderboards facing spawn, auras, titles, rebirth badges.
 7. **A reason to come back tomorrow:** daily rewards, playtime gifts, a weekly event, limited items.
 8. **Juice on everything:** sound + shake + particles + bounce on each reward.
+
+<!-- related:start -->
+## Step-by-step notes from the transcripts
+
+- [[I Made 4 Roblox Games with AI… Did I Get Rich?]]
+- [[My Roblox Game Made $43,292 (Here's Exactly How to Monetize Yours)]]
+- [[Roblox Game Design Explained Like You're 5 Yrs Old]]
+- [[Why 90% of Roblox Games Never Get Players]]
+
+Build with these: [[00 Build Router]]
+<!-- related:end -->

@@ -51,3 +51,11 @@ No AI prompts. Mentions lighting presets possibly in description; toolbox skybox
 - Randomized texture and color-variation script makes repeated simulator tiles or plots feel less cloned.
 - Highlight on the player (or on stolen items) could mark targets in steal-style games (inferred).
 - Raise contrast and saturation in ColorCorrection to keep bright simulator maps crisp.
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[13 Cartoony & Low-Poly Building]] · [[04 Building, Maps & 3D Models]]
+- Playbooks: [[Blueprint - Egg Run]] · [[16 Cartoony Kid-Appeal Checklist]]
+- More in Cartoony building and lighting: [[How to Build PRO Roblox Maps!]] · [[How to Light a Low Poly Map (Roblox Studio)]] · [[How to Make Stylized Trees & Assets NEWEST METHOD ULTIMATE Tutorial {Roblox Studio}]] · [[How to Model a Low Poly Roblox Pet (Blender Tutorial)]] · [[How to make AMAZING Low Poly Roblox Models]] · [[How to make CARTOON LIGHTING in Roblox Studio]] · [[LOW-POLY TERRAIN TUTORIAL ROBLOX+BLENDER]]
+<!-- related:end -->

@@ -85,17 +85,21 @@ local function freshSaveTest()
 	return IS_STUDIO and workspace:GetAttribute("FreshSaveTest") == true
 end
 
+-- returns true once the data is safely stored (or there is nothing to store in the fresh-save test)
 local function save(player)
 	local profile = profiles[player]
-	if not (profile and profile.Loaded) or freshSaveTest() then
-		return
+	if not (profile and profile.Loaded) then
+		return false
+	end
+	if freshSaveTest() then
+		return true
 	end
 	profile.Data.LastOnline = os.time()
-	withRetries(function()
+	return (withRetries(function()
 		store:UpdateAsync("Player_" .. player.UserId, function()
 			return profile.Data
 		end)
-	end)
+	end))
 end
 
 ---------------------------------------------------------------------------
@@ -473,8 +477,9 @@ local function launch(player)
 	end
 	-- step back out of the Launch Zone so walking in again throws again
 	if root and launchZone and (root.Position - launchZone.Position).Magnitude < 20 then
-		local back = launchZone.Position + Config.LAUNCH_DIRECTION.Unit * (launchZone.Size.X / 2 + 6) + Vector3.new(0, 3, 0)
-		player.Character:PivotTo(CFrame.lookAt(back, back - Config.LAUNCH_DIRECTION.Unit))
+		-- the zone's lobby side (the cannon and the water are on the other side), facing the cannon
+		local back = launchZone.Position - Config.LAUNCH_DIRECTION.Unit * (launchZone.Size.X / 2 + 6) + Vector3.new(0, 3, 0)
+		player.Character:PivotTo(CFrame.lookAt(back, back + Config.LAUNCH_DIRECTION.Unit))
 	end
 	player:SetAttribute("Launching", false)
 end
@@ -761,6 +766,37 @@ local function equipCannon(player, id)
 end
 
 ---------------------------------------------------------------------------
+-- Cannonballs (Cash, picked on the lobby stand)
+---------------------------------------------------------------------------
+local function buyBall(player, id)
+	local data = profiles[player].Data
+	local ball = Config.GetBall(id)
+	if not ball or data.Balls[id] then
+		return false
+	end
+	if data.Cash < ball.Price then
+		return false, "Not enough Cash!"
+	end
+	data.Cash -= ball.Price
+	data.Balls[id] = true
+	data.EquippedBall = id
+	player:SetAttribute("Ball", id) -- every client draws your launch with it
+	markDirty(player)
+	return true, ball.Name .. " Cannonball unlocked!"
+end
+
+local function equipBall(player, id)
+	local data = profiles[player].Data
+	if not (Config.GetBall(id) and data.Balls[id]) then
+		return false
+	end
+	data.EquippedBall = id
+	player:SetAttribute("Ball", id)
+	markDirty(player)
+	return true
+end
+
+---------------------------------------------------------------------------
 -- Worlds
 ---------------------------------------------------------------------------
 local function teleportToWorld(player, worldId)
@@ -997,15 +1033,18 @@ MarketplaceService.ProcessReceipt = function(receipt)
 	if not profile then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	if profile.Data.Receipts[receipt.PurchaseId] then
-		return Enum.ProductPurchaseDecision.PurchaseGranted
+	-- answer "granted" only once the purchase is stored; a retry of a purchase already given but not yet
+	-- stored just tries the save again, so it is never given twice
+	if not profile.Data.Receipts[receipt.PurchaseId] then
+		local key = productById[receipt.ProductId]
+		if not key or not grantProduct(player, key) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		profile.Data.Receipts[receipt.PurchaseId] = true
 	end
-	local key = productById[receipt.ProductId]
-	if not key or not grantProduct(player, key) then
+	if not save(player) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	profile.Data.Receipts[receipt.PurchaseId] = true
-	save(player)
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
@@ -1216,6 +1255,8 @@ local actions = {
 	DeletePet = deletePet,
 	BuyCannon = buyCannon,
 	EquipCannon = equipCannon,
+	BuyBall = buyBall,
+	EquipBall = equipBall,
 	Teleport = teleportToWorld,
 	ClaimMission = claimMission,
 	ClaimDaily = claimDaily,
@@ -1302,7 +1343,11 @@ task.spawn(function()
 		desc.HeadColor, desc.LeftArmColor, desc.RightArmColor = skin, skin, skin
 		desc.TorsoColor = Color3.fromRGB(13, 105, 172)
 		desc.LeftLegColor, desc.RightLegColor = Color3.fromRGB(164, 189, 71), Color3.fromRGB(164, 189, 71)
-		return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+		-- the Async name replaces the old one; fall back where Studio doesn't have it yet
+		local okAsync, model = pcall(function()
+			return Players:CreateHumanoidModelFromDescriptionAsync(desc, Enum.HumanoidRigType.R15)
+		end)
+		return okAsync and model or Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
 	end)
 	if ok and guide then
 		guide.Name = "TutorialGuide"
@@ -1337,6 +1382,7 @@ local function onPlayerAdded(player)
 	end
 	local data = reconcile(type(stored) == "table" and stored or {}, Config.DefaultData)
 	profiles[player] = { Data = data, Loaded = true, JoinTime = os.clock(), PlaytimeClaimed = {}, Passes = {} }
+	player:SetAttribute("Ball", data.EquippedBall)
 	loadPasses(player)
 	if not player.Parent then
 		profiles[player] = nil

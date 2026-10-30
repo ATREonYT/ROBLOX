@@ -87,3 +87,11 @@ No AI prompts. Websites: UI Resources (textures/icons), Figma, Gumroad (Kek), UI
 - Rarity colors via swapping gradient colors (orange legendary, purple epic in the video); extend to our own tiers (inferred).
 - Build in Figma once as components then export slices for Roblox ImageLabels with UICorner/UIStroke for in-engine versions (inferred).
 - Use the "Equip Best", "Delete Mode", "Filter", "Exit" buttons as a template for +1 and steal-style inventory screens (inferred).
+
+<!-- related:start -->
+## Related
+
+- Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[07 UI & GUI]] · [[14 Cartoony UI & Juice]]
+- Playbooks: [[16 Cartoony Kid-Appeal Checklist]]
+- More in UI: [[How To Make Simulator UI Buttons In Figma Roblox UI Tutorial]] · [[Make INSANE Roblox GUI Assets with AI! (GPT Image 2)]] · [[Make Your Roblox UI Buttons SUPER Smooth in 8 Minutes!]]
+<!-- related:end -->
