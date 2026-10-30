@@ -3,7 +3,7 @@
 	Builds the 2-tier cannonball pedestal from models/GunStand_2Tiers.glb, piece
 	for piece: the file is made only of boxes and cylinders, so each one becomes
 	a Part with the same size, position and colour (glowing pieces are Neon).
-	It stands against the right-hand wall of the lobby, beside spawn.
+	It stands against the -Z wall by the water, facing into the lobby.
 	Safe to run again: it replaces workspace.CannonBallStand.
 ]]
 local MATS = {{110,124,164,false},{240,244,252,false},{138,150,186,false},{180,188,214,false},{178,188,214,false},{93,109,153,false},{240,246,255,true},{194,200,224,false},{244,246,255,false},{228,232,244,false},{244,246,252,false},{255,160,214,true},{150,250,172,true},{240,132,194,false},{116,222,146,false},{153,51,108,false},{27,153,68,false},{226,64,146,false},{26,156,64,false},{255,112,186,true},{255,112,186,false},{64,220,104,true},{64,220,104,false}}
@@ -263,5 +263,25 @@ for _, d in ipairs(P) do
 	p.Parent = model
 end
 model.WorldPivot = CFrame.new(-125.000, 8.430, -104.050) * CFrame.Angles(0, math.rad(-90), 0)
+-- Oct 30: stands where Alex put his imported mesh of it, against the -Z wall by the water,
+-- turned round to face into the lobby (on your right as you face the water)
+local AT = Vector3.new(-140.64, 0, -189.74)
+local lo, hi = Vector3.new(math.huge, 0, math.huge), Vector3.new(-math.huge, 0, -math.huge)
+for _, p in ipairs(model:GetChildren()) do
+	lo = Vector3.new(math.min(lo.X, p.Position.X), 0, math.min(lo.Z, p.Position.Z))
+	hi = Vector3.new(math.max(hi.X, p.Position.X), 0, math.max(hi.Z, p.Position.Z))
+end
+local move = CFrame.new(AT) * CFrame.Angles(0, math.pi, 0) * CFrame.new(-(lo + hi) / 2)
+for _, p in ipairs(model:GetChildren()) do
+	p.CFrame = move * p.CFrame
+end
+model.WorldPivot = move * model.WorldPivot
+-- the pads' state parts start purple (the game turns the picked one green, BallStand.lua)
+local PURPLE = { StateGlow = Color3.fromRGB(190, 170, 255), StateMat = Color3.fromRGB(150, 130, 240), StateStrip = Color3.fromRGB(95, 55, 200), StateShade = Color3.fromRGB(75, 40, 165), StateTop = Color3.fromRGB(115, 75, 225) }
+for _, p in ipairs(model:GetChildren()) do
+	if PURPLE[p.Name] then
+		p.Color = (p.Name == "StateTop" and p.Material == Enum.Material.Neon) and Color3.fromRGB(120, 80, 245) or PURPLE[p.Name]
+	end
+end
 model.Parent = workspace
 return #model:GetChildren() .. " parts"

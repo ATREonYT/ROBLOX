@@ -17,7 +17,7 @@
 local ServerStorage = game:GetService("ServerStorage")
 local Config = require(game.ReplicatedStorage.GameConfig)
 
-local SIDE = -1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side
+local SIDE = 1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side (Alex, Oct 30: training on your left as you face the water, the cannonball stand on your right)
 local CANNON_HEIGHT = 6 -- studs; a default character is ~5
 local PLINTH = 1.2 -- the cannon stands on a plinth in its booth's colours, so it shows above the counter (Alex, Oct 30)
 local TARGET_DISTANCE = 12 -- muzzle to target
@@ -675,7 +675,7 @@ stroke.Color = Color3.fromRGB(60, 30, 90)
 stroke.Parent = label
 local board = Instance.new("BillboardGui")
 board.Size = UDim2.fromOffset(220, 50)
-board.StudsOffset = Vector3.new(0, 7, 0)
+board.StudsOffset = Vector3.new(0, 3, 0) -- under the cannon's name tag, not on top of it
 board.LightInfluence = 0
 board.MaxDistance = 250
 board.Parent = zone

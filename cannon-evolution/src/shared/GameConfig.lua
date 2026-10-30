@@ -278,18 +278,20 @@ end
 -- Cannonballs: shown on the stand in the lobby, one per pad (lower row first,
 -- left to right). Bought once with Cash, then picked; the picked one
 -- is the ball your cannon fires and adds its Cash bonus to every launch (Alex, Oct 30).
+-- Model = true: Alex's imported ball (ReplicatedStorage.CannonBalls, named by Id) is used; the
+-- others are drawn from Color and Band, which also tint the trail and the shop card.
 ---------------------------------------------------------------------------
 Config.Balls = {
-	{ Id = "Classic",  Name = "Classic",  Price = 0,         CashBonus = 0,    Color = Color3.fromRGB(55, 60, 75),    Band = Color3.fromRGB(255, 200, 60) },
-	{ Id = "Bronze",   Name = "Bronze",   Price = 500,       CashBonus = 0.05, Color = Color3.fromRGB(190, 110, 55),  Band = Color3.fromRGB(255, 220, 150) },
-	{ Id = "Silver",   Name = "Silver",   Price = 2500,      CashBonus = 0.1,  Color = Color3.fromRGB(200, 210, 225), Band = Color3.fromRGB(90, 160, 255) },
-	{ Id = "Gold",     Name = "Gold",     Price = 10000,     CashBonus = 0.15, Color = Color3.fromRGB(255, 200, 40),  Band = Color3.fromRGB(255, 255, 255) },
-	{ Id = "Ruby",     Name = "Ruby",     Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
-	{ Id = "Emerald",  Name = "Emerald",  Price = 250000,    CashBonus = 0.3,  Color = Color3.fromRGB(40, 200, 110),  Band = Color3.fromRGB(190, 255, 210) },
-	{ Id = "Ocean",    Name = "Ocean",    Price = 1000000,   CashBonus = 0.4,  Color = Color3.fromRGB(40, 140, 240),  Band = Color3.fromRGB(150, 240, 255) },
-	{ Id = "Frost",    Name = "Frost",    Price = 5000000,   CashBonus = 0.5,  Color = Color3.fromRGB(190, 235, 255), Band = Color3.fromRGB(70, 180, 255) },
-	{ Id = "Magma",    Name = "Magma",    Price = 25000000,  CashBonus = 0.75, Color = Color3.fromRGB(60, 25, 25),    Band = Color3.fromRGB(255, 120, 30) },
-	{ Id = "Galaxy",   Name = "Galaxy",   Price = 100000000, CashBonus = 1,    Color = Color3.fromRGB(70, 30, 140),   Band = Color3.fromRGB(255, 110, 240) },
+	{ Id = "Wood",    Name = "Wood",    Price = 0,         CashBonus = 0,    Model = true, Color = Color3.fromRGB(225, 110, 40),  Band = Color3.fromRGB(150, 65, 25) },
+	{ Id = "Stone",   Name = "Stone",   Price = 500,       CashBonus = 0.05, Model = true, Color = Color3.fromRGB(175, 170, 165), Band = Color3.fromRGB(115, 110, 105) },
+	{ Id = "Steel",   Name = "Steel",   Price = 2500,      CashBonus = 0.1,  Model = true, Color = Color3.fromRGB(230, 232, 240), Band = Color3.fromRGB(150, 160, 185) },
+	{ Id = "Gold",    Name = "Gold",    Price = 10000,     CashBonus = 0.15, Color = Color3.fromRGB(255, 200, 40),  Band = Color3.fromRGB(255, 255, 255) },
+	{ Id = "Ruby",    Name = "Ruby",    Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
+	{ Id = "Neon",    Name = "Neon",    Price = 250000,    CashBonus = 0.3,  Model = true, Color = Color3.fromRGB(45, 20, 70),    Band = Color3.fromRGB(210, 70, 255) },
+	{ Id = "Frost",   Name = "Frost",   Price = 1000000,   CashBonus = 0.4,  Color = Color3.fromRGB(190, 235, 255), Band = Color3.fromRGB(70, 180, 255) },
+	{ Id = "Rainbow", Name = "Rainbow", Price = 5000000,   CashBonus = 0.5,  Model = true, Color = Color3.fromRGB(255, 190, 40),  Band = Color3.fromRGB(255, 80, 60) },
+	{ Id = "Hacker",  Name = "Hacker",  Price = 25000000,  CashBonus = 0.75, Model = true, Color = Color3.fromRGB(15, 30, 20),    Band = Color3.fromRGB(60, 255, 100) },
+	{ Id = "Galaxy",  Name = "Galaxy",  Price = 100000000, CashBonus = 1,    Model = true, Color = Color3.fromRGB(50, 25, 95),    Band = Color3.fromRGB(200, 110, 255) },
 }
 
 function Config.GetBall(id)
@@ -308,12 +310,13 @@ Config.Passes = {
 	DoubleCash  = { Id = 0, Name = "2x Cash",     Icon = "DoubleCash",  Price = 399, Desc = "Double Cash from every launch" },
 	Lucky       = { Id = 0, Name = "Lucky",       Icon = "Lucky",       Price = 249, Desc = "2x Luck when hatching eggs" },
 	TripleOpen  = { Id = 0, Name = "Triple Open", Icon = "TripleOpen",  Price = 349, Desc = "Hatch 3 eggs at once" },
+	OctoOpen    = { Id = 0, Name = "8x Open",     Icon = "TripleOpen",  Price = 799, Desc = "Hatch 8 eggs at once" },
 	AutoCollect = { Id = 0, Name = "Auto Collect", Icon = "AutoCollect", Price = 349, Desc = "Collect orbs from far away", ComingSoon = true }, -- orbs are off, so it gives nothing yet
 	ExtraEquip  = { Id = 0, Name = "+2 Pets",     Icon = "ExtraEquip",  Price = 199, Desc = "Equip 2 more pets" },
 	VIP         = { Id = 0, Name = "VIP",         Icon = "VIP",         Price = 299, Desc = "Dragon Cannon station + 1.5x Gems" },
 	AutoLaunch  = { Id = 0, Name = "Auto Launch", Icon = "Trophy",      Price = 25,  Desc = "Launch automatically" },
 }
-Config.PassOrder = { "DoublePower", "DoubleCash", "Lucky", "TripleOpen", "AutoCollect", "ExtraEquip", "VIP", "AutoLaunch" }
+Config.PassOrder = { "DoublePower", "DoubleCash", "Lucky", "TripleOpen", "OctoOpen", "AutoCollect", "ExtraEquip", "VIP", "AutoLaunch" }
 
 -- Grant: what the server gives when the product is bought.
 Config.Products = {
@@ -430,22 +433,33 @@ Config.LEADERBOARD_REFRESH = 60
 -- Button sounds: upload cannon-evolution/assets/sfx/UI_*.ogg (Kenney Interface Sounds, CC0) with
 -- Asset Manager > Bulk Import, then paste each rbxassetid here.
 Config.Sounds = {
-	Click = "", -- UI_Click.ogg (Kenney drop_002): every button press
-	Hover = "", -- UI_Hover.ogg (Kenney select_002): mouse over a button, very quiet
-	Open = "", -- UI_Open.ogg (Kenney maximize_009): a panel opens
-	Close = "", -- UI_Close.ogg (Kenney minimize_009): a panel closes
-	Confirm = "", -- UI_Confirm.ogg (Kenney confirmation_001): buy, claim, equip
-	Error = "", -- UI_Error.ogg (Kenney error_007): can't afford / not yet
-	Tab = "", -- UI_Tab.ogg (Kenney switch_002): tabs and toggles
+	-- Button sounds: Roblox's own "Roblox_UI_" set (by Roblox, public, no upload), found and load-checked in
+	-- Studio's Toolbox on Oct 30 after Alex found the built-in clicks harsh. The Kenney files in assets/sfx
+	-- (UI_*.ogg, CC0) are the alternative if uploaded.
+	-- Alex, Oct 30: "find out what sounds other popular games use". Big simulators use this same licensed library
+	-- (Pro Sound Effects / APM): a bubble "pop" click, a coin bounce, a dry boom. Found with AssetService:SearchAudio.
+	Click = "rbxassetid://9112872239", -- "Small Bubbles Water Surface Float Up Pop 5 (SFX)", ProSoundEffects (Sfx plays 0.25 s)
+	Hover = "", -- silent: a tick on every hover was too much
+	Open = "rbxassetid://15675012262", -- "Roblox_UI_Whoosh_04", 0.35 s
+	Close = "rbxassetid://15675028888", -- "Roblox_UI_Whoosh_02", 0.49 s
+	Confirm = "rbxassetid://9038924756", -- "Happy Forever - Hit3", APMOfficial, ~2 s (Sfx plays its first 0.6 s)
+	Error = "rbxassetid://15675075163", -- "Roblox_UI_Delete", 0.61 s
+	Tab = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s
 	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
 	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
 	Hatch = "rbxassetid://9116384799",
-	Reward = "",
-	Rebirth = "",
-	Coin = "",
-	Shot = "",
-	Launch = "",
-	Skip = "",
+	-- Roblox's free licensed library too (found with Studio's Toolbox search on Oct 30, each loaded in Studio;
+	-- picked by title and length, not yet heard by Alex: swap any one by changing its id):
+	Reward = "rbxassetid://1840076509", -- "Through the Roof (sting)", APMOfficial, 2.25 s: a playful organ sting
+	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
+	Rebirth = "rbxassetid://1840018171",
+	Unlock = "rbxassetid://9116405618", -- "Magic Poofs Short Breathy Bursts Punchy 2 (SFX)", ProSoundEffects
+	Coin = "rbxassetid://9113848469", -- "Coin Bounce 3 (SFX)", ProSoundEffects: Sfx plays only its first 0.35 s
+	Shot = "rbxassetid://9043341682", -- "DRY BOOM 01", APMOfficial, ~1 s (Sfx plays 0.8 s); assets/sfx/Shot.ogg (crack + boom) if uploaded
+	Launch = "rbxassetid://9125805579", -- "Rising Whoosh Hissing Build Up Ascending Swo (SFX)", ProSoundEffects, 1.14 s
+	Skip = "rbxassetid://9120589933", -- "Water Splash Splashes Splats Light 5 (SFX)", ProSoundEffects, 0.41 s
+	-- the ball's final landing (Alex, Oct 30: "a big splash sound"); found with Studio's Creator Store search, public and free
+	Splash = "rbxassetid://9120585530", -- "Water Splash Big Water Splash Dive In 3 (SFX)", ProSoundEffects, 2.7 s, Sfx cuts it at 1 s
 	Music = "",
 }
 
@@ -464,8 +478,8 @@ Config.DefaultData = {
 	NextPetUid = 1,
 	Cannons = { Starter = true },
 	EquippedCannon = "Starter",
-	Balls = { Classic = true },
-	EquippedBall = "Classic",
+	Balls = { Wood = true },
+	EquippedBall = "Wood",
 	Boosts = {}, -- [boostId] = seconds remaining
 	Products = {}, -- owned product grants that are permanent (cannons), plus receipt ids
 	Stats = { Shots = 0, Launches = 0, Hatches = 0, CashEarned = 0, Rebirths = 0 },

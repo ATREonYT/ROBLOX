@@ -66,11 +66,19 @@ return function(ctx)
 		for i, ball in ipairs(Config.Balls) do
 			local card, grad = Kit.card({ Button = true, Color = Kit.Colors.Purple, Order = i, Parent = scroll, ZIndex = 25 })
 			Kit.movingPattern(card, { Lite = true, Texture = "StudTile", Speed = 10, ImageTransparency = 0.8, ZIndex = 25 })
-			local art = drawBall(card, ball, 70, 50)
+			-- Alex's imported ball model where there is one (ReplicatedStorage.CannonBalls), a drawn ball otherwise
+			local balls = ReplicatedStorage:FindFirstChild("CannonBalls")
+			local model = ball.Model and balls and balls:FindFirstChild(ball.Id)
+			local art
+			if model then
+				art = Kit.viewport(card, model, { Size = UDim2.fromOffset(78, 78), Position = UDim2.new(0.5, 0, 0, 58), Spin = 30, FitLargest = true, Zoom = 0.85, ZIndex = 27 })
+			else
+				art = drawBall(card, ball, 54, 58)
+			end
 			if ball.CashBonus > 0 then
 				Kit.text({ Text = "+" .. math.floor(ball.CashBonus * 100 + 0.5) .. "% Cash", Size = 16, Color = Kit.Colors.Yellow, FrameSize = UDim2.fromOffset(110, 20), Position = UDim2.fromOffset(6, 4), AlignX = Enum.TextXAlignment.Left, ZIndex = 30, Parent = card })
 			end
-			Kit.text({ Text = ball.Name, Size = 22, Scaled = true, MaxSize = 22, FrameSize = UDim2.new(1, -8, 0, 24), Position = UDim2.new(0.5, 0, 0, 92), Anchor = Vector2.new(0.5, 0), ZIndex = 28, Parent = card })
+			Kit.text({ Text = ball.Name, Size = 22, Scaled = true, MaxSize = 22, FrameSize = UDim2.new(1, -8, 0, 24), Position = UDim2.new(0.5, 0, 0, 98), Anchor = Vector2.new(0.5, 0), ZIndex = 28, Parent = card })
 			local status = Kit.card({ Color = Kit.Colors.Green, Size = UDim2.new(1, -12, 0, 26), Position = UDim2.new(0.5, 0, 1, -6), Anchor = Vector2.new(0.5, 1), Radius = 8, StrokeSize = 2.5, ZIndex = 28, Parent = card })
 			local statusText = Kit.text({ Text = "", Size = 18, Scaled = true, MaxSize = 18, FrameSize = UDim2.new(1, -6, 1, -4), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 29, Parent = status })
 			card.Activated:Connect(function()
@@ -83,9 +91,9 @@ return function(ctx)
 				local ok = ctx.Request(data.Balls[ball.Id] and "EquipBall" or "BuyBall", ball.Id)
 				if ok then
 					-- the new ball hops, like on the stand
-					Kit.tween(art, 0.12, { Position = UDim2.new(0.5, 0, 0, 38) }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+					Kit.tween(art, 0.12, { Position = UDim2.new(0.5, 0, 0, 46) }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 					task.delay(0.12, function()
-						Kit.tween(art, 0.3, { Position = UDim2.new(0.5, 0, 0, 50) }, Enum.EasingStyle.Bounce)
+						Kit.tween(art, 0.3, { Position = UDim2.new(0.5, 0, 0, 58) }, Enum.EasingStyle.Bounce)
 					end)
 				end
 			end)
@@ -135,7 +143,7 @@ return function(ctx)
 				end
 				local model = models and models:FindFirstChild(cannon.Model)
 				if model then
-					Kit.viewport(card, model, { Size = UDim2.new(1, -10, 0, 96), Position = UDim2.new(0.5, 0, 0, 52), ZIndex = 27 })
+					Kit.viewport(card, model, { Size = UDim2.new(1, -10, 0, 96), Position = UDim2.new(0.5, 0, 0, 52), Yaw = 35, ZIndex = 27 }) -- cannon models face +Z, unlike pets
 				else
 					Kit.icon("Evolve", { Size = UDim2.fromOffset(80, 80), Position = UDim2.new(0.5, 0, 0, 52), Anchor = Vector2.new(0.5, 0.5), ZIndex = 27, Parent = card })
 				end

@@ -37,7 +37,10 @@ local root = Kit.new("Frame", {
 local uiScale = Kit.new("UIScale", { Parent = root })
 local function rescale()
 	local view = Workspace.CurrentCamera.ViewportSize
-	local s = math.min(view.X / 1280, view.Y / 720)
+	-- 0.82: the whole UI a size smaller so it doesn't crowd the screen (Alex, Oct 30). Phones (short screens) keep
+	-- almost full size, or the text gets too small to read and tap.
+	local fit = view.Y < 500 and 0.95 or 0.82
+	local s = math.min(view.X / 1280, view.Y / 720) * fit
 	uiScale.Scale = s
 	root.Size = UDim2.fromOffset(view.X / s, view.Y / s)
 end
@@ -85,6 +88,16 @@ local ctx = {
 
 local current = nil
 
+-- The Power bar along the bottom steps aside while a panel is open, so it never sits on the panel's buttons (seen
+-- in Play, Oct 30)
+local function showHudBottom(on)
+	local hud = root:FindFirstChild("HUD")
+	local bar = hud and hud:FindFirstChild("PowerBar")
+	if bar then
+		bar.Visible = on
+	end
+end
+
 function ctx.Close()
 	if not current then
 		return
@@ -104,6 +117,7 @@ function ctx.Close()
 		end
 		if not current then
 			dim.Visible = false
+			showHudBottom(true)
 		end
 	end)
 end
@@ -136,6 +150,7 @@ function ctx.Open(name, tab, arg)
 	-- entrance: rises a little from below and pops past full size (Back Out, 0.26 s), from 0.75 not 0:
 	-- a big panel bouncing from nothing is too much (vault "UI Motion Language")
 	panel.Frame.Visible = true
+	showHudBottom(false)
 	local s = Kit.scale(panel.Frame)
 	s.Scale = 0.75
 	panel.Frame.Position = UDim2.fromScale(0.5, 0.6)

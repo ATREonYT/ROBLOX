@@ -338,24 +338,86 @@ return function(ctx)
 	end
 
 	local BALL_RADIUS = 1.4
+	-- a foam ring that rolls out over the water: a loop of short rounded tubes that grows, thins and fades,
+	-- lifting a little as it goes like a real ripple (plain white, no neon, so nothing flashes)
+	local function waveRing(pos, radius, duration, thick)
+		local SEGS = 24
+		local segs = {}
+		for i = 1, SEGS do
+			segs[i] = new("Part", {
+				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+				Shape = Enum.PartType.Cylinder, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(238, 250, 255),
+				Size = Vector3.new(0.5, thick, thick), Parent = workspace,
+			})
+		end
+		local start = os.clock()
+		local conn
+		conn = RunService.Heartbeat:Connect(function()
+			local u = math.min((os.clock() - start) / duration, 1)
+			local e = 1 - (1 - u) ^ 2
+			local r = 1.2 + (radius - 1.2) * e
+			local th = thick * (1 - 0.6 * u)
+			local lift = math.sin(u * math.pi) * 0.35
+			local fade = math.clamp((u - 0.35) / 0.65, 0, 1)
+			for i, seg in ipairs(segs) do
+				local a = (i / SEGS) * math.pi * 2
+				local at = pos + Vector3.new(math.cos(a) * r, lift, math.sin(a) * r)
+				seg.Size = Vector3.new(2 * math.pi * r / SEGS * 1.2, th, th)
+				seg.CFrame = CFrame.lookAt(at, at + Vector3.new(-math.sin(a), 0, math.cos(a))) * CFrame.Angles(0, math.rad(90), 0)
+				seg.Transparency = 0.1 + 0.9 * fade
+			end
+			if u >= 1 then
+				conn:Disconnect()
+				for _, seg in ipairs(segs) do
+					seg:Destroy()
+				end
+			end
+		end)
+	end
+
+	-- every skip on the water: a ripple ring and a few droplets
 	local function splash(pos, big)
-		local ring = new("Part", {
-			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-			Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = Color3.fromRGB(220, 245, 255),
-			Size = Vector3.new(0.2, 2, 2), Transparency = 0.25,
-			CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)),
-			Parent = workspace,
+		waveRing(pos, big and 9 or 5, big and 0.9 or 0.65, big and 0.7 or 0.45)
+		local holder = new("Part", {
+			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 1,
+			Size = Vector3.new(1, 0.2, 1), CFrame = CFrame.new(pos), Parent = workspace,
 		})
-		local size = big and 22 or 9
-		TweenService:Create(ring, TweenInfo.new(0.5, Enum.EasingStyle.Quad), { Size = Vector3.new(0.2, size, size), Transparency = 1 }):Play()
-		local emitter = new("ParticleEmitter", {
+		new("ParticleEmitter", {
 			Texture = "rbxasset://textures/particles/sparkles_main.dds", Color = ColorSequence.new(Color3.fromRGB(230, 248, 255)),
 			Speed = NumberRange.new(10, 20), SpreadAngle = Vector2.new(35, 35), Lifetime = NumberRange.new(0.35, 0.6),
-			Size = NumberSequence.new(1.1, 0), Acceleration = Vector3.new(0, -70, 0), EmissionDirection = Enum.NormalId.Right,
-			Rate = 0, Parent = ring,
+			Size = NumberSequence.new(1.1, 0), Acceleration = Vector3.new(0, -70, 0), EmissionDirection = Enum.NormalId.Top,
+			Rate = 0, Parent = holder,
+		}):Emit(big and 30 or 12)
+		Debris:AddItem(holder, 0.8)
+	end
+
+	-- the ball's final landing: a tall foamy splash and three ripple rings rolling out over the water (Alex, Oct 30)
+	local function bigSplash(pos)
+		for i = 0, 2 do
+			task.delay(i * 0.25, function()
+				waveRing(pos, 18 - i * 4, 1.4, 1.1 - i * 0.2)
+			end)
+		end
+		local column = new("Part", {
+			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 1,
+			Size = Vector3.new(3, 0.2, 3), CFrame = CFrame.new(pos), Parent = workspace,
 		})
-		emitter:Emit(big and 36 or 12)
-		Debris:AddItem(ring, 0.8)
+		-- foam shooting up and falling back
+		new("ParticleEmitter", {
+			Texture = "rbxasset://textures/particles/smoke_main.dds", Color = ColorSequence.new(Color3.fromRGB(245, 252, 255)),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.5), NumberSequenceKeypoint.new(1, 4.5) }),
+			Speed = NumberRange.new(22, 34), SpreadAngle = Vector2.new(14, 14), Lifetime = NumberRange.new(0.8, 1.2),
+			Acceleration = Vector3.new(0, -55, 0), EmissionDirection = Enum.NormalId.Top, Rate = 0, Parent = column,
+		}):Emit(26)
+		-- droplets flying out to the sides
+		new("ParticleEmitter", {
+			Texture = "rbxasset://textures/particles/sparkles_main.dds", Color = ColorSequence.new(Color3.fromRGB(220, 245, 255)),
+			Size = NumberSequence.new(1.2, 0), Speed = NumberRange.new(16, 28), SpreadAngle = Vector2.new(60, 60),
+			Lifetime = NumberRange.new(0.6, 1), Acceleration = Vector3.new(0, -70, 0), EmissionDirection = Enum.NormalId.Top,
+			Rate = 0, Parent = column,
+		}):Emit(40)
+		Debris:AddItem(column, 2.5)
 	end
 
 	local function popBanner(text, color)
@@ -393,8 +455,29 @@ return function(ctx)
 		flightGui.Enabled = false
 		setSideMenu(true)
 	end
+	-- the area walls only show while you fly: from the lobby they stacked up behind your cannon and
+	-- their names printed on top of the cannon's sign (play-test, Oct 30)
+	local function showBorders(on)
+		local folder = workspace:FindFirstChild("AreaBorders")
+		for _, b in ipairs(folder and folder:GetChildren() or {}) do
+			if b:IsA("BasePart") then
+				b.LocalTransparencyModifier = on and 0 or 1
+				for _, g in ipairs(b:GetChildren()) do
+					if g:IsA("SurfaceGui") then
+						g.Enabled = on
+					end
+				end
+			end
+		end
+	end
+	task.spawn(function()
+		workspace:WaitForChild("AreaBorders", 30)
+		showBorders(player:GetAttribute("Launching") == true)
+	end)
 	player:GetAttributeChangedSignal("Launching"):Connect(function()
-		if not player:GetAttribute("Launching") then
+		local on = player:GetAttribute("Launching") == true
+		showBorders(on)
+		if not on then
 			endFlight()
 		end
 	end)
@@ -596,13 +679,32 @@ return function(ctx)
 			Material = Enum.Material.SmoothPlastic, Color = look.Color, CFrame = CFrame.new(origin),
 			Parent = workspace,
 		})
-		local band = new("Part", {
-			Name = "Band", Shape = Enum.PartType.Cylinder, Size = Vector3.new(BALL_RADIUS * 0.35, BALL_RADIUS * 2.08, BALL_RADIUS * 2.08),
-			CanCollide = false, CanQuery = false, CanTouch = false, Massless = true,
-			Material = Enum.Material.SmoothPlastic, Color = look.Band, CFrame = ball.CFrame * CFrame.Angles(0, math.rad(90), 0),
-			Parent = ball,
-		})
-		new("WeldConstraint", { Part0 = ball, Part1 = band, Parent = ball })
+		-- Alex's model of the ball when there is one, else a band round the plain ball
+		local balls = ReplicatedStorage:FindFirstChild("CannonBalls")
+		local model = balls and balls:FindFirstChild(look.Id)
+		if model and model:IsA("Model") then
+			model = model:Clone()
+			local _, size = model:GetBoundingBox()
+			model:ScaleTo(model:GetScale() * BALL_RADIUS * 2 / math.max(size.X, size.Y, size.Z))
+			model:PivotTo(ball.CFrame)
+			for _, d in ipairs(model:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.Anchored = false
+					d.CanCollide, d.CanQuery, d.CanTouch, d.Massless = false, false, false, true
+					new("WeldConstraint", { Part0 = ball, Part1 = d, Parent = d })
+				end
+			end
+			model.Parent = ball
+			ball.Transparency = 1
+		else
+			local band = new("Part", {
+				Name = "Band", Shape = Enum.PartType.Cylinder, Size = Vector3.new(BALL_RADIUS * 0.35, BALL_RADIUS * 2.08, BALL_RADIUS * 2.08),
+				CanCollide = false, CanQuery = false, CanTouch = false, Massless = true,
+				Material = Enum.Material.SmoothPlastic, Color = look.Band, CFrame = ball.CFrame * CFrame.Angles(0, math.rad(90), 0),
+				Parent = ball,
+			})
+			new("WeldConstraint", { Part0 = ball, Part1 = band, Parent = ball })
+		end
 		local a0 = new("Attachment", { Position = Vector3.new(0, 0.9, 0), Parent = ball })
 		local a1 = new("Attachment", { Position = Vector3.new(0, -0.9, 0), Parent = ball })
 		new("Trail", {
@@ -687,6 +789,12 @@ return function(ctx)
 					counterScale.Scale = 1.3
 					TweenService:Create(counterScale, TweenInfo.new(0.4, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 				end
+				local last = hops[#hops]
+				local stop = pointAt(distance)
+				bigSplash(Vector3.new(stop.X, last[5] - BALL_RADIUS + 0.2, stop.Z))
+				if mine then
+					Kit.playSound("Splash")
+				end
 				TweenService:Create(ball, TweenInfo.new(0.8), { Transparency = 1 }):Play()
 				Debris:AddItem(ball, Config.RETURN_DELAY + 1)
 			end
@@ -741,95 +849,9 @@ return function(ctx)
 	end)
 
 	-----------------------------------------------------------------------
-	-- Pets follow their owners (every player's pets, rendered locally)
+	-- Pets follow their owners: walkers hop along the ground, flyers hover (PetFollow.lua)
 	-----------------------------------------------------------------------
-	local petFolder = new("Folder", { Name = "PetVisuals", Parent = workspace })
-	local followers = {} -- [player] = { key = "a,b", models = {} }
-	local showPets = true
-
-	local function buildPets(owner)
-		local entry = followers[owner]
-		if entry then
-			for _, m in ipairs(entry.models) do
-				m:Destroy()
-			end
-		end
-		local key = owner:GetAttribute("EquippedPets") or ""
-		entry = { key = key, models = {} }
-		followers[owner] = entry
-		local templates = ReplicatedStorage:FindFirstChild("Pets")
-		if not templates or key == "" then
-			return
-		end
-		for name in string.gmatch(key, "[^,]+") do
-			local template = templates:FindFirstChild(name)
-			if template then
-				local m = template:Clone()
-				for _, d in ipairs(m:GetDescendants()) do
-					if d:IsA("BasePart") then
-						d.Anchored = true
-						d.CanCollide = false
-						d.CanQuery = false
-						d.CanTouch = false
-						d.CastShadow = false
-					end
-				end
-				-- normalise size to ~3 studs
-				if m:IsA("Model") then
-					local _, size = m:GetBoundingBox()
-					local biggest = math.max(size.X, size.Y, size.Z)
-					if biggest > 0 then
-						m:ScaleTo(m:GetScale() * 3 / biggest)
-					end
-				end
-				m.Parent = petFolder
-				table.insert(entry.models, m)
-			end
-		end
-	end
-
-	local function watch(owner)
-		owner:GetAttributeChangedSignal("EquippedPets"):Connect(function()
-			buildPets(owner)
-		end)
-		buildPets(owner)
-	end
-	for _, p in ipairs(Players:GetPlayers()) do
-		watch(p)
-	end
-	Players.PlayerAdded:Connect(watch)
-	Players.PlayerRemoving:Connect(function(p)
-		local entry = followers[p]
-		if entry then
-			for _, m in ipairs(entry.models) do
-				m:Destroy()
-			end
-		end
-		followers[p] = nil
-	end)
-
-	RunService.RenderStepped:Connect(function(dt)
-		local t = os.clock()
-		for owner, entry in pairs(followers) do
-			local root = owner.Character and owner.Character:FindFirstChild("HumanoidRootPart")
-			local n = #entry.models
-			for i, m in ipairs(entry.models) do
-				local visible = showPets and root ~= nil
-				if not visible then
-					m:PivotTo(CFrame.new(0, -500, 0))
-				else
-					-- fan out behind the owner
-					local spread = (i - (n + 1) / 2) * 3.5
-					local offset = Vector3.new(spread, 0, 5 + math.abs(spread) * 0.3)
-					local hover = math.sin(t * 3 + i) * 0.4
-					local goal = root.CFrame * CFrame.new(offset.X, -1 + hover, offset.Z)
-					local current = m:GetPivot()
-					local pos = current.Position:Lerp(goal.Position, math.min(1, dt * 8))
-					m:PivotTo(CFrame.lookAt(pos, pos + root.CFrame.LookVector))
-				end
-			end
-		end
-	end)
+	require(script.Parent.PetFollow)(ctx)
 
 	-----------------------------------------------------------------------
 	-- Water: Stone Skipping style light lines drifting over the ocean
@@ -885,7 +907,6 @@ return function(ctx)
 		for _, sound in pairs(Kit.Sounds) do
 			sound.Volume = s.Sfx and 0.5 or 0
 		end
-		showPets = s.ShowPets
 		for _, p in ipairs(Players:GetPlayers()) do
 			if p ~= player and p.Character then
 				for _, d in ipairs(p.Character:GetDescendants()) do

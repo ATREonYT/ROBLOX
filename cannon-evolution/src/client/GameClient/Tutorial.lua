@@ -8,9 +8,8 @@
 	     rules: lock, hide, letterbox, cut on action, a wide after the big
 	     moment, and restore everything exactly, even if something fails.
 	  2. A quest bar at the top with a live count, e.g. TRAIN POWER (12/30).
-	  3. A line of white arrows flowing from you to the next thing to do
-	     (it follows a walkable path), and a pointer on the menu button when
-	     the step is in the UI.
+	  3. A chain of white arrows floating straight from you to the next thing to
+	     do, and a pointer on the menu button when the step is in the UI.
 	  4. A TUTORIAL COMPLETE! screen after the first rebirth.
 	Each step finishes on its own when you do it, and progress is saved.
 
@@ -19,7 +18,6 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local PathfindingService = game:GetService("PathfindingService")
 
 -- Everything the tutorial says.
 local TEXT = {
@@ -327,43 +325,62 @@ return function(ctx)
 	Kit.icon("Arrow", { Size = UDim2.fromScale(1, 1), Rotation = 90, Parent = marker })
 
 	-----------------------------------------------------------------------
-	-- Arrow line: white arrowheads with a dark outline, floating a little
-	-- off the floor, turned to face the camera, flowing toward the target
-	-- along a walkable path.
+	-- Arrow line, matched to Alex's Stone Skipping recording: a tight chain
+	-- of white arrowheads (a dart with a notch at the back) with a thin dark
+	-- outline, floating on one straight line from you to the target (not on
+	-- the ground, Alex Oct 30), turned to face the camera, flowing forward.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED, LIFT = 34, 2.6, 6, 1.6
+	local ARROWS, SPACING, FLOW_SPEED = 30, 1.05, 2.5 -- SPACING in dart lengths on screen; FLOW_SPEED darts a second
+	local LEN, HALF, NOTCH, THICK = 1.6, 0.95, 0.5, 0.12 -- dart length, half width, notch depth, thickness
+	local RIM = 1.3 -- each dart has its own dark copy behind it, this much bigger: its outline
 	local HIDDEN = CFrame.new(0, -500, 0)
 	local arrowFolder = new("Model", { Name = "TutorialArrows" })
-	new("Highlight", {
-		Adornee = arrowFolder, FillTransparency = 1, OutlineColor = Color3.fromRGB(30, 30, 50), OutlineTransparency = 0,
-		DepthMode = Enum.HighlightDepthMode.Occluded, Parent = arrowFolder,
-	})
+	-- each dart is two triangles (tip, barb, notch), each triangle two wedges, and the same again in dark
+	-- behind it; one shared Highlight outlined the whole chain as a single jagged shape
 	local arrows = {}
 	for i = 1, ARROWS do
-		local arms = {}
-		for side = 1, 2 do
-			arms[side] = new("Part", {
+		local wedges = {}
+		for w = 1, 8 do
+			wedges[w] = new("WedgePart", {
 				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-				Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(245, 245, 250),
-				Size = Vector3.new(0.75, 0.15, 1.7), CFrame = HIDDEN, Parent = arrowFolder,
+				Material = Enum.Material.SmoothPlastic, CFrame = HIDDEN, Parent = arrowFolder,
+				Color = w <= 4 and Color3.fromRGB(246, 246, 252) or Color3.fromRGB(30, 30, 55),
 			})
 		end
-		arrows[i] = arms
+		arrows[i] = wedges
 	end
-	local rayParams = RaycastParams.new()
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+	-- a flat triangle a, b, c from two wedges, THICK deep
+	local function triangle(a, b, c, w1, w2)
+		local ab, ac, bc = b - a, c - a, c - b
+		local abd, acd, bcd = ab:Dot(ab), ac:Dot(ac), bc:Dot(bc)
+		if abd > acd and abd > bcd then
+			c, a = a, c
+		elseif acd > bcd and acd > abd then
+			a, b = b, a
+		end
+		ab, ac, bc = b - a, c - a, c - b
+		local right = ac:Cross(ab).Unit
+		local up = bc:Cross(right).Unit
+		local back = bc.Unit
+		local height = math.abs(ab:Dot(up))
+		w1.Size = Vector3.new(THICK, height, math.abs(ab:Dot(back)))
+		w1.CFrame = CFrame.fromMatrix((a + b) / 2, right, up, back)
+		w2.Size = Vector3.new(THICK, height, math.abs(ac:Dot(back)))
+		w2.CFrame = CFrame.fromMatrix((a + c) / 2, -right, up, -back)
+	end
 
 	local function hideArrows()
-		for _, arms in ipairs(arrows) do
-			arms[1].CFrame = HIDDEN
-			arms[2].CFrame = HIDDEN
+		for _, wedges in ipairs(arrows) do
+			for _, part in ipairs(wedges) do
+				part.CFrame = HIDDEN
+			end
 		end
 	end
 
-	-- path from you to the target, refreshed when you move or the target changes
-	local path = PathfindingService:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = true, WaypointSpacing = 6 })
+	-- a straight line through the air from you to the target: it points at one thing, never bends
+	-- round obstacles and never follows the ground (Alex, Oct 30)
 	local route = nil -- { points = {Vector3}, lengths = {cumulative}, total = n }
-	local routeFrom, routeTarget, routeAt, routeBusy = nil, nil, 0, false
 
 	local function setRoute(points)
 		local lengths, total = { 0 }, 0
@@ -372,31 +389,6 @@ return function(ctx)
 			lengths[i] = total
 		end
 		route = { points = points, lengths = lengths, total = total }
-	end
-
-	local function refreshRoute(from, target)
-		if routeBusy then
-			return
-		end
-		routeBusy = true
-		routeFrom, routeTarget, routeAt = from, target, os.clock()
-		local goal = target.Position
-		task.spawn(function()
-			local ok = pcall(function()
-				path:ComputeAsync(from, goal)
-			end)
-			if ok and path.Status == Enum.PathStatus.Success then
-				local points = {}
-				for _, w in ipairs(path:GetWaypoints()) do
-					table.insert(points, w.Position)
-				end
-				points[1] = from
-				setRoute(points)
-			else
-				setRoute({ from, Vector3.new(goal.X, from.Y, goal.Z) })
-			end
-			routeBusy = false
-		end)
 	end
 
 	local function pointOnRoute(d)
@@ -422,54 +414,61 @@ return function(ctx)
 			arrowFolder.Parent = workspace
 		end
 		local from = root.Position
-		if target ~= routeTarget or not routeFrom or (from - routeFrom).Magnitude > 4 or os.clock() - routeAt > 2 then
-			refreshRoute(from, target)
-		end
-		if not route then
-			hideArrows()
-			return
-		end
-		-- start the line at you even between path refreshes
-		route.points[1] = from
+		setRoute({ from, target.Position })
 		local total = route.total
-		local flatGap = Vector3.new(target.Position.X - from.X, 0, target.Position.Z - from.Z).Magnitude
-		if flatGap < 7 or total < 7 then
+		if total < 7 then
 			hideArrows()
 			return
 		end
-		local camPos = workspace.CurrentCamera.CFrame.Position
-		rayParams.FilterDescendantsInstances = { player.Character, arrowFolder, workspace:FindFirstChild("MyCannon") }
-		local phase = (os.clock() * FLOW_SPEED) % SPACING
-		for i, arms in ipairs(arrows) do
-			local d = 2.5 + (i - 1) * SPACING + phase
-			if d > total - 2 then
-				arms[1].CFrame = HIDDEN
-				arms[2].CFrame = HIDDEN
-			else
-				local p, seg = pointOnRoute(d)
-				local dir = Vector3.new(seg.X, 0, seg.Z)
-				dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.xAxis
-				local hit = workspace:Raycast(p + Vector3.new(0, 3, 0), Vector3.new(0, -12, 0), rayParams)
-				local pos = Vector3.new(p.X, (hit and hit.Position.Y or p.Y - 2.5) + LIFT, p.Z)
-				local toCam = camPos - pos
-				if toCam.Magnitude < 9 then
-					-- right under the camera an arrow fills the screen: skip it
-					arms[1].CFrame = HIDDEN
-					arms[2].CFrame = HIDDEN
-					continue
+		local cam = workspace.CurrentCamera
+		local camCF = cam.CFrame
+		local camPos = camCF.Position
+		local focal = cam.ViewportSize.Y / (2 * math.tan(math.rad(cam.FieldOfView) / 2))
+		-- walk along the line and drop a dart every time the line has covered one dart length on screen,
+		-- so the chain reads tip to notch at every distance and never piles up when it runs away from you
+		local phase = (os.clock() * FLOW_SPEED) % 1
+		local placed, nextMark, progress = 0, phase, 0
+		local d, prevScreen = 2.5, nil
+		while d < total - 2 and placed < ARROWS do
+			local pos, seg = pointOnRoute(d)
+			local depth = (pos - camPos):Dot(camCF.LookVector)
+			local screen = depth > 0.5 and cam:WorldToViewportPoint(pos) or nil
+			if screen and prevScreen then
+				local gapPx = SPACING * LEN * focal / depth
+				progress += (Vector2.new(screen.X, screen.Y) - prevScreen).Magnitude / gapPx
+			end
+			prevScreen = screen and Vector2.new(screen.X, screen.Y) or nil
+			if screen and progress >= nextMark and (pos - camPos).Magnitude > 6 then
+				nextMark += 1
+				placed += 1
+				local wedges = arrows[placed]
+				local normal = (camPos - pos).Unit
+				local dir = seg.Magnitude > 0.01 and seg.Unit or Vector3.xAxis
+				-- flat to the screen like a sticker (as in the reference), pointing the way the line runs on screen
+				local flat = dir - normal * dir:Dot(normal)
+				if flat.Magnitude < 0.05 then
+					flat = Vector3.yAxis - normal * normal.Y
 				end
-				-- face the camera: the arrow's flat side turns toward you around its pointing direction
-				local normal = toCam - dir * toCam:Dot(dir)
-				normal = normal.Magnitude > 0.01 and normal.Unit or Vector3.yAxis
+				dir = flat.Unit
 				local side = dir:Cross(normal)
-				local base = CFrame.fromMatrix(pos, side, normal)
-				-- grow in near you and shrink near the target
-				local s = math.clamp(math.min((d - 2.5) / 4, (total - 2 - d) / 4), 0, 1)
-				local k = 0.35 + 0.65 * s
-				arms[1].Size = Vector3.new(0.75 * k, 0.15, 1.7 * k)
-				arms[2].Size = arms[1].Size
-				arms[1].CFrame = base * CFrame.new(0.5 * k, 0, 0.5 * k) * CFrame.Angles(0, math.rad(45), 0)
-				arms[2].CFrame = base * CFrame.new(-0.5 * k, 0, 0.5 * k) * CFrame.Angles(0, math.rad(-45), 0)
+				-- grow in near you and shrink into the target
+				local k = 0.35 + 0.65 * math.clamp(math.min((d - 2.5) / 3, (total - 2 - d) / 3), 0, 1)
+				for layer = 0, 1 do
+					local r = layer == 0 and k or k * RIM
+					local c = pos - normal * (layer * THICK * 1.5) -- the dark copy sits just behind
+					local tip = c + dir * (LEN / 2 * r)
+					local tail = c - dir * (LEN / 2 * r)
+					local notch = tail + dir * (NOTCH * r)
+					local w = layer * 4
+					triangle(tip, tail + side * (HALF * r), notch, wedges[w + 1], wedges[w + 2])
+					triangle(tip, notch, tail - side * (HALF * r), wedges[w + 3], wedges[w + 4])
+				end
+			end
+			d += 0.15
+		end
+		for i = placed + 1, ARROWS do
+			for _, part in ipairs(arrows[i]) do
+				part.CFrame = HIDDEN
 			end
 		end
 	end
@@ -882,11 +881,13 @@ return function(ctx)
 				end
 				local pad = stationPad(1)
 				local padPos = pad and pad.Position or (feet + facing * 30)
+				-- the booths open towards the middle of the lobby, whichever side they stand on
+				local open = pad and padPos.Z > -144.27 and -1 or 1
 				local startCF = cam.CFrame
 				local camPath = {
 					startCF.Position,
-					padPos + Vector3.new(14, 12, 18),
-					padPos + Vector3.new(-6, 9, 14),
+					padPos + Vector3.new(14, 12, 18 * open),
+					padPos + Vector3.new(-6, 9, 14 * open),
 					endPos + Vector3.new(0, 4, 0) - facing * 6,
 					endPos,
 				}
@@ -1002,7 +1003,6 @@ return function(ctx)
 		lastHave = nil
 		launchBase = nil
 		route = nil
-		routeTarget = nil
 		quest.Visible = true
 		quest.Position = UDim2.new(0.5, 0, 0, QUEST_Y - 40)
 		questScale.Scale = 0.85

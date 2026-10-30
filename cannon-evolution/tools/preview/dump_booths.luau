@@ -165,7 +165,7 @@ do
 			if math.abs(a.CFrame.Position.Y - b.CFrame.Position.Y) > 1 then
 				return a.CFrame.Position.Y < b.CFrame.Position.Y
 			end
-			return a.CFrame.Position.X > b.CFrame.Position.X
+			return a.CFrame.Position.X < b.CFrame.Position.X
 		end)
 		local GREEN, PURPLE = roblox.Color3.fromRGB(64, 220, 104), roblox.Color3.fromRGB(160, 90, 245)
 		for _, p in stand:GetChildren() do

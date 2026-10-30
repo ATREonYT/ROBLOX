@@ -5,6 +5,7 @@ The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 ## Build Playbooks (start here to build)
 - [[Build Playbooks/00 Build Router|Build Router]]: every job mapped to the right notes, skills and code
 - [[Build Playbooks/05 New Game Kit|New Game Kit]]: the starter kit every new game begins from
+- [[References/Reference Gallery|Reference Gallery]]: every reference picture you shared, by game
 - [[Build Playbooks/Sector Briefs/Sector Briefs Index|Sector Briefs]]: 8 verified, build-ready briefs, one per sector (Oct 30, 2026)
 - [[Build Playbooks/01 Current Hits October 2026|Current hits, Oct 2026]] and [[Build Playbooks/02 Launch and Discovery Cheat Sheet|launch cheat sheet]]
 - [[Build Playbooks/03 What's New on Roblox - RDC 2026 and October|What's new on Roblox (RDC 2026, Oct)]] and [[Build Playbooks/04 AI Tools Landscape October 2026|AI tools landscape]]

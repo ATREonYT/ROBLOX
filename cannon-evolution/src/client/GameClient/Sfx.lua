@@ -3,11 +3,13 @@
 	Plays the game's sounds by name: Sfx.play("Click"). Kit.playSound(name) calls this, so every older call works.
 
 	Where each sound comes from (GameConfig.Sounds holds the ids):
-	  * Button sounds (Click, Hover, Open, Close, Confirm, Error, Tab): Kenney "Interface Sounds" (CC0), the same
+	  * Button sounds: Roblox's own "Roblox_UI_" set (public, picked in the Toolbox Oct 30). Alternative: Kenney "Interface Sounds" (CC0), the same
 	    family Alex picked for Huzz Valley, in cannon-evolution/assets/sfx/UI_*.ogg. They need Alex's upload; until
-	    then Roblox's own built-in sounds stand in (FALLBACK below), played low and soft.
+	    then they stay silent (or a licensed pick in GameConfig plays instead).
 	  * Hatch: "Magic Burst 2" from Roblox's free licensed library (Pro Sound Effects): public, plays as it is.
-	  * Shot, Launch, Skip, Coin, Reward, Rebirth: built-in stand-ins until a licensed pick goes into GameConfig.
+	  * Launch, Skip, Reward, Rebirth: Roblox's licensed library too (picked in Studio's Toolbox, Oct 30).
+	  * Shot: a low built-in thump until a licensed pick goes into GameConfig. Coin: silent until then.
+	  * Both groups have a soft high cut and a gentle compressor (warmer, nothing jumps out).
 
 	Rules (vault: UI Motion Language, Sound Design Pitfalls; Huzz Valley's button notes):
 	  * Button sounds are never pitch-wobbled (the same press sounds the same); game sounds get a small spread so
@@ -22,6 +24,7 @@
 local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
@@ -40,34 +43,37 @@ local LEVEL = {
 	Coin = { 0.25, 0.03, "Effects" },
 	Reward = { 0.45, 0, "Effects" },
 	Hatch = { 0.4, 0, "Effects" },
-	Rebirth = { 0.5, 0, "Effects" },
+	Rebirth = { 0.4, 0, "Effects" },
+	Unlock = { 0.45, 0, "Effects" },
 	Shot = { 0.55, 0.04, "Effects" },
 	Launch = { 0.55, 0.03, "Effects" },
 	Skip = { 0.35, 0.08, "Effects" },
+	Splash = { 0.5, 0.05, "Effects" },
 }
 
 -- Roblox's own sounds standing in until ours are uploaded: { id, volume multiplier, pitch }. Only built-ins every
 -- client has; never pitched above 1.1 (Alex: "not some random high pitch sounds"); no stand-in where a built-in
 -- can only sound wrong (silence beats a squeaky ping). Open/Close stay silent: there is no soft swell built in.
-local PING = "rbxasset://sounds/electronicpingshort.wav"
-local BUTTON = "rbxasset://sounds/button.wav"
-local TICK = "rbxasset://sounds/clickfast.wav"
 local THUD = "rbxasset://sounds/action_jump_land.mp3"
+-- Alex, Oct 30, after hearing the built-in clicks and pings: "these are bad, make them smooth and not sound bad
+-- and harsh". So the only stand-in left is the low soft thump under the cannon shot; every other slot stays silent
+-- until it has a real id (silence beats a harsh sound).
 local FALLBACK = {
-	Click = { BUTTON, 0.5, 0.9 },
-	Hover = { TICK, 0.5, 0.9 },
-	Tab = { TICK, 0.7, 0.85 },
-	Confirm = { PING, 0.7, 0.9 },
-	Error = { BUTTON, 0.6, 0.7 },
-	Coin = { PING, 0.6, 1.05 },
-	Reward = { PING, 0.9, 0.85 },
-	Rebirth = { PING, 0.9, 0.7 },
 	Shot = { THUD, 1, 0.6 },
-	Launch = { THUD, 1, 0.5 },
-	Skip = { "rbxasset://sounds/impact_water.mp3", 1, 1 },
 }
 
+-- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
+-- Alex, Oct 30: "make the earned sounds just quick, nothing long". So rewards stop by 0.7 s at most.
+local CUT = { Click = 0.25, Shot = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.6, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
+
+-- slots that use another slot's sound until they have their own
+local BORROW = { Unlock = "Reward" }
+
 local GAP = 0.06 -- a button sound asked for again this soon is the same press
+-- The big "ta-da" sounds never stack: a rebirth that also unlocks a cannon would otherwise play two stings at once
+local STINGS = { Reward = true, Rebirth = true, Hatch = true, Unlock = true }
+local STING_GAP = 1.5
+local lastSting = -math.huge
 local POOL = 3
 
 local folder = Instance.new("Folder")
@@ -79,6 +85,20 @@ for _, name in ipairs({ "Interface", "Effects" }) do
 	g.Name = name
 	g.Volume = 1
 	g.Parent = folder
+	-- Warmer and smoother: take the edge off the highs (the part that sounds harsh on phone and laptop speakers)
+	-- and even out the loud peaks, so no sound jumps out of the mix
+	local eq = Instance.new("EqualizerSoundEffect")
+	eq.HighGain = -7
+	eq.MidGain = -1
+	eq.LowGain = 1
+	eq.Parent = g
+	local comp = Instance.new("CompressorSoundEffect")
+	comp.Threshold = -16
+	comp.Ratio = 3
+	comp.Attack = 0.005
+	comp.Release = 0.15
+	comp.Priority = 1
+	comp.Parent = g
 	groups[name] = g
 end
 
@@ -88,6 +108,9 @@ local lastPlayed = {}
 local function build(name)
 	local level = LEVEL[name] or { 0.4, 0, "Effects" }
 	local id = Config.Sounds and Config.Sounds[name]
+	if (not id or id == "") and BORROW[name] then
+		id = Config.Sounds[BORROW[name]] -- a slot without its own sound yet uses its sibling's
+	end
 	local volume, pitch = level[1], 1
 	if not id or id == "" then
 		local fb = FALLBACK[name]
@@ -96,7 +119,7 @@ local function build(name)
 		end
 		id, volume, pitch = fb[1], level[1] * fb[2], fb[3]
 	end
-	local pool = { sounds = {}, next = 1, pitch = pitch, spread = level[2] }
+	local pool = { sounds = {}, next = 1, pitch = pitch, spread = level[2], volume = math.min(volume, 1) }
 	for i = 1, POOL do
 		local s = Instance.new("Sound")
 		s.Name = name .. i
@@ -123,6 +146,12 @@ function Sfx.play(name)
 	if LEVEL[name] and LEVEL[name][3] == "Interface" and lastPlayed[name] and now - lastPlayed[name] < GAP then
 		return
 	end
+	if STINGS[name] then
+		if now - lastSting < STING_GAP then
+			return
+		end
+		lastSting = now
+	end
 	lastPlayed[name] = now
 	local s = pool.sounds[pool.next]
 	pool.next = pool.next % #pool.sounds + 1
@@ -130,7 +159,20 @@ function Sfx.play(name)
 		s.PlaybackSpeed = pool.pitch * (1 + (math.random() * 2 - 1) * pool.spread)
 	end
 	s.TimePosition = 0
+	s.Volume = pool.volume
 	s:Play()
+	local cut = CUT[name]
+	if cut then
+		task.delay(cut, function()
+			if s.IsPlaying and s.TimePosition >= cut - 0.05 then
+				local fade = TweenService:Create(s, TweenInfo.new(0.08), { Volume = 0 })
+				fade:Play()
+				fade.Completed:Wait()
+				s:Stop()
+				s.Volume = pool.volume
+			end
+		end)
+	end
 end
 
 -- The Sound Effects setting (off = both groups silent)

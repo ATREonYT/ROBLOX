@@ -1247,7 +1247,19 @@ local actions = {
 		if not egg or egg.Currency == "Robux" then
 			return false
 		end
-		count = (count == 3 and hasPass(player, "TripleOpen")) and 3 or 1
+		-- 8x Open also covers 3x. Asking for more than you own hatches nothing
+		-- (rather than quietly hatching 1), e.g. while a pass is still loading
+		if count == 8 then
+			if not hasPass(player, "OctoOpen") then
+				return false, "You need the 8x Open pass!"
+			end
+		elseif count == 3 then
+			if not (hasPass(player, "TripleOpen") or hasPass(player, "OctoOpen")) then
+				return false, "You need the Triple Open pass!"
+			end
+		else
+			count = 1
+		end
 		return hatch(player, egg, count, false)
 	end,
 	EquipPet = equipPet,
@@ -1382,6 +1394,10 @@ local function onPlayerAdded(player)
 	end
 	local data = reconcile(type(stored) == "table" and stored or {}, Config.DefaultData)
 	profiles[player] = { Data = data, Loaded = true, JoinTime = os.clock(), PlaytimeClaimed = {}, Passes = {} }
+	data.Balls[Config.Balls[1].Id] = true
+	if not (Config.GetBall(data.EquippedBall) and data.Balls[data.EquippedBall]) then
+		data.EquippedBall = Config.Balls[1].Id
+	end
 	player:SetAttribute("Ball", data.EquippedBall)
 	loadPasses(player)
 	if not player.Parent then
