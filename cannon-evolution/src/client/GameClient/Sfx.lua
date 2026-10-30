@@ -5,10 +5,11 @@
 	Where each sound comes from (GameConfig.Sounds holds the ids):
 	  * Button sounds (Click, Hover, Open, Close, Confirm, Error, Tab): Kenney "Interface Sounds" (CC0), the same
 	    family Alex picked for Huzz Valley, in cannon-evolution/assets/sfx/UI_*.ogg. They need Alex's upload; until
-	    then Roblox's own built-in sounds stand in (FALLBACK below), played low and soft.
+	    then they stay silent (or a licensed pick in GameConfig plays instead).
 	  * Hatch: "Magic Burst 2" from Roblox's free licensed library (Pro Sound Effects): public, plays as it is.
 	  * Launch, Skip, Reward, Rebirth: Roblox's licensed library too (picked in Studio's Toolbox, Oct 30).
-	  * Shot, Coin: built-in stand-ins until a licensed pick goes into GameConfig (none short enough was found).
+	  * Shot: a low built-in thump until a licensed pick goes into GameConfig. Coin: silent until then.
+	  * Both groups have a soft high cut and a gentle compressor (warmer, nothing jumps out).
 
 	Rules (vault: UI Motion Language, Sound Design Pitfalls; Huzz Valley's button notes):
 	  * Button sounds are never pitch-wobbled (the same press sounds the same); game sounds get a small spread so
@@ -50,22 +51,12 @@ local LEVEL = {
 -- Roblox's own sounds standing in until ours are uploaded: { id, volume multiplier, pitch }. Only built-ins every
 -- client has; never pitched above 1.1 (Alex: "not some random high pitch sounds"); no stand-in where a built-in
 -- can only sound wrong (silence beats a squeaky ping). Open/Close stay silent: there is no soft swell built in.
-local PING = "rbxasset://sounds/electronicpingshort.wav"
-local BUTTON = "rbxasset://sounds/button.wav"
-local TICK = "rbxasset://sounds/clickfast.wav"
 local THUD = "rbxasset://sounds/action_jump_land.mp3"
+-- Alex, Oct 30, after hearing the built-in clicks and pings: "these are bad, make them smooth and not sound bad
+-- and harsh". So the only stand-in left is the low soft thump under the cannon shot; every other slot stays silent
+-- until it has a real id (silence beats a harsh sound).
 local FALLBACK = {
-	Click = { BUTTON, 0.5, 0.9 },
-	Hover = { TICK, 0.5, 0.9 },
-	Tab = { TICK, 0.7, 0.85 },
-	Confirm = { PING, 0.7, 0.9 },
-	Error = { BUTTON, 0.6, 0.7 },
-	Coin = { PING, 0.6, 1.05 },
-	Reward = { PING, 0.9, 0.85 },
-	Rebirth = { PING, 0.9, 0.7 },
 	Shot = { THUD, 1, 0.6 },
-	Launch = { THUD, 1, 0.5 },
-	Skip = { "rbxasset://sounds/impact_water.mp3", 1, 1 },
 }
 
 local GAP = 0.06 -- a button sound asked for again this soon is the same press
@@ -84,6 +75,20 @@ for _, name in ipairs({ "Interface", "Effects" }) do
 	g.Name = name
 	g.Volume = 1
 	g.Parent = folder
+	-- Warmer and smoother: take the edge off the highs (the part that sounds harsh on phone and laptop speakers)
+	-- and even out the loud peaks, so no sound jumps out of the mix
+	local eq = Instance.new("EqualizerSoundEffect")
+	eq.HighGain = -7
+	eq.MidGain = -1
+	eq.LowGain = 1
+	eq.Parent = g
+	local comp = Instance.new("CompressorSoundEffect")
+	comp.Threshold = -16
+	comp.Ratio = 3
+	comp.Attack = 0.005
+	comp.Release = 0.15
+	comp.Priority = 1
+	comp.Parent = g
 	groups[name] = g
 end
 

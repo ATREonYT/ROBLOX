@@ -37,7 +37,10 @@ local root = Kit.new("Frame", {
 local uiScale = Kit.new("UIScale", { Parent = root })
 local function rescale()
 	local view = Workspace.CurrentCamera.ViewportSize
-	local s = math.min(view.X / 1280, view.Y / 720)
+	-- 0.82: the whole UI a size smaller so it doesn't crowd the screen (Alex, Oct 30). Phones (short screens) keep
+	-- almost full size, or the text gets too small to read and tap.
+	local fit = view.Y < 500 and 0.95 or 0.82
+	local s = math.min(view.X / 1280, view.Y / 720) * fit
 	uiScale.Scale = s
 	root.Size = UDim2.fromOffset(view.X / s, view.Y / s)
 end
