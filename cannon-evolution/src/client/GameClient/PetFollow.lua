@@ -3,7 +3,9 @@
 	Every player's equipped pets, rendered on this client (the server only
 	publishes the EquippedPets attribute). Walkers stay on the ground and hop
 	along, rocking left and right in step with their owner; flyers hover
-	behind and bank into turns. Built from the vault's "Pet Hatching and
+	behind and bank into turns. Walkers kick up a little dust on each landing,
+	new pets pop in with a bounce, and pets standing still turn to look at
+	their owner. Built from the vault's "Pet Hatching and
 	Following End to End" (client-rendered, anchored, frame-rate independent
 	smoothing, ground raycast, snap on teleport, cull when far).
 ]]
@@ -36,6 +38,8 @@ local SPREAD = 0.75 -- radians between pets in the arc
 local SHARPNESS = 9 -- follow snappiness
 local SNAP_DISTANCE = 60 -- owner teleported: snap instead of streaking across the map
 local CULL_DISTANCE = 260
+local POP_TIME = 0.35 -- a newly equipped pet grows in with a bounce
+local DUST = "rbxasset://textures/particles/smoke_main.dds" -- built in, nothing to upload
 
 return function(ctx)
 	local State = ctx.State
@@ -46,7 +50,36 @@ return function(ctx)
 
 	local followers = {} -- [player] = { list of pet records }
 	local hidden = {}
+	local lastKeys = {} -- [player] = { [petName] = count } from the previous build, so only new pets pop in
 	local showPets = true
+	local lowGraphics = false
+
+	-- one small dust emitter per walking pet, fired with Emit on each landing (vault VFX brief: Rate 0 + Emit)
+	local function addDust(m)
+		local base = m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
+		if not base then
+			return nil
+		end
+		local att = Instance.new("Attachment")
+		att.Name = "PetDust"
+		att.Parent = base
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = DUST
+		e.Rate = 0
+		e.Lifetime = NumberRange.new(0.35, 0.55)
+		e.Speed = NumberRange.new(1.5, 3)
+		e.SpreadAngle = Vector2.new(80, 80)
+		e.Acceleration = Vector3.new(0, 2, 0)
+		e.Drag = 4
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 1.1) })
+		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 1) })
+		e.Color = ColorSequence.new(Color3.fromRGB(235, 225, 205))
+		e.LightInfluence = 0.6
+		e.LightEmission = 0
+		e.ZOffset = -0.5
+		e.Parent = att
+		return { Attachment = att, Emitter = e }
+	end
 
 	local function clear(owner)
 		for _, r in ipairs(followers[owner] or {}) do
@@ -57,8 +90,11 @@ return function(ctx)
 	end
 
 	local function build(owner)
+		local before = lastKeys[owner] or {}
 		clear(owner)
 		local key = owner:GetAttribute("EquippedPets") or ""
+		local seen = {}
+		lastKeys[owner] = seen
 		local templates = ReplicatedStorage:FindFirstChild("Pets")
 		local list = {}
 		followers[owner] = list
@@ -93,8 +129,16 @@ return function(ctx)
 				-- how far the pivot sits above the pet's feet
 				m:PivotTo(CFrame.new())
 				local box, boxSize = m:GetBoundingBox()
-				m.Parent = folder
 				local flying = FLYING[name] == true
+				local dust = not flying and addDust(m) or nil
+				-- a pet that wasn't equipped last time pops in; the rest just carry on
+				seen[name] = (seen[name] or 0) + 1
+				local isNew = seen[name] > (before[name] or 0)
+				local baseScale = m:GetScale()
+				if isNew then
+					m:ScaleTo(baseScale * 0.05)
+				end
+				m.Parent = folder
 				table.insert(list, {
 					Model = m,
 					Flying = flying,
@@ -107,6 +151,10 @@ return function(ctx)
 					GroundY = nil,
 					Yaw = nil,
 					Bank = 0,
+					Dust = dust,
+					Landing = 0,
+					BaseScale = baseScale,
+					Born = isNew and os.clock() or nil,
 				})
 			end
 		end
@@ -122,12 +170,16 @@ return function(ctx)
 		watch(p)
 	end
 	Players.PlayerAdded:Connect(watch)
-	Players.PlayerRemoving:Connect(clear)
+	Players.PlayerRemoving:Connect(function(p)
+		clear(p)
+		lastKeys[p] = nil
+	end)
 
 	local function readSetting()
 		local s = State.Data and State.Data.Settings
 		if s then
 			showPets = s.ShowPets ~= false
+			lowGraphics = s.LowGraphics == true
 		end
 	end
 	State.Changed:Connect(readSetting)
@@ -197,9 +249,30 @@ return function(ctx)
 				local moving = speed > 2 or step.Magnitude > dt * 3
 				r.Move += ((moving and 1 or 0) - r.Move) * math.min(1, dt * 8)
 
-				-- face where the pet is going, or the owner's way when standing
-				local wantYaw = step.Magnitude > dt * 1.5 and yawOf(step) or ownerYaw
+				-- face where the pet is going; standing still, turn to look at the owner
+				local toOwner = (root.Position - pos) * Vector3.new(1, 0, 1)
+				local wantYaw
+				if step.Magnitude > dt * 1.5 then
+					wantYaw = yawOf(step)
+				elseif r.Move < 0.3 and toOwner.Magnitude > 0.5 then
+					wantYaw = yawOf(toOwner)
+				else
+					wantYaw = ownerYaw
+				end
 				r.Yaw = turn(r.Yaw or wantYaw, wantYaw, math.min(1, dt * 10))
+
+				-- pop in: grow from small with an overshoot, then stay at full size
+				local k = 1
+				if r.Born then
+					local a = (t - r.Born) / POP_TIME
+					if a >= 1 then
+						r.Born = nil
+					else
+						local c1, c3 = 1.70158, 2.70158 -- back-out easing
+						k = math.max(0.05, 1 + c3 * (a - 1) ^ 3 + c1 * (a - 1) ^ 2)
+					end
+					r.Model:ScaleTo(r.BaseScale * k)
+				end
 
 				local cf
 				if r.Flying then
@@ -218,6 +291,14 @@ return function(ctx)
 					-- stride speed follows the owner's speed: faster run, quicker hops
 					local g = r.Gait
 					r.Stride += dt * (4 + math.min(speed, 40) * 0.45) * g.Rate * r.Move
+					-- each time the hop touches down, a puff of dust
+					local landing = math.floor(r.Stride * 2 / math.pi)
+					if landing ~= r.Landing then
+						r.Landing = landing
+						if r.Dust and r.Move > 0.6 and not lowGraphics then
+							r.Dust.Emitter:Emit(g == GAITS.hop and 4 or 2)
+						end
+					end
 					local s = math.sin(r.Stride * 2)
 					local hop = math.abs(math.sin(r.Stride * 2)) * g.Height * r.Move
 					local rock = math.rad(g.Roll) * s * r.Move -- left / right
@@ -225,7 +306,7 @@ return function(ctx)
 					local tilt = math.rad(-6) * r.Move + math.cos(r.Stride * 4) * math.rad(4) * r.Move
 					-- standing still: a slow little breathe
 					local idle = (1 - r.Move) * math.sin(t * 2 + r.Phase) * 0.05
-					cf = CFrame.new(pos.X, r.GroundY + r.Foot + hop + idle, pos.Z)
+					cf = CFrame.new(pos.X, r.GroundY + r.Foot * k + hop + idle, pos.Z)
 						* CFrame.Angles(0, r.Yaw, 0)
 						* CFrame.new(sway, 0, 0)
 						* CFrame.Angles(tilt, 0, rock)
