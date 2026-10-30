@@ -122,16 +122,16 @@ return {
 	Egg_Secret = "rbxassetid://83353924222215",
 	Egg_Starter = "rbxassetid://133125260544777",
 	Egg_Woodland = "rbxassetid://92212937275805",
-	-- Alex's drawn cannonballs (design/cannon_ball_ui.zip, Oct 30), icons/balls/<ball id>.png: empty until uploaded.
+	-- Alex's drawn cannonballs (design/cannon_ball_ui.zip, Oct 30), icons/balls/<ball id>.png, uploaded Oct 30.
 	-- Steel uses the pack's Iron Ball, Frost its Ice Ball; Ruby has no picture in the pack yet.
-	Ball_Wood = "",
-	Ball_Stone = "",
-	Ball_Steel = "",
-	Ball_Gold = "",
+	Ball_Wood = "rbxassetid://73094962796213",
+	Ball_Stone = "rbxassetid://93711888667900",
+	Ball_Steel = "rbxassetid://90367745417517",
+	Ball_Gold = "rbxassetid://106788032267799",
 	Ball_Ruby = "",
-	Ball_Neon = "",
-	Ball_Frost = "",
-	Ball_Rainbow = "",
-	Ball_Hacker = "",
-	Ball_Galaxy = "",
+	Ball_Neon = "rbxassetid://122444367473186",
+	Ball_Frost = "rbxassetid://139397359887744",
+	Ball_Rainbow = "rbxassetid://85461355812986",
+	Ball_Hacker = "rbxassetid://131006551526696",
+	Ball_Galaxy = "rbxassetid://137130560699068",
 }

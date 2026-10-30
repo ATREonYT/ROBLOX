@@ -72,7 +72,9 @@ return function(ctx)
 			local art
 			if Kit.hasImage("Ball_" .. ball.Id) then
 				-- Alex's drawn ball (Icons Ball_<id>) wins over the 3D model and the drawn stand-in
-				art = Kit.icon("Ball_" .. ball.Id, { Size = UDim2.fromOffset(80, 80), Position = UDim2.new(0.5, 0, 0, 58), Anchor = Vector2.new(0.5, 0.5), ZIndex = 27, Parent = card })
+				-- Frost, Rainbow and Galaxy are drawn with sparkles round them, so their ball is smaller in the picture
+				local px = math.floor(80 * (({ Frost = 1.3, Rainbow = 1.3, Galaxy = 1.12 })[ball.Id] or 1))
+				art = Kit.icon("Ball_" .. ball.Id, { Size = UDim2.fromOffset(px, px), Position = UDim2.new(0.5, 0, 0, 58), Anchor = Vector2.new(0.5, 0.5), ZIndex = 27, Parent = card })
 			elseif model then
 				art = Kit.viewport(card, model, { Size = UDim2.fromOffset(78, 78), Position = UDim2.new(0.5, 0, 0, 58), Spin = 30, FitLargest = true, Zoom = 0.85 / (ball.CardZoom or 1), ZIndex = 27 }) -- CardZoom: meshes with sparkles baked in frame bigger
 			else
