@@ -143,7 +143,7 @@ return function(ctx)
 				end
 				local model = models and models:FindFirstChild(cannon.Model)
 				if model then
-					Kit.viewport(card, model, { Size = UDim2.new(1, -10, 0, 96), Position = UDim2.new(0.5, 0, 0, 52), ZIndex = 27 })
+					Kit.viewport(card, model, { Size = UDim2.new(1, -10, 0, 96), Position = UDim2.new(0.5, 0, 0, 52), Yaw = 35, ZIndex = 27 }) -- cannon models face +Z, unlike pets
 				else
 					Kit.icon("Evolve", { Size = UDim2.fromOffset(80, 80), Position = UDim2.new(0.5, 0, 0, 52), Anchor = Vector2.new(0.5, 0.5), ZIndex = 27, Parent = card })
 				end
