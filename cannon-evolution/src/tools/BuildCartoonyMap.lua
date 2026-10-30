@@ -84,8 +84,15 @@ local function run(root, transparency)
 			local plain = p.Material ~= Enum.Material.Neon and p.Material ~= Enum.Material.Glass
 				and not (p:IsA("Part") and p.Shape ~= Enum.PartType.Block)
 			if not UNDO and p.Transparency < 0.5 and plain and not skip(p) then
-				-- cannons placed in the booths get the softer cannon studs too
-				stud(p, p:FindFirstAncestor("Cannon") and 0.45 or transparency)
+				-- blocky cannons get full studs; imported cannons (also when placed in a booth) softer ones
+				local model = p:FindFirstAncestorWhichIsA("Model")
+				local alpha = transparency
+				if model and model:GetAttribute("Blocky") then
+					alpha = 0.1
+				elseif p:FindFirstAncestor("Cannon") then
+					alpha = 0.45
+				end
+				stud(p, alpha)
 				added += 1
 			end
 		end
