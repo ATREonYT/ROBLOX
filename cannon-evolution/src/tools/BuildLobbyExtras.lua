@@ -63,14 +63,20 @@ local EGG_COLORS = {
 	Ocean = Color3.fromRGB(60, 160, 255),
 }
 local EGGS = { "Starter", "Woodland", "Nature", "Ocean" } -- the exclusive egg goes 5th
-local NEW_SPOTS = { Starter = Vector2.new(-87.74, 12.94), Woodland = Vector2.new(-95.13, 8.87), Nature = Vector2.new(-95.42, 0.64), Ocean = Vector2.new(-88.88, -4.75) }
+-- new map: Alex's curve round the west side of the plaza (Oct 30), spaced out evenly, Starter at the south
+-- end. Spot 5, past the Starter egg towards the ship, stays free for a Robux pet or egg (Alex decides,
+-- Oct 31). In the map file's units: the plaza's middle, the radius and degrees round from the dock.
+local ARC_CENTRE, ARC_RADIUS, ARC_FIRST, ARC_STEP = Vector2.new(-60, 0), 36, 205, -15
+local function eggSpot(i) -- i = 0 is the free Robux spot
+	local a = math.rad(ARC_FIRST + (i - 1) * ARC_STEP)
+	return ARC_CENTRE + Vector2.new(math.cos(a), -math.sin(a)) * ARC_RADIUS
+end
 for i, id in ipairs(EGGS) do
 	local egg = Config.GetEgg(id)
 	local pos = Vector3.new(-34 - (#EGGS - i) * 16, floorY, -108)
 	if newMap then
-		-- new map: where Alex put them by hand (Oct 30), a curve on the west side of the plaza. In the
-		-- map file's units, so they move out with the map when Config.Map.Scale makes it bigger.
-		local spot = NEW_SPOTS[id]
+		-- new map: on the curve (eggSpot above); Config.Map.At moves it out with the map
+		local spot = eggSpot(i)
 		local p = Config.Map.At(spot.X, 0, spot.Y)
 		pos = Vector3.new(p.X, floorAt(p.X, p.Z), p.Z)
 	end

@@ -77,8 +77,9 @@ if newMap then
 	-- the palisade, with a 2.5-stud strip of ground between neighbours. Booth 1 is at the east end, nearest
 	-- the dock; the VIP booth is the west one. The block's middle is in the map file's units (Config.Map.At
 	-- moves it out with the map); checked against every rock, palm and fence by tools/map/plan_check.py.
-	BOOTH_SCALE = 0.75 -- bigger than the 8-booth rows' 0.6 (Alex: "miniature trainings, but not too small")
-	local MIDDLE, PITCH = Config.Map.At(-61, 0, -26), 14 * BOOTH_SCALE + 2.5 -- the middle stand point; booth width + gap
+	-- Alex, Oct 30: "make the trainings a bit bigger, bring them close to the lobby, just a little".
+	BOOTH_SCALE = 0.9
+	local MIDDLE, PITCH = Config.Map.At(-61, 0, -22), 14 * BOOTH_SCALE + 2.5 -- the middle stand point; booth width + gap
 	fireDir = Vector3.new(0, 0, -1)
 	local function x(i)
 		return MIDDLE.X - (i - (#Config.Stations + 1) / 2) * PITCH
@@ -86,7 +87,7 @@ if newMap then
 	-- one floor height for the whole block, so the booths line up: the highest ground under any of them
 	local blockY = -math.huge
 	for i = 1, #Config.Stations do
-		for _, z in ipairs({ MIDDLE.Z + 4, MIDDLE.Z, MIDDLE.Z - 10, MIDDLE.Z - 19 }) do
+		for _, z in ipairs({ MIDDLE.Z + 5, MIDDLE.Z, MIDDLE.Z - 12, MIDDLE.Z - 22 }) do
 			blockY = math.max(blockY, floorAt(x(i), z, floorY))
 		end
 	end

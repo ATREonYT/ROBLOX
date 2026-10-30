@@ -229,6 +229,7 @@ local MOVES = {
 	{ { "Trees_Palm_001" }, Vector2.new(-106, -31) }, -- by the west palisade, behind the VIP booth
 	{ { "Props_Crate_001", "Props_Crate_002", "Props_Crate_003", "Props_Barrel_001", "Props_Barrel_002", "Props_Treasure_Chest_001" }, Vector2.new(-16, -35) }, -- the north-east corner, by the dock
 	{ { "Props_Barrel_003" }, Vector2.new(-23, -30) },
+	{ { "Trees_Palm_005" }, Vector2.new(-20, -41) }, -- a little east, clear of booth 1
 }
 local groundParams = RaycastParams.new()
 groundParams.FilterType = Enum.RaycastFilterType.Include
