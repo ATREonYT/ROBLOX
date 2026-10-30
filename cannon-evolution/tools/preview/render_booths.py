@@ -10,8 +10,6 @@ sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from render_cannons import faces, apply  # noqa: E402  (shape tables shared with the cannon sheet)
 
 NAMES = {1: "Starter", 2: "Iron", 3: "Steel", 4: "Heavy", 5: "Industrial", 6: "Golden", 7: "Dragon (VIP)", 8: "Plasma"}
-data = json.load(open(sys.argv[1]))
-order = sorted(data, key=lambda k: data[k]["x"])
 
 def sub(a, b): return [a[i] - b[i] for i in range(3)]
 def dot(a, b): return sum(a[i] * b[i] for i in range(3))
@@ -45,7 +43,8 @@ def render(parts, cam, look, W, H, fov=55):
             shade = 1.0 if p["neon"] else 0.72 + 0.38 * max(0, dot(nrm, LIGHT))
             col = [min(255, int(c * 255 * shade * (1.3 if p["neon"] else 1))) for c in p["color"]]
             a = p["alpha"]
-            polys.append((sum(ds) / len(ds), pts, tuple(col), a, p["neon"]))
+            depth = 1e9 + sum(ds) / len(ds) if p.get("ground") else sum(ds) / len(ds)  # ground first
+            polys.append((depth, pts, tuple(col), a, p["neon"]))
     img = Image.new("RGB", (W, H), (196, 214, 238))
     d = ImageDraw.Draw(img, "RGBA")
     glow = Image.new("RGB", (W, H), (0, 0, 0))
@@ -57,21 +56,24 @@ def render(parts, cam, look, W, H, fov=55):
     glow = ImageChops.add(glow.filter(ImageFilter.GaussianBlur(9)), glow.filter(ImageFilter.GaussianBlur(3)))
     return ImageChops.screen(img, glow)
 
-T_W, T_H, COLS = 520, 430, 4
-rows = math.ceil(len(order) / COLS)
-sheet = Image.new("RGB", (T_W * COLS, (T_H + 34) * rows), (25, 25, 32))
-dr = ImageDraw.Draw(sheet)
-try:
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-except OSError:
-    font = None
-for i, k in enumerate(order):
-    b = data[k]
-    floor = min(p["cf"][1] for p in b["parts"] if p["cannon"])
-    x = b["x"]
-    img = render(b["parts"], [x + 6, floor + 11, -150], [x, floor + 4.5, -177], T_W, T_H)
-    ox, oy = (i % COLS) * T_W, (i // COLS) * (T_H + 34)
-    sheet.paste(img, (ox, oy + 34))
-    dr.text((ox + 10, oy + 6), NAMES.get(int(k), k) + " booth", fill="white", font=font)
-sheet.save(sys.argv[2], quality=90)
-print("saved", sys.argv[2])
+if __name__ == "__main__":
+    data = json.load(open(sys.argv[1]))
+    order = sorted((k for k in data if k != "start"), key=lambda k: data[k]["x"])
+    T_W, T_H, COLS = 520, 430, 4
+    rows = math.ceil(len(order) / COLS)
+    sheet = Image.new("RGB", (T_W * COLS, (T_H + 34) * rows), (25, 25, 32))
+    dr = ImageDraw.Draw(sheet)
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+    except OSError:
+        font = None
+    for i, k in enumerate(order):
+        b = data[k]
+        floor = min(p["cf"][1] for p in b["parts"] if p["cannon"])
+        x = b["x"]
+        img = render(b["parts"], [x + 6, floor + 11, -150], [x, floor + 4.5, -177], T_W, T_H)
+        ox, oy = (i % COLS) * T_W, (i // COLS) * (T_H + 34)
+        sheet.paste(img, (ox, oy + 34))
+        dr.text((ox + 10, oy + 6), NAMES.get(int(k), k) + " booth", fill="white", font=font)
+    sheet.save(sys.argv[2], quality=90)
+    print("saved", sys.argv[2])

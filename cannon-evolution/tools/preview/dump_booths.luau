@@ -129,7 +129,60 @@ if not ok then
 	print("(after the booths) " .. tostring(err))
 end
 
+local function encode(list, p, extra)
+	local shape = p.ClassName == "WedgePart" and "Wedge" or (p.ClassName == "Part" and p.Shape.Name or "Block")
+	local row = {
+		shape = shape,
+		size = { p.Size.X, p.Size.Y, p.Size.Z },
+		cf = { p.CFrame:GetComponents() },
+		color = { p.Color.R, p.Color.G, p.Color.B },
+		neon = p.Material == roblox.Enum.Material.Neon,
+		alpha = p.Transparency,
+	}
+	for k, v in extra or {} do
+		row[k] = v
+	end
+	table.insert(list, row)
+end
+
 local out = {}
+-- the start of the water: your cannon (placed like Effects.placeMyCannon), the Launch Zone,
+-- and stand-in lobby floor and sea so the scene reads
+do
+	local list = {}
+	local spot = workspace:FindFirstChild("MyCannonSpot")
+	local zone = workspace:FindFirstChild("LaunchZone")
+	if spot and zone then
+		local dir = config.LAUNCH_DIRECTION.Unit
+		local m = cannons.Cannon01_Starter:Clone()
+		m:PivotTo(CFrame.lookAt(Vector3.new(0, 0, 0), -dir))
+		local _, size = m:GetBoundingBox()
+		m:ScaleTo(9 / size.Y)
+		local cf, sc = m:GetBoundingBox()
+		m:PivotTo(m:GetPivot() + (spot.CFrame.Position - Vector3.new(cf.Position.X, cf.Position.Y - sc.Y / 2, cf.Position.Z)))
+		for _, p in parts(m) do
+			encode(list, p)
+		end
+		encode(list, zone)
+		-- floor and sea as small tiles (the renderer drops faces that reach behind the camera),
+		-- flagged ground so they are always drawn first
+		local fy = spot.CFrame.Position.Y
+		local function tiles(x0, x1, z0, z1, y, step, color)
+			for x = x0, x1 - 0.01, step do
+				for z = z0, z1 - 0.01, step do
+					local t = Instance.new("Part")
+					t.Size = Vector3.new(math.min(step, x1 - x), 0.2, math.min(step, z1 - z))
+					t.CFrame = CFrame.new(x + t.Size.X / 2, y, z + t.Size.Z / 2)
+					t.Color = color
+					encode(list, t, { ground = true })
+				end
+			end
+		end
+		tiles(-153, 41, -214, -75, fy - 0.1, 8, roblox.Color3.fromRGB(205, 200, 225))
+		tiles(-753, -153, -192, -96, 5.4, 24, roblox.Color3.fromRGB(40, 170, 225))
+	end
+	out.start = { parts = list, x = 0 }
+end
 for _, st in workspace.TrainingStations:GetChildren() do
 	local list = {}
 	for _, p in parts(st) do
