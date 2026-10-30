@@ -26,7 +26,7 @@ return function(ctx)
 
 	local TILE_COLORS = {
 		DoublePower = Color3.fromRGB(255, 150, 30), DoubleCash = Color3.fromRGB(60, 190, 70), Lucky = Color3.fromRGB(40, 200, 150),
-		TripleOpen = Color3.fromRGB(170, 70, 255), AutoCollect = Color3.fromRGB(50, 140, 255), ExtraEquip = Color3.fromRGB(120, 80, 230),
+		TripleOpen = Color3.fromRGB(170, 70, 255), OctoOpen = Color3.fromRGB(230, 60, 170), AutoCollect = Color3.fromRGB(50, 140, 255), ExtraEquip = Color3.fromRGB(120, 80, 230),
 		VIP = Color3.fromRGB(255, 190, 30), AutoLaunch = Color3.fromRGB(230, 60, 60),
 	}
 

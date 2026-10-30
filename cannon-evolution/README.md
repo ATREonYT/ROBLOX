@@ -10,7 +10,7 @@ Everything lives in `src/`. I install it straight into your open Studio place wh
 | `src/shared/Icons.lua` | ReplicatedStorage > **Icons** (ModuleScript) |
 | `src/server/GameServer.server.lua` | ServerScriptService > **GameServer** (Script) |
 | `src/client/GameClient/init.client.lua` | StarterPlayerScripts > **GameClient** (LocalScript) |
-| `src/client/GameClient/*.lua` (all others) | ModuleScripts **inside** GameClient, same names (Kit, Sfx, State, Popups, HUD, Effects, Shop, Cannons, Pets, Rebirth, Worlds, Upgrades, Missions, Rewards, Leaderboard, Settings) |
+| `src/client/GameClient/*.lua` (all others) | ModuleScripts **inside** GameClient, same names (Kit, Sfx, State, Popups, HUD, Effects, Shop, Cannons, Pets, PetFollow, Rebirth, Worlds, Upgrades, Missions, Rewards, Leaderboard, Settings) |
 | `src/tools/BuildLobbyExtras.lua` | Command Bar, once. Builds the 4 egg stands by the Grand Cannon and the see-through area borders along the track (already run) |
 | `src/tools/BuildRebirthSigns.lua` | Command Bar, once. Hangs a rebirth sign on the wall over each training area (rebirths needed, Power multiplier, locked/unlocked). Run it again after BuildWorld1, which brings back the old floating signs (already run) |
 | `src/tools/BuildCannonBallStand.lua` | Command Bar, once. The 2-tier cannonball pedestal on the right wall of the lobby, built part for part from `models/GunStand_2Tiers.glb` (already run) |
@@ -36,6 +36,12 @@ Like Stone Skipping: walk into the yellow **Launch Zone** in front of the Grand 
 ## Eggs
 
 Walk up to an egg stand and the egg menu opens on that egg; walk away and it closes. There's room for the exclusive egg as a 5th stand: add its id to `EGGS` in BuildLobbyExtras.
+
+Hatching: x1 always; x3 with the **Triple Open** pass and x8 with the **8x Open** pass (8x Open also unlocks x3). Both ids go in `Config.Passes`. The hatch popup is `Popups.Hatch`: three knocks with cracks, a glow that only turns blue/purple/gold if the pet inside really is that rare, the burst, pets popping out one by one, and a banner + confetti for Legendary and up. Tap to skip once the pets are out.
+
+## Pets following you
+
+`GameClient/PetFollow.lua`. Walking pets stay on the ground and hop along, rocking left and right in step with you; flying pets hover behind and bank into turns. Which pets fly is the `FLYING` list at the top; bunny and frog `hop` higher and penguin, chick, crab and turtle `waddle` (the `GAIT` list).
 
 ## Codes
 

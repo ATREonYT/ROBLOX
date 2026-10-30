@@ -741,95 +741,9 @@ return function(ctx)
 	end)
 
 	-----------------------------------------------------------------------
-	-- Pets follow their owners (every player's pets, rendered locally)
+	-- Pets follow their owners: walkers hop along the ground, flyers hover (PetFollow.lua)
 	-----------------------------------------------------------------------
-	local petFolder = new("Folder", { Name = "PetVisuals", Parent = workspace })
-	local followers = {} -- [player] = { key = "a,b", models = {} }
-	local showPets = true
-
-	local function buildPets(owner)
-		local entry = followers[owner]
-		if entry then
-			for _, m in ipairs(entry.models) do
-				m:Destroy()
-			end
-		end
-		local key = owner:GetAttribute("EquippedPets") or ""
-		entry = { key = key, models = {} }
-		followers[owner] = entry
-		local templates = ReplicatedStorage:FindFirstChild("Pets")
-		if not templates or key == "" then
-			return
-		end
-		for name in string.gmatch(key, "[^,]+") do
-			local template = templates:FindFirstChild(name)
-			if template then
-				local m = template:Clone()
-				for _, d in ipairs(m:GetDescendants()) do
-					if d:IsA("BasePart") then
-						d.Anchored = true
-						d.CanCollide = false
-						d.CanQuery = false
-						d.CanTouch = false
-						d.CastShadow = false
-					end
-				end
-				-- normalise size to ~3 studs
-				if m:IsA("Model") then
-					local _, size = m:GetBoundingBox()
-					local biggest = math.max(size.X, size.Y, size.Z)
-					if biggest > 0 then
-						m:ScaleTo(m:GetScale() * 3 / biggest)
-					end
-				end
-				m.Parent = petFolder
-				table.insert(entry.models, m)
-			end
-		end
-	end
-
-	local function watch(owner)
-		owner:GetAttributeChangedSignal("EquippedPets"):Connect(function()
-			buildPets(owner)
-		end)
-		buildPets(owner)
-	end
-	for _, p in ipairs(Players:GetPlayers()) do
-		watch(p)
-	end
-	Players.PlayerAdded:Connect(watch)
-	Players.PlayerRemoving:Connect(function(p)
-		local entry = followers[p]
-		if entry then
-			for _, m in ipairs(entry.models) do
-				m:Destroy()
-			end
-		end
-		followers[p] = nil
-	end)
-
-	RunService.RenderStepped:Connect(function(dt)
-		local t = os.clock()
-		for owner, entry in pairs(followers) do
-			local root = owner.Character and owner.Character:FindFirstChild("HumanoidRootPart")
-			local n = #entry.models
-			for i, m in ipairs(entry.models) do
-				local visible = showPets and root ~= nil
-				if not visible then
-					m:PivotTo(CFrame.new(0, -500, 0))
-				else
-					-- fan out behind the owner
-					local spread = (i - (n + 1) / 2) * 3.5
-					local offset = Vector3.new(spread, 0, 5 + math.abs(spread) * 0.3)
-					local hover = math.sin(t * 3 + i) * 0.4
-					local goal = root.CFrame * CFrame.new(offset.X, -1 + hover, offset.Z)
-					local current = m:GetPivot()
-					local pos = current.Position:Lerp(goal.Position, math.min(1, dt * 8))
-					m:PivotTo(CFrame.lookAt(pos, pos + root.CFrame.LookVector))
-				end
-			end
-		end
-	end)
+	require(script.Parent.PetFollow)(ctx)
 
 	-----------------------------------------------------------------------
 	-- Water: Stone Skipping style light lines drifting over the ocean
@@ -885,7 +799,6 @@ return function(ctx)
 		for _, sound in pairs(Kit.Sounds) do
 			sound.Volume = s.Sfx and 0.5 or 0
 		end
-		showPets = s.ShowPets
 		for _, p in ipairs(Players:GetPlayers()) do
 			if p ~= player and p.Character then
 				for _, d in ipairs(p.Character:GetDescendants()) do

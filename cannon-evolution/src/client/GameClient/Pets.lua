@@ -1,6 +1,6 @@
 --[[
 	Pets panel. "Eggs" tab: one studded egg card with its pets, their odds
-	and the 1 / 3 / 10 buttons; arrows step through the eggs. "Pets" tab: inventory with equip, equip best, delete.
+	and the 1 / 3 / 8 buttons (1 / 3 / 10 on the Robux egg); arrows step through the eggs. "Pets" tab: inventory with equip, equip best, delete.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -83,7 +83,7 @@ return function(ctx)
 		local buttons = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -22), Size = UDim2.new(0.6, 0, 0, 66), ZIndex = 28, Parent = show })
 		Kit.list(buttons, 14, true, Enum.HorizontalAlignment.Right)
 		local function eggButton(order, label, priceText, color, icon, onClick, rainbow)
-			local b = Kit.button({ Text = priceText, Icon = icon, Color = color, Size = UDim2.fromOffset(176, 62), TextSize = 32, IconSize = 32, Order = -order, ZIndex = 30, Parent = buttons, OnClick = onClick })
+			local b = Kit.button({ Text = priceText, Icon = icon, Color = color, Size = UDim2.fromOffset(152, 62), TextSize = 30, IconSize = 30, Order = -order, ZIndex = 30, Parent = buttons, OnClick = onClick })
 			b.Instance.Name = "EggBuy" .. order -- the tutorial points at EggBuy1
 			Kit.text({ Text = label, Size = 28, StrokeSize = 3.5, FrameSize = UDim2.fromOffset(60, 28), Position = UDim2.fromOffset(-10, -20), AlignX = Enum.TextXAlignment.Left, ZIndex = 35, Parent = b.Instance })
 			if rainbow then
@@ -106,15 +106,21 @@ return function(ctx)
 			eggButton(1, "x1", Config.Format(egg.Price), "Green", icon, function()
 				ctx.Request("Hatch", egg.Id, 1)
 			end)
-			if State.Passes.TripleOpen then
-				eggButton(2, "x3", Config.Format(egg.Price * 3), "Yellow", icon, function()
-					ctx.Request("Hatch", egg.Id, 3)
-				end)
-			else
-				eggButton(2, "x3", "Unlock", "Yellow", "Robux", function()
-					ctx.Request("Purchase", "Pass", "TripleOpen")
-				end)
+			-- x3 and x8 hatch at once with their gamepass (8x Open covers x3 too); without it the button sells the pass
+			local function multiButton(order, n, pass, color, rainbow)
+				local owned = State.Passes[pass] or (n == 3 and State.Passes.OctoOpen)
+				if owned then
+					eggButton(order, "x" .. n, Config.Format(egg.Price * n), color, icon, function()
+						ctx.Request("Hatch", egg.Id, n)
+					end, rainbow)
+				else
+					eggButton(order, "x" .. n, "Unlock", color, "Robux", function()
+						ctx.Request("Purchase", "Pass", pass)
+					end, rainbow)
+				end
 			end
+			multiButton(2, 3, "TripleOpen", "Yellow")
+			multiButton(3, 8, "OctoOpen", "Green", true)
 		end
 
 		-- step through the eggs
@@ -245,6 +251,7 @@ return function(ctx)
 	end })
 
 	local lastPetsKey = ""
+	local lastPassKey = ""
 	return {
 		Frame = panel.Frame,
 		OnOpen = function(tab, eggId)
@@ -254,7 +261,16 @@ return function(ctx)
 			tabs:Select(tab or current)
 		end,
 		Refresh = function()
-			if current ~= "Pets" or not State.Data then
+			if not State.Data then
+				return
+			end
+			if current == "Eggs" then
+				-- swap "Unlock" for the price once a hatch gamepass is bought
+				local passKey = tostring(State.Passes.TripleOpen) .. tostring(State.Passes.OctoOpen)
+				if passKey ~= lastPassKey then
+					lastPassKey = passKey
+					buildEggs()
+				end
 				return
 			end
 			-- rebuild only when the pet list actually changed

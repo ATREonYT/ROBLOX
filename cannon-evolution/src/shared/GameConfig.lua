@@ -308,12 +308,13 @@ Config.Passes = {
 	DoubleCash  = { Id = 0, Name = "2x Cash",     Icon = "DoubleCash",  Price = 399, Desc = "Double Cash from every launch" },
 	Lucky       = { Id = 0, Name = "Lucky",       Icon = "Lucky",       Price = 249, Desc = "2x Luck when hatching eggs" },
 	TripleOpen  = { Id = 0, Name = "Triple Open", Icon = "TripleOpen",  Price = 349, Desc = "Hatch 3 eggs at once" },
+	OctoOpen    = { Id = 0, Name = "8x Open",     Icon = "TripleOpen",  Price = 799, Desc = "Hatch 8 eggs at once" },
 	AutoCollect = { Id = 0, Name = "Auto Collect", Icon = "AutoCollect", Price = 349, Desc = "Collect orbs from far away", ComingSoon = true }, -- orbs are off, so it gives nothing yet
 	ExtraEquip  = { Id = 0, Name = "+2 Pets",     Icon = "ExtraEquip",  Price = 199, Desc = "Equip 2 more pets" },
 	VIP         = { Id = 0, Name = "VIP",         Icon = "VIP",         Price = 299, Desc = "Dragon Cannon station + 1.5x Gems" },
 	AutoLaunch  = { Id = 0, Name = "Auto Launch", Icon = "Trophy",      Price = 25,  Desc = "Launch automatically" },
 }
-Config.PassOrder = { "DoublePower", "DoubleCash", "Lucky", "TripleOpen", "AutoCollect", "ExtraEquip", "VIP", "AutoLaunch" }
+Config.PassOrder = { "DoublePower", "DoubleCash", "Lucky", "TripleOpen", "OctoOpen", "AutoCollect", "ExtraEquip", "VIP", "AutoLaunch" }
 
 -- Grant: what the server gives when the product is bought.
 Config.Products = {

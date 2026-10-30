@@ -1247,7 +1247,14 @@ local actions = {
 		if not egg or egg.Currency == "Robux" then
 			return false
 		end
-		count = (count == 3 and hasPass(player, "TripleOpen")) and 3 or 1
+		-- 8x Open also covers 3x
+		if count == 8 and hasPass(player, "OctoOpen") then
+			count = 8
+		elseif count == 3 and (hasPass(player, "TripleOpen") or hasPass(player, "OctoOpen")) then
+			count = 3
+		else
+			count = 1
+		end
 		return hatch(player, egg, count, false)
 	end,
 	EquipPet = equipPet,
