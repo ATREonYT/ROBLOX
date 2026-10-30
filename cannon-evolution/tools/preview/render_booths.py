@@ -1,9 +1,10 @@
 """Offline look at the training booths with their cannons: draws the parts from dump_booths.luau
 as flat-shaded shapes through a perspective camera at each booth's front, one tile per booth.
 python3 tools/preview/render_booths.py booths.json out.png
-Only a rough stand-in for Studio: no studs, particles, bloom, labels or real lighting."""
+Only a rough stand-in for Studio: no studs, particles, labels or real lighting; neon gets a simple blur glow
+to stand in for Studio's bloom."""
 import json, math, sys
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 from render_cannons import faces, apply  # noqa: E402  (shape tables shared with the cannon sheet)
@@ -44,12 +45,17 @@ def render(parts, cam, look, W, H, fov=55):
             shade = 1.0 if p["neon"] else 0.72 + 0.38 * max(0, dot(nrm, LIGHT))
             col = [min(255, int(c * 255 * shade * (1.3 if p["neon"] else 1))) for c in p["color"]]
             a = p["alpha"]
-            polys.append((sum(ds) / len(ds), pts, tuple(col), a))
+            polys.append((sum(ds) / len(ds), pts, tuple(col), a, p["neon"]))
     img = Image.new("RGB", (W, H), (196, 214, 238))
     d = ImageDraw.Draw(img, "RGBA")
-    for _, pts, col, a in sorted(polys, key=lambda t: -t[0]):
+    glow = Image.new("RGB", (W, H), (0, 0, 0))
+    g = ImageDraw.Draw(glow)
+    for _, pts, col, a, neon in sorted(polys, key=lambda t: -t[0]):
         d.polygon(pts, fill=col + (int(255 * (1 - a)),), outline=tuple(max(0, c - 45) for c in col) + (int(255 * (1 - a)),))
-    return img
+        # neon lights up; anything drawn over it later hides its glow source
+        g.polygon(pts, fill=col if neon else (0, 0, 0))
+    glow = ImageChops.add(glow.filter(ImageFilter.GaussianBlur(9)), glow.filter(ImageFilter.GaussianBlur(3)))
+    return ImageChops.screen(img, glow)
 
 T_W, T_H, COLS = 520, 430, 4
 rows = math.ceil(len(order) / COLS)
