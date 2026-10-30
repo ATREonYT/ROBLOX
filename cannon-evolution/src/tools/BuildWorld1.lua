@@ -219,9 +219,9 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 	blk("Rim", Vector3.new(W - 2, 0.6, L), 0, 0.3, (front + back) / 2, theme.Rim, true)
 	blk("Floor", Vector3.new(W - 1.6, 0.7, L - 3.6), 0, 0.35, (front + back) / 2, theme.Floor, true)
 	blk("Floor", Vector3.new(W - 3.6, 0.7, L - 1.6), 0, 0.35, (front + back) / 2, theme.Floor, true)
-	if theme.Neon or theme.Edge then
-		-- glowing outline around the rim (front edge only for the matte tiers)
-		local c = theme.Neon or theme.Edge
+	do
+		-- glowing outline: the front edge on every booth, the sides too on the neon tiers
+		local c = theme.Neon or theme.Edge or theme.Rim:Lerp(WHITE, 0.45)
 		glow("Edge", Vector3.new(W - 2, 0.2, 0.3), 0, 0.62, front + 0.15, c)
 		if theme.Neon then
 			for _, s in ipairs({ -1, 1 }) do
@@ -232,6 +232,7 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 
 	-- start mat: white outline and the two marks
 	local matW, z0, z1 = W - 4.4, front + 1.6, 0.6
+	blk("MatFill", Vector3.new(matW, 0.05, z1 - z0), 0, 0.72, (z0 + z1) / 2, dark(theme.Floor, 0.22))
 	for _, s in ipairs({ -1, 1 }) do
 		blk("Mat", Vector3.new(0.25, 0.08, z1 - z0), s * matW / 2, 0.74, (z0 + z1) / 2, WHITE)
 		blk("Mat", Vector3.new(matW + 0.25, 0.08, 0.25), 0, 0.74, s == -1 and z0 or z1, WHITE)
@@ -363,6 +364,13 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 		for i, c in ipairs({ rgb(235, 60, 60), rgb(60, 140, 235), rgb(80, 200, 90) }) do
 			round("Bottle", 0.35, 1, W / 2 - 2.8 + i * 0.35, 2.1, 3.8, c, true)
 		end
+		-- striped barrel and a bucket of balls
+		round("Barrel", 1.4, 1.8, -(W / 2 - 2.2), 1.6, 6.4, rgb(220, 50, 50), true)
+		round("Band", 1.45, 0.3, -(W / 2 - 2.2), 1.6, 6.4, WHITE, true)
+		blk("Bucket", Vector3.new(1.2, 0.8, 1.2), W / 2 - 2.2, 1.1, 6.6, rgb(60, 140, 235))
+		for i, c in ipairs({ rgb(250, 200, 40), rgb(235, 60, 60), WHITE }) do
+			ball("Ball", 0.5, W / 2 - 2.6 + i * 0.25, 1.7, 6.6 + (i % 2) * 0.2, c)
+		end
 	elseif theme.Props == "targets" then
 		for _, s in ipairs({ -1, 1 }) do
 			local x = s * (W / 2 - 2.4)
@@ -379,7 +387,18 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 			p.Material = Enum.Material.Glass
 			p.Transparency = 0.35
 		end
+		-- tall ice pillars in the back corners and snow drifting down
+		for _, sx in ipairs({ -1, 1 }) do
+			local p = blk("IcePillar", Vector3.new(1.2, 4.5, 1.2), sx * (W / 2 - 2.2), 2.95, pz - 1.4, rgb(190, 235, 255))
+			p.Material = Enum.Material.Glass
+			p.Transparency = 0.3
+		end
 		sparkles(blk("Fx", Vector3.new(W - 3, 0.2, 4), 0, 1, laneZ, WHITE), rgb(200, 240, 255), 3, 0.5).Parent.Transparency = 1
+		local snow = sparkles(blk("Fx", Vector3.new(W - 3, 0.2, L - 6), 0, H, (front + back) / 2 + 2, WHITE), WHITE, 6, 0.3, "rbxasset://textures/particles/smoke_main.dds", 0.5)
+		snow.Parent.Transparency = 1
+		snow.EmissionDirection = Enum.NormalId.Bottom
+		snow.Acceleration = Vector3.new(0, -1.5, 0)
+		snow.Lifetime = NumberRange.new(4, 6)
 	elseif theme.Props == "stage" then
 		local sun = round("Sun", 4, 0.3, 0, 7.6, pz - 0.4, rgb(255, 210, 40))
 		sun.Material = Enum.Material.Neon
@@ -411,9 +430,23 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 			p.Material = Enum.Material.Neon
 			p.CFrame = p.CFrame * CFrame.Angles(0, 0, math.rad(45))
 		end
+		for i, b in ipairs({ { -(W / 2 - 1.6), 3.4, 3.4 }, { W / 2 - 1.6, 3.8, 3.2 } }) do
+			local col = i == 1 and rgb(120, 230, 120) or rgb(255, 160, 60)
+			ball("Balloon", 1.2, b[1], b[2] + 1.2, b[3], col).Material = Enum.Material.Glass
+			bar(b[1], b[2] + 0.6, b[3], b[1], 2.8, b[3] - 1.2, 0.08, WHITE, "String")
+		end
 		sparkles(blk("Fx", Vector3.new(W - 3, 0.2, 4), 0, 1, laneZ, WHITE), rgb(255, 170, 240), 3, 0.5).Parent.Transparency = 1
 	elseif theme.Props == "gold" then
-		-- red laser lines on the dark panel and a gold sparkle shower
+		-- coin stacks, a treasure chest, red laser lines on the dark panel and a gold sparkle shower
+		for i, c in ipairs({ { -(W / 2 - 2), 4.2, 3 }, { -(W / 2 - 2.8), 4.9, 2 }, { W / 2 - 2, 4.4, 4 } }) do
+			for k = 0, c[3] - 1 do
+				round("Coin", 1, 0.25, c[1], 0.85 + k * 0.27, c[2], k % 2 == 0 and rgb(255, 205, 40) or rgb(240, 180, 30), true)
+			end
+		end
+		blk("Chest", Vector3.new(2, 1.2, 1.3), W / 2 - 2.4, 1.3, 7.2, rgb(140, 75, 40))
+		blk("ChestLid", Vector3.new(2.1, 0.5, 1.4), W / 2 - 2.4, 2.1, 7.2, rgb(120, 60, 30))
+		blk("ChestTrim", Vector3.new(2.15, 0.2, 1.45), W / 2 - 2.4, 1.85, 7.2, rgb(255, 205, 40))
+		glow("ChestGlow", Vector3.new(1.6, 0.15, 1), W / 2 - 2.4, 2.4, 7.2, rgb(255, 225, 120))
 		for _, s in ipairs({ -1, 1 }) do
 			local a = bar(s * 1.2, 1, pz - 0.3, s * (W / 2 - 1.8), H - 1, pz - 0.3, 0.12, rgb(255, 40, 40), "Laser")
 			a.Material = Enum.Material.Neon
@@ -441,6 +474,12 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 			local cap = round("TankGlow", 1.25, 0.4, s * (W / 2 - 2.2), 4.2, pz - 1.2, theme.Neon, true)
 			cap.Material = Enum.Material.Neon
 		end
+		-- glowing pipes along the lane sides and a toxic puddle
+		for _, sx in ipairs({ -1, 1 }) do
+			blk("Pipe", Vector3.new(0.5, 0.5, pz - 4), sx * (W / 2 - 1.3), 0.95, (pz + 3) / 2, rgb(30, 45, 70))
+			glow("PipeGlow", Vector3.new(0.52, 0.15, pz - 5), sx * (W / 2 - 1.3), 1.2, (pz + 3) / 2, theme.Neon)
+		end
+		glow("Puddle", Vector3.new(2.2, 0.06, 1.6), -2.2, 0.74, 6.8, theme.Neon)
 		local sign = blk("Warning", Vector3.new(1.6, 1.6, 0.15), W / 2 - 2, H - 1.5, pz - 0.4, rgb(250, 205, 30))
 		sign.CFrame = sign.CFrame * CFrame.Angles(0, 0, math.rad(45))
 		local sg = Instance.new("SurfaceGui")
@@ -460,6 +499,15 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 		fx.EmissionDirection = Enum.NormalId.Top
 		fx.SpreadAngle = Vector2.new(20, 20)
 	end
+
+	-- coloured light from the back wall so the booth glows onto its floor, like the pictures
+	local lamp = blk("Glow", Vector3.new(0.5, 0.5, 0.5), 0, 6, pz - 2.5, WHITE)
+	lamp.Transparency = 1
+	local pl = Instance.new("PointLight")
+	pl.Color = (theme.Neon or theme.Edge or theme.Floor):Lerp(WHITE, 0.2)
+	pl.Brightness = theme.Neon and 1.6 or 1
+	pl.Range = 16
+	pl.Parent = lamp
 
 	-- small black "+N Power" label over the booth, like the pictures
 	local tag = blk("Tag", Vector3.new(0.5, 0.5, 0.5), 0, H + 4.2, pz, WHITE)
