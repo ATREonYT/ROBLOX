@@ -1389,6 +1389,10 @@ local function onPlayerAdded(player)
 	end
 	local data = reconcile(type(stored) == "table" and stored or {}, Config.DefaultData)
 	profiles[player] = { Data = data, Loaded = true, JoinTime = os.clock(), PlaytimeClaimed = {}, Passes = {} }
+	data.Balls[Config.Balls[1].Id] = true
+	if not (Config.GetBall(data.EquippedBall) and data.Balls[data.EquippedBall]) then
+		data.EquippedBall = Config.Balls[1].Id
+	end
 	player:SetAttribute("Ball", data.EquippedBall)
 	loadPasses(player)
 	if not player.Parent then

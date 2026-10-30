@@ -278,18 +278,20 @@ end
 -- Cannonballs: shown on the stand in the lobby, one per pad (lower row first,
 -- left to right). Bought once with Cash, then picked; the picked one
 -- is the ball your cannon fires and adds its Cash bonus to every launch (Alex, Oct 30).
+-- Model = true: Alex's imported ball (ReplicatedStorage.CannonBalls, named by Id) is used; the
+-- others are drawn from Color and Band, which also tint the trail and the shop card.
 ---------------------------------------------------------------------------
 Config.Balls = {
-	{ Id = "Classic",  Name = "Classic",  Price = 0,         CashBonus = 0,    Color = Color3.fromRGB(55, 60, 75),    Band = Color3.fromRGB(255, 200, 60) },
-	{ Id = "Bronze",   Name = "Bronze",   Price = 500,       CashBonus = 0.05, Color = Color3.fromRGB(190, 110, 55),  Band = Color3.fromRGB(255, 220, 150) },
-	{ Id = "Silver",   Name = "Silver",   Price = 2500,      CashBonus = 0.1,  Color = Color3.fromRGB(200, 210, 225), Band = Color3.fromRGB(90, 160, 255) },
-	{ Id = "Gold",     Name = "Gold",     Price = 10000,     CashBonus = 0.15, Color = Color3.fromRGB(255, 200, 40),  Band = Color3.fromRGB(255, 255, 255) },
-	{ Id = "Ruby",     Name = "Ruby",     Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
-	{ Id = "Emerald",  Name = "Emerald",  Price = 250000,    CashBonus = 0.3,  Color = Color3.fromRGB(40, 200, 110),  Band = Color3.fromRGB(190, 255, 210) },
-	{ Id = "Ocean",    Name = "Ocean",    Price = 1000000,   CashBonus = 0.4,  Color = Color3.fromRGB(40, 140, 240),  Band = Color3.fromRGB(150, 240, 255) },
-	{ Id = "Frost",    Name = "Frost",    Price = 5000000,   CashBonus = 0.5,  Color = Color3.fromRGB(190, 235, 255), Band = Color3.fromRGB(70, 180, 255) },
-	{ Id = "Magma",    Name = "Magma",    Price = 25000000,  CashBonus = 0.75, Color = Color3.fromRGB(60, 25, 25),    Band = Color3.fromRGB(255, 120, 30) },
-	{ Id = "Galaxy",   Name = "Galaxy",   Price = 100000000, CashBonus = 1,    Color = Color3.fromRGB(70, 30, 140),   Band = Color3.fromRGB(255, 110, 240) },
+	{ Id = "Wood",    Name = "Wood",    Price = 0,         CashBonus = 0,    Model = true, Color = Color3.fromRGB(225, 110, 40),  Band = Color3.fromRGB(150, 65, 25) },
+	{ Id = "Stone",   Name = "Stone",   Price = 500,       CashBonus = 0.05, Model = true, Color = Color3.fromRGB(175, 170, 165), Band = Color3.fromRGB(115, 110, 105) },
+	{ Id = "Steel",   Name = "Steel",   Price = 2500,      CashBonus = 0.1,  Model = true, Color = Color3.fromRGB(230, 232, 240), Band = Color3.fromRGB(150, 160, 185) },
+	{ Id = "Gold",    Name = "Gold",    Price = 10000,     CashBonus = 0.15, Color = Color3.fromRGB(255, 200, 40),  Band = Color3.fromRGB(255, 255, 255) },
+	{ Id = "Ruby",    Name = "Ruby",    Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
+	{ Id = "Neon",    Name = "Neon",    Price = 250000,    CashBonus = 0.3,  Model = true, Color = Color3.fromRGB(45, 20, 70),    Band = Color3.fromRGB(210, 70, 255) },
+	{ Id = "Frost",   Name = "Frost",   Price = 1000000,   CashBonus = 0.4,  Color = Color3.fromRGB(190, 235, 255), Band = Color3.fromRGB(70, 180, 255) },
+	{ Id = "Rainbow", Name = "Rainbow", Price = 5000000,   CashBonus = 0.5,  Model = true, Color = Color3.fromRGB(255, 190, 40),  Band = Color3.fromRGB(255, 80, 60) },
+	{ Id = "Hacker",  Name = "Hacker",  Price = 25000000,  CashBonus = 0.75, Model = true, Color = Color3.fromRGB(15, 30, 20),    Band = Color3.fromRGB(60, 255, 100) },
+	{ Id = "Galaxy",  Name = "Galaxy",  Price = 100000000, CashBonus = 1,    Model = true, Color = Color3.fromRGB(50, 25, 95),    Band = Color3.fromRGB(200, 110, 255) },
 }
 
 function Config.GetBall(id)
@@ -465,8 +467,8 @@ Config.DefaultData = {
 	NextPetUid = 1,
 	Cannons = { Starter = true },
 	EquippedCannon = "Starter",
-	Balls = { Classic = true },
-	EquippedBall = "Classic",
+	Balls = { Wood = true },
+	EquippedBall = "Wood",
 	Boosts = {}, -- [boostId] = seconds remaining
 	Products = {}, -- owned product grants that are permanent (cannons), plus receipt ids
 	Stats = { Shots = 0, Launches = 0, Hatches = 0, CashEarned = 0, Rebirths = 0 },

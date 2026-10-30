@@ -882,11 +882,13 @@ return function(ctx)
 				end
 				local pad = stationPad(1)
 				local padPos = pad and pad.Position or (feet + facing * 30)
+				-- the booths open towards the middle of the lobby, whichever side they stand on
+				local open = pad and padPos.Z > -144.27 and -1 or 1
 				local startCF = cam.CFrame
 				local camPath = {
 					startCF.Position,
-					padPos + Vector3.new(14, 12, 18),
-					padPos + Vector3.new(-6, 9, 14),
+					padPos + Vector3.new(14, 12, 18 * open),
+					padPos + Vector3.new(-6, 9, 14 * open),
 					endPos + Vector3.new(0, 4, 0) - facing * 6,
 					endPos,
 				}

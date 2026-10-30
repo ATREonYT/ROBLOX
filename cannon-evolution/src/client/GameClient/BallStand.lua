@@ -38,7 +38,8 @@ return function(ctx)
 		return
 	end
 
-	-- pads in Config.Balls order: lower row first, left to right as you face the stand (+X first)
+	-- pads in Config.Balls order: lower row first, left to right as you face the stand (it stands on
+	-- the -Z side facing +Z, so -X is on your left)
 	local pads = {}
 	for _, p in ipairs(stand:GetChildren()) do
 		if p.Name == "PadBase" then
@@ -49,7 +50,7 @@ return function(ctx)
 		if math.abs(a.Position.Y - b.Position.Y) > 1 then
 			return a.Position.Y < b.Position.Y
 		end
-		return a.Position.X > b.Position.X
+		return a.Position.X < b.Position.X
 	end)
 
 	local function partsOn(pad)

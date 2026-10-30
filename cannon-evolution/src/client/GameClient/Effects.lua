@@ -596,13 +596,32 @@ return function(ctx)
 			Material = Enum.Material.SmoothPlastic, Color = look.Color, CFrame = CFrame.new(origin),
 			Parent = workspace,
 		})
-		local band = new("Part", {
-			Name = "Band", Shape = Enum.PartType.Cylinder, Size = Vector3.new(BALL_RADIUS * 0.35, BALL_RADIUS * 2.08, BALL_RADIUS * 2.08),
-			CanCollide = false, CanQuery = false, CanTouch = false, Massless = true,
-			Material = Enum.Material.SmoothPlastic, Color = look.Band, CFrame = ball.CFrame * CFrame.Angles(0, math.rad(90), 0),
-			Parent = ball,
-		})
-		new("WeldConstraint", { Part0 = ball, Part1 = band, Parent = ball })
+		-- Alex's model of the ball when there is one, else a band round the plain ball
+		local balls = ReplicatedStorage:FindFirstChild("CannonBalls")
+		local model = balls and balls:FindFirstChild(look.Id)
+		if model and model:IsA("Model") then
+			model = model:Clone()
+			local _, size = model:GetBoundingBox()
+			model:ScaleTo(model:GetScale() * BALL_RADIUS * 2 / math.max(size.X, size.Y, size.Z))
+			model:PivotTo(ball.CFrame)
+			for _, d in ipairs(model:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.Anchored = false
+					d.CanCollide, d.CanQuery, d.CanTouch, d.Massless = false, false, false, true
+					new("WeldConstraint", { Part0 = ball, Part1 = d, Parent = d })
+				end
+			end
+			model.Parent = ball
+			ball.Transparency = 1
+		else
+			local band = new("Part", {
+				Name = "Band", Shape = Enum.PartType.Cylinder, Size = Vector3.new(BALL_RADIUS * 0.35, BALL_RADIUS * 2.08, BALL_RADIUS * 2.08),
+				CanCollide = false, CanQuery = false, CanTouch = false, Massless = true,
+				Material = Enum.Material.SmoothPlastic, Color = look.Band, CFrame = ball.CFrame * CFrame.Angles(0, math.rad(90), 0),
+				Parent = ball,
+			})
+			new("WeldConstraint", { Part0 = ball, Part1 = band, Parent = ball })
+		end
 		local a0 = new("Attachment", { Position = Vector3.new(0, 0.9, 0), Parent = ball })
 		local a1 = new("Attachment", { Position = Vector3.new(0, -0.9, 0), Parent = ball })
 		new("Trail", {

@@ -17,7 +17,7 @@
 local ServerStorage = game:GetService("ServerStorage")
 local Config = require(game.ReplicatedStorage.GameConfig)
 
-local SIDE = -1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side
+local SIDE = 1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side (Alex, Oct 30: training on your left as you face the water, the cannonball stand on your right)
 local CANNON_HEIGHT = 6 -- studs; a default character is ~5
 local PLINTH = 1.2 -- the cannon stands on a plinth in its booth's colours, so it shows above the counter (Alex, Oct 30)
 local TARGET_DISTANCE = 12 -- muzzle to target
