@@ -30,6 +30,9 @@ Config.Stations = {
 	{ Id = 5, Name = "Industrial Cannon", Model = "Cannon06_Industrial", Gain = 50,  Rebirths = 8 },
 	{ Id = 6, Name = "Golden Cannon",     Model = "Cannon05_Golden",     Gain = 125, Rebirths = 10 },
 	{ Id = 7, Name = "Dragon Cannon",     Model = "Cannon19_Dragon",     Gain = 40,  Rebirths = 0, Pass = "VIP" },
+	-- 8th station (Alex, Oct 30). Ids are list positions, so it goes after the VIP one;
+	-- BuildWorld1 still places the VIP booth last in the row.
+	{ Id = 8, Name = "Plasma Cannon",     Model = "Cannon09_Plasma",     Gain = 300, Rebirths = 12 },
 }
 
 ---------------------------------------------------------------------------

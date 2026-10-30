@@ -1,7 +1,10 @@
 --[[
 	BuildWorld1  (run once in Studio's Command Bar, Edit mode)
 
-	Builds the World 1 training stations (6 + 1 gamepass) along the left side of the lobby,
+	Builds the World 1 training stations (7 + 1 gamepass) along the left side of the lobby,
+	each in a coloured booth like the carnival shooting booths Alex sent (Oct 30): floor with a
+	white start mat, caution stripe, side rails, a framed back wall behind the target with a
+	"+N Power" header and two lamp posts. Plain colours, no neon.
 	the Grand Cannon LaunchPoint and Launch Zone, and moves the SpawnLocation into the lobby.
 	Safe to re-run: it deletes and rebuilds Workspace.TrainingStations.
 
@@ -123,12 +126,12 @@ local function makeSign(cf, info)
 		t.Parent = bb
 	end
 	line(info.Name, 0, 0.4, Color3.new(1, 1, 1))
-	line("+" .. Config.Format(info.Gain) .. " ⚡ Power per shot", 0.4, 0.32, Color3.fromRGB(255, 215, 70))
+	line("+" .. Config.Format(info.Gain) .. " Power per shot", 0.4, 0.32, Color3.fromRGB(255, 215, 70))
 	local req
 	if info.Pass then
-		req = "⭐ GAMEPASS ⭐"
+		req = "VIP GAMEPASS"
 	elseif info.Rebirths > 0 then
-		req = "Requires " .. info.Rebirths .. " Rebirths 🔄"
+		req = "Requires " .. info.Rebirths .. " Rebirths"
 	else
 		req = "FREE"
 	end
@@ -136,15 +139,104 @@ local function makeSign(cf, info)
 	return sign
 end
 
-local PAD_COLORS = {
-	Color3.fromRGB(120, 220, 120), Color3.fromRGB(150, 160, 175), Color3.fromRGB(120, 190, 255),
-	Color3.fromRGB(255, 150, 70), Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 190, 40),
-	Color3.fromRGB(190, 80, 255), -- gamepass
+-- booth colours per station Id, taken from Alex's booth pictures; plain colours, no neon
+local THEMES = {
+	[1] = { Main = Color3.fromRGB(45, 95, 200), Accent = Color3.fromRGB(150, 95, 55) }, -- blue + wood
+	[2] = { Main = Color3.fromRGB(30, 40, 100), Accent = Color3.fromRGB(215, 50, 50) }, -- navy + red
+	[3] = { Main = Color3.fromRGB(95, 185, 235), Accent = Color3.fromRGB(235, 245, 255) }, -- light blue + white
+	[4] = { Main = Color3.fromRGB(235, 135, 35), Accent = Color3.fromRGB(255, 205, 70) }, -- orange
+	[5] = { Main = Color3.fromRGB(210, 65, 190), Accent = Color3.fromRGB(140, 60, 220) }, -- pink
+	[6] = { Main = Color3.fromRGB(235, 190, 45), Accent = Color3.fromRGB(255, 240, 200) }, -- gold
+	[7] = { Main = Color3.fromRGB(105, 50, 195), Accent = Color3.fromRGB(210, 70, 210) }, -- purple (VIP)
+	[8] = { Main = Color3.fromRGB(75, 190, 75), Accent = Color3.fromRGB(35, 70, 45) }, -- green
 }
+local function dark(c, a)
+	return c:Lerp(Color3.new(0, 0, 0), a or 0.3)
+end
+
+-- the booth around one station. at(x, y, z): x right, y up from the floor, z forward
+-- from the stand point towards the target.
+local function makeBooth(standCf, width, targetZ, theme, info)
+	local m = Instance.new("Model")
+	m.Name = "Booth"
+	local function at(x, y, z)
+		return standCf * CFrame.new(x, y, -z)
+	end
+	local function block(name, size, cf, color, collide)
+		return part({ Name = name, Size = size, CFrame = cf, Color = color, Material = Enum.Material.SmoothPlastic, CanCollide = collide ~= false, CastShadow = true, Parent = m })
+	end
+	local back, front = targetZ + 3, -6
+	local length = back - front
+	local mid = (back + front) / 2
+	-- floor: darker rim, coloured inner floor
+	block("Floor", Vector3.new(width, 0.5, length), at(0, 0.25, mid), dark(theme.Main, 0.35))
+	block("FloorInner", Vector3.new(width - 2, 0.56, length - 2), at(0, 0.28, mid), theme.Main)
+	-- white start mat outline and two marks where the player stands
+	local white = Color3.fromRGB(245, 245, 250)
+	for _, side in ipairs({ -1, 1 }) do
+		block("Mat", Vector3.new(0.35, 0.6, 7), at(side * 3.5, 0.3, -1), white, false)
+		block("Mat", Vector3.new(7.35, 0.6, 0.35), at(0, 0.3, -1 + side * 3.5), white, false)
+		block("Mark", Vector3.new(0.7, 0.6, 2), at(side * 0.7, 0.3, -3.2), white, false)
+	end
+	-- caution stripe between the mat and the cannon
+	block("Stripe", Vector3.new(width - 2, 0.62, 0.7), at(0, 0.31, 2.2), Color3.fromRGB(250, 205, 40), false)
+	-- low side rails
+	for _, side in ipairs({ -1, 1 }) do
+		block("Rail", Vector3.new(0.9, 1.6, back - 2.2), at(side * (width / 2 - 0.45), 0.8, (back + 2.2) / 2), dark(theme.Main, 0.2))
+		block("RailTop", Vector3.new(1.1, 0.3, back - 2.2), at(side * (width / 2 - 0.45), 1.75, (back + 2.2) / 2), theme.Accent, false)
+	end
+	-- framed back wall behind the target
+	block("BackWall", Vector3.new(width, 15, 1), at(0, 7.5, back - 0.5), dark(theme.Main, 0.25))
+	block("BackPanel", Vector3.new(width - 3.4, 11.5, 0.3), at(0, 7.5, back - 1.1), theme.Accent, false)
+	for _, side in ipairs({ -1, 1 }) do
+		block("Pillar", Vector3.new(1.5, 17, 1.5), at(side * (width / 2 - 0.75), 8.5, back - 0.75), theme.Main)
+	end
+	local header = block("Header", Vector3.new(width + 1, 2.6, 2), at(0, 16.2, back - 1), theme.Main)
+	block("HeaderTrim", Vector3.new(width + 1.2, 0.5, 2.2), at(0, 14.9, back - 1), theme.Accent, false)
+	block("Crest", Vector3.new(width * 0.45, 1.6, 1.6), at(0, 18.2, back - 1), theme.Accent, false)
+	local sg = Instance.new("SurfaceGui")
+	sg.Face = Enum.NormalId.Back -- faces the stand point
+	sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	sg.PixelsPerStud = 30
+	sg.LightInfluence = 0.3
+	sg.Parent = header
+	local t = Instance.new("TextLabel")
+	t.BackgroundTransparency = 1
+	t.Size = UDim2.fromScale(0.9, 0.8)
+	t.Position = UDim2.fromScale(0.05, 0.1)
+	t.Font = Enum.Font.FredokaOne
+	t.TextScaled = true
+	t.TextColor3 = Color3.new(1, 1, 1)
+	t.Text = "+" .. Config.Format(info.Gain) .. " Power"
+	local st = Instance.new("UIStroke")
+	st.Thickness = 4
+	st.Parent = t
+	t.Parent = sg
+	-- two lamp posts at the front corners, soft warm light
+	for _, side in ipairs({ -1, 1 }) do
+		block("LampPost", Vector3.new(0.9, 3.6, 0.9), at(side * (width / 2 + 0.8), 1.8, front + 0.5), Color3.fromRGB(200, 205, 225))
+		local cap = block("LampCap", Vector3.new(1.3, 0.7, 1.3), at(side * (width / 2 + 0.8), 3.95, front + 0.5), Color3.fromRGB(255, 250, 235), false)
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 235, 200)
+		light.Brightness = 0.7
+		light.Range = 10
+		light.Parent = cap
+	end
+	return m
+end
 
 local templates = game.ReplicatedStorage:FindFirstChild("Cannons")
 
-for i, info in ipairs(Config.Stations) do
+-- row order: by rebirths needed, the VIP booth last
+local order = table.clone(Config.Stations)
+table.sort(order, function(a, b)
+	local ka = a.Pass and math.huge or a.Rebirths
+	local kb = b.Pass and math.huge or b.Rebirths
+	return ka < kb
+end)
+local boothWidth = math.min(14, spacing - 3)
+
+for i, info in ipairs(order) do
 	local station = Instance.new("Model")
 	station.Name = "Station_" .. info.Id
 	station:SetAttribute("StationId", info.Id)
@@ -156,8 +248,7 @@ for i, info in ipairs(Config.Stations) do
 		Name = "Pad",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.4, 7, 7),
-		Color = PAD_COLORS[i],
-		Material = Enum.Material.Neon,
+		Transparency = 1, -- the booth's start mat shows where to stand
 		CanCollide = false,
 		CFrame = CFrame.new(standPos + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 		Parent = station,
@@ -195,6 +286,8 @@ for i, info in ipairs(Config.Stations) do
 
 	local targetPos = muzzlePos + fireDir * TARGET_DISTANCE
 	makeTarget(CFrame.lookAt(targetPos, targetPos - fireDir)).Parent = station
+	local targetZ = (targetPos - standPos):Dot(fireDir)
+	makeBooth(CFrame.lookAt(Vector3.new(standPos.X, floorY, standPos.Z), Vector3.new(standPos.X, floorY, standPos.Z) + fireDir), boothWidth, targetZ, THEMES[info.Id] or THEMES[1], info).Parent = station
 
 	makeSign(CFrame.new(standPos + fireDir * 4 + Vector3.new(0, CANNON_HEIGHT + 4, 0)), info).Parent = station
 	station.PrimaryPart = pad
