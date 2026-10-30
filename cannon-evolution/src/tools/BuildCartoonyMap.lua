@@ -41,6 +41,7 @@ local function skip(p)
 	local n = p:GetFullName():lower()
 	return n:find("ocean") or n:find("water") or n:find("river") or n:find("tree") or n:find("leaf")
 		or n:find("leaves") or n:find("bush") or n:find("flower") or n:find("grass_tuft")
+		or p.Name == "Bore" -- the dark muzzle hole stays plain
 end
 
 local function clear(p)
