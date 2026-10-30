@@ -154,7 +154,7 @@ local THEMES = {
 	[2] = { Rim = rgb(25, 30, 95), Floor = rgb(225, 45, 50), Counter = rgb(25, 30, 95), Frame = rgb(25, 30, 95), Panel = rgb(30, 38, 110), Style = "stepped", Props = "targets", Edge = rgb(255, 60, 70) },
 	[3] = { Rim = rgb(110, 190, 240), Floor = rgb(170, 225, 250), Counter = rgb(60, 140, 220), Frame = rgb(225, 240, 255), Panel = rgb(140, 210, 245), Style = "truss", Props = "ice", Neon = rgb(80, 190, 255), Rings = { rgb(60, 160, 240), rgb(255, 255, 255), rgb(60, 160, 240), rgb(255, 255, 255) } },
 	[4] = { Rim = rgb(235, 120, 20), Floor = rgb(250, 165, 40), Counter = rgb(240, 150, 40), Frame = rgb(240, 130, 25), Panel = rgb(70, 30, 20), Style = "truss", Props = "stage", Edge = rgb(255, 150, 40) },
-	[5] = { Rim = rgb(215, 45, 200), Floor = rgb(240, 85, 220), Counter = rgb(110, 40, 190), Frame = rgb(225, 60, 210), Panel = rgb(95, 35, 175), Style = "truss", Props = "balloons" },
+	[5] = { Rim = rgb(215, 45, 200), Floor = rgb(240, 85, 220), Counter = rgb(110, 40, 190), Frame = rgb(225, 60, 210), Panel = rgb(95, 35, 175), Style = "truss", Props = "balloons", Neon = rgb(255, 110, 240) },
 	[6] = { Rim = rgb(235, 185, 25), Floor = rgb(255, 215, 60), Counter = rgb(240, 190, 40), Frame = rgb(250, 205, 45), Panel = rgb(90, 25, 25), Style = "crown", Props = "gold", Neon = rgb(255, 245, 210), Rings = { rgb(255, 200, 40), rgb(255, 225, 110), rgb(220, 40, 40), rgb(255, 200, 40) } },
 	[7] = { Rim = rgb(85, 30, 200), Floor = rgb(40, 20, 105), Counter = rgb(85, 30, 200), Frame = rgb(70, 25, 170), Panel = rgb(35, 15, 90), Style = "stepped", Props = "neon", Neon = rgb(255, 60, 230), Rings = { rgb(255, 60, 230), rgb(45, 15, 95), rgb(255, 60, 230), rgb(45, 15, 95) } },
 	[8] = { Rim = rgb(70, 215, 60), Floor = rgb(30, 110, 45), Counter = rgb(60, 190, 55), Frame = rgb(70, 215, 60), Panel = rgb(15, 60, 30), Style = "truss", Props = "toxic", Neon = rgb(110, 255, 90), Rings = { rgb(110, 255, 90), rgb(20, 70, 35), rgb(110, 255, 90), rgb(255, 255, 255) } },
@@ -221,10 +221,11 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 	blk("Floor", Vector3.new(W - 1.6, 0.7, L - 3.6), 0, 0.35, (front + back) / 2, theme.Floor, true)
 	blk("Floor", Vector3.new(W - 3.6, 0.7, L - 1.6), 0, 0.35, (front + back) / 2, theme.Floor, true)
 	do
-		-- glowing outline: the front edge on every booth, the sides too on the neon tiers
+		-- glowing outline: the front edge on every booth, the sides too from the stage booth up
+		-- (glow grows with the tier, like the pictures: plain low booths, outlined high ones)
 		local c = theme.Neon or theme.Edge or theme.Rim:Lerp(WHITE, 0.45)
 		glow("Edge", Vector3.new(W - 2, 0.2, 0.3), 0, 0.62, front + 0.15, c)
-		if theme.Neon then
+		if theme.Neon or (theme.Edge and info.Rebirths >= 6) then
 			for _, s in ipairs({ -1, 1 }) do
 				glow("Edge", Vector3.new(0.3, 0.2, L - 2), s * (W / 2 - 0.15), 0.62, (front + back) / 2, c)
 			end
@@ -506,8 +507,8 @@ local function makeBooth(standCf, width, targetZ, theme, info)
 	lamp.Transparency = 1
 	local pl = Instance.new("PointLight")
 	pl.Color = (theme.Neon or theme.Edge or theme.Floor):Lerp(WHITE, 0.2)
-	pl.Brightness = theme.Neon and 1.6 or 1
-	pl.Range = 16
+	pl.Brightness = theme.Neon and 2.2 or 1.3
+	pl.Range = 18
 	pl.Parent = lamp
 
 	-- small black "+N Power" label over the booth, like the pictures
@@ -627,6 +628,8 @@ for i, info in ipairs(order) do
 	local targetZ = (targetPos - standPos):Dot(fireDir)
 	makeBooth(CFrame.lookAt(Vector3.new(standPos.X, floorY, standPos.Z), Vector3.new(standPos.X, floorY, standPos.Z) + fireDir), boothWidth, targetZ, THEMES[info.Id] or THEMES[1], info).Parent = station
 
+	-- the booth's glow colour, used by the client for its shots and hit effects
+	station:SetAttribute("Accent", theme.Neon or theme.Edge or theme.Rim:Lerp(WHITE, 0.3))
 	station.PrimaryPart = pad
 	station.Parent = folder
 end

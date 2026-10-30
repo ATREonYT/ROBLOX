@@ -66,9 +66,10 @@ cc.Brightness = 0.02
 cc.TintColor = Color3.fromRGB(255, 244, 228)
 
 local bloom = get("BloomEffect", "Bloom")
-bloom.Intensity = 0.6
-bloom.Size = 24
-bloom.Threshold = 0.95
+-- a little more bloom so the booths' neon glows like Alex's booth pictures; the threshold keeps it on neon only
+bloom.Intensity = 0.9
+bloom.Size = 28
+bloom.Threshold = 0.92
 
 local rays = get("SunRaysEffect", "SunRays")
 rays.Intensity = 0.03

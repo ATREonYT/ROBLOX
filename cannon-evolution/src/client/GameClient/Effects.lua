@@ -90,6 +90,9 @@ return function(ctx)
 		})
 		local bb = new("BillboardGui", { Size = UDim2.fromOffset(240, 70), AlwaysOnTop = true, StudsOffset = Vector3.new(0, 2, 0), Parent = anchor })
 		local t = Kit.text({ Text = text, Size = big and 56 or 40, Color = color, Parent = bb })
+		-- pop in big, then settle
+		local pop = new("UIScale", { Scale = big and 1.8 or 1.5, Parent = t })
+		TweenService:Create(pop, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 		TweenService:Create(bb, TweenInfo.new(0.9, Enum.EasingStyle.Quad), { StudsOffset = Vector3.new(math.random(-15, 15) / 10, 6, 0) }):Play()
 		task.delay(0.5, function()
 			TweenService:Create(t, TweenInfo.new(0.4), { TextTransparency = 1 }):Play()
@@ -98,7 +101,39 @@ return function(ctx)
 		Debris:AddItem(anchor, 1)
 	end
 
-	local function hitTarget(target, position, crit)
+	-- the booth's glow colour (BuildWorld1 sets it), so every booth's shots look like that booth
+	local function accentOf(station)
+		return station:GetAttribute("Accent") or Color3.fromRGB(255, 220, 80)
+	end
+
+	-- the booth light swells on a hit; at most once a second (kid-safe flashing limit)
+	local lastPulse = {}
+	local function pulseBooth(station)
+		local booth = station:FindFirstChild("Booth")
+		local lamp = booth and booth:FindFirstChild("Glow")
+		local light = lamp and lamp:FindFirstChildOfClass("PointLight")
+		if not light or os.clock() - (lastPulse[station.Name] or 0) < 1 then
+			return
+		end
+		lastPulse[station.Name] = os.clock()
+		local base = light:GetAttribute("Base") or light.Brightness
+		light:SetAttribute("Base", base)
+		light.Brightness = base * 1.8
+		TweenService:Create(light, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { Brightness = base }):Play()
+	end
+
+	-- a flat ring that grows and fades on the target face
+	local function shockwave(center, color)
+		local ring = new("Part", {
+			Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.1, 1.5, 1.5), Color = color, Material = Enum.Material.Neon,
+			Transparency = 0.2, Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+			CFrame = center.CFrame * CFrame.new(0, 0, -0.4) * CFrame.Angles(0, math.rad(90), 0), Parent = workspace,
+		})
+		TweenService:Create(ring, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Size = Vector3.new(0.1, 7, 7), Transparency = 1 }):Play()
+		Debris:AddItem(ring, 0.35)
+	end
+
+	local function hitTarget(target, position, crit, color)
 		local center = target:FindFirstChild("Center")
 		if center and not target:GetAttribute("Shaking") then
 			target:SetAttribute("Shaking", true)
@@ -111,7 +146,7 @@ return function(ctx)
 		end
 		burst(position, {
 			Texture = "rbxasset://textures/particles/sparkles_main.dds",
-			Color = ColorSequence.new(crit and Color3.fromRGB(255, 80, 255) or Color3.fromRGB(255, 220, 80)),
+			Color = ColorSequence.new(crit and Color3.fromRGB(255, 80, 255) or color),
 			Size = NumberSequence.new(crit and 1 or 0.6, 0),
 			Lifetime = NumberRange.new(0.3, 0.5),
 			Speed = NumberRange.new(10, crit and 30 or 20),
@@ -129,6 +164,7 @@ return function(ctx)
 			return
 		end
 		recoil(station)
+		local accent = accentOf(station)
 		local att = burst(muzzle, {
 			Texture = "rbxasset://textures/particles/smoke_main.dds",
 			Color = ColorSequence.new(Color3.fromRGB(255, 240, 200), Color3.fromRGB(120, 120, 120)),
@@ -140,7 +176,7 @@ return function(ctx)
 			EmissionDirection = Enum.NormalId.Front,
 			Count = 12,
 		})
-		local light = new("PointLight", { Color = Color3.fromRGB(255, 190, 90), Brightness = 6, Range = 12, Parent = att })
+		local light = new("PointLight", { Color = accent, Brightness = 6, Range = 12, Parent = att })
 		TweenService:Create(light, TweenInfo.new(0.2), { Brightness = 0 }):Play()
 		if isMine then
 			Kit.playSound("Shot")
@@ -148,16 +184,19 @@ return function(ctx)
 
 		local ball = new("Part", {
 			Shape = Enum.PartType.Ball, Size = Vector3.one * 1.2,
-			Color = crit and Color3.fromRGB(200, 60, 255) or Color3.fromRGB(35, 35, 40),
-			Material = crit and Enum.Material.Neon or Enum.Material.SmoothPlastic,
+			Color = crit and Color3.fromRGB(200, 60, 255) or accent,
+			Material = Enum.Material.Neon,
 			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
 			Parent = workspace,
 		})
 		new("Trail", {
 			Attachment0 = new("Attachment", { Position = Vector3.new(0, 0.4, 0), Parent = ball }),
 			Attachment1 = new("Attachment", { Position = Vector3.new(0, -0.4, 0), Parent = ball }),
-			Lifetime = 0.15,
-			Transparency = NumberSequence.new(0.3, 1),
+			Lifetime = 0.2,
+			Color = ColorSequence.new(crit and Color3.fromRGB(255, 120, 255) or accent),
+			LightEmission = 1,
+			WidthScale = NumberSequence.new(1, 0),
+			Transparency = NumberSequence.new(0.2, 1),
 			Parent = ball,
 		})
 		local p0, p2 = muzzle.Position, center.Position
@@ -170,7 +209,11 @@ return function(ctx)
 			if a >= 1 then
 				conn:Disconnect()
 				ball:Destroy()
-				hitTarget(target, p2, crit)
+				hitTarget(target, p2, crit, accent)
+				shockwave(center, crit and Color3.fromRGB(255, 120, 255) or accent)
+				if isMine then
+					pulseBooth(station)
+				end
 				if isMine then
 					floatingText(p2, (crit and "CRIT! +" or "+") .. Config.Format(gain) .. " ⚡", crit and Color3.fromRGB(255, 90, 255) or Kit.Colors.Yellow, crit)
 				end
