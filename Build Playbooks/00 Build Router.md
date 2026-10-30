@@ -9,7 +9,10 @@ updated: 2026-10-30
 
 **Then read the sector brief for your job** in [[Sector Briefs Index]] (8 briefs, verified against Roblox docs on 2026-10-30). Where an older note disagrees with a brief, the brief wins ([[Vault Corrections October 2026]]).
 
+**Starting code: [[05 New Game Kit]].** Every new game starts from `new-game-kit/` (saving, cash, upgrades, rebirth, eggs, pets, shop, gifts, codes, HUD, all tested offline). Build only the game's own loop.
+
 Playbooks in this folder:
+- [[05 New Game Kit]]: the starter kit and how to start a game from it in 10 steps
 - [[01 Current Hits October 2026]]: what's on the charts now, grouped into game families
 - [[Blueprint - Egg Run]]: treadmill speed, biomes, grab eggs, base income, steal (Steal An Egg, Climb/Bike For Eggs)
 - [[Blueprint - Plus One Evolution]]: train one stat, launch or throw for distance, cash, worlds (our Cannon Evolution)
@@ -33,16 +36,16 @@ Playbooks in this folder:
 
 | System | Design note | Code to copy |
 |---|---|---|
-| Saving | [[Session Locking and Profile Libraries]] | `LihFolk/skills/lihfolk-systems/` (PlayerData), `cannon-evolution/src/server/GameServer.server.lua` |
-| Currency, upgrades | [[Pricing Curves and Upgrade Costs]], [[Economy Inflation Sinks and Faucets Math]] | lihfolk-systems Currency; Cannon Evolution `GameConfig.lua` |
-| Big numbers (1.2M, 3.4B) | [[Big Numbers Precision and Formatting]] | |
-| Eggs, pets, rarity | [[Pet Hatching and Following End to End]], [[Drop Tables Rarity and Pity Systems]], [[Rarity Ladders and Drop Pacing Math]] | lihfolk-systems EggHatch; Cannon Evolution `Pets.lua` |
-| Rebirth | [[Rebirth and Prestige System End to End]] | lihfolk-systems Rebirth; Cannon Evolution `Rebirth.lua` |
-| Base / plot income | [[Tycoon Plots and Droppers End to End]], [[Offline Earnings]] | |
+| Saving | [[Session Locking and Profile Libraries]] | `new-game-kit/src/Server/PlayerData.luau`; `LihFolk/skills/lihfolk-systems/` (PlayerData), `cannon-evolution/src/server/GameServer.server.lua` |
+| Currency, upgrades | [[Pricing Curves and Upgrade Costs]], [[Economy Inflation Sinks and Faucets Math]] | `new-game-kit/src/Server/Currency.luau`, `Upgrades.luau`; lihfolk-systems Currency; Cannon Evolution `GameConfig.lua` |
+| Big numbers (1.2M, 3.4B) | [[Big Numbers Precision and Formatting]] | `new-game-kit/src/Shared/Format.luau` |
+| Eggs, pets, rarity | [[Pet Hatching and Following End to End]], [[Drop Tables Rarity and Pity Systems]], [[Rarity Ladders and Drop Pacing Math]] | `new-game-kit/src/Server/EggHatch.luau`, `Pets.luau`; lihfolk-systems EggHatch; Cannon Evolution `Pets.lua` |
+| Rebirth | [[Rebirth and Prestige System End to End]] | `new-game-kit/src/Server/Rebirth.luau`; lihfolk-systems Rebirth; Cannon Evolution `Rebirth.lua` |
+| Base / plot income | [[Tycoon Plots and Droppers End to End]], [[Offline Earnings]] | `new-game-kit/src/Server/Income.luau` (per second + offline) |
 | Steal from players | [[Case Study - Steal a Brainrot]], [[Blueprint - Egg Run]] section 4 | |
-| Shop, passes, products | [[Shop with Game Passes and Developer Products End to End]], [[Paid Random Items and Odds Disclosure in Practice]] | lihfolk-systems Shop + Receipts |
-| Daily rewards, codes, quests | [[Daily Rewards System End to End]], [[Codes Redemption System End to End]], [[Quest Chain System End to End]] | lihfolk-systems; Cannon Evolution `Rewards.lua`, `Missions.lua` |
-| Leaderboards | [[Global Leaderboards End to End]] | lihfolk-systems Leaderboard |
+| Shop, passes, products | [[Shop with Game Passes and Developer Products End to End]], [[Paid Random Items and Odds Disclosure in Practice]] | `new-game-kit/src/Server/Shop.luau` + `Receipts.luau`; lihfolk-systems Shop + Receipts |
+| Daily rewards, codes, quests | [[Daily Rewards System End to End]], [[Codes Redemption System End to End]], [[Quest Chain System End to End]] | `new-game-kit/src/Server/` DailyRewards, PlaytimeGifts, Codes, Quests; lihfolk-systems; Cannon Evolution `Rewards.lua`, `Missions.lua` |
+| Leaderboards | [[Global Leaderboards End to End]] | `new-game-kit/src/Server/Leaderboard.luau`; lihfolk-systems Leaderboard |
 | Obby checkpoints | [[Obby Checkpoints and Stage Saves End to End]] | |
 | Trading | [[Trading Systems Without Duplication]] | |
 | Anti-cheat for speed games | [[Detecting Movement Exploits - Speed Fly Noclip Teleport]], [[Server Authority and Validation]] | `LihFolk/skills/roblox-secure-remotes/` |

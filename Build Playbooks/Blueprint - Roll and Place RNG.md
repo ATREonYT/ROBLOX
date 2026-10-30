@@ -7,6 +7,8 @@ updated: 2026-10-30
 
 Back to [[00 Build Router]] · Family overview: [[01 Current Hits October 2026]]
 
+**Code:** start from [[05 New Game Kit]] (`sh new-game-kit/tools/new_game.sh`); build only this blueprint's own loop.
+
 **One line:** press Roll to get a random unit, keep the best ones on your plot to earn cash every second, and buy more luck and income so the next rolls are better.
 
 Reference games: Anime Dice (99% rating, an update every Saturday), Sol's RNG. Deep teardown: [[Teardown - Sol's RNG]]. Genre notes: `LihFolk/LihFolk Vault V2/10 Game Design and Genres/Genre Playbook - RNG and Collection Games.md`.

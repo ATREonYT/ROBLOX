@@ -7,6 +7,8 @@ updated: 2026-10-30
 
 Back to [[00 Build Router]] · Family overview: [[01 Current Hits October 2026]]
 
+**Code:** start from [[05 New Game Kit]] (`sh new-game-kit/tools/new_game.sh`); build only this blueprint's own loop.
+
 **One line:** work a normal job on a night shift (hospital, fry stand, kebab kiosk), serve each customer or patient, and spot the ones that are subtly wrong before they get you.
 
 Reference games: Animal Hospital (Anomaly), Sell Fries! [Anomaly], Scary Shawarma Kiosk: the ANOMALY. Servers of about 30, no voice chat. Related notes: [[Case Study - Doors]], [[Horror Monster Chase AI End to End]], `LihFolk/LihFolk Vault V2/10 Game Design and Genres/Genre Playbook - Horror and Story.md`.

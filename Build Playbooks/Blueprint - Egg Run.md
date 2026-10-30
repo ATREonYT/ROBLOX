@@ -7,6 +7,8 @@ updated: 2026-10-30
 
 Back to [[00 Build Router]] · Family overview: [[01 Current Hits October 2026]]
 
+**Code:** start from [[05 New Game Kit]] (`sh new-game-kit/tools/new_game.sh`); build only this blueprint's own loop.
+
 **One line:** train Speed on a treadmill, run into a biome you can now reach, grab an egg, get it home, hatch an animal that earns cash every second on your base, and spend the cash on a better treadmill and base. Optional: other players can steal from your base and you from theirs.
 
 Reference games: Steal An Egg (#1 on Roblox in Oct 2026), Climb For Animals Eggs, Bike For Egg!, Break and Steal an Egg, Steal A Pet And Ride It!, Ride A Pet. Deep teardowns: [[Teardown - Steal An Egg]], [[Teardown - Ride A Pet]], [[Case Study - Steal a Brainrot]].

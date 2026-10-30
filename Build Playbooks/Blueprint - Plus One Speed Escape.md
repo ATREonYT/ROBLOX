@@ -7,6 +7,8 @@ updated: 2026-10-30
 
 Back to [[00 Build Router]] · Family overview: [[01 Current Hits October 2026]]
 
+**Code:** start from [[05 New Game Kit]] (`sh new-game-kit/tools/new_game.sh`); build only this blueprint's own loop.
+
 **One line:** every step gives +1 speed, you try an obstacle course that gets harder to control the faster you are, finishing gives Wins, and Wins buy multipliers and unlock themed worlds.
 
 Reference games: +1 Speed Keyboard Escape (a themed world in each title, 22-player servers, about 9-minute sessions), Punch to Escape!, +1 Speed Monkey Escape. Deep teardown: [[Teardown - +1 Speed Keyboard Escape]]. Prototype in this repo: `plus-one-speed/`.
