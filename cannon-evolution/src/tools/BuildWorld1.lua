@@ -150,7 +150,7 @@ end
 local THEMES = {
 	[1] = { Rim = rgb(35, 70, 170), Floor = rgb(65, 115, 215), Counter = rgb(150, 75, 45), Frame = rgb(120, 60, 35), Panel = rgb(165, 90, 55), Style = "stall", Props = "fair" },
 	[2] = { Rim = rgb(25, 30, 95), Floor = rgb(225, 45, 50), Counter = rgb(25, 30, 95), Frame = rgb(25, 30, 95), Panel = rgb(30, 38, 110), Style = "stepped", Props = "targets", Edge = rgb(255, 60, 70) },
-	[3] = { Rim = rgb(110, 190, 240), Floor = rgb(170, 225, 250), Counter = rgb(60, 140, 220), Frame = rgb(225, 240, 255), Panel = rgb(140, 210, 245), Style = "truss", Props = "ice", Neon = rgb(80, 190, 255), Rings = { rgb(255, 255, 255), rgb(80, 170, 240), rgb(255, 255, 255), rgb(80, 170, 240) } },
+	[3] = { Rim = rgb(110, 190, 240), Floor = rgb(170, 225, 250), Counter = rgb(60, 140, 220), Frame = rgb(225, 240, 255), Panel = rgb(140, 210, 245), Style = "truss", Props = "ice", Neon = rgb(80, 190, 255), Rings = { rgb(60, 160, 240), rgb(255, 255, 255), rgb(60, 160, 240), rgb(255, 255, 255) } },
 	[4] = { Rim = rgb(235, 120, 20), Floor = rgb(250, 165, 40), Counter = rgb(240, 150, 40), Frame = rgb(240, 130, 25), Panel = rgb(70, 30, 20), Style = "truss", Props = "stage", Edge = rgb(255, 150, 40) },
 	[5] = { Rim = rgb(215, 45, 200), Floor = rgb(240, 85, 220), Counter = rgb(110, 40, 190), Frame = rgb(225, 60, 210), Panel = rgb(95, 35, 175), Style = "truss", Props = "balloons" },
 	[6] = { Rim = rgb(235, 185, 25), Floor = rgb(255, 215, 60), Counter = rgb(240, 190, 40), Frame = rgb(250, 205, 45), Panel = rgb(90, 25, 25), Style = "crown", Props = "gold", Neon = rgb(255, 245, 210), Rings = { rgb(255, 200, 40), rgb(255, 225, 110), rgb(220, 40, 40), rgb(255, 200, 40) } },
