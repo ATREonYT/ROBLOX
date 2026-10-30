@@ -338,43 +338,64 @@ return function(ctx)
 	end
 
 	local BALL_RADIUS = 1.4
-	local function splash(pos, big)
-		local ring = new("Part", {
-			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-			Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = Color3.fromRGB(220, 245, 255),
-			Size = Vector3.new(0.2, 2, 2), Transparency = 0.25,
-			CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)),
-			Parent = workspace,
-		})
-		local size = big and 22 or 9
-		TweenService:Create(ring, TweenInfo.new(0.5, Enum.EasingStyle.Quad), { Size = Vector3.new(0.2, size, size), Transparency = 1 }):Play()
-		local emitter = new("ParticleEmitter", {
-			Texture = "rbxasset://textures/particles/sparkles_main.dds", Color = ColorSequence.new(Color3.fromRGB(230, 248, 255)),
-			Speed = NumberRange.new(10, 20), SpreadAngle = Vector2.new(35, 35), Lifetime = NumberRange.new(0.35, 0.6),
-			Size = NumberSequence.new(1.1, 0), Acceleration = Vector3.new(0, -70, 0), EmissionDirection = Enum.NormalId.Right,
-			Rate = 0, Parent = ring,
-		})
-		emitter:Emit(big and 36 or 12)
-		Debris:AddItem(ring, 0.8)
+	-- a foam ring that rolls out over the water: a loop of short rounded tubes that grows, thins and fades,
+	-- lifting a little as it goes like a real ripple (plain white, no neon, so nothing flashes)
+	local function waveRing(pos, radius, duration, thick)
+		local SEGS = 24
+		local segs = {}
+		for i = 1, SEGS do
+			segs[i] = new("Part", {
+				Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+				Shape = Enum.PartType.Cylinder, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(238, 250, 255),
+				Size = Vector3.new(0.5, thick, thick), Parent = workspace,
+			})
+		end
+		local start = os.clock()
+		local conn
+		conn = RunService.Heartbeat:Connect(function()
+			local u = math.min((os.clock() - start) / duration, 1)
+			local e = 1 - (1 - u) ^ 2
+			local r = 1.2 + (radius - 1.2) * e
+			local th = thick * (1 - 0.6 * u)
+			local lift = math.sin(u * math.pi) * 0.35
+			local fade = math.clamp((u - 0.35) / 0.65, 0, 1)
+			for i, seg in ipairs(segs) do
+				local a = (i / SEGS) * math.pi * 2
+				local at = pos + Vector3.new(math.cos(a) * r, lift, math.sin(a) * r)
+				seg.Size = Vector3.new(2 * math.pi * r / SEGS * 1.2, th, th)
+				seg.CFrame = CFrame.lookAt(at, at + Vector3.new(-math.sin(a), 0, math.cos(a))) * CFrame.Angles(0, math.rad(90), 0)
+				seg.Transparency = 0.1 + 0.9 * fade
+			end
+			if u >= 1 then
+				conn:Disconnect()
+				for _, seg in ipairs(segs) do
+					seg:Destroy()
+				end
+			end
+		end)
 	end
 
-	-- the ball's final landing: a tall foamy splash and three waves rolling out over the water (Alex, Oct 30).
-	-- Plain white parts, no neon, so nothing flashes
+	-- every skip on the water: a ripple ring and a few droplets
+	local function splash(pos, big)
+		waveRing(pos, big and 9 or 5, big and 0.9 or 0.65, big and 0.7 or 0.45)
+		local holder = new("Part", {
+			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 1,
+			Size = Vector3.new(1, 0.2, 1), CFrame = CFrame.new(pos), Parent = workspace,
+		})
+		new("ParticleEmitter", {
+			Texture = "rbxasset://textures/particles/sparkles_main.dds", Color = ColorSequence.new(Color3.fromRGB(230, 248, 255)),
+			Speed = NumberRange.new(10, 20), SpreadAngle = Vector2.new(35, 35), Lifetime = NumberRange.new(0.35, 0.6),
+			Size = NumberSequence.new(1.1, 0), Acceleration = Vector3.new(0, -70, 0), EmissionDirection = Enum.NormalId.Top,
+			Rate = 0, Parent = holder,
+		}):Emit(big and 30 or 12)
+		Debris:AddItem(holder, 0.8)
+	end
+
+	-- the ball's final landing: a tall foamy splash and three ripple rings rolling out over the water (Alex, Oct 30)
 	local function bigSplash(pos)
 		for i = 0, 2 do
-			task.delay(i * 0.22, function()
-				local wave = new("Part", {
-					Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
-					Shape = Enum.PartType.Cylinder, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(235, 250, 255),
-					Size = Vector3.new(0.35, 4, 4), Transparency = 0.15,
-					CFrame = CFrame.new(pos + Vector3.new(0, 0.05 * i, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-					Parent = workspace,
-				})
-				local size = 30 - i * 6
-				TweenService:Create(wave, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					Size = Vector3.new(0.12, size, size), Transparency = 1,
-				}):Play()
-				Debris:AddItem(wave, 1.4)
+			task.delay(i * 0.25, function()
+				waveRing(pos, 18 - i * 4, 1.4, 1.1 - i * 0.2)
 			end)
 		end
 		local column = new("Part", {
