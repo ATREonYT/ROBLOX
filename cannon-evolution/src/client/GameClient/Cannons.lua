@@ -71,7 +71,7 @@ return function(ctx)
 			local model = ball.Model and balls and balls:FindFirstChild(ball.Id)
 			local art
 			if model then
-				art = Kit.viewport(card, model, { Size = UDim2.fromOffset(78, 78), Position = UDim2.new(0.5, 0, 0, 58), Spin = 30, FitLargest = true, Zoom = 0.85, ZIndex = 27 })
+				art = Kit.viewport(card, model, { Size = UDim2.fromOffset(78, 78), Position = UDim2.new(0.5, 0, 0, 58), Spin = 30, FitLargest = true, Zoom = 0.85 / (ball.CardZoom or 1), ZIndex = 27 }) -- CardZoom: meshes with sparkles baked in frame bigger
 			else
 				art = drawBall(card, ball, 54, 58)
 			end

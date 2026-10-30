@@ -289,9 +289,9 @@ Config.Balls = {
 	{ Id = "Ruby",    Name = "Ruby",    Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
 	{ Id = "Neon",    Name = "Neon",    Price = 250000,    CashBonus = 0.3,  Model = true, Color = Color3.fromRGB(45, 20, 70),    Band = Color3.fromRGB(210, 70, 255) },
 	{ Id = "Frost",   Name = "Frost",   Price = 1000000,   CashBonus = 0.4,  Color = Color3.fromRGB(190, 235, 255), Band = Color3.fromRGB(70, 180, 255) },
-	{ Id = "Rainbow", Name = "Rainbow", Price = 5000000,   CashBonus = 0.5,  Model = true, Color = Color3.fromRGB(255, 190, 40),  Band = Color3.fromRGB(255, 80, 60) },
-	{ Id = "Hacker",  Name = "Hacker",  Price = 25000000,  CashBonus = 0.75, Model = true, Color = Color3.fromRGB(15, 30, 20),    Band = Color3.fromRGB(60, 255, 100) },
-	{ Id = "Galaxy",  Name = "Galaxy",  Price = 100000000, CashBonus = 1,    Model = true, Color = Color3.fromRGB(50, 25, 95),    Band = Color3.fromRGB(200, 110, 255) },
+	{ Id = "Rainbow", Name = "Rainbow", Price = 5000000,   CashBonus = 0.5,  Model = true, CardZoom = 1.8, Color = Color3.fromRGB(255, 190, 40),  Band = Color3.fromRGB(255, 80, 60) },
+	{ Id = "Hacker",  Name = "Hacker",  Price = 25000000,  CashBonus = 0.75, Model = true, CardZoom = 1.8, Color = Color3.fromRGB(15, 30, 20),    Band = Color3.fromRGB(60, 255, 100) },
+	{ Id = "Galaxy",  Name = "Galaxy",  Price = 100000000, CashBonus = 1,    Model = true, CardZoom = 1.8, Color = Color3.fromRGB(50, 25, 95),    Band = Color3.fromRGB(200, 110, 255) },
 }
 
 function Config.GetBall(id)
