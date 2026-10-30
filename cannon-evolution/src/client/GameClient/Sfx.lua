@@ -45,8 +45,9 @@ local LEVEL = {
 	Hatch = { 0.4, 0, "Effects" },
 	Rebirth = { 0.4, 0, "Effects" },
 	Unlock = { 0.45, 0, "Effects" },
-	Shot = { 0.55, 0.04, "Effects" },
-	Launch = { 0.55, 0.03, "Effects" },
+	Shot = { 0.45, 0.06, "Effects" },
+	Launch = { 0.5, 0.03, "Effects" },
+	LaunchBoom = { 0.55, 0.04, "Effects" },
 	Skip = { 0.35, 0.08, "Effects" },
 	Splash = { 0.5, 0.05, "Effects" },
 }
@@ -64,10 +65,13 @@ local FALLBACK = {
 
 -- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
 -- Alex, Oct 30: "make the earned sounds just quick, nothing long". So rewards stop by 0.7 s at most.
-local CUT = { Click = 0.25, Shot = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.6, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
+local CUT = { Shot = 0.4, Launch = 1, LaunchBoom = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.4, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
 
 -- slots that use another slot's sound until they have their own
 local BORROW = { Unlock = "Reward" }
+
+-- slots that also play a second sound on top (the launch: a boom plus a whoosh flying away)
+local WITH = { Launch = "LaunchBoom" }
 
 local GAP = 0.06 -- a button sound asked for again this soon is the same press
 -- The big "ta-da" sounds never stack: a rebirth that also unlocks a cannon would otherwise play two stings at once
@@ -135,6 +139,9 @@ end
 
 -- pitch (optional) raises or lowers this one play, e.g. 2 ^ (n / 12) for n semitones up
 function Sfx.play(name, pitch)
+	if WITH[name] then
+		Sfx.play(WITH[name], pitch)
+	end
 	local pool = pools[name]
 	if pool == nil then
 		pool = build(name)

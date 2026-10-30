@@ -497,7 +497,9 @@ Config.Sounds = {
 	-- (UI_*.ogg, CC0) are the alternative if uploaded.
 	-- Alex, Oct 30: "find out what sounds other popular games use". Big simulators use this same licensed library
 	-- (Pro Sound Effects / APM): a bubble "pop" click, a coin bounce, a dry boom. Found with AssetService:SearchAudio.
-	Click = "rbxassetid://9112872239", -- "Small Bubbles Water Surface Float Up Pop 5 (SFX)", ProSoundEffects (Sfx plays 0.25 s)
+	-- Alex, Oct 30 evening: "make the ui clicking sound more smooth", "the reward sound just quick", "the launching sound
+	-- actually like a launch", "make the training sound better". Library picks until our own (assets/sfx) are uploaded:
+	Click = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s: one short soft tick (the bubble pop had a watery tail)
 	Hover = "", -- silent: a tick on every hover was too much
 	Open = "rbxassetid://15675012262", -- "Roblox_UI_Whoosh_04", 0.35 s
 	Close = "rbxassetid://15675028888", -- "Roblox_UI_Whoosh_02", 0.49 s
@@ -509,13 +511,15 @@ Config.Sounds = {
 	Hatch = "rbxassetid://9116384799",
 	-- Roblox's free licensed library too (found with Studio's Toolbox search on Oct 30, each loaded in Studio;
 	-- picked by title and length, not yet heard by Alex: swap any one by changing its id):
-	Reward = "rbxassetid://1840076509", -- "Through the Roof (sting)", APMOfficial, 2.25 s: a playful organ sting
+	Reward = "rbxassetid://9119516891", -- "Spoon Saucer 19 (SFX)", ProSoundEffects: one quick bright "ting" (Sfx plays 0.4 s); assets/sfx/Reward.ogg (2-note) if uploaded
 	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
 	Rebirth = "rbxassetid://1840018171",
 	Unlock = "rbxassetid://9116405618", -- "Magic Poofs Short Breathy Bursts Punchy 2 (SFX)", ProSoundEffects
 	Coin = "rbxassetid://9113848469", -- "Coin Bounce 3 (SFX)", ProSoundEffects: Sfx plays only its first 0.35 s
-	Shot = "rbxassetid://9043341682", -- "DRY BOOM 01", APMOfficial, ~1 s (Sfx plays 0.8 s); assets/sfx/Shot.ogg (crack + boom) if uploaded
-	Launch = "rbxassetid://9125805579", -- "Rising Whoosh Hissing Build Up Ascending Swo (SFX)", ProSoundEffects, 1.14 s
+	Shot = "rbxassetid://9119348667", -- training cannon: "Soccer Header 1 (SFX)", ProSoundEffects, a soft round thump (Sfx plays 0.4 s)
+	-- the launch is two sounds at once: the boom, and a low whoosh flying away (assets/sfx/Launch.ogg has both, if uploaded)
+	Launch = "rbxassetid://9120737280", -- "Whoosh Sweep Low End Thumping Repetitive 2 (SFX)", ProSoundEffects
+	LaunchBoom = "rbxassetid://9043341682", -- "DRY BOOM 01", APMOfficial, 1.25 s (Sfx plays 0.8 s); set to "" once Launch.ogg is in
 	Skip = "rbxassetid://9120589933", -- "Water Splash Splashes Splats Light 5 (SFX)", ProSoundEffects, 0.41 s
 	-- the ball's final landing (Alex, Oct 30: "a big splash sound"); found with Studio's Creator Store search, public and free
 	Splash = "rbxassetid://9120585530", -- "Water Splash Big Water Splash Dive In 3 (SFX)", ProSoundEffects, 2.7 s, Sfx cuts it at 1 s
