@@ -102,7 +102,7 @@ Rules [R `CLAUDE.md`, brief]:
 | Intro cutscene | ~15 s, skippable | ≤15 s, skippable, ends behind the player |
 | First payoff (throw/launch) | ~40 s after join | **≤30 s** |
 | First new item (stone/cannon) | ~55 s | ≤60 s |
-| First rebirth (tutorial end) | **~85 s** | **≤90 s** (Cannon was ~7 min: lower `REBIRTH_POWER_BASE` for rebirth 1 only) |
+| First rebirth (tutorial end) | **~85 s** | **≤90 s** (Cannon: GameConfig now aims at ~1.5 min of training with `REBIRTH_POWER_BASE = 100`; an earlier build took ~7 min. Time it from join in a fresh save) |
 | Feature unlock + Daily Rewards | ~88 s | Right after the first rebirth |
 | First egg hatch | Not in the first 90 s | In the first 3 min (from a playtime gift: a free egg) |
 

@@ -26,6 +26,9 @@ Playbooks in this folder:
 - [[Teardown - Stone Skipping]]: the +1 reference measured frame by frame (first 90 s, one throw, HUD, shop, retention)
 - [[08 Few-Prompt Game Building with AI]]: how to get a good game in a few prompts (what works, templates, self-checks)
 - [[09 Owner Taste Rules]]: the owner's calls on UI, sound, look and pace; load for every look/feel job
+- [[10 Map Design Playbook]]: ⭐ popular-quality maps from a short prompt (4 layout templates, 12-zone theme kit, scale numbers, build recipe, checklist)
+- [[11 VFX Moments Playbook]]: ⭐ launch, trails, splashes, coins, hatch, rebirth, zone and rare-shot effects with values and tier scaling
+- [[12 Game Loop Logic Playbook]]: ⭐ loop families, pacing targets, economy formulas, server/client system template, pacing sim
 - [[03 What's New on Roblox - RDC 2026 and October]]: every new Roblox feature, sorted into use now / coming soon
 - [[04 AI Tools Landscape October 2026]]: our AI stack, the official Studio MCP tool list, and 20+ third-party tools compared
 
@@ -34,7 +37,7 @@ Playbooks in this folder:
 | Want | Open |
 |---|---|
 | What to build next | [[01 Current Hits October 2026]], [[Viral Game Anatomy - Hooks, Loops and Timing]], `LihFolk/skills/roblox-trend-game/SKILL.md` |
-| A game in a known family | The matching Blueprint above |
+| A game in a known family | The matching Blueprint above, then [[12 Game Loop Logic Playbook]] for pacing and numbers |
 | A genre not listed | `LihFolk/LihFolk Vault V2/10 Game Design and Genres/` (Genre Playbook notes) |
 | The 7-day plan | `LihFolk/skills/roblox-trend-game/references/trend-games-research.md` section 9 |
 
@@ -61,9 +64,9 @@ Playbooks in this folder:
 
 | Job | Skill (`.claude/skills/`) | Notes |
 |---|---|---|
-| Map, props, lighting | `roblox-cartoony-building` | [[13 Cartoony & Low-Poly Building]], `reports/Cartoony Roblox building UI and animation.md` |
+| Map, props, lighting | `roblox-cartoony-building` | [[10 Map Design Playbook]], [[13 Cartoony & Low-Poly Building]], `reports/Cartoony Roblox building UI and animation.md` |
 | UI | `roblox-cartoony-ui` | [[14 Cartoony UI & Juice]] |
-| Effects | `roblox-vfx` | `VFX-ITEMS.md`, [[05 VFX]] |
+| Effects | `roblox-vfx` | [[11 VFX Moments Playbook]], `VFX-ITEMS.md`, [[05 VFX]] |
 | Animations | `roblox-ai-animation` | [[06 Animation]] |
 | Blender models | `blender-roblox-models` | [[04 Building, Maps & 3D Models]] |
 | Game feel | | [[06 Beat the Hits - Polish Playbook]], `GAME-FEEL.md`, `LihFolk/LihFolk Vault V2/47 Game Feel and Juice/` |

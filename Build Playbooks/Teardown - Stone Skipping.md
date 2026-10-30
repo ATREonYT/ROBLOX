@@ -33,7 +33,7 @@ Each bounce gives **+1 Skill**. Skill raises your Level, and the Level raises a 
 | ~85 s | **TUTORIAL COMPLETE!** on a sunburst: "Rebirth #1, ×2 SKILL, Tap to continue". Then confetti and a new feature unlocks with a NEW! tag (**SKIP RUSH**). |
 | ~88 s | **Daily Rewards** opens: 7 days, with day 7 a "Limited Shooting Star Relic". "CLAIM YOUR REWARD". |
 
-**Benchmark:** the tutorial ends with a first rebirth about **70 s after the cutscene**. Cannon Evolution's first rebirth took about 7 minutes (`reports/+1 Cannon Evolution build notes.md`, Still open).
+**Benchmark:** the tutorial ends with a first rebirth about **70 s after the cutscene**. An earlier Cannon Evolution build took about 7 minutes (build notes); `GameConfig.lua` now sets `REBIRTH_POWER_BASE = 100`, aimed at about 1.5 min of training. Time it from join on a fresh save.
 
 ## 3. One throw, frame by frame [M]
 - **Trigger:** stand in the **THROW ZONE**, a yellow studded dock with giant painted letters. A green **THROW** button pops up just above your character. Auto Throw is a pass.

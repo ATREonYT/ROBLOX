@@ -19,7 +19,7 @@ This file loads in every session, so keep it short. Each game folder has its own
   to the skin (its accent colour, a motif from its name, placed at its gem or edge). Scale by tier, as visible as the
   reference but no louder, and use only Roblox's built-in pictures.
 
-- For any UI, sound, look or feel job, load `Build Playbooks/09 Owner Taste Rules.md` first. Before showing a build, run the feel test in `Build Playbooks/06 Beat the Hits - Polish Playbook.md` §9.
+- For any UI, sound, look or feel job, load `Build Playbooks/09 Owner Taste Rules.md` first. Maps: `10 Map Design Playbook.md`; effects: `11 VFX Moments Playbook.md`; loops and numbers: `12 Game Loop Logic Playbook.md` (all in `Build Playbooks/`). Before showing a build, run the feel test in `Build Playbooks/06 Beat the Hits - Polish Playbook.md` §9.
 
 ## Skills from the video library
 **New game: start from `new-game-kit/`** (`sh new-game-kit/tools/new_game.sh <folder> <PlaceName>`, then its `README.md` and `CLAUDE.md`). **New game or new system: open `Build Playbooks/00 Build Router.md` first.** It points each job (game type, system, look, launch) to the right blueprint, notes, skills and code to copy.

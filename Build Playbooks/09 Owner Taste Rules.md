@@ -42,7 +42,7 @@ Back to [[00 Build Router]] · Process: [[08 Few-Prompt Game Building with AI]]
 - **Area walls show only while you fly**, so their names don't stack in the lobby.
 
 ## Pace and progression
-- **The reference pace is the target.** Its first rebirth comes at ~85 s; Cannon's took ~7 min. Hood's World 1 was set to 25–30 minutes on their call (Oct 27).
+- **The reference pace is the target.** Its first rebirth comes at ~85 s; Cannon's Config now aims at ~1.5 min of training (an earlier build took ~7 min). Hood's World 1 was set to 25–30 minutes on their call (Oct 27).
 - **"Coming soon" instead of fake features:** Auto Collect shows Coming soon until it's real.
 
 ## Working with them
