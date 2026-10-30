@@ -74,6 +74,26 @@ if (centre - PLAZA_CENTRE).Magnitude > 0.05 then
 	map:PivotTo(map:GetPivot() + (PLAZA_CENTRE - centre))
 	print(TAG, "moved into place by " .. tostring(PLAZA_CENTRE - centre))
 end
+-- Import 3D can also turn the map (Alex's import came in 180 degrees round). The round plaza can't show
+-- that, so check the launch dock is east of it (+X, the launch direction) and turn the map back if not.
+local dock
+for _, d in ipairs(map:GetDescendants()) do
+	if d:IsA("BasePart") and string.find(d.Name, "^Dock_Launch_Dock") then
+		dock = d
+		break
+	end
+end
+if dock then
+	local away = dock.Position - PLAZA_CENTRE
+	local turned = math.round(math.atan2(-away.Z, away.X) / (math.pi / 2)) * (math.pi / 2)
+	if turned ~= 0 then
+		local pivot = Vector3.new(PLAZA_CENTRE.X, 0, PLAZA_CENTRE.Z)
+		map:PivotTo(CFrame.new(pivot) * CFrame.Angles(0, -turned, 0) * CFrame.new(-pivot) * map:GetPivot())
+		print(TAG, ("the import was turned %d degrees: turned it back"):format(math.deg(turned)))
+	end
+else
+	warn(TAG, "no Dock_Launch_Dock part: can't check which way the map faces")
+end
 
 -- the importer may keep the file's groups as models or flatten them; put pieces in the groups by name
 local function group(name)
