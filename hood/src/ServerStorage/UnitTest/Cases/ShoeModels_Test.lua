@@ -143,7 +143,9 @@ return function(t)
   for i,id in W1 do
    t.expect.equal(P.Ids[i],id)
    local m=M.shoe(id,'R',1)
-   t.expect.equal(parts(m)-1,#P.Shoes[id]);t.expect.equal(M.Meta[id].Parts,#P.Shoes[id])
+   -- (Oct 28) plus the polish's sole line where the sheet has no stripe
+   local extra=named(m,'SoleLine')
+   t.expect.equal(parts(m)-1,#P.Shoes[id]+extra);t.expect.equal(M.Meta[id].Parts,#P.Shoes[id]+extra)
    -- a layered sole, a toe cap, the stepped upper, the lace bed and its bars, the square collar with round corners, the
    -- lining, the tongue and the heel tab (Astro Crown's crown takes the tab's place)
    t.expect.truthy(named(m,'Outsole')>=2 and named(m,'Sole')>=2 and named(m,'ToeBox')>=2 and named(m,'Quarter')==3 and named(m,'Eyestay')==1)
@@ -190,5 +192,78 @@ return function(t)
   local vf=M.viewport('Comet')
   t.expect.truthy(vf:IsA('ViewportFrame') and vf:FindFirstChildOfClass('Camera') and vf:FindFirstChild('Comet'))
   vf:Destroy()
+ end)
+ -- (Oct 28) the polish: same shapes, a cleaner finish
+ t.test('the polish: clean finish by rarity, laces that read, no z-fighting, a sole line only where it fits',function()
+  local Pol=M._polish
+  local lines=0
+  for _,id in M.AllIds do
+   local list,def=M._specs(id)
+   -- every coplanar overlap was tidied when the specs were made (a second pass finds none)
+   t.expect.equal(Pol.tidy(list),0)
+   local bed
+   for _,s in list do if s.name=='Eyestay' then bed=s.color break end end
+   local rarity=M.Meta[id].Rarity
+   local m=M.shoe(id,'R',1)
+   for _,d in m:GetDescendants() do
+    if d:IsA('BasePart') and d.Name~='Fit' then
+     t.expect.truthy(d.Material~=Enum.Material.Plastic and d.Material~=Enum.Material.Fabric)
+     if d.Name=='Lace' and bed and not def.rainbowLaces then t.expect.falsy(Pol.near(d.Color,bed)) end
+     if d.Name=='Quarter' and d.Material==Enum.Material.SmoothPlastic then t.expect.equal(d.Reflectance>0,rarity>=2) end
+    end
+   end
+   local n=named(m,'SoleLine')
+   if n>0 then lines+=1;t.expect.equal(named(m,'Stripe')+named(m,'Seam'),0) end
+   t.expect.truthy(parts(m)-1<=60)
+   m:Destroy()
+  end
+  t.expect.truthy(lines>=3)
+ end)
+ t.test('rounded blocks and wedges when RoundMesh is ready: same pieces, sizes and places; Parts again without it',function()
+  local R=M.RoundMesh
+  t.expect.truthy(R)
+  -- the packed meshes decode to size 1 meshes with valid triangles
+  for _,name in R.Names do
+   local v,n,tr=R.decode(name)
+   t.expect.equal(#tr,R.Data[name].Tris)
+   for _,p in v do t.expect.truthy(math.abs(p.X)<=0.5001 and math.abs(p.Y)<=0.5001 and math.abs(p.Z)<=0.5001) end
+   for _,q in tr do for i=1,3 do t.expect.truthy(v[q[i]]~=nil and n[q[i+3]]~=nil) end end
+  end
+  local sharp=M.shoe('SilverStreak','R',1)
+  local function tpl(name) local ok,p=pcall(Instance.new,'MeshPart');if not ok then p=Instance.new('Part') end;p.Name=name;p:SetAttribute('Tpl',name);return p end
+  R.inject({RoundBox=tpl('RoundBox'),RoundWedge=tpl('RoundWedge')})
+  local ok,err=pcall(function()
+   local soft=M.shoe('SilverStreak','R',1)
+   local a,b={},{}
+   for _,d in sharp:GetDescendants() do if d:IsA('BasePart') then table.insert(a,d) end end
+   for _,d in soft:GetDescendants() do if d:IsA('BasePart') then table.insert(b,d) end end
+   t.expect.equal(#a,#b)
+   local rounded=0
+   for i,d in a do
+    local e=b[i]
+    t.expect.equal(d.Name,e.Name)
+    t.expect.truthy((d.Size-e.Size).Magnitude<1e-4 and (d.CFrame.Position-e.CFrame.Position).Magnitude<1e-4 and d.Color==e.Color)
+    if e:GetAttribute('Tpl') then
+     rounded+=1
+     t.expect.equal(e:GetAttribute('Tpl'),d:IsA('WedgePart') and 'RoundWedge' or 'RoundBox')
+     t.expect.truthy(e.Anchored and not e.CanCollide and not e.CanQuery)
+    end
+   end
+   t.expect.truthy(rounded>=20)
+   -- worn: welded like the Parts
+   local ch=Instance.new('Model')
+   for _,n in {'LeftFoot','RightFoot','LeftLowerLeg','RightLowerLeg'} do local p=Instance.new('Part');p.Name=n;p.Size=n:find('Foot') and V(1,0.3,1) or V(1,1.193,1);p.Parent=ch end
+   local cleanup=M.wear(ch,'SilverStreak',{noFx=true})
+   local welded=0
+   for _,d in ch.HoodShoes:GetChildren() do if d:GetAttribute('Tpl') and d:FindFirstChild('ShoeWeld') then welded+=1 end end
+   t.expect.equal(welded,2*rounded)
+   cleanup();t.expect.falsy(ch:FindFirstChild('HoodShoes'))
+   soft:Destroy()
+  end)
+  R.inject(nil)
+  t.expect.truthy(ok,err)
+  local again=M.shoe('SilverStreak','R',1)
+  for _,d in again:GetDescendants() do t.expect.falsy(d:GetAttribute('Tpl')) end
+  again:Destroy();sharp:Destroy()
  end)
 end

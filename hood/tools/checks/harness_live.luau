@@ -152,7 +152,8 @@ roblox.implementMethod("CollectionService", "GetTagged", function(self, tag)
 end)
 roblox.implementMethod("Players", "GetPlayers", function(self) return self:GetChildren() end)
 -- (armory brief6) Debris and RunService.Heartbeat for the client's celebration; the test steps Heartbeat itself.
-roblox.implementMethod("Debris", "AddItem", function(self, inst, t) task.delay(t or 10, function() pcall(function() inst:Destroy() end) end) end)
+-- (Oct 28) on the recorder's frame clock when there is one (ui/firstvideo.luau: a 0.2 s effect lives 6 frames, not 0.2 s of a slow dump)
+roblox.implementMethod("Debris", "AddItem", function(self, inst, t) (_G.__vtask or task).delay(t or 10, function() pcall(function() inst:Destroy() end) end) end)
 roblox.implementProperty("RunService", "Heartbeat", function(self) return instSignal(self, "Heartbeat") end)
 -- (MECHANICS) server and client scripts in one DataModel: remotes deliver both ways (FireServer runs the server's
 -- handlers with the LocalPlayer), GUI/input/descendant events are recordable signals, sounds and tool equips are
@@ -185,7 +186,19 @@ roblox.implementProperty("Instance", "DescendantAdded", function(self) return in
 roblox.implementProperty("ValueBase", "Changed", function(self) return instSignal(self, "Changed") end)
 roblox.implementProperty("ProximityPromptService", "PromptTriggered", function(self) return instSignal(self, "PromptTriggered") end)
 roblox.implementMethod("Players", "GetUserThumbnailAsync", function() return "" end)
-roblox.implementMethod("RemoteFunction", "InvokeServer", function() return { Ready = false } end)
+-- (a RemoteFunction answers { Ready = false } unless a scenario sets _G.__liveInvoke before the servers start: then the
+-- server's OnServerInvoke answers, with the LocalPlayer, as in Roblox; the UI preview's HUD uses it for its extras)
+_G.__serverInvokers = {}
+roblox.implementProperty("RemoteFunction", "OnServerInvoke", function(self) return _G.__serverInvokers[self] end, function(self, fn)
+	-- (the checks keep the old harness: no live answers, and setting the handler fails as it always did there)
+	if not _G.__liveInvoke then error('OnServerInvoke is not a valid member of ' .. self.Name) end
+	_G.__serverInvokers[self] = fn
+end)
+roblox.implementMethod("RemoteFunction", "InvokeServer", function(self, ...)
+	local fn = _G.__liveInvoke and _G.__serverInvokers[self]
+	if not fn then return { Ready = false } end
+	return fn(game:GetService("Players").LocalPlayer, ...)
+end)
 roblox.implementProperty("Instance", "AncestryChanged", function(self) return instSignal(self, "AncestryChanged") end)
 roblox.implementProperty("Instance", "Destroying", function(self) return instSignal(self, "Destroying") end)
 roblox.implementProperty("Instance", "DescendantRemoving", function(self) return instSignal(self, "DescendantRemoving") end)
@@ -462,6 +475,9 @@ local cache, loading = {}, {}
 local function envFor(scriptInst)
 	local env = { script = scriptInst }
 	for k, v in base do env[k] = v end
+	-- (a video scene, tools/preview/ui/firstvideo.luau, puts the game's scripts on the frames' own clock: its task and os)
+	if _G.__vtask then env.task = _G.__vtask end
+	if _G.__vos then env.os = _G.__vos end
 	return env
 end
 function base.require(target)

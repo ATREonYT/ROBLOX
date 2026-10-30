@@ -1,0 +1,127 @@
+{
+ "oct17": {
+  "Technology": "Future",
+  "Brightness": 2.8,
+  "ClockTime": 14.2,
+  "GeographicLatitude": 28,
+  "OutdoorAmbient": [
+   138,
+   140,
+   156
+  ],
+  "ColorShift_Top": [
+   255,
+   246,
+   228
+  ],
+  "EnvironmentDiffuseScale": 0.6,
+  "ShadowSoftness": 0.35,
+  "ExposureCompensation": 0.15,
+  "grade": {
+   "Brightness": 0.02,
+   "Contrast": 0.14,
+   "Saturation": 0.28,
+   "Tint": [
+    255,
+    252,
+    247
+   ]
+  },
+  "bloom": {
+   "Intensity": 0.55,
+   "Threshold": 1.5
+  },
+  "K": {
+   "sun": 1.0,
+   "amb": 1.35,
+   "env": 1.35,
+   "point": 8
+  }
+ },
+ "before": {
+  "Technology": "Future",
+  "Brightness": 2.2,
+  "ClockTime": 14.2,
+  "GeographicLatitude": 28,
+  "OutdoorAmbient": [
+   132,
+   134,
+   152
+  ],
+  "ColorShift_Top": [
+   255,
+   250,
+   240
+  ],
+  "EnvironmentDiffuseScale": 0.6,
+  "ShadowSoftness": 0.35,
+  "ExposureCompensation": -0.05,
+  "grade": {
+   "Brightness": 0,
+   "Contrast": 0.16,
+   "Saturation": 0.4,
+   "Tint": [
+    255,
+    252,
+    247
+   ]
+  },
+  "bloom": {
+   "Intensity": 0.55,
+   "Threshold": 1.5
+  },
+  "K": {
+   "sun": 1.0,
+   "amb": 1.35,
+   "env": 1.35,
+   "point": 8
+  }
+ },
+ "after": {
+  "Technology": "ShadowMap",
+  "Brightness": 1.4,
+  "ClockTime": 13,
+  "GeographicLatitude": 23,
+  "OutdoorAmbient": [
+   210,
+   210,
+   218
+  ],
+  "ColorShift_Top": [
+   255,
+   252,
+   245
+  ],
+  "EnvironmentDiffuseScale": 1,
+  "ShadowSoftness": 0.6,
+  "ExposureCompensation": 0.05,
+  "grade": {
+   "Brightness": 0,
+   "Contrast": 0.05,
+   "Saturation": 0.12,
+   "Tint": [
+    255,
+    254,
+    250
+   ]
+  },
+  "bloom": {
+   "Intensity": 0.4,
+   "Threshold": 1.6
+  },
+  "LightScale": {
+   "HuzzLobbyProps": 0.36,
+   "HuzzLeaderboards": 0.5
+  },
+  "RangeScale": {
+   "HuzzLobbyProps": 0.58,
+   "HuzzLeaderboards": 0.7
+  },
+  "K": {
+   "sun": 1.0,
+   "amb": 1.35,
+   "env": 1.35,
+   "point": 8
+  }
+ }
+}

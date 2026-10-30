@@ -14,7 +14,7 @@
 -- on a pad to cash out (back to the lobby), spend the Cash, then fight further each run.
 local Skins = require(script.Parent.Config.Skins)
 local PadRules = require(script.Parent.PadRules)
-local LevelRules = require(script.Parent.LevelRules) -- (brief 29: goals speak in Levels; the Need stays in Power)
+local Balance = require(script.Parent.Config.Balance)
 
 local GoalRules = {}
 GoalRules.MaxText = 28
@@ -38,12 +38,18 @@ end
 -- (Where: the hall's layout as built: the ranges are the lanes on the west wall, the ARMORY the stand on the east
 -- side, the shoe boxes at the back, the stage door at the end. The ranges fire by themselves; every stage is a crew of
 -- goons to beat, and the two pads before its far gate cash out.)
+-- (Oct 27, flow) A Tutorial goal is one the tutorial itself walks you through: while the tutorial runs it completes
+-- quietly (its Cash still lands; GoalService marks the message Quiet), and the tutorial ends on one "YOU'RE READY!"
+-- moment instead of five GOAL DONE moments in 20 seconds (the audit, hood/docs/research/OUR_FIRST_10_MIN.md).
+local FIRST_POWER = (Balance.Worlds and Balance.Worlds[1] and Balance.Worlds[1].StagePower[1]) or 10
+GoalRules.FirstPower = FIRST_POWER
 GoalRules.List = {
-	{ Id = 'FreeRange', Text = 'Reach Level ' .. LevelRules.levelOf(10) .. ' in BAY 1', Where = 'on the left, it shoots for you', Reward = 2, Need = { Power = LevelRules.powerFor(LevelRules.levelOf(10)) } }, -- (Level 6 starts at 7 Power)
-	{ Id = 'Stage1', Text = 'Walk to Stage 1', Where = 'through the big door ahead', Reward = 3, Need = { Stages = 1 } },
-	{ Id = 'Wave1', Text = 'Beat the Stage 1 crew', Where = 'hold to shoot them', Reward = 5, Need = { Wave = 1 } },
-	{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 5, Need = { CashOuts = 1 } },
-	{ Id = 'Gun', Text = 'Buy a gun', Where = 'at the ARMORY, right side of the hall', Reward = 5, Need = { Guns = 2 } },
+	-- (Oct 27, flow: the kid stays in BAY 1 until Stage 1's Power, and the goal says it in Power, not in Levels)
+	{ Id = 'FreeRange', Text = 'Train to ' .. FIRST_POWER .. ' Power in BAY 1', Where = 'on the left, it shoots for you', Reward = 2, Need = { Power = FIRST_POWER }, Tutorial = true },
+	{ Id = 'Stage1', Text = 'Walk to Stage 1', Where = 'through the big door ahead', Reward = 3, Need = { Stages = 1 }, Tutorial = true },
+	{ Id = 'Wave1', Text = 'Beat the Stage 1 crew', Where = 'hold to shoot them', Reward = 5, Need = { Wave = 1 }, Tutorial = true },
+	{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 5, Need = { CashOuts = 1 }, Tutorial = true },
+	{ Id = 'Gun', Text = 'Buy a gun', Where = 'at the ARMORY, right side of the hall', Reward = 5, Need = { Guns = 2 }, Tutorial = true },
 	-- (CRITIC3 r1: the stage 2 pad pays for the shoe box the next goal points at)
 	{ Id = 'CashOut2', Text = 'Beat Stage 2 and cash out', Where = 'the yellow pad: ' .. PadRules.text(PadRules.reward(2, false)), Reward = 5, Need = { CashOutStage = 2 } },
 	{ Id = 'Shoe', Text = 'Open a shoe box', Where = 'at the back of the hall', Reward = 5, Need = { Boxes = 1 }, Side = true },
@@ -68,12 +74,43 @@ GoalRules.List = {
 	lane('DoubleEnd', 'Range6', 1500),
 	lane('Ring', 'Ring', 2500, 'Stage 16, at %s'), -- FIGHTS30 (was 'Boss Yard, at %d rebirths')
 }
+-- (Oct 27) World 2, Business District (its own place; Shared/WorldInfo): a fresh chain through its five districts (City Streets,
+-- Modern Plaza, Construction Zone, Transit Area, Luxury District), up to the CEO on the rooftop. You
+-- arrive with your rebirths, guns and shoes, so it's only the new stages, the crews and the last lanes; the rewards are
+-- scaled to its pads (7K to 40K). A World 2 visitor's goals start unsynced (HoodServer/WorldData), so the lanes and guns
+-- they already have are skipped quietly.
+local okW, WorldInfo = pcall(function() return require(script.Parent.WorldInfo) end)
+GoalRules.World = okW and WorldInfo.current() or 1
+if GoalRules.World == 2 then
+	GoalRules.List = {
+		{ Id = 'Stage1', Text = 'Walk to Business District Stage 1', Where = 'through the big doors ahead', Reward = 500, Need = { Stages = 1 } },
+		{ Id = 'Wave1', Text = 'Beat the Interns', Where = 'hold to shoot them', Reward = 750, Need = { Wave = 1 } },
+		{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 750, Need = { CashOuts = 1 } },
+		{ Id = 'Stage4', Text = 'Reach Stage 4', Where = 'the Modern Plaza, past the City Streets', Reward = 1500, Need = { Stages = 4 } },
+		{ Id = 'Stage6', Text = 'Reach Stage 6', Where = 'by the plaza fountains', Reward = 2500, Need = { Stages = 6 } },
+		{ Id = 'Stage10', Text = 'Reach Stage 10', Where = 'under the train line, past the cranes', Reward = 4000, Need = { Stages = 10 } },
+		{ Id = 'Stage13', Text = 'Reach Stage 13', Where = 'the Luxury District, with the palms', Reward = 6000, Need = { Stages = 13 } },
+		{ Id = 'Wave15', Text = 'Beat the Stage 15 crew', Where = 'by the red BOSS gate', Reward = 8000, Need = { Wave = 15 } },
+		{ Id = 'BossYard', Text = 'Reach the rooftop', Where = 'through the BOSS gate, Stage 16', Reward = 10000, Need = { Stages = 16 } },
+		{ Id = 'BossWave', Text = 'Beat The CEO', Where = 'on the rooftop, Stage 16', Reward = 15000, Need = { Wave = 16 } },
+		lane('Speed', 'Range5', 12000),
+		lane('DoubleEnd', 'Range6', 20000),
+		lane('Ring', 'Ring', 30000, 'Stage 16, at %s'),
+	}
+end
 GoalRules.ById = {}
 for i, g in GoalRules.List do
 	g.Step = i
 	GoalRules.ById[g.Id] = g
 end
-GoalRules.AllDone = { Text = 'ALL GOALS DONE!', Where = 'World 2 is coming soon' }
+GoalRules.AllDone = GoalRules.World == 2 and { Text = 'ALL GOALS DONE!', Where = 'more worlds are coming soon' }
+	or { Text = 'ALL GOALS DONE!', Where = 'take the World 2 portal to the Business District' }
+-- (Oct 27, round 8) The tutorial's "YOU'RE READY!" says what comes next, in one line: train, then beat the stage after
+-- the best one you have beaten (Stage 2 at the end of the tutorial). beaten: WaveCleared.
+function GoalRules.readyLine(beaten)
+	local n = (type(beaten) == 'number' and beaten == beaten) and math.floor(beaten) + 1 or 2
+	return 'Next: train and beat Stage ' .. math.max(2, n)
+end
 -- The chain's version, saved with each profile's Goals (Chain). Older chains, by goal id (GoalRules.migrate moves a
 -- saved step to the same goal in this chain).
 GoalRules.Chain = 5 -- (5: Oct 27 pacing, the lanes spread over 50 rebirths; BAY 5 after the boss)
@@ -90,6 +127,19 @@ GoalRules.Renamed = { Gun3 = 'Gun4', Range6 = 'Range4', Range8 = 'Range6' }
 
 local function number(v)
 	return type(v) == 'number' and v == v and v or 0
+end
+
+-- (Oct 27, the core loop) What the goal line says for `goal` with `rebirths` rebirths: a lane goal whose lane is still
+-- locked reads "Rebirth to open BAY 4" (where: "it opens at 7 rebirths, you have 6"), so the line never sends a player
+-- to a locked lane with nothing to do there. nil goal: the chain is done. Returns text, where.
+function GoalRules.shown(goal, rebirths)
+	if not goal then return GoalRules.AllDone.Text, GoalRules.AllDone.Where end
+	local st = goal.Need.Range and Skins.Stations[goal.Need.Range]
+	local n = number(rebirths)
+	if st and (st.Rebirths or 0) > n then
+		return 'Rebirth to open ' .. st.Name, string.format('it opens at %d rebirths, you have %d', st.Rebirths, n)
+	end
+	return goal.Text, goal.Where
 end
 
 -- True when `state` meets the goal. A wave goal on a map without waves (state.Waves false), or a shoe-box goal on a
@@ -151,7 +201,7 @@ end
 function GoalRules.migrate(goals)
 	if type(goals) ~= 'table' then return goals end
 	local chain = type(goals.Chain) == 'number' and goals.Chain or 1
-	local old = GoalRules.Chains[chain]
+	local old = GoalRules.World == 1 and GoalRules.Chains[chain] -- (the old chains are World 1's)
 	if old then
 		local function map(step)
 			if type(step) ~= 'number' or step ~= step or step % 1 ~= 0 then return step end

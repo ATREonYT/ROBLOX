@@ -4,7 +4,7 @@
 -- warehouse with no extras, so this checks the opposite: all six of the Harbor crew on the floor from the start, the
 -- strongest a named enemy (no "BOSS" anywhere) with a bigger, brick-studded tag, no card, no HP bar, no phase pips, its
 -- red telegraphs held >= 1.0 s, the dead lying in heaps that stay, CLEAR! on the counter, and the World 2 door's normal
--- clear: "Defeat The Harbor Captain", one short white flash, then "WORLD 2 / Coming soon!". (Stages.client runs too.)
+-- clear: "Defeat The Harbor Captain", one short white flash, then "WORLD 2 / Portal in the lobby!". (Stages.client runs too.)
 -- (the old header:) play_run.luau (STAGES, brief 23): the run loop played through the REAL server and client scripts in one DataModel
 -- (run with tools/harness_play.luau on work24_STAGES2/src; LOOP's play.luau setup). Servers: StageService, WaveService,
 -- GoalService, TravelService. Clients: Stages, Waves, Goals, LabelFade, World.
@@ -272,7 +272,7 @@ end
 check('fb the last kill: the World 2 door\'s haze flashes solid white', whiteFrames >= 1, string.format('%d frames, last at %.2f s', whiteFrames, lastWhite))
 check('fb ... CLEAR! on the counter', pillText.Visible and pillText.Count.Text == 'CLEAR!', pillText.Count.Text)
 local stillWhite = whitePanes() > 0
-check('fb ... one short flash (gone within 0.25 s), then "WORLD 2 / Coming soon!"', not stillWhite and sign.Title.Visible and sign.Title.Text == 'WORLD 2' and sign.Sub.Text == 'Coming soon!' and not status.Visible, sign.Title.Text .. ' / ' .. sign.Sub.Text)
+check('fb ... one short flash (gone within 0.25 s), then "WORLD 2 / Portal in the lobby!"', not stillWhite and sign.Title.Visible and sign.Title.Text == 'WORLD 2' and sign.Sub.Text == 'Portal in the lobby!' and not status.Visible, sign.Title.Text .. ' / ' .. sign.Sub.Text)
 local done = texts(P.PlayerGui, 'WORLD 1 COMPLETE')
 check('fb no slow-motion "WORLD 1 COMPLETE!" show', #done == 0 and P.PlayerGui:FindFirstChild('FinaleFlash', true) == nil)
 wall(4)

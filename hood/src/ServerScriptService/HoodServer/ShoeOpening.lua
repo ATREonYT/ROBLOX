@@ -6,7 +6,7 @@
 -- are synced, the client gets ONE ShoeOpened (Shoes.client plays the same unboxing moment for both; a batch gets the
 -- multi reveal) and a Legendary or better pair is news for the whole server.
 --   ShoeOpening.sync(player, profile)            the shoe attributes from the profile (ShoeService documents them)
---   ShoeOpening.slots(player) / .lucky(player)    the +1 Shoe Slot and Lucky passes (Pass_* attributes, set by
+--   ShoeOpening.slots(player) / .lucky(player)    the +1 Shoe Slot and luck passes (Pass_* attributes, set by
 --                                                StoreService on the server: a client can't fake them)
 --   ShoeOpening.open(player, profile, boxId, r?) -> shoeId, info          one pair (r: a fixed roll in [0, 1) for tests)
 --   ShoeOpening.shield(player, seconds?) / .unshield(player) / .shielded(player) / .sweep(now?)
@@ -99,9 +99,9 @@ end
 function ShoeOpening.slots(player)
 	return ShoeRules.slotsFor(player:GetAttribute('Pass_ExtraEquip'))
 end
--- Does this player roll Cash boxes with the Lucky pass's odds?
+-- This player's luck level for Cash boxes: 1, 2 (2x Luck, Pass_Lucky) or 4 (4x Luck, Pass_Luck4; supersedes 2x).
 function ShoeOpening.lucky(player)
-	return player:GetAttribute('Pass_Lucky') == true
+	return ShoeRules.luckOf(player)
 end
 
 -- (brief 22) A save keeps up to ShoeRules.MaxSlots pairs on; only the player's own `slots` count. The extra one is
@@ -168,7 +168,7 @@ function ShoeOpening.openMany(player, profile, boxId, n, opts)
 	-- (from here on nothing may undo the grant: the attributes and messages can't fail it, even for a player who left)
 	local top = list[best]
 	local info = {
-		Box = box.Id, Shoe = top.Shoe, Rarity = top.Rarity, New = top.New, Count = top.Count, Equipped = top.Equipped, Guaranteed = top.Guaranteed,
+		Box = box.Id, Shoe = top.Shoe, Rarity = top.Rarity, New = top.New, Count = top.Count, Equipped = top.Equipped, Guaranteed = top.Guaranteed, Luck = lucky, -- (Luck: the opener's luck level, for the reveal's odds)
 		Shoes = list, Buy = n, Best = best, Product = type(opts.Product) == 'string' and opts.Product or nil,
 	}
 	pcall(ShoeOpening.sync, player, profile)

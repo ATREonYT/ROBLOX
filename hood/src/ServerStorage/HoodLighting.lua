@@ -117,6 +117,57 @@ L.Presets = {
 	-- its lit top, the shade a little blue), a bluer sky (Atmosphere) and real Terrain clouds. The grade keeps more
 	-- saturation than Huss's 0.12 (our map's colours lean on it) and Brightness stays under Huss's 1.4 a touch, so the
 	-- studded concrete floor stays mid-tone. Lamps stay faint (TheBlockV2's look pass caps every PointLight in the lobby).
+	-- Huzz (Oct 27, the owner: "copy the huzz valley games lighting, its really good, fix the sky block, make the lighting
+	-- the same"): Huzz Valley's own look, number for number (its Config/Look, huzz-valley/docs/notes/look-and-lighting.md):
+	-- even, cartoony light, a soft early-afternoon sun over a strong near-white sky fill (a cast shadow keeps about half
+	-- the sunlit floor's light), a gentle grade, Roblox's own sky painted a saturated blue by the Atmosphere, and real
+	-- white Terrain clouds. Any other Sky in the place (an old skybox) is set aside into the backup folder by Apply.
+	-- The game applies it when the server starts (HoodServer/LookService), so a place with older Lighting gets it too.
+	Huzz = {
+		technology = 'ShadowMap',
+		lighting = {
+			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.4, ExposureCompensation = 0.05,
+			Ambient = C(150, 150, 160), OutdoorAmbient = C(210, 210, 218),
+			ColorShift_Top = C(255, 252, 245), ColorShift_Bottom = C(0, 0, 0),
+			EnvironmentDiffuseScale = 1, EnvironmentSpecularScale = 0.4, ShadowSoftness = 0.6, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.22, Offset = 0.25, Haze = 0.3, Glare = 0, Color = C(178, 214, 255), Decay = C(85, 165, 245) },
+		grade = { Brightness = 0, Contrast = 0.05, Saturation = 0.12, TintColor = C(255, 254, 250) },
+		bloom = { Intensity = 0.4, Size = 24, Threshold = 1.6 },
+		rays = { Intensity = 0.03, Spread = 0.5 },
+		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 3000, CelestialBodiesShown = true },
+		clouds = { Cover = 0.4, Density = 0.75, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
+	-- PlusOne (Oct 27, the owner: "keep the colours vibrant, but don't make the lighting so bright, it hurts my eyes ...
+	-- check other games that are +1 games ... how their lighting operates"). Measured against the +1 game's spawn frame
+	-- (ref_W01.0: mean brightness 145, 0.8% of the picture near white, colour saturation 0.66), Huzz rendered 165, 4.6%
+	-- and 0.36: brighter and paler. The +1 games' recipe: a real sun with clear shadows, a moderate sky fill (shade keeps
+	-- its colour but is visibly darker), exposure pulled down, no haze (haze greys the colours), and the colour grade
+	-- doing the vividness (saturation up) instead of brightness. Huzz's sky and clouds stay.
+	-- (Lobby round 2, the critic: play frames measured darker and duller than ref_W01, mean 114-122 against 139-146,
+	-- saturation 0.48-0.58 against 0.63-0.71: exposure -0.3 to -0.15, grade saturation 0.35 to 0.45, and a slightly warm
+	-- ambient so the warehouse floor under the closed roof reads warm, not lavender. Never past the ref's ~145 / 1% white.)
+	-- (Oct 28, the owner in Studio: "there are too many shades ... remove the shades, we need to make this cartoony") No
+	-- shadows at all: GlobalShadows off (Ambient lights everything evenly, inside the roofed hall as outside; the roof,
+	-- girders and overhangs throw nothing), a high warm Ambient, a gentler sun so its faces don't flare, saturation 0.5.
+	-- Preview: the spawn view ~145, under 1% near white. The map's own dark cuts are lifted too (x_look Look.cartoon).
+	PlusOne = {
+		technology = 'ShadowMap',
+		lighting = {
+			ClockTime = 13, GeographicLatitude = 23, Brightness = 1.15, ExposureCompensation = -0.1,
+			Ambient = C(168, 164, 160), OutdoorAmbient = C(168, 164, 160),
+			ColorShift_Top = C(255, 248, 236), ColorShift_Bottom = C(0, 0, 0),
+			EnvironmentDiffuseScale = 0.5, EnvironmentSpecularScale = 0.2, ShadowSoftness = 1, GlobalShadows = false,
+		},
+		atmosphere = { Density = 0.15, Offset = 0.3, Haze = 0, Glare = 0, Color = C(170, 210, 255), Decay = C(80, 160, 245) },
+		grade = { Brightness = 0, Contrast = 0.08, Saturation = 0.5, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.2, Size = 24, Threshold = 2 },
+		rays = { Intensity = 0, Spread = 0.5 },
+		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 3000, CelestialBodiesShown = true },
+		clouds = { Cover = 0.4, Density = 0.75, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
 	HoodToy = {
 		technology = 'ShadowMap',
 		-- (B35, the owner: "make the lighting block better to fix the lighting look"; it read pale and hazy) the soldier

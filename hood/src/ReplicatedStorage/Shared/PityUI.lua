@@ -82,8 +82,8 @@ function PityUI.boardTab(gui, panel, boxId, player)
 	Kit.corner(UDim.new(0.5, 0)).Parent = tab
 	Kit.stroke(Kit.Color.ink, 3, true).Parent = tab
 	local label = line({ TextSize = 18, StrokeThickness = 3.5, Position = UDim2.fromScale(0.04, 0.08), Size = UDim2.fromScale(0.92, 0.84), ZIndex = 3, Parent = tab })
-	label.TextScaled = true
 	PityUI.paint(label, boxId, player)
+	Kit.sizeText(label, nil, 8, 0.86) -- (round 7: whole-pixel sizes from the board's size, not TextScaled)
 	-- (it follows the counter while the board is up; it lets go with the board)
 	local p = me(player)
 	local okSignal, conn = pcall(function() return p:GetAttributeChangedSignal('ShoePity'):Connect(function() PityUI.paint(label, boxId, p) end) end)

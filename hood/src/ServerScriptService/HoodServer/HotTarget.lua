@@ -33,7 +33,7 @@ function HotTarget.claim(player, profile, lane, station, carry, RebirthService)
 	local one = ShotRules.pay(ShotRules.perShot(lane, n, Boosts.power(player)), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), carry)
 	local gain = Rules.gain(one, Rules.boost(player:GetAttribute('HotTargetBoostEnds'), os.time()))
 	if gain <= 0 then return 0 end
-	profile.Data.Rep = math.min(1e12, profile.Data.Rep + gain)
+	profile.Data.Rep = math.min(1e15, profile.Data.Rep + gain)
 	if RebirthService then RebirthService.publish(player, profile.Data) end
 	Net.get('HotTarget'):FireClient(player, { Gain = gain, Left = Rules.left(states[player], os.clock()) })
 	return gain

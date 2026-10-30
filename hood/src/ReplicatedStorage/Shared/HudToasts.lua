@@ -88,13 +88,11 @@ local function show(text, tone, sub)
 	local h = HudToasts.Size + 8 + (sub and HudToasts.SubSize + 6 or 0)
 	local slot = Kit.new('Frame', { Name = 'Toast' .. count, BackgroundTransparency = 1, Size = UDim2.fromOffset(900, h), LayoutOrder = -count, Parent = stack })
 	local line = Kit.text({ Name = 'Toast', Text = tostring(text), TextSize = HudToasts.Size, Stroke = Kit.Color.black, StrokeThickness = 4.5, Size = UDim2.new(1, 0, 0, HudToasts.Size + 8), ZIndex = 44, Parent = slot })
-	line.TextScaled = true
-	Kit.new('UITextSizeConstraint', { MaxTextSize = HudToasts.Size, MinTextSize = 14, Parent = line })
+	line.TextSize = Kit.fitSize(line.Text, HudToasts.Size, 900, 14) -- (round 7: a whole size that fits, not TextScaled)
 	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(colors[1], colors[2]), Parent = line })
 	if sub then
 		local s = Kit.text({ Name = 'Sub', Text = tostring(sub), TextSize = HudToasts.SubSize, Stroke = Kit.Color.black, StrokeThickness = 3.5, Position = UDim2.fromOffset(0, HudToasts.Size + 8), Size = UDim2.new(1, 0, 0, HudToasts.SubSize + 6), ZIndex = 44, Parent = slot })
-		s.TextScaled = true
-		Kit.new('UITextSizeConstraint', { MaxTextSize = HudToasts.SubSize, MinTextSize = 12, Parent = s })
+		s.TextSize = Kit.fitSize(s.Text, HudToasts.SubSize, 900, 12)
 	end
 	Motion.toast(slot, 3)
 	task.delay(3.5, function() if slot.Parent then slot:Destroy() end end)
@@ -113,7 +111,50 @@ local function place()
 end
 HudToasts.place = place
 
+-- (Oct 27, flow: "one voice at a time") News (a purchase, a reward, a tip) takes its turn in the one moment queue
+-- (Shared/MomentQueue), one notice at a time with a calm after it, so it never lands on GOAL DONE, the rank-up or the
+-- rebirth moment. A direct answer to what you just did ("Need 5 more Power!", "coming soon", "loading": red and blue)
+-- shows at once, as before.
+local MomentQueue = require(script.Parent.MomentQueue)
+local muted = {} -- { { Prefix, Until } }: lines another moment already says (the new-gun reveal says "Bought ...")
+function HudToasts.mute(prefix, seconds)
+	table.insert(muted, { Prefix = tostring(prefix), Until = os.clock() + (tonumber(seconds) or 3) })
+end
+local function isMuted(text)
+	local now = os.clock()
+	for i = #muted, 1, -1 do
+		local m = muted[i]
+		if now > m.Until then table.remove(muted, i) elseif string.sub(tostring(text), 1, #m.Prefix) == m.Prefix then return true end
+	end
+	return false
+end
+local news, newsRunning = {}, false
+local function drainNews()
+	if newsRunning then return end
+	newsRunning = true
+	task.spawn(function()
+		while #news > 0 do
+			task.wait(0.2) -- (a beat, so a moment that says the same thing, the new-gun reveal, can mute it first)
+			local token = MomentQueue.acquire('Notice', { Size = 'small', Timeout = 30, Ready = function() return slotY() ~= nil end })
+			local w = table.remove(news, 1)
+			if token and w and os.clock() - w.At <= 30 and not isMuted(w.Text) then
+				place()
+				show(w.Text, w.Tone, w.Sub)
+				task.wait(3.5)
+			end
+			if token then MomentQueue.release(token) end
+		end
+		newsRunning = false
+	end)
+end
 function HudToasts.say(text, tone, sub)
+	if isMuted(text) then return end
+	if tone ~= 'red' and tone ~= 'blue' then
+		table.insert(news, { Text = text, Tone = tone, Sub = sub, At = os.clock() })
+		while #news > 3 do table.remove(news, 1) end
+		drainNews()
+		return
+	end
 	if place() then
 		show(text, tone, sub)
 		return

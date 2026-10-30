@@ -41,37 +41,49 @@ function Spec.screen(name, displayOrder)
 end
 
 -- the left column (ref: Shop 20..173 x 221..281; Pets / Rebirth 71 px squares at x 20 / 105, y 295; Items / Skins y 378)
+-- (Oct 27, round 8, CRITIC_OCT27 gap 10: our small squares were 5.3 % of the screen's width, the ref's 7.8 %) the grid
+-- is 1.35x: squares 96 (7.5 % of 1280 and of 1920), the Shop bar over both, the words a size up
 Spec.Column = {
 	X = 20, Y = 163, -- the column's top-left in Root (the Shop's top is 221 - 58)
-	Square = 71, GapX = 14, GapY = 12, -- (squares 20..91 and 105..176; rows 295..366 and 378..449)
-	ShopW = 156, ShopH = 60, ShopGap = 14, -- (the Shop bar spans both squares; 281 -> 295)
-	Badge = { X = 145, Y = 4, W = 28, H = 30 }, -- the Shop's rainbow "!": its centre in the bar (ref 150..180 x 210..240)
-	Pill = { Right = 16, Y = 3, W = 42, H = 21, TextSize = 16 }, -- the Rebirth "57%" pill: centre 16 in from the right edge, 3 down
-	Count = { Size = 22, Right = 2, Y = 3 }, -- the cyan count circle on a square's top-right corner (ref Items "1")
-	ShopText = 25, SquareText = 20,
+	Square = 96, GapX = 16, GapY = 14,
+	ShopW = 208, ShopH = 66, ShopGap = 14, -- (the Shop bar spans both squares)
+	Badge = { X = 196, Y = 4, W = 30, H = 32 }, -- the Shop's rainbow "!": its centre in the bar
+	Pill = { Right = 20, Y = 3, W = 50, H = 24, TextSize = 18 }, -- the Rebirth "57%" pill: centre 20 in from the right edge, 3 down
+	Count = { Size = 26, Right = 2, Y = 3 }, -- the cyan count circle on a square's top-right corner (ref Items "1")
+	ShopText = 28, SquareText = 24,
 }
 -- the bottom-left block (ref: Rank row centre 568, Rebirths 609, Wins 653, Friend Boost 694; the screen's bottom is 720)
 Spec.Counters = {
 	Rank = { Above = 152, Icon = 36, IconX = 12, TextX = 55, TextSize = 28 },
 	Rebirths = { Above = 111, Icon = 38, IconX = 11, TextX = 56, TextSize = 26 },
 	Cash = { Above = 67, Icon = 40, IconX = 10, TextX = 56, TextSize = 26 },
-	Friend = { Above = 26, TextX = 10, TextSize = 20, Plus = 37 }, -- (the reference's words are narrower than ours: 20 keeps its width, ~190 px)
+	Friend = { Above = 26, TextX = 10, TextSize = 22, Plus = 37 }, -- (the reference's words are narrower than ours; round 8: 20 -> 22, the small-text floor)
 }
 -- the bottom centre (ref: the bar 375..775 x 600..638; Power 204 centred at 570; Multiplier 385.. at 587; the packs
 -- 648..682; Autowin 820..890 x 600..640)
+-- (round 8, CRITIC_OCT27 gap 10: the level bar 31 % of the width against the ref's 35 %, the packs 9.2 % against 10.9 %)
+-- the bottom block 1.12x, and no word under 17 px at 720
 Spec.Bottom = {
-	BarW = 400, BarH = 38, BarAbove = 120, -- the bar's top is 120 px over the bottom
+	BarW = 448, BarH = 42, BarAbove = 124, -- the bar's top is 124 px over the bottom
 	TrackColor = hex('2C2C34'), TrackTransparency = 0.4, BarStuds = 0.14, -- (the unfilled part: a see-through dark grey, faint studs)
-	PowerAbove = 150, PowerIcon = 30, PowerText = 26,
-	MultAbove = 133, MultX = 10, MultText = 17,
-	PackW = 120, PackH = 34, PackGap = 20, PackAbove = 72, PackText = 24, PackPrice = 18,
-	AutoW = 70, AutoH = 40, AutoGap = 45,
+	PowerAbove = 156, PowerIcon = 32, PowerText = 28,
+	MultAbove = 138, MultX = 10, MultText = 20,
+	PackW = 134, PackH = 38, PackGap = 23, PackAbove = 74, PackText = 26, PackPrice = 19,
+	AutoW = 88, AutoH = 46, AutoGap = 40, AutoText = 17,
 }
+-- (round 8) no HUD word under this many screen px on a computer (phones: Kit.PhoneMinText dp, raised to 12)
+Spec.MinText = 17
+Spec.PhoneMinText = 12
 -- the right column (ref: the x2 cards 977..1137 = 160 x 52, 11 in from the right edge, tops at 237 / 325 / 413)
-Spec.Offers = { W = 160, H = 52, Right = 11, Top = 179, Step = 88, TitleSize = 30, PriceSize = 20 }
+Spec.Offers = { W = 176, H = 52, Right = 11, Top = 179, Step = 88, TitleSize = 30, PriceSize = 20 }
+-- (Oct 27, round 8, CRITIC_OCT27 gap 8: the title hid the card's own picture) the picture in its own box at the card's
+-- right end, poking over its top edge like the ref's (Kit.inBox: x, y, w, h in the card's px), the title left of it
+Spec.OfferIcon = { X = 176 - 70, Y = -18, W = 72, H = 72, Margin = 0.04, TitleW = 176 - 76 }
 -- where the cards' pictures sit (a UIKit Kit.Place rule; fractions of the card's height): the reference's trophy is about
--- 1.4 h wide and 1.15 h tall, centred, its top 0.2 h over the card's top edge, the title over it
-Spec.OfferArt = { W = 1.5, H = 1.3, X = 0.5, XH = 0, Y = 0.42, TopAt = -0.28 }
+-- 1.4 h wide and 1.15 h tall, centred, its top 0.2 h over the card's top edge, the title over it. (Oct 27, round 7,
+-- OUR_UI_AUDIT B: it stood 0.28 h over, 18-24 px into the gap above; now exactly the reference's 0.2 h. Held fully inside
+-- the card, the picture hid behind the title.)
+Spec.OfferArt = { W = 1.5, H = 1.3, X = 0.5, XH = 0, Y = 0.42, TopAt = -0.2 }
 -- the Shop bar's basket (ref: 80 x 60 over a 155 x 60 bar, centred, its handle 0.2 h over the top; its foot hides behind
 -- "Shop"; drawn in a frame from 0.5 h over the top down to the bar's bottom edge)
 Spec.ShopArt = { W = 1.42, H = 1.3, X = 0.5, XH = 0, Y = 0.3, TopAt = -0.24, ClipTop = -0.5 }
@@ -79,7 +91,7 @@ Spec.ShopArt = { W = 1.42, H = 1.3, X = 0.5, XH = 0, Y = 0.3, TopAt = -0.24, Cli
 -- Pack 94 in; Missions under Playtime)
 Spec.Spin = { X = 258, Y = 12, Size = 68, Badge = 18, Caption = 22 }
 Spec.Playtime = { Right = 241, Y = -16, Icon = 68, Caption = 20 }
-Spec.Starter = { Right = 94, Y = 82, Icon = 88, Caption = 20 } -- (the crate's drawn part 97..152 under the caption at 90, as the reference's)
+Spec.Starter = { Right = 94, Y = 0, Icon = 88, Caption = 20 } -- (Oct 27: up beside Playtime, Y 82 -> 0: at 82 it sat on the x2 Cash card)
 Spec.Missions = { Right = 243, Y = 107, Icon = 60, Caption = 22 }
 -- the top centre: the boss timer line (ref 10..48, "Next GUNSHIP boss fight in: 2:52" + SKIP) and the fight chip
 -- (CLEAR! / 5 LEFT, about 103 x 29 centred at 36) share the band; FIGHTS fills both slots

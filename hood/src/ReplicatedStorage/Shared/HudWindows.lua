@@ -104,8 +104,13 @@ function HudWindows.open(w)
 	playerGui:SetAttribute('HoodWindow', w.Name)
 	if w.Open then w.Open() end
 	Motion.blur(w.Name, true)
-	Motion.open(w.Overlay, w.Panel, 1)
-	staggerIn(w)
+	-- (Oct 27, round 7, OUR_UI_AUDIT C1) its pictures are drawn before it shows (at most 0.3 s): nothing pops in after
+	local function show()
+		if current ~= w then return end
+		Motion.open(w.Overlay, w.Panel, 1)
+		staggerIn(w)
+	end
+	Kit.ImageLoader.prepare(w.Panel, 0.3, show)
 end
 function HudWindows.toggle(w)
 	if current == w then HudWindows.close() else HudWindows.open(w) end

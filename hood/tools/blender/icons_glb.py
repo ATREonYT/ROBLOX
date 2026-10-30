@@ -38,6 +38,10 @@ GUN_VIEW = (1.0, 0.16, 0.26)
 for gid, tilt, sp in (('Pistol', 0, 0), ('Revolver', 0, 0), ('Uzi', 0, 0), ('Shotgun', 28, 0), ('Tommy', 28, 0), ('AK', 28, 0),
 		('Deagle', 0, 2), ('Minigun', 0, 2), ('Blaster', 0, 3), ('Diamond', 0, 4)):
 	icon('Gun_' + gid, 'Gun_' + gid, 'Items_Guns.glb', GUN_VIEW, fill=0.92, tilt=tilt, sparkles=sp, seed=11)
+# (Oct 27) the five Robux exclusive guns (Config/Guns.Exclusive), sold as game-pass cards: the same profile view, with
+# sparkles like the top Cash guns
+for gid, sp, seed in (('NeonViper', 3, 21), ('GalaxyRay', 4, 22), ('InfernoCannon', 3, 23), ('Frostbite', 3, 24), ('RoyalCrown', 4, 25)):
+	icon('Gun_' + gid, 'Gun_' + gid, 'Items_Guns.glb', GUN_VIEW, fill=0.92, sparkles=sp, seed=seed)
 
 # Pass icons: the Robux pad's prize, from the front (the GLB's -Z = Blender +Y), a little from the left and above.
 PAD_VIEW = (-0.22, 1.0, 0.34)

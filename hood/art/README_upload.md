@@ -8,16 +8,19 @@ instances.
 |---|---|---|
 | `hood/art/icons3d/<Id>.png` | 512x512 icons, transparent, navy outline baked in | `IconModels.Images.<Id>` in `src/ReplicatedStorage/Shared/Models/IconModels.lua` |
 | `hood/art/ui/<file>.png` | tileable textures (studs, gloss) | the `UIKit.lua` line `Kit.<Name> = '' -- hood/art/ui/<file>.png` |
+| `hood/art/sounds/<Name>.ogg` | our footsteps (uploaded as Audio) | `Sound.Steps.<Name>` in `src/ReplicatedStorage/Shared/Config/Sound.lua` |
 
 Every id is written as `'rbxassetid://<number>'`.
 
-The icon PNGs are rendered by `hood/tools/blender/icons_hd.py`. The textures come from `hood/tools/make_ui_textures.py`.
+The icon PNGs are rendered by `hood/tools/blender/icons_hd.py`. The textures come from `hood/tools/make_ui_textures.py`,
+the footsteps from `hood/tools/sounds/make_footsteps.py` (its `walk_demo.mp3` is for listening, not uploaded). Audio
+uploads count toward Roblox's monthly audio limit; the six steps fit in it.
 You never need to run either of them to upload.
 
 ## A. With the tool (recommended)
 
 `hood/tools/upload_assets.py` needs only plain `python3`, with no pip installs. It uploads through Roblox Open Cloud,
-then writes the ids into the two Lua files.
+then writes the ids into the Lua files.
 
 ### 1. Make an API key (once)
 1. Open https://create.roblox.com/dashboard/credentials (Creator Dashboard > Open Cloud > API Keys) and click

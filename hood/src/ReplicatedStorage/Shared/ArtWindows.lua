@@ -53,6 +53,23 @@ function ArtWindows.root()
 	return root, gui
 end
 
+-- (Oct 27, round 7, OUR_UI_AUDIT C1: no picture pops in after a window opens) a new panel waits, scaled to nothing,
+-- until the pictures it shows are drawn (Shared/ImageLoader.prepare, at most 0.35 s), then pops in.
+local function reveal(entry)
+	local P = entry.Handle and entry.Handle.P
+	if not P then return end
+	local s = Motion.scaleOf(P.Panel)
+	local held = false
+	local ready = Kit.ImageLoader.prepare(entry.Holder, 0.35, function()
+		if held and entry.Holder.Parent then A.popIn(P) end
+	end)
+	if ready then
+		A.popIn(P)
+	else
+		held = true
+		s.Scale = 0
+	end
+end
 local function build(layer, name, builder, dim, tapOut, onTap)
 	local holder = A.frame(layer, { Name = name, Box = UDim2.fromScale(1, 1), Z = layer.ZIndex })
 	-- (brief 30) the dim sits under everything the builder puts in the holder (siblings order by ZIndex), so a window
@@ -100,7 +117,7 @@ function ArtWindows.open(name, builder)
 	Motion.blur('Art', true)
 	cover(true)
 	fitOne(entry)
-	if entry.Handle and entry.Handle.P then A.popIn(entry.Handle.P) end
+	reveal(entry)
 	return entry.Handle
 end
 function ArtWindows.dialog(name, builder, opts)
@@ -112,7 +129,7 @@ function ArtWindows.dialog(name, builder, opts)
 	dlg = entry
 	if not win then Motion.blur('ArtDialog', opts.blur ~= false) end
 	fitOne(entry)
-	if entry.Handle and entry.Handle.P then A.popIn(entry.Handle.P) end
+	reveal(entry)
 	return entry.Handle
 end
 function ArtWindows.current() return win and win.Name, win and win.Handle end

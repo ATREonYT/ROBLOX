@@ -16,6 +16,7 @@
 -- Used by HoodClient/HUD, Store, Shoes, Goals and Waves; UIKitDemo builds sample screens with the older pieces.
 local Kit = {}
 local Fonts = require(script.Parent.Fonts)
+local ImageLoader = require(script.Parent.ImageLoader) -- (round 3: the packed pictures, drawn in game)
 
 local function hex(h)
 	return Color3.fromRGB(tonumber(h:sub(1, 2), 16), tonumber(h:sub(3, 4), 16), tonumber(h:sub(5, 6), 16))
@@ -101,6 +102,27 @@ Kit.Tone = {
 	sunset = { top = hex('F91284'), base = hex('E8E04A'), lip = hex('B01060'), stroke = hex('4A0830'), rim = hex('FF8AC4'), rot = 0,
 		seq = { { 0, hex('F91284') }, { 0.35, hex('FF2020') }, { 0.7, hex('FF9A10') }, { 1, hex('F2E640') } } },
 }
+-- (Oct 27) The owner's UI mockup (hood/docs/refs/ui/owner_ui_windows_oct27.png), "tuned to the game": every window is a
+-- dark navy body with a faint blue square tile, a thick near-black outline and rounded corners, under a bright yellow
+-- header bar (lighter on top) with the icon breaking out at its left, the title in white Montserrat Black and a red
+-- square X; tabs are dark pills with the open one bright blue; side menus dark rows, the open one blue; buttons green
+-- (do it), grey (secondary) or red (delete); progress bars a dark trough with a green fill and a centred label.
+Kit.Skin = {
+	outline = hex('0B0E1C'), -- the windows' outline: a near-black navy
+	bodyTop = hex('26315A'), bodyBase = hex('1A2240'), -- the body, top -> bottom (sampled ~#232E52 -> #1A2340)
+	tile = hex('9DB8FF'), tileShade = 0.12, -- the faint square tile over the body (tint, strength)
+	rim = hex('3C4C86'), -- the thin light line inside the outline
+	well = hex('10152C'), -- dark wells: bar troughs
+	corner = 14, -- body corner radius
+	headerCorner = 10,
+}
+Kit.Tone.headerYellow = { top = hex('FFEA5C'), base = hex('F7B400'), lip = hex('D08A00'), stroke = hex('5A3A00'), rim = hex('FFF7B8'), rimLow = hex('E8A200'), rot = 90 }
+Kit.Tone.headerRed = { top = hex('FF6A6A'), base = hex('E01E2C'), lip = hex('A8161C'), stroke = hex('4A0B10'), rim = hex('FFB4B4'), rimLow = hex('C0141E'), rot = 90 } -- (delete / are you sure)
+Kit.Tone.closeRed = { top = hex('FF5C5C'), base = hex('E3101E'), lip = hex('9A0A12'), stroke = hex('3A0008'), rim = hex('FFA0A0'), rot = 90 }
+Kit.Tone.navyRow = { top = hex('2F3B68'), base = hex('212B50'), lip = hex('18203C'), stroke = hex('0B0E1C'), rim = hex('48598F'), rot = 90 } -- idle tabs, menu rows, stat cards
+Kit.Tone.tabBlue = { top = hex('5EC4FF'), base = hex('1A7CF2'), lip = hex('1258B8'), stroke = hex('06204A'), rim = hex('AEE0FF'), rot = 90 } -- the open tab / row
+Kit.Tone.buyGreen = { top = hex('92F64E'), base = hex('2FBE1E'), lip = hex('1E8A12'), stroke = hex('0E3A06'), rim = hex('CCFFA6'), rot = 90 } -- primary buttons, bar fills
+Kit.Tone.slate = { top = hex('97A1B6'), base = hex('646E86'), lip = hex('444C60'), stroke = hex('1A1E2A'), rim = hex('C2C9D8'), rot = 90 } -- secondary buttons
 -- Cross-industry rarity ladder (white, green, blue, purple, gold), extended upward.
 Kit.Rarity = {
 	{ name = 'COMMON', color = hex('B8BEC8') },
@@ -274,6 +296,7 @@ function Kit.hasIcon(id)
 		if ok and v then return true end
 	end
 	if Kit.iconImage(id) ~= '' then return true end
+	if ImageLoader.packed('Icons', id) ~= nil then return true end -- (round 7: a packed picture counts, e.g. Auto Open's own)
 	local rows = models and type(models.Fallback) == 'table' and models.Fallback
 	return (rows and type(rows[id]) == 'table') or Kit.FlatDefault[id] ~= nil
 end
@@ -634,27 +657,60 @@ function Kit.icon3d(id, size, props)
 	-- the bare glyph unless the caller asks for the block (Bare = false: a plain backdrop, e.g. a sheet of icons)
 	local bare = props.Bare ~= false
 	local image = Kit.iconImage(id)
-	if place then size = Kit.placeSize(id, image ~= '', bare, place) end
+	-- (Oct 27, round 7, OUR_UI_AUDIT A3) an upload of an older drawing (Shared/Images/Uploads: not Fresh) gives way to
+	-- the packed picture of the current one; it is kept only as the stand-in while packed pictures can't be drawn
+	local stale = ''
+	if image ~= '' and ImageLoader.packed('Icons', id) ~= nil and not ImageLoader.fresh(id) then stale, image = image, '' end
+	if place then size = Kit.placeSize(id, image ~= '' or stale ~= '', bare, place) end
 	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
 	holder:SetAttribute('IconId', id)
 	local black = Color3.new(0, 0, 0)
-	if image ~= '' then
-		-- ART2's uploaded PNG: one ImageLabel, outline and shading baked in
+	local packed = ImageLoader.packed('Icons', id) ~= nil
+	if image ~= '' or packed then
+		-- ART2's PNG: one ImageLabel, outline and shading baked in; the uploaded id, else (round 3) the packed pixels
+		-- drawn in game by Shared/ImageLoader, so every icon and item picture shows without an upload
 		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = props.Locked and black or props.Color or Color3.new(1, 1, 1), Rotation = props.Rotation or 0, ZIndex = z, Parent = holder })
 		img:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws hood/art/icons3d/<id>.png here
-		-- (brief 23/24) an upload that never arrives (in review, rejected) swaps to the flat stand-in; back if it comes later
-		Kit.watchImage(img, function()
+		local function flat()
 			img.Visible = false
-			local f = Kit.flatIcon(holder, id, holder.Size.X.Offset, { Locked = img.ImageColor3 == black, Bare = bare })
-			f.Rotation = img.Rotation
-			Kit.replace(holder)
-		end, function()
+			local has = false
+			for _, d in holder:GetChildren() do
+				if d:GetAttribute('Flat') then has = true end
+			end
+			if not has then
+				local f = Kit.flatIcon(holder, id, holder.Size.X.Offset, { Locked = img.ImageColor3 == black, Bare = bare })
+				f.Rotation = img.Rotation
+				Kit.replace(holder)
+			end
+		end
+		local function unflat()
 			for _, d in holder:GetChildren() do
 				if d:GetAttribute('Flat') then d:Destroy() end
 			end
 			img.Visible = true
 			Kit.replace(holder)
-		end)
+		end
+		local function drawPacked()
+			if not packed then return flat() end
+			img.Image = ''
+			ImageLoader.apply(img, 'Icons', id, '', { onShow = unflat, onFail = function()
+				if stale ~= '' then
+					img.Image = stale -- (the older upload, better than the flat stand-in)
+					unflat()
+				else
+					flat()
+				end
+			end })
+		end
+		if image == '' then
+			drawPacked()
+		else
+			-- (brief 23/24) an upload that never arrives (in review, rejected) swaps to the packed picture (or the flat
+			-- stand-in); back to the upload if it comes later
+			Kit.watchImage(img, drawPacked, function()
+				ImageLoader.apply(img, 'Icons', id, image, { onShow = unflat })
+			end)
+		end
 	else
 		local f = Kit.flatIcon(holder, id, size, { Locked = props.Locked, Bare = bare })
 		f.Rotation = props.Rotation or 0
@@ -692,6 +748,9 @@ Kit.Place = {
 	-- ref22_store_*'s window header (170 ref px tall): the basket 0.85 h wide and 0.79 h tall, centred 0.62 h in from the
 	-- header's left end and 0.51 h down; the title starts right after it (Kit.window)
 	windowHeader = { W = 0.85, H = 0.8, X = 0, XH = 0.62, Y = 0.51 },
+	-- (Oct 27) the owner's UI mockup: the window's icon breaks out of the yellow bar's left end, about 1.3x the bar's
+	-- height, its top about a third of the bar over the bar's top edge
+	breakout = { W = 1.3, H = 1.3, X = 0, XH = 0.72, Y = 0.36 },
 	-- ref22_pets_window's header (132 ref px tall): the backpack 1.04 h wide and 0.95 h tall, centred 0.8 h in from the
 	-- header's left end and 0.52 h down
 	header = { W = 1.04, H = 0.95, X = 0, XH = 0.8, Y = 0.52 },
@@ -751,6 +810,13 @@ function Kit.placeSize(id, imaged, bare, place)
 	local b = Kit.contentBounds(id, imaged, bare)
 	local cw, ch = math.max(0.05, b[3] - b[1]), math.max(0.05, b[4] - b[2])
 	return math.floor(math.min(rule.W * place.H / cw, rule.H * place.H / ch) + 0.5)
+end
+-- (Oct 27, round 7, OUR_UI_AUDIT B: one placement rule for every slot) A Place for Kit.icon3d / Kit.place: the picture's
+-- DRAWN content (its visible box, not its square) fits inside the slot (x, y, w, h: pixels in the holder's parent) with
+-- `margin` (a fraction of the slot, 0.09 by default) clear on every side, centred in it. Nothing spills out of its slot.
+function Kit.inBox(x, y, w, h, margin)
+	local m = margin or 0.09
+	return { Rule = { W = w * (1 - 2 * m), H = h * (1 - 2 * m), X = x + w / 2, XH = 0, Y = y + h / 2 }, W = 1, H = 1 }
 end
 -- Sizes and moves an icon3d holder so its drawn content lands where `place` says (and remembers it: the holder is
 -- placed again if its picture swaps between the PNG and the flat stand-in).
@@ -2092,6 +2158,7 @@ function Kit.studs(parent, props)
 		file, image, tilePitch, tint, alpha, floor = 'stud_tile', Kit.StudTile, pitch, color, math.max(0, transparency - (props.TileBoost or 0.12)), 0
 	end
 	if image then
+		if props.Tint then tint = props.Tint end -- (Oct 27: the windows' faint blue tile)
 		-- (brief 22, UICRITIC2: the reference's grid fills the whole block from its top-left corner, the first stud half a
 		-- pitch in, and is low-contrast) one tiled ImageLabel over the whole face
 		local tile = new('ImageLabel', {
@@ -2253,11 +2320,131 @@ end
 -- StudPattern ('checker': the raised / recessed tile) / StudShade (the pre-shaded tiles' strength), Gloss (the diagonal
 -- bands), Shadow (px straight down, 0: the reference has none), Rim (false = no light inner band) / RimWidth (2), Flat.
 -- Returns holder; holder.Body is the face to put content in.
+---------------------------------------------------------------------------------------------- the owner's UI pictures
+-- (Oct 27, round 3; the owner: "directly import the images of the ui ... the ones you make aren't the same") Buttons,
+-- tabs, tiles, cards, bars, the header bar, the X and the window body wear pieces cut from the owner's UI mockup
+-- (hood/tools/ui/cut_mockup.py -> hood/art/ui_owner, packed into Shared/Images/Ui by hood/tools/ui/pack_images.py),
+-- 9-sliced (SliceCenter) so they stretch without blurring their corners, and drawn in game by Shared/ImageLoader (no
+-- upload). The words stay ours (live Montserrat over the piece). While a piece can't be drawn (Studio's Game Settings >
+-- Security > "Allow Mesh / Image APIs" off, or the picture memory full) the drawn look underneath shows instead.
+Kit.ImageLoader = ImageLoader
+-- (Oct 27, round 7, OUR_UI_AUDIT A3/A4) OFF: the mockup crops were 25-58 px tall in the mockup, so on screen they were
+-- blown up 1.4-8x (blurry), and their cut edges lost the outline on some sides. Every block now draws natively (Frame +
+-- UICorner + UIStroke + UIGradient: sharp at any size), shaped like the mockup by Kit.MockLook below. true brings the
+-- pictures back (the switch stays for the owner's call). (Oct 27, 23:36) ON again, the owner's call after comparing
+-- the drawn shop with the mockup: "keep the mock ups, not the draw ones".
+Kit.UseOwnerSkins = true
+-- (round 7) The mockup's shapes for the tones the pictures used to cover (Kit.SkinPieces): buttons and pills rounded
+-- (about a fifth of their height), smooth (no studs) with a soft light band over their top half; cards and tiles
+-- rounded 12 px with their faint studs. Only where the caller didn't ask for its own Radius / Studs.
+Kit.MockLook = true
+-- A tone's pieces: { small (buttons, pills, rows), big (h >= Kit.SkinBig: tiles and cards) }.
+Kit.SkinBig = 110
+Kit.SkinPieces = {
+	buyGreen = { 'btn_green', 'tile_green' }, green = { 'btn_green', 'tile_green' }, cardGreen = { 'btn_green', 'tile_green' },
+	lime = { 'price_green', 'tile_green' },
+	slate = { 'btn_grey', 'tile_grey' }, grey = { 'btn_grey', 'tile_grey' }, disabled = { 'btn_grey', 'tile_grey' },
+	red = { 'btn_red', 'tile_red' }, cardRed = { 'btn_red', 'tile_red' },
+	gold = { 'btn_yellow', 'tile_yellow' }, yellow = { 'btn_yellow', 'tile_yellow' }, cardGold = { 'btn_yellow', 'tile_yellow' },
+	blue = { 'tab_on_blue', 'tile_blue' }, cardBlue = { 'tab_on_blue', 'tile_blue' }, tabBlue = { 'tab_on_blue', 'tile_blue' }, cyan = { 'tab_on_blue', 'tile_blue' },
+	purple = { 'tile_purple', 'tile_purple' }, cardPurple = { 'tile_purple', 'tile_purple' }, magenta = { 'tile_purple', 'tile_purple' },
+	navyRow = { 'tab_off', 'stat_card' }, navy = { 'tab_off', 'stat_card' }, dark = { 'tab_off', 'stat_card' },
+	closeRed = { 'close', 'close' },
+}
+-- The tile for a shoe rarity (Config/Shoes.Rarities' Id).
+Kit.RarityPiece = { Common = 'tile_grey', Rare = 'tile_blue', Epic = 'tile_purple', Legendary = 'tile_yellow', Mythic = 'tile_red', Secret = 'tile_secret' }
+function Kit.skinPiece(tone, h)
+	if not Kit.UseOwnerSkins or type(tone) ~= 'string' then return nil end
+	local row = Kit.SkinPieces[tone]
+	if not row then return nil end
+	local piece = (h or 0) >= Kit.SkinBig and row[2] or row[1]
+	return ImageLoader.meta('Ui', piece) and piece or nil
+end
+-- The drawn look's parts a piece covers (hidden while it shows).
+local LOOK = { Studs = true, Gloss = true, Rim = true, TopBand = true, IdleBorder = true, Border = true }
+local function skinLook(face, skinImg, on, keep)
+	local saved = skinImg:GetAttribute('SavedT')
+	if not on then
+		if saved == nil then skinImg:SetAttribute('SavedT', face.BackgroundTransparency) end
+		if not keep.Fill then face.BackgroundTransparency = 1 end
+	elseif saved ~= nil then
+		face.BackgroundTransparency = saved
+	end
+	for _, c in face:GetChildren() do
+		if c:IsA('UIStroke') and not keep.Stroke then
+			c.Enabled = on
+		elseif LOOK[c.Name] and c:IsA('GuiObject') and not keep[c.Name] then
+			c.Visible = on
+		elseif c.Name == 'Face' and c:IsA('GuiObject') and not keep.Face then
+			-- (an ArtKit.framed card's inner face: it holds the item and its words, so only its fill and line go)
+			if c:GetAttribute('SavedT') == nil then c:SetAttribute('SavedT', c.BackgroundTransparency) end
+			c.BackgroundTransparency = on and c:GetAttribute('SavedT') or 1
+			local st = c:FindFirstChildOfClass('UIStroke')
+			if st then st.Enabled = on end
+		end
+	end
+	skinImg:SetAttribute('Shown', not on)
+	if skinImg:GetAttribute('Piece') == 'close' then
+		-- (the owner's X carries its own white cross: our "X" label steps aside while it shows)
+		local label = face:FindFirstChild('Label')
+		if label then label.Visible = on end
+	end
+end
+-- Lays piece `piece` over `face` (a block's face Frame; its look stays underneath while the picture can't be drawn).
+-- props: Out (px the face's outline reaches outside it: the piece carries its own outline and covers that too),
+-- Height (the whole look's height, for the slice scale), SliceScale, TileScale (tile pieces), Radius (a UICorner on the
+-- piece), Keep { Stroke, Fill, Rim, ... } (parts of the drawn look kept under the piece). Returns the ImageLabel.
+function Kit.skin(face, piece, props)
+	if not Kit.UseOwnerSkins then return nil end
+	local meta = ImageLoader.meta('Ui', piece)
+	if not meta then return nil end
+	props = props or {}
+	local out = props.Out or 0
+	local h = props.Height or (face.Size.Y.Offset + 2 * out)
+	local img = new('ImageLabel', { Name = 'Skin', BackgroundTransparency = 1, Image = '', Position = UDim2.fromOffset(-out, -out), Size = UDim2.new(1, 2 * out, 1, 2 * out), ZIndex = math.max(0, face.ZIndex - 1), Parent = face })
+	img:SetAttribute('Piece', piece)
+	img:SetAttribute('SkinH', h)
+	if props.Radius and props.Radius > 0 then corner(props.Radius).Parent = img end
+	local keep = props.Keep or {}
+	Kit.reskin(img, piece, { SliceScale = props.SliceScale, TileScale = props.TileScale, Keep = keep })
+	return img
+end
+-- Points a skin at another piece (a tab turning on, a button turning grey).
+function Kit.reskin(img, piece, props)
+	if not img or not Kit.UseOwnerSkins then return end
+	local meta = ImageLoader.meta('Ui', piece)
+	if not meta then return end
+	props = props or {}
+	local face = img.Parent
+	img:SetAttribute('Piece', piece)
+	if meta.Mode == 'tile' then
+		img.ScaleType = Enum.ScaleType.Tile
+		local k = props.TileScale or 1
+		img.TileSize = UDim2.fromOffset(math.max(4, math.floor(meta.W * k + 0.5)), math.max(4, math.floor(meta.H * k + 0.5)))
+	elseif meta.Mode == 'whole' then
+		img.ScaleType = Enum.ScaleType.Stretch
+	else
+		img.ScaleType = Enum.ScaleType.Slice
+		local s = meta.Slice
+		img.SliceCenter = Rect.new(s[1], s[2], s[3], s[4])
+		img.SliceScale = props.SliceScale or math.clamp((img:GetAttribute('SkinH') or meta.H) / meta.H, 0.15, 3)
+	end
+	local keep = props.Keep or {}
+	ImageLoader.apply(img, 'Ui', piece, '', {
+		onShow = function() skinLook(face, img, false, keep) end,
+		onFail = function() skinLook(face, img, true, keep) end,
+	})
+end
+
 function Kit.block(props)
 	local tone = toneOf(props.Tone)
 	local w, h = props.Width or 160, props.Height or 60
 	-- (brief 19) the reference's blocks have crisp square corners: no UICorner and a mitred outline (Radius > 0 rounds)
 	local r = props.Radius or 0
+	-- (round 7) the mockup's shape where the owner's pictures used to sit (Kit.MockLook)
+	local mock = Kit.MockLook and not Kit.UseOwnerSkins and props.Skin ~= false and type(props.Tone) == 'string' and Kit.SkinPieces[props.Tone] ~= nil
+	local small = mock and h < Kit.SkinBig
+	if mock and props.Radius == nil then r = small and math.clamp(math.floor(h * 0.2 + 0.5), 6, 12) or 12 end
 	local z = props.ZIndex or 1
 	local holder = blank({ Name = props.Name or 'Block', Size = UDim2.fromOffset(w, h), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0, ZIndex = z })
 	local sh = props.Shadow or 0
@@ -2272,13 +2459,20 @@ function Kit.block(props)
 	if r > 0 then corner(r).Parent = body end
 	stroke(props.OutlineColor or Kit.Color.black, O, true, 0, r > 0 and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = body
 	if not props.Flat then Kit.fillGradient(tone).Parent = body end
-	if props.Studs ~= false then
+	if props.Studs ~= false and not (small and props.Studs == nil) then
 		-- (brief 22) the reference's recessed studs on every block ('checker': the raised / recessed tile of the window
 		-- headers and the Rebirth boxes; 'plain': none of these, the old centred outline grid)
 		local pattern = props.StudPattern or 'recessed'
-		Kit.studs(body, { Width = w - 2 * O, Height = h - 2 * O, Pitch = props.Studs or 15, Color = props.StudColor or tone.lip, Transparency = props.StudTransparency or 0.66, Pattern = pattern ~= 'plain' and pattern or nil, Shade = props.StudShade or 0.8, Sparse = props.StudSparse, ZIndex = z + 1 })
+		local studs = Kit.studs(body, { Width = w - 2 * O, Height = h - 2 * O, Pitch = props.Studs or 15, Color = props.StudColor or tone.lip, Transparency = props.StudTransparency or 0.66, Pattern = pattern ~= 'plain' and pattern or nil, Shade = props.StudShade or 0.8, Sparse = props.StudSparse, ZIndex = z + 1 })
+		if r > 0 and studs and studs:IsA('ImageLabel') then corner(r).Parent = studs end -- (Oct 27: the tile stays inside rounded corners)
 	end
 	if props.Gloss then Kit.gloss(body, { ZIndex = z + 1, Radius = r }) end
+	if small and props.Gloss == nil then
+		-- (round 7) the mockup buttons' soft light top half: one white band fading out downward
+		local band = blank({ Name = 'TopBand', BackgroundTransparency = 0, BackgroundColor3 = Kit.Color.white, Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 0.5, -2), ZIndex = z + 1, Parent = body })
+		if r > 2 then corner(r - 2).Parent = band end
+		new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new(0.72, 1), Parent = band })
+	end
 	if props.Rim ~= false then
 		local rw = props.RimWidth or 2
 		local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(rw, rw), Size = UDim2.new(1, -2 * rw, 1, -2 * rw), ZIndex = z + 1, Parent = body })
@@ -2290,6 +2484,9 @@ function Kit.block(props)
 			stroke(tone.lip or Kit.Color.black, 1, true, 0.35, Enum.LineJoinMode.Miter).Parent = line
 		end
 	end
+	-- (round 3) the owner's piece for this tone over the drawn look (props.Skin: a piece name, or false for none)
+	local piece = props.Skin ~= false and (type(props.Skin) == 'string' and props.Skin or Kit.skinPiece(props.Tone, h)) or nil
+	if piece then Kit.skin(body, piece, { Out = O, Height = h }) end
 	holder:SetAttribute('Tone', type(props.Tone) == 'string' and props.Tone or '')
 	return holder
 end
@@ -2321,6 +2518,10 @@ function Kit.blockButton(props)
 	end
 	local hit = new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = z + 3, Parent = holder })
 	holder:SetAttribute('Lip', 3)
+	-- (round 3) the owner's X carries its own white cross: our "X" label steps aside while it shows (skinLook)
+	local skin = body:FindFirstChild('Skin')
+	local label = body:FindFirstChild('Label')
+	if skin and label and skin:GetAttribute('Piece') == 'close' then label.Visible = skin:GetAttribute('Shown') ~= true end
 	return holder, hit
 end
 
@@ -2463,6 +2664,25 @@ function Kit.fitSize(text, maxSize, width, minSize)
 	if w <= 0 then return maxSize end
 	return math.max(minSize or 8, math.min(maxSize, math.floor(width / w)))
 end
+-- (Oct 27, round 7, OUR_UI_AUDIT D) TextScaled's replacement for a label sized by its parent (a world board's
+-- BillboardGui, whose pixels change as you walk): a WHOLE-pixel TextSize from the label's own box (its height x `fill`,
+-- 0.9 by default, held to minSize..maxSize and to the width its text needs), worked out again when the box or the
+-- text changes. (A screen label has a fixed size: it takes Kit.fitSize once.)
+function Kit.sizeText(label, maxSize, minSize, fill)
+	local function fit()
+		local ok, box = pcall(function() return label.AbsoluteSize end)
+		if not ok or typeof(box) ~= 'Vector2' or box.Y <= 0 or box.X <= 0 then return end
+		local size = math.floor(box.Y * (fill or 0.9))
+		if maxSize then size = math.min(size, maxSize) end
+		size = Kit.fitSize(label.Text, size, box.X, minSize or 8)
+		if label.TextSize ~= size then label.TextSize = size end
+	end
+	label.TextScaled = false
+	pcall(function() label:GetPropertyChangedSignal('AbsoluteSize'):Connect(fit) end)
+	pcall(function() label:GetPropertyChangedSignal('Text'):Connect(fit) end)
+	fit()
+	return label
+end
 
 -- "ONLY <Robux> 199" (the reference's price under the offer cards and 2x Speed): ONLY in a yellow -> green gradient,
 -- the mark and the price in gold -> orange, all black-outlined (props OnlyColors / MarkColor / PriceColors restyle it:
@@ -2538,6 +2758,14 @@ function Kit.bar(props)
 	Kit.studs(track, { Width = w, Height = h, Pitch = props.Studs or 15, Color = Kit.Color.black, Transparency = 0.84, Pattern = 'checker', Shade = props.StudShade or 0.6, ZIndex = z })
 	local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 1, -4), ZIndex = z, Parent = fill })
 	stroke(tone.rim or Kit.Color.white, 2, true, 0.35, Enum.LineJoinMode.Miter).Parent = rim
+	-- (round 3) the owner's trough and green fill (a non-green bar keeps its drawn fill)
+	if Kit.UseOwnerSkins and props.Skin ~= false then
+		Kit.skin(track, 'bar_trough', { Out = O, Height = h + 2 * O })
+		if (props.Tone == 'buyGreen' or props.Tone == 'green' or props.Tone == 'lime') then
+			track.ClipsDescendants = false
+			Kit.skin(fill, 'bar_fill', { Height = h })
+		end
+	end
 	local size = props.TextSize or math.floor(h * 0.62)
 	local labels = {}
 	local function label(name, text, align, pos, anchor, width)
@@ -2552,63 +2780,159 @@ function Kit.bar(props)
 	return holder, fill, labels
 end
 
--- A window like the reference's Store and Rebirth (user_27/28, measured at their size): a studded header in the
--- window's colour (a big icon, the title in Gotham Black, a red-pink square X) over a grey see-through body with a
--- light inner band, both with a thick black outline; no dimming (the world behind is blurred, UIMotion.blur). The
--- window keeps the reference's size (it covers most of the screen) and shrinks to fit small screens (Kit.fitWindow).
--- props: Name, Title, Icon (an icon3d id) or IconNode (any GuiObject), Tone (the header), Width (940), Height (642),
--- HeaderHeight (120), TitleSize (80).
+-- (Oct 27) A window like the owner's UI mockup (hood/docs/refs/ui/owner_ui_windows_oct27.png): a bright yellow header
+-- bar (lighter on top, a faint tile, a thick dark outline) with the window's icon breaking out over its left end, the
+-- title in white Montserrat Black with a thick dark outline and a red square X at its right end, over a dark navy body
+-- with a faint blue square tile, a thick outline and rounded corners (Kit.windowBody). No dimming (the world behind is
+-- blurred, UIMotion.blur). The window keeps its design size and shrinks to fit small screens (Kit.fitWindow).
+-- props: Name, Title, Icon (an icon3d id) or IconNode (any GuiObject), Tone ('headerRed' for a delete / are-you-sure
+-- window; any other tone is the yellow bar, like every window of the mockup), Width (940), Height (642), HeaderHeight
+-- (Kit.Window.Header), TitleSize (80).
 -- Returns panel, well (the body's inside, to fill), closeHit, overlay, header. UIMotion.open/close animate it.
-Kit.Window = { Outline = 10, Header = 120, Rim = 8, Inset = 18 }
+Kit.Window = { Outline = 6, Header = 104, Rim = 3, Inset = 18, TileScale = 0.9 } -- (TileScale: the owner's body tile, round 3)
 function Kit.window(root, props)
 	local w, h = props.Width or 940, props.Height or 642
 	local hh = props.HeaderHeight or Kit.Window.Header
-	local O, RIM = Kit.Window.Outline, Kit.Window.Rim
+	local O = Kit.Window.Outline
 	local overlay = blank({ Name = (props.Name or 'Window') .. 'Overlay', BackgroundTransparency = 1, BackgroundColor3 = Kit.Color.ink, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = root })
 	-- (Fit holds the window's size and the UIScale that shrinks it onto small screens; the panel inside takes UIMotion's pop)
 	local fitter = blank({ Name = 'Fit', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 4), Size = UDim2.fromOffset(w, h), ZIndex = 21, Parent = overlay })
 	new('UIScale', { Name = 'FitScale', Parent = fitter })
 	local panel = blank({ Name = props.Name or 'Window', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = fitter })
-	-- the body: grey and see-through, with a light band inside its outline
-	local bodyTop = hh - 6 - (props.HeaderOverlap or 0) -- (HeaderOverlap: a taller header over the same body, user_28's)
-	-- (the reference's body darkens what's behind it by about a third and keeps it visible: a near-black at 0.68)
-	local frame = blank({ Name = 'Frame', BackgroundTransparency = 0.58, BackgroundColor3 = hex('12141C'), Position = UDim2.fromOffset(O, bodyTop + O), Size = UDim2.new(1, -2 * O, 1, -bodyTop - 2 * O), ZIndex = 21, Parent = panel })
-	corner(5).Parent = frame
-	stroke(Kit.Color.black, O, true).Parent = frame
-	local band = blank({ Name = 'Rim', Position = UDim2.fromOffset(RIM, RIM), Size = UDim2.new(1, -2 * RIM, 1, -2 * RIM), ZIndex = 21, Parent = frame })
-	stroke(Kit.Color.white, RIM, true, 0.5).Parent = band -- (brief 22, UICRITIC2: a translucent white band, ~50%, like the reference's)
+	-- the body: navy, opaque, the tile, the outline; it runs up under the header so their corners meet
+	local bodyTop = hh - 14 - (props.HeaderOverlap or 0) -- (HeaderOverlap: a taller header over the same body)
+	local frame = blank({ Name = 'Frame', Position = UDim2.fromOffset(O, bodyTop + O), Size = UDim2.new(1, -2 * O, 1, -bodyTop - 2 * O), ZIndex = 21, Parent = panel })
+	Kit.windowBody(frame, w - 2 * O, h - bodyTop - 2 * O, { Outline = O })
 	local inset = Kit.Window.Inset
-	local well = blank({ Name = 'Content', Position = UDim2.fromOffset(inset, bodyTop + inset), Size = UDim2.new(1, -2 * inset, 1, -bodyTop - 2 * inset), ZIndex = 22, Parent = panel })
-	-- the header
-	-- (brief 19 r7) the header's studs are the reference's raised / recessed checker, at its strongest; the diagonal gloss
-	-- only where the reference has it (the Store's; props.Gloss = false for Rebirth and Rewards)
-	local header = Kit.block({ Name = 'Header', Tone = props.Tone or 'headerGold', Width = w, Height = hh, Outline = O, Radius = 5, Studs = 34, StudPattern = 'checker', StudShade = 0.9, Gloss = props.Gloss ~= false, RimWidth = 6, ZIndex = 23 })
+	local top = hh + 12
+	local well = blank({ Name = 'Content', Position = UDim2.fromOffset(inset, top), Size = UDim2.new(1, -2 * inset, 1, -top - inset), ZIndex = 22, Parent = panel })
+	-- the header: the yellow bar (the red one for a delete window), a faint tile, no diagonal gloss
+	local tone = (props.Tone == 'headerRed' or props.Tone == 'danger') and 'headerRed' or 'headerYellow'
+	local header = Kit.block({ Name = 'Header', Tone = tone, Width = w, Height = hh, Outline = O, OutlineColor = Kit.Skin.outline, Radius = Kit.Skin.headerCorner, Studs = 30, StudShade = 0.22, RimWidth = 4, ZIndex = 23 })
 	header.Parent = panel
-	local iconSize = props.IconSize or math.floor(hh * 0.95)
+	Kit.headerBand(header, tone)
+	-- (round 3) the owner's yellow header fill with its studs, repeated along the bar (our outline and corners kept)
+	local headMeta = tone == 'headerYellow' and Kit.UseOwnerSkins and ImageLoader.meta('Ui', 'header')
+	if headMeta then Kit.skin(header.Body, 'header', { TileScale = (hh - 2 * O) / headMeta.H, Radius = Kit.Skin.headerCorner, Keep = { Stroke = true } }) end
 	local icon = props.IconNode
 	local left = 30
 	if icon then
 		icon.AnchorPoint = Vector2.new(0, 0.5)
-		icon.Position = UDim2.new(0, 14, 0.5, 0)
+		icon.Position = UDim2.new(0, 14, 0.5, -math.floor(hh * 0.12))
 		icon.Parent = header
-		left = 14 + iconSize + 8
+		left = 14 + (props.IconSize or math.floor(hh * 1.1)) + 8
 	elseif props.Icon then
-		-- (brief 25) the picture where user_28's / ref22_store's basket is: Kit.Place.windowHeader
-		icon = Kit.icon3d(props.Icon, nil, { ZIndex = 27, Place = { Rule = 'windowHeader', W = w, H = hh } })
+		-- the picture breaks out of the bar's left end and over its top edge (Kit.Place.breakout)
+		icon = Kit.icon3d(props.Icon, nil, { ZIndex = 27, Place = { Rule = 'breakout', W = w, H = hh } })
 		icon.Parent = header
-		left = math.floor(Kit.contentRight(icon) + hh * 0.1 - O) -- (the title, in the header's Body, right after the picture)
+		left = math.floor(Kit.contentRight(icon) + hh * 0.06 - O)
 	end
 	local titleSize = props.TitleSize or 80
 	Kit.text({
-		Name = 'Title', Text = props.Title or 'Title', FontFace = Kit.Font.heading, TextSize = titleSize, Stroke = Kit.Color.black, StrokeThickness = math.max(4, titleSize * 0.075),
-		TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(left, 0), Size = UDim2.new(1, -left - hh, 1, 0), ZIndex = 27, Parent = header.Body,
+		Name = 'Title', Text = props.Title or 'Title', FontFace = Kit.Font.display, TextSize = titleSize, Stroke = Kit.Skin.outline, StrokeThickness = math.max(4, titleSize * 0.09),
+		TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(left, -2), Size = UDim2.new(1, -left - hh, 1, 0), ZIndex = 27, Parent = header.Body,
 	})
-	local xs = math.floor(hh * 0.68)
-	local close, closeHit = Kit.blockButton({ Name = 'Close', Tone = 'rose', Width = xs, Height = xs, Text = 'X', TextSize = math.floor(xs * 0.6), Studs = false, Outline = 5, RimWidth = 3, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -(hh - xs) / 2 - 6, 0.5, 0), ZIndex = 27 })
+	local xs = math.floor(hh * 0.7)
+	local close, closeHit = Kit.blockButton({ Name = 'Close', Tone = 'closeRed', Width = xs, Height = xs, Text = 'X', TextSize = math.floor(xs * 0.62), Studs = false, Outline = 5, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 8, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -(hh - xs) / 2 - 2, 0.5, 0), ZIndex = 27 })
 	close.Parent = header
 	panel:SetAttribute('DesignW', w)
 	panel:SetAttribute('DesignH', h)
 	return panel, well, closeHit, overlay, header
+end
+
+-- (Oct 27) Paints `frame` as a window body of the mockup: a navy top -> bottom gradient (opaque), the faint blue square
+-- tile, a thick near-black outline, rounded corners and a thin light line inside the outline. `w` x `h`: the frame's
+-- design size (for the tile). props: Outline (5), OutlineColor, Radius (Kit.Skin.corner), Pitch (the tile's, 28),
+-- Transparency (0), Top / Base (Color3s: another body colour), Tile (false: none). Returns frame.
+function Kit.windowBody(frame, w, h, props)
+	props = props or {}
+	local S = Kit.Skin
+	local r = props.Radius or S.corner
+	frame.BackgroundTransparency = props.Transparency or 0
+	frame.BackgroundColor3 = Kit.Color.white
+	new('UIGradient', { Name = 'BodyGradient', Rotation = 90, Color = ColorSequence.new(props.Top or S.bodyTop, props.Base or S.bodyBase), Parent = frame })
+	if r > 0 then corner(r).Parent = frame end
+	stroke(props.OutlineColor or S.outline, props.Outline or 5, true, 0, r > 0 and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = frame
+	if props.Tile ~= false then
+		local tile = Kit.studs(frame, { Width = w, Height = h, Pitch = props.Pitch or 28, Tint = S.tile, Color = S.tile, Transparency = 0.9, Shade = S.tileShade, MinAlpha = 0.84, Filled = true, ZIndex = frame.ZIndex })
+		if tile and tile:IsA('ImageLabel') and r > 0 then corner(r).Parent = tile end
+	end
+	local rw = 2
+	local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(rw, rw), Size = UDim2.new(1, -2 * rw, 1, -2 * rw), ZIndex = frame.ZIndex, Parent = frame })
+	if r > rw then corner(r - rw).Parent = rim end
+	stroke(S.rim, rw, true, 0.25, r > rw and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = rim
+	-- (round 3) the owner's body: his navy square tile, repeated (our outline, corners and light inner line kept)
+	if Kit.UseOwnerSkins and props.Tile ~= false and not props.Top then
+		Kit.skin(frame, 'body_tile', { TileScale = Kit.Window.TileScale, Radius = r, Keep = { Stroke = true, Rim = true } })
+	end
+	return frame
+end
+
+-- (Oct 27) The mockup's header bars are lighter on their top half: a soft band over a Kit.block's face, fading out toward
+-- its middle. tone: the block's (its rim colour tints the band).
+function Kit.headerBand(block, tone)
+	local body = block and block:FindFirstChild('Body')
+	if not body then return end
+	local t = toneOf(tone)
+	local band = blank({ Name = 'TopBand', BackgroundTransparency = 0, BackgroundColor3 = t.rim or Kit.Color.white, Position = UDim2.fromOffset(4, 3), Size = UDim2.new(1, -8, 0.46, 0), ZIndex = body.ZIndex, Parent = body })
+	corner(math.max(2, Kit.Skin.headerCorner - 4)).Parent = band
+	new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 1) }), Parent = band })
+	return band
+end
+
+-- (Oct 27) A row of the mockup's pill tabs: dark navy pills with white outlined labels, the open one bright blue. Each
+-- pill is as wide as its label needs, the row scaled to `Width`. props: Items { { Id, Text } }, Width (600), Height (42),
+-- Gap (8), TextSize (Height * 0.48), Selected (an Id), Position, AnchorPoint, ZIndex, Name, OnSelect(id), Wire
+-- (function(pill, fn): how a pill takes taps, e.g. UIMotion.button; default its Hit's Activated), OnTone and OnPiece (the
+-- open pill's tone and skin piece: 'tabBlue' / 'tab_on_blue'; the Shop's is gold, as on the owner's mockup).
+-- Returns holder, set(id) (paints the open one, no callback), pills { [id] = holder }.
+function Kit.tabs(parent, props)
+	local items = props.Items or {}
+	local h, gap = props.Height or 42, props.Gap or 8
+	local w = props.Width or 600
+	local z = props.ZIndex or 1
+	local size = props.TextSize or math.floor(h * 0.48)
+	local holder = blank({ Name = props.Name or 'Tabs', Size = UDim2.fromOffset(w, h), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z, Parent = parent })
+	local want, total = {}, 0
+	for i, it in items do
+		want[i] = Kit.textWidth(it.Text or it.Id, size) + 30
+		total += want[i]
+	end
+	local room = w - gap * math.max(0, #items - 1)
+	local k = total > 0 and room / total or 1
+	local pills = {}
+	local function paint(pill, on)
+		local tone = Kit.Tone[on and (props.OnTone or 'tabBlue') or 'navyRow']
+		local body = pill:FindFirstChild('Body')
+		local g = body and body:FindFirstChildOfClass('UIGradient')
+		if g then g.Color = ColorSequence.new(tone.top, tone.base) end
+		local rim = body and body:FindFirstChild('Rim')
+		local rs = rim and rim:FindFirstChildOfClass('UIStroke')
+		if rs then rs.Color = tone.rim end
+		local sk = body and body:FindFirstChild('Skin')
+		local piece = on and (props.OnPiece or 'tab_on_blue') or 'tab_off'
+		if sk and sk:GetAttribute('Piece') ~= piece then Kit.reskin(sk, piece) end
+		pill:SetAttribute('On', on)
+	end
+	local function set(id)
+		for key, p in pills do paint(p, key == id) end
+		holder:SetAttribute('Selected', id)
+	end
+	local x = 0
+	for i, it in items do
+		local pw = math.floor(want[i] * k)
+		local pill, hit = Kit.blockButton({ Name = 'Tab_' .. it.Id, Tone = 'navyRow', Width = pw, Height = h, Text = it.Text or it.Id, TextSize = size, Studs = false, Outline = 3, OutlineColor = Kit.Skin.outline, RimWidth = 2, Radius = math.floor(h * 0.28), Position = UDim2.fromOffset(x, 0), ZIndex = z })
+		pill.Parent = holder
+		pills[it.Id] = pill
+		x += pw + gap
+		local function pick()
+			set(it.Id)
+			if props.OnSelect then props.OnSelect(it.Id) end
+		end
+		if props.Wire then props.Wire(pill, pick) else hit.Activated:Connect(pick) end
+	end
+	if #items > 0 then set(props.Selected or items[1].Id) end
+	return holder, set, pills
 end
 
 -- Shrinks a Kit.window to fit the screen (gui's AbsoluteSize): the window keeps its design size where it fits and

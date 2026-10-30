@@ -36,7 +36,7 @@ local function fade(label, t) -- text and its outline out
 end
 
 ---------------------------------------------------------------------------------------------- level up
-local TOAST_W, TOAST_H, TOAST_Y = 250, 30, 86 -- (under the goal tracker's three lines)
+local TOAST_W, TOAST_H, TOAST_Y = 250, 30, 116 -- (at least under the goal tracker's lines, which end ~100 down at the HUD's scale; this screen's scale is up to 8% smaller on a computer)
 local toast = Kit.new('Frame', { Name = 'LevelToast', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TOAST_Y), Size = px(TOAST_W, TOAST_H), BackgroundColor3 = hex('0B0D18'), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 5, Parent = root })
 Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.18, 0.2), NumberSequenceKeypoint.new(0.82, 0.2), NumberSequenceKeypoint.new(1, 1) }), Parent = toast })
 local toastText = Kit.text({ Name = 'Text', Text = '', TextSize = 19, Stroke = BLACK, StrokeThickness = 3, TextColor3 = hex('FFF27A'), ZIndex = 6, Parent = toast })
@@ -87,7 +87,7 @@ local function levelUp(from, to)
 	else
 		if not wasShown then toast.Position = UDim2.new(0.5, 0, 0, y - 8) end
 		tween(toast, 0.18, { Position = UDim2.new(0.5, 0, 0, y) }, Enum.EasingStyle.Back)
-		if os.clock() - lastBloom >= 1.2 then -- one flash, 0.25 s at most, never more than one a second
+		if os.clock() - lastBloom >= 1.2 and require(RS.Shared.FlashGate).take('levelup') then -- one flash, 0.25 s at most, never more than one a second (on the whole screen: Shared/FlashGate)
 			lastBloom = os.clock()
 			bloom.Visible, bloom.BackgroundTransparency = true, 0.45
 			tween(bloom, 0.25, { BackgroundTransparency = 1 })
@@ -103,11 +103,16 @@ local function levelUp(from, to)
 		end)
 	end)
 end
+-- (Oct 27, flow: "one voice at a time") No level toast in the first minute of a visit (the first shots level you up every
+-- second or two: the counter and the Level bar tick, quietly), and none while another moment owns the screen.
+local MomentQueue = require(RS.Shared.MomentQueue)
+local QUIET_FIRST = 60
+local joinedAt = os.clock()
 local function onPower()
 	local p = player:GetAttribute('Power')
 	if type(p) ~= 'number' then return end
 	local level = LevelRules.levelOf(p)
-	if lastLevel and level > lastLevel then levelUp(lastLevel, level) end
+	if lastLevel and level > lastLevel and os.clock() - joinedAt >= QUIET_FIRST and not MomentQueue.busy() then levelUp(lastLevel, level) end
 	lastLevel = level -- (a rebirth lowers it: no toast, just the new base)
 end
 player:GetAttributeChangedSignal('Power'):Connect(onPower)
@@ -213,11 +218,12 @@ local function drain()
 	task.spawn(function()
 		while #queue > 0 do
 			local info = table.remove(queue, 1)
-			local t0 = os.clock()
-			while busy() and os.clock() - t0 < 25 do task.wait(0.3) end
-			if not busy() then
+			-- (Oct 27, flow) its turn in the one moment queue, on a free screen (25 s at most, as before)
+			local token = MomentQueue.acquire('RankUp', { Ready = function() return not busy() end, Timeout = 25 })
+			if token then
 				showRank(info)
 				task.wait(2.1)
+				MomentQueue.release(token)
 			end
 		end
 		running = false

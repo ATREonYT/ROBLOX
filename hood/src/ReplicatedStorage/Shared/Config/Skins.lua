@@ -62,5 +62,12 @@ S.Stations={
  -- Last in the list, after the Champ Ring, so every older lane keeps its place (GoalRules' Range goals count places)
  {Id='Head',Name='HEAD LANE',Gear='GoldBag',Rebirths=0,Multiplier=500,Pass='RangeVIP3',RobuxPrice=699,Required=0,Color=C(255,214,70)},
 }
+-- (Oct 27) World 2's ranges hit harder: every lane's Multiplier times this world's LaneBoost (Config/Balance; 1 in World 1).
+do
+	local boost = require(script.Parent.Balance).LaneBoost
+	if type(boost) == 'number' and boost ~= 1 then
+		for _, g in S.Stations do g.Multiplier *= boost end
+	end
+end
 S.StationById={};for _,s in S.Stations do S.StationById[s.Id]=s end
 return S

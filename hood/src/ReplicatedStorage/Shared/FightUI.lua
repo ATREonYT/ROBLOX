@@ -121,8 +121,10 @@ function FightUI.pill(parent)
 		scale.Scale = 1.22
 		TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	end
+	local hiding = 0 -- (Oct 28, the feel round: the chip shrinks away instead of vanishing; a show cancels it)
 	local function show(t, color)
-		local changed = text.Text ~= t or not box.Visible
+		hiding += 1
+		local changed = text.Text ~= t or not box.Visible or scale.Scale < 0.99
 		text.Text = t
 		text.TextColor3 = color
 		text.TextSize = Kit.fitSize(t, 23, w - 48, 12)
@@ -144,9 +146,18 @@ function FightUI.pill(parent)
 		sub.Text = rewardText and tostring(rewardText) or 'Street cleared!'
 	end
 	function api.hide()
-		box.Visible = false
-		sub.Text = ''
 		chipShown(false)
+		if not box.Visible then sub.Text = '' return end
+		hiding += 1
+		local my = hiding
+		local tw = TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 0.01 })
+		tw.Completed:Once(function()
+			if hiding ~= my then return end
+			box.Visible = false
+			sub.Text = ''
+			scale.Scale = 1
+		end)
+		tw:Play()
 	end
 	return api
 end

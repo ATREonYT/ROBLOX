@@ -1,0 +1,18 @@
+{
+  "name": "CannonEvolution",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "GameConfig": { "$path": "src/shared/GameConfig.lua" },
+      "Icons": { "$path": "src/shared/Icons.lua" }
+    },
+    "ServerScriptService": {
+      "GameServer": { "$path": "src/server/GameServer.server.lua" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "GameClient": { "$path": "src/client/GameClient" }
+      }
+    }
+  }
+}

@@ -83,11 +83,11 @@ function Motion.open(overlay, panel, dim)
 	local shadow = overlay:FindFirstChild('Shadow')
 	if shadow then
 		local ss = scaleOf(shadow)
-		ss.Scale = 0.8
+		ss.Scale = 0.85
 		tween(ss, Motion.Time.open, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
 	end
 	local s = scaleOf(panel)
-	s.Scale = 0.8
+	s.Scale = 0.85 -- (round 7, UI_CRISP_AND_JUICE: 0.85 -> 1 with a small Back overshoot)
 	return tween(s, Motion.Time.open, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
 end
 function Motion.close(overlay, panel, onClosed)
@@ -136,7 +136,7 @@ function Motion.countTo(label, from, to, duration, format)
 end
 
 -- A diagonal light band sweeping across gui every `every` seconds (primary buttons, Legendary+ cards only).
-function Motion.shine(gui, every, radius)
+function Motion.shine(gui, every, radius, priority)
 	local band = Instance.new('Frame')
 	band.Name = 'Shine'
 	band.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -155,15 +155,9 @@ function Motion.shine(gui, every, radius)
 	g.Offset = Vector2.new(-1, 0)
 	g.Parent = band
 	band.Parent = gui
-	local alive = true
-	task.spawn(function()
-		while alive and band.Parent do
-			g.Offset = Vector2.new(-1, 0)
-			TweenService:Create(g, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Offset = Vector2.new(1, 0) }):Play()
-			task.wait(every or 3.5)
-		end
-	end)
-	return function() alive = false; band:Destroy() end
+	-- (Oct 27: on UIIdle's one shared loop, paused while off screen, instead of a loop per shine)
+	local rec = require(script.Parent.UIIdle).add(band, 'sweep', { Band = band, Gradient = g, Every = every or 3.5, Dur = 0.7, Phase = 0, Watch = gui, Priority = priority })
+	return function() if rec then rec.stop() end; band:Destroy() end
 end
 
 -- Slide a toast in from above, hold, slide out and destroy it.
@@ -228,18 +222,20 @@ function Motion.aside(items, on, time)
 	end
 end
 
--- Looping idle motion: a notification badge wobbles, a tutorial arrow bobs.
+-- Idle motion: a notification badge wiggles, a tutorial arrow bobs. (Oct 27, round 7, OUR_UI_AUDIT C: no endless
+-- wobble) both run on Shared/UIIdle's one loop, under its on-screen budget: a wobble is one small swing (at most 5 deg)
+-- and then a rest of about 2.5 s, a bob at most 4 px over at least 1.6 s. The returned handle's :Cancel() stops it and
+-- puts the gui back (as the tween these used to return did).
+local function handle(rec)
+	return { Cancel = function() if rec then rec.stop() end end, Pause = function() if rec then rec.stop() end end, Play = function() end }
+end
 function Motion.wobble(gui, degrees, period)
-	local t = TweenService:Create(gui, TweenInfo.new((period or 0.9) / 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = degrees or 8 })
-	gui.Rotation = -(degrees or 8)
-	t:Play()
-	return t
+	local UIIdle = require(script.Parent.UIIdle)
+	return handle(UIIdle.add(gui, 'rock', { Deg = math.min(degrees or 5, 5), Period = math.max(period or 1.2, 1), Rest = 2.5 }))
 end
 function Motion.bob(gui, pixels, period)
-	local base = gui.Position
-	local t = TweenService:Create(gui, TweenInfo.new((period or 0.7) / 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Position = base - UDim2.fromOffset(0, pixels or 10) })
-	t:Play()
-	return t
+	local UIIdle = require(script.Parent.UIIdle)
+	return handle(UIIdle.add(gui, 'bob', { Px = math.min(pixels or 4, 4), Period = math.max(period or 1.6, 1.6) }))
 end
 
 return Motion

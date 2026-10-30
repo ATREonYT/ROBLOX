@@ -116,3 +116,8 @@ a render is what the game builds. Never hand-edit `Shared/Models/*.lua`; they ar
   vertex colours multiply with MeshPart.Color, so set Color to white (DevForum "Vertex Colored Meshes
   using Blender and Studio", devforum.roblox.com/t/3050119); Neon on a textured MeshPart does not glow
   from the texture (DevForum "Trouble making mesh neon", devforum.roblox.com/t/trouble-making-mesh-neon/3058484).
+
+## From the video library
+Cartoony low-poly prop budgets (rock, grass, tree, ground chunk, pet), leaf-card trees and the Meshy remesh
+targets are in the `roblox-cartoony-building` skill, section 3. Transcript notes:
+`AI Video Library/Video Notes/3D and Blender/` and `Video Notes/Cartoony building and lighting/`.

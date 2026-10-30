@@ -5,8 +5,9 @@
 #   nofake: our Part fallbacks only (what Studio shows before the import).
 # -> <out>/scene.json (lobby + forecourt + first stages) and <out>/plan.json (no roof, for top-down views).
 # Needs LUNE=/path/to/lune (or lune on PATH). SRC=... overrides hood/src; SOUTH=<z> is the hall's south wall (crop).
+# MAP=TheCity exports World 2's map instead (default TheBlockV2).
 T=$(cd "$(dirname "$0")" && pwd); R=$(cd "$T/../../../../.." && pwd); L=${LUNE:-lune}; O=$1; mkdir -p "$O"; O=$(cd "$O" && pwd)
-BUILD="return require(game.ServerStorage.TheBlockV2).Build()"
+BUILD="return require(game.ServerStorage.${MAP:-TheBlockV2}).Build()"
 if [ "$2" = nofake ]; then SNIP="$BUILD"; else
 SNIP="MANIFEST='$R/hood/art/models/items/manifest.json'
 $(cat "$T/fake_items.luau")

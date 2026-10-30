@@ -39,12 +39,12 @@ local function crewHp(stage)
 	return hp
 end
 
-local function bestLane(r)
+local function bestLane(r, boost)
 	local best = 1
 	for _, g in Skins.Stations do
 		if not g.Pass and (g.Rebirths or 0) <= r and g.Multiplier > best then best = g.Multiplier end
 	end
-	return best
+	return best * (boost or 1)
 end
 
 local function cashBoxes()
@@ -53,12 +53,19 @@ local function cashBoxes()
 	return list
 end
 
+-- (Oct 27, World 2) opts.sp / opts.pad: another world's StagePower and PadCash (default World 1's); opts.boost: that
+-- world's lane multiplier boost; opts.from: a finished run's result to carry on from (Power, rebirths, Cash, guns and
+-- shoes carry over; the new world's stages start fresh). A crew's HP scales with its stage's Power.
 function simulate(opts) -- (global: tune.luau, appended to this snippet, calls it)
 	local rng = Random.new(opts.seed or 1)
 	local waste = opts.waste or 0
+	local SP = opts.sp or Balance.StagePower
+	local PAD = opts.pad or Balance.PadCash
+	local from = opts.from
 	local t, power, r, cash, gun = 0, 0, 0, 0, 1
-	local gunMult = Guns.List[1].Multiplier
-	local owned = {}
+	if from then t, power, r, cash, gun = from.t, from.power, from.rebirths, from.cash, from.gun end
+	local gunMult = Guns.List[gun].Multiplier
+	local owned = from and table.clone(from.owned) or {}
 	local shoeMult = 1
 	local best = 0 -- the furthest stage ever beaten
 	local stageAt, rebirthAt, gunAt = {}, {}, {}
@@ -67,7 +74,7 @@ function simulate(opts) -- (global: tune.luau, appended to this snippet, calls i
 	local function reach(p)
 		local k = 0
 		for s = 1, STAGES do
-			if p >= Balance.StagePower[s] then k = s else break end
+			if p >= SP[s] then k = s else break end
 		end
 		return k
 	end
@@ -115,13 +122,13 @@ function simulate(opts) -- (global: tune.luau, appended to this snippet, calls i
 		for s = 1, k do
 			local dmg = EnemyRules.damage(power) * 3 -- per second
 			-- (at least one shot a goon, 3 a second, however strong you are)
-			local fight = math.max(#EnemyRules.Lineups[s] / 3, crewHp(s) / dmg)
+			local fight = math.max(#EnemyRules.Lineups[s] / 3, crewHp(s) * SP[s] / Balance.StagePower[s] / dmg)
 			local shots = fight * 3
 			power += shots * ShotRules.pay(ShotRules.perShot(1, r, 1), gunMult, shoeMult)
 			t += slow(fight + 64 / walk + 1)
 			if not stageAt[s] then stageAt[s] = t end
 		end
-		cash += PadRules.reward(k, false)
+		cash += PAD[k] or PadRules.reward(k, false)
 		t += slow(8) -- back home
 		best = math.max(best, k)
 		shop()
@@ -130,7 +137,7 @@ function simulate(opts) -- (global: tune.luau, appended to this snippet, calls i
 		local need = RebirthRules.need(r)
 		if power >= need then
 			local k = reach(power)
-			if k > 0 then run(k) end
+			if k > 0 and not (opts.skipRun and best >= STAGES) then run(k) end -- (skipRun: past the world, just train)
 			power, r = 0, r + 1
 			rebirthAt[r] = t
 			t += slow(5)
@@ -141,9 +148,9 @@ function simulate(opts) -- (global: tune.luau, appended to this snippet, calls i
 				run(k)
 				if stageAt[STAGES] and not opts.stopAt then break end
 			else
-				local rate = ShotRules.AutoRate * ShotRules.pay(ShotRules.perShot(bestLane(r), r, 1), gunMult, shoeMult) * ShotRules.AutoValue
+				local rate = ShotRules.AutoRate * ShotRules.pay(ShotRules.perShot(bestLane(r, opts.boost), r, opts.pass or 1), gunMult, shoeMult) * ShotRules.AutoValue
 				-- train until a new stage, or the rebirth, comes in reach
-				local target = best >= STAGES and need or math.min(need, Balance.StagePower[best + 1])
+				local target = best >= STAGES and need or math.min(need, SP[best + 1])
 				local dt = math.max(1, (math.max(target, power + 1) - power) / rate)
 				dt = math.min(dt, 30)
 				power += rate * dt
@@ -151,7 +158,8 @@ function simulate(opts) -- (global: tune.luau, appended to this snippet, calls i
 			end
 		end
 	end
-	return { stageAt = stageAt, rebirthAt = rebirthAt, gunAt = gunAt, gun = gun, shoes = shoeMult, rebirths = r }
+	equipBest()
+	return { stageAt = stageAt, rebirthAt = rebirthAt, gunAt = gunAt, gun = gun, shoes = shoeMult, rebirths = r, t = t, power = power, cash = cash, owned = owned }
 end
 
 local function minutes(s) return s and string.format('%5.1f', s / 60) or '    -' end
@@ -189,6 +197,36 @@ for _, kind in { { name = 'focused', waste = 0 }, { name = 'casual', waste = 0.3
 	row = {}
 	for i = 2, #Guns.List do table.insert(row, ('%s %s'):format(Guns.List[i].Id, minutes(res.gunAt[i]))) end
 	table.insert(lines, '  guns (min): ' .. table.concat(row, ' |'))
+end
+-- (Oct 27, the owner: "3 hours, but with game passes it will be way quicker") The real way to 50: World 1, then World 2
+-- to its boss (about rebirth 24), then training in World 2's ranges (LaneBoost 2, no more runs) to 50, free and with the
+-- 2x Power pass (pass = 2). The training part is measured from rebirth 24 in a train-only player; the total adds the
+-- focused World 1 and World 2 times above.
+for _, v in { { name = 'free', pass = 1 }, { name = '2x Power pass', pass = 2 } } do
+	local res = simulate({ seed = 1, waste = 0, stopAt = LAST, limit = 40 * 3600, skipRun = true, boost = (Balance.Worlds and Balance.Worlds[2] and Balance.Worlds[2].LaneBoost) or 2, pass = v.pass })
+	local from, to = res.rebirthAt[24], res.rebirthAt[LAST]
+	if from and to then table.insert(lines, ('train 24 -> %d in World 2, %s: %.0f min'):format(LAST, v.name, (to - from) / 60)) end
+end
+-- World 2 (Oct 27): carries on from World 1's boss with World 2's numbers (globals W2_SP, W2_PAD, W2_BOOST, else
+-- Balance.Worlds[2]); its boss at about 40 minutes more is the owner's "later worlds longer".
+local W2 = Balance.Worlds and Balance.Worlds[2]
+local sp2, pad2, boost2 = W2_SP, W2_PAD or (W2 and W2.PadCash), W2_BOOST or (W2 and W2.LaneBoost)
+if not sp2 and W2 then -- (World 2 runs at Scale x World 1's numbers on both sides: the sim plays it in World 1's units)
+	sp2 = {}
+	for i, v in W2.StagePower do sp2[i] = v / (W2.Scale or 1) end
+end
+if sp2 and pad2 then
+	for _, kind in { { name = 'focused', waste = 0 }, { name = 'patient', waste = 0, patient = true }, { name = 'casual', waste = 0.35 } } do
+		local one = simulate({ seed = 1, waste = kind.waste, patient = kind.patient })
+		local two = simulate({ seed = 1, waste = kind.waste, patient = kind.patient, from = one, sp = sp2, pad = pad2, boost = boost2, limit = one.t + 4 * 3600 })
+		local row = {}
+		for s = 1, STAGES do table.insert(row, ('S%d %s'):format(s, two.stageAt[s] and string.format('%4.1f', (two.stageAt[s] - one.t) / 60) or '   -')) end
+		table.insert(lines, ('== World 2, %s (minutes after World 1, entered at %.1f min, rebirth %d)'):format(kind.name, one.t / 60, one.rebirths))
+		table.insert(lines, table.concat(row, ' |'))
+		local at, rb = two.stageAt[STAGES], one.rebirths
+		for i, when in two.rebirthAt do if at and when <= at and i > rb then rb = i end end
+		table.insert(lines, ('WORLD2 %s %s min, rebirth %d at its boss'):format(kind.name, at and string.format('%.1f', (at - one.t) / 60) or 'not reached', rb))
+	end
 end
 print(table.concat(lines, '\n'))
 end

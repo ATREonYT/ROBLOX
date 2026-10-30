@@ -160,7 +160,7 @@ Net.get('WorldBossShot').OnServerEvent:Connect(function(player)
 	-- (a hit pays like a goon hit: a x1 shot's Power)
 	local perShot = ShotRules.perShot(1, RebirthRules.count(profile.Data.Rebirths), Boosts.power(player))
 	local gain = ShotRules.pay(perShot, player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), {})
-	profile.Data.Rep = math.min(1e12, profile.Data.Rep + gain)
+	profile.Data.Rep = math.min(1e15, profile.Data.Rep + gain)
 	player:SetAttribute('Power', profile.Data.Rep)
 	if f.G.State == S.Idle then S.alert(f.G, 0) end
 	if f.Hp <= 0 then finish(true) end

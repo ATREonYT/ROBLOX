@@ -27,7 +27,7 @@ local Kit = require(Shared.UIKit)
 local Motion = require(Shared.UIMotion)
 local Products = require(Shared.Config.Products)
 local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
-local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX) } -- (ROBUX, rules 27-28)
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX), Idle = require(Shared.UIIdle), Pity = require(Shared.PityUI), PityLines = {} } -- (ROBUX, rules 27-28; Oct 27: the idle motion, the box cards' pity lines)
 local Balance = require(Shared.Config.Balance)
 
 local function optional(...)
@@ -51,6 +51,10 @@ local function coverPlayerList(on)
 end
 
 local player = Players.LocalPlayer
+-- (Oct 27) the box cards' pity lines follow the server's counter
+player:GetAttributeChangedSignal('ShoePity'):Connect(function()
+	for _, p in Sell.PityLines do pcall(Sell.Pity.paint, p.Label, p.Box) end
+end)
 local playerGui = player:WaitForChild('PlayerGui')
 local Color, short, hex = Kit.Color, Kit.short, Kit.hex
 local BLACK = Color.black
@@ -93,12 +97,11 @@ local function gradient(t, top, bottom)
 end
 
 ---------------------------------------------------------------------------------------------- window
-local WIN = { W = 800, Head = 66, Body = 468, Pad = 12 }
+local WIN = { W = 860, Head = 66, Body = 560, Pad = 12, Tabs = 48 } -- (Oct 27: Tabs, the tab row under the header)
 local LIST_W = WIN.W - 2 * WIN.Pad
 -- Tones that are not in Kit.Tone: the reference's lime cards and price buttons, the OWNED button, the gift's blue.
 local LIME = { top = hex('DEF52A'), base = hex('5ED614'), lip = hex('3FA00A'), stroke = hex('1B4A00'), rim = hex('C8F55E') }
 local LIMEBTN = { top = hex('E8F94A'), base = hex('9CDD22'), lip = hex('7CB814'), stroke = hex('24510A'), rim = hex('F2FC9A') }
-local HEADER = { top = hex('FFE24A'), base = hex('F4B814'), lip = hex('D49A00'), stroke = hex('5A3C08'), rim = hex('FFF39A') } -- (the reference's bar: light yellow at the top, orange-yellow at the bottom)
 local OWNEDBTN = { top = hex('FFF45A'), base = hex('E8C812'), lip = hex('C8A000'), stroke = hex('4A3600'), rim = hex('FFFAA8') }
 
 -- A little drawn gift (a red box, a gold ribbon and bow), centred at `pos`.
@@ -120,24 +123,23 @@ end
 
 local function buildWindow()
 	local w, head, bodyH, pad = WIN.W, WIN.Head, WIN.Body, WIN.Pad
+	local tabsY = head + 8 -- (Oct 27) the tab row under the header
+	local listY = tabsY + WIN.Tabs + 6
 	local overlay = Kit.new('Frame', { Name = NAME .. 'Overlay', BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = root })
 	local fitter = Kit.new('Frame', { Name = 'Fit', BackgroundTransparency = 1, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = px(w, head + bodyH), ZIndex = 21, Parent = overlay })
 	Kit.new('UIScale', { Name = 'FitScale', Parent = fitter })
 	local panel = Kit.new('Frame', { Name = NAME, BackgroundTransparency = 1, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = fitter })
-	-- the body: a dark slate at 85%, the black line round it, a light line inside (the header sits over its top)
-	local frame = Kit.new('Frame', { Name = 'Frame', BackgroundTransparency = 0.12, BackgroundColor3 = hex('322D3E'), BorderSizePixel = 0, Position = px(0, head - 12), Size = px(w, bodyH + 12), ZIndex = 21, Parent = panel })
-	Kit.corner(14).Parent = frame
-	Kit.stroke(BLACK, 3, true).Parent = frame
-	local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(4, 4), Size = UDim2.new(1, -8, 1, -8), ZIndex = 21, Parent = frame })
-	Kit.corner(10).Parent = rim
-	Kit.stroke(hex('DCE0EC'), 3, true, 0.55).Parent = rim
+	-- the body (Oct 27, the owner's UI mockup): opaque navy, the faint blue square tile, a thick dark outline, rounded
+	-- corners (Kit.windowBody); the header sits over its top
+	local frame = Kit.new('Frame', { Name = 'Frame', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(0, head - 12), Size = px(w, bodyH + 12), ZIndex = 21, Parent = panel })
+	Kit.windowBody(frame, w, bodyH + 12, { Outline = 4 })
 	local list = Kit.new('ScrollingFrame', {
-		Name = 'Items', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(pad, head + 4), Size = px(w - 2 * pad, bodyH - pad - 4), ZIndex = 24,
+		Name = 'Items', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(pad, listY), Size = px(w - 2 * pad, head + bodyH - listY - pad), ZIndex = 24,
 		ScrollBarThickness = WIN.Pad - 5, ScrollBarImageColor3 = Color.white, ScrollBarImageTransparency = 1, ScrollingDirection = Enum.ScrollingDirection.Y,
 		VerticalScrollBarInset = Enum.ScrollBarInset.None, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), Parent = panel,
 	})
-	local trackH = bodyH - pad - 24
-	local track = Kit.new('Frame', { Name = 'ScrollTrack', BackgroundTransparency = 0.6, BackgroundColor3 = BLACK, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = px(w - pad + 2, head + 12), Size = px(7, trackH), ZIndex = 30, Parent = panel })
+	local trackH = head + bodyH - listY - pad - 16
+	local track = Kit.new('Frame', { Name = 'ScrollTrack', BackgroundTransparency = 0.6, BackgroundColor3 = BLACK, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = px(w - pad + 2, listY + 8), Size = px(7, trackH), ZIndex = 30, Parent = panel })
 	Kit.corner(UDim.new(0.5, 0)).Parent = track
 	local thumb = Kit.new('Frame', { Name = 'Thumb', BackgroundTransparency = 0.08, BackgroundColor3 = hex('E8ECF4'), BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 40), ZIndex = 31, Parent = track })
 	Kit.corner(UDim.new(0.5, 0)).Parent = thumb
@@ -151,16 +153,21 @@ local function buildWindow()
 		track.Visible = contentH > view + 1
 	end
 	list:GetPropertyChangedSignal('CanvasPosition'):Connect(placeThumb)
-	-- the header bar: yellow, studded, thick black line; the title, the blue Gift A Player button, the red X
-	local header = Kit.block({ Name = 'Header', Tone = HEADER, Width = w, Height = head, Studs = 26, StudSparse = true, StudShade = 0.45, Outline = 3.5, RimWidth = 3, Radius = 8, Position = px(0, 0), ZIndex = 26 })
+	-- the header bar (Oct 27): the mockup's yellow, lighter on top, a faint tile, a thick dark line; the basket breaking
+	-- out over its left end, "Shop", the blue Gift A Player button, the red square X
+	local header = Kit.block({ Name = 'Header', Tone = 'headerYellow', Width = w, Height = head, Studs = 26, StudShade = 0.22, Outline = 4, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = Kit.Skin.headerCorner, Position = px(0, 0), ZIndex = 26 })
 	header.Parent = panel
-	local titleText = 'EXCLUSIVE SHOP'
-	local title = label({ Name = 'Title', Text = titleText, TextSize = 38, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(22, head / 2 - 1), Size = px(330, 48), ZIndex = 34, Parent = panel })
+	Kit.headerBand(header, 'headerYellow')
+	local basket = Kit.icon3d(iconOr('Shop', 'Basket'), nil, { ZIndex = 33, Place = { Rule = 'breakout', W = w, H = head } })
+	basket.Parent = header
+	local titleX = math.floor(Kit.contentRight(basket) + 6)
+	local titleText = 'Shop'
+	local title = label({ Name = 'Title', Text = titleText, TextSize = 44, Stroke = Kit.Skin.outline, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(titleX, head / 2 - 2), Size = px(260, 52), ZIndex = 34, Parent = panel })
 	local xs = 52
-	local close = Kit.blockButton({ Name = 'Close', Tone = 'cardRed', Width = xs, Height = xs, Text = 'X', TextSize = 34, Studs = false, Outline = 3.5, RimWidth = 3, Radius = 4, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 12, head / 2 - 1), ZIndex = 32 })
+	local close = Kit.blockButton({ Name = 'Close', Tone = 'closeRed', Width = xs, Height = xs, Text = 'X', TextSize = 32, Studs = false, Outline = 4, OutlineColor = Kit.Skin.outline, RimWidth = 3, Radius = 7, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 10, head / 2 - 1), ZIndex = 32 })
 	close.Parent = panel
 	local gw, gh = 200, 46
-	local gift = Kit.blockButton({ Name = 'GiftButton', Tone = 'cardBlue', Width = gw, Height = gh, Studs = false, Outline = 3, RimWidth = 2, Radius = 7, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 12 - xs - 14, head / 2 - 1), ZIndex = 32 })
+	local gift = Kit.blockButton({ Name = 'GiftButton', Tone = 'tabBlue', Width = gw, Height = gh, Studs = false, Outline = 3, OutlineColor = Kit.Skin.outline, RimWidth = 2, Radius = 8, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 10 - xs - 14, head / 2 - 1), ZIndex = 32 })
 	gift.Parent = panel
 	label({ Name = 'Text', Text = 'Gift A Player', TextSize = 20, Stroke = hex('0B2A55'), Position = px(60, 0), Size = UDim2.new(1, -64, 1, -1), ZIndex = 36, Parent = gift.Body })
 	-- (the AI picture Gift.png when it is uploaded, else the drawn glyph)
@@ -169,10 +176,12 @@ local function buildWindow()
 	else
 		giftGlyph(gift.Body, 54, 36, px(24, gh / 2 - 6))
 	end
+	-- (Oct 27) the tab row: one dark pill a section, the one in view blue (filled by build(): only sections with cards)
+	local tabs = Kit.new('Frame', { Name = 'TabRow', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(pad + 2, tabsY), Size = px(w - 2 * pad - 4, WIN.Tabs), ZIndex = 30, Parent = panel })
 	panel:SetAttribute('DesignW', w)
 	panel:SetAttribute('DesignH', head + bodyH)
 	return {
-		Overlay = overlay, Fit = fitter, Panel = panel, Frame = frame, List = list, ListW = w - 2 * pad, CloseButton = close, GiftButton = gift, Title = title, Top = head,
+		Overlay = overlay, Fit = fitter, Panel = panel, Frame = frame, List = list, ListW = w - 2 * pad, CloseButton = close, GiftButton = gift, Title = title, Top = head, Tabs = tabs,
 		SetContent = function(height) contentH = height; placeThumb() end,
 		SetBar = function(width) track.Size = px(width, trackH); list.ScrollBarThickness = width end,
 	}
@@ -187,40 +196,48 @@ local Art -- MOCKUP30 (the Grail Bundle, the gift picker; below)
 -- Tasteful motion (the references' pops and stagger-ins), all TweenService and one shared Heartbeat: the window pops in
 -- (0.9 > 1.03 > 1), a section's cards and title stagger in, the hero price buttons breathe (scale only, 3%), a slow soft
 -- shine sweeps the Featured and BEST DEAL cards every few seconds, a new OWNED stamp pops. Nothing flashes.
-local RunService = game:GetService('RunService')
 local TweenService = game:GetService('TweenService')
 local entrance, headers, breathers, shines, popOwned = {}, {}, {}, {}, {}
 local curSection -- (the section build() is filling: cards register themselves for the stagger-in)
-local breathConn
-local function startBreath()
-	if breathConn then return end
-	local ok, conn = pcall(function()
-		return RunService.Heartbeat:Connect(function()
-			local k = 1 + 0.03 * (0.5 + 0.5 * math.sin(os.clock() * 2.4))
-			for i = #breathers, 1, -1 do
-				local s = breathers[i]
-				if s.Parent then s.Scale = k else table.remove(breathers, i) end
-			end
-		end)
-	end)
-	if ok then breathConn = conn end
+-- (Oct 27, the owner: "make the ui more animated ... look more buyable") every idle motion here (the breath of the big
+-- buy buttons, the shine sweeps, the sparkles, the icons' rock / bob / breathe, the green buttons' glow) runs on
+-- Shared/UIIdle's one shared loop, staggered, and only while it is on screen: a closed Store does no work.
+-- (Oct 27, round 7, OUR_UI_AUDIT C) Only the hero cards shine (every 3.5-4.3 s) and only their big buy buttons breathe;
+-- UIIdle's budget lets at most 6 motions move on screen at once, these first (Priority 3 / 2).
+-- A soft light band sweeping across `body`: a full-size rounded frame whose UIGradient carries the light (Motion.shine),
+-- so its corners follow the card's (the old band in a clipping frame showed square corners).
+local CARD_R = 12 -- (the mockup's card corner)
+local function addShine(body, radius)
+	table.insert(shines, body)
+	Motion.shine(body, 3.5 + ((#shines - 1) % 3) * 0.4, UDim.new(0, radius or CARD_R), 3)
+	local band = body:FindFirstChild('Shine')
+	if band then band.ZIndex = 58 end
 end
-local function stopBreath()
-	if breathConn then breathConn:Disconnect() end
-	breathConn = nil
+-- A hero price button's own shine (the same rounded band, inside the button's corners).
+local function buyFX(holder, radius)
+	local body = holder:FindFirstChild('Body') or holder
+	Motion.shine(body, 4.2, UDim.new(0, radius), 2)
+	local band = body:FindFirstChild('Shine')
+	if band then band.ZIndex = body.ZIndex + 6 end
 end
--- A soft diagonal band the shared loop (startTicker) sweeps across `body` every few seconds.
-local function addShine(body)
-	body.ClipsDescendants = true
-	local band = Kit.new('Frame', { Name = 'Shine', BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(-0.3, 0, 0.5, 0), Size = UDim2.new(0.14, 0, 2, 0), Rotation = 18, ZIndex = 58, Parent = body })
-	Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.74), NumberSequenceKeypoint.new(1, 1) }), Parent = band })
-	table.insert(shines, band)
+-- A button's corner: about a fifth of its height (the mockup's pills), 6-12 px.
+local function btnR(h) return math.clamp(math.floor(h * 0.2 + 0.5), 6, 12) end
+-- An item icon's idle motion (cash bobs, the clover wiggles now and then, the rest breathes), staggered by its place.
+-- prio: its UIIdle budget priority (the hero cards' icons 3).
+local iconCount = 0
+local function idleIcon(art, id, prio)
+	iconCount += 1
+	Sell.Idle.icon(art, id, iconCount, prio)
+	return art
 end
+-- (round 7) The passes the Luck section shows (in this order) instead of the Gamepasses section.
+local LUCK_KEYS = { 'Lucky', 'Luck4', 'TripleOpen', 'AutoOpen' }
+local LUCK_SET = { Lucky = true, Luck4 = true, TripleOpen = true, AutoOpen = true }
 -- The section a Store.Open(at) target belongs to ('Featured' by default).
 local function sectionOf(at)
 	if type(at) ~= 'string' then return 'Featured' end
 	local e = Products.ByKey[at]
-	if e then return e.Key == 'BlockParty' and 'Featured' or e.Section end
+	if e then return (e.Key == 'BlockParty' and 'Featured') or (LUCK_SET[e.Key] and 'Luck') or e.Section end
 	return at
 end
 -- The stagger-in: the section's title slides in from the left, its cards rise and pop one after another.
@@ -230,13 +247,15 @@ local function animateIn(sectionId)
 	if text then
 		local home = text.Position
 		local stroke = text:FindFirstChildOfClass('UIStroke')
-		text.Position = home - UDim2.fromOffset(80, 0)
+		text.Position = home - UDim2.fromOffset(24, 0)
 		text.TextTransparency = 1
 		if stroke then stroke.Transparency = 1 end
-		Motion.tween(text, 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Position = home, TextTransparency = 0 })
-		if stroke then Motion.tween(stroke, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Transparency = 0 }) end
+		Motion.tween(text, 0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Position = home, TextTransparency = 0 })
+		if stroke then Motion.tween(stroke, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Transparency = 0 }) end
 	end
-	local delay = 0.06
+	-- (round 7) each card settles from 0.92 and 12 px low, 0.04 s after the one before, the last starting by 0.2 s:
+	-- the whole window is still by 0.45 s (it used to grow from nothing, 0.07 s apart, up to 0.6 s late)
+	local delay = 0.03
 	for _, e in entrance do
 		local c = e.Holder
 		if e.Section == sectionId and c.Parent then
@@ -244,19 +263,18 @@ local function animateIn(sectionId)
 				e.Center = c.Position + UDim2.fromOffset(c.Size.X.Offset / 2, c.Size.Y.Offset / 2)
 				c.AnchorPoint = Vector2.new(0.5, 0.5)
 			end
-			c.Position = e.Center + UDim2.fromOffset(0, 28)
+			c.Position = e.Center + UDim2.fromOffset(0, 12)
 			local s = Motion.scaleOf(c)
-			s.Scale = 0.01 -- (nothing to see until its turn: a TweenInfo delay, which also runs under the offline renderer's clock)
-			TweenService:Create(c, TweenInfo.new(0.34, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, delay), { Position = e.Center }):Play()
-			TweenService:Create(s, TweenInfo.new(0.34, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, delay), { Scale = 1 }):Play()
-			delay = math.min(delay + 0.07, 0.6)
+			s.Scale = 0.92 -- (a TweenInfo delay, which also runs under the offline renderer's clock)
+			TweenService:Create(c, TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, false, delay), { Position = e.Center }):Play()
+			TweenService:Create(s, TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, delay), { Scale = 1 }):Play()
+			delay = math.min(delay + 0.04, 0.2)
 		end
 	end
 end
 local function close()
 	if not isOpen then return end
 	isOpen = false
-	stopBreath()
 	if closePicker then closePicker() end
 	coverPlayerList(false)
 	Motion.blur(NAME, false)
@@ -368,7 +386,7 @@ local STRUCK = hex('DCDCE6') -- (light grey with a dark edge: readable on every 
 local function priceButton(parent, entry, w, h, pos, anchor, z, tone, opts)
 	opts = opts or {}
 	if owns(entry) then
-		local chip = Kit.block({ Name = 'Owned', Tone = OWNEDBTN, Width = w, Height = h, Studs = false, Outline = 3, RimWidth = 2, Radius = 6, OutlineColor = OWNEDBTN.stroke, Position = pos, AnchorPoint = anchor, ZIndex = z })
+		local chip = Kit.block({ Name = 'Owned', Tone = OWNEDBTN, Width = w, Height = h, Studs = false, Outline = 3, RimWidth = 2, Radius = btnR(h), OutlineColor = OWNEDBTN.stroke, Position = pos, AnchorPoint = anchor, ZIndex = z })
 		label({ Name = 'Text', Text = 'OWNED', TextSize = math.floor(h * 0.5), Stroke = hex('3A3A24'), StrokeThickness = math.max(2.5, h * 0.075), Size = UDim2.fromScale(1, 1), ZIndex = z + 4, Parent = chip.Body })
 		chip.Parent = parent
 		-- (a pass just bought: the stamp pops in)
@@ -381,11 +399,12 @@ local function priceButton(parent, entry, w, h, pos, anchor, z, tone, opts)
 		return chip
 	end
 	tone = tone or ((Products.giftable(entry.Key) and giftActive()) and 'cardBlue') or LIMEBTN
-	local holder, _, l = Kit.robuxButton({ Name = 'Buy', Tone = tone, Price = entry.Price, TextSize = opts.TextSize, Width = w, Height = h, Position = pos, AnchorPoint = anchor, Outline = 3, RimWidth = 2, Radius = 6, ZIndex = z })
+	local holder, _, l = Kit.robuxButton({ Name = 'Buy', Tone = tone, Price = entry.Price, TextSize = opts.TextSize, Width = w, Height = h, Position = pos, AnchorPoint = anchor, Outline = 3, RimWidth = 2, Radius = btnR(h), ZIndex = z })
 	holder.Parent = parent
 	if opts.Breathe then
-		local bs = Kit.new('UIScale', { Name = 'Breathe', Parent = holder })
-		table.insert(breathers, bs)
+		-- (round 7: only the hero cards' buttons move: a 3% breath over 2.6 s and a shine every 4.2 s)
+		table.insert(breathers, Sell.Idle.add(holder, 'breathe', { Name = 'Breathe', Amount = 0.03, Period = 2.6, Priority = 2 }))
+		buyFX(holder, btnR(h) - 2)
 	end
 	local row = holder.Body:FindFirstChild('Price')
 	if opts.Was and row then
@@ -396,7 +415,7 @@ local function priceButton(parent, entry, w, h, pos, anchor, z, tone, opts)
 		row.AnchorPoint = Vector2.new(0, 0.5)
 		row.Position = UDim2.new(0.5, -total / 2 + tw + 6, 0.5, 0)
 		local was = label({ Name = 'Was', Text = text, TextSize = size, TextColor3 = STRUCK, StrokeThickness = 2, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.5, -total / 2, 0.5, 0), Size = px(tw, size + 4), ZIndex = z + 5, Parent = holder.Body })
-		local line = Kit.new('Frame', { Name = 'Strike', BackgroundColor3 = hex('FF2A2A'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 4, 0, 2), Rotation = -10, ZIndex = z + 6, Parent = was })
+		local line = Kit.new('Frame', { Name = 'Strike', BackgroundColor3 = hex('FF2A2A'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 4, 0, 2), ZIndex = z + 6, Parent = was }) -- (level: nothing tilts at rest)
 		Kit.stroke(hex('3A0000'), 1, true, 0, Enum.LineJoinMode.Miter).Parent = line
 	end
 	priceLabels[entry.Key] = priceLabels[entry.Key] or {}
@@ -457,7 +476,7 @@ local THIRD = math.floor((CW - 2 * GAP) / 3)
 local HALF = math.floor((CW - GAP) / 2)
 local BTN_H = 58 -- (>= 36 px on a phone's screen)
 local function card(entry, tone, w, h, x, y, parent)
-	local c = Kit.block({ Name = entry.Key or 'Card', Tone = tone, Width = w, Height = h, Position = px(x, y), Outline = 3, Radius = 5, RimWidth = 2, Studs = 26, StudSparse = true, StudShade = 0.55, ZIndex = 25 })
+	local c = Kit.block({ Name = entry.Key or 'Card', Tone = tone, Width = w, Height = h, Position = px(x, y), Outline = 3, Radius = CARD_R, RimWidth = 2, Studs = 26, StudSparse = true, StudShade = 0.55, ZIndex = 25 })
 	c.Parent = parent
 	if curSection and curSection ~= 'Box' then table.insert(entrance, { Holder = c, Section = curSection }) end
 	return c
@@ -470,7 +489,8 @@ local function title(parent, text, size, tone, props)
 end
 -- Every picture slot asks for its own key (icon:<Name>), so a picture dropped in under that name is used at once; until it is
 -- uploaded the nearest existing picture stands in.
-local ICON_FALLBACK = { CashBig = 'CashMedium', CashMega = 'CashLarge', PowerBig = 'PowerMedium', PowerMega = 'PowerLarge', Speed2x = 'Arrow', AutoOpen = 'TripleOpen', ServerBoost = 'BlockParty' }
+local ICON_FALLBACK = { CashBig = 'CashMedium', CashMega = 'CashLarge', PowerBig = 'PowerMedium', PowerMega = 'PowerLarge', Speed2x = 'Arrow', AutoOpen = 'TripleOpen', ServerBoost = 'BlockParty',
+	Gun_NeonViper = 'Gun', Gun_Frostbite = 'Gun', Gun_GalaxyRay = 'Gun', Gun_InfernoCannon = 'Gun', Gun_RoyalCrown = 'Gun' }
 local function iconId(entry, fallback)
 	local id = (entry.Art or ''):match('^icon:(.+)$') or fallback or 'Shop'
 	if id == 'Power' then id = iconOr('Muscle', 'Power') end
@@ -519,15 +539,14 @@ local function boxCard(rows, y, parent, over)
 	-- the real box, the WHOLE model (topper and sparkles too) framed to fill the card's left part and BOX_POP over it,
 	-- BOX_FOOT clear of its bottom: nothing is cut. Its camera looks down a little more (24 degrees) and nearly flat-on
 	-- (FOV 14), so a halo on top reads as a ring, not a bar.
-	local art = Kit.model3d('box', boxId, Vector2.new(left, BOX_H + BOX_POP - BOX_FOOT), { ZIndex = z, Whole = true, Fill = 0.99, MaxReach = 0.99, Overflow = 1, Pitch = 24, Fov = 14, Priority = 5, PreviewKind = 'boxhero' })
-	art.Position = px(-3, -BOX_POP - 3)
+	-- (Oct 27, round 8, CRITIC_OCT27 gap 7: the live 3D view showed as an empty dashed box wherever it didn't draw) the
+	-- box's own picture: Box_<id>, rendered from the game's box model (tools/blender/icons_hd.py over the part export),
+	-- packed through the alpha-bleed step; sharp at any size, and the same in the preview as in Studio
+	local art = Kit.icon3d('Box_' .. boxId, nil, { ZIndex = z, Place = Kit.inBox(-3, -BOX_POP - 3, left, BOX_H + BOX_POP - BOX_FOOT, 0.03) })
 	art.Parent = c.Body
 	local artHit = Kit.new('TextButton', { Name = 'ArtHit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = px(left, BOX_H), ZIndex = 34, Parent = c.Body })
-	Kit.model3dHover(art, artHit)
-	artHit.Activated:Connect(function()
-		Kit.model3dActive(art, 'tap', true)
-		task.delay(2, function() Kit.model3dActive(art, 'tap', false) end)
-	end)
+	artHit.MouseEnter:Connect(function() Motion.pop(art, 0.06) end)
+	artHit.Activated:Connect(function() Motion.pop(art, 0.12) end)
 	local right = CW - left - 14
 	local t = title(c.Body, (box and box.Name) or first.Title, 40, tone, { Position = px(left + right / 2, 2), Width = right })
 	if tone == 'storeMagenta' then gradient(t, hex('FFF6B0'), hex('F8CF4A')) end
@@ -543,15 +562,17 @@ local function boxCard(rows, y, parent, over)
 		end
 		local cy = 102
 		local tagsShown = 0 -- (how many of the row's name tags show: the title hides while any does)
-		local models = Kit.model3dRow('shoe', items, cell, pitch, { ZIndex = z + 1, Position = px(left + pitch / 2 - cell / 2, cy - cell / 2), Priority = 4 })
-		models.Parent = c.Body
+		-- (round 8, gap 7) each shoe's own picture (Shoe_<id>, rendered from its model like the box) over its rarity splat
 		for i, sid in box.Shoes do
 			local shoe = Shoes.ById and Shoes.ById[sid]
 			local secret = shoe and shoe.Rank == #(Shoes.Rarities or {})
 			local cx = left + (i - 0.5) * pitch
-			itemSplat(c.Body, cx, cy, cell * Kit.Studio.shoe.Fill, chanceColor(shoe):Lerp(Kit.toneOf(tone).base, 0.15), secret and 'rainbow' or nil, (i * 37) % 360, z, Kit.toneOf(tone).base)
+			itemSplat(c.Body, cx, cy, cell * 0.62, chanceColor(shoe):Lerp(Kit.toneOf(tone).base, 0.15), secret and 'rainbow' or nil, (i * 37) % 360, z, Kit.toneOf(tone).base)
+			local pic = Kit.icon3d('Shoe_' .. sid, nil, { ZIndex = z + 1, Place = Kit.inBox(cx - cell / 2, cy - cell / 2, cell, cell, 0.08) })
+			pic.Name = 'ShoePic_' .. sid
+			pic.Parent = c.Body
 			local hit = Kit.new('TextButton', { Name = 'Hit_' .. sid, Text = '', AutoButtonColor = false, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, cy + 12), Size = px(pitch, cell + 24), ZIndex = 34, Parent = c.Body })
-			Kit.model3dItemHover(models, i, hit)
+			hit.MouseEnter:Connect(function() Motion.pop(pic, 0.1) end)
 			local chance = type(box.Chances) == 'table' and box.Chances[i]
 			if chance then
 				local cl = label({ Name = 'Chance' .. i, Text = pctText(chance), TextSize = 22, StrokeThickness = 3.5, TextColor3 = secret and Color.white or chanceColor(shoe):Lerp(Color.white, 0.25), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, 152), Size = px(pitch + 10, 28), ZIndex = z + 3, Parent = c.Body })
@@ -571,14 +592,17 @@ local function boxCard(rows, y, parent, over)
 			hit.MouseLeave:Connect(function() show(false) end)
 			hit.Activated:Connect(function()
 				show(true)
-				Kit.model3dItemActive(models, i, 'tap', true)
+				Motion.pop(pic, 0.15)
 				task.delay(1.6, function()
 					if tag.Parent then show(false) end
-					Kit.model3dItemActive(models, i, 'tap', false)
 				end)
 			end)
 		end
 	end
+	-- (Oct 27) the visible pity counter under the odds (Shared/PityUI over the server's ShoePity): "Epic+ guaranteed in 8 opens"
+	local pity = label({ Name = 'PityLine', Text = '', TextSize = 19, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(left + right / 2, 177), Size = px(right, 22), ZIndex = z + 3, Parent = c.Body })
+	Sell.Pity.paint(pity, boxId)
+	table.insert(Sell.PityLines, { Label = pity, Box = boxId })
 	-- the buttons: x8 | x3 | x1 (rainbow, yellow, green); over each, its count and (a bundle) "SAVE n%"; inside a bundle's
 	-- button, its real one-by-one price struck through
 	table.sort(rows, function(a, b) return (a.Count or 1) > (b.Count or 1) end)
@@ -597,9 +621,11 @@ local function boxCard(rows, y, parent, over)
 		local count = r.Count or 1
 		local w = (count == 1 and single) or bw
 		local whole = Products.savings(r.Key)
-		priceButton(layer, r, w, BTN_H, px(ox + x, oy + by), Vector2.zero, z + 2, BUNDLE_TONE[count], { Was = whole, TextSize = 28 })
-		label({ Name = 'Count' .. count, Text = 'x' .. count, TextSize = 24, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(ox + x, oy + by - 17), Size = px(50, 30), ZIndex = z + 6, Parent = layer })
-		saveBadge(layer, r.Key, px(ox + x + w, oy + by - 17), Vector2.new(1, 0.5), z + 6)
+		local btn = priceButton(layer, r, w, BTN_H, px(ox + x, oy + by), Vector2.zero, z + 2, BUNDLE_TONE[count], { Was = whole, TextSize = 28 })
+		-- (round 8, gap 7: "x3" drifted over the x8 button) the count and the SAVE badge belong to their own button: they
+		-- sit on it, so they move and press with it
+		label({ Name = 'Count' .. count, Text = 'x' .. count, TextSize = 24, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 2, 0, -17), Size = px(50, 30), ZIndex = z + 6, Parent = btn })
+		saveBadge(btn, r.Key, UDim2.new(1, 0, 0, -17), Vector2.new(1, 0.5), z + 6)
 		sections[r.Key] = c
 		x += w + gap
 	end
@@ -625,29 +651,41 @@ local function infoTab(c, text, x, y, z, right)
 	return tab
 end
 
--- A pass card (the reference's pass grid): a BIG glossy icon at the left that overflows the card, the heavily outlined title,
--- a 2-line white outlined description, the purple Info tab, and OWNED (yellow) or the price at the bottom right.
-local HALF_H = 156
-local PASS_TONES = { 'cardRed', 'cardGold', 'cardBlue', 'cardGreen', 'cardPurple' }
+-- A pass card (Oct 27, round 7: ref_ui_shop_passes, the owner: "make the gamepass menu look better so people are more
+-- likely to buy them"): one bright colour, the picture BIG but inside the card's left part (its visible box fits that
+-- slot with an 8% margin: Kit.inBox), the heavily outlined title, two short white lines, the price (or OWNED) under them.
+-- Nothing moves on it and nothing is stuck on it (no Info tab, no sparkles): the calm grid lets the picture sell it.
+local HALF_H = 196
+local PASS_TONES = { 'cardRed', 'cardGold', 'cardBlue', 'cardGreen', 'cardPurple', 'cardTeal', 'cardPink' }
+-- The card's two short lines: its Detail when that is short and not shouty, else its Sub.
+local function passLines(entry)
+	local d = entry.Detail or ''
+	if d ~= '' and #d <= 34 and string.match(d, '%l%l') then return d end
+	return entry.Sub or d
+end
 local function passCard(entry, x, y, parent, tone, opts)
 	opts = opts or {}
 	local c = card(entry, tone, HALF, HALF_H, x, y, parent)
 	local z = 28
-	local art = Kit.icon3d(iconId(entry), 178, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(76, HALF_H / 2 - 2) })
+	local split = math.floor(HALF * 0.44) -- (the picture's part of the card)
+	local art = Kit.icon3d(iconId(entry), 160, { ZIndex = z, Place = Kit.inBox(4, 4, split - 4, HALF_H - 8, 0.08) })
 	art.Parent = c.Body
-	local ax, aw = 146, HALF - 146 - 12
+	local ax, aw = split, HALF - split - 12
 	local ink = Kit.toneOf(tone).stroke
-	local t = title(c.Body, entry.Title, 32, tone, { Position = px(ax + aw / 2, 8), Width = aw })
+	local t = title(c.Body, entry.Title, 34, tone, { Position = px(ax + aw / 2, 12), Width = aw })
 	Sell.Style.apply(t, 'white', { Thickness = math.max(4, t.TextSize * 0.17), Shadow = true })
-	local desc = label({ Name = 'Desc', Text = entry.Detail or entry.Sub or '', FontFace = Kit.Font.body, TextSize = (#(entry.Detail or entry.Sub or '') > 34) and 16 or 19, StrokeThickness = 3, Stroke = ink, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top,
-		AnchorPoint = Vector2.new(0.5, 0), Position = px(ax + aw / 2, 46), Size = px(aw, 50), ZIndex = z + 2, Parent = c.Body })
-	Sell.Style.apply(desc, 'cyan', { Font = false, Thickness = 3 }) -- (the reference's cyan sub-line: "Equip more pets!")
-	if not owns(entry) then
-		addShine(c.Body)
-		Sell.FX.sparkles(c.Body, { Count = 1, Size = 14, ZIndex = z + 6, Every = 3.4, Inset = 0.1, Seed = #entry.Key })
+	local text = passLines(entry)
+	local size = Kit.textWidth(text, 21) <= aw * 1.7 and 21 or 18 -- (two lines at most; 18 px is 12.6 px on a phone)
+	label({ Name = 'Desc', Text = text, FontFace = Kit.Font.body, TextSize = size, StrokeThickness = 3, Stroke = ink, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Center,
+		AnchorPoint = Vector2.new(0.5, 0), Position = px(ax + aw / 2, 58), Size = px(aw, 2 * (size + 5)), ZIndex = z + 2, Parent = c.Body })
+	if opts.Covered then -- (a pass a better one you own already does: a grey chip saying so, nothing to buy)
+		local w, h = math.min(aw - 8, 196), 48
+		local chip = Kit.block({ Name = 'Covered', Tone = OWNEDBTN, Width = w, Height = h, Studs = false, Outline = 3, RimWidth = 2, Radius = btnR(h), OutlineColor = OWNEDBTN.stroke, Position = px(ax + aw / 2, HALF_H - 16), AnchorPoint = Vector2.new(0.5, 1), ZIndex = z + 2 })
+		label({ Name = 'Text', Text = opts.Covered, TextSize = 20, Stroke = hex('3A3A24'), StrokeThickness = 2.5, Size = UDim2.fromScale(1, 1), ZIndex = z + 6, Parent = chip.Body })
+		chip.Parent = c.Body
+		return c
 	end
-	priceButton(c.Body, entry, math.min(aw, 190), 42, px(ax + aw / 2, HALF_H - 10), Vector2.new(0.5, 1), z + 2, nil, opts.Was and { Was = opts.Was, TextSize = 24 } or nil)
-	infoTab(c, (entry.Info or entry.Detail or '') .. (entry.Kind == 'Pass' and ' Yours forever!' or ''), 8, 6, z + 4)
+	priceButton(c.Body, entry, math.min(aw - 8, 196), 48, px(ax + aw / 2, HALF_H - 16), Vector2.new(0.5, 1), z + 2, nil, opts.Was and { Was = opts.Was, TextSize = 24 } or nil)
 	return c
 end
 
@@ -670,9 +708,11 @@ local function packCard(entry, x, y, w, h, parent, mode)
 	local tall, wide = mode == 'tall', mode == 'wide'
 	title(c.Body, tall and 'MEGA PACK' or entry.Title, tall and 32 or 26, tone, { Align = Enum.TextXAlignment.Left, Anchor = Vector2.zero, Position = px(10, 6), Width = w - 20 })
 	local size = tall and 250 or (wide and 200 or 160)
-	local art = Kit.icon3d(iconId(entry, section == 'Power' and 'Muscle' or 'Cash'), size, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = tall and px(w / 2, h - 140) or (wide and px(98, h / 2 - 2) or px(66, h / 2 - 6)) })
+	-- (round 7) the picture's visible box fits its slot with a 6% margin: inside the card, never over its edge
+	local slot = tall and Kit.inBox(4, h - 265, w - 8, 250, 0.06) or (wide and Kit.inBox(2, 2, 192, h - 4, 0.06) or Kit.inBox(2, 2, 128, h - 4, 0.06))
+	local art = Kit.icon3d(iconId(entry, section == 'Power' and 'Muscle' or 'Cash'), size, { ZIndex = z, Place = slot })
 	art.Parent = c.Body
+	if tall then idleIcon(art, iconId(entry, section == 'Power' and 'Muscle' or 'Cash'), 2) end
 	local sz = tall and 58 or (wide and 56 or 40)
 	local amount = label({ Name = 'Amount', Text = amountText(entry), TextSize = Kit.fitSize(amountText(entry), sz, tall and w - 20 or (w - 100), 20), TextColor3 = Color.white, Stroke = hex('5A2E00'), StrokeThickness = math.max(3.5, sz * 0.13),
 		TextXAlignment = tall and Enum.TextXAlignment.Center or Enum.TextXAlignment.Right, AnchorPoint = tall and Vector2.new(0.5, 0) or Vector2.new(1, 0.5),
@@ -687,7 +727,7 @@ local function packCard(entry, x, y, w, h, parent, mode)
 		-- the "BEST DEAL" ribbon: it really is the most Cash / Power per Robux of the four (the packs' own prices)
 		-- the reference's angled ribbon: a red-orange band with notched tails, "BEST VALUE" (BEST DEAL only beside a real was-price)
 		local word = entry.WasPrice and 'BEST DEAL' or 'BEST VALUE'
-		local rib = Kit.new('Frame', { Name = 'Ribbon', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(w / 2, 62), Size = px(w - 6, 40), Rotation = -7, ZIndex = z + 5, Parent = c.Body })
+		local rib = Kit.new('Frame', { Name = 'Ribbon', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(w / 2, 62), Size = px(w - 6, 40), ZIndex = z + 5, Parent = c.Body }) -- (level at rest)
 		for _, side in { -1, 1 } do
 			local tail = Kit.new('Frame', { Name = 'Tail', BackgroundColor3 = hex('A82A10'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(side < 0 and 0 or 1, side < 0 and 4 or -4, 0.5, 6), Size = px(26, 26), Rotation = 45, ZIndex = z + 4, Parent = rib })
 			Kit.stroke(hex('3A0A00'), 2.5, true).Parent = tail
@@ -706,7 +746,7 @@ local function packCard(entry, x, y, w, h, parent, mode)
 		local wl = label({ Name = 'Was', Text = RobuxText.commas(whole), TextSize = 22, TextColor3 = hex('FF5A5A'), Stroke = hex('4A0000'), StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1),
 			Position = px(w - 18, h - 10 - bh - 4), Size = px(120, 26), ZIndex = z + 5, Parent = c.Body })
 		Kit.robux(18, { Color = hex('FF5A5A'), Inner = hex('FF5A5A'), Core = hex('4A0000'), Edge = hex('4A0000'), AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 18 - Kit.textWidth(RobuxText.commas(whole), 22) - 4, h - 10 - bh - 17), ZIndex = z + 5 }).Parent = c.Body
-		local line = Kit.new('Frame', { Name = 'Strike', BackgroundColor3 = hex('FF2A2A'), BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 16, h - 10 - bh - 17), Size = px(Kit.textWidth(RobuxText.commas(whole), 22) + 30, 3), Rotation = -6, ZIndex = z + 6, Parent = c.Body })
+		local line = Kit.new('Frame', { Name = 'Strike', BackgroundColor3 = hex('FF2A2A'), BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 16, h - 10 - bh - 17), Size = px(Kit.textWidth(RobuxText.commas(whole), 22) + 30, 3), ZIndex = z + 6, Parent = c.Body })
 		Kit.stroke(hex('3A0000'), 1, true).Parent = line
 	end
 	priceButton(c.Body, entry, bw, bh, px(w / 2, h - 10), Vector2.new(0.5, 1), z + 5, nil, { TextSize = tall and 30 or nil, Breathe = tall })
@@ -741,7 +781,7 @@ local CREAM = hex('FFF6C8') -- (the reference's Server Luck lettering is cream, 
 local LETTER_EDGE = hex('3F7A10')
 local CHIP_BLUE = { top = hex('3E86E8'), base = hex('1F58BC'), lip = hex('1A4AA0'), stroke = hex('08205C'), rim = hex('86BCF6') }
 local THEMES = {
-	FeaturedPack1 = { Id = 'Street', Sky = { hex('2E1A6E'), hex('FF8A3C') }, Ink = hex('2A0B4E'), Sub = hex('FFE27A') },
+	FeaturedPack1 = { Id = 'Street', Sky = { hex('7B2FE0'), hex('FF8A3C') }, Ink = hex('2A0B4E'), Sub = hex('FFE27A') },
 	FeaturedPack2 = { Id = 'Grail', Sky = { hex('72B8FF'), hex('FFF4D6') }, Ink = hex('1F3F8A'), Sub = hex('FFD34A') },
 	FeaturedPack3 = { Id = 'Sneaker', Sky = { hex('7EC4FF'), hex('E4F2FF') }, Ink = hex('0E3A7A'), Sub = hex('FFE27A') },
 }
@@ -782,7 +822,7 @@ local function tile(parent, cx, cy, icon, chip, z)
 	-- (the reference sits each item on a soft glow circle)
 	blob(parent, cx - 54, cy - 54, 108, 108, Color.white, 0.82, true).ZIndex = z - 2
 	blob(parent, cx - 38, cy - 38, 76, 76, Color.white, 0.7, true).ZIndex = z - 1
-	Kit.icon3d(icon, 76, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, cy) }).Parent = parent
+	Kit.icon3d(icon, 76, { ZIndex = z, Place = Kit.inBox(cx - 44, cy - 44, 88, 88, 0.07) }).Parent = parent
 	local cw = math.max(76, Kit.textWidth(chip, 18) + 18)
 	local ch = Kit.block({ Name = 'Chip', Tone = CHIP_BLUE, Width = cw, Height = 28, Studs = false, Outline = 2.5, RimWidth = 2, Radius = 6, OutlineColor = hex('08205C'), Position = px(cx, cy + 50), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = z + 1 })
 	label({ Name = 'Text', Text = chip, TextSize = 19, Stroke = hex('08205C'), Size = UDim2.fromScale(1, 1), ZIndex = z + 6, Parent = ch.Body })
@@ -792,7 +832,7 @@ local function featuredCard(key, y, parent)
 	local entry = Products.ByKey[key]
 	local th = THEMES[key] or THEMES.FeaturedPack1
 	local tone = { top = th.Sky[1], base = th.Sky[2], lip = th.Sky[2], stroke = th.Ink, rim = Color.white }
-	local c = Kit.block({ Name = key, Tone = tone, Width = CW, Height = FEAT_H, Position = px(MARGIN, y), Outline = 3, Radius = 5, RimWidth = 2, Studs = false, ZIndex = 25 })
+	local c = Kit.block({ Name = key, Tone = tone, Width = CW, Height = FEAT_H, Position = px(MARGIN, y), Outline = 3, Radius = CARD_R, RimWidth = 2, Studs = false, ZIndex = 25 })
 	c.Parent = parent
 	table.insert(entrance, { Holder = c, Section = 'Featured' })
 	-- the picture FeaturedBg_<Theme> (an AI picture or the Blender render, once uploaded), else the flat painting
@@ -801,7 +841,7 @@ local function featuredCard(key, y, parent)
 		c.Body.ClipsDescendants = true
 		local bg = Kit.new('ImageLabel', { Name = 'Background', BackgroundTransparency = 1, Image = Kit.iconImage(bgId), ScaleType = Enum.ScaleType.Crop, Size = UDim2.fromScale(1, 1), ZIndex = 26, Parent = c.Body })
 		bg:SetAttribute('PreviewImage', 'icon3d:' .. bgId)
-		Kit.corner(4).Parent = bg
+		Kit.corner(CARD_R - 3).Parent = bg
 	else
 		paintTheme(c.Body, th.Id, CW - 6, FEAT_H - 6)
 	end
@@ -833,10 +873,39 @@ local function featuredCard(key, y, parent)
 	Kit.new('Frame', { Name = 'HandB', BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5), Position = px(11, 11), Size = px(7, 3), ZIndex = z + 2, Parent = clock })
 	countdownLabel = label({ Name = 'Time', Text = fmtLeft(left), TextSize = 19, StrokeThickness = 3, Stroke = hex('1E1E26'), TextXAlignment = Enum.TextXAlignment.Right, Position = px(-12, 0), Size = UDim2.new(1, 0, 1, 0), ZIndex = z + 1, Parent = chip })
 	addShine(c.Body)
-	Sell.FX.sparkles(c.Body, { Count = 3, Size = 18, ZIndex = z + 8, Every = 3, Inset = 0.12 })
+	Sell.FX.sparkles(c.Body, { Count = 1, Size = 18, ZIndex = z + 8, Every = 3.4, Inset = 0.12 })
 	priceButton(c.Body, entry, 200, 76, px(CW - 14, FEAT_H - 20), Vector2.new(1, 1), z + 2, nil, { TextSize = 40, Breathe = true })
 	shownFeatured = key
 	return c
+end
+-- (Oct 27, the owner's mockup) under the week's pack: the best-known passes as a row of solid tiles, a big icon each and
+-- the green price pill (the same passes and prices as the Gamepasses section; OWNED once bought). Returns its height.
+local STRIP_KEYS = { 'DoubleRep', 'DoubleCash', 'Lucky', 'TripleOpen' }
+-- (Oct 27, the owner: 'make it look like the reference') each pass keeps its own colour, set by its key; the Lucky clover
+-- sits on gold, not on green, so the green clover stands out the way it does on the mockup's bright card
+local STRIP_TONES = { DoubleRep = 'cardRed', DoubleCash = 'cardBlue', Lucky = 'cardGold', Luck4 = 'cardGold', TripleOpen = 'cardPurple' }
+local STRIP_H = 196
+local function passStrip(y, parent)
+	local shown = {}
+	for _, key in STRIP_KEYS do
+		local e = Products.ByKey[key]
+		-- (the luck round) with 4x Luck and no 2x, the tile is 4x Luck (OWNED): 2x adds nothing on top of 4x
+		local four = key == 'Lucky' and Products.ByKey.Luck4
+		if e and four and player:GetAttribute('Pass_Luck4') == true and not owns(e) then e = four end
+		if e and e.Wired == true and e.Kind == 'Pass' then table.insert(shown, e) end
+	end
+	if #shown == 0 then return 0 end
+	local q = math.floor((CW - (#shown - 1) * GAP) / #shown)
+	for i, entry in shown do
+		local tone = STRIP_TONES[entry.Key] or 'cardBlue'
+		local c = card(entry, tone, q, STRIP_H, MARGIN + (i - 1) * (q + GAP), y, parent)
+		c.Name = 'Strip_' .. entry.Key
+		local t = title(c.Body, entry.Title, 28, tone, { Position = px(q / 2, 6), Width = q - 16 })
+		Sell.Style.apply(t, 'white', { Thickness = math.max(3.5, t.TextSize * 0.15), Shadow = true })
+		Kit.icon3d(iconId(entry), 112, { ZIndex = 29, Place = Kit.inBox(8, 40, q - 16, STRIP_H - 40 - 56, 0.05) }).Parent = c.Body
+		priceButton(c.Body, entry, q - 30, 42, px(q / 2, STRIP_H - 12), Vector2.new(0.5, 1), 31, 'buyGreen', { TextSize = 26 })
+	end
+	return STRIP_H
 end
 -- (brief 30) The Grail Bundle (the user's bundle sheet and handoff): the bundle's own chest on the left (the real 3D
 -- model), The Grail featured largest with its two companion pairs, Astro Crown and Platinum Wings, the same size beside
@@ -847,7 +916,7 @@ local function bundleCard(entry, y, parent)
 	local c = card(entry, tone, CW, BUNDLE_H, MARGIN, y, parent)
 	local z = 28
 	addShine(c.Body)
-	Sell.FX.sparkles(c.Body, { Count = 3, Size = 18, ZIndex = z + 8, Every = 3, Inset = 0.12, Color = hex('FFF3B0') })
+	Sell.FX.sparkles(c.Body, { Count = 1, Size = 18, ZIndex = z + 8, Every = 3.4, Inset = 0.12, Color = hex('FFF3B0') })
 	local left = math.floor(CW * 0.31)
 	local boxId = (entry.Art or ''):match('^box:(.+)$') or 'GrailBundle'
 	local art = Kit.model3d('box', boxId, Vector2.new(left, BUNDLE_H - 20), { ZIndex = z, Whole = true, Fill = 0.96, MaxReach = 0.99, Overflow = 1, Pitch = 20, Fov = 20, Priority = 5, PreviewKind = 'boxhero' })
@@ -877,8 +946,7 @@ local function serverCard(entry, y, parent)
 	local c = card(entry, LIME, CW, SERVER_H, MARGIN, y, parent)
 	local z = 28
 	addShine(c.Body)
-	Sell.FX.sparkles(c.Body, { Count = 2, Size = 18, ZIndex = z + 8, Every = 3, Inset = 0.12 })
-	Kit.icon3d(iconOr('ServerBoost', iconId(entry)), 172, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(88, SERVER_H / 2) }).Parent = c.Body
+	idleIcon(Kit.icon3d(iconOr('ServerBoost', iconId(entry)), 172, { ZIndex = z, Place = Kit.inBox(4, 4, 168, SERVER_H - 8, 0.06) }), 'ServerBoost', 3).Parent = c.Body
 	local mid = 372
 	local st = title(c.Body, 'Server Boost', 46, LIME, { Position = px(mid, 2), Width = 330 })
 	st.TextColor3 = CREAM
@@ -901,6 +969,61 @@ local function serverCard(entry, y, parent)
 	priceButton(c.Body, entry, 184, 64, px(CW - 16, SERVER_H / 2 + 6), Vector2.new(1, 0.5), z + 2, nil, { TextSize = 34, Breathe = true })
 	-- the purple Info tab on the card's top edge, with its short description
 	infoTab(c, 'Everyone in this server gets x2 Power for 15 minutes. Buy again to add 15 more minutes!', CW - 70, 2, z + 3, true)
+	return c
+end
+-- (Oct 27, round 7) The Luck tab's hero: what the luck passes really do to a Cash box's odds, rarity by rarity
+-- (ShoeRules.luckTable: the same weights the server rolls with), and that they do nothing to the Robux boxes.
+-- (Oct 27, luck round: the owner's "Add 2x and 4x Luck passes") Three columns, Normal / 2x / 4x, the player's own level
+-- marked YOURS; the two passes are the cards under it (4x replaces 2x, they never stack to 8x).
+local LUCKY_H = 352
+local LUCK_UP, LUCK_DOWN = hex('C8FF5A'), hex('E8E8F0')
+local function luckyCard(_, y, parent)
+	local tone = 'cardGold' -- (the green clover stands out on gold, as on the owner's mockup)
+	local c = card({ Key = 'LuckOdds' }, tone, CW, LUCKY_H, MARGIN, y, parent)
+	local z = 28
+	local ink = Kit.toneOf(tone).stroke
+	addShine(c.Body)
+	local artW = 200
+	idleIcon(Kit.icon3d('Lucky', 180, { ZIndex = z, Place = Kit.inBox(4, 4, artW, LUCKY_H - 8, 0.08) }), 'Lucky', 3).Parent = c.Body
+	local rx = artW + 8
+	local t = title(c.Body, 'BOX LUCK', 46, tone, { Align = Enum.TextXAlignment.Left, Anchor = Vector2.zero, Position = px(rx, 6), Width = 320 })
+	Sell.Style.apply(t, 'white', { Thickness = 5, Shadow = true })
+	label({ Name = 'Sub', Text = 'The real odds in every Cash box, with each Luck pass:', FontFace = Kit.Font.body, TextSize = 20, StrokeThickness = 3, Stroke = ink, TextXAlignment = Enum.TextXAlignment.Left,
+		Position = px(rx + 2, 58), Size = px(CW - rx - 16, 26), ZIndex = z + 2, Parent = c.Body })
+	-- the odds: one row a rarity, at each luck level (a Cash box of this world: they all share these odds)
+	local boxId
+	for _, b in (Shoes and Shoes.boxesForWorld and Shoes.boxesForWorld(Shoes.ActiveWorld) or {}) do
+		if not b.Robux then boxId = b.Id break end
+	end
+	local rows = (ShoeRules and ShoeRules.luckTable and boxId) and ShoeRules.luckTable(boxId) or {}
+	local mine = (ShoeRules and ShoeRules.luckOf) and ShoeRules.luckOf(player) or 1
+	local TW, RH = 478, 24
+	local tbl = Kit.new('Frame', { Name = 'Odds', BackgroundColor3 = hex('2A1600'), BackgroundTransparency = 0.55, BorderSizePixel = 0, Position = px(rx, 92), Size = px(TW, 30 + #rows * RH + 30), ZIndex = z + 1, Parent = c.Body })
+	Kit.corner(10).Parent = tbl
+	local cols = { { 'Rarity', 12, 126, Enum.TextXAlignment.Left, nil, 'Rarity' }, { 'Normal', 140, 100, Enum.TextXAlignment.Right, 1, 'Normal' },
+		{ '2x Luck', 248, 104, Enum.TextXAlignment.Right, 2, 'Lucky' }, { '4x Luck', 360, 106, Enum.TextXAlignment.Right, 4, 'Luck4' } }
+	for i, col in cols do
+		local yours = col[5] ~= nil and col[5] == mine
+		if yours then -- (your column: a soft gold band behind it, YOURS under its last row)
+			local band = Kit.new('Frame', { Name = 'Yours', BackgroundColor3 = hex('FFD54A'), BackgroundTransparency = 0.72, BorderSizePixel = 0, Position = px(col[2] - 4, 2), Size = px(col[3] + 8, 30 + #rows * RH + 26), ZIndex = z + 2, Parent = tbl })
+			Kit.corner(8).Parent = band
+			label({ Name = 'YoursTag', Text = 'YOURS', TextSize = 16, StrokeThickness = 2.5, TextColor3 = hex('FFE24A'), Position = px(col[2], 30 + #rows * RH + 2), Size = px(col[3], 22), ZIndex = z + 3, Parent = tbl })
+		end
+		label({ Name = 'Head' .. i, Text = col[1], TextSize = 17, StrokeThickness = 2.5, TextColor3 = (i >= 3) and LUCK_UP or Color.white, TextXAlignment = col[4], Position = px(col[2], 6), Size = px(col[3], 22), ZIndex = z + 3, Parent = tbl })
+	end
+	for i, row in rows do
+		local r = Shoes.RarityById and Shoes.RarityById[row.Rarity]
+		local yy = 30 + (i - 1) * RH
+		label({ Name = 'Rarity' .. i, Text = r and r.Name or row.Rarity, TextSize = 18, StrokeThickness = 2.5, TextColor3 = (r and r.Color or Color.white):Lerp(Color.white, 0.25), TextXAlignment = Enum.TextXAlignment.Left, Position = px(cols[1][2], yy), Size = px(cols[1][3], RH), ZIndex = z + 3, Parent = tbl })
+		for k = 2, 4 do
+			local col = cols[k]
+			local v = row[col[6]] or row.Normal
+			local up = v > row.Normal + 1e-9
+			label({ Name = col[6] .. i, Text = ShoeRules.chanceText(v), TextSize = 18, StrokeThickness = 2.5, TextColor3 = k == 2 and Color.white or (up and LUCK_UP or LUCK_DOWN), TextXAlignment = Enum.TextXAlignment.Right, Position = px(col[2], yy), Size = px(col[3], RH), ZIndex = z + 3, Parent = tbl })
+		end
+	end
+	label({ Name = 'Note', Text = 'Epic and rarer come up 2x or 4x as often. 4x Luck replaces 2x Luck (never 8x). Robux boxes keep their odds.', FontFace = Kit.Font.body, TextSize = 17, StrokeThickness = 2.5, Stroke = ink, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
+		Position = px(rx + 2, 92 + 30 + #rows * RH + 30 + 6), Size = px(CW - rx - 16, 46), ZIndex = z + 2, Parent = c.Body })
 	return c
 end
 -- Community Codes (the reference's bottom section): a purple card with a darker header bar, the code field, the lime REDEEM
@@ -1123,6 +1246,7 @@ pcall(function()
 end)
 -- MOCKUP30 END
 
+local buildTabs -- (Oct 27: the tab row; below, after scrollTo)
 local function build()
 	built = true
 	table.clear(priceLabels)
@@ -1131,18 +1255,31 @@ local function build()
 	countdownLabel, partyLine, shownFeatured = nil, nil, nil
 	table.clear(entrance)
 	table.clear(headers)
+	for _, r in breathers do if r then r.stop() end end
 	table.clear(breathers)
+	table.clear(Sell.PityLines)
 	table.clear(shines)
 	for _, child in list:GetChildren() do
 		if child:IsA('GuiObject') then child:Destroy() end
 	end
 	local order = 1
 	giftBanner(order)
+	-- (Oct 27, round 7, the owner: "make luck separate") the Luck section, right after Featured: Products keeps these
+	-- passes under Gamepass (the same products); the Store shows them here instead
+	local shownSections = {}
 	for _, section in Products.Sections do
+		table.insert(shownSections, section)
+		if section.Id == 'Featured' then table.insert(shownSections, { Id = 'Luck', Title = 'Luck' }) end
+	end
+	for _, section in shownSections do
 		local items = {}
 		for _, entry in Products.Catalog do
 			-- (brief 22, lead) only what can really be bought: a row shows once its effect is Wired
-			if entry.Section == section.Id and entry.Wired == true then table.insert(items, entry) end
+			local sid = LUCK_SET[entry.Key] and 'Luck' or entry.Section
+			if sid == section.Id and entry.Wired == true then table.insert(items, entry) end
+		end
+		if section.Id == 'Luck' then
+			table.sort(items, function(a, b) return table.find(LUCK_KEYS, a.Key) < table.find(LUCK_KEYS, b.Key) end)
 		end
 		if section.Id == 'Featured' then
 			-- only the week's pack (Products.featuredAt), (brief 30) the Grail Bundle, then the Server Boost (Block Party)
@@ -1168,6 +1305,17 @@ local function build()
 		local block = Kit.new('Frame', { Name = section.Id, BackgroundTransparency = 1, LayoutOrder = order, ZIndex = 24, Parent = list })
 		local y = 0
 		if section.Id == 'Featured' then
+			-- (Oct 27, the owner's mockup and V3's store: a box on top) the Chrome Box, the Robux box most opened (the
+			-- cheapest), with its real chances, the pity counter and its x8 / x3 / x1 buttons (the same products as the
+			-- Boxes section); the week's pack and the rest one row down. No NEW / EXCLUSIVE banner, no countdown.
+			local boxRows = {}
+			for _, entry in Products.Catalog do
+				if entry.Section == 'Box' and entry.Wired == true and entry.Box == 'Exclusive' then table.insert(boxRows, entry) end
+			end
+			if #boxRows > 0 then
+				boxCard(boxRows, y, block)
+				y += BOX_H + GAP
+			end
 			for _, entry in items do
 				if type(entry.Shoes) == 'table' then
 					-- MOCKUP30: MODELS' bundle product drawn as the user's artboard hero (bundleCard stays as the fallback)
@@ -1181,6 +1329,8 @@ local function build()
 				elseif entry.Section == 'Featured' then
 					sections[entry.Key] = featuredCard(entry.Key, y, block)
 					y += FEAT_H + GAP
+					local stripH = passStrip(y, block)
+					if stripH > 0 then y += stripH + GAP end
 				else
 					sections[entry.Key] = serverCard(entry, y, block)
 					y += SERVER_H + GAP
@@ -1202,11 +1352,35 @@ local function build()
 			end
 		elseif section.Id == 'Cash' or section.Id == 'Power' then
 			y += packGrid(items, y, block) + GAP
+		elseif section.Id == 'Luck' then
+			-- the odds hero (Normal / 2x / 4x), the 2x Luck and 4x Luck cards, Triple Open and Auto Open side by side, then
+			-- the Chrome Box (its odds and its pity counter)
+			sections.LuckOdds = luckyCard(nil, y, block)
+			y += LUCKY_H + GAP
+			local col = 0
+			local LUCK_TONES = { Lucky = 'cardTeal', Luck4 = 'cardGold', TripleOpen = 'cardBlue', AutoOpen = 'cardPurple' }
+			for _, entry in items do
+				-- (2x Luck when you already have 4x: it would add nothing, so it says so instead of selling it)
+				local covered = entry.Key == 'Lucky' and not owns(entry) and player:GetAttribute('Pass_Luck4') == true
+				sections[entry.Key] = passCard(entry, MARGIN + col * (HALF + GAP), y, block, LUCK_TONES[entry.Key] or 'cardPurple', covered and { Covered = 'YOU HAVE 4x' } or nil)
+				col += 1
+				if col == 2 then col = 0; y += HALF_H + GAP end
+			end
+			if col == 1 then y += HALF_H + GAP end
+			local boxRows = {}
+			for _, entry in Products.Catalog do
+				if entry.Section == 'Box' and entry.Wired == true and entry.Box == 'Exclusive' then table.insert(boxRows, entry) end
+			end
+			if #boxRows > 0 then
+				y += BOX_POP -- (room for the box standing over its card's top edge)
+				boxCard(boxRows, y, block)
+				y += BOX_H + GAP
+			end
 		else
 			-- Gamepasses and Boosts: the coloured 2-column grid (a lone last card sits at the left, as in the reference)
 			for i, entry in items do
 				local col = (i - 1) % 2
-				local tone = PASS_TONES[((i - 1 + (section.Id == 'Boost' and 2 or 0)) % #PASS_TONES) + 1]
+				local tone = PASS_TONES[((i - 1 + (section.Id == 'Boost' and 3 or 0)) % #PASS_TONES) + 1]
 				sections[entry.Key] = passCard(entry, MARGIN + col * (HALF + GAP), y, block, tone, { Was = (Products.savings(entry.Key)) })
 				if col == 1 or i == #items then y += HALF_H + GAP end
 			end
@@ -1229,6 +1403,7 @@ local function build()
 		if child:IsA('GuiObject') then total += child.Size.Y.Offset end
 	end
 	Win.SetContent(total)
+	if buildTabs then buildTabs() end
 	fetchPrices()
 end
 rebuild = build
@@ -1248,6 +1423,23 @@ for _, entry in Products.Catalog do
 	end
 end
 
+local gliding = 0 -- (a tab's glide is running: the tab row keeps the tab that was tapped)
+-- Where a section starts in the list (round 7: from the list's own stacking, 2 px of top padding and every visible
+-- block before it, so it is right before the list has been laid out on screen, e.g. while the window is still hidden).
+local function canvasY(target)
+	local inner = 0
+	local block = target
+	while block.Parent and block.Parent ~= list do
+		-- (a card inside a section's block: its top in the block, whatever its anchor)
+		if block:IsA('GuiObject') then inner += block.Position.Y.Offset - block.AnchorPoint.Y * block.Size.Y.Offset end
+		block = block.Parent
+	end
+	local y = 2 + inner
+	for _, c in list:GetChildren() do
+		if c:IsA('GuiObject') and c.Visible and c ~= block and c.LayoutOrder < block.LayoutOrder then y += c.Size.Y.Offset end
+	end
+	return math.max(0, y - 8)
+end
 local function scrollTo(at)
 	local target = at and sections[at]
 	if not target then
@@ -1255,10 +1447,49 @@ local function scrollTo(at)
 		return
 	end
 	task.defer(function()
-		local y = target.AbsolutePosition.Y - list.AbsolutePosition.Y + list.CanvasPosition.Y - 8
-		list.CanvasPosition = Vector2.new(0, math.max(0, y))
+		local to = Vector2.new(0, canvasY(target))
+		if isOpen then
+			-- (round 7) a tab glides there (0.28 s, easing out) instead of jumping
+			local tw = TweenService:Create(list, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CanvasPosition = to })
+			gliding += 1
+			tw.Completed:Once(function() gliding -= 1 end)
+			tw:Play()
+		else
+			list.CanvasPosition = to
+		end
 	end)
 end
+-- (Oct 27, the owner's UI mockup) The tab row under the header: a dark pill for each section on show (in the list's
+-- order), a tap scrolls to that section, and the pill of the section in view is the blue one as you scroll.
+local TABS = {
+	{ Id = 'Featured', Text = 'Featured' }, { Id = 'Luck', Text = 'Luck' }, { Id = 'Gamepass', Text = 'Gamepasses' }, { Id = 'Cash', Text = 'Cash' }, { Id = 'Power', Text = 'Power' },
+	{ Id = 'Boost', Text = 'Boosts' }, { Id = 'Box', Text = 'Boxes' }, { Id = 'Codes', Text = 'Codes' },
+}
+local setTab, shownTabs
+buildTabs = function()
+	for _, c in Win.Tabs:GetChildren() do c:Destroy() end
+	shownTabs = {}
+	for _, t in TABS do
+		if headers[t.Id] then table.insert(shownTabs, t) end
+	end
+	local _, set = Kit.tabs(Win.Tabs, { Name = 'Tabs', Items = shownTabs, Width = Win.Tabs.Size.X.Offset, Height = WIN.Tabs, TextSize = 22, ZIndex = 30, OnTone = 'gold', OnPiece = 'btn_yellow', Wire = Motion.button, OnSelect = function(id) scrollTo(id) end })
+	setTab = set
+end
+list:GetPropertyChangedSignal('CanvasPosition'):Connect(function()
+	if not setTab or not shownTabs or #shownTabs == 0 or gliding > 0 then return end
+	local cur = shownTabs[1].Id
+	local bottom = list.AbsoluteCanvasSize.Y - list.AbsoluteSize.Y
+	if bottom > 0 and list.CanvasPosition.Y >= bottom - 2 then
+		cur = shownTabs[#shownTabs].Id -- (at the very end: the last section, however short)
+	else
+		local top = list.AbsolutePosition.Y
+		for _, t in shownTabs do
+			local h = headers[t.Id]
+			if h and h.Parent and h.AbsolutePosition.Y - top <= 40 then cur = t.Id end
+		end
+	end
+	setTab(cur)
+end)
 ---------------------------------------------------------------------------------------------- Gift A Player + the clock
 local pickerFrame
 closePicker = function()
@@ -1350,32 +1581,12 @@ local function startTicker()
 			task.wait(1)
 		end
 	end)
-	-- the shine sweep: one soft diagonal band over each registered card, one after another, every few seconds
-	task.spawn(function()
-		task.wait(1.4)
-		while isOpen and mine == tickToken do
-			for i, band in shines do
-				task.delay(((i - 1) % 4) * 0.6, function()
-					if band.Parent and isOpen then
-						band.Position = UDim2.new(-0.3, 0, 0.5, 0)
-						Motion.tween(band, 0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, { Position = UDim2.new(1.3, 0, 0.5, 0) })
-					end
-				end)
-			end
-			task.wait(3.5)
-		end
-	end)
+	-- (the shine sweeps run on UIIdle's shared loop, addShine)
 end
-local function open(at)
-	if isOpen then
-		scrollTo(at)
-		return
-	end
+local function reveal(at)
 	isOpen = true
 	coverPlayerList(true)
 	playerGui:SetAttribute('HoodWindow', NAME)
-	if not built then build() end
-	paintPacks()
 	startTicker()
 	Motion.blur(NAME, true)
 	Motion.open(overlay, panel, 1)
@@ -1386,9 +1597,32 @@ local function open(at)
 	pop.Completed:Once(function(state)
 		if state == Enum.PlaybackState.Completed then Motion.tween(ps, 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, { Scale = 1 }) end
 	end)
-	startBreath()
 	animateIn(sectionOf(at))
 	scrollTo(at)
+end
+local opening = false
+local function open(at)
+	if isOpen then
+		scrollTo(at)
+		return
+	end
+	if opening then return end
+	if not built then build() end
+	paintPacks()
+	-- (Oct 27, round 7, OUR_UI_AUDIT C1: no picture pops in after the window opens) the list goes where it opens, then
+	-- every picture in that view is drawn (Shared/ImageLoader.prepare) before the window shows: at most 0.4 s, at once
+	-- when they are all drawn already
+	local target = at and sections[at]
+	if target then
+		list.CanvasPosition = Vector2.new(0, canvasY(target))
+	else
+		list.CanvasPosition = Vector2.zero
+	end
+	opening = true
+	Kit.ImageLoader.prepare(panel, 0.4, function()
+		opening = false
+		if not isOpen then reveal(at) end
+	end)
 end
 openEvent.Event:Connect(open)
 

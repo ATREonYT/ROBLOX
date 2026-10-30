@@ -12,11 +12,16 @@ return function(t)
 		seq += 1
 		return 'rbxassetid://' .. tostring(900000000000 + math.floor(os.clock() * 1000) % 100000000 * 100 + seq)
 	end
+	-- (round 7) these uploads count as the current drawings (ImageLoader.fresh): an older upload gives way to the packed
+	-- picture, which the offline run can't draw
 	local function with(preloader, fn)
 		local was, wait, grace, loaded = Kit.Preloader, Kit.ImageWait, Kit.ImageGrace, Kit.IsLoaded
+		local fresh = Kit.ImageLoader.fresh
 		Kit.Preloader = preloader
+		Kit.ImageLoader.fresh = function() return true end
 		local ok, err = pcall(fn)
 		Kit.Preloader, Kit.ImageWait, Kit.ImageGrace, Kit.IsLoaded = was, wait, grace, loaded
+		Kit.ImageLoader.fresh = fresh
 		assert(ok, err)
 	end
 	local function answers(status) return function(content, callback) callback(content, status) end end

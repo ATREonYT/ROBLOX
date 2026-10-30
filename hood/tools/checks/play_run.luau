@@ -81,7 +81,11 @@ end
 local nowhere = Instance.new('Part'); nowhere.Name = 'HarnessNowhere'; nowhere.Anchored = true; nowhere.Transparency = 1
 nowhere.CFrame = CFrame.new(0, -20000, 0); pcall(function() nowhere.Position = Vector3.new(0, -20000, 0) end); nowhere.Parent = workspace
 _G.__nowhere = nowhere
-local function lunePatch(source) return (source:gsub('([%w_%.]+%.Adornee) = nil', '%1 = _G.__nowhere')) end
+local function lunePatch(source)
+	source = source:gsub('([%w_%.]+%.Adornee) = nil', '%1 = _G.__nowhere')
+	-- (the harness has no Position default on map parts: GunService measures the reach through CFrames instead)
+	return (source:gsub('%(root%.Position %- point%.Position%)', '(root.CFrame.Position - point.CFrame.Position)'))
+end
 local function run(src, name, parent)
 	local m = Instance.new('ModuleScript'); m.Name = name; m.Source = lunePatch(src.Source); m.Parent = parent
 	task.spawn(function()
@@ -90,7 +94,7 @@ local function run(src, name, parent)
 	end)
 end
 P:SetAttribute('ProfileReady', true)
-for _, s in { 'StageService', 'WaveService', 'GoalService', 'TravelService' } do run(HS[s], s, fake) end
+for _, s in { 'StageService', 'WaveService', 'GoalService', 'TravelService', 'GunService' } do run(HS[s], s, fake) end
 local HC = game.StarterPlayer.StarterPlayerScripts.HoodClient
 for _, c in { 'Stages', 'Waves', 'Goals', 'LabelFade', 'World' } do run(HC[c], c .. 'CUT', HC) end
 
@@ -371,6 +375,21 @@ check('pads locked again', label(r1, 'Sub') == '🔒 Clear the crew!', label(r1,
 wall(1.8)
 check('the goal moves on to buying a gun', attr('GoalText') == 'Buy a gun', attr('GoalText'))
 check('BestCashOut 1 (the stage cashed out at)', attr('BestCashOut') == 1, attr('BestCashOut'))
+-- (Oct 27, the "stale Buy a gun goal" open item) buying a gun at the ARMORY moves the goal on within the hold + a check.
+do
+	local second
+	for _, g in require(RS.Shared.Config.Guns).List do if g.Id ~= 'Pistol' and not g.Exclusive then second = second or g end end
+	local point = workspace:FindFirstChild('GunPoint_' .. second.Id, true)
+	local cashBefore = data.Cash
+	data.Cash = math.max(data.Cash, second.Cost + 100)
+	moveTo(CFrame.new(point.CFrame.Position + Vector3.new(0, 3, 0)))
+	wall(0.3)
+	RS.HoodNet.BuyGun:FireServer(second.Id)
+	wall(3.5)
+	check('buying a gun moves the goal on from "Buy a gun"', attr('GoalText') ~= 'Buy a gun' and attr('EquippedGun') == second.Id,
+		tostring(attr('GoalText')) .. ' / ' .. tostring(attr('EquippedGun')))
+	data.Cash = cashBefore
+end
 cash0 = data.Cash
 onPad(r1)
 wall(0.6)
@@ -709,6 +728,34 @@ do
 	check('(brief 30) no boss HP bar on the fight screen at all', bar == nil)
 end
 hum.MaxHealth, hum.Health = 100, 100
+
+-- (Oct 27, round 8) The tutorial's end: YOU'RE READY! lands within ~3 s even in a fight (the moment queue's priority),
+-- says what's next, and once it has played the HUD may bring in the offers (PlayerGui TutorialReady).
+do
+	local G = P.PlayerGui
+	local function ready()
+		local g = G:FindFirstChild('HoodGoals')
+		local gd = g and g:FindFirstChild('GoalDone', true)
+		local t = gd and gd:FindFirstChild('Title')
+		return t ~= nil and t.Text == "YOU'RE READY!", gd
+	end
+	P:SetAttribute('WaveCleared', 1)
+	P:SetAttribute('OnboardingStep', 'Run')
+	wall(0.3)
+	P:SetAttribute('WaveLeft', 4) -- (a fight on)
+	P:SetAttribute('OnboardingStep', 'Done')
+	local t0 = os.clock()
+	local seen, gd = false, nil
+	while os.clock() - t0 < 4 and not seen do wall(0.1); seen, gd = ready() end
+	local after = os.clock() - t0
+	local lead = gd and gd:FindFirstChild('Lead')
+	check('30 YOU\'RE READY!: within 3 s of the tutorial\'s end, in a fight, with "Next: train and beat Stage 2"', seen and after <= 3.5 and lead ~= nil and lead.Text == 'Next: train and beat Stage 2', ('%.1f s, "%s"'):format(after, tostring(lead and lead.Text)))
+	check('30 ... the offers wait for it', G:GetAttribute('TutorialReady') == false, tostring(G:GetAttribute('TutorialReady')))
+	local t1 = os.clock()
+	while os.clock() - t1 < 8 and G:GetAttribute('TutorialReady') ~= true do wall(0.2) end
+	check('30 ... and once it has played they may come', G:GetAttribute('TutorialReady') == true, tostring(G:GetAttribute('TutorialReady')))
+	P:SetAttribute('WaveLeft', 0)
+end
 
 print('[play] ' .. #CHECKS .. ' checks, ' .. #FAILS .. ' failed')
 if EXPORT then __fs.writeFile(EXPORT .. '/manifest.json', __serde.encode('json', SHOTS)) end

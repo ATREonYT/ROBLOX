@@ -5,9 +5,9 @@
 -- its front wall. Inside: a clear fight floor (|x| <= 31, marked in yellow, a big anchor painted in the middle), container
 -- stacks and pallet racks along the walls, a parked forklift, the CHAMP BAY (the Champ Ring's lane: its TrainingZone, no
 -- ring) in the near right corner, catwalks along both walls and across the back, an overhead crane with its hook,
--- hanging lamps under the roof trusses, skylights, and the loading dock along the back wall: two roller doors and,
+-- hanging lamps under the roof trusses, a solid roof (round 5: was skylit), and the loading dock along the back wall: two roller doors and,
 -- between them, the WORLD 2 door (a stage gate's frame and haze, tagged HoodWorldDoor: HoodClient/Stages writes "Defeat
--- <name>" on it while the Harbor crew stands, flashes it white when the last one falls, then "WORLD 2 / Coming soon!").
+-- <name>" on it while the Harbor crew stands, flashes it white when the last one falls, then "WORLD 2 / Portal in the lobby!").
 -- The Harbor crew waits in front of it like every wave; the stage's two cash pads stand before it like every gate's.
 -- (brief 30: no BOSS pad, ring, perch or reserve doors any more.) The props are BoxKit models (Shared/Models/PropModels).
 --   Finale.yard(ctx)           the warehouse, stage 16 (f2_stages' bossYard calls it)
@@ -108,9 +108,11 @@ function Finale.yard(ctx)
 	for _, s in { -1, 1 } do
 		for k = 0, bays - 1 do
 			local z0 = T - 0.2 - k * L / bays
+			-- (Oct 27 round 5, the owner: "add roofs to the warehouses") every bay is solid now; the old skylight bays (every
+			-- other one) cast no shadow, so the floor keeps the light they let in
 			local glass = k % 2 == 1
-			local p = roof:part(glass and 'Skylight' or 'RoofPanel', V(slope, 0.8, L / bays), CFrame.new(s * run / 2, EH + rise / 2 + 0.4, z0 - L / bays / 2) * CFrame.Angles(0, 0, -s * a), glass and P.st.glassA or steel:Lerp(P.black, 0.12), glass and M.Glass or M.Plastic)
-			if glass then p.Transparency = 0.45 end
+			local p = roof:part('RoofPanel', V(slope, 0.8, L / bays), CFrame.new(s * run / 2, EH + rise / 2 + 0.4, z0 - L / bays / 2) * CFrame.Angles(0, 0, -s * a), steel:Lerp(P.black, 0.12), M.Plastic)
+			if glass then p.CastShadow = false end
 		end
 	end
 	roof:box('Ridge', V(-0.8, RH, E - wallT), V(0.8, RH + 0.9, T - 0.2), dark, M.Plastic)
@@ -229,7 +231,7 @@ function Finale.yard(ctx)
 	cr:box('Trolley', V(-36.5, 23.4, bz - 1.6), V(-31.5, 25.2, bz + 1.6), dark, M.Metal)
 	decor(cr:part('Cable', V(5.4, 0.25, 0.25), CFrame.new(-34, 23.4 - 2.7, bz) * CFrame.Angles(0, 0, math.pi / 2), C(30, 32, 36), M.Metal, Enum.PartType.Cylinder))
 	Finale.prop(cr, 'CraneHook', CFrame.new(-34, 18, bz), 1.4)
-	-- the hanging lamps (a few of them really light the floor; the skylights do the rest)
+	-- the hanging lamps (a few of them really light the floor; the sun through the shadowless old skylight bays does the rest)
 	local lamps = b:group('Lamps')
 	local n = 0
 	for _, d in { 18, 42, 66 } do
@@ -292,7 +294,7 @@ function Finale.worldDoor(ctx, z)
 	local grad = Instance.new('UIGradient')
 	grad.Color, grad.Rotation = GATE.titleShade, 90
 	grad.Parent = title
-	put('Sub', 'Coming soon!', 0.52, 0.3, GATE.sub, GATE.subInk, 0.1)
+	put('Sub', 'Portal in the lobby!', 0.52, 0.3, GATE.sub, GATE.subInk, 0.1) -- (Oct 27: World 2 is built; its portal is in the lobby)
 	local status = put('Status', 'Defeat the crew first', 0.3, 0.26, GATE.status, GATE.statusInk, 0.1)
 	status.Position, status.Size = UDim2.fromScale(0.02, 0.3), UDim2.fromScale(0.96, 0.26)
 	title.Visible, gui:FindFirstChild('Sub').Visible = false, false

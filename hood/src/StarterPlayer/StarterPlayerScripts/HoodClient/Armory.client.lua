@@ -155,8 +155,9 @@ local function paint(slot, state)
 		local pay = state == 'Locked' or state == 'Buy'
 		if slot.PriceIcon then slot.PriceIcon.Visible = pay and not slot.PriceIconMissing end
 		local price = slot.Gun.Cost == 0 and 'FREE' or Format.compact(slot.Gun.Cost)
-		local text = pay and ((glyph ~= '' and glyph .. ' ' or '') .. price) or string.upper(state)
-		if state == 'Buy' then text = 'BUY ' .. text end
+		-- (lobby round 2, the critic: one short line per gun) the price only while it is to buy; the state word (BUY,
+		-- OWNED, EQUIPPED, LOCKED) is the plate's alone
+		local text = pay and ((glyph ~= '' and glyph .. ' ' or '') .. price) or ''
 		slot.Price.Text = text
 		slot.Price.TextColor3 = look.Word or look.Text
 	end
@@ -270,6 +271,98 @@ local function celebrate(slot, text)
 	end)
 end
 
+-- (Oct 27, flow: the audit's "buying the first gun isn't a moment") A gun that just became yours gets its own moment:
+-- the gun itself turning slowly in the middle of the screen, "NEW GUN!", its name and what it does ("x2 POWER PER SHOT"),
+-- for a couple of seconds, in its turn in the moment queue (Shared/MomentQueue). The server's "Bought ..." notice says
+-- the same, so it is muted. It never blocks: no input is taken, the game runs under it. Reduced Motion: it doesn't turn.
+-- (Oct 27, round 8) It is one of our windows now: a solid navy panel (Kit.windowBody) with the yellow header bar, in
+-- the middle of the screen over a soft dark backdrop, not see-through text on a band.
+local RunService = game:GetService('RunService')
+local MomentQueue = require(RS.Shared.MomentQueue)
+local okStyle, TextStyle = pcall(require, RS.Shared.TextStyle)
+local okToasts, HudToasts = pcall(require, RS.Shared.HudToasts)
+local REVEAL_FOR = 2.6
+local function reveal(gun)
+	if not Kit or type(gun) ~= 'table' then return end
+	if okToasts and HudToasts.mute then HudToasts.mute('Bought ', 8) end
+	local pg = player:FindFirstChildOfClass('PlayerGui')
+	if not pg then return end
+	local function free()
+		local w = pg:GetAttribute('HoodWindow')
+		return not (type(w) == 'string' and w ~= '') and pg:GetAttribute('Unboxing') ~= true
+	end
+	local token = MomentQueue.acquire('NewGun', { Ready = free, Timeout = 10 })
+	if not token then return end
+	local gui, spin
+	local ok, err = pcall(function()
+		gui = Kit.screen('HoodGunReveal', pg, 55)
+		gui.IgnoreGuiInset = true
+		gui.ScreenInsets = Enum.ScreenInsets.None
+		local root = gui:FindFirstChild('Root')
+		local TS = game:GetService('TweenService')
+		-- the soft dark backdrop (it takes no input: the game runs under it)
+		local backdrop = Kit.new('Frame', { Name = 'Backdrop', BackgroundColor3 = Kit.hex('070912'), BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = gui })
+		root.ZIndex = 2
+		TS:Create(backdrop, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.45 }):Play()
+		-- the window: a solid navy body under a yellow header bar, centred
+		local W, H, HH = 520, 380, 64
+		local card = Kit.new('Frame', { Name = 'Card', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(W, H), ZIndex = 2, Parent = root })
+		local sc = Kit.new('UIScale', { Scale = 0.85, Parent = card })
+		local body = Kit.new('Frame', { Name = 'Body', BorderSizePixel = 0, Position = UDim2.fromOffset(0, HH - 14), Size = UDim2.new(1, 0, 1, -(HH - 14)), ZIndex = 2, Parent = card })
+		Kit.windowBody(body, W, H - HH + 14, { Outline = 5 })
+		local header = Kit.block({ Name = 'Header', Tone = 'headerYellow', Width = W, Height = HH, Outline = 5, OutlineColor = Kit.Skin.outline, Radius = Kit.Skin.headerCorner, Studs = 30, StudShade = 0.22, RimWidth = 4, ZIndex = 4 })
+		header.Parent = card
+		if Kit.headerBand then Kit.headerBand(header, 'headerYellow') end
+		local head = Kit.text({ Name = 'Head', Text = 'NEW GUN!', FontFace = Kit.Font.display, TextSize = 44, Stroke = Kit.Skin.outline, StrokeThickness = 5, ZIndex = 8, Position = UDim2.fromOffset(0, -2), Size = UDim2.fromScale(1, 1), Parent = header:FindFirstChild('Body') or header })
+		-- the gun turns in a dark well
+		local well = Kit.new('Frame', { Name = 'Well', BackgroundColor3 = Kit.Skin.well, BackgroundTransparency = 0.2, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, HH + 10), Size = UDim2.fromOffset(W - 60, 176), ZIndex = 5, Parent = card })
+		Kit.new('UICorner', { CornerRadius = UDim.new(0, 12), Parent = well })
+		local view
+		local models = gunModels()
+		if models and models.viewport then
+			local ok, vf = pcall(models.viewport, gun.Id, UDim2.fromOffset(300, 170))
+			if ok and vf then
+				view = vf
+				vf.AnchorPoint, vf.Position = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5)
+				vf.BackgroundTransparency = 1
+				vf.ZIndex = 6
+				vf.Parent = well
+			end
+		end
+		local nameLabel = Kit.text({ Name = 'GunName', Text = string.upper(gun.Name), TextSize = 34, ZIndex = 7, Position = UDim2.fromOffset(0, HH + 194), Size = UDim2.new(1, 0, 0, 42), Parent = card })
+		local what = Kit.text({ Name = 'What', Text = 'x' .. tostring(gun.Multiplier) .. ' POWER PER SHOT', TextSize = 30, ZIndex = 7, Position = UDim2.fromOffset(0, HH + 240), Size = UDim2.new(1, 0, 0, 38), Parent = card })
+		nameLabel.TextSize = Kit.fitSize and Kit.fitSize(nameLabel.Text, 34, W - 40, 18) or 34
+		if okStyle then
+			TextStyle.apply(head, 'white', { Thickness = 5 })
+			TextStyle.apply(nameLabel, 'white', { Shadow = true })
+			TextStyle.apply(what, 'gold', { Shadow = true })
+		end
+		TS:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		-- the gun turns, slowly (a third of a turn while it shows)
+		local meta = models and models.Meta and models.Meta[gun.Id]
+		local cam = view and select(2, pcall(function() return view.CurrentCamera end))
+		if typeof(cam) == 'Instance' and meta and player:GetAttribute('ReducedMotion') ~= true then
+			local center = meta.Center
+			local offset = cam.CFrame.Position - center
+			local t = 0
+			spin = RunService.Heartbeat:Connect(function(dt)
+				t += math.clamp(type(dt) == 'number' and dt or 1 / 60, 0, 0.1)
+				pcall(function() cam.CFrame = CFrame.lookAt(center + CFrame.Angles(0, t * 0.8, 0):VectorToWorldSpace(offset), center) end)
+			end)
+		end
+		task.wait(REVEAL_FOR)
+		-- out: the window shrinks away (Back In) while the backdrop clears
+		local out = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+		TS:Create(sc, out, { Scale = 0 }):Play()
+		TS:Create(backdrop, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { BackgroundTransparency = 1 }):Play()
+		task.wait(0.35)
+	end)
+	if spin then spin:Disconnect() end
+	if not ok then warn('[Armory] the new-gun moment: ' .. tostring(err)) end
+	if gui then gui:Destroy() end
+	MomentQueue.release(token)
+end
+
 -- Celebrations only start once the server has told us what we own: loading your profile is not a purchase.
 local primed = player:GetAttribute('OwnedGuns') ~= nil
 local function refresh(next)
@@ -279,7 +372,9 @@ local function refresh(next)
 		if shown[id] ~= state then
 			local before = shown[id]
 			paint(slot, state)
-			if primed and (before == 'Locked' or before == 'Buy') and state ~= 'Locked' and state ~= 'Buy' then celebrate(slot, 'NEW GUN!')
+			if primed and (before == 'Locked' or before == 'Buy') and state ~= 'Locked' and state ~= 'Buy' then
+				celebrate(slot, 'NEW GUN!')
+				task.spawn(reveal, slot.Gun)
 			elseif primed and before == 'Owned' and state == 'Equipped' then celebrate(slot, 'EQUIPPED!') end
 			shown[id] = state
 		end

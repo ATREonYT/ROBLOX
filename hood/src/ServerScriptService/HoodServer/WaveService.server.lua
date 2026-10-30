@@ -228,7 +228,7 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index, melee)
 	local share = ShotRules.EnemyShare * (melee and EnemyRules.MeleePay or 1)
 	local gain = ShotRules.share(ShotRules.pay(perShot, player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry[player]), share, shoeCarry[player], melee and 'Melee' or 'Enemy')
 	-- P4 (brief 29) END
-	profile.Data.Rep = math.min(1e12, profile.Data.Rep + gain)
+	profile.Data.Rep = math.min(1e15, profile.Data.Rep + gain)
 	player:SetAttribute('Power', profile.Data.Rep)
 	stateRemote:FireClient(player, { Kind = 'Hit', Stage = stage, Index = index, HP = w.HP[index], Left = w.Left, Damage = damage, Gain = gain, Melee = melee or nil })
 	if done then cleared(player, profile, stage) end
@@ -365,6 +365,7 @@ end)
 -- attributes 4 times a second.
 local since = 0
 local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
+local lastPlayerError -- (one player's error, reported once)
 while true do
 	local ok, err = pcall(function()
 		local dt = task.wait(EnemyRules.Tick)
@@ -374,23 +375,28 @@ while true do
 		if beat then since = 0 end
 		countdowns()
 		for _, player in Players:GetPlayers() do
-			local profile = Data.get(player)
-			if profile then
-				local s = sessionOf(player)
-				local _, root = living(player)
-				if beat and not downed[player] then place(player, s, root) end
-				local you = root and s.Stage ~= 0 and not downed[player] and mapPos(root) or nil
-				local events, moved = s:tick(dt, you)
-				for _, ev in events do
-					if ev.Kind == 'punch' or ev.Kind == 'blast' then punch(player, s, ev)
-					elseif ev.Kind == 'tele' then tele(player, ev) end
+			-- (Oct 27 review) each player in a pcall of their own: one bad save never stops the crews of the rest
+			local okP, errP = pcall(function()
+				local profile = Data.get(player)
+				if profile then
+					local s = sessionOf(player)
+					local _, root = living(player)
+					if beat and not downed[player] then place(player, s, root) end
+					local you = root and s.Stage ~= 0 and not downed[player] and mapPos(root) or nil
+					local events, moved = s:tick(dt, you)
+					for _, ev in events do
+						if ev.Kind == 'punch' or ev.Kind == 'blast' then punch(player, s, ev)
+						elseif ev.Kind == 'tele' then tele(player, ev) end
+					end
+					for stage in moved do
+						local w = s.Waves[stage]
+						if w then stateRemote:FireClient(player, { Kind = 'Moves', Stage = stage, D = WaveRules.pack(w) }) end
+					end
+					if beat then publish(player, profile, s) end
 				end
-				for stage in moved do
-					local w = s.Waves[stage]
-					if w then stateRemote:FireClient(player, { Kind = 'Moves', Stage = stage, D = WaveRules.pack(w) }) end
-				end
-				if beat then publish(player, profile, s) end
-			end
+			end)
+			if not okP and errP ~= lastPlayerError then warn('[WaveService] ' .. player.Name .. ': ' .. tostring(errP)) end
+			if not okP then lastPlayerError = errP end
 		end
 	end)
 	if not ok and err ~= lastTickError then warn('[WaveService] tick failed, carrying on: ' .. tostring(err)) end

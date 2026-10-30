@@ -12,10 +12,10 @@ local TweenService = game:GetService('TweenService')
 local RunService = game:GetService('RunService')
 local Skins = require(RS.Shared.Config.Skins)
 local ActiveMap = require(RS.Shared.ActiveMap)
+local BigAttr = require(RS.Shared.BigAttr)
 local RebirthRules = require(RS.Shared.RebirthRules)
 local RobuxText = require(RS.Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
 local Fonts = require(RS.Shared.Fonts)
-local LevelRules = require(RS.Shared.LevelRules)
 
 local player = Players.LocalPlayer
 local active = ActiveMap.wait(20)
@@ -39,8 +39,10 @@ local function label(parent, name, textSize, color)
 	t.TextWrapped = true
 	local stroke = Instance.new('UIStroke')
 	stroke.Color = INK
-	stroke.Thickness = 2.5
+	stroke.Thickness = math.max(2.5, textSize * 0.14) -- (Oct 28: TextStyle's thick outline, was 2.5)
+	stroke.LineJoinMode = Enum.LineJoinMode.Round
 	stroke.Parent = t
+	pcall(function() require(RS.Shared.TextStyle).world(t) end) -- (lit from the top, like the UI's words)
 	t.Parent = parent
 	return t, stroke
 end
@@ -393,7 +395,7 @@ local function guidePhase(n)
 	if not gate then return n < GUIDE_POWER and 'lane' or '', nil end
 	local cleared = player:GetAttribute('StagesCleared')
 	if (cleared or 0) >= 1 then return '', nil end
-	if n < LevelRules.powerFor(LevelRules.levelOf(gate:GetAttribute('Required') or 10)) then return 'lane', gate end -- (brief 29: the gate's Level, where it starts)
+	if n < (BigAttr.get(gate, 'Required') or 10) then return 'lane', gate end -- (Oct 27, flow: the gate's Recommended Power itself)
 	return cleared ~= nil and 'exit' or '', gate -- (not before the server has said you haven't cleared it)
 end
 
@@ -667,7 +669,8 @@ local function updateGuide(n, station, evolving, zone, laneTitle)
 	if guide.door then
 		-- The floating arrow leaves the lanes. (LOOP: it used to float "STAGE 1 OPEN ↓" at the door, right on the gate
 		-- sign's own "Open! Walk through" badge: the sign says it, the trail leads there.)
-		indicator.Adornee = nil
+		indicator.Enabled = false
+		pcall(function() indicator.Adornee = nil end)
 	end
 end
 player.CharacterAdded:Connect(function(c)
@@ -686,12 +689,15 @@ local MarketplaceService = game:GetService('MarketplaceService')
 local boards = {}
 local function paintBoard(b)
 	local owned = player:GetAttribute('Pass_' .. b.Key) == true
-	if b.Owned == owned then return end
-	b.Owned = owned
-	if b.Prompt then b.Prompt.Enabled = not owned end
+	-- (the luck round) 2x Luck adds nothing on top of 4x Luck: its board says so and sells nothing
+	local covered = not owned and b.Key == 'Lucky' and player:GetAttribute('Pass_Luck4') == true
+	local state = owned and 'OWNED' or (covered and 'YOU HAVE 4x') or ''
+	if b.Owned == state then return end
+	b.Owned = state
+	if b.Prompt then b.Prompt.Enabled = state == '' end
 	if b.Price then
 		local price = b.Price:GetAttribute('Price')
-		b.Price.Text = owned and 'OWNED' or ('ONLY ' .. RobuxText.fmt(price or '')) -- (B31 PLAZA: the reference's "ONLY <price>")
+		b.Price.Text = state ~= '' and state or RobuxText.fmt(price or '') -- (lobby round 1: the price alone, no "ONLY")
 	end
 end
 local function watchBoards()
@@ -709,10 +715,12 @@ local function watchBoards()
 			prompt:SetAttribute('ComingSoon', not live) -- (HUD.client toasts "<ObjectText> is coming soon!")
 			prompt.Triggered:Connect(function()
 				if not (Products and Products.canBuy(key)) or player:GetAttribute('Pass_' .. key) == true then return end
+				if key == 'Lucky' and player:GetAttribute('Pass_Luck4') == true then return end
 				pcall(function() MarketplaceService:PromptGamePassPurchase(player, Products.idOf(key)) end)
 			end)
 		end
 		player:GetAttributeChangedSignal('Pass_' .. key):Connect(function() paintBoard(b) end)
+		if key == 'Lucky' then player:GetAttributeChangedSignal('Pass_Luck4'):Connect(function() paintBoard(b) end) end
 		paintBoard(b)
 	end
 end
@@ -757,11 +765,16 @@ local function refresh()
 	for _, g in Skins.Stations do
 		if RebirthRules.laneOpen(g, rebirths, player) and stations[g.Id] then bestGym = g end
 	end
-	if station == '' or station:find('Locked:') then
+	-- (Oct 27, flow: one guide at a time) not while the tutorial runs (its own arrows) or the goal guide's arrow is up
+	local pg = player.PlayerGui
+	local otherGuide = pg:GetAttribute('HoodGoalGuide') == true or pg:GetAttribute('HoodGuide') == 'Tutorial' or player:GetAttribute('OnboardingStep') ~= 'Done'
+	local showPointer = (station == '' or station:find('Locked:')) and not otherGuide
+	indicator.Enabled = showPointer == true -- (Enabled as well as the Adornee: the off state holds even where nil can't be set)
+	if showPointer then
 		indicator.Adornee = zoneOf(bestGym.Id)
 		pointer.Text = 'TRAIN x' .. bestGym.Multiplier .. ' HERE ↓'
 	else
-		indicator.Adornee = nil
+		pcall(function() indicator.Adornee = nil end)
 	end
 	updateGuide(n, station, false, zoneOf(bestGym.Id), string.upper(bestGym.Name))
 	-- "+N POWER" over your head when Power comes from anything but a shot (a pack from the store, say): not on a range
@@ -789,9 +802,10 @@ local function refresh()
 	end
 	lastPower = n
 end
-for _, key in { 'Power', 'TrainingStation', 'StagesCleared', 'Rebirths' } do -- (the last two: the guide's steps and the lanes)
+for _, key in { 'Power', 'TrainingStation', 'StagesCleared', 'Rebirths', 'OnboardingStep' } do -- (the last three: the guide's steps and the lanes)
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
+for _, key in { 'HoodGoalGuide', 'HoodGuide' } do player.PlayerGui:GetAttributeChangedSignal(key):Connect(refresh) end
 -- (a Robux lane opens the moment its pass arrives: Pass_RangeVIP1, Pass_RangeVIP2)
 for _, s in Skins.Stations do
 	local pass = RebirthRules.lanePass and RebirthRules.lanePass(s)

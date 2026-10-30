@@ -167,7 +167,7 @@ local function autoFire(player,profile,lane,station,dt)
  local gun,shoes=player:GetAttribute('GunMultiplier'),player:GetAttribute('ShoeMultiplier')
  local pay=0
  for _=1,shots do pay+=ShotRules.autoValue(ShotRules.pay(per,gun,shoes,shoeCarry[player]),autoCarry[player]) end -- (FEEL 32: each worth AutoValue shots)
- profile.Data.Rep=math.min(1e12,profile.Data.Rep+pay)
+ profile.Data.Rep=math.min(1e15,profile.Data.Rep+pay)
  profile.Data.Onboarding.Trained=true
  RebirthService.publish(player,profile.Data) -- (Power and RebirthReady at once, so the counter climbs with every shot)
 end
@@ -248,6 +248,7 @@ local function writeBoard(lobby,spec,rows)
 end
 local beat=0
 local lastTickError -- (the loop carries on after an error; the same error is reported once, not every tick)
+local lastPlayerError -- (and one player's error, once)
 while true do
  local ok, err = pcall(function()
   local dt=task.wait(0.25)
@@ -255,7 +256,8 @@ while true do
   local rows={}
   for _,player in Players:GetPlayers() do
    local profile=Data.get(player)
-   if profile then
+   -- (Oct 27 review) each player in a pcall of their own: one bad save never stops everyone after them from training
+   local okP,errP=profile and pcall(function()
     local n=RebirthRules.count(profile.Data.Rebirths)
     local lane,station=standing(player,n)
     sync(player,profile,lane,station)
@@ -266,7 +268,9 @@ while true do
     if beat%4==0 then overheadTag(player,profile.Data.Rep,n,profile.Data.BestLevel) end
     local waves=profile.Data.Waves
     table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep,Cash=profile.Data.Cash,Rebirths=n,Stage=type(waves)=='table' and tonumber(waves.Cleared) or 0})
-   end
+   end)
+   if profile and not okP and errP~=lastPlayerError then warn('[LobbyService] '..player.Name..': '..tostring(errP)) end
+   if profile and not okP then lastPlayerError=errP end
   end
   if beat%20==0 then
    -- The lobby boards: TOP POWER, TOP REBIRTHS (rebirths, then Power), TOP CASH (when the map has them).

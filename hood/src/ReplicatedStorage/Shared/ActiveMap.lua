@@ -6,6 +6,11 @@
 local ActiveMap = {}
 
 local function resolve()
+	-- (Oct 27) World 2's place builds TheCity (ServerStorage.TheCity), with the same contracts as TheBlockV2.
+	local city = workspace:FindFirstChild('TheCity')
+	if city and city:GetAttribute('Active') then
+		return { Id = 'City', Root = city, Lobby = city, Frame = city:GetAttribute('Origin') and CFrame.new(city:GetAttribute('Origin')) or CFrame.new() }
+	end
 	local v2 = workspace:FindFirstChild('TheBlockV2')
 	if v2 and v2:GetAttribute('Active') then
 		return { Id = 'V2', Root = v2, Lobby = v2, Frame = v2:GetAttribute('Origin') and CFrame.new(v2:GetAttribute('Origin')) or CFrame.new() }

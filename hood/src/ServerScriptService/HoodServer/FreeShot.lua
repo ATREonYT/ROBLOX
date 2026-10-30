@@ -24,7 +24,7 @@ function FreeShot.click(player, profile, station, carry, RebirthService)
 	local whole = ShotRules.pay(ShotRules.perShot(1, n, Boosts.power(player)), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), carry)
 	local gain = ShotRules.share(whole, ShotRules.FreeShare, carry, 'Free')
 	if gain <= 0 then return 0 end
-	profile.Data.Rep = math.min(1e12, profile.Data.Rep + gain)
+	profile.Data.Rep = math.min(1e15, profile.Data.Rep + gain)
 	if RebirthService then RebirthService.publish(player, profile.Data) end
 	return gain
 end

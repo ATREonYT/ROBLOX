@@ -11,6 +11,7 @@ local FightFX = require(RS.Shared.FightFX)
 local player = Players.LocalPlayer
 local Gap = 3 -- (brief 32: early levels come every few shots; filmed, a burst every 1.4 s hid you for most of your first 6 s)
 local lastLevel, lastBurst = nil, -10
+local QUIET_FIRST, joinedAt = 60, os.clock()
 
 local function onPower()
 	local p = player:GetAttribute('Power')
@@ -23,6 +24,8 @@ local function onPower()
 	local pg = player:FindFirstChild('PlayerGui')
 	if pg and pg:FindFirstChild('HoodLoading') then return end
 	if os.clock() - lastBurst < Gap then return end
+	-- (Oct 27, flow: like the level toast, none in a visit's first minute: the first shots level you every second or two)
+	if os.clock() - joinedAt < QUIET_FIRST then return end
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')
 	if not root then return end

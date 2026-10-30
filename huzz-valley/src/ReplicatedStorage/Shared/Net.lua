@@ -1,0 +1,100 @@
+-- One place that names every remote. The server creates them; clients wait for them.
+--   State          RemoteEvent     server -> client: the player's saved state (coins, gems, owned, settings)
+--   GetState       RemoteFunction  client -> server: ask for the current state (on join)
+--   SetSetting     RemoteFunction  client -> server: (key, value) -> ok, message
+--   BuyWithCoins   RemoteFunction  client -> server: (productKey) -> ok, message (no coin items yet; validated anyway)
+--   Action         RemoteFunction  client -> server: (verb, ...) -> ok, message (equip, favourite, claim; see ActionService)
+--   Round          RemoteEvent     server -> client: (kind, data) round moments; its attributes are the round state
+--                                  (Stage, EndsAt, Round, Phase, Goal, GirlName, GirlRarity, HolderId, Map; and while
+--                                  voting VoteA, VoteB, VoteCountA, VoteCountB; see RoundService and MapVoteService)
+--   Vote           RemoteEvent     client -> server: (mapName) the player's map vote; a new vote replaces the old one
+--   Dance          RemoteEvent     client -> server: (danceId?, startAt) the dance you started (nil = stopped) and its
+--                                  start in server time; ActionService puts both on your character (HuzzDance,
+--                                  HuzzDanceAt) so people who start the same dance nearby dance in step
+--   Spin           RemoteFunction  client -> server: (count) spin the wheel 1, 5 or 10 times -> ok, result or why
+--   SpinOpen       RemoteEvent     server -> client: open the Spin the Wheel screen (you used the wheel in the lobby)
+--   Admin          RemoteEvent     client -> server: (verb, key) the owner's admin panel (GiveKnife / SpawnGirl / NextGirl);
+--                                  server -> client: (ok, message, verb, key). Owner only, checked by AdminService
+--   AdminMessage   RemoteEvent     server -> client: ({ text, from, seconds }) an admin's message to every server (BroadcastService)
+--   LuckBoost      RemoteEvent     server -> client: ({ name, luck }) someone bought luck and the server's went up to x`luck` (LuckService)
+--   KnifeGlb       RemoteFunction  client -> server: (key, n) -> the n-th baked .glb mesh of a knife, nil when none,
+--                                  false to ask again later (HuzzServer/KnifeGlbService, Gameplay/KnifeDress)
+--   KnifeView      RemoteFunction  client -> server: (knife key) -> true when a copy of that knife's model is in
+--                                  ReplicatedStorage > HuzzKnifeViews (one a knife, shared) (UI/ImageLoader's last fallback for a knife card
+--                                  it can't draw; HuzzServer/KnifeGlbService)
+--   KnifeBackup    RemoteFunction  client -> server: (knife key) -> the plain cut's baked rows of one of his 30 knives, nil
+--                                  when none, false to ask again later (HuzzServer/KnifeGlbService; Gameplay/KnifeMeshCheck
+--                                  builds it only on a copy whose meshes don't load on that screen)
+--   HeadLook       RemoteEvent     client -> server: (turn, tilt) where your head looks, whole degrees, ~5 a second
+--                                  (Gameplay/HeadAim); HuzzServer/HeadLookService puts it on your character (HuzzLook)
+--   Place          RemoteEvent     server -> client: (character, CFrame) move your own body there (HuzzServer/PlaceService,
+--                                  Gameplay/PlaceSelf: the owner of a body moves it, so every screen agrees); someone
+--                                  else's: draw it there at once (PlaceSelf.drawAt) until Roblox's copy arrives
+--   Combine        RemoteEvent     server -> client: (userId, girlKey, fromGrade, toGrade, startAt) someone merged two
+--                                  girls at the Combine machine: every screen plays it there (Gameplay/CombineMachine).
+--                                  The merge itself is the Action "Combine" (HuzzServer/CombineService)
+--   Motion         UnreliableRemoteEvent  client -> server: (t, p, v, g, push) a stamp of your own body (Gameplay/
+--                                  MotionSend); server -> client: (character, t, p, v, g, push) someone's stamp, checked
+--                                  and passed on (HuzzServer/MotionRelay), drawn by Gameplay/OthersAhead (Shared/MotionStamps)
+--   Away           RemoteEvent     client -> server: (on) no input on this screen for Config/Afk.IdleAfter s (true), or
+--                                  back (false) (Gameplay/AfkRejoin; HuzzServer/AfkService makes them AFK)
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Net = {}
+
+local SPEC = {
+	State = "RemoteEvent",
+	GetState = "RemoteFunction",
+	SetSetting = "RemoteFunction",
+	BuyWithCoins = "RemoteFunction",
+	Action = "RemoteFunction",
+	Round = "RemoteEvent",
+	Vote = "RemoteEvent",
+	Stab = "RemoteEvent",
+	Power = "RemoteEvent",
+	Hero = "RemoteEvent",
+	Dash = "RemoteEvent",
+	Dance = "RemoteEvent",
+	Lunge = "RemoteEvent",
+	Spin = "RemoteFunction",
+	SpinOpen = "RemoteEvent",
+	Admin = "RemoteEvent",
+	AdminMessage = "RemoteEvent",
+	LuckBoost = "RemoteEvent",
+	KnifeGlb = "RemoteFunction",
+	KnifeView = "RemoteFunction",
+	KnifeBackup = "RemoteFunction",
+	HeadLook = "RemoteEvent",
+	Place = "RemoteEvent",
+	ClientReady = "RemoteEvent", -- client -> server, once: this screen has loaded (RoundService: only loaded players play)
+	Combine = "RemoteEvent",
+	Motion = "UnreliableRemoteEvent",
+	Away = "RemoteEvent",
+}
+
+local folder: Folder
+if RunService:IsServer() then
+	folder = ReplicatedStorage:FindFirstChild("Remotes") :: Folder
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "Remotes"
+		folder.Parent = ReplicatedStorage
+	end
+	for name, class in SPEC do
+		if not folder:FindFirstChild(name) then
+			local r = Instance.new(class)
+			r.Name = name
+			r.Parent = folder
+		end
+	end
+else
+	folder = ReplicatedStorage:WaitForChild("Remotes") :: Folder
+end
+
+function Net.get(name: string): Instance
+	assert(SPEC[name], "unknown remote " .. name)
+	return folder:WaitForChild(name)
+end
+
+return Net

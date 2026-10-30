@@ -17,8 +17,10 @@
 --   Game passes (brief 22; the server reads them from Pass_* attributes and passes them in, default = no pass):
 --     +1 Shoe Slot (ExtraEquip)  `slots` = MaxEquipped + ExtraSlots pairs on instead of MaxEquipped (canEquip, equip,
 --                                best, equipBest, open take an optional `slots`); a save holds at most MaxSlots
---     Lucky                      `lucky` = Epic and rarer shoes weigh LuckyFactor x in a CASH box's roll (renormalised:
---                                weights, roll, chances take an optional `lucky`); a Robux box's odds never change
+--     2x Luck (Lucky), 4x Luck   `lucky` = the luck level, 1 (none), 2 (the 2x Luck pass, key Lucky) or 4 (the 4x Luck
+--     (Luck4)                    pass, key Luck4; it supersedes 2x: never 8x): Epic and rarer shoes weigh that many times
+--                                in a CASH box's roll (renormalised: weights, roll, chances take an optional `lucky`; true
+--                                still means 2x); a Robux box's odds never change. luckOf(player) reads the level.
 --     Triple Open (TripleOpen)   canOpen's optional `count` = 3: three opens at once, 3x the Price and room for 3
 --   Pity (brief 30; Shared/PityRules): weights, roll, chances and open take an optional `minRank`: only entries of that rank
 --     or better can come out, each by its own weight (renormalised), which is how a guaranteed Epic+ open rolls. The shown
@@ -30,8 +32,30 @@ ShoeRules.Range = 12 -- studs from your HumanoidRootPart to a box's BoxPoint for
 ShoeRules.MaxEquipped = Shoes.MaxEquipped -- pairs on without the +1 Shoe Slot pass
 ShoeRules.ExtraSlots = 1 -- what the +1 Shoe Slot pass adds
 ShoeRules.MaxSlots = ShoeRules.MaxEquipped + ShoeRules.ExtraSlots -- the most pairs any save may have on (ProfileSchema checks it)
-ShoeRules.LuckyFactor = 2 -- the Lucky pass: Epic and rarer weigh this much more in a Cash box's roll
+ShoeRules.LuckyFactor = 2 -- the 2x Luck pass (key Lucky): Epic and rarer weigh this much more in a Cash box's roll
+ShoeRules.Luck4Factor = 4 -- (Oct 27) the 4x Luck pass (key Luck4); owning both is 4x, never 8x
 ShoeRules.LuckyRank = 3 -- (Epic)
+ShoeRules.LuckLevels = { 1, 2, 4 } -- (the Store's odds table columns: Normal, 2x, 4x)
+
+-- The luck level a `lucky` argument stands for: true (the old Lucky flag) = 2, a number 2 or 4 = itself, anything else 1.
+function ShoeRules.luckLevel(lucky: any): number
+	if lucky == true then return ShoeRules.LuckyFactor end
+	if lucky == ShoeRules.LuckyFactor or lucky == ShoeRules.Luck4Factor then return lucky end
+	return 1
+end
+-- A player's luck level from the passes they own (the Pass_Lucky / Pass_Luck4 attributes the server sets): 4x Luck
+-- supersedes 2x Luck (the higher one counts, they never multiply).
+function ShoeRules.levelFromPasses(owns2: any, owns4: any): number
+	if owns4 == true then return ShoeRules.Luck4Factor end
+	if owns2 == true then return ShoeRules.LuckyFactor end
+	return 1
+end
+function ShoeRules.luckOf(player: any): number
+	if player == nil then return 1 end
+	local ok, two, four = pcall(function() return player:GetAttribute('Pass_Lucky'), player:GetAttribute('Pass_Luck4') end)
+	if not ok then return 1 end
+	return ShoeRules.levelFromPasses(two, four)
+end
 ShoeRules.MaxOwned = Shoes.MaxOwned
 ShoeRules.MaxCopies = 999 -- sanity cap per shoe in a save
 ShoeRules.OpenBurst = 1 -- opens the server lets through at once
@@ -149,7 +173,8 @@ end
 function ShoeRules.weights(boxId: any, lucky: any, minRank: any): ({ number }?, number)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	if not box then return nil, 0 end
-	local boost = lucky == true and not box.Robux
+	local level = ShoeRules.luckLevel(lucky)
+	local boost = level > 1 and not box.Robux
 	-- (brief 30) minRank: entries below it weigh 0 (a guaranteed open). A rank no entry reaches changes nothing.
 	local floor = int(minRank)
 	if floor then
@@ -162,7 +187,7 @@ function ShoeRules.weights(boxId: any, lucky: any, minRank: any): ({ number }?, 
 	local list, total = {}, 0
 	for i, id in box.Shoes do
 		local w = box.Weights[i]
-		if boost and Shoes.ById[id].Rank >= ShoeRules.LuckyRank then w *= ShoeRules.LuckyFactor end
+		if boost and Shoes.ById[id].Rank >= ShoeRules.LuckyRank then w *= level end
 		if floor and Shoes.ById[id].Rank < floor then w = 0 end
 		list[i] = w
 		total += w
@@ -192,7 +217,8 @@ function ShoeRules.roll(boxId: any, r: any, lucky: any, minRank: any): (string?,
 end
 
 -- A box's shoes with their chances (percent), commonest first: { { Id, Rarity, Chance } } (6 on a Cash box, 5 on a
--- Robux box). With `lucky` (a Lucky pass owner) a Cash box's real, better odds; every odds display passes it.
+-- Robux box). With `lucky` (the player's luck level, ShoeRules.luckOf) a Cash box's real, better odds; every odds display
+-- passes it.
 function ShoeRules.chances(boxId: any, lucky: any, minRank: any)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	local list = {}
@@ -206,13 +232,26 @@ function ShoeRules.chances(boxId: any, lucky: any, minRank: any)
 	return list
 end
 
--- The chance (percent) a shoe's own box gives it (0 for an unknown id); with `lucky`, a Lucky owner's real chance.
+-- (Oct 27, round 7: the Store's Luck tab) What the luck passes really change in a box: one row per entry, commonest
+-- first, { Id, Rarity, Normal, Lucky, Luck4 } (percent, from ShoeRules.chances at level 1, 2 and 4). A Robux box's rows
+-- are the same all three ways (luck works in Cash boxes only). Each column adds up to 100.
+function ShoeRules.luckTable(boxId: any)
+	local normal, two, four = ShoeRules.chances(boxId, 1), ShoeRules.chances(boxId, 2), ShoeRules.chances(boxId, 4)
+	local rows = {}
+	for i, row in normal do
+		table.insert(rows, { Id = row.Id, Rarity = row.Rarity, Normal = row.Chance, Lucky = two[i].Chance, Luck4 = four[i].Chance })
+	end
+	return rows
+end
+
+-- The chance (percent) a shoe's own box gives it (0 for an unknown id); with `lucky` (a level, 2 or 4, or true), a luck
+-- pass owner's real chance.
 function ShoeRules.chanceOf(id: any, lucky: any): number
 	local shoe = type(id) == 'string' and Shoes.ById[id]
 	local box = shoe and Shoes.BoxById[shoe.Box]
 	local i = box and table.find(box.Shoes, id)
 	if not i then return 0 end
-	if lucky == true then return ShoeRules.chances(box.Id, true)[i].Chance end
+	if ShoeRules.luckLevel(lucky) > 1 then return ShoeRules.chances(box.Id, lucky)[i].Chance end
 	return box.Chances[i]
 end
 

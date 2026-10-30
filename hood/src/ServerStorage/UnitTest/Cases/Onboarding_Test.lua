@@ -7,8 +7,22 @@ return function(t)
 	local Guns = require(RS.Shared.Config.Guns)
 	local Shoes = require(RS.Shared.Config.Shoes)
 	local Schema = require(game.ServerScriptService.HoodServer.ProfileSchema)
+	local Features = require(RS.Shared.Config.Features)
+	-- (Oct 27: the gift is off for now, Config/Features.WelcomeGift; the gift's steps are tested with it on, then off)
+	local function withGift(on, f) local was = Features.WelcomeGift; Features.WelcomeGift = on; local ok, err = pcall(f); Features.WelcomeGift = was; if not ok then error(err, 0) end end
 
-	t.test('a new player walks Train, Door, Fight, Cash, Gift, Gun, Run, then Done', function()
+	t.test('with the gift off, the first Cash pad leads straight to the gun and the next run', function()
+		withGift(false, function()
+			local s = { Power = 20, Need = 10, Beaten = 1, WaveStage = 0, Guns = 1, Cash = 0 }
+			t.expect.equal(R.step(s), 'Run')
+			s.Cash, s.GunCost = 100, 50; t.expect.equal(R.step(s), 'Gun')
+			t.expect.equal(R.step({ Beaten = 1, WaveStage = 1, WaveLeft = 0, RunCleared = 1 }), 'Cash') -- (run 1: the pad comes next)
+			t.expect.truthy(R.cameHome({ Beaten = 1, WaveStage = 0 })); t.expect.falsy(R.cameHome({ Beaten = 1, WaveStage = 1 })); t.expect.falsy(R.cameHome({ Beaten = 0 }))
+			t.expect.equal(R.step({ Beaten = 1, WaveStage = 2, WaveLeft = 3, Gift = true }), 'Done') -- (run 2, after home: the guidance is over)
+		end)
+	end)
+
+	t.test('a new player walks Train, Door, Fight, Cash, Gift, Gun, Run, then Done', function() withGift(true, function()
 		local s = { Power = 0, Need = 10, Beaten = 0, WaveStage = 0, Guns = 1, Cash = 0 }
 		t.expect.equal(R.step(s), 'Train')
 		s.Power = 10
@@ -25,9 +39,9 @@ return function(t)
 		t.expect.equal(R.step(s), 'Run')
 		s.WaveStage, s.WaveLeft = 1, 3
 		t.expect.equal(R.step(s), 'Done')
-	end)
+	end) end)
 
-	t.test('the steps never stall: no pad, no Cash, a second stage, a rebirth, a saved Done', function()
+	t.test('the steps never stall: no pad, no Cash, a second stage, a rebirth, a saved Done', function() withGift(true, function()
 		-- walked home without the pad: the gift still waits
 		t.expect.equal(R.step({ Power = 30, Beaten = 1, WaveStage = 0 }), 'Gift')
 		-- a gun you cannot afford yet is skipped: back out to run
@@ -42,7 +56,7 @@ return function(t)
 		t.expect.equal(R.step(nil), 'Train')
 		t.expect.equal(R.step({ Power = 0 / 0, Need = 'x' }), 'Train')
 		t.expect.equal(R.step({ Power = 9, Need = 0 }), 'Train') -- (an unknown need is Stage 1's 10)
-	end)
+	end) end)
 
 	t.test('a returning player past the opening is a veteran: no guidance, no gift', function()
 		t.expect.falsy(R.veteran({}))

@@ -613,7 +613,7 @@ function Lobby.world2(e, cf)
 		local top = p:box('World2Panel', V(-dw + 1, dh * 0.52, -1.95), V(dw - 1, dh - 0.4, -1.8), green, M.SmoothPlastic)
 		local low = p:box('World2Panel', V(-dw + 1, st + 1, -1.95), V(dw - 1, dh * 0.5 - 0.6, -1.8), green, M.SmoothPlastic)
 		local g = surface(top, Enum.NormalId.Front, 14)
-		line(g, 'Soon', 'COMING SOON', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2)
+		line(g, 'Soon', 'BUSINESS DISTRICT', C(255, 214, 60), FONT.title, 0.08, 0.3, C(40, 30, 0), 2) -- (Oct 27: World 2 is built)
 		line(g, 'World', 'WORLD 2', P.white, FONT.title, 0.44, 0.44, C(10, 50, 20), 3)
 		line(surface(low, Enum.NormalId.Front, 14), 'Detail', 'Beat the Boss Yard\nto unlock!', C(220, 255, 220), FONT.title, 0.62, 0.32, C(10, 50, 20), 1)
 		-- the padlock over the panels' join: a gold body with a keyhole, a darker shackle
@@ -914,7 +914,8 @@ function Lobby.rowX(k) return Lobby.Plaza.x1 - 1.2 - 1.0 - 4.5 - Lobby.Stand.Pit
 Lobby.RowZ = { N = Lobby.CrossZ - 16, S = Lobby.CrossZ + 16 } -- (the aisle's half width + the lanes' half length)
 -- (B35) the built lane's half length: the compact bay's (Stations.LaneHalf), else the full 10
 function Lobby.laneHalf() return Stations and (Stations.LaneHalf or Stations.HALF_Z) or 10 end
-function Lobby.endX() return Lobby.HeadFront - Lobby.laneHalf() end
+function Lobby.headHalf() return Stations and (Stations.HeadHalf or Stations.LaneHalf or Stations.HALF_Z) or 10 end
+function Lobby.endX() return Lobby.HeadFront - Lobby.headHalf() end
 function Lobby.standLayout()
 	local St = Lobby.Stand
 	table.clear(St.Lanes)
@@ -1026,9 +1027,9 @@ function Lobby.headStage(t, K)
 	local Pz, H = Lobby.Plaza, Lobby.Stand.Head
 	local h, hz = Pz.deck, H.HalfZ
 	local zc = Lobby.CrossZ
-	local x0 = Lobby.endX() - Lobby.laneHalf() - 1.0 -- (its back, a stud past the lane's, in the alcove)
+	local x0 = Lobby.endX() - Lobby.headHalf() - (Lobby.HeadStageBack or 1.0) -- (its back, a stud past the lane's, in the alcove)
 	-- (the head lane faces east, +x: its front, the shooter's end, is at endX + HALF_Z)
-	local xf = Lobby.endX() + Lobby.laneHalf() + 0.6 -- the stage's front edge, 0.6 past the lane's rim
+	local xf = Lobby.endX() + Lobby.headHalf() + 0.6 -- the stage's front edge, 0.6 past the lane's rim
 	local top = h + H.Rise
 	local gold, goldDeep, goldPale = K.gold, K.goldDark, C(255, 236, 150)
 	-- (from the floor: its back half stands in the alcove, past the plaza's deck)
@@ -1054,8 +1055,8 @@ function Lobby.headStage(t, K)
 		decor(t:box('HeadPostLamp', V(x - 0.4, top + 5.55, z - 0.4), V(x + 0.4, top + 6.35, z + 0.4), C(255, 232, 140), M.Neon)).CastShadow = false
 	end
 	-- the glass dome over the target field (an ellipsoid half under the stage top), a gold finial on its crown
-	local cx = Lobby.endX() - 3.4
-	local dome = decor(t:blob('HeadDome', V(14, 17, 2 * hz - 0.4), V(cx, top, zc), C(236, 246, 255), M.Glass))
+	local cx = Lobby.endX() - (Lobby.HeadDomeIn or 3.4)
+	local dome = decor(t:blob('HeadDome', V(Lobby.HeadDomeX or 14, 17, 2 * hz - 0.4), V(cx, top, zc), C(236, 246, 255), M.Glass))
 	dome.Transparency, dome.CastShadow = 0.72, false
 	t:post('HeadFinialFoot', 0.9, 0.5, V(cx, top + 8.4, zc), goldDeep, M.SmoothPlastic)
 	decor(t:part('HeadFinial', V(1.1, 1.1, 1.1), CFrame.new(cx, top + 9.4, zc) * CFrame.Angles(0, math.pi / 4, math.pi / 4), goldPale, M.Neon)).CastShadow = false
@@ -1108,7 +1109,7 @@ function Lobby.stand(L, skins)
 	slab('Aisle', V(ax, h, a0), V(x1 - kw, h + 0.04, a1), K.aisle)
 	for _, z in { a0, a1 - 0.35 } do flat('AisleEdge', V(ax, h + 0.04, z), V(x1 - kw, h + 0.07, z + 0.35), K.aisleEdge) end
 	local rz0, rz1 = (a0 + a1) / 2 - 3, (a0 + a1) / 2 + 3
-	local rx = Lobby.endX() + Lobby.laneHalf() + 0.6 + (St.Head.Steps - 1) * St.Head.Tread -- (the steps' foot)
+	local rx = Lobby.endX() + Lobby.headHalf() + 0.6 + (St.Head.Steps - 1) * St.Head.Tread -- (the steps' foot)
 	slab('AisleRunner', V(rx, h + 0.04, rz0 + 0.6), V(x1, h + 0.16, rz1 - 0.6), K.runner or K.carpet)
 	for _, z in { rz0, rz1 - 0.6 } do slab('AisleRunnerEdge', V(rx, h + 0.04, z), V(x1, h + 0.16, z + 0.6), K.runnerEdge or K.carpetDark) end
 
@@ -1123,7 +1124,7 @@ function Lobby.stand(L, skins)
 		decor(t:box('LaneLamp', V(x - 0.38, y + 4.7, z - 0.38), V(x + 0.38, y + 5.4, z + 0.38), C(255, 236, 196), M.Neon)).CastShadow = false
 		t:box('LaneLampTop', V(x - 0.52, y + 5.4, z - 0.52), V(x + 0.52, y + 5.62, z + 0.52), K.riserDark, M.SmoothPlastic)
 	end
-	for _, z in { a0 - 0.65, a1 + 0.65 } do lamp(x1 - 0.6, z) end
+	if Lobby.LaneLamps ~= false then for _, z in { a0 - 0.65, a1 + 0.65 } do lamp(x1 - 0.6, z) end end -- (e3: none, lobby round 1)
 
 	-- the head lane's gold stage
 	Lobby.headStage(t, K)
@@ -1153,7 +1154,7 @@ function Lobby.stand(L, skins)
 			local step = spot[1] == 'End' and 7 or (2 * spot[2] + (spot[1] == 'S' and 1 or 0))
 			local alt = (spot[1] ~= 'End' and spot[2] % 2 == 1) and St.AltLift or 0
 			local lift = step * St.LabelStep + alt + (s.Pass and St.PaidLift or 0)
-			Lobby.place(L, training, 'Range_' .. id, St.Slots[k], { X = 9, Y = 12, Z0 = -Lobby.laneHalf(), Z1 = Lobby.laneHalf() }, string.upper(s.Name or id), C(90, 200, 120),
+			Lobby.place(L, training, 'Range_' .. id, St.Slots[k], (id == 'Head' and { X = 9, Y = 12, Z0 = -Lobby.headHalf(), Z1 = Lobby.headHalf() } or { X = 9, Y = 12, Z0 = -Lobby.laneHalf(), Z1 = Lobby.laneHalf() }), string.upper(s.Name or id), C(90, 200, 120),
 				Stations and function(c) Stations.build(c, id, { labelLift = lift }) end)
 		end
 	end
@@ -1210,12 +1211,12 @@ Lobby.Dais = (function()
 		-- box i stands at x = First - (i - 1) * Pitch (left to right from the hall), all on the one row; the top of each
 		-- box's art ArtTop over the deck (PremiumTop for a Robux box: the featured eggs of the reference's row)
 		-- (LOBBY5 r3, CRITIC3: the Robux boxes' toppers bob up ~0.7, so both land at 6.3: under 7 with the bob)
-		First = 15, Pitch = 10, RowZ = rowZ, Back = back, BackH = 3.2, HeadY = 14.6, HeadH = 4.2, ArtTop = 6.1, PremiumTop = 6.1, -- (B31: 5-stud boxes)
+		First = 15, Pitch = 10, RowZ = rowZ, Back = back, BackH = 3.2, HeadY = 14.6, HeadH = 4.2, ArtTop = 7.8, PremiumTop = 7.8, -- (Oct 28, the owner: "some of the crate models are too small": ~6.6-stud boxes, over a character's head like the reference's eggs; B31: 5)
 		-- (B30) the premium box's slot: a wider pedestal, taller art, a wider fit; Slots: the row's x positions, left to right
 		-- from the hall, the premium one in the third
-		TopR = 3.9, TopArt = 6.6, TopWide = 7.6, Slots = { 16.5, 6, -5, -16 },
+		TopR = 3.9, TopArt = 9.0, TopWide = 11.5, Slots = { 16.5, 6, -5, -16 },
 		-- (B30 final, ref_W23.0_egg_row: a box's width of floor between boxes; the premium on a raised studded plinth)
-		Fit = 6.6, Plinth = 1.2,
+		Fit = 8.4, Plinth = 1.2, -- (Oct 28: a box is ~1.35 times as wide as tall, so the width sets its size: 8.4 wide, ~6 tall; slots 10.5+ apart)
 	}
 end)()
 -- The stand-in until Config.Shoes.boxesForWorld exists: the two cheapest Cash boxes, then the two Robux boxes.
@@ -1702,6 +1703,17 @@ function Lobby.nearWords(gui, near, far)
 	gui:SetAttribute('FadeGroup', 'Lanes')
 	return gui
 end
+-- (Oct 27, release fixes: the open item "product labels too big when passing on the walk to the gate") a product's or a
+-- Robux box pad's words: 6.4 x 2.5 studs (were 7.6 x 3.0), whole from 26 studs, gone by 36, and inside 22 studs they
+-- shrink with the distance down to half, so walking past one at arm's length never fills the screen (LabelFade's
+-- FadeShrink, in studs: the same on a phone and a PC).
+Lobby.ProductWordsW, Lobby.ProductWordsH = 6.4, 2.5
+function Lobby.productWords(gui)
+	Lobby.nearWords(gui, 26, 36)
+	gui:SetAttribute('FadeShrink', 22)
+	gui:SetAttribute('FadeShrinkMin', 0.5)
+	return gui
+end
 -- The codes terminal (c: on the floor, front -Z): a dark studded foot, a navy body with a yellow stripe, a sloped
 -- top carrying a glowing screen, a keypad ledge; a floating CODES label and a ComingSoon prompt.
 function Lobby.codeTerminal(c)
@@ -1875,7 +1887,7 @@ Lobby.PassTones = {
 Lobby.PassStub = { -- (when Config/Products is missing)
 	DoubleRep = { Title = '2x Power', Big = 'Every\nShot', Price = 199 }, AutoShoot = { Title = 'Auto Fight', Big = 'Hands\nFree', Price = 99 },
 	VIP = { Title = 'VIP', Big = 'VIP', Price = 249 }, DoubleCash = { Title = '2x Cash', Big = 'Every\nStage', Price = 149 },
-	Lucky = { Title = 'Lucky', Big = 'Better\nBoxes', Price = 129 }, TripleOpen = { Title = 'Triple Open', Big = '3 Boxes\nat Once', Price = 179 },
+	Lucky = { Title = '2x Luck', Big = '2x\nLuck', Price = 129 }, TripleOpen = { Title = 'Triple Open', Big = '3 Boxes\nat Once', Price = 179 },
 	ExtraEquip = { Title = '+1 Shoe Slot', Big = '4 Pairs\nOn', Price = 99 }, AutoOpen = { Title = 'Auto Open', Big = 'Open\nNon-Stop', Price = 249 },
 	Speed2x = { Title = '2x Speed', Big = 'Run\nFaster', Price = 99 }, AutoCollect = { Title = 'Auto Collect', Big = 'Cash\nCollects Itself', Price = 149 },
 }
@@ -1985,6 +1997,7 @@ end
 -- else the Part build, fitted so its largest side is `size`, its bottom centre at c, turning 40 deg/s and bobbing 0.3
 -- about its own middle (ref_product_pads). Returns the model and its height.
 Lobby.ItemSize = 5
+Lobby.SaleItemSize = 6.6 -- (Oct 28, the owner: "crate models are too small": a sale chest's widest side, its wings; its body ~4 wide)
 function Lobby.showcase(c, meshId, size, build, spin)
 	local holder, model = c:group('Item')
 	local IM = Lobby.itemMeshes()
@@ -2066,12 +2079,12 @@ function Lobby.productStand(c, key, opts)
 	if type(entry.Sticker) == 'string' and entry.Sticker ~= '' and not Lobby.hasDesign('Pad_' .. key) then Lobby.padTag(g, entry.Sticker, -half - 0.35) end
 	-- the words (rule 28, ref W01 "x2 Power / ONLY 3"): the headline big in gold-orange, "ONLY <Robux mark><price>" in lime
 	local name = entry.Title or key
-	local a, labels = Lobby.signWords(g, V(0, foot + tall + 2.3 + (opts.lift or 0), 0), 7.6, 3.0, {
+	local a, labels = Lobby.signWords(g, V(0, foot + tall + 2.0 + (opts.lift or 0), 0), Lobby.ProductWordsW, Lobby.ProductWordsH, {
 		{ 'Title', name, 0.56, Lobby.Grad.gold, 4 },
-		{ 'Price', 'ONLY ' .. RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 },
+		{ 'Price', RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 }, -- (lobby round 1: the price alone, no "ONLY")
 	}, 36)
 	labels.Price:SetAttribute('Price', entry.Price)
-	Lobby.nearWords(a.WorldLabel, 26, 36)
+	Lobby.productWords(a.WorldLabel)
 	-- the prompt, on a point at the pad's front
 	local point = ghost(g:box('PassPoint', V(-1.2, 0.6, -half - 1.6), V(1.2, 3.4, -half), P.white))
 	point.CastShadow = false
@@ -2121,7 +2134,7 @@ function Lobby.boxPadStand(c, boxId, key, tone, tag, special, lift)
 	-- the chest hovering over the pad, turning and bobbing (B31: 5 studs, ItemMeshes' Box_<Id> or BoxModels' chest)
 	local foot = padTop + 1.0
 	local BoxModels = Lobby.sharedModule('Models', 'BoxModels')
-	local box, tall = Lobby.showcase(g:at(CFrame.new(0, foot, 0)), 'Box_' .. boxId, Lobby.ItemSize, function()
+	local box, tall = Lobby.showcase(g:at(CFrame.new(0, foot, 0)), 'Box_' .. boxId, Lobby.SaleItemSize, function()
 		local ok, m = pcall(BoxModels.build, boxId, 1, CFrame.new())
 		return ok and m or nil
 	end, 30)
@@ -2130,11 +2143,11 @@ function Lobby.boxPadStand(c, boxId, key, tone, tag, special, lift)
 	Lobby.sparkles(g, midY, tone, 2.6)
 	Lobby.shine(g, midY, tone)
 	-- the words: the name in the box's colour, "ONLY <Robux mark><price>" in lime under it
-	local a = Lobby.signWords(g, V(0, foot + tall + 2.3 + (lift or 0), 0), 8.4, 3.0, {
+	local a = Lobby.signWords(g, V(0, foot + tall + 2.0 + (lift or 0), 0), Lobby.ProductWordsW + 0.8, Lobby.ProductWordsH, {
 		{ 'Title', entry.Title or boxId, 0.56, { tone:Lerp(P.white, 0.6), tone:Lerp(P.white, 0.1) }, 4 },
-		{ 'Price', 'ONLY ' .. RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 },
+		{ 'Price', RobuxText.fmt(entry.Price), 0.44, Lobby.Grad.lime, 3.5 }, -- (lobby round 1: the price alone, no "ONLY")
 	}, 36)
-	Lobby.nearWords(a.WorldLabel, 26, 36)
+	Lobby.productWords(a.WorldLabel)
 	-- the prompt: opens the Store at the box's card
 	local point = ghost(g:box('BoxPadPoint', V(-1.2, 0.6, -5.6), V(1.2, 3.4, -4.1), P.white))
 	point.CastShadow = false
@@ -2474,6 +2487,7 @@ function Lobby.leaderboard(L, cf, b)
 		l.TextSize, l.LineHeight = SIZE, ROW / (SIZE * 1.219) -- (Montserrat's line is 1.219 em)
 		l.RichText, l.TextWrapped, l.TextYAlignment, l.TextXAlignment = true, false, Enum.TextYAlignment.Top, align
 		l.TextColor3 = color
+		l.Text = '' -- (lobby round 1: never Roblox's default "Label"; LobbyService fills the rows)
 		local s = Instance.new('UIStroke')
 		s.Color, s.Thickness, s.LineJoinMode = C(8, 12, 30), 2, Enum.LineJoinMode.Round
 		s.Parent = l
@@ -2867,7 +2881,7 @@ function Lobby.build(ctx, skins)
 	Lobby.corners(L)
 	Lobby.surroundings(L)
 	Lobby.stands(L)
-	Lobby.worldBoss(L)
+	if V2.feature('WorldBoss') then Lobby.worldBoss(L) end -- (Oct 27: a later update; Config/Features)
 	Lobby.decor(L)
 	if Lobby.extras then Lobby.extras(L) end -- (B31 PLAZA: the spin wheel stand, the spawn pad, the plaza's scenery)
 	return model

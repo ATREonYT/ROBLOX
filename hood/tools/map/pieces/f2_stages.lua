@@ -41,7 +41,9 @@ local GATE = {
 	-- from there, see HoodClient/Stages: GrowFrom studs, GrowPow, GrowMax, never past the openings in front of it), and
 	-- its lines: name, top and height (0-1 of the sign) and outline thickness as a share of the line's height (UI2's:
 	-- ~7% on titles, ~11% on small lines).
-	signW = 34, signH = 11.6, signY = 6.8, signZ = 2.9, signPPS = 30, -- (the board: studs, foot height, distance in front of the wall, px per stud)
+	-- (lobby round 2, the critic: "the gate sign sits at camera height and fills the screen on approach"; ref W01 and
+	-- LOOK_RECIPE 24: small and high) 0.62x, its foot at 14.2 so it ends at the beam's top, over the camera's eye line
+	signW = 21, signH = 7.2, signY = 14.2, signZ = 2.9, signPPS = 40, -- (the board: studs, foot height, distance in front of the wall, px per stud)
 	lines = {
 		{ 'Title', 0, 0.37, 0.075 }, { 'Sub', 0.375, 0.235, 0.1 }, { 'Power', 0.61, 0.235, 0.1 }, { 'Status', 0.88, 0.12, 0.1 },
 	},
@@ -57,7 +59,7 @@ local GATE = {
 	edge = C(255, 176, 196), -- the haze's lit lip along the top and its side edges
 	-- The frame: studded concrete in three tones, dark recesses, a hazard beam with a darker lip.
 	pillarW = 4, beamH = 3,
-	stone = C(160, 162, 172), stoneDark = C(116, 118, 130), stoneLight = C(190, 192, 200), recess = C(62, 66, 80),
+	stone = C(160, 162, 172), stoneDark = C(176, 178, 190), stoneLight = C(190, 192, 200), recess = C(62, 66, 80),
 	hazard = C(250, 204, 40), hazardDark = C(36, 38, 46), hazardLip = C(196, 146, 28),
 	steel = C(70, 74, 90), bolt = C(156, 160, 172), -- the plates clamping the beam to the pillars
 	track = C(58, 66, 98), trackGlow = C(255, 96, 128), -- the emitter track along the foot and its glowing line
@@ -406,7 +408,9 @@ local function stageGate(ctx, i)
 	fx.Parent = shell
 	model:SetAttribute('Stage', i)
 	model:SetAttribute('WallId', 'HoodW1Stage' .. i)
-	model:SetAttribute('Required', req)
+	-- (Oct 27) a Power in the billions is kept as its digits (Shared/BigAttr: the place writer wraps big whole numbers)
+	local okBig, BigAttr = pcall(function() return require(ReplicatedStorage.Shared.BigAttr) end)
+	if okBig and type(BigAttr) == 'table' then BigAttr.set(model, 'Required', req) else model:SetAttribute('Required', req) end
 	model:SetAttribute('LineZ', z)
 	model:SetAttribute('PadZ', z + padZ)
 	model:SetAttribute('HalfWidth', front)
@@ -1349,8 +1353,10 @@ local function bossYard(ctx)
 	-- (brief 29, P3b) the Harbor Crew's warehouse (code5/f4_finale: no ring), and the World Boss pier and board
 	if V2.Finale then
 		local yard = V2.Finale.yard(ctx)
-		V2.Finale.arena(ctx)
-		V2.Finale.board(ctx)
+		if V2.feature('WorldBoss') then -- (Oct 27: the World Boss is a later update; Config/Features)
+			V2.Finale.arena(ctx)
+			V2.Finale.board(ctx)
+		end
 		return yard
 	end
 	local b = ctx:group('BossYard')

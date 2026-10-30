@@ -15,7 +15,8 @@ Create a pass, set its price, copy its id, and paste it at `Products.Passes.<Key
 | 2x Cash | 149 | `DoubleCash` | Double Cash from the pads and goals |
 | VIP | 249 | `VIP` | Gold VIP tag + 1.5x Cash |
 | Auto Fight | 99 | `AutoShoot` | Your gun fires at stage goons on its own |
-| Lucky | 129 | `Lucky` | Epic-and-better shoes are twice as likely in Cash boxes |
+| 2x Luck | 129 | `Lucky` | Epic-and-better shoes are twice as likely in Cash boxes (the key is still `Lucky`; name the pass "2x Luck" on the website) |
+| 4x Luck | 299 | `Luck4` | Epic-and-better shoes are four times as likely in Cash boxes. It replaces 2x Luck: owning both is 4x, never 8x (the card says so). Robux boxes keep their odds |
 | Triple Open | 179 | `TripleOpen` | Open 3 Cash shoe boxes at once (for 3x the Cash) |
 | +1 Shoe Slot | 99 | `ExtraEquip` | Wear 4 pairs of shoes instead of 3 |
 | 10x Cash | 199 | `TenXCash` | The pink pad before every gate pays 10x the yellow one (+100 instead of +10 at Stage 1) |
@@ -25,6 +26,11 @@ Create a pass, set its price, copy its id, and paste it at `Products.Passes.<Key
 | Auto Open | 249 | `AutoOpen` | The box's T button opens box after box by itself (one at a time, stops when you press it or run out of Cash) |
 | 2x Speed | 99 | `Speed2x` | Walk speed exactly x2 |
 | Auto Collect | 149 | `AutoCollect` | A street's pad Cash is paid the moment its crew is down (the 10x pad's amount with the 10x pass); the pad then only takes you back to the lobby. There are no loose drops in the game, so pads are what it collects |
+| Neon Viper | 149 | `GunNeonViper` | Exclusive gun: x8 Power per shot (equipped the moment it's bought) |
+| Frostbite | 249 | `GunFrostbite` | Exclusive gun: x12 Power per shot |
+| Galaxy Ray | 399 | `GunGalaxyRay` | Exclusive gun: x20 Power per shot |
+| Inferno Cannon | 599 | `GunInfernoCannon` | Exclusive gun: x28 Power per shot |
+| Royal Crown | 899 | `GunRoyalCrown` | Exclusive gun: x40 Power per shot (the Cash shop's best is x32) |
 
 ## Developer products (Monetization → Developer Products)
 

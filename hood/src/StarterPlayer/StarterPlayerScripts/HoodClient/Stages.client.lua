@@ -14,7 +14,7 @@
 -- one you also see the shut line of the gate after it (the reference's view through gate 1). (Brief 30) As you walk
 -- through a gate its sign fades to about 40 % (V1 3.5 s, W 36.6-36.8 s). The last stage's far door (the World 2 door,
 -- tagged HoodWorldDoor) reads "Defeat <name>" while the last crew stands, flashes white when it falls, then "WORLD 2 /
--- Coming soon!" (World 2 isn't built: the door stays shut).
+-- Portal in the lobby!" (the way there is the lobby's World 2 portal: the door itself stays shut).
 -- The pads (parts tagged HoodStagePad, attributes Stage and Kind; the server pays): their own colour a notch darker,
 -- reading the reward over "🔒 Clear the crew!", until that stage's crew is down this run; then lit, with sparkles and
 -- their words: "+10 Cash / Return" (yellow) and
@@ -35,7 +35,9 @@ local RunService = game:GetService('RunService')
 local TweenService = game:GetService('TweenService')
 local Debris = game:GetService('Debris')
 local ActiveMap = require(RS.Shared.ActiveMap)
+local BigAttr = require(RS.Shared.BigAttr)
 local Juice = require(RS.Shared.Juice)
+local FlashGate = require(RS.Shared.FlashGate)
 local Format = require(RS.Shared.Format)
 local Net = require(RS.Shared.Net)
 local StageRules = require(RS.Shared.StageRules)
@@ -75,7 +77,7 @@ local gates = {}
 local function track(model)
 	if gates[model] or not model:IsDescendantOf(active.Root) then return end
 	gates[model] = {
-		Model = model, Stage = model:GetAttribute('Stage'), Required = model:GetAttribute('Required') or 0,
+		Model = model, Stage = model:GetAttribute('Stage'), Required = BigAttr.get(model, 'Required') or 0,
 		Z = model:GetAttribute('LineZ'), HalfWidth = model:GetAttribute('HalfWidth') or 20,
 		Color = model:GetAttribute('Color') or C(255, 210, 60), Light = model:GetAttribute('Light') or C(255, 236, 160),
 	}
@@ -135,7 +137,10 @@ end
 -- One flash, under the kid-safe 0.25 s. done() runs at the end.
 local function flashOut(e, seconds, done, clears) -- (clears: the haze fades all the way out, the gate is opening)
 	local t0 = os.clock()
-	local WHITE = Color3.new(1, 1, 1)
+	-- (Oct 27, flow round 2) white only when the screen has had no white flash for a second (Shared/FlashGate: another
+	-- gate, a hit, a level-up); otherwise a soft warm glow that keeps the panes' own see-through
+	local soft = not FlashGate.take('gate')
+	local WHITE = soft and Color3.fromRGB(255, 226, 170) or Color3.new(1, 1, 1)
 	local conn
 	local function step()
 		local k = math.clamp((os.clock() - t0) / seconds, 0, 1)
@@ -154,8 +159,8 @@ local function flashOut(e, seconds, done, clears) -- (clears: the haze fades all
 				if pane:IsA('Frame') then
 					local base = pane:GetAttribute('BaseColor') or pane.BackgroundColor3
 					local baseT = clears and 1 or (pane:GetAttribute('BaseTransparency') or pane.BackgroundTransparency)
-					pane.BackgroundColor3 = clears and WHITE or base:Lerp(WHITE, a) -- (opening: white fading to nothing, never back through red)
-					pane.BackgroundTransparency = baseT + (math.min(pane:GetAttribute('BaseTransparency') or baseT, 0.1) - baseT) * a
+					pane.BackgroundColor3 = clears and WHITE or base:Lerp(WHITE, soft and a * 0.5 or a) -- (opening: white fading to nothing, never back through red)
+					pane.BackgroundTransparency = baseT + ((soft and math.min(baseT, 0.6) or math.min(pane:GetAttribute('BaseTransparency') or baseT, 0.1)) - baseT) * a
 				end
 			end
 		end
@@ -242,6 +247,43 @@ local function nextGate()
 	end
 	return best
 end
+-- (Oct 27, release fixes: "gates repeating down the street") Only the gates up to your first shut one are drawn for
+-- you; the shut gates past it (out of reach until it opens) are hidden on your screen, so each stage's view ends on its
+-- own gate. A hidden gate's parts are see-through for you alone (LocalTransparencyModifier: Transparency, CanCollide and
+-- the gate's own state stay as they are), its signs, haze, lights and sparkles are off; it comes back the moment the
+-- gate before it opens (paint() then redraws it from scratch).
+local GUI_CLASSES = { 'SurfaceGui', 'BillboardGui', 'ParticleEmitter', 'PointLight', 'SpotLight', 'SurfaceLight' }
+local function isToggle(d)
+	for _, c in GUI_CLASSES do if d:IsA(c) then return true end end
+	return false
+end
+local function hideOne(e, d)
+	if d:IsA('BasePart') then
+		pcall(function() d.LocalTransparencyModifier = 1 end)
+	elseif isToggle(d) then
+		if e.WasOn[d] == nil then e.WasOn[d] = d.Enabled; table.insert(e.Toggles, d) end
+		d.Enabled = false
+	end
+end
+local function setHidden(e, hide)
+	if hide then
+		if not e.Hidden then
+			e.Hidden, e.WasOn, e.Toggles = true, {}, {}
+			e.HideConn = e.Model.DescendantAdded:Connect(function(d) if e.Hidden then hideOne(e, d) end end)
+			for _, d in e.Model:GetDescendants() do hideOne(e, d) end
+		end
+		-- (paint() can switch a sign or the haze back on while the gate streams in: keep them off)
+		for _, d in e.Toggles do d.Enabled = false end
+	elseif e.Hidden then
+		e.Hidden = false
+		if e.HideConn then e.HideConn:Disconnect() end
+		for _, d in e.Model:GetDescendants() do
+			if d:IsA('BasePart') then pcall(function() d.LocalTransparencyModifier = 0 end) end
+		end
+		for d, was in e.WasOn do if d.Parent then d.Enabled = was end end
+		e.WasOn, e.Toggles, e.State = nil, nil, nil -- (paint() redraws it in full)
+	end
+end
 local shownRun = nil -- the RunStage the gates were last painted for (a rise is a gate opening in front of you)
 local function repaint()
 	local open = runStage()
@@ -256,7 +298,10 @@ local function repaint()
 	end
 	for _, e in gates do
 		local isOpen = (e.Stage or 1) <= open
+		local hide = (e.Stage or 1) > open + 1
+		if not hide then setHidden(e, false) end
 		paint(e, isOpen, e == nxt or (e == after and 'shut') or false, rose and isOpen and e.Stage > shownRun)
+		if hide then setHidden(e, true) end
 	end
 	shownRun = open
 end
@@ -409,13 +454,23 @@ local function showBanner(title, detail, color, detailColor)
 	back.AnchorPoint = Vector2.new(0.5, 0.5)
 	back.Position = UDim2.fromScale(0.5, 0.5)
 	back.Size = UDim2.new(1, 16 * k, 1, 12 * k)
-	back.BackgroundColor3 = C(16, 19, 30)
-	back.BackgroundTransparency = 0.4
+	-- (Oct 28, the owner: "match the UI more") the mockup windows' navy card: top-lit, a thick ink outline
+	back.BackgroundColor3 = Color3.new(1, 1, 1)
+	back.BackgroundTransparency = 0.06
 	back.BorderSizePixel = 0
 	back.ZIndex = 0
+	local backFill = Instance.new('UIGradient')
+	backFill.Rotation = 90
+	backFill.Color = ColorSequence.new(C(38, 49, 90), C(26, 34, 64))
+	backFill.Parent = back
 	local backCorner = Instance.new('UICorner')
 	backCorner.CornerRadius = UDim.new(0, 12 * k)
 	backCorner.Parent = back
+	local backEdge = Instance.new('UIStroke')
+	backEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	backEdge.Color = C(11, 14, 28)
+	backEdge.Thickness = math.max(2, 3.5 * k)
+	backEdge.Parent = back
 	back.Parent = holder
 	local t = Instance.new('TextLabel')
 	t.Name = 'Title'
@@ -443,6 +498,7 @@ local function showBanner(title, detail, color, detailColor)
 	d.TextColor3 = detailColor or C(90, 255, 120)
 	d.Parent = holder
 	local dStroke = stroke(d, C(0, 0, 0), 3.5 * k)
+	pcall(function() require(RS.Shared.TextStyle).world(d) end) -- (lit from the top like the UI's words)
 	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	task.delay(1.8, function()
 		if banner ~= holder then return end
@@ -451,6 +507,7 @@ local function showBanner(title, detail, color, detailColor)
 		for _, x in { t, d } do TweenService:Create(x, fade, { TextTransparency = 1 }):Play() end
 		for _, x in { tStroke, dStroke } do TweenService:Create(x, fade, { Transparency = 1 }):Play() end
 		TweenService:Create(back, fade, { BackgroundTransparency = 1 }):Play()
+		TweenService:Create(backEdge, fade, { Transparency = 1 }):Play()
 		task.delay(0.45, function() if banner == holder then holder:Destroy(); banner = nil end end)
 	end)
 end
@@ -511,7 +568,7 @@ local _ = fovKick
 
 -- (brief 30) The World 2 door at the end of the last stage (code5/f4_finale, tagged HoodWorldDoor): shut, "Defeat
 -- <name>" while the last crew stands; the moment it falls the haze flashes white (FLASH) and the sign reads "WORLD 2 /
--- Coming soon!" (World 2 isn't built: the door stays shut, its lock on). A new run shuts it again.
+-- Portal in the lobby!" (the door itself stays shut, its lock on). A new run shuts it again.
 local doors = {}
 local function trackDoor(m)
 	if doors[m] or not m:IsDescendantOf(active.Root) then return end
@@ -580,8 +637,13 @@ end
 
 -- A pad paid out (you are back in the lobby): the Cash just joins the balance (HUD.client ticks the counter; brief 29: no
 -- big "+10 Cash" in the middle of the screen any more), with a small gold burst over you.
+-- (Oct 28, the feel round: no hard cuts) A pad's trip back: the screen dips to night blue (CashOutGo, Shared/ScreenDip),
+-- the server moves you under it (StageRules.DipFor), and it lifts on the lobby (CashOut).
+local dip = require(RS.Shared.ScreenDip)
 Net.get('Cinematic').OnClientEvent:Connect(function(info)
+	if type(info) == 'table' and info.Kind == 'CashOutGo' then dip.close() return end
 	if type(info) ~= 'table' or info.Kind ~= 'CashOut' then return end
+	task.delay(0.05, dip.open)
 	local gold = C(255, 214, 40)
 	task.delay(0.15, function()
 		local character = player.Character
@@ -589,6 +651,8 @@ Net.get('Cinematic').OnClientEvent:Connect(function(info)
 		if not root then return end
 		Juice.burst(root.Position + Vector3.new(0, 2, 0), gold, 2)
 		if Juice.shards then pcall(Juice.shards, root.Position + Vector3.new(0, 3, 0), gold, 'confetti') end
+		-- (Oct 28, the feel round) the Cash flies into your counter as the dip lifts
+		pcall(function() require(RS.Shared.FightJuice).orbs(root.Position + Vector3.new(0, 2.5, 0), 6, 'Cash') end)
 	end)
 end)
 

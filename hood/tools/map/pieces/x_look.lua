@@ -19,7 +19,7 @@ local Look = {}
 Look.Variant = 'P' -- (B31 PLAZA: the open plaza, rule 26; 'A' / 'B' were the slice's variants)
 Look.StudAlpha = 0.15 -- the stud texture's Transparency (B31 PLAZA, critic 1: the ref's walks and grass show their studs plainly, a lit patch's
 -- luminance spread 15-25 of 255; 0.45 measured 0.4, a dead fill)
-Look.Lighting = { P = 'HoodToy', A = 'HoodToy', B = 'HoodToy', off = 'HoodSun' }
+Look.Lighting = { P = 'PlusOne', A = 'PlusOne', B = 'PlusOne', off = 'HoodSun' } -- (Oct 27: PlusOne, the +1 games' softer look; Huzz, HoodToy before)
 -- Old colour (r,g,b) -> new colour, per variant. Keys are the hall's own colours (Lobby.Colors, Lobby.FieldColor and the
 -- shades the hall builder derives), measured by area in the B30 lobby (work31_LOOK/tools: 57% of its surface was studded).
 local function key(c) return string.format('%d,%d,%d', math.round(c.R * 255), math.round(c.G * 255), math.round(c.B * 255)) end
@@ -52,7 +52,7 @@ function Look.studTexture()
 	return Look._stud
 end
 -- Faint studs on one face (or every face): a white StudBevel tile per stud.
-function Look.faintStuds(p, faces)
+function Look.faintStuds(p, faces, alpha)
 	local id = Look.studTexture()
 	if id == '' then return end
 	for _, f in faces do
@@ -62,7 +62,7 @@ function Look.faintStuds(p, faces)
 		t.Face = f
 		t.StudsPerTileU, t.StudsPerTileV = 1, 1
 		t.Color3 = Color3.new(1, 1, 1)
-		t.Transparency = Look.StudAlpha
+		t.Transparency = alpha or Look.StudAlpha
 		t:SetAttribute('PreviewTexture', 'stud_bevel')
 		t.Parent = p
 	end
@@ -80,7 +80,7 @@ function Look.openPlaza(lobby, deckY)
 		local g = lobby:FindFirstChild(name)
 		if g then
 			for _, p in g:GetDescendants() do
-				if p:IsA('BasePart') and not p:FindFirstAncestor('World2Portal') then
+				if p:IsA('BasePart') and not p:FindFirstAncestor('World2Portal') and not p:FindFirstAncestor('World1Portal') then
 					local top = p.CFrame.Position.Y + p.Size.Y / 2
 					if name == 'Roof' or top > deckY + 1.6 then p:Destroy() end
 				end
@@ -102,7 +102,7 @@ end
 -- apron, the walls, the roof's steel and the cliffs and terraces outside. Smooth stay: Neon glows, glass, anything see-
 -- through, anything carrying words (a SurfaceGui), signs, boards, screens and lamps, every lane, pad, item and prop, and
 -- the owner's designed meshes (MeshParts). The faint stud texture goes wherever real studs replace it.
-Look.Classic = true
+Look.Classic = false -- (Oct 27 round 2: the faint studs above instead; the classic surface's contrast can't be tuned)
 Look.ClassicNames = { '^Concrete$', '^Threshold$', '^Grass$', '^Wall', '^Roof', '^Path', '^SpawnSquare$', '^Plaza', '^Dais',
 	'^Apron', '^Cliff', '^Floor$', '^FloorField$' }
 Look.ClassicKeep = { 'Sign', 'Board', 'Glow', 'Lamp', 'Screen', 'Label', 'Text', 'Neon', 'Nosing', 'Hazard' }
@@ -161,8 +161,15 @@ end
 
 -- (B31 PLAZA) Saturation over this on a lane's surfaces comes down to it (critic 7: big fields S 0.55-0.75; the pad tops,
 -- prices and items keep theirs). Measured in the colour the part is built with; HoodToy's grade adds ~0.1 on screen.
-Look.BigS = 0.38 -- (B31 PLAZA, lead: the lanes' view toward the reference's median S ~0.5)
-Look.Layers = { Grass = 4, Path = 3, SpawnSquare = 3, PlazaDeck = 2, Concrete = 1 } -- (stud layers on the plaza's ground, by part name)
+-- (Oct 27, the owner: "make the colors the same also as the references ... more cartoony": the reference's bays are
+-- full-strength hues, red ~(240, 40, 40); was 0.38, B31's "tone down", which left them pastel)
+Look.BigS = 0.85
+-- (stud layers on the plaza's ground, by part name; Oct 27 round 2, the owner: "make the studs not stand out as much,
+-- make it like the reference": the faint tone-on-tone studs on the floor, the walks and every platform instead of
+-- Roblox's classic Studs surface, tuned to the reference's stud contrast: a flat lit patch's luminance spread (p10..p90)
+-- 16-26 of 255 in ref_STILL_lobby_topdown's floor and platforms)
+Look.Layers = { Grass = 3, Path = 3, SpawnSquare = 3, PlazaDeck = 3, Concrete = 3, PlazaKerb = 2, PlazaStep = 2, DaisTop = 3, DaisStep = 3, DaisStairTread = 3 }
+Look.WallLayers = 1 -- (the warehouse's brick walls: the same faint studs on every face, fainter: 2 layers measured 62 on a lit wall)
 local function calm(col, maxS)
 	local h, sat, v = col:ToHSV()
 	if sat <= maxS then return col end
@@ -203,6 +210,8 @@ function Look.apply(root)
 				elseif upright and top <= deckY + 2.6 and (v ~= 'P' or p.Size.Y <= 1.7) and p.Size.X >= 3 and p.Size.Z >= 3 then
 					Look.faintStuds(p, { Enum.NormalId.Top }) -- (B31 PLAZA: walkable ground only: the grass, walks, decks, mats, pads)
 				end
+			elseif v == 'P' and p.Name == 'Wall' and p:IsA('Part') and p.Transparency < 0.05 then
+				for _ = 1, Look.WallLayers do Look.faintStuds(p, ALL) end
 			end
 		end
 	end
@@ -222,6 +231,72 @@ function Look.apply(root)
 	end
 	Look.itemFX(lobby)
 	lobby:SetAttribute('LookVariant', v)
+end
+-- (Oct 27 round 5, the owner: "make the studs less visible", both worlds) The one rule for everything the lobby pass
+-- doesn't cover (the stages, the gates, the buildings, the props, the edges): Roblox's classic Studs surface comes off
+-- every face (its strokes are high-contrast in the real client and can't be tuned), and the lobby's faint stud texture
+-- goes on instead where a stud reads: SoftGroundLayers on the top of walkable ground (an upright block, top within 2.6 of
+-- the deck, 3 x 3 or more), one fainter layer (SoftWallAlpha) on any other studded face of SoftFaceArea or more (a
+-- building's wall, a tree's crown); small parts (trims, posts, props) turn smooth. Untouched: the owner's meshes (MeshParts), Neon, glass,
+-- see-through parts and anything carrying words (a SurfaceGui).
+Look.SoftGroundLayers = 1
+Look.SoftFaceArea = 24
+Look.SoftWallAlpha = 0.4 -- (the walls' and crowns' one layer, fainter than the ground's: a stud you notice only up close)
+local NORMAL = { TopSurface = Enum.NormalId.Top, BottomSurface = Enum.NormalId.Bottom, FrontSurface = Enum.NormalId.Front,
+	BackSurface = Enum.NormalId.Back, LeftSurface = Enum.NormalId.Left, RightSurface = Enum.NormalId.Right }
+local function faceArea(s, f)
+	if f == 'TopSurface' or f == 'BottomSurface' then return s.X * s.Z end
+	if f == 'FrontSurface' or f == 'BackSurface' then return s.X * s.Y end
+	return s.Y * s.Z
+end
+function Look.softStuds(root)
+	local parts, textures = 0, 0
+	for _, p in root:GetDescendants() do
+		if p:IsA('BasePart') and not p:IsA('MeshPart') and Look.isStudded(p) then
+			parts += 1
+			local studded = {}
+			for _, f in FACES do
+				if p[f] == S.Studs then table.insert(studded, f) end
+				p[f] = S.Smooth
+			end
+			if p.Material == M.Plastic then p.Material = M.SmoothPlastic end
+			if p.Material ~= M.Neon and p.Material ~= M.Glass and p.Transparency < 0.05 and not p:FindFirstChildOfClass('SurfaceGui') then
+				local block = p:IsA('Part') and p.Shape == Enum.PartType.Block
+				local ground = block and p.CFrame.UpVector.Y > 0.99 and p.Size.X >= 3 and p.Size.Z >= 3
+					and V2.Origin:PointToObjectSpace(p.CFrame.Position).Y + p.Size.Y / 2 <= 2.6
+				for _, f in studded do
+					local onGround = ground and f == 'TopSurface'
+					local layers = onGround and Look.SoftGroundLayers or ((block and faceArea(p.Size, f) >= Look.SoftFaceArea) and 1 or 0)
+					for _ = 1, layers do Look.faintStuds(p, { NORMAL[f] }, not onGround and Look.SoftWallAlpha or nil); textures += 1 end
+				end
+			end
+		end
+	end
+	root:SetAttribute('SoftStudParts', parts)
+	root:SetAttribute('SoftStudTextures', textures)
+end
+-- (Oct 28, the owner in Studio: "the map isn't good, there are too many shades ... remove the shades, we need to make
+-- this cartoony") The +1 games' flat toy look: no colour on the map darker than Look.MinV (HSV value) unless it is ink
+-- (value under Look.InkV: hazard stripes, tyres, outlines, which stay black on purpose). A dark cut of a colour (a navy
+-- girder, a brown kick, a deep rim) comes up to the same hue and saturation at MinV, so the darker shades of one colour
+-- merge into fewer, brighter flat tones. Untouched: the owner's meshes (MeshParts keep their own colours), Neon, glass,
+-- see-through parts, anything carrying words (a SurfaceGui's board keeps its contrast) and the named holes (Void).
+-- Both worlds, after every other pass (g_build). The lighting has no shadows either (HoodLighting PlusOne).
+Look.MinV = 0.6
+Look.InkV = 0.2
+function Look.cartoon(root)
+	local lifted = 0
+	for _, p in root:GetDescendants() do
+		if p:IsA('BasePart') and not p:IsA('MeshPart') and p.Transparency < 0.05 and p.Material ~= M.Neon
+			and p.Material ~= M.Glass and not p:FindFirstChildOfClass('SurfaceGui') and not string.find(p.Name, 'Void') then
+			local h, s, v = p.Color:ToHSV()
+			if v >= Look.InkV and v < Look.MinV then
+				p.Color = Color3.fromHSV(h, s, Look.MinV)
+				lifted += 1
+			end
+		end
+	end
+	root:SetAttribute('CartoonLifted', lifted)
 end
 V2.Look = Look
 V2.Stations = Stations

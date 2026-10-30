@@ -6,3 +6,7 @@ rojo.exe
 *.rbxl.lock
 *.rbxlx.lock
 __pycache__/
+.claude/worktrees/
+
+# Obsidian vault settings (the owner opens this folder as a vault)
+.obsidian/

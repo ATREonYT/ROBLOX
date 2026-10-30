@@ -8,7 +8,8 @@
 -- a rate limit, that the profile is loaded and the character alive, and that you own it (equip) or can afford it
 -- (buy). Buying needs you within GunRules.Range of that gun's pedestal (part GunPoint_<Id> in the active map);
 -- (brief 23) equipping a gun you own works anywhere, so the inventory's Guns tab can choose it.
--- Buying takes the Cash, adds the gun and equips it. Answers go back as Net 'Notice' messages.
+-- Buying takes the Cash, adds the gun and equips it. Answers go back as Net 'Notice' messages. (Oct 27) The 5 Robux
+-- exclusives (Config/Guns.Exclusive) come only with their game passes: see grantPasses.
 --
 -- Player attributes kept in step with the profile (set on load and on every change):
 --   EquippedGun    gun id ('Pistol' to start)
@@ -111,6 +112,8 @@ Net.get('BuyGun').OnServerEvent:Connect(function(player, id)
 			notice(player, 'Walk up to the gun to buy it')
 		elseif why == 'cash' then
 			notice(player, 'Need ' .. Format.compact(gun.Cost) .. ' Cash')
+		elseif why == 'robux' then
+			notice(player, 'The ' .. gun.Name .. ' is in the Shop')
 		end
 		return
 	end
@@ -144,14 +147,43 @@ Net.get('EquipGun').OnServerEvent:Connect(function(player, id)
 	notice(player, 'Equipped ' .. gun.Name .. '! ' .. perShot(gun))
 end)
 
+-- (Oct 27) A Robux exclusive gun is yours while you own its game pass (StoreService sets Pass_<Pass> on the server; a
+-- client can't). Found at load it is just added; bought now (`fresh`) it is equipped at once and announced.
+local function grantPasses(player, profile, fresh)
+	local guns = GunRules.sanitize(profile.Data.Guns)
+	local added
+	for _, gun in Guns.Exclusive do
+		if player:GetAttribute('Pass_' .. gun.Pass) == true and guns.Owned[gun.Id] ~= true then
+			guns.Owned[gun.Id] = true
+			added = gun
+		end
+	end
+	if added and fresh then
+		equip(player, profile, added)
+		notice(player, 'You got the ' .. added.Name .. '! ' .. perShot(added))
+	elseif added then
+		Data.push(player)
+	end
+	return added
+end
+
 -- Attributes follow the profile: DataService flips ProfileReady once a profile has loaded.
 local function watch(player)
 	local function ready()
 		local profile = player:GetAttribute('ProfileReady') and Data.get(player)
-		if profile then sync(player, profile) end
+		if profile then
+			grantPasses(player, profile, false)
+			sync(player, profile)
+		end
 	end
 	player:GetAttributeChangedSignal('ProfileReady'):Connect(ready)
 	ready()
+	for _, gun in Guns.Exclusive do
+		player:GetAttributeChangedSignal('Pass_' .. gun.Pass):Connect(function()
+			local profile = player:GetAttribute('ProfileReady') and Data.get(player)
+			if profile and grantPasses(player, profile, player:GetAttribute('PassesChecked') == true) then sync(player, profile) end
+		end)
+	end
 	-- A new character gets a fresh Backpack: hand the gun over again once it exists, into the hand once the character
 	-- is in the Workspace.
 	player.CharacterAdded:Connect(function(character)

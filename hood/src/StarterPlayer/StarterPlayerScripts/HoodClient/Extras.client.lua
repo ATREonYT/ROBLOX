@@ -23,7 +23,7 @@ local Motion = require(Shared.UIMotion)
 local Net = require(Shared.Net)
 local Products = require(Shared.Config.Products)
 local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
-local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX) } -- (ROBUX, rules 27-28)
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX), Idle = require(Shared.UIIdle) } -- (ROBUX, rules 27-28)
 local Format = require(Shared.Format)
 local Spec = require(Shared.HudSpec)
 local Windows = require(Shared.HudWindows)
@@ -125,13 +125,13 @@ do
 		for _, name in { 'PlaytimeReady', 'DailyReady' } do player:GetAttributeChangedSignal(name):Connect(paint) end
 		paint()
 	end
-	-- the window: six cards in two rows (the Daily Rewards' navy cards and coloured borders), then the line and Daily Rewards
+	-- the window: six reward tiles in two rows, then the line and Daily Rewards
 	local well = playtime.Well
 	local CW, CH, GAP = 268, 196, 14
 	local cards = Kit.new('Frame', { Name = 'Gifts', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4), Size = px(3 * CW + 2 * GAP, 2 * CH + GAP), ZIndex = 24, Parent = well })
 	cards:SetAttribute('NoStagger', true)
-	local CARD_TONE = { top = hex('243C7C'), base = hex('1A2A5E'), lip = hex('2C4690'), stroke = hex('0B1230') }
-	local BORDER = { hex('3FA9FF'), hex('3FA9FF'), hex('A455FF'), hex('A455FF'), hex('FF4A3A'), hex('FFC21A') }
+	-- (Oct 27, the owner's UI mockup) solid coloured reward tiles, by how long they take: blue, purple, red, gold
+	local CARD_TONES = { 'cardBlue', 'cardBlue', 'cardPurple', 'cardPurple', 'cardRed', 'cardGold' }
 	local note = label({ Name = 'Note', Text = 'Gifts open as you play. They start again on your next visit.', FontFace = Kit.Font.body, TextSize = 19, StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(16, 2 * CH + GAP + 22), Size = px(560, 44), ZIndex = 26, Parent = well })
 	note.TextWrapped = true
 	local daily = Kit.blockButton({ Name = 'DailyButton', Tone = 'cardBlue', Width = 230, Height = 60, Text = 'Daily Rewards', TextSize = 26, Outline = 4, RimWidth = 2, Radius = 6, Studs = 18, Position = px(3 * CW + 2 * GAP - 236 + 20, 2 * CH + GAP + 16), ZIndex = 26 })
@@ -167,7 +167,7 @@ do
 			end
 			if card then card:Destroy() end
 			local col, row = (i - 1) % 3, (i - 1) // 3
-			card = Kit.block({ Name = 'Gift' .. i, Tone = CARD_TONE, Width = CW, Height = CH, Position = px(col * (CW + GAP), row * (CH + GAP)), Outline = 5, OutlineColor = BORDER[i], Studs = false, Rim = false, ZIndex = 25 })
+			card = Kit.block({ Name = 'Gift' .. i, Tone = CARD_TONES[i] or 'cardBlue', Width = CW, Height = CH, Position = px(col * (CW + GAP), row * (CH + GAP)), Outline = 5, OutlineColor = Kit.Skin.outline, Radius = 12, RimWidth = 3, Studs = false, ZIndex = 25 })
 			card:SetAttribute('Key', key)
 			card.Parent = cards
 			built[i] = card
@@ -254,7 +254,7 @@ do
 	list:SetAttribute('NoStagger', true)
 	local footer = gradient(label({ Name = 'Done', Text = '', TextSize = 22, StrokeThickness = 3, Position = px(0, 400), Size = px(864, 28), ZIndex = 26, Parent = well }), GOLD)
 	local ICON = { Goons = 'Skull', Shots = 'Gun', Boxes = 'ShoeBox', Clears = 'Trophy', CashOuts = 'Cash', Spins = 'SpinWheel' }
-	local ROW_TONE = { top = hex('2A3A6A'), base = hex('1A244A'), lip = hex('2C3C70'), stroke = hex('0B1230') }
+	local ROW_TONE = Kit.Tone.navyRow -- (Oct 27, the owner's UI mockup: dark rows)
 	local function paint(opening)
 		for _, c in list:GetChildren() do c:Destroy() end
 		local m = state and state.Missions
@@ -265,12 +265,12 @@ do
 		footer.Text = 'Missions done: ' .. Format.compact(m.Done) .. '   New ones come as you finish them!'
 		for i, t in m.List do
 			local done = t.Have >= t.Goal
-			local row = Kit.block({ Name = 'Mission' .. i, Tone = ROW_TONE, Width = 864, Height = 120, Outline = 4, OutlineColor = done and hex('7CE82A') or BLACK, RimWidth = 2, Studs = false, Position = px(0, (i - 1) * 132), ZIndex = 25 })
+			local row = Kit.block({ Name = 'Mission' .. i, Tone = ROW_TONE, Width = 864, Height = 120, Outline = 4, OutlineColor = done and hex('7CE82A') or Kit.Skin.outline, RimWidth = 2, Radius = 10, Studs = false, Position = px(0, (i - 1) * 132), ZIndex = 25 })
 			row.Parent = list
 			Kit.icon3d(Kit.iconOr(ICON[t.Kind] or 'Quest', 'Quest'), 84, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), ZIndex = 28 }).Parent = row.Body
 			label({ Name = 'Text', Text = t.Text, TextSize = 28, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(108, 12), Size = px(480, 34), ZIndex = 28, Parent = row.Body })
 			-- the progress bar: lime on a dark track, "6 / 10"
-			local bar, fill = Kit.bar({ Name = 'Progress', Width = 410, Height = 36, Tone = 'lime', Value = 0, Text = Format.compact(t.Have) .. ' / ' .. Format.compact(t.Goal), TextSize = 20, Track = 'dark', Position = px(108, 58), ZIndex = 27 })
+			local bar, fill = Kit.bar({ Name = 'Progress', Width = 410, Height = 36, Tone = 'buyGreen', TrackColor = Kit.Skin.well, TrackTransparency = 0, Radius = 8, Value = 0, Text = Format.compact(t.Have) .. ' / ' .. Format.compact(t.Goal), TextSize = 20, Track = 'dark', Position = px(108, 58), ZIndex = 27 })
 			bar.Parent = row.Body
 			local frac = math.clamp(t.Have / math.max(1, t.Goal), 0, 1)
 			if opening then
@@ -327,7 +327,7 @@ do
 		crate.Parent = body
 		-- (ROBUX, rules 27-28) the reference's Starter Pack: the white outlined caption, the crate bobbing, stars round it
 		Sell.Style.apply(caption, 'white', { Thickness = 3.5, Shadow = true })
-		Motion.bob(crate, 4, 2.4)
+		Sell.Idle.add(crate, 'bob', { Px = 4, Period = 2.4 }) -- (Oct 27: on UIIdle's one shared loop, still while hidden)
 		Sell.FX.sparkles(body, { Count = 2, Size = 16, ZIndex = 5, Every = 3, Inset = 0.15 })
 		local function paint()
 			holder.Visible = player:GetAttribute('StarterOwned') ~= true
@@ -351,7 +351,7 @@ do
 	label({ Name = 'Sub', Text = 'All three in one purchase, once per player.', FontFace = Kit.Font.body, TextSize = 19, StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(290, 52), Size = px(480, 26), ZIndex = 26, Parent = well })
 	local partsFrame = Kit.new('Frame', { Name = 'Parts', BackgroundTransparency = 1, Position = px(290, 92), Size = px(480, 196), ZIndex = 25, Parent = well })
 	partsFrame:SetAttribute('NoStagger', true)
-	local CARD = { top = hex('243C7C'), base = hex('1A2A5E'), lip = hex('2C4690'), stroke = hex('0B1230') }
+	local CARDS = { 'cardGreen', 'cardRed', 'cardPurple' } -- (Oct 27, the owner's UI mockup: solid coloured tiles; Cash green, the potion red, the box purple)
 	local buyButton = Kit.robuxButton({ Name = 'Buy', Tone = 'lime', Width = 300, Height = 86, Price = entry and entry.Price or '?', TextSize = 44, Outline = 5, Radius = 8, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 312), ZIndex = 26 })
 	buyButton.Parent = well
 	Motion.button(buyButton, buy)
@@ -364,7 +364,7 @@ do
 		local lines = s and s.Lines or {}
 		local icons = { 'CashMedium', 'PotionRed', s and s.Box and ('Box_' .. s.Box) or 'ShoeBox' }
 		for i = 1, 3 do
-			local c = Kit.block({ Name = 'Part' .. i, Tone = CARD, Width = 150, Height = 196, Outline = 4, OutlineColor = hex('3FA9FF'), Studs = false, Rim = false, Position = px((i - 1) * 164, 0), ZIndex = 25 })
+			local c = Kit.block({ Name = 'Part' .. i, Tone = CARDS[i], Width = 150, Height = 196, Outline = 4, OutlineColor = Kit.Skin.outline, Radius = 12, RimWidth = 3, Studs = false, Position = px((i - 1) * 164, 0), ZIndex = 25 })
 			c.Parent = partsFrame
 			Kit.icon3d(Kit.iconOr(icons[i], 'Rewards'), 96, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 72), ZIndex = 28 }).Parent = c.Body
 			local t = label({ Name = 'What', Text = lines[i] or '', TextSize = 20, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.new(1, -10, 0, 50), ZIndex = 28, Parent = c.Body })

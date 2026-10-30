@@ -14,7 +14,7 @@
 --                          the rack. Takes the Cash, rolls the shoe (server Random), saves it, answers with ShoeOpened.
 --                          count = 3 (brief 22, the Triple Open pass: Pass_TripleOpen) opens three at once for 3x the
 --                          Price, with room for 3 pairs, in one ShoeOpened (Buy = 3); without the pass it is refused.
---                          A Lucky owner (Pass_Lucky) rolls with the Lucky odds (ShoeRules.chances(boxId, true)).
+--                          A luck pass owner (Pass_Lucky 2x, Pass_Luck4 4x) rolls with those odds (ShoeRules.luckOf).
 --                          (brief 30, PITY) The roll is ShoeOpening's, which keeps the visible pity counter of each box
 --                          (Shared/PityRules): the open at the threshold is guaranteed Epic+. The remote carries no pity
 --                          argument: only the profile's counter decides, never the client.

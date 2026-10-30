@@ -15,7 +15,7 @@ return function(t)
    t.expect.falsy(string.find(string.lower(g.Text..g.Where),'look',1,true));t.expect.falsy(string.find(g.Where,'Power)',1,true))
   end
   t.expect.truthy(total<10000)
-  t.expect.equal(G.List[1].Need.Power,7);t.expect.equal(G.List[2].Need.Stages,1);t.expect.equal(G.List[3].Need.Wave,1);t.expect.equal(G.List[4].Need.CashOuts,1);t.expect.equal(G.List[5].Need.Guns,2)
+  t.expect.equal(G.List[1].Need.Power,10);t.expect.equal(G.List[1].Text,'Train to 10 Power in BAY 1');t.expect.equal(G.List[2].Need.Stages,1);t.expect.equal(G.List[3].Need.Wave,1);t.expect.equal(G.List[4].Need.CashOuts,1);t.expect.equal(G.List[5].Need.Guns,2)
   -- (brief 23) the run loop: beat the crew, then cash out on a pad before the gate
   t.expect.equal(G.line(G.List[3]),'Beat the Stage 1 crew - hold to shoot them')
   t.expect.equal(G.line(G.List[4]),'Step on the yellow pad - by the gate: +20 Cash')
@@ -104,5 +104,14 @@ return function(t)
   t.expect.equal(id(from(4,21)),'Range6');t.expect.equal(id(from(4,22)),'Ring');t.expect.equal(id(from(4,23)),'done')
   local d3=from(3,5,7);t.expect.equal(id(d3),'Shoe');t.expect.equal(G.List[d3.Back].Id,'Rebirth1');t.expect.equal(d3.Chain,G.Chain)
   local current=G.migrate({Chain=4,Step=9,Synced=true});t.expect.equal(current.Step,9)
+ end)
+ -- (Oct 27, the core loop) A lane goal for a lane still locked reads as the rebirth that opens it; open, the goal's own words.
+ t.test('a locked lane goal says to rebirth',function()
+  local G=require(game.ReplicatedStorage.Shared.GoalRules)
+  local g=G.ById.Range4
+  local text,where=G.shown(g,6);t.expect.equal(text,'Rebirth to open BAY 4');t.expect.truthy(where:find('7 rebirths',1,true) and where:find('you have 6',1,true))
+  t.expect.equal(G.shown(g,7),g.Text);t.expect.equal(G.shown(G.ById.Stage6,0),G.ById.Stage6.Text)
+  t.expect.equal(G.shown(nil,0),G.AllDone.Text)
+  for _,x in G.List do t.expect.truthy(#G.shown(x,0)<=G.MaxText) end
  end)
 end

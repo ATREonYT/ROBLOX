@@ -3,44 +3,54 @@
 Do these in order. Each step says where the details are. Tick them off as you go.
 
 ## A. Get the latest game into Studio
-1. In GitHub Desktop: **Fetch origin → Pull** on branch `claude/elegant-cannon-i9r37o`.
-2. Open `hood/places/HoodEvolution.rbxl` in Studio, or sync the scripts with Rojo (`ROJO-SETUP.md`).
+1. In GitHub Desktop: **Fetch origin → Pull** on branch `claude/project-thread-u3g0qe`.
+2. Open your game in Studio with Rojo connected (`rojo serve` in the `hood` folder, then Rojo → Connect), or open `hood/places/HoodEvolution.rbxl`.
+   - After a map change, rebuild the map once: paste `require(game.ServerStorage.TheBlockV2).Build()` into the **Command Bar** (the old map is kept in ServerStorage as a backup).
 
 ## B. One-time Studio steps
 3. **Your designs:** follow `hood/art/MESH_IMPORT.md`.
    - **File → Import 3D**, then pick the 4 files in `hood/art/models/items/`.
    - Paste `hood/tools/blender/studio_item_meshes.lua` into the **Command Bar**.
    - Check: `ReplicatedStorage → HoodItemMeshes` has 57 models. Press Play and the plaza shows your designs.
-4. **Icons:** upload the UI pictures with `python3 hood/tools/upload_assets.py`, using your Open Cloud API key (`hood/art/README_upload.md`). Without this, menus show stand-ins.
-5. **Saving:** Game Settings → Security → turn on **Enable Studio Access to API Services**. In Studio, progress is on purpose a throwaway copy that resets when you press Stop, so your real saves are never touched by tests (Output says "MOCK DATA").
+4. **Icons and footsteps:** upload the UI pictures and the footstep sounds with `python3 hood/tools/upload_assets.py`, using your Open Cloud API key (`hood/art/README_upload.md`). Without this, menus show stand-ins.
+5. **Lighting:** select **Lighting** in the Explorer and set **Technology** to **ShadowMap** in Properties (a script can't set it; the rest of the Huzz Valley look is applied when the game starts).
+6. **Animations:** upload the 7 moves from your R15 pack (Idle, Walk, Run, Jump, Fall, Climb, Swimming: right-click each in the pack's AnimSaves → Save to Roblox) and paste the numbers into `hood/src/ReplicatedStorage/Shared/Config/Animations.lua` (or send them to Claude). The pack itself stays out of GitHub: its licence forbids sharing it.
+7. **Saving:** Game Settings → Security → turn on **Enable Studio Access to API Services**. In Studio, progress is on purpose a throwaway copy that resets when you press Stop, so your real saves are never touched by tests (Output says "MOCK DATA").
 
 ## C. Robux items (this is the money)
-6. **Passes and products:** create every game pass and developer product listed in `hood/MONETIZATION.md`, at the prices given. Paste each id into `hood/src/ReplicatedStorage/Shared/Config/Products.lua`.
+8. **Passes and products:** create every game pass and developer product listed in `hood/MONETIZATION.md`, at the prices given. Paste each id into `hood/src/ReplicatedStorage/Shared/Config/Products.lua`.
    - Until an id is pasted, that button says "Coming soon!" and nothing breaks.
-7. **Group:** put your group id in `hood/src/ServerScriptService/HoodServer/ServerConfig.lua` (`GroupId`). This turns on the group reward chest.
-8. **Optional:** the 5 Robux exclusive guns (Neon Viper, Galaxy Ray, Inferno Cannon, Frostbite, Royal Crown) are imported but not for sale yet. Tell Claude if you want them sold, and at what prices.
+9. **Group:** put your group id in `hood/src/ServerScriptService/HoodServer/ServerConfig.lua` (`GroupId`). This turns on the group reward chest.
+10. **Luck passes:** there are two, "2x Luck" (key `Lucky`, 129) and "4x Luck" (key `Luck4`, 299). If you already made the old "Lucky" pass, just rename it to "2x Luck" on the website (keep its id); then create "4x Luck" and paste its id at `Products.Passes.Luck4`. In Studio, buy 4x Luck and check the Shop's Luck tab marks the 4x column YOURS and the 2x card says YOU HAVE 4x.
+11. **Exclusive guns:** the 5 Robux exclusive guns (Neon Viper, Frostbite, Galaxy Ray, Inferno Cannon, Royal Crown) are sold as game passes in the Shop. They're in the pass list in step 8, so create them with the rest.
 
 ## D. Test before anyone else plays (Studio → Play)
-9. **First 5 minutes, as a new player:**
+12. **First 5 minutes, as a new player:**
    - the tutorial hint and arrows lead you to the range, the gun shop, Stage 1 and a box;
    - nothing is stuck, no error in Output.
-10. **Purchases:** Studio test purchases are free. Buy one pass, one box and one Cash pack; check each gives what it says.
-11. **Save:** this one is tested in the published game (step 16), not in Studio, because Studio progress resets on Stop. There: play, earn Cash, leave, join again; the Cash must still be there.
-12. **Phone:** Test → Device → an iPhone. Every button must be reachable, and no text cut off.
-13. **Two players:** Test → Clients and Servers → 2 players. Check the World Boss, the leaderboards and gifting.
+13. **Purchases:** Studio test purchases are free. Buy one pass, one box and one Cash pack; check each gives what it says.
+14. **Save:** this one is tested in the published game (step 19), not in Studio, because Studio progress resets on Stop. There: play, earn Cash, leave, join again; the Cash must still be there.
+15. **Phone:** Test → Device → an iPhone. Every button must be reachable, and no text cut off.
+16. **Two players:** Test → Clients and Servers → 2 players. Check the leaderboards and gifting. (The World Boss and the free gift are switched off for now: `Config/Features`.)
+
+## D2. World 2 (Business District), a second place in the same game
+- **Add the place:** in Studio, open your game, then **View → Asset Manager → Places → Add New Place**. Open `hood/places/HoodEvolution_World2.rbxl` and **File → Publish to Roblox As** that new place.
+- **Both place ids:** copy World 1's place id (the start place) and World 2's (Asset Manager → right-click the place → Copy ID) into `hood/src/ReplicatedStorage/Shared/Config/Worlds.lua` (`PlaceId`), or send both numbers to Claude. Publish **both** places again after this, so both have the ids. Until both ids are in, the doors between the worlds say "coming soon", and Output in a live server says which id is missing.
+- **Same settings in both places:** Game Settings → Security → turn on **Allow Mesh / Image APIs** (the menus' pictures) and **Enable Studio Access to API Services** (saving); Lighting → Technology → **ShadowMap**.
+- **Test in the published game** (Studio can't teleport): beat World 1's Stage 16 → the lobby's World 2 portal takes you to the Business District with your Power, guns and shoes; in Business District, the brick arch (THE HOOD) takes you back.
 
 ## E. Publish
-14. **Experience page.** These are worth designing in Claude Design, with the same blocky prompt (`hood/art/CLAUDE_DESIGN_PROMPT.md`):
+17. **Experience page.** These are worth designing in Claude Design, with the same blocky prompt (`hood/art/CLAUDE_DESIGN_PROMPT.md`):
     - an icon, 512×512;
     - 3+ thumbnails, 1920×1080, showing the plaza, a fight and a box opening;
     - a short description.
-15. **Content questionnaire:** Creator Dashboard → your experience → **Questionnaire**. Answer honestly. The game has toy-style blocky guns and knock-outs with no blood, and paid random items (the shoe boxes show their odds and a pity counter).
-16. **Private first:**
+18. **Content questionnaire:** Creator Dashboard → your experience → **Questionnaire**. Answer honestly. The game has toy-style blocky guns and knock-outs with no blood, and paid random items (the shoe boxes show their odds and a pity counter).
+19. **Private first:**
     - Publish, keep it **Private** or friends-only;
     - play it on a real phone and a computer with 2-3 friends;
-    - do the save test from step 11 (earn Cash, leave, join again);
+    - do the save test from step 14 (earn Cash, leave, join again);
     - fix what they find.
-17. **Public:** make it Public. Watch the first day's **Analytics** (Retention, Monetization) and send Claude what you see.
+20. **Public:** make it Public. Watch the first day's **Analytics** (Retention, Monetization) and send Claude what you see.
 
 ## Known open items
 - Stage props: a batch from Claude Design is still to come. The stages keep their current props until then.

@@ -170,6 +170,37 @@ return function(t)
   f:decide(cam,500);run(f,0.5,cam);t.expect.truthy(f:get(far).hidden);t.expect.equal(far.Power.TextTransparency,1)
   root:Destroy()
  end)
+ t.test('a world label under a HUD button fades out, and comes back once clear (the HUD keep-out)',function()
+  -- the pure rule: more than UNDER_HUD of its box under the buttons; back under UNDER_HUD_SHOW, with hysteresis
+  local e={}
+  local r={x0=0,x1=100,y0=0,y1=50,area=5000}
+  t.expect.falsy(F.underHud(e,r,{{x0=95,x1=200,y0=0,y1=50}})) -- (5% under: left alone)
+  e={}
+  t.expect.truthy(F.underHud(e,r,{{x0=80,x1=200,y0=0,y1=50}})) -- (20% under, a first decision: at once)
+  t.expect.truthy(F.underHud(e,r,{{x0=96,x1=200,y0=0,y1=50}})) -- (4%: still over UNDER_HUD_SHOW)
+  t.expect.truthy(F.underHud(e,r,{})) ; t.expect.truthy(F.underHud(e,r,{}))
+  t.expect.falsy(F.underHud(e,r,{})) -- (clear for three decisions running: back)
+  -- through the fader: a lane's stack straight ahead, a button box on the screen's centre
+  local root=Instance.new('Model')
+  local g=lane(root,Vector3.new(0,10,0))
+  local f=F.new();f:add(g)
+  local cam=eye(30)
+  local button={{x0=-60,x1=60,y0=-60,y1=60}}
+  f:decide(cam,500);run(f,0.5,cam)
+  t.expect.equal(g.Power.TextTransparency,0)
+  f:decide(cam,500,button);run(f,F.OUT_TIME+0.05,cam)
+  t.expect.truthy(f:get(g).underHud);t.expect.equal(g.Power.TextTransparency,1)
+  -- a button far off at the side covers nothing: back after three decisions
+  local aside={{x0=2000,x1=2100,y0=0,y1=100}}
+  f:decide(cam,500,aside);run(f,0.1,cam);f:decide(cam,500,aside);run(f,0.1,cam)
+  t.expect.equal(g.Power.TextTransparency,1)
+  f:decide(cam,500,aside);run(f,F.IN_TIME+F.POP_TIME+0.05,cam)
+  t.expect.equal(g.Power.TextTransparency,0)
+  -- no HUD at all: nothing to keep out
+  f:decide(cam,500,button);run(f,F.OUT_TIME+0.05,cam);f:decide(cam,500);run(f,F.IN_TIME+F.POP_TIME+0.05,cam)
+  t.expect.equal(f:get(g).underHud,nil);t.expect.equal(g.Power.TextTransparency,0)
+  root:Destroy()
+ end)
  t.test('sixty labels standing still cost nothing per frame; remove gives the label back',function()
   local root=Instance.new('Model')
   local f=F.new()

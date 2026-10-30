@@ -190,3 +190,13 @@ when parented straight to a part; read `part.CFrame.Position` (Lune doesn't deri
 - [ ] Looks right in daylight on a pale floor (and at night: LightInfluence 0 glows stay bright).
 - [ ] Flipbook layouts only with uploaded sheets; fallback look checked with `builtinOnly`.
 - [ ] Budget written in a comment; LOD hook available; no per-frame emitter property writes.
+
+## 10. From the video library (AI VFX workflow)
+Notes: `AI Video Library/Video Notes/VFX/` (fwjelaa, MrWonderHow).
+- Always give Claude a **reference image** (or generate one first) plus this skill; without one the result is mediocre.
+- Say "everything must move": the first aura in the video came out static.
+- Tell Claude exactly which tools exist (built-in textures, HoodVFX), or it assumes plugins we don't have.
+- Fire bursts from **animation event markers** at the contact frame (see `roblox-ai-animation`).
+- Big moments (rebirth, legendary): screen flash + small camera shake + blur burst, at most 1 flash per second.
+- Slash ribbons: a 16-frame, 24 fps flipbook on a mesh is a cheap swing trail. Weld effects to HumanoidRootPart.
+- Image textures: PNG with alpha (JPG erase turns grey, missing alpha turns black).

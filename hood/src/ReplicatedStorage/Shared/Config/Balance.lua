@@ -31,26 +31,50 @@ local PAD_CASH = { 20, 80, 140, 220, 320, 440, 600, 800, 1000, 1400, 1800, 2400,
 -- The pacing sim (hood/tools/pacing; minutes from a new player, a free player who never stops):
 --   rebirths at about 4.3, 7.4, 10.4, 13.9, 17.3, 19.1, 21, 24.9, 30.3; the boss falls at about 33 for a player who runs
 --   every new stage the moment it opens, 29 for one who trains up and runs once a rebirth (most players about 30); a
---   casual player (a third of the time idle) about 50. Rebirth 50 at about 4 hours (casual about 6).
+--   casual player (a third of the time idle) about 50.
+--   (Oct 27, the owner: "don't make it 4 hours ... or make it 3 hours, but with game passes it will be way quicker" and
+--   "in the start make it quick, but then ... you are better off buying game passes") World 1 and World 2's rebirths (to
+--   25) stay as they were; from 26 on each need climbs up to 10x the old ladder by 50, the same for every player. A free
+--   player who goes on to World 2 reaches 50 at about 3 hours (World 1 ~33 min, World 2 ~62, then about 90 of
+--   training); the 2x Power pass halves the training and the paid lanes cut it far more. Nothing is hidden or per-player.
 local NEED = {
 	1000, 3500, 8000, 16000, 30000, 55000, 90000, 130000, 180000, -- World 1 (rebirths 1-9)
 	250000, 300000, 360000, 430000, 500000, 600000, 700000, 850000, 950000, 1100000, -- 10-19
-	1300000, 1500000, 1700000, 2000000, 2300000, 2600000, 3000000, 3400000, 3900000, 4400000, -- 20-29
-	5000000, 5500000, 6500000, 7500000, 8500000, 9500000, 11000000, 12000000, 14000000, 15000000, -- 30-39
-	17000000, 20000000, 22000000, 25000000, 28000000, 32000000, 36000000, 40000000, 45000000, 50000000, -- 40-49
-	55000000, -- 50
+	1300000, 1500000, 1700000, 2000000, 2300000, 2600000, 3000000, 4000000, 5600000, 7500000, -- 20-29
+	10000000, 13000000, 17000000, 22000000, 28000000, 35000000, 44000000, 52000000, 66000000, 77000000, -- 30-39
+	93000000, 120000000, 140000000, 170000000, 200000000, 240000000, 280000000, 330000000, 390000000, 460000000, -- 40-49
+	530000000, -- 50
 }
+
 
 -- How long each world should take a player in the middle (the owner, Oct 27): World 1 25-30 minutes, later worlds
 -- longer. Only World 1 is built; the sim's targets for the next ones.
-local WORLD_TARGETS = { 27, 40, 55, 70, 90 }
+local WORLD_TARGETS = { 27, 62, 90, 120, 150 }
+
+-- World 2, Business District (Oct 27; hood/docs/WORLD2.md): its own place, entered at about rebirth 9-10 (World 1's boss).
+-- (the owner: "we need way way higher power needed for world 2, in other games it's usually billions" and "make it way
+-- longer") Everything in World 2 runs at Scale x World 1's numbers: every shot pays Scale times more (ShotBase), every
+-- rebirth needs Scale times more Power (RebirthRules.need), so the pace is World 1's ladder while the numbers read in
+-- the billions. One new stage with each rebirth from 10 to 25 (each at that cycle's need, x Scale: 1.25B to 13B), its
+-- ranges hit twice as hard (LaneBoost, Config/Skins), the pads pay from 7K to 40K Cash. The pacing sim (World 2
+-- section): its boss about 62 minutes after the door for a player who runs every new stage (World 1: about 30), about
+-- 95 for a casual one; rebirth 24 or so at the boss.
+local WORLD2 = {
+	Scale = 5000,
+	StagePower = { 1250000000, 1500000000, 1800000000, 2150000000, 2500000000, 3000000000, 3500000000, 4250000000, 4750000000, 5500000000, 6500000000, 7500000000, 8500000000, 10000000000, 11500000000, 13000000000 },
+	PadCash = { 7000, 7900, 8800, 9900, 11100, 12500, 14100, 15800, 17700, 19900, 22400, 25100, 28200, 31700, 35600, 40000 },
+	LaneBoost = 2,
+}
+
+-- Each world is its own place (Config/Worlds); this server's world picks its stages, pads and lane boost.
+local WORLD = require(script.Parent.Parent.WorldInfo).current()
 
 local Balance = {
  -- The currency's name, in one place (brief 23: the reference's "Wins" are our Cash; the pads say "+20 Cash").
  CashName = 'Cash',
  Version = 3, BaseRepPerSecond = 1, StudsPerStep = 6, MaxStepsPerSecond = 3,
  WallBase = 50, WallGrowth = 2.1, WallsPerMap = 10, MapThresholdGrowth = 40,
- BaseCrewSlots = 3, MaxSafeValue = 1e12,
+ BaseCrewSlots = 3, MaxSafeValue = 1e15, -- (Oct 27: 1e12 before World 2's billions; Power and saves cap here)
 
  -- Shots (Shared/ShotRules).
  ShotBase = 1,
@@ -70,8 +94,12 @@ local Balance = {
  -- goons' HP: EnemyRules.maxHp = HpShots x the kind's weight x this). Oct 27 pacing: which rebirth brings which stage is
  -- under NEED above. The map builder reads this (code5/c_layout).
  StagePower = { 10, 60, 150, 350, 2400, 3500, 5500, 8000, 11000, 16000, 30000, 55000, 90000, 130000, 180000, 220000 },
+ -- (Oct 27) every world's numbers; StagePower, PadCash and LaneBoost here are this server's world's (set below)
+ Worlds = {},
  -- The pads (Shared/PadRules): the yellow Return pad's Cash per stage; the magenta pad pays PadRules.TenX times it.
  PadCash = PAD_CASH,
+ LaneBoost = 1, -- the ranges' multiplier boost in this world (Config/Skins applies it)
+ Scale = 1, -- this world's number scale: shots pay and rebirths need this many times World 1's (set below)
  -- Beating a stage's goons pays no Cash, the first time or any later run (WaveRules.reward / repeatReward): the pad at
  -- the end of the run is the one big number (CRITIC3: fewer, bigger Cash moments). Kept for readers of the old field.
  WaveCash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -102,5 +130,16 @@ end
 function Balance.stageCash(stage: any): number
  return type(stage) == 'number' and Balance.StageCash[stage] or 0
 end
+
+Balance.Worlds[1] = { StagePower = Balance.StagePower, PadCash = PAD_CASH, LaneBoost = 1, Scale = 1 }
+Balance.Worlds[2] = WORLD2
+if Balance.Worlds[WORLD] then
+	Balance.StagePower = Balance.Worlds[WORLD].StagePower
+	Balance.PadCash = Balance.Worlds[WORLD].PadCash
+	Balance.LaneBoost = Balance.Worlds[WORLD].LaneBoost
+	Balance.Scale = Balance.Worlds[WORLD].Scale or 1
+	Balance.ShotBase = Balance.ShotBase * Balance.Scale
+end
+Balance.World = WORLD
 
 return table.freeze(Balance)

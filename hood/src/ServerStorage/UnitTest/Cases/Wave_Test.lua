@@ -17,8 +17,10 @@ return function(t)
   t.expect.equal(E.damage(0),1);t.expect.equal(E.damage(37.9),37);t.expect.equal(E.damage(-5),1);t.expect.equal(E.damage(0/0),1);t.expect.equal(E.damage('x'),1);t.expect.equal(E.damage(1e9),1e9)
   t.expect.equal(E.recommended(1),Balance.StagePower[1]);t.expect.equal(E.recommended(99),Balance.StagePower[16]);t.expect.equal(E.recommended(nil),Balance.StagePower[1])
   -- Stage 1's goons read like the video's guards ("Guard 1 40/40"): a few shots at the gate's Power.
-  t.expect.equal(E.maxHp(1,'Goon'),E.HpShots*Balance.StagePower[1])
-  t.expect.equal(math.ceil(E.maxHp(1,'Goon')/E.damage(Balance.StagePower[1])),E.HpShots)
+  -- (Oct 27, flow) World 1's first crew takes FirstCrewShots, so the first fight lasts a few seconds
+  t.expect.equal(E.maxHp(1,'Goon'),E.FirstCrewShots*Balance.StagePower[1])
+  t.expect.equal(math.ceil(E.maxHp(1,'Goon')/E.damage(Balance.StagePower[1])),E.FirstCrewShots)
+  t.expect.truthy(E.FirstCrewShots>E.HpShots and E.FirstCrewShots<=2*E.HpShots)
   for s=2,16 do
    t.expect.truthy(E.maxHp(s,'Goon')>E.maxHp(s-1,'Goon'))
    -- at the stage's Recommended Power a plain goon falls in about HpShots shots (rounding aside), a Runner sooner, a Bruiser later

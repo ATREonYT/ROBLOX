@@ -17,6 +17,8 @@
 --   with its crew. No pads, cards, phases or banners. The last stage's (the Harbor crew's) has three of them.
 -- Positions are the map frame's X and Z (stages run toward -Z; z' = studs past a stage's gate line).
 local Balance = require(script.Parent.Config.Balance)
+local okW, WorldInfo = pcall(function() return require(script.Parent.WorldInfo) end)
+local WORLD = okW and WorldInfo.current() or 1
 
 local EnemyRules = {}
 local function flat(v: Vector3): Vector3 return Vector3.new(v.X, 0, v.Z) end
@@ -33,6 +35,9 @@ EnemyRules.Calm = 3 -- after your KO the goons ignore you this long
 EnemyRules.Shield = 3 -- and you wear a ForceField this long
 EnemyRules.HpShots = 3 -- shots a plain Goon takes at its stage's Recommended Power (brief 30 r3: 3 at 3 shots a second,
 -- the reference's cadence, so a goon lasts about a second, as 6 at 5 a second had it; the reference's guards go in 0.5 s)
+-- (Oct 27, flow: the audit's "the first fight is over in 1.3 s") World 1's Stage 1 crew is a little tougher, so the first
+-- fight is a fight (about 5 s at its Power): FirstCrewShots instead of HpShots. Every other crew is as it was.
+EnemyRules.FirstCrewShots = 5
 EnemyRules.Margin = 2 -- goons stay this far inside their stage's gate lines
 EnemyRules.Edge = 2 -- and this far inside the street's sides (the gate's HalfWidth)
 EnemyRules.Gap = 2.6 -- goons keep about this far apart (times their scale)
@@ -349,7 +354,9 @@ end
 function EnemyRules.maxHp(stage: any, kind: string?): number
 	local k = kind and EnemyRules.Kinds[kind] or EnemyRules.Kinds.Goon
 	local weight = (kind == 'Boss' and type(stage) == 'number' and stage >= #EnemyRules.Lineups) and EnemyRules.FinalBossHp or k.Hp
-	local hp = EnemyRules.HpShots * weight * EnemyRules.recommended(stage)
+	local shots = EnemyRules.HpShots
+	if type(stage) == 'number' and math.floor(stage) == 1 and WORLD == 1 then shots = EnemyRules.FirstCrewShots end
+	local hp = shots * weight * EnemyRules.recommended(stage)
 	if hp >= 2000 then return Balance.round(hp) end
 	local step = hp >= 200 and 50 or hp >= 20 and 5 or 1
 	return math.max(1, math.floor(hp / step + 0.5) * step)

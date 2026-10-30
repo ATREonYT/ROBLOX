@@ -3,31 +3,42 @@
 -- COMPACT in B34 (the user: "redo the lobby layout completely ... make it feel nice to play"; their pick: a smaller,
 -- tidier warehouse, everything a few steps from the spawn). Runs after e3_plaza, which lays the zones out.
 --   Floor    warm light concrete slabs (two tones, 16 x 16, faint studs), no grass inside; the walks lie on it.
---   Walls    chunky brick round x -92..68, z 6..92 (the training block's kerb at the north wall, the head lane's stage at
---            the west wall), a dark brick skirting, cream pilasters every 16 studs, an open clerestory band showing the
---            cliffs and the hood blocks outside, one painted field per wall (west red behind the head lane, north blue
+--   Walls    chunky brick round x -86..86, z 6..100 (Oct 27; the training block and the head lane's stage clear of
+--            the west wall; the Oct 13 hall's colours again in round 3), a dark brick skirting, cream pilasters every
+--            16 studs, an open clerestory band showing the cliffs and the hood blocks outside, one painted field per wall (west red behind the head lane, north blue
 --            either side of the door, east teal behind the gun shop, south yellow behind the box dais), roller doors:
 --            open ones onto the yard (the north one onto the Stage 1 gate, 6 studs out), shut slatted ones as detail.
---   Roof     open trusses (chords, posts and braces) and purlins, 31-37 up: no sheeting, so the HoodToy sun throws
+--   Roof     trusses (chords, posts and braces) and purlins, 31-37 up, closed by a cream ceiling and a steel deck (Oct 27;
+--            they cast no shadow); the HoodToy sun throws
 --            stripes of shadow on the floor; the camera never meets it. The shell itself casts no shade.
 --   Outside  the cliffs, trees and hood blocks, 12 studs past the walls (a grass yard between), seen through the doors.
-Lobby.WH = { x0 = -70, x1 = 54, z0 = 6, z1 = 82, -- (B35: the compact plan, ref_STILL_lobby_topdown; z0 hugs the gate's wings)
+-- (Oct 27, the owner: "keep the warehouse ... dont make it so cramped": 172 x 88, was 124 x 76; the spine on its middle
+-- line like the reference's path, the zones a walk's width off it, calm floor round them; z0 still hugs the gate's wings)
+-- (lobby round 1, the owner: "way too crowded": 16 deeper, 172 x 110, so the zones stand the reference's 15-25 apart)
+Lobby.WH = { x0 = -86, x1 = 86, z0 = 6, z1 = 116,
 	 t = 2, eave = 30, truss = 6, off = 12, bay = 16,
-	win = { 17, 25 }, skirt = 3,
+	win = { 17.6, 28.2 }, skirt = 3, -- (Oct 27 round 2: taller clerestory windows, more sky and cliffs over the walls)
 	-- open doors: { wall, u0, u1, height } (u along the wall: z for west/east, x for north/south)
 	-- (B34 fix round: the north door 28 high, so the Stage 1 gate's whole frame shows through it from the spawn)
-	open = { { 'N', -24, 24, 28 }, { 'S', -50, -36, 16 }, { 'S', 30, 44, 16 }, { 'W', 56, 70, 16 } },
-	shut = { { 'N', -60, -46, 14 }, { 'W', 10, 22, 14 } },
+	open = { { 'N', -24, 24, 28 }, { 'S', -46, -32, 16 }, { 'S', 32, 46, 16 }, { 'W', 88, 102, 16 } },
+	shut = { { 'N', -66, -52, 14 }, { 'W', 12, 24, 14 }, { 'E', 88, 100, 14 } },
 	-- one painted field per wall: { wall, u0, u1, y0, y1, colour key }
-	-- (B34 fix round: one muted warm brick, no painted fields, stripes or posters: the walls stay quieter than the
-	-- things you can use)
-	fields = {},
+	-- (B34 fix round: none; Oct 27 round 3: back, as in the Oct 13 hall the owner picked ("E"): red behind the ranges,
+	-- blue either side of the gate's door, teal behind the gun shop, yellow behind the box dais, all under the windows)
+	fields = { { 'W', 42, 68, 3, 15, 'red' }, { 'N', -46, -30, 3, 15, 'blue' }, { 'N', 30, 46, 3, 15, 'blue' },
+		{ 'E', 42, 68, 3, 15, 'teal' }, { 'S', -14, 14, 3, 14, 'yellow' } }, -- (round 1: W and E follow the zones 13 south)
 }
-Lobby.WHColors = { -- (B34: one muted warm brick family, warm steel; the floor a mid tone under classic studs)
-	floorA = C(198, 150, 106), floorB = C(194, 146, 102), grass = C(122, 204, 82), -- (B35: a warmer, more saturated concrete: the grey walks read lighter on it)
-	brick = C(180, 108, 82), brickLight = C(190, 118, 90), skirt = C(146, 84, 64), trim = C(196, 128, 98),
-	steel = C(98, 88, 84), steelLight = C(128, 116, 108), slat = C(186, 178, 168), slatDark = C(164, 156, 146),
-	drum = C(92, 84, 80), lamp = C(255, 236, 170),
+Lobby.WHColors = { -- (Oct 27 round 3, the owner picked the Oct 13 warehouse, "E", the one with blue highlights: its
+	-- palette is back: warm light concrete, orange brick with a dark brick skirting and cream pilasters, blue steel trusses
+	-- and lamp shades; the layout stays today's)
+	floorA = C(238, 202, 152), floorB = C(226, 190, 142), -- (lobby round 2, the critic: the pale beige read lavender under the
+	-- blue sky fill and grey from above; S ~0.35 so it lands warm)
+	 grass = Lobby.Bright.floor,
+	-- (Oct 28, the owner: "too many shades ... remove the shades, we need to make this cartoony": one brick tone and a
+	-- bright red skirting instead of three browns; the steel a clear toy blue instead of navy, no darker cuts)
+	brick = C(222, 118, 70), brickLight = C(222, 118, 70), skirt = C(222, 84, 64), trim = C(246, 226, 188),
+	steel = C(58, 132, 232), steelLight = C(110, 172, 246), slat = C(196, 206, 222), slatDark = C(196, 206, 222),
+	drum = C(120, 150, 210), lamp = C(255, 236, 170),
 	red = C(214, 70, 60), blue = C(60, 128, 214), teal = C(40, 172, 160), yellow = C(250, 196, 50),
 }
 -- (tutorial targets: gate 1 is reached through the north loading door; its arrows pass the doorway first)
@@ -194,14 +205,31 @@ function Lobby.warehouse(L, h)
 	for x = Wh.x0 + 8.65, Wh.x1 - 4, 17.3 do
 		r:box('RoofPurlin', V(x - 0.6, y1, Wh.z0 - Wh.t), V(x + 0.6, y1 + 1.2, Wh.z1 + Wh.t), K.steel, M.SmoothPlastic)
 	end
+	-- (Oct 27, the owner: "add roofs to the warehouses") the roof closed: a brick band round the top of the walls up to the
+	-- roof (no sky in the gap over the clerestory), a warm cream ceiling on the purlins and a blue steel deck over it with
+	-- a cream lip. The ceiling and deck cast no shadow, so the hall stays as bright as it was under the open trusses
+	-- (the trusses still throw their stripes).
+	local top = y1 + 1.2
+	local band = { { Wh.x0 - Wh.t, Wh.z0 - Wh.t, Wh.x1 + Wh.t, Wh.z0 }, { Wh.x0 - Wh.t, Wh.z1, Wh.x1 + Wh.t, Wh.z1 + Wh.t },
+		{ Wh.x0 - Wh.t, Wh.z0, Wh.x0, Wh.z1 }, { Wh.x1, Wh.z0, Wh.x1 + Wh.t, Wh.z1 } }
+	for _, b in band do
+		r:box('RoofBand', V(b[1], Wh.eave + 1.2, b[2]), V(b[3], top, b[4]), K.brick, M.SmoothPlastic)
+	end
+	local ceiling = r:box('RoofCeiling', V(Wh.x0 - Wh.t, top, Wh.z0 - Wh.t), V(Wh.x1 + Wh.t, top + 0.4, Wh.z1 + Wh.t), K.trim, M.SmoothPlastic)
+	local deck = r:box('RoofDeck', V(Wh.x0 - Wh.t - 0.6, top + 0.4, Wh.z0 - Wh.t - 0.6), V(Wh.x1 + Wh.t + 0.6, top + 1.4, Wh.z1 + Wh.t + 0.6), K.steel, M.SmoothPlastic)
+	for _, e in { { -1, Wh.z0 - Wh.t - 0.6 }, { 1, Wh.z1 + Wh.t + 0.6 } } do
+		r:box('RoofLip', V(Wh.x0 - Wh.t - 0.8, top + 1.4, e[2] - 0.5), V(Wh.x1 + Wh.t + 0.8, top + 1.8, e[2] + 0.5), K.trim, M.SmoothPlastic)
+	end
+	ceiling.CastShadow, deck.CastShadow = false, false
 	-- hanging lamps under the trusses either side of the spine (chunky shade, a warm glowing underside)
 	local lamps = L:group('HallLamps')
 	for z = Wh.z0 + 10, Wh.z1 - 6, 18 do
-		for _, x in { -36, 36 } do
+		for _, x in { -46, 46 } do
 			lamps:box('LampRod', V(x - 0.2, 24.6, z - 0.2), V(x + 0.2, y0, z + 0.2), K.drum, M.SmoothPlastic)
 			lamps:box('LampShade', V(x - 1.6, 23.4, z - 1.6), V(x + 1.6, 24.6, z + 1.6), K.steel, M.SmoothPlastic)
 			local g = lamps:box('LampGlow', V(x - 1.2, 23.1, z - 1.2), V(x + 1.2, 23.4, z + 1.2), K.lamp, M.Neon)
-			light(g, K.lamp, 0.6, 26)
+			-- (lobby round 1: a light on every other row; the glow keeps every lamp lit to the eye)
+			if math.floor((z - Wh.z0 - 10) / 18) % 2 == 0 then light(g, K.lamp, 0.6, 26) end
 		end
 	end
 	for _, p in lamps.parent:GetDescendants() do
@@ -271,16 +299,10 @@ Lobby.Scenery = (function()
 	local list = {}
 	local function add(id, x, z, yaw, k) table.insert(list, { id, x, z, yaw or 0, k or 1 }) end
 	local Wh = Lobby.WH
-	add('Scn_Hoop', Wh.x0 + 4, 50, -90) -- (by the west door)
-	add('Scn_Crate', Wh.x0 + 3.4, Wh.z1 - 3.4, 0) add('Scn_Crate', Wh.x0 + 6.4, Wh.z1 - 3, 12) add('Scn_Barrel', Wh.x0 + 3.6, Wh.z1 - 7.4, 0)
-	add('Scn_Crate', Wh.x1 - 3.4, Wh.z1 - 3.4, 0) add('Scn_Barrel', Wh.x1 - 3.6, Wh.z1 - 7.4, 0) add('Scn_Barrel', Wh.x1 - 6.2, Wh.z1 - 3.2, 20)
-	for _, d in Wh.open do
-		if d[1] == 'S' then add('Scn_Cone', d[2] + 2, Wh.z1 - 2.2, 0) add('Scn_Cone', d[3] - 2, Wh.z1 - 2.2, 0) end
-	end
-	add('Scn_Hydrant', -48, Wh.z1 - 2.4, 180) add('Scn_TrashCan', 28, Wh.z1 - 2.4, 180)
+	-- (lobby round 1, the owner: "way too crowded": no props inside the hall any more; the yard keeps its trees)
 	-- out in the yard (framed by the doors and the clerestory)
-	add('Scn_Tree_1', -58, Wh.z1 + 10, 0) add('Scn_Tree_2', 44, Wh.z1 + 10, 0) add('Scn_Tree_2', Wh.x1 + 12, 15, 0) add('Scn_Tree_1', Wh.x0 - 12, 74, 0)
-	for _, x in { -70, -46, 32, 56 } do add('Scn_Bush_1', x, Wh.z1 + 5.6, 0) end
-	add('Scn_Bush_1', Wh.x1 + 6, 4, -90) add('Scn_Bush_1', Wh.x1 + 6, 26, -90) add('Scn_Bush_1', Wh.x0 - 6, 62, 90) add('Scn_Bush_1', Wh.x0 - 6, 86, 90)
+	add('Scn_Tree_1', -56, Wh.z1 + 10, 0) add('Scn_Tree_2', 42, Wh.z1 + 10, 0) add('Scn_Tree_2', Wh.x1 + 12, 15, 0) add('Scn_Tree_1', Wh.x0 - 12, 78, 0)
+	for _, x in { -70, -44, 34, 58 } do add('Scn_Bush_1', x, Wh.z1 + 5.6, 0) end
+	add('Scn_Bush_1', Wh.x1 + 6, 4, -90) add('Scn_Bush_1', Wh.x1 + 6, 26, -90) add('Scn_Bush_1', Wh.x0 - 6, 64, 90) add('Scn_Bush_1', Wh.x0 - 6, 88, 90)
 	return list
 end)()

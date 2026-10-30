@@ -51,6 +51,7 @@ local CharMotion = require(RS.Shared.CharMotion) -- (brief 29: the arms kick wit
 local EnemyRig = require(RS.Shared.EnemyRig)
 local BossFX = require(RS.Shared.BossFX)
 local FightFX = require(RS.Shared.FightFX)
+local FightJuice = require(RS.Shared.FightJuice) -- (Oct 28, the feel round: hit-stop, squash, the KO's bounce and stars, orbs, streaks)
 local WorldBossView = require(RS.Shared.WorldBossView) -- (brief 29, P3b: the World Boss, HoodClient/WorldBoss)
 local FightUI = require(RS.Shared.FightUI)
 local Kit = require(RS.Shared.UIKit)
@@ -104,6 +105,7 @@ folder.Name = 'HoodGoons'
 folder.Parent = workspace
 BossFX.Parent = folder
 FightFX.Parent = folder
+FightJuice.Parent = folder
 local Boss = {} -- (the strongest enemies' signature moves and the court walk-outs, below)
 
 -- waves[stage] = { Stage, Known (the server told us), Cleared, Goons = { [i] = view } }
@@ -234,6 +236,10 @@ local function setState(v, state)
 	if state == EnemyRules.Windup then
 		v.SwingN += 1
 		v.Swing = EnemyRules.swingFor(v.Kind, v.SwingN + v.Index)
+		-- (Oct 28, the feel round) the tell: a warm glint over its head as it draws back, so a kid sees the punch coming
+		if v.Rig and v.Rig.Head and v.Stage == current and not v.Down then
+			FightJuice.glint(v.Rig.Head.Position + Vector3.new(0, 1.1 * v.Rig.Scale, 0), v.Rig.Scale)
+		end
 	end
 end
 -- snap: the crew was only just drawn (put everyone where the server has them, no puffs).
@@ -270,8 +276,11 @@ end
 -- back a little (a swing a lot more); `power` ~1 a shot, ~2 a swing, more on the hit that knocks it out.
 -- (r3, matched side by side to W 31-33 s: the reference's guards show no stagger at all, only the X and the bar, so the
 -- hit is a small tick: Stagger scales every push)
-local STAGGER = 0.22
+-- (Oct 28, the feel round, the owner: "add the good fighting animations": a hit now visibly rocks the goon, squashes it
+-- for a beat (FightJuice.squash) and, on a swing or a knock-out, freezes it for a few frames: hit-stop)
+local STAGGER = 0.5
 local function impulse(v, from, power)
+	v.HitAt, v.HitPow = os.clock(), math.min(1.4, 0.55 + 0.35 * power)
 	power *= STAGGER
 	if not v.Rig then
 		v.FlinchV += 7 * power
@@ -366,11 +375,42 @@ end
 local gui, root, fit = Kit.screen('HoodWaves', nil, 6)
 local pill = FightUI.pill(root)
 FightUI.dock(pill.Gui, 'FightChipSlot', root) -- (the HUD's slot at the top centre, HudSpec.TopCentre)
+local streakChip = FightJuice.streakChip(root) -- (Oct 28: DOUBLE KO!, TRIPLE KO! under the counter)
 -- (LOOP) The first fights teach themselves: while goons are up and you haven't fired for a moment, "Hold click to
 -- shoot!" (or "Hold SHOOT to fire!" on a touch screen) sits under the counter, in the goal line's gold. Only until
 -- you have beaten a couple of stages; the Auto Fight pass needs no telling.
 local shootHint = Kit.text({ Name = 'ShootHint', Text = 'Hold click to shoot!', TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, TextColor3 = Kit.hex('FFD21A'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52), Size = UDim2.fromOffset(460, 32), Visible = false, Parent = root })
 local HINT_UNTIL, HINT_IDLE = 2, 1.2 -- (shown while WaveCleared < HINT_UNTIL, after HINT_IDLE s without a shot)
+-- (Oct 27, flow: the audit's "the first fight is over before it starts") A crew you have never beaten announces itself:
+-- "CREW INCOMING!" in red over the street for a beat as you walk in (once a stage a visit). It cannot wait its turn, so
+-- it takes the moment queue's screen at once (MomentQueue.mark) and the others hold back.
+local TextStyle = require(RS.Shared.TextStyle)
+local MomentQueue = require(RS.Shared.MomentQueue)
+local announced = {}
+local CREW_FOR = 1.4
+local crewUntil = 0 -- (Oct 28: one voice at a time; the shoot hint waits while CREW INCOMING! is up)
+local hintWant, hintA = false, 0 -- (the shoot hint's wish and its eased opacity, 0 to 1)
+local function crewIncoming(stage)
+	if announced[stage] then return end
+	local best = player:GetAttribute('WaveCleared')
+	if type(best) == 'number' and stage <= best then return end
+	announced[stage] = true
+	MomentQueue.mark('CrewIncoming', CREW_FOR)
+	crewUntil = os.clock() + CREW_FOR
+	local holder = Kit.new('Frame', { Name = 'CrewIncoming', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), Size = UDim2.fromOffset(700, 80), Parent = root })
+	local sc = Kit.new('UIScale', { Scale = 0.5, Parent = holder })
+	local t = Kit.text({ Name = 'Text', Text = 'CREW INCOMING!', TextSize = 54, ZIndex = 3, Parent = holder })
+	TextStyle.apply(t, 'red', { Shadow = true })
+	TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	task.delay(CREW_FOR - 0.35, function()
+		local out = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		for _, d in holder:GetDescendants() do
+			if d:IsA('TextLabel') then TweenService:Create(d, out, { TextTransparency = 1 }):Play() end
+			if d:IsA('UIStroke') then TweenService:Create(d, out, { Transparency = 1 }):Play() end
+		end
+		task.delay(0.4, function() holder:Destroy() end)
+	end)
+end
 local clearUntil = 0 -- (the CLEAR! moment holds the pill until then)
 
 -- (brief 30) The revive screen (Shared/FightUI.revive), its prices from Config/Products.
@@ -472,7 +512,35 @@ local function popGain(r, amount, melee)
 	local right = cam and cam.CFrame.RightVector or Vector3.new(1, 0, 0)
 	gainSide = (gainSide + 1) % 3
 	local at = r.Position - right * (1.5 + gainSide * 0.35) + Vector3.new(0, 0.5 + gainSide * 0.3, 0)
-	FightFX.gain(at, amount, { melee = melee, text = Format.compact(amount) })
+	FightFX.gain(at, amount, { melee = melee, text = Format.compact(amount), drift = -right * (0.35 + gainSide * 0.15) })
+end
+
+-- (Oct 28, the feel round) A knock-out you made: the goon holds the hit a few frames, then flies into its fall with a
+-- ring of light and a puff, bounces once, and three gold stars circle its head; Power orbs burst out of it into your
+-- counter; the camera thumps; knock-outs in a row (FightJuice.streak) say DOUBLE KO!, TRIPLE KO! under the counter.
+local koTimes = {}
+local function koJuice(v, melee)
+	local now = os.clock()
+	local stop = FightJuice.hitStop(melee and 'KOMelee' or 'KO')
+	v.Freeze = now + stop
+	v.KO = (v.KO or now) + stop
+	CharMotion.hitStop(stop)
+	table.insert(koTimes, now)
+	if #koTimes > 8 then table.remove(koTimes, 1) end
+	local n = FightJuice.streak(koTimes, now)
+	local chest = chestOf(v)
+	local scale = v.Rig and v.Rig.Scale or 1
+	task.delay(stop, function()
+		FightJuice.koBurst(chest, scale)
+		FightJuice.orbs(chest, FightJuice.orbCount(n))
+		Juice.kick(melee and 0.45 or 0.3)
+		FightJuice.fovKick(melee and 2.2 or 1.6)
+	end)
+	task.delay(stop + EnemyRig.FallTime + 0.05, function()
+		if v.Rig and v.Down and v.Rig.Head then FightJuice.dizzy(v.Rig.Head, scale, 1.3) end
+	end)
+	if streakChip then streakChip.ko(n) end
+	play('Tock', 0.8 + 0.08 * math.min(n, 5))
 end
 
 local last, aimed, aimUntil = 0, nil, 0
@@ -514,6 +582,13 @@ local function shoot()
 			if not hitV.Rig then return end
 			FightFX.star(chestOf(hitV) - look * 0.5, 2.5, 0.1)
 			impulse(hitV, r.Position, 2.2)
+			-- (Oct 28) the swing lands with weight: both of you hold the frame, the camera thumps, sparks, a tint
+			local stop = FightJuice.hitStop('Melee')
+			if not hitV.Down then hitV.Freeze = math.max(hitV.Freeze or 0, os.clock() + stop) end
+			CharMotion.hitStop(stop)
+			FightJuice.fovKick(0.9)
+			Juice.flash(hitV.Rig.Model)
+			Juice.burst(chestOf(hitV) - look * 0.5, Color3.fromRGB(255, 236, 170), 0.55)
 		end)
 		popGain(r, gain(true), true)
 		if v.Tag then v.Tag.set(shownHp(v), v.Max) end
@@ -540,6 +615,9 @@ local function shoot()
 	-- (brief 30) the reference's hit: a white X on the goon and a small white star, no camera shake, no damage numbers
 	FightFX.hitX(to)
 	FightFX.star(to + Vector3.new(0, 0.2, 0), 1.0, 0.07)
+	-- (Oct 28) impact sparks in the gun's colour and a soft tint on the goon (white at most once a second: FlashGate)
+	Juice.burst(to, gun.Color, 0.42)
+	if not boss and v.Rig then Juice.flash(v.Rig.Model) end
 	if boss then
 		WorldBossView.hit(damage, to)
 	else
@@ -755,6 +833,18 @@ local function draw(v, dt, now, you)
 		if t >= SETTLE then v.Settled = true end
 	end
 	local at = toWorld(v.Pos, v.Y or 0) * CFrame.Angles(0, v.Yaw, 0)
+	-- (Oct 28, the feel round) a hit squashes it for a beat (a quick dip, its knees giving), a knock-out bounces off the
+	-- ground once as it lands, and a swing or a knock-out holds it frozen a few frames on the hit (hit-stop)
+	local sq = v.Down and 0 or FightJuice.squash(now - (v.HitAt or -10)) * (v.HitPow or 1)
+	if sq ~= 0 then
+		at = CFrame.new(0, -0.32 * sq * v.Rig.Scale, 0) * at
+		if v.Rig.R15 and sq > 0 then p.crouch = math.max(p.crouch or 0, 0.6 * sq) end
+	end
+	if v.Down and v.KO then
+		local b = FightJuice.bounce(now - v.KO - EnemyRig.FallTime)
+		if b > 0 then at = CFrame.new(0, b * v.Rig.Scale, 0) * at end
+	end
+	if v.Freeze and now < v.Freeze then return end
 	if v.PuffIn then
 		v.PuffIn = nil
 		puffAt(at.Position + Vector3.new(0, 2 * v.Rig.Scale, 0), v.Rig.Scale, 5)
@@ -1101,13 +1191,26 @@ RunService.PreRender:Connect(function(dt)
 		ownTag(not inFight())
 		local learning = (player:GetAttribute('WaveCleared') or 0) < HINT_UNTIL
 		-- (brief 32, FEEL: not while the tutorial's own hint says the same thing, in a new player's first fight)
+		-- (Oct 27, round 8: YOU'RE READY! now lands in a fight, in the same top band: the hint waits while a goal moment
+		-- is up, PlayerGui GoalMoment)
 		local want = learning and inFight() and not autoFight() and now - last > HINT_IDLE and player:GetAttribute('OnboardingStep') ~= 'Fight'
+			and player.PlayerGui:GetAttribute('GoalMoment') ~= true and now > crewUntil
 		if want and shootHint.Visible == false then
 			local okT, touch = pcall(function() return UserInputService.TouchEnabled and not UserInputService.MouseEnabled end)
 			touch = okT and touch
 			shootHint.Text = touch and 'Hold SHOOT to fire!' or 'Hold click to shoot!'
 		end
-		if shootHint.Visible ~= want then shootHint.Visible = want end
+		hintWant = want
+	end
+	-- (Oct 28, the feel round: nothing snaps) the shoot hint eases in (0.22 s) and out (0.15 s), stepped here every frame
+	local hintTo = hintWant and 1 or 0
+	if hintA ~= hintTo or (hintA == 0 and shootHint.Visible) then
+		hintA = hintWant and math.min(1, hintA + dt / 0.22) or math.max(0, hintA - dt / 0.15)
+		local e = hintWant and 1 - (1 - hintA) ^ 2 or hintA ^ 2
+		shootHint.TextTransparency = 1 - e
+		local st = shootHint:FindFirstChildOfClass('UIStroke')
+		if st then st.Transparency = 1 - e end
+		shootHint.Visible = hintA > 0
 	end
 	for stage in world do
 		local near = stageNear(stage, cam.CFrame.Position)
@@ -1244,6 +1347,7 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 	local stage = info.Stage
 	if info.Kind == 'Wave' then
 		onWave(info)
+		if not info.Restored then pcall(crewIncoming, stage) end
 		return
 	end
 	local drawn = waves[stage] ~= nil
@@ -1273,8 +1377,10 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 			if info.HP <= 0 then
 				-- (brief 30) the hit that knocks it out throws it back harder: a swing hardest
 				local r = rootPart()
+				local fresh = not v.Down and v.Rig ~= nil and stage == current
 				if r and not v.Down then impulse(v, r.Position, info.Melee and 2.4 or 1.6) end
 				knockOut(v, true, info.Melee == true)
+				if fresh then koJuice(v, info.Melee == true) end
 			elseif v.Tag then v.Tag.set(shownHp(v), v.Max) end
 		end
 	elseif info.Kind == 'Punch' and type(info.Index) == 'number' then
@@ -1290,6 +1396,9 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 		Boss.blast(w.Goons[info.Index], info)
 	elseif info.Kind == 'Cleared' then
 		w.Cleared = true
+		-- (Oct 28) a crew cleared: gold confetti over you
+		local cr = stage == current and rootPart()
+		if cr then Juice.shards(cr.Position + Vector3.new(0, 3.2, 0), FightJuice.Gold, 'confetti') end
 		for _, g in w.Goons do if not g.Down then knockOut(g, g.Rig ~= nil) end end
 		local reward = type(info.Reward) == 'number' and info.Reward or 0
 		-- (brief 30) the reference's CLEAR! chip with its line under it ("Mission complete!"): ours says the gate ahead

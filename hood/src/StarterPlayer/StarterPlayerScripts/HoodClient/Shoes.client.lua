@@ -458,7 +458,7 @@ local function boardAnchorOffset(entry)
 end
 -- What a board shows changes with your rack and with the Lucky pass (a Lucky owner's Cash boxes have better odds).
 local function boardKey()
-	return (player:GetAttribute('ShoesOwned') or '') .. '|' .. tostring(player:GetAttribute('Pass_Lucky') == true)
+	return (player:GetAttribute('ShoesOwned') or '') .. '|' .. tostring(ShoeRules.luckOf(player))
 end
 local function cellFor(board, i, id, rack, n)
 	local shoe = Shoes.ById[id]
@@ -480,13 +480,13 @@ local function cellFor(board, i, id, rack, n)
 	icon.Size = UDim2.fromScale(0.96, 0.62)
 	Kit.new('UIAspectRatioConstraint', { AspectRatio = 1, Parent = icon })
 	icon.Parent = cell
-	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true)), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
-	chance.TextScaled = true
+	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id, ShoeRules.luckOf(player))), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
+	Kit.sizeText(chance, nil, 6) -- (round 7: whole-pixel sizes from the board's size, not TextScaled)
 	local name = Kit.text({ Name = 'Name', Text = hidden and '???' or string.upper(shoe.Name), FontFace = face('Heading', Kit.Font.body), TextColor3 = Color.white, Stroke = Color.ink, Position = UDim2.fromScale(0.04, 0.85), Size = UDim2.fromScale(0.92, 0.13), ZIndex = 3, Parent = cell })
-	name.TextScaled = true
+	Kit.sizeText(name, nil, 6)
 	if owned then
 		local tick = Kit.text({ Name = 'Owned', Text = '✔', FontFace = face('Body', Kit.Font.body), TextColor3 = Tone.green.top, Stroke = Color.ink, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1.04, -0.06), Size = UDim2.fromScale(0.32, 0.2), ZIndex = 4, Parent = cell })
-		tick.TextScaled = true
+		Kit.sizeText(tick, nil, 6)
 	end
 	return cell
 end
@@ -509,20 +509,20 @@ local function buildBoard(entry)
 	Kit.corner(UDim.new(0.08, 0)).Parent = panel
 	Kit.stroke(Color.ink, 3, true).Parent = panel
 	local title = Kit.text({ Name = 'Title', Text = string.upper(box.Name), Stroke = Color.ink, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromScale(0.03, 0.03), Size = UDim2.fromScale(0.6, 0.22), ZIndex = 2, Parent = panel })
-	title.TextScaled = true
+	Kit.sizeText(title, nil, 8)
 	title.TextColor3 = box.Color:Lerp(Color.white, 0.35)
 	local price = Kit.new('Frame', { Name = 'Price', BackgroundColor3 = Tone.green.base, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(0.97, 0.04), Size = UDim2.fromScale(0.3, 0.2), ZIndex = 2, Parent = panel })
 	Kit.corner(UDim.new(0.5, 0)).Parent = price
 	Kit.stroke(Color.ink, 2.5, true).Parent = price
 	Kit.gradient(Tone.green.top, Tone.green.base, 0.55).Parent = price
 	local priceText = Kit.text({ Name = 'Text', Text = box.Robux and RobuxText.fmt(box.RobuxPrice) or (Format.compact(box.Price) .. ' CASH'), Stroke = Tone.green.stroke, Position = UDim2.fromScale(0.08, 0.1), Size = UDim2.fromScale(0.84, 0.8), ZIndex = 3, Parent = price })
-	priceText.TextScaled = true
+	Kit.sizeText(priceText, nil, 6)
 	entry.Price = price
 	if box.Exclusive then
 		-- (a Robux box: a green EXCLUSIVE tag next to the title, like the reference's "Robux Exclusive" eggs)
-		title.Size = UDim2.fromScale(0.36, 0.22)
+		title.Size = UDim2.fromScale(0.36, 0.22) -- (Kit.sizeText follows the new box)
 		local tag = Kit.text({ Name = 'Exclusive', Text = 'EXCLUSIVE', TextColor3 = Kit.hex('7CFF4F'), Stroke = Color.ink, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromScale(0.4, 0.07), Size = UDim2.fromScale(0.26, 0.15), ZIndex = 2, Parent = panel })
-		tag.TextScaled = true
+		Kit.sizeText(tag, nil, 6)
 	end
 	for i, id in box.Shoes do cellFor(panel, i, id, rack, #box.Shoes) end
 	PityUI.boardTab(gui, panel, box.Id, player) -- ("Epic+ guaranteed in 7 opens" on a tab under the board)
@@ -542,7 +542,7 @@ local function say(text)
 		if c.Name == 'Say' then c:Destroy() end
 	end
 	local t = Kit.text({ Name = 'Say', Text = text, TextSize = 30, TextColor3 = Kit.hex('5AE0FF'), Stroke = Color.black, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 160), Size = px(900, 40), ZIndex = 44, Parent = sayRoot })
-	t.TextScaled = true
+	t.TextSize = Kit.fitSize(text, 30, 900, 16) -- (round 7: a whole size that fits, not TextScaled)
 	Motion.toast(t, 2.6)
 	task.delay(3, function() if mine == saying and t.Parent then t:Destroy() end end)
 end
@@ -866,7 +866,7 @@ function Art.auto(boxId)
 end
 function Art.ctx(boxId)
 	return {
-		lucky = player:GetAttribute('Pass_Lucky') == true,
+		lucky = ShoeRules.luckOf(player),
 		open = Art.open, auto = Art.auto, autoOn = function() return autoOn end,
 		autoAvailable = function(id) return not (Shoes.BoxById[id] and Shoes.BoxById[id].Robux) end,
 		openState = function(id, n)
@@ -929,7 +929,7 @@ local function refreshKeys()
 	end
 	keysUI.Holder.Visible = best ~= nil
 	if best then
-		keysUI.paint(best.Box.Id, { cash = cashNow(), lucky = player:GetAttribute('Pass_Lucky') == true, autoOn = autoOn, owned = passOwned, entry = passEntry })
+		keysUI.paint(best.Box.Id, { cash = cashNow(), lucky = ShoeRules.luckOf(player), autoOn = autoOn, owned = passOwned, entry = passEntry })
 	end
 end
 task.spawn(function()
@@ -989,7 +989,7 @@ function Art.reveal(info, job)
 	end
 	local handle = Art.Windows.dialog('Reveal', function(holder)
 		return Art.Screens.reveal(holder, info, {
-			lucky = player:GetAttribute('Pass_Lucky') == true,
+			lucky = ShoeRules.luckOf(player),
 			equip = function()
 				if not info.Equipped then Net.get('ShoeAction'):FireServer('Equip', info.Shoe) end
 				keep()
@@ -1555,6 +1555,7 @@ local function play(info)
 			core.Size = px(cs, cs)
 			core.BackgroundTransparency = lerp(0.2, 1, c01(f * 1.8))
 			flash.BackgroundTransparency = tier.Rank >= 4 and lerp(0.4, 1, c01(f * 1.2)) or 1
+			if tier.Rank >= 4 then require(RS.Shared.FlashGate).note('box') end -- (the hits and gates wait a second after it)
 		else
 			ring.Visible, core.Visible = false, false
 			flash.BackgroundTransparency = 1
@@ -1856,14 +1857,20 @@ function drain()
 			-- (the safety net: the cinematic always ends itself; if it ever didn't, the queue still moves on)
 			if unboxing and Cinematic.active and not Cinematic.active() then
 				unboxing = false
+				-- (Oct 27 review: its onDone never came, so nothing else gives the HUD and the toasts back)
+				if #queue == 0 then
+					reportDone()
+					player.PlayerGui:SetAttribute('UnboxingCalm', false)
+					player.PlayerGui:SetAttribute('Unboxing', false)
+				end
 				drain()
 			end
 		end)
 		return
 	end
 	local ok, length = pcall(play, info)
-	if not ok then
-		warn('[Shoes] unboxing: ' .. tostring(length))
+	if not ok or not length then -- (no length: the moment couldn't start, after a failed cinematic had set the flags)
+		if not ok then warn('[Shoes] unboxing: ' .. tostring(length)) end
 		unboxing = false
 		if #queue == 0 then reportDone() end
 		player.PlayerGui:SetAttribute('Unboxing', false)

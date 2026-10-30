@@ -22,8 +22,9 @@
 -- Waves.client). The Robux shoe boxes, one or a bundle of 3 or 8 (brief 21/22: StoreService opens them through
 -- HoodServer/ShoeOpening, the same roll and unboxing as a Cash box; the dais prompt and the Store's 'Box' cards buy them).
 -- The shoe passes (brief 22; ShoeOpening and ShoeService read the Pass_* attributes): ExtraEquip (+1 Shoe Slot, 4 pairs
--- on; ShoesMax tells the UI), Lucky (Cash boxes roll with ShoeRules.weights(boxId, true); every odds display shows the
--- owner ShoeRules.chances / chanceOf(..., true)) and TripleOpen (the dais's "Open x3" prompt: OpenShoeBox(boxId, 3), 3
+-- on; ShoesMax tells the UI), Lucky ("2x Luck") and Luck4 ("4x Luck", Oct 27; it supersedes 2x, never 8x): Cash boxes
+-- roll with ShoeRules.weights(boxId, level), the level from ShoeRules.luckOf(player); every odds display shows the
+-- owner's real level (ShoeRules.chances / chanceOf(..., level)), and TripleOpen (the dais's "Open x3" prompt: OpenShoeBox(boxId, 3), 3
 -- at once for 3x the Price).
 --
 -- Honest prices (brief 22): a bundle's WasPrice is what its parts cost bought one by one (a box bundle: Count x the
@@ -31,6 +32,7 @@
 -- Nothing here is limited or timed: no "Limited Stock", no made-up countdowns. (Brief 30: the one timer in the Store is the
 -- weekly Featured pack's, and it is real: Products.featuredAt rotates it by the clock for everyone.)
 local Balance = require(script.Parent.Balance)
+local FEATURES = require(script.Parent.Features)
 local Products = {}
 Products.Enabled = true -- master switch: false = every card says "Coming soon!"
 -- The Robux sign in text: U+E002, the character Roblox's own fonts draw as the Robux icon (written ⏣ in our docs; a
@@ -43,7 +45,8 @@ Products.Passes = {
 	DoubleCash = 0, -- 2x Cash from the pads and goals
 	AutoShoot = 0, -- (shown as "Auto Fight", brief 18) your gun fires at stage goons on its own
 	VIP = 0, -- VIP tag + 1.5x Cash
-	Lucky = 0, -- better odds for Epic and up in Cash shoe boxes
+	Lucky = 0, -- "2x Luck": Epic and up twice as often in Cash shoe boxes (the key from the first build)
+	Luck4 = 0, -- (Oct 27) "4x Luck": Epic and up four times as often in Cash shoe boxes; supersedes 2x Luck (never 8x)
 	TripleOpen = 0, -- open 3 Cash shoe boxes at once for 3x the Cash
 	ExtraEquip = 0, -- +1 shoe pair on (4 instead of 3); replaces the old crew-slot pass
 	-- (brief 23)
@@ -55,6 +58,12 @@ Products.Passes = {
 	AutoOpen = 0, -- "Auto Open": the box's T card opens box after box by itself (Shoes.client; free to stop any time)
 	Speed2x = 0, -- "2x Speed": walk speed x Products.SpeedPassFactor (2), LobbyService.walk
 	AutoCollect = 0, -- "Auto Collect": a street's pad Cash pays the moment its crew is down (StageService), no walk to the pad
+	-- (Oct 27) the 5 Robux exclusive guns (Config/Guns.Exclusive): owning the pass adds the gun (GunService)
+	GunNeonViper = 0, -- "Neon Viper", x8 Power per shot, 149 Robux
+	GunFrostbite = 0, -- "Frostbite", x12, 249 Robux
+	GunGalaxyRay = 0, -- "Galaxy Ray", x20, 399 Robux
+	GunInfernoCannon = 0, -- "Inferno Cannon", x28, 599 Robux
+	GunRoyalCrown = 0, -- "Royal Crown", x40, 899 Robux
 }
 -- Developer product ids (0 = not created yet).
 Products.DeveloperProducts = {
@@ -140,7 +149,9 @@ Products.Catalog = {
 	{ Key = 'DoubleCash', Kind = 'Pass', Section = 'Gamepass', Title = '2x Cash', Big = 'Every\nStage', Detail = 'Double Cash from pads and goals', Sub = 'Double pad Cash', Price = 149, Art = 'icon:DoubleCash', Tone = 'cardPurple', Offer = '2x Cash', Sticker = '2x', Wired = true },
 	{ Key = 'VIP', Kind = 'Pass', Section = 'Gamepass', Banner = true, Title = 'VIP', Big = 'VIP', Detail = 'GOLD TAG + 1.5x CASH', Sub = 'A gold tag and 1.5x Cash', Price = 249, Art = 'icon:VIP', Tone = 'cardGreen', Wired = true },
 	{ Key = 'AutoShoot', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Fight', Big = 'Hands\nFree', Detail = 'Fires at goons for you', Sub = 'Fires for you', Price = 99, Art = 'icon:AutoFight', Tone = 'cardRed', Offer = 'Auto Fight', Wired = true },
-	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = 'Lucky', Big = 'Better\nBoxes', Detail = 'Better odds for Epic and up in Cash boxes', Sub = 'Better box odds', Price = 129, Art = 'icon:Lucky', Tone = 'cardTeal', Wired = true },
+	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = '2x Luck', Big = '2x\nLuck', Detail = 'Epic+ 2x as often in Cash boxes', Sub = '2x box luck', Price = 129, Art = 'icon:Lucky', Tone = 'cardTeal', Sticker = '2x', Wired = true },
+	-- (Oct 27, the owner: "Add 2x and 4x Luck passes") 4x supersedes 2x: owning both is 4x, never 8x (ShoeRules.luckOf)
+	{ Key = 'Luck4', Kind = 'Pass', Section = 'Gamepass', Title = '4x Luck', Big = '4x\nLuck', Detail = '4x Epic+ odds. Replaces 2x Luck', Sub = '4x box luck', Price = 299, Art = 'icon:Lucky', Tone = 'cardGold', Sticker = '4x', Wired = true },
 	{ Key = 'TripleOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Triple Open', Big = '3 Boxes\nat Once', Detail = 'Open 3 Cash boxes at once, for 3x the Cash', Sub = 'Open 3 at once', Price = 179, Art = 'icon:TripleOpen', Tone = 'cardBlue', Sticker = 'x3', Wired = true },
 	{ Key = 'ExtraEquip', Kind = 'Pass', Section = 'Gamepass', Title = '+1 Shoe Slot', Big = '4 Pairs\nOn', Detail = 'Wear 4 pairs at once', Sub = 'Wear 4 pairs', Price = 99, Art = 'icon:ExtraEquip', Tone = 'cardPink', Sticker = '+1', Wired = true },
 	-- (brief 23) the 10x Cash pad and the two Robux lanes. A lane row's Price is its station's RobuxPrice (Config/Skins).
@@ -153,6 +164,12 @@ Products.Catalog = {
 	{ Key = 'AutoOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Open', Big = 'Open\nNon-Stop', Detail = 'The box T button opens boxes for you', Sub = 'Opens boxes for you', Price = 249, Art = 'icon:AutoOpen', Tone = 'cardTeal', Sticker = 'AUTO', Wired = true },
 	{ Key = 'Speed2x', Kind = 'Pass', Section = 'Gamepass', Title = '2x Speed', Big = 'Run\nFaster', Detail = 'Walk and run twice as fast', Sub = 'Twice as fast', Price = 99, Art = 'icon:Speed2x', Tone = 'cardGold', Offer = '2x Speed', Sticker = '2x', Wired = true },
 	{ Key = 'AutoCollect', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Collect', Big = 'Cash\nCollects Itself', Detail = 'A street\'s pad Cash pays the moment its crew is down', Sub = 'Pads pay by themselves', Price = 149, Art = 'icon:AutoCollect', Tone = 'cardGreen', Offer = 'Auto Collect', Sticker = 'AUTO', Wired = true },
+	-- (Oct 27) the Robux exclusive guns, one card each (Config/Guns.Exclusive: the price and Power come from there)
+	{ Key = 'GunNeonViper', Kind = 'Pass', Section = 'Gamepass', Gun = 'NeonViper', Title = 'Neon Viper', Big = 'x8\nPower', Detail = 'Exclusive gun: x8 Power per shot', Sub = 'x8 Power gun', Price = 149, Art = 'icon:Gun_NeonViper', Tone = 'cardGreen', Wired = true },
+	{ Key = 'GunFrostbite', Kind = 'Pass', Section = 'Gamepass', Gun = 'Frostbite', Title = 'Frostbite', Big = 'x12\nPower', Detail = 'Exclusive gun: x12 Power per shot', Sub = 'x12 Power gun', Price = 249, Art = 'icon:Gun_Frostbite', Tone = 'cardBlue', Wired = true },
+	{ Key = 'GunGalaxyRay', Kind = 'Pass', Section = 'Gamepass', Gun = 'GalaxyRay', Title = 'Galaxy Ray', Big = 'x20\nPower', Detail = 'Exclusive gun: x20 Power per shot', Sub = 'x20 Power gun', Price = 399, Art = 'icon:Gun_GalaxyRay', Tone = 'cardPurple', Wired = true },
+	{ Key = 'GunInfernoCannon', Kind = 'Pass', Section = 'Gamepass', Gun = 'InfernoCannon', Title = 'Inferno Cannon', Big = 'x28\nPower', Detail = 'Exclusive gun: x28 Power per shot', Sub = 'x28 Power gun', Price = 599, Art = 'icon:Gun_InfernoCannon', Tone = 'cardRed', Wired = true },
+	{ Key = 'GunRoyalCrown', Kind = 'Pass', Section = 'Gamepass', Gun = 'RoyalCrown', Title = 'Royal Crown', Big = 'x40\nPower', Detail = 'Exclusive gun: x40 Power per shot', Sub = 'x40 Power gun', Price = 899, Art = 'icon:Gun_RoyalCrown', Tone = 'cardGold', Wired = true },
 	-- ~Boosts~ (two 2x + one 3x bought one by one: 39 + 39 + 69 = 147)
 	{ Key = 'BoostBundle', Kind = 'Product', Section = 'Boost', Wide = true, Title = 'Boost Bundle', Detail = '45 minutes of boosts', Sub = 'Two 2x + one 3x', Bundle = { 'RepBoost2x', 'RepBoost2x', 'RepBoost3x' }, Lines = { '- Two 2x Power Boosts', '- One 3x Power Boost' }, Price = 119, WasPrice = 147, Art = 'icon:BoostBundle', Tone = 'rainbow', Wired = true },
 	{ Key = 'RepBoost2x', Kind = 'Product', Section = 'Boost', Title = '2x Power', Detail = '15 minutes', Sub = '15 minutes', Boost = 2, Price = 39, Art = 'icon:PotionRed', Tone = 'cardRed', Wired = true },
@@ -187,7 +204,7 @@ Products.Catalog = {
 	-- FIGHTS30 BEGIN (brief 30, FIGHTS: the revive screen and the World Boss timer; never in the Store's sections)
 	{ Key = 'Revive', Kind = 'Product', Section = 'Fight', Title = 'Revive!', Detail = 'Stand up where you fell with full HP', Price = 15, Art = 'icon:Shield', Tone = 'green', Wired = true },
 	{ Key = 'Revenge', Kind = 'Product', Section = 'Fight', Title = 'Revenge!', Detail = 'Stand up with full HP and knock out the crew', Price = 39, Art = 'icon:Skull', Tone = 'gold', Wired = true },
-	{ Key = 'WorldBossSkip', Kind = 'Product', Section = 'Fight', Title = 'Skip', Detail = 'The next World Boss lands now, for everyone here', Price = 25, Art = 'icon:Skull', Tone = 'blue', Wired = true },
+	{ Key = 'WorldBossSkip', Kind = 'Product', Section = 'Fight', Title = 'Skip', Detail = 'The next World Boss lands now, for everyone here', Price = 25, Art = 'icon:Skull', Tone = 'blue', Wired = FEATURES.WorldBoss == true }, -- (off with the World Boss: Config/Features)
 	-- FIGHTS30 END
 }
 Products.ByKey = {}

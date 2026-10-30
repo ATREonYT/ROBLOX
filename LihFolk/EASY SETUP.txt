@@ -1,0 +1,30 @@
+LihFolk Vault V2: download and setup
+1. Remove V1 (if you have it)
+In Obsidian, click the vault switcher at the bottom left, then Manage vaults.
+Find LihFolk Vault V1, click ⋯, then Remove from list. This only removes it from Obsidian.
+Delete the old V1 folder, or move it somewhere as a backup.
+If you added V1’s extra Claude Code plugins (caveman, obsidian-skills) only for V1, remove them in Claude Code with /plugin, then Manage, then Uninstall. V2 doesn’t need them.
+2. Download V2
+Go to github.com/lihfolk-cy/v2-vault.
+Click the green Code button, then Download ZIP, or use LihFolk-Vault-V2-2.5.0.zip if you were given it.
+Unzip it somewhere permanent, for example Documents\LihFolk Vault V2.
+3. Open it in Obsidian
+Obsidian: vault switcher, then Open folder as vault.
+Pick the LihFolk Vault V2 folder inside what you unzipped (the folder with 000 Home).
+If asked, click Trust author and enable plugins. This turns on the small LihFolk Graph plugin; the look works either way.
+Open 000 Home. The Celestial theme, colours and graph load automatically.
+4. Add it to Claude Code (optional but recommended)
+
+In Claude Code, run:
+
+/plugin marketplace add lihfolk-cy/v2-vault
+/plugin install lihfolk@lihfolk
+
+Then restart Claude Code. Ask any Roblox question and it uses the vault automatically.
+
+Updating later: run /plugin marketplace update lihfolk in Claude Code, and download the ZIP again for Obsidian.
+
+5. Asset pack (optional)
+Download the asset pack zips from the v2.3.0 release on the GitHub page.
+Unzip them all into one folder.
+Set the LIHFOLK_ASSETS environment variable to that folder. In Claude Code, /lihfolk:assets setup walks you through it.

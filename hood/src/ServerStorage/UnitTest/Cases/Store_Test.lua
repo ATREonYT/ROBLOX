@@ -545,6 +545,62 @@ return function(t)
 		t.expect.truthy(string.find(Products.ByKey.Lucky.Detail, 'Cash boxes', 1, true) ~= nil)
 	end)
 
+	t.test('4x Luck: Epic and up weigh 4x in a Cash box, every column adds to 100, the Robux boxes never change', function()
+		local plain, two, four = R.chances('Street', 1), R.chances('Street', 2), R.chances('Street', 4)
+		local sums = { 0, 0, 0 }
+		for i, c in four do
+			sums[1] += plain[i].Chance; sums[2] += two[i].Chance; sums[3] += c.Chance
+			if Shoes.ById[c.Id].Rank >= R.LuckyRank then
+				t.expect.truthy(c.Chance > two[i].Chance and two[i].Chance > plain[i].Chance)
+			else
+				t.expect.truthy(c.Chance < two[i].Chance and two[i].Chance < plain[i].Chance)
+			end
+		end
+		for _, x in sums do t.expect.near(x, 100, 1e-6) end
+		-- (Epic: 950 x 4 of 6200 + 2500 + (950 + 300 + 45 + 5) x 4 = 13900)
+		t.expect.near(four[3].Chance, 3800 / 13900 * 100, 1e-9)
+		-- true still means 2x (the old Lucky flag), and the table's three columns are the three levels
+		t.expect.equal(R.chances('Street', true)[3].Chance, two[3].Chance)
+		local rows = R.luckTable('Street')
+		t.expect.equal(#rows, #four)
+		for i, row in rows do
+			t.expect.equal(row.Normal, plain[i].Chance); t.expect.equal(row.Lucky, two[i].Chance); t.expect.equal(row.Luck4, four[i].Chance)
+		end
+		t.expect.equal(R.chanceOf('Checkmate', 4), four[3].Chance)
+		-- a roll that is Rare without a pass is Epic with 4x
+		t.expect.equal(R.roll('Street', 0.8, 4), 'Checkmate')
+		for _, id in { 'Exclusive', 'Grail' } do
+			local a, b = R.chances(id), R.chances(id, 4)
+			for i in a do t.expect.equal(a[i].Chance, b[i].Chance) end
+			for _, row in R.luckTable(id) do t.expect.equal(row.Luck4, row.Normal) end
+		end
+		-- the Products row: its own key and price, a pass, sold, and its card says it replaces 2x
+		local e = Products.ByKey.Luck4
+		t.expect.truthy(e ~= nil and e.Kind == 'Pass' and e.Price == 299 and e.Wired == true and Products.Passes.Luck4 ~= nil)
+		t.expect.truthy(string.find(e.Detail, 'Replaces 2x', 1, true) ~= nil)
+		t.expect.equal(Products.ByKey.Lucky.Title, '2x Luck'); t.expect.equal(Products.ByKey.Lucky.Price, 129)
+	end)
+
+	t.test('4x Luck supersedes 2x Luck: owning both is 4x, never 8x', function()
+		t.expect.equal(R.levelFromPasses(nil, nil), 1)
+		t.expect.equal(R.levelFromPasses(true, nil), 2)
+		t.expect.equal(R.levelFromPasses(nil, true), 4)
+		t.expect.equal(R.levelFromPasses(true, true), 4)
+		t.expect.equal(R.luckLevel(8), 1); t.expect.equal(R.luckLevel(3), 1); t.expect.equal(R.luckLevel('4'), 1)
+		local both = fakePlayer()
+		both:SetAttribute('Pass_Lucky', true); both:SetAttribute('Pass_Luck4', true)
+		t.expect.equal(R.luckOf(both), 4)
+		t.expect.equal(Opening.lucky(both), 4)
+		-- ShoeOpening rolls with it, and tells the reveal the level it rolled with
+		local ids, info = Opening.openMany(both, newProfile(), 'Street', 1, { Rolls = { 0.8 } })
+		t.expect.equal(ids[1], 'Checkmate')
+		t.expect.equal(info.Luck, 4)
+		local only4 = fakePlayer(); only4:SetAttribute('Pass_Luck4', true)
+		t.expect.equal(R.luckOf(only4), 4)
+		t.expect.equal(R.luckOf(fakePlayer()), 1)
+		t.expect.equal(R.luckOf(nil), 1)
+	end)
+
 	t.test('Triple Open: 3 at once for 3x the Price, with room for 3 pairs', function()
 		local s = R.sanitize({ Owned = {}, Equipped = {}, Opened = 0 })
 		t.expect.truthy(R.canOpen(s, 75, 'Street', 1, nil, 3))

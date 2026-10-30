@@ -1352,6 +1352,7 @@ function UnboxWorld.wordsUpdate(job, t)
 		end
 	end
 	if W.flash.BackgroundColor3 ~= W.flashColor then W.flash.BackgroundColor3 = W.flashColor end
+	if fa >= 0.3 then require(Shared:WaitForChild('FlashGate')).note('unbox') end -- (the hits and gates wait a second after it)
 	local ft = 1 - M.c01(fa)
 	if W.flash.BackgroundTransparency ~= ft then W.flash.BackgroundTransparency = ft end
 	-- the vignette: in with the HUD going (0.3 s), out with the close

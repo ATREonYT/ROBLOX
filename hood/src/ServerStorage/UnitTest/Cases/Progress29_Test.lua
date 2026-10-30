@@ -44,7 +44,7 @@ return function(t)
 			t.expect.equal(lv, L.levelOf(Balance.StagePower[s]))
 		end
 		t.expect.equal(L.stageLevel(1), 6); t.expect.equal(L.stageLevel(4), 15); t.expect.equal(L.stageLevel(16), 31)
-		t.expect.equal(L.rebirthLevel(0), 18); t.expect.equal(L.rebirthLevel(49), 45)
+		t.expect.equal(L.rebirthLevel(0), 18); t.expect.equal(L.rebirthLevel(49), 50)
 		for s = 1, 4 do t.expect.truthy(L.stageLevel(s) <= L.rebirthLevel(0)) end -- (stages 1-4 come before the first rebirth)
 		local rl = 0
 		for n = 0, 20 do local v = L.rebirthLevel(n); t.expect.truthy(v >= rl); rl = v end
@@ -53,7 +53,7 @@ return function(t)
 
 	t.test('the goal chain speaks in Levels but still needs Power', function()
 		local first = Goals.List[1]
-		t.expect.equal(first.Text, 'Reach Level 6 in BAY 1'); t.expect.equal(first.Need.Power, 7) -- (Level 6 starts at 7 Power; the Stage 1 gate's own Required stays 10)
+		t.expect.equal(first.Text, 'Train to 10 Power in BAY 1'); t.expect.equal(first.Need.Power, 10) -- (Oct 27, flow: the gate's own Power, said in Power)
 		t.expect.truthy(string.find(Goals.List[9].Where, 'Level bar', 1, true) ~= nil)
 	end)
 

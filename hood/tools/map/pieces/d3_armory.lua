@@ -66,10 +66,11 @@ Armory.LabelW, Armory.LabelH = 6.0, 2.7 -- the nameplate's size (B31: the price 
 -- every top edge, in the hall floor's lavender family.
 Armory.Tone = {
 	-- (B34 fix round: warm greys and cream instead of the cold lavender, on the east quadrant's green field)
-	deck = C(214, 204, 190), tread = C(222, 212, 198), trim = C(240, 232, 220), face = C(150, 132, 118),
-	kick = C(118, 102, 92), riser = C(178, 164, 150), wall = C(176, 160, 146), band = C(136, 118, 104),
-	pilaster = C(222, 212, 198), pad = C(228, 220, 208), padLip = C(244, 238, 228), plinth = C(130, 112, 100),
-	apron = C(196, 188, 176), kerb = C(98, 86, 78), kerbTop = C(132, 116, 104),
+	-- (Oct 28, the owner: "too many shades": the bands, kicks and kerbs a light warm stone, not brown-grey)
+	deck = C(214, 204, 190), tread = C(222, 212, 198), trim = C(240, 232, 220), face = C(200, 184, 166),
+	kick = C(188, 172, 156), riser = C(196, 184, 170), wall = C(204, 190, 174), band = C(196, 180, 162),
+	pilaster = C(222, 212, 198), pad = C(228, 220, 208), padLip = C(244, 238, 228), plinth = C(190, 174, 158),
+	apron = C(206, 198, 186), kerb = C(186, 170, 154), kerbTop = C(204, 190, 174),
 	matRim = C(244, 246, 255),
 }
 
@@ -300,11 +301,13 @@ function Armory.label(c, pos, gun, state, colors)
 	local g = Instance.new('BillboardGui')
 	g.Name = 'GunLabel'
 	g.Size = UDim2.fromScale(Armory.LabelW, Armory.LabelH)
-	g.MaxDistance = 46
+	g.MaxDistance = 24
 	-- (LOBBY5 r3, CRITIC3: the whole price ladder reads from the walkway, the back tiers too; B31 PLAZA, critic 3: up close
-	-- only, whole to 34 studs, gone by 46, so the plaza's other views stay clear of the stand's ten plates)
-	g:SetAttribute('FadeNear', 34)
-	g:SetAttribute('FadeFar', 46)
+	-- only. Lobby round 2, the critic: "about 10 labels in one view, back rows over front rows": only the guns you stand by,
+	-- whole to 16 studs from the camera, gone by 24, and a nearer plate hides one it covers, like ref_V2-02.0's 3 per view)
+	g:SetAttribute('FadeNear', 16)
+	g:SetAttribute('FadeFar', 24)
+	g:SetAttribute('FadeGroup', 'Guns')
 	g.LightInfluence = 0
 	g.Parent = anchor
 	local ink = C(24, 22, 40)
@@ -337,7 +340,7 @@ function Armory.label(c, pos, gun, state, colors)
 	end
 	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' Power', P.white, 0, 0.6, 3)
 	local price = row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), look.Word or C(255, 228, 92), 0.62, 0.38, 2)
-	if state == 'Equipped' or state == 'Owned' then price.Text = string.upper(state) end
+	if state == 'Equipped' or state == 'Owned' then price.Text = '' end -- (lobby round 2: the state word is the plate's)
 	shadowAll(g)
 	return anchor
 end
@@ -405,6 +408,7 @@ function Armory.slot(c, gun, x, z, y, colors)
 	end
 	local sg = surface(strip, Enum.NormalId.Front, 60)
 	sg.Name = 'StateGui'
+	sg.MaxDistance = 26 -- (lobby round 2: the state tag reads at the stand, not across the hall)
 	line(sg, 'State', string.upper(state), P.white, FONT.title, 0.06, 0.88, look.Strip:Lerp(P.black, 0.45), 2)
 	-- The gun floating over the pad in profile to the hall (muzzle to the viewer's right), tilted up a little,
 	-- bobbing; never turning, so it is never seen end-on.

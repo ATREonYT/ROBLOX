@@ -14,8 +14,8 @@ return function(t)
   t.expect.equal(R.multiplier(-3),1);t.expect.equal(R.multiplier(0/0),1);t.expect.equal(R.multiplier('7'),1);t.expect.equal(R.multiplier(2.7),3)
  end)
  t.test('each rebirth needs more Power than the last, in round numbers',function()
-  t.expect.equal(R.need(0),1000);t.expect.equal(R.need(1),3500);t.expect.equal(R.need(2),8000);t.expect.equal(R.need(8),180000);t.expect.equal(R.need(49),55000000);t.expect.equal(#Balance.RebirthNeed,50)
-  t.expect.equal(R.need(50),60000000);t.expect.equal(R.need(51),70000000);t.expect.equal(R.need(52),80000000) -- (past the list: x1.1 x (n + 1) / n)
+  t.expect.equal(R.need(0),1000);t.expect.equal(R.need(1),3500);t.expect.equal(R.need(2),8000);t.expect.equal(R.need(8),180000);t.expect.equal(R.need(49),530000000);t.expect.equal(#Balance.RebirthNeed,50)
+  t.expect.equal(R.need(50),600000000);t.expect.equal(R.need(51),650000000);t.expect.equal(R.need(52),750000000) -- (past the list: x1.1 x (n + 1) / n)
   for n=0,#Balance.RebirthNeed-1 do t.expect.equal(R.need(n),Balance.RebirthNeed[n+1]) end
   t.expect.equal(Balance.RebirthBase,R.need(0))
   local last=0
@@ -133,5 +133,11 @@ return function(t)
  end)
  t.test('walk speed: 16 to start, a stud faster a rebirth, 24 at most',function()
   t.expect.equal(R.walkSpeed(0),16);t.expect.equal(R.walkSpeed(4),20);t.expect.equal(R.walkSpeed(16),24);t.expect.equal(R.walkSpeed(500),24);t.expect.equal(R.walkSpeed(nil),16)
+ end)
+ -- (Oct 27 review) Power stops at 1e15 (every writer's cap): a need past it could never be met (World 2, Scale 5000, hit it
+ -- from rebirth 104 before the cap came after the Scale; tools/checks/loop.luau's notes)
+ t.test('a rebirth need never passes the Power cap',function()
+  for _,n in {0,50,103,104,200,999,R.Max} do t.expect.truthy(R.need(n)<=1e15 and R.need(n)>0) end
+  t.expect.truthy(R.canRebirth(1e15,R.Max-1))
  end)
 end

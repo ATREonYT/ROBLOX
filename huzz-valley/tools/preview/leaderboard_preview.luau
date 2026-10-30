@@ -1,0 +1,38 @@
+-- A board's face (Shared/LeaderboardLook, the game's own code) for the side-by-side with Huss Valley's MOST WINS
+-- board (tools/preview/leaderboard_vs_ref.py). The face paints its own backdrop, studs and web (as in the game);
+-- the side by side then puts the game's colour grade on it. The rows hold the reference board's own names and
+-- numbers, for comparing only.
+-- From tools/preview: lune run harness.luau ../../src <out.json> "$(cat leaderboard_preview.luau)" setup_ui.luau
+local RS = game:GetService("ReplicatedStorage")
+local Look = require(RS.Shared.LeaderboardLook)
+local Rules = require(RS.Shared.LeaderboardRules)
+local Config = require(RS.Shared.Config.Leaderboards)
+_G.__screenSize = Vector2.new(Look.Canvas.W, Look.Canvas.H)
+local gui = Instance.new("ScreenGui")
+gui.Name = "BoardPreview"
+gui.Parent = game:GetService("StarterGui")
+local slab = Instance.new("Frame") -- (the face paints its own colour, studs and web: nothing drawn under it)
+slab.Name = "Slab"
+slab.BorderSizePixel = 0
+slab.BackgroundTransparency = 1
+slab.Size = UDim2.fromOffset(Look.Canvas.W, Look.Canvas.H)
+slab.Parent = gui
+local api = { Instance = Instance, UDim2 = UDim2, UDim = UDim, Color3 = Color3, Vector2 = Vector2, Vector3 = Vector3, CFrame = CFrame, Enum = Enum, Font = Font }
+local def
+for _, d in Config.Boards do if d.Stat == (__previewStat or "Wins") then def = d end end
+local canvas = Look.canvas(api, slab, def, Config.Subtitle)
+local names = { "5_dmi", "TheMicrobloxGamer", "roblox_user_4802712065", "Jefferson6293", "hope_cakepop", "firhankhan", "noctyythegoat",
+	"XXXStk_FamilyXXX", "Sk_jesse24", "lvhhaz", "imnotgau", "yaboihame" }
+local values = { 2611, 2441, 2402, 2148, 1999, 1987, 1980, 1973, 1844, 1747, 1720, 1716 }
+if def.Stat == "Level" then -- (the HIGHEST LEVEL board in his Oct 19 screenshot and the clip)
+	names = { "yourfavfraud", "Dtgxhstsyd", "roblox_user_4802712065", "BRATAMAn1", "Just_better260", "admiringthenightsky",
+		"AHMET_GALATA", "BynXNator", "steeltenz", "BeamedY0U", "xM4zT3R808121x", "R0SEES" }
+	values = { 402, 377, 357, 349, 274, 270, 256, 254, 251, 242, 240, 239 }
+end
+local entries = {}
+for i, n in names do entries[i] = { u = i, n = n, v = values[i] } end
+Look.fill(api, canvas, def, entries, Config.Shown, Rules.format, nil)
+for _, d in canvas:GetDescendants() do
+	if d.Name == "Avatar" then d:SetAttribute("Icon", "Avatar") end -- (offline: a stand-in head)
+end
+return gui
