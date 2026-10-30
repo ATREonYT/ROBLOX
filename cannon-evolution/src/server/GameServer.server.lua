@@ -1247,11 +1247,16 @@ local actions = {
 		if not egg or egg.Currency == "Robux" then
 			return false
 		end
-		-- 8x Open also covers 3x
-		if count == 8 and hasPass(player, "OctoOpen") then
-			count = 8
-		elseif count == 3 and (hasPass(player, "TripleOpen") or hasPass(player, "OctoOpen")) then
-			count = 3
+		-- 8x Open also covers 3x. Asking for more than you own hatches nothing
+		-- (rather than quietly hatching 1), e.g. while a pass is still loading
+		if count == 8 then
+			if not hasPass(player, "OctoOpen") then
+				return false, "You need the 8x Open pass!"
+			end
+		elseif count == 3 then
+			if not (hasPass(player, "TripleOpen") or hasPass(player, "OctoOpen")) then
+				return false, "You need the Triple Open pass!"
+			end
 		else
 			count = 1
 		end

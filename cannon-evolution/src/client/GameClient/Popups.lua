@@ -119,10 +119,48 @@ return function(ctx)
 	end
 
 	-----------------------------------------------------------------------
+	-- Big moments (rewards, UNLOCKED!, egg hatches) take turns: one that
+	-- arrives while another is showing waits until that one is closed
+	-----------------------------------------------------------------------
+	local bigQueue, bigBusy = {}, false
+	local function pumpBig()
+		if bigBusy or #bigQueue == 0 then
+			return
+		end
+		bigBusy = true
+		local job = table.remove(bigQueue, 1)
+		task.spawn(function()
+			local released = false
+			local function done()
+				if not released then
+					released = true
+					task.delay(0.2, function()
+						bigBusy = false
+						pumpBig()
+					end)
+				end
+			end
+			local ok, err = pcall(job, done)
+			if not ok then
+				warn("Popup failed: " .. tostring(err))
+				done()
+			end
+		end)
+	end
+	local function queueBig(job)
+		table.insert(bigQueue, job)
+		pumpBig()
+	end
+
+	-----------------------------------------------------------------------
 	-- Reward popup ("You got...")
 	-----------------------------------------------------------------------
-	function Popups.Rewards(list, title)
-		local _, holder, close = modal(640, 360)
+	local function showRewards(done, list, title)
+		local _, holder, closeModal = modal(640, 360)
+		local function close()
+			closeModal()
+			done()
+		end
 		Kit.text({ Text = title or "You got!", Size = 60, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0, 70), ZIndex = 75, Parent = holder })
 		local row = new("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 85), Size = UDim2.new(1, 0, 0, 180), ZIndex = 72, Parent = holder })
 		Kit.list(row, 16, true)
@@ -147,6 +185,11 @@ return function(ctx)
 		okButton(holder, close)
 		Kit.playSound("Reward")
 	end
+	function Popups.Rewards(list, title)
+		queueBig(function(done)
+			showRewards(done, list, title)
+		end)
+	end
 	Remotes.Rewarded.OnClientEvent:Connect(function(list)
 		Popups.Rewards(list)
 	end)
@@ -154,8 +197,12 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- "UNLOCKED!" celebration after buying a gamepass or cannon
 	-----------------------------------------------------------------------
-	function Popups.Unlocked(title, icon, line)
-		local shade, holder, close = modal(620, 440)
+	local function showUnlocked(done, title, icon, line)
+		local shade, holder, closeModal = modal(620, 440)
+		local function close()
+			closeModal()
+			done()
+		end
 		Kit.rays(holder, { Size = UDim2.fromOffset(560, 560), Position = UDim2.fromScale(0.5, 0.42), Color = Kit.Colors.Yellow, Transparency = 0.6, Speed = 35, ZIndex = 72 })
 		Kit.rays(holder, { Size = UDim2.fromOffset(420, 420), Position = UDim2.fromScale(0.5, 0.42), Color = Color3.new(1, 1, 1), Transparency = 0.75, Speed = -20, ZIndex = 72 })
 		local banner = Kit.text({ Text = "UNLOCKED!", Size = 72, StrokeSize = 5, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0, 80), ZIndex = 76, Parent = holder })
@@ -182,6 +229,11 @@ return function(ctx)
 		Kit.confetti(shade, 60)
 		Kit.playSound("Reward")
 	end
+	function Popups.Unlocked(title, icon, line)
+		queueBig(function(done)
+			showUnlocked(done, title, icon, line)
+		end)
+	end
 	Remotes.Unlocked.OnClientEvent:Connect(Popups.Unlocked)
 
 	-----------------------------------------------------------------------
@@ -192,10 +244,8 @@ return function(ctx)
 	-- anything), a swell, the burst, pets pop out one after another. Rare
 	-- pets add sparkles; Legendary and up dim the screen further and get a
 	-- banner with confetti. Tap to skip once the pets are out. Hatches that
-	-- arrive mid-animation wait their turn instead of being dropped.
+	-- arrive mid-animation wait their turn (queueBig) instead of being dropped.
 	-----------------------------------------------------------------------
-	local hatchQueue = {}
-	local hatching = false
 	local RARITY_WORD = { [5] = "LEGENDARY!", [6] = "MYTHIC!", [7] = "SECRET!" }
 
 	local function shards(parent, color, count)
@@ -477,19 +527,13 @@ return function(ctx)
 	end
 
 	function Popups.Hatch(eggId, pets)
-		table.insert(hatchQueue, { eggId, pets })
-		if hatching then
-			return
-		end
-		hatching = true
-		while #hatchQueue > 0 do
-			local job = table.remove(hatchQueue, 1)
-			local ok, err = pcall(playHatch, job[1], job[2])
+		queueBig(function(done)
+			local ok, err = pcall(playHatch, eggId, pets)
 			if not ok then
 				warn("Hatch animation failed: " .. tostring(err))
 			end
-		end
-		hatching = false
+			done()
+		end)
 	end
 	Remotes.Hatched.OnClientEvent:Connect(Popups.Hatch)
 
