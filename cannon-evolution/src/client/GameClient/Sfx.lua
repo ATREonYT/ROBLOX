@@ -64,7 +64,7 @@ local FALLBACK = {
 
 -- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
 -- Alex, Oct 30: "make the earned sounds just quick, nothing long". So rewards stop by 0.7 s at most.
-local CUT = { Confirm = 0.6, Coin = 0.35, Reward = 0.6, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
+local CUT = { Click = 0.25, Shot = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.6, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
 
 -- slots that use another slot's sound until they have their own
 local BORROW = { Unlock = "Reward" }
