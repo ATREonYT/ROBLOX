@@ -50,10 +50,24 @@ return function(ctx)
 		Kit.text({ Text = props.Title, Size = 22, Scaled = true, MaxSize = 24, FrameSize = UDim2.new(1, -10, 0, 28), Position = UDim2.fromOffset(5, 4), ZIndex = 30, Parent = card })
 		-- the icon fills the space between the title and the text/button below
 		local below = props.Desc and 92 or 52
+		if not props.Gems then
+			-- paid with Robux: soft light rays turning behind the picture, so it reads as a prize
+			local glow = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -24, 1, -(34 + below + 6)), Position = UDim2.new(0.5, 0, 0, 34 + 3), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 27, Parent = card })
+			Kit.rays(glow, { Size = UDim2.fromScale(1.3, 1.3), Color = Color3.fromRGB(255, 250, 210), Transparency = 0.6, ZIndex = 27 })
+		end
 		local icon = Kit.icon(props.Icon, { Size = UDim2.new(1, -24, 1, -(34 + below + 6)), Position = UDim2.new(0.5, 0, 0, 34 + 3), Anchor = Vector2.new(0.5, 0), ZIndex = 29, Parent = card })
 		new("UIAspectRatioConstraint", { Parent = icon })
 		Kit.bob(icon, 3, 2.2)
 		Kit.hoverLift(card, icon)
+		if props.Value then
+			-- a true value tag, worked out from the prices (vs the smallest pack of the same kind); it sits on the
+			-- picture's corner, under the title (at the top it hid the end of the name)
+			local tag = new("Frame", { Name = "Value", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(92, 28), Position = UDim2.new(1, -2, 0, 36), AnchorPoint = Vector2.new(1, 0), Rotation = 8, ZIndex = 33, Parent = card })
+			Kit.corner(8, tag)
+			Kit.stroke(3, nil, tag)
+			Kit.gradient(Kit.Colors.Yellow, Kit.Colors.YellowDark, tag)
+			Kit.text({ Text = props.Value, Size = 18, Color = Color3.fromRGB(120, 50, 0), StrokeColor = Color3.new(1, 1, 1), StrokeSize = 2, FrameSize = UDim2.fromScale(1, 1), ZIndex = 34, Parent = tag })
+		end
 		if props.Desc then
 			Kit.text({ Text = props.Desc, Size = 16, Scaled = true, MaxSize = 17, Wrapped = true, FrameSize = UDim2.new(1, -12, 0, 36), Position = UDim2.new(0.5, 0, 1, -52), Anchor = Vector2.new(0.5, 1), ZIndex = 30, Parent = card })
 		end
@@ -63,12 +77,12 @@ return function(ctx)
 			Kit.corner(10, ribbon)
 			Kit.stroke(3, nil, ribbon)
 			Kit.gradient(Kit.Colors.Green, Kit.Colors.GreenDark, ribbon)
-			Kit.text({ Text = "✔ OWNED", Size = 24, Scaled = true, MaxSize = 24, FrameSize = UDim2.new(1, -10, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 31, Parent = ribbon })
+			Kit.text({ Text = "OWNED", Size = 24, Scaled = true, MaxSize = 24, FrameSize = UDim2.new(1, -10, 0.8, 0), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 31, Parent = ribbon })
 			return card, ribbon
 		end
 		local buy
 		if props.Gems then
-			buy = Kit.button({ Text = "💎 " .. props.Gems, Color = "Purple", Size = UDim2.new(1, -16, 0, 38), Position = UDim2.new(0.5, 0, 1, -8), Anchor = Vector2.new(0.5, 1), TextSize = 24, ZIndex = 30, Parent = card, OnClick = props.OnBuy })
+			buy = Kit.button({ Text = tostring(props.Gems), Icon = "Gem", IconSize = 24, Color = "Purple", Size = UDim2.new(1, -16, 0, 38), Position = UDim2.new(0.5, 0, 1, -8), Anchor = Vector2.new(0.5, 1), TextSize = 24, ZIndex = 30, Parent = card, OnClick = props.OnBuy })
 		else
 			buy = robuxButton(card, props.Price, props.OnBuy)
 		end
@@ -148,6 +162,15 @@ return function(ctx)
 		return page
 	end
 
+	-- "+48% MORE": how much more you get per Robux than the smallest pack of the same kind (only shown when it's real)
+	local function valueTag(amount, price, baseAmount, basePrice)
+		if not (amount and price and baseAmount and basePrice) then
+			return nil
+		end
+		local more = math.floor((amount / price) / (baseAmount / basePrice) * 100 - 100 + 0.5)
+		return more >= 10 and ("+" .. more .. "% MORE") or nil
+	end
+
 	local builders = {
 		Featured = buildFeatured,
 		Gamepasses = function(page)
@@ -173,8 +196,15 @@ return function(ctx)
 				else
 					amount = "+" .. Config.Format(Config.PowerPerMinute(data, State.Passes.VIP) * p.Grant.PowerMinutes) .. " Power"
 				end
+				local base = Config.Products[p.Grant.CashMinutes and "CashSmall" or "PowerPack1"]
+				local value
+				if p.Grant.CashMinutes then
+					value = valueTag(p.Grant.CashMinutes, p.Price, base.Grant.CashMinutes, base.Price)
+				else
+					value = valueTag(p.Grant.PowerMinutes, p.Price, base.Grant.PowerMinutes, base.Price)
+				end
 				tile(grid, {
-					Title = p.Name, Icon = p.Icon, Order = i, Desc = amount, Price = p.Price, Texture = "StudTile",
+					Title = p.Name, Icon = p.Icon, Order = i, Desc = amount, Price = p.Price, Texture = "StudTile", Value = value,
 					Color = p.Grant.CashMinutes and Color3.fromRGB(60, 190, 70) or Color3.fromRGB(255, 170, 30),
 					OnBuy = function()
 						ctx.Request("Purchase", "Product", key)
@@ -186,8 +216,10 @@ return function(ctx)
 			local grid = gridPage(page)
 			for i, key in ipairs({ "GemsSmall", "GemsMedium", "GemsLarge", "StarterPack" }) do
 				local p = Config.Products[key]
+				local base = Config.Products.GemsSmall
 				tile(grid, {
 					Title = p.Name, Icon = p.Icon, Order = i, Price = p.Price, Texture = "StudTile",
+					Value = key ~= "StarterPack" and valueTag(p.Grant.Gems, p.Price, base.Grant.Gems, base.Price) or nil,
 					Desc = key == "StarterPack" and "500 Gems + Royal Cube + Cash" or nil,
 					Color = key == "StarterPack" and Color3.fromRGB(240, 150, 30) or Color3.fromRGB(180, 70, 255),
 					OnBuy = function()

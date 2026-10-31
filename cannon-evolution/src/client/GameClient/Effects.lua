@@ -854,7 +854,7 @@ return function(ctx)
 				splash(Vector3.new(p.X, done[5] - BALL_RADIUS + 0.2, p.Z), hopIndex == 2)
 				if mine then
 					-- each skip a semitone higher than the last, up to seven (vault: rising pitch reads as a streak)
-					Kit.playSound("Skip", 2 ^ (math.min(hopIndex - 2, 7) / 12))
+					Kit.playSound("Skip", 1 + math.min(hopIndex - 2, 5) * 0.015) -- a gentle rise; whole-semitone steps sounded robotic (Alex, Oct 31)
 					local share = math.floor(cash * done[2] / distance) - paid
 					if share > 0 then
 						paid += share
@@ -898,7 +898,7 @@ return function(ctx)
 				local g = gates[nextGate]
 				if g and dist * reported / distance >= g.At then
 					nextGate += 1
-					Kit.playSound("Coin", 1 + math.min(nextGate, 8) * 0.04)
+					Kit.playSound("Coin", 1 + math.min(nextGate, 8) * 0.01) -- a gentle rise; bigger steps sounded robotic (Alex, Oct 31)
 				end
 				if bestFlag and not passedBest and dist * reported / distance > best then
 					passedBest = true
@@ -941,10 +941,45 @@ return function(ctx)
 	end)
 
 	-----------------------------------------------------------------------
-	-- Egg stands: walk up to one and the egg menu opens on that egg
+	-- Egg stands: click (or tap) the egg to open the egg menu on it (Alex, Oct 31:
+	-- walking up is no longer enough). Works on any EggStands child that carries an
+	-- EggId attribute, including stands rebuilt later. Walking away closes the menu
+	-- only if a stand opened it.
 	-----------------------------------------------------------------------
-	local EGG_RANGE = 11
-	local nearEgg = nil
+	local EGG_RANGE = 14 -- studs: click range, and how far you can walk before it closes
+	local openedFrom = nil
+	local function hookStand(stand)
+		if not stand:IsA("Model") or stand:GetAttribute("EggHooked") then
+			return
+		end
+		stand:SetAttribute("EggHooked", true)
+		local function open()
+			local id = stand:GetAttribute("EggId")
+			if id and not player:GetAttribute("Launching") then
+				openedFrom = stand
+				ctx.Open("Pets", "Eggs", id)
+			end
+		end
+		-- clicking anywhere on the stand or its egg (mouse and touch)
+		local click = Instance.new("ClickDetector")
+		click.MaxActivationDistance = EGG_RANGE
+		click.Parent = stand
+		click.MouseClick:Connect(open)
+		-- the on-screen button for gamepad / keyboard (E), placed on the egg
+		local spot = stand:FindFirstChild("Egg")
+		spot = spot and (spot:IsA("BasePart") and spot or spot:FindFirstChildWhichIsA("BasePart", true))
+			or stand.PrimaryPart or stand:FindFirstChildWhichIsA("BasePart", true)
+		if spot then
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.ActionText = "Open"
+			prompt.ObjectText = "Egg"
+			prompt.HoldDuration = 0
+			prompt.MaxActivationDistance = EGG_RANGE - 4
+			prompt.RequiresLineOfSight = false
+			prompt.Parent = spot
+			prompt.Triggered:Connect(open)
+		end
+	end
 	task.spawn(function()
 		local stands = workspace:WaitForChild("EggStands", 30)
 		if not stands then
@@ -952,37 +987,45 @@ return function(ctx)
 		end
 		-- eggs turn slowly on their own stands (no bob: the stand stays on the floor)
 		local spinners = {}
-		for _, stand in ipairs(stands:GetChildren()) do
+		local function addStand(stand)
+			if stand:GetAttribute("EggId") then
+				hookStand(stand)
+			end
 			local egg = stand:FindFirstChild("Egg")
-			if egg then
-				table.insert(spinners, { Model = egg, Home = egg:GetPivot(), Phase = #spinners })
+			if egg and egg:IsA("Model") and not spinners[egg] then
+				spinners[egg] = { Home = egg:GetPivot(), Phase = #stands:GetChildren() }
 			end
 		end
+		for _, stand in ipairs(stands:GetChildren()) do
+			addStand(stand)
+		end
+		stands.ChildAdded:Connect(function(stand)
+			task.wait() -- let its parts and attributes arrive
+			addStand(stand)
+		end)
 		RunService.Heartbeat:Connect(function()
 			local t = os.clock()
-			for _, e in ipairs(spinners) do
-				e.Model:PivotTo(e.Home * CFrame.Angles(0, t * 0.6 + e.Phase, 0))
+			for egg, e in pairs(spinners) do
+				if egg.Parent then
+					egg:PivotTo(e.Home * CFrame.Angles(0, t * 0.6 + e.Phase, 0))
+				else
+					spinners[egg] = nil
+				end
 			end
 		end)
 		while true do
-			task.wait(0.2)
-			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			local found, best = nil, EGG_RANGE
-			if root and not player:GetAttribute("Launching") then
-				for _, stand in ipairs(stands:GetChildren()) do
-					local d = (stand:GetPivot().Position - root.Position) * Vector3.new(1, 0, 1)
-					if stand:GetAttribute("EggId") and d.Magnitude < best then
-						found, best = stand, d.Magnitude
-					end
-				end
+			task.wait(0.3)
+			local panel = ctx.Panels and ctx.Panels.Pets
+			if panel and not panel.Frame.Visible then
+				openedFrom = nil -- closed by hand: walking away must not close a menu opened later
 			end
-			if found ~= nearEgg then
-				if found then
-					ctx.Open("Pets", "Eggs", found:GetAttribute("EggId"))
-				elseif nearEgg then
+			if openedFrom then
+				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				local d = root and openedFrom.Parent and ((openedFrom:GetPivot().Position - root.Position) * Vector3.new(1, 0, 1)).Magnitude or math.huge
+				if d > EGG_RANGE + 6 then
+					openedFrom = nil
 					ctx.CloseIf("Pets")
 				end
-				nearEgg = found
 			end
 		end
 	end)

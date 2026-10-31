@@ -13,6 +13,12 @@
 	  - a wooden signpost by the spawn plaza (TRAINING, LAUNCH, EGGS) and a CANNONBALLS board by the stand
 	  - a LAUNCH gate where the dock path reaches the dock: the lobby's focal point, framing the way out
 	  - two palms framing the LAUNCH gate on the lobby side
+	Oct 31, evening (Alex: "make the lobby way better"; vault notes 18-20, "World Composition and Set Dressing"):
+	  - the LAUNCH gate became the lobby's hero: a tall arch with a big red LAUNCH! sign, gold bands, a glowing
+	    gold strip and a fire bowl on each pillar, the brightest and tallest thing the spawn looks at
+	  - festival flag strings on poles over the dock path, the leading line from the spawn to the arch
+	  - bushes and flower clumps at the plaza edges (dense at the edges, nothing on the paths)
+	  - the eggs moved next to the dock path (BuildLobbyExtras), so the CANNONBALLS board and the EGGS arm moved too
 	  - nothing on or round the training lanes: they stay clean, like Stone Skipping's (Alex, Oct 31)
 
 	Spots are in the map file's units, from tools/map/lobby_plan.json (plan_check.py checks them).
@@ -68,18 +74,24 @@ local GROUP = {
 local PALMS = { { -91, 18.5, 40 }, { -63, 20.5, 200 }, { -18.5, -10.5, 120 }, { -19, 9.5, 290 } }
 -- lanterns: { x, z, the way the arm reaches {x, z}, glows }
 local LANTERNS = {
-	{ -81, 3.8, { 0, -1 } }, -- along the egg path, between eggs
-	{ -97, 2.2, { 0, -1 } },
+	{ -81, 3.8, { 0, -1 }, true }, -- along the west plank path (all four glow since Oct 31: "fuller and brighter")
+	{ -97, 2.2, { 0, -1 }, true },
 	{ -48.5, -2.6, { 0, 1 }, true }, -- framing the dock path where it leaves the plaza
 	{ -48.5, 6.4, { 0, -1 }, true },
 }
 local GATE = { { -16, -6.4 }, { -16, 3.5 } } -- its two posts, either side of the dock path
-local BALL_SIGN = { -46.5, 9.8 }
+local BALL_SIGN = { -31, 8 } -- between the dock path and the stand's west end (the eggs took the old spot, Oct 31)
 local SIGN = { -53, -10.5 }
+-- festival poles in pairs either side of the dock path, from the plaza to the arch: { x, z one side, z other side }
+local FLAG_POLES = { { -44, -2.5, 6.25 }, { -37, -4, 5 }, { -30, -4.25, 1.75 } }
+local FLAG_COLORS = { Color3.fromRGB(235, 60, 60), Color3.fromRGB(255, 205, 50), Color3.fromRGB(60, 150, 255), Color3.fromRGB(80, 210, 90), Color3.fromRGB(255, 255, 255) }
+-- bush and flower clumps at the plaza edges: { x, z, bushes } (never on a path, a booth front, an egg or the stand)
+local CLUMPS = { { -68, 7, 2 }, { -76, 9.5, 3 }, { -91, 9, 2 }, { -68.5, -7, 2 }, { -47, -7, 1 }, { -20, -7, 2 }, { -20, 6, 2 }, { -50, -5, 1 }, { -51, 4.5, 1 }, { -23, 4, 1 } }
+local GOLD, NEON_GOLD, SIGN_RED = Color3.fromRGB(255, 196, 60), Color3.fromRGB(255, 214, 90), Color3.fromRGB(205, 48, 48)
 local BOARDS = { -- { text, way it points {x, z}, height over the ground }
 	{ "TRAINING", { 0, -1 }, 6.3 },
 	{ "LAUNCH", { 1, 0 }, 5.2 },
-	{ "EGGS", { -1, 0.55 }, 4.1 },
+	{ "EGGS", { 0.1, 1 }, 4.1 }, -- the eggs are south of the dock path now (Oct 31)
 }
 
 local map = workspace:FindFirstChild(Config.Map.Root)
@@ -278,30 +290,129 @@ for i, l in ipairs(LANTERNS) do
 	lantern.Parent = folder
 end
 
--- 3b. the LAUNCH gate over the dock path
+-- a string of diamond flags from a to b (thin, never collides or blocks the camera)
+local function bunting(parent, a, b)
+	local d = b - a
+	local len = d.Magnitude
+	local mid = (a + b) / 2
+	part({ Name = "Rope", Size = Vector3.new(0.12, 0.12, len), CFrame = CFrame.lookAt(mid, b), Color = TEXT_EDGE, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false }, parent)
+	local n = math.max(2, math.floor(len / 1.7))
+	for i = 1, n do
+		local at = a + d * ((i - 0.5) / n) - Vector3.new(0, 0.42, 0)
+		part({
+			Name = "Flag",
+			Size = Vector3.new(0.85, 0.85, 0.08),
+			CFrame = CFrame.fromMatrix(at, d.Unit, Vector3.yAxis) * CFrame.Angles(0, 0, math.rad(45)),
+			Color = FLAG_COLORS[(i - 1) % #FLAG_COLORS + 1],
+			CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+		}, parent)
+	end
+end
+
+-- 3b. the LAUNCH arch over the dock path: the lobby's hero, the tallest and brightest thing the spawn faces
 do
 	local a, b = Config.Map.At(GATE[1][1], 0, GATE[1][2]), Config.Map.At(GATE[2][1], 0, GATE[2][2])
 	local y = math.max(groundAt(a.X, a.Z), groundAt(b.X, b.Z))
 	local gate = Instance.new("Model")
 	gate.Name = "LaunchGate"
-	for _, p in ipairs({ a, b }) do
-		part({ Name = "Post", Size = Vector3.new(1.1, 9.8, 1.1), CFrame = CFrame.new(p.X, y + 9.8 / 2 - 0.4, p.Z), Color = POST_WOOD }, gate)
-	end
 	local across = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
-	local mid = Vector3.new((a.X + b.X) / 2, y + 9.2, (a.Z + b.Z) / 2)
-	part({ Name = "Beam", Size = Vector3.new(1, 1, across.Magnitude + 2.6), CFrame = CFrame.lookAt(mid, mid + across), Color = POST_WOOD }, gate)
-	-- the board hangs under the beam on two chains, its words facing the plaza and the dock
-	local boardCf = CFrame.fromMatrix(mid - Vector3.new(0, 2.3, 0), across.Unit, Vector3.yAxis)
-	board(gate, "LAUNCH", boardCf, 7, 1.9)
-	for _, s in ipairs({ -2.6, 2.6 }) do
-		local c = mid + across.Unit * s - Vector3.new(0, 0.9, 0)
-		part({ Name = "Chain", Size = Vector3.new(0.12, 0.9, 0.12), CFrame = CFrame.new(c), Color = IRON, CanCollide = false }, gate)
+	local toPlaza = Vector3.new(-1, 0, 0) -- the spawn is west of the dock
+	local H = 20 -- taller than the lookout towers' platforms, so it is the hero from the spawn (critic, Oct 31)
+	for _, p in ipairs({ a, b }) do
+		local base = Vector3.new(p.X, y, p.Z)
+		part({ Name = "Plinth", Size = Vector3.new(3.8, 1.2, 3.8), CFrame = CFrame.new(base + Vector3.new(0, 0.4, 0)), Color = Color3.fromRGB(150, 150, 162) }, gate)
+		part({ Name = "Pillar", Size = Vector3.new(2.6, H, 2.6), CFrame = CFrame.new(base + Vector3.new(0, H / 2, 0)), Color = POST_WOOD }, gate)
+		for _, h in ipairs({ 2.6, 8.2, 13.8, 17.6 }) do
+			part({ Name = "Band", Size = Vector3.new(2.85, 0.5, 2.85), CFrame = CFrame.new(base + Vector3.new(0, h, 0)), Color = GOLD, CanCollide = false }, gate)
+		end
+		-- a glowing gold strip up the side that faces the spawn (steady, never flashing)
+		part({ Name = "GlowStrip", Size = Vector3.new(0.25, H - 3.4, 0.5), CFrame = CFrame.new(base + toPlaza * 1.36 + Vector3.new(0, H / 2 + 0.3, 0)), Color = NEON_GOLD,
+			Material = Enum.Material.Neon, CanCollide = false, CanQuery = false, CastShadow = false }, gate)
+		part({ Name = "Cap", Size = Vector3.new(3.3, 0.8, 3.3), CFrame = CFrame.new(base + Vector3.new(0, H + 0.4, 0)), Color = GOLD }, gate)
+		-- a fire bowl on top: real fire and a warm light, seen from the whole plaza
+		local bowl = part({ Name = "FireBowl", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.2, 2.8, 2.8),
+			CFrame = CFrame.new(base + Vector3.new(0, H + 1.4, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color = IRON, CanCollide = false }, gate)
+		local fire = Instance.new("Fire")
+		fire.Size = 8
+		fire.Heat = 12
+		fire.Color = Color3.fromRGB(255, 140, 40)
+		fire.SecondaryColor = Color3.fromRGB(255, 225, 90)
+		fire.Parent = bowl
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 170, 80)
+		light.Range = 30
+		light.Brightness = 2.5
+		light.Shadows = false
+		light.Parent = bowl
 	end
-	-- a glowing lantern under each end of the beam, just inside the posts
+	-- the crossbeam and the big LAUNCH! sign under it, words on both faces
+	local top = Vector3.new((a.X + b.X) / 2, y + H - 1.6, (a.Z + b.Z) / 2)
+	part({ Name = "Beam", Size = Vector3.new(1.8, 1.8, across.Magnitude + 3.6), CFrame = CFrame.lookAt(top, top + across), Color = POST_WOOD }, gate)
+	local signCf = CFrame.fromMatrix(top - Vector3.new(0, 3.1, 0), across.Unit, Vector3.yAxis)
+	local SW, SH = 17, 4.6
+	part({ Name = "SignFrame", Size = Vector3.new(SW + 0.8, SH + 0.8, 0.4), CFrame = signCf, Color = GOLD, CanCollide = false }, gate)
+	local sign = part({ Name = "Board_LAUNCH", Size = Vector3.new(SW, SH, 0.55), CFrame = signCf, Color = SIGN_RED, CanCollide = false }, gate)
+	for _, face in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = face
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 24 -- low on purpose: TextScaled stops at 100 px, so a dense canvas left the words small
+		gui.LightInfluence = 0
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(0.92, 0.84)
+		label.Position = UDim2.fromScale(0.04, 0.08)
+		label.BackgroundTransparency = 1
+		label.Font = Enum.Font.FredokaOne
+		label.TextScaled = true
+		label.Text = "LAUNCH!"
+		label.TextColor3 = Color3.new(1, 1, 1)
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 6
+		stroke.Color = Color3.fromRGB(90, 20, 20)
+		stroke.Parent = label
+		label.Parent = gui
+		gui.Parent = sign
+	end
+	-- flags along the beam, and a glowing lantern under each end
+	local half = across.Unit * (across.Magnitude / 2 + 1.2)
+	bunting(gate, top - half - Vector3.new(0, 0.9, 0), top + half - Vector3.new(0, 0.9, 0))
 	for _, s in ipairs({ -1, 1 }) do
-		hangLantern(gate, mid + across.Unit * s * (across.Magnitude / 2 - 1.3) - Vector3.new(0, 0.5, 0), true)
+		hangLantern(gate, top + across.Unit * s * (across.Magnitude / 2 - 2) - Vector3.new(0, 1.2, 0), true)
 	end
 	gate.Parent = folder
+end
+
+-- 3c. festival flag strings over the dock path: the leading line from the spawn to the arch
+do
+	local avenue = Instance.new("Model")
+	avenue.Name = "FlagStrings"
+	local tops = {}
+	for i, fp in ipairs(FLAG_POLES) do
+		tops[i] = {}
+		for side = 1, 2 do
+			local at = Config.Map.At(fp[1], 0, fp[side + 1])
+			local y = groundAt(at.X, at.Z)
+			local H = 9.4
+			part({ Name = "Pole", Size = Vector3.new(0.5, H, 0.5), CFrame = CFrame.new(at.X, y + H / 2 - 0.3, at.Z), Color = POST_WOOD, CanCollide = false }, avenue)
+			-- a warm glowing bulb on top of every pole (steady light, never flashing)
+			local knob = part({ Name = "Knob", Shape = Enum.PartType.Ball, Size = Vector3.new(1, 1, 1), CFrame = CFrame.new(at.X, y + H - 0.1, at.Z), Color = Color3.fromRGB(255, 214, 120), Material = Enum.Material.Neon, CanCollide = false, CanQuery = false }, avenue)
+			local bulb = Instance.new("PointLight")
+			bulb.Color = Color3.fromRGB(255, 190, 110)
+			bulb.Range = 12
+			bulb.Brightness = 1.4
+			bulb.Shadows = false
+			bulb.Parent = knob
+			part({ Name = "Pennant", Size = Vector3.new(0.08, 1.1, 1.7), CFrame = CFrame.new(at.X, y + H - 1.2, at.Z + 0.9), Color = FLAG_COLORS[(i + side) % 3 + 1], CanCollide = false, CanQuery = false }, avenue)
+			tops[i][side] = Vector3.new(at.X, y + H - 1.6, at.Z)
+		end
+		bunting(avenue, tops[i][1], tops[i][2]) -- across the path
+		if i > 1 then
+			for side = 1, 2 do
+				bunting(avenue, tops[i - 1][side], tops[i][side]) -- along each side
+			end
+		end
+	end
+	avenue.Parent = folder
 end
 
 -- 3d. the CANNONBALLS board by the stand
@@ -335,5 +446,50 @@ do
 	sign.Parent = folder
 end
 
+-- 5. bushes and flower clumps at the plaza edges: odd groups, grown things turned any way, nothing on a path
+do
+	local rng = Random.new(31)
+	local GREENS = { Color3.fromRGB(70, 175, 70), Color3.fromRGB(95, 200, 80), Color3.fromRGB(55, 150, 75) }
+	local PETALS = { Color3.fromRGB(255, 120, 190), Color3.fromRGB(255, 220, 70), Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 120, 255), Color3.fromRGB(255, 90, 80) }
+	local deco = { CanCollide = false, CanQuery = false, CanTouch = false }
+	for ci, c in ipairs(CLUMPS) do
+		local clump = Instance.new("Model")
+		clump.Name = "Clump" .. ci
+		local at = Config.Map.At(c[1], 0, c[2])
+		for bi = 1, c[3] do
+			local ang = rng:NextNumber(0, math.pi * 2)
+			local off = bi == 1 and Vector3.zero or Vector3.new(math.cos(ang), 0, math.sin(ang)) * rng:NextNumber(2.2, 3.2)
+			local x, z = at.X + off.X, at.Z + off.Z
+			local y = groundAt(x, z)
+			local big = (bi == 1 and 3.6 or 2.6) * rng:NextNumber(0.9, 1.1)
+			for _, ball in ipairs({ { 0, 0, 1 }, { 0.45, 0.3, 0.75 }, { -0.4, -0.35, 0.7 } }) do
+				local sz = big * ball[3]
+				local p = part({ Name = "Bush", Shape = Enum.PartType.Ball, Size = Vector3.new(sz, sz, sz),
+					CFrame = CFrame.new(x + ball[1] * big * 0.6, y + sz * 0.38, z + ball[2] * big * 0.6), Color = GREENS[rng:NextInteger(1, #GREENS)] }, clump)
+				for key, v in pairs(deco) do
+					p[key] = v
+				end
+			end
+		end
+		-- a ring of flowers round the front of the clump
+		for fi = 1, 7 do
+			local ang = rng:NextNumber(0, math.pi * 2)
+			local r = rng:NextNumber(2.4, 4.4)
+			local x, z = at.X + math.cos(ang) * r, at.Z + math.sin(ang) * r
+			local y = groundAt(x, z)
+			local stem = part({ Name = "Stem", Size = Vector3.new(0.18, 0.9, 0.18), CFrame = CFrame.new(x, y + 0.4, z), Color = GREENS[3] }, clump)
+			local color = PETALS[(ci + fi) % #PETALS + 1]
+			local flower = part({ Name = "Flower", Size = Vector3.new(0.75, 0.32, 0.75), CFrame = CFrame.new(x, y + 0.95, z) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0), Color = color }, clump)
+			local middle = part({ Name = "Middle", Size = Vector3.new(0.32, 0.36, 0.32), CFrame = flower.CFrame, Color = Color3.fromRGB(255, 200, 40) }, clump)
+			for _, q in ipairs({ stem, flower, middle }) do
+				for key, v in pairs(deco) do
+					q[key] = v
+				end
+			end
+		end
+		clump.Parent = folder
+	end
+end
+
 folder.Parent = workspace
-print(TAG, ("%d props (map crates, barrels and palms), %d nooks, %d lanterns, the LAUNCH gate and two signs"):format(props, #NOOKS, #LANTERNS))
+print(TAG, ("%d props (map crates, barrels and palms), %d nooks, %d lanterns, the LAUNCH arch, %d flag poles, %d flower clumps and two signs"):format(props, #NOOKS, #LANTERNS, #FLAG_POLES * 2, #CLUMPS))

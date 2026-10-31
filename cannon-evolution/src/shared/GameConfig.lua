@@ -305,6 +305,43 @@ function Config.GetEgg(id)
 	end
 end
 
+-- Pity (house rule: paid random items show a pity counter; we give every egg one).
+-- The goal is the egg's second-best rarity tier and up; after N hatches without
+-- one, the next hatch is guaranteed to be one. N = about 3x the normal wait.
+-- Returns goalOrder, N, goalName ("Mythic"), goalChance (0..1).
+function Config.PityInfo(egg)
+	local orders, total = {}, 0
+	for _, entry in ipairs(egg.Pets) do
+		local order = Config.Rarities[Config.Pets[entry[1]].Rarity].Order
+		orders[order] = true
+		total += entry[2]
+	end
+	local list = {}
+	for order in pairs(orders) do
+		table.insert(list, order)
+	end
+	table.sort(list)
+	local goal = list[math.max(1, #list - 1)]
+	local chance = 0
+	for _, entry in ipairs(egg.Pets) do
+		if Config.Rarities[Config.Pets[entry[1]].Rarity].Order >= goal then
+			chance += entry[2] / total
+		end
+	end
+	local goalName = "Rare"
+	for name, r in pairs(Config.Rarities) do
+		if r.Order == goal then
+			goalName = name
+		end
+	end
+	return goal, math.max(10, math.ceil(3 / math.max(chance, 0.001))), goalName, chance
+end
+
+-- Eggs bought with Robux or Gems (Gems can be bought) are paid random items
+function Config.IsPaidEgg(egg)
+	return egg.Currency ~= "Cash"
+end
+
 ---------------------------------------------------------------------------
 -- Cannon collection. Equipped cannon multiplies Power per shot.
 -- Model = model name in ReplicatedStorage > Cannons.
@@ -527,27 +564,33 @@ Config.Sounds = {
 	-- (Pro Sound Effects / APM): a bubble "pop" click, a coin bounce, a dry boom. Found with AssetService:SearchAudio.
 	-- Alex, Oct 30 evening: "make the ui clicking sound more smooth", "the reward sound just quick", "the launching sound
 	-- actually like a launch", "make the training sound better". Library picks until our own (assets/sfx) are uploaded:
-	Click = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s: one short soft tick (the bubble pop had a watery tail)
+	-- Oct 31: from Alex's SFX pack (project files SFX.zip, 99 MB, not in git). Only its licensed-library sounds are used (ProSoundEffects / Roblox):
+	-- they are public and play in any game; measured with huzz-valley/tools/sfx/measure_sfx.py.
+	-- Oct 31, Alex: "make the sound normal, these sound so robotic". So every button and reward sound is now a real
+	-- recorded sound (a real switch click, a real suction pop), never a synth or 8-bit blip, and never pitch-stepped.
+	Click = "rbxassetid://9119720940", -- "Switches Clicks Buttons Various Versions 7 (SFX)", ProSoundEffects: one real button click, 0.27 s
+	-- was "RBLX UI Select 01 (SFX)" 10128760939 (a synth tick)
 	Hover = "", -- silent: a tick on every hover was too much
 	Open = "rbxassetid://15675012262", -- "Roblox_UI_Whoosh_04", 0.35 s
 	Close = "rbxassetid://15675028888", -- "Roblox_UI_Whoosh_02", 0.49 s
 	Confirm = "rbxassetid://9038924756", -- "Happy Forever - Hit3", APMOfficial, ~2 s (Sfx plays its first 0.6 s)
 	Error = "rbxassetid://15675075163", -- "Roblox_UI_Delete", 0.61 s
-	Tab = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s
+	Tab = "rbxassetid://9119720940", -- the same real click as Click, quieter (was "Roblox_UI_Small_Click" 15675032796)
 	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
 	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
 	Hatch = "rbxassetid://9116384799",
 	-- Roblox's free licensed library too (found with Studio's Toolbox search on Oct 30, each loaded in Studio;
 	-- picked by title and length, not yet heard by Alex: swap any one by changing its id):
-	Reward = "rbxassetid://9119516891", -- "Spoon Saucer 19 (SFX)", ProSoundEffects: one quick bright "ting" (Sfx plays 0.4 s); assets/sfx/Reward.ogg (2-note) if uploaded
+	Reward = "rbxassetid://9119668788", -- "Suction Pop 1 (SFX)", ProSoundEffects: a quick real "pop", 0.31 s
+	-- was "Roblox_Pinball_8Bit_Blip_01" 16480580213: Alex found it robotic
 	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
 	Rebirth = "rbxassetid://1840018171",
 	Unlock = "rbxassetid://9116405618", -- "Magic Poofs Short Breathy Bursts Punchy 2 (SFX)", ProSoundEffects
 	Coin = "rbxassetid://9113848469", -- "Coin Bounce 3 (SFX)", ProSoundEffects: Sfx plays only its first 0.35 s
-	Shot = "rbxassetid://9119348667", -- training cannon: "Soccer Header 1 (SFX)", ProSoundEffects, a soft round thump (Sfx plays 0.4 s)
+	Shot = "rbxassetid://9113263647", -- training cannon: "Balloon Pop 4 (SFX)", ProSoundEffects: 0.22 s punchy pop, 430 Hz
 	-- the launch is two sounds at once: the boom, and a low whoosh flying away (assets/sfx/Launch.ogg has both, if uploaded)
-	Launch = "rbxassetid://9120737280", -- "Whoosh Sweep Low End Thumping Repetitive 2 (SFX)", ProSoundEffects
-	LaunchBoom = "rbxassetid://9043341682", -- "DRY BOOM 01", APMOfficial, 1.25 s (Sfx plays 0.8 s); set to "" once Launch.ogg is in
+	Launch = "rbxassetid://9120705982", -- "Whoosh Explosion 1 (SFX)", ProSoundEffects: a boom that whooshes away, 1.15 s, 128 Hz, no hiss
+	LaunchBoom = "", -- not needed: Whoosh Explosion 1 already has the boom ("DRY BOOM 01" = 9043341682 if wanted again)
 	Skip = "rbxassetid://9120589933", -- "Water Splash Splashes Splats Light 5 (SFX)", ProSoundEffects, 0.41 s
 	-- the ball's final landing (Alex, Oct 30: "a big splash sound"); found with Studio's Creator Store search, public and free
 	Splash = "rbxassetid://9120585530", -- "Water Splash Big Water Splash Dive In 3 (SFX)", ProSoundEffects, 2.7 s, Sfx cuts it at 1 s
@@ -574,6 +617,7 @@ Config.DefaultData = {
 	Boosts = {}, -- [boostId] = seconds remaining
 	Products = {}, -- owned product grants that are permanent (cannons), plus receipt ids
 	Stats = { Shots = 0, Launches = 0, Hatches = 0, CashEarned = 0, Rebirths = 0 },
+	Pity = {}, -- [eggId] = hatches since the egg's pity goal tier last came up
 	Missions = { DailyKey = "", WeeklyKey = "", Daily = {}, Weekly = {}, Infinite = {} },
 	Daily = { Streak = 0, LastClaim = 0 },
 	Codes = {},

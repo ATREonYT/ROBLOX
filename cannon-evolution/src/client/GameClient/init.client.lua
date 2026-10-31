@@ -178,7 +178,8 @@ function ctx.IsOpen(name)
 	return current ~= nil and current == ctx.Panels[name]
 end
 
-dim.Activated:Connect(ctx.Close)
+-- No tap-outside-to-close: a panel closes only with its X (Alex, Oct 31: "fix the ui so that you cant just press
+-- outside of the ui and it closes"). The dim stays a button so taps behind an open panel still hit nothing.
 
 -- Request + show the server's message
 -- Spending and claiming answer with a sound: a warm "yes" when the server
