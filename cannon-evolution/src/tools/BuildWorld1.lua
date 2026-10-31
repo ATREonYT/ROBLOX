@@ -589,12 +589,13 @@ if first and pass then
 	local shop = Instance.new("Model")
 	shop.Name = "TrainingShop"
 	local cf, size = first.Booth:GetBoundingBox()
-	local groundY = floorAt(cf.Position.X + size.X / 2 + 7, first.StandPoint.Position.Z - 10, cf.Position.Y - size.Y / 2)
-	local base = Vector3.new(cf.Position.X + size.X / 2 + 7, groundY, first.StandPoint.Position.Z - 10)
-	local spawnAt = Config.Map.Spawn
-	local faceCf = CFrame.lookAt(base, Vector3.new(spawnAt.X, base.Y, spawnAt.Z))
+	-- beside the first lane's stand pad (clear of the lookout tower behind it), turned 30 degrees from facing the
+	-- plaza towards that pad, so you read it from the plaza and while you train
+	local bx, bz = cf.Position.X + size.X / 2 + 7.5, first.StandPoint.Position.Z + 1
+	local base = Vector3.new(bx, floorAt(bx, bz, cf.Position.Y - size.Y / 2), bz)
+	local faceCf = CFrame.new(base) * CFrame.Angles(0, math.rad(-30), 0) * CFrame.Angles(0, math.pi, 0)
 	local WOOD, BRASS = rgb(105, 68, 38), rgb(225, 175, 70)
-	local BW, BH, LIFT = 9, 5.6, 3.4 -- the board's width and height, and how high its bottom is
+	local BW, BH, LIFT = 11, 7, 2.6 -- the board's width and height, and how high its bottom is
 	for _, sx in ipairs({ -1, 1 }) do
 		part({ Name = "Post", Size = Vector3.new(0.8, LIFT + BH + 0.6, 0.8), Color = WOOD, Material = Enum.Material.SmoothPlastic,
 			CFrame = faceCf * CFrame.new(sx * (BW / 2 - 0.6), (LIFT + BH + 0.6) / 2 - 0.3, 0.5), Parent = shop })
@@ -641,7 +642,7 @@ if first and pass then
 	bolt.Size = UDim2.fromScale(0.3, 0.6)
 	bolt.Parent = gui
 	text("2x POWER", Color3.new(1, 1, 1), UDim2.fromScale(0.32, 0.08), UDim2.fromScale(0.65, 0.42), 8)
-	text("every training shot", rgb(235, 255, 215), UDim2.fromScale(0.32, 0.5), UDim2.fromScale(0.65, 0.14), 4)
+	text("on every shot", rgb(235, 255, 215), UDim2.fromScale(0.32, 0.5), UDim2.fromScale(0.65, 0.17), 4)
 	text("ONLY", rgb(255, 225, 60), UDim2.fromScale(0.12, 0.7), UDim2.fromScale(0.3, 0.24), 6)
 	local robux = Instance.new("ImageLabel")
 	robux.BackgroundTransparency = 1
