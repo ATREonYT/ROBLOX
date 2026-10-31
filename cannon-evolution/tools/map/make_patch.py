@@ -6,11 +6,18 @@ now does and writes only those, so Alex imports a small file instead of the whol
 the Lua table for src/tools/PlaceMapPatch.lua (where each new piece goes, in the file's units).
 Usage: python3 make_patch.py CannonMap.glb MapPatch.glb
 """
-import sys
+import re, sys
 import numpy as np
+import pack_map
 from pack_map import read_glb, local_matrix, mesh_world, cap_span, write_glb
 
-TOO_LONG = 1500  # over 2048 once the map is built 1.3x bigger (Config.Map.Scale); shorter pieces are left alone
+# Over 2048 once the map is built 2x bigger (Config.Map.Scale, Oct 31); shorter pieces are left alone.
+# The river pieces are 1,008 long, so they still fit (2,016).
+TOO_LONG = 1020
+pack_map.MAX_SPAN = TOO_LONG  # cap_span cuts down to this
+# Pieces Alex's first import (Oct 30) got squashed, which the current pack already cuts: they go in the
+# patch as they are, replacing the one long piece they came from.
+ALREADY_CUT = re.compile(r"^(12_Aurora_Peaks_0[36]|14_Volcano_Core_(06|11))(_base\d+)?$")
 
 
 def main(src, dst):
@@ -23,7 +30,12 @@ def main(src, dst):
         m = mat @ local_matrix(n)
         if "mesh" in n:
             P, N, U = mesh_world(j, buf, n, m)
-            if (P.max(0) - P.min(0)).max() > TOO_LONG:
+            cut = ALREADY_CUT.match(n["name"])
+            if cut:
+                out.append((group, n["name"], P, N, U))
+                lo, hi = P.min(0), P.max(0)
+                rows.append((n["name"], cut.group(1), (lo + hi) / 2, hi - lo, len(P) // 3))
+            elif (P.max(0) - P.min(0)).max() > TOO_LONG:
                 for suffix, (p, nn, u) in cap_span(P, N, U):
                     out.append((group, n["name"] + suffix, p, nn, u))
                     lo, hi = p.min(0), p.max(0)
