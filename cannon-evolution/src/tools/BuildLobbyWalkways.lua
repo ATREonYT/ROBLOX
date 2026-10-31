@@ -1,77 +1,57 @@
 --[[
 	BuildLobbyWalkways  (run in Studio's Command Bar, Edit mode, after BuildCannonMap and before
-	BuildLobbyExtras; then BuildCartoonyMap for the studs)
+	BuildLobbyExtras and BuildLobbyDressing; then BuildCartoonyMap for the studs)
 
-	The lobby's walkways, laid out like the reference lobby (Stone Skipping, references/image-1.png;
-	Alex, Oct 31: "make the lobby better ... fix all of the paths leading to them, make it like in the
-	references"): a wide lavender main walkway from the west end through the spawn plaza to the launch
-	dock, with dark arrows on it pointing at the launch, and a walkway to every area off it: along the
-	front of the training booths (north), the eggs' walkway (south-west) and the cannonball stand's
-	(south-east). The lawn between them is two-tone checkered grass like the reference's (Oct 31), laid
-	under the walkways so they frame it.
-	The map's own wooden paths led to nothing in particular, so they go to ServerStorage.OldMaps.LobbyPaths
-	(drag them back into CannonMap.01_Lobby to undo).
+	The lobby's paths, pirate style (Alex, Oct 31: "use the other paths, we want to keep the pirate
+	spirit"). The map's own wooden plank paths stay as Alex made them (plaza to the dock, plaza to the
+	west, plaza to the cannonball stand). An earlier version of this tool put them in
+	ServerStorage.OldMaps.LobbyPaths; this one puts them back. New plank paths in the same style (the same
+	plank size, gaps, two browns and grey stones along the edges, measured off the map file) reach the
+	places the map's paths don't: a boardwalk along the front of the training booths with three links to
+	it, the west path past the eggs, and a link from the dock path to the front of the cannonball stand.
 
-	Spots are in the map file's units (Config.Map.At scales them with the map), from
+	Routes are in the map file's units (Config.Map.At scales them with the map), from
 	tools/map/lobby_plan.json, where plan_check.py checks no rock, palm or prop stands on them.
-	Safe to run again: it replaces Workspace.LobbyWalkways.
+	Safe to run again: it replaces Workspace.LobbyWalkways, and the planks come out the same every run.
 ]]
 
 local Config = require(game.ReplicatedStorage.GameConfig)
 local ServerStorage = game:GetService("ServerStorage")
 
 local TAG = "[LobbyWalkways]"
--- the reference's walkways: pinkish lavender tiles with a darker rim, dark flat arrows
-local WALK, RIM, ARROW = Color3.fromRGB(210, 178, 222), Color3.fromRGB(165, 128, 190), Color3.fromRGB(80, 66, 96)
-local BORDER, LIFT = 0.8, 0.3 -- studs: the rim round the outside, and how far the top stands over the lawn
-local WALKS = { -- { name, x0, x1, z0, z1 } in the file's units
-	{ "SpineEast", -51.8, -13, -4.5, 4.5 }, -- from under the plaza's rim to under the dock
-	{ "SpineWest", -103, -68.2, -4.5, 4.5 },
-	{ "Training", -95.5, -26.5, -17.9, -12.5 }, -- along the booth fronts
-	{ "LinkMid", -63, -57, -12.5, -8 }, -- plaza to the booths
-	{ "LinkEast", -33, -27, -12.5, -4.5 },
-	{ "LinkWest", -95.5, -89.5, -12.5, -4.5 },
-	{ "Eggs", -103, -63, 4.5, 15.5 }, -- the eggs stand on it (BuildLobbyExtras)
-	{ "Stand", -48.5, -17.5, 4.5, 12.2 }, -- runs under the front of the cannonball stand
+-- the map's own planks and stones (measured in the file): planks 0.92 wide, about 4.2-4.5 long and 0.3
+-- thick, every 1.25 along the path, turned a little each; stones about 0.8 across along the edges
+local WOOD = { Color3.fromRGB(176, 122, 69), Color3.fromRGB(156, 106, 58) }
+local STONE = Color3.fromRGB(163, 156, 142)
+local PLANK_W, PLANK_T, PITCH, STONE_EVERY = 0.92, 0.3, 1.25, 2.3 -- file units
+local ROUTES = { -- { name, from {x, z}, to {x, z}, width } in the file's units
+	{ "PathWest", { -85.4, -0.8 }, { -105, -0.4 }, 4.4 }, -- carries on from the map's west path, past the eggs
+	{ "PathBooths", { -97.5, -15.2 }, { -24.5, -15.2 }, 5.4 }, -- along the booth fronts
+	{ "LinkPlaza", { -60, -9.0 }, { -60, -12.4 }, 4.4 }, -- spawn plaza to the booths
+	{ "LinkDock", { -30, -4.9 }, { -30, -12.4 }, 4.4 }, -- dock path to the first booth
+	{ "LinkWest", { -93, -3.1 }, { -93, -12.4 }, 4.4 }, -- west path to the last booths
+	{ "LinkStand", { -37, 6.0 }, { -37, 11.7 }, 4.4 }, -- dock path to the cannonball stand's front
 }
--- along the east spine, pointing at the dock (+X): chunky and close together like the reference's
-local ARROWS_X = { -48, -43.5, -39, -34.5, -30, -25.5, -21, -16.5 }
-local ARROW_W = 1.6 -- studs: each arm's thickness
--- the checkered lawn: one area in the file's units ({ x0, x1, z0, z1 }), from the booths' walkway down to
--- the ship and the lookout tower, and from the west end to the beach by the dock. Squares line up with the
--- spawn plaza; any square the walkways or the plaza hide completely is left out.
-local LAWN = { -103, -17, -12.5, 24 }
-local SQUARE = 6 -- studs
-local GRASS_LIGHT, GRASS_DARK = Color3.fromRGB(124, 190, 58), Color3.fromRGB(100, 160, 42)
 
 local map = workspace:FindFirstChild(Config.Map.Root)
 if not map then
 	error(TAG .. " no CannonMap in Workspace: run BuildCannonMap first")
 end
+local k = Config.Map.Scale
 
--- 1. the map's wooden paths go on the shelf
-local oldMaps = ServerStorage:FindFirstChild("OldMaps") or Instance.new("Folder")
-oldMaps.Name = "OldMaps"
-oldMaps.Parent = ServerStorage
-local shelf = oldMaps:FindFirstChild("LobbyPaths") or Instance.new("Folder")
-shelf.Name = "LobbyPaths"
-shelf.Parent = oldMaps
-local paths = {}
-for _, d in ipairs(map:GetDescendants()) do
-	if d:IsA("BasePart") and string.find(d.Name, "^Path_") then
-		table.insert(paths, d)
+-- 1. the map's wooden paths come back from the shelf
+local restored = 0
+local shelf = ServerStorage:FindFirstChild("OldMaps") and ServerStorage.OldMaps:FindFirstChild("LobbyPaths")
+if shelf then
+	local home = map:FindFirstChild("01_Lobby") or map
+	for _, p in ipairs(shelf:GetChildren()) do
+		p.Parent = home
+		restored += 1
 	end
-end
-for _, p in ipairs(paths) do
-	local node = p.Parent
-	if node and node:IsA("Model") and node.Name == p.Name .. "_Node" then
-		node.Parent = shelf
-	else
-		p.Parent = shelf
-	end
+	shelf:Destroy()
 end
 
--- 2. the lawn's height (the island is flat in the lobby)
+-- 2. the ground's height (the island is flat in the lobby)
 local islands = {}
 for _, d in ipairs(map:GetDescendants()) do
 	if d:IsA("BasePart") and string.find(d.Name, "^Island_") then
@@ -83,10 +63,10 @@ params.FilterType = Enum.RaycastFilterType.Include
 params.FilterDescendantsInstances = islands
 local probe = Config.Map.At(-60, 0, -30)
 local hit = workspace:Raycast(Vector3.new(probe.X, 200, probe.Z), Vector3.new(0, -400, 0), params)
-local ground = hit and hit.Position.Y or 2.11 * Config.Map.Scale
+local ground = hit and hit.Position.Y or 2.11 * k
+local plankTop = ground + 0.07 * k -- the map's planks stand this far over the ground
 
--- 3. the walkways: every rim first, then every top a little higher, so where two walkways meet the
--- tops cover each other's rims and only the outside edge shows
+-- 3. the new plank paths
 local old = workspace:FindFirstChild("LobbyWalkways")
 if old then
 	old:Destroy()
@@ -94,97 +74,70 @@ end
 local folder = Instance.new("Folder")
 folder.Name = "LobbyWalkways"
 
-local function part(props)
+local rng = Random.new(31) -- fixed, so every run lays the same planks
+local function part(props, parent)
 	local p = Instance.new("Part")
 	p.Anchored = true
 	p.Material = Enum.Material.SmoothPlastic
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	for k, v in pairs(props) do
-		p[k] = v
+	for key, v in pairs(props) do
+		p[key] = v
 	end
-	p.Parent = folder
+	p.Parent = parent
 	return p
 end
-local function slab(name, w, top, color, grow)
-	local a, b = Config.Map.At(w[2], 0, w[4]), Config.Map.At(w[3], 0, w[5])
-	return part({
-		Name = name,
-		Size = Vector3.new(math.abs(b.X - a.X) + grow * 2, 0.8, math.abs(b.Z - a.Z) + grow * 2),
-		CFrame = CFrame.new((a.X + b.X) / 2, top - 0.4, (a.Z + b.Z) / 2),
-		Color = color,
-	})
-end
-for _, w in ipairs(WALKS) do
-	slab(w[1] .. "Rim", w, ground + LIFT - 0.05, RIM, BORDER)
-end
-for _, w in ipairs(WALKS) do
-	slab(w[1], w, ground + LIFT, WALK, 0)
+local function shade(c, f)
+	return Color3.new(math.clamp(c.R * f, 0, 1), math.clamp(c.G * f, 0, 1), math.clamp(c.B * f, 0, 1))
 end
 
--- 4. the checkered lawn, a little under the walkways' rims (rims at +0.25, lawn at +0.1)
-local lawnTop = ground + 0.1
-local covers = {} -- world rectangles that hide the lawn: every walkway with its rim
-for _, w in ipairs(WALKS) do
-	local a, b = Config.Map.At(w[2], 0, w[4]), Config.Map.At(w[3], 0, w[5])
-	table.insert(covers, { math.min(a.X, b.X) - BORDER, math.max(a.X, b.X) + BORDER, math.min(a.Z, b.Z) - BORDER, math.max(a.Z, b.Z) + BORDER })
-end
-local plaza = Config.Map.At(-60, 0, 0) -- the spawn plaza's middle; its round top hides squares near it
-local PLAZA_R = 11
-local la, lb = Config.Map.At(LAWN[1], 0, LAWN[3]), Config.Map.At(LAWN[2], 0, LAWN[4])
-local x0, x1, z0, z1 = math.min(la.X, lb.X), math.max(la.X, lb.X), math.min(la.Z, lb.Z), math.max(la.Z, lb.Z)
-local squares = 0
-for i = math.floor((x0 - plaza.X) / SQUARE), math.ceil((x1 - plaza.X) / SQUARE) do
-	for j = math.floor((z0 - plaza.Z) / SQUARE), math.ceil((z1 - plaza.Z) / SQUARE) do
-		local ax, bx = math.max(x0, plaza.X + i * SQUARE), math.min(x1, plaza.X + (i + 1) * SQUARE)
-		local az, bz = math.max(z0, plaza.Z + j * SQUARE), math.min(z1, plaza.Z + (j + 1) * SQUARE)
-		if bx - ax > 0.05 and bz - az > 0.05 then
-			local hidden = false
-			for _, c in ipairs(covers) do
-				if ax >= c[1] and bx <= c[2] and az >= c[3] and bz <= c[4] then
-					hidden = true
-					break
-				end
-			end
-			if not hidden then
-				hidden = true
-				for _, corner in ipairs({ { ax, az }, { bx, az }, { ax, bz }, { bx, bz } }) do
-					if Vector2.new(corner[1] - plaza.X, corner[2] - plaza.Z).Magnitude > PLAZA_R then
-						hidden = false
-					end
-				end
-			end
-			if not hidden then
+local planks, stones = 0, 0
+for _, r in ipairs(ROUTES) do
+	local route = Instance.new("Model")
+	route.Name = r[1]
+	local a, b = Config.Map.At(r[2][1], 0, r[2][2]), Config.Map.At(r[3][1], 0, r[3][2])
+	a, b = Vector3.new(a.X, 0, a.Z), Vector3.new(b.X, 0, b.Z)
+	local len = (b - a).Magnitude
+	local dir = (b - a).Unit
+	local side = dir:Cross(Vector3.yAxis)
+	local width = r[4] * k
+	local n = math.max(1, math.floor(len / (PITCH * k)))
+	local step = len / n
+	for i = 0, n - 1 do
+		local t = (i + 0.5) * step
+		local wiggle = math.sin(t / (9 * k)) * 0.3 * k -- a gentle hand-laid wander, like the map's paths
+		local c = a + dir * t + side * (wiggle + rng:NextNumber(-0.12, 0.12) * k)
+		local long = width + rng:NextNumber(-0.25, 0.15) * k
+		local turn = math.rad(rng:NextNumber(-7, 7))
+		part({
+			Name = "Plank",
+			Size = Vector3.new(long, PLANK_T * k, PLANK_W * k),
+			CFrame = CFrame.lookAt(c, c + dir) * CFrame.Angles(0, turn, 0) + Vector3.new(0, plankTop - PLANK_T * k / 2, 0),
+			Color = shade(WOOD[rng:NextInteger(1, 2)], rng:NextNumber(0.94, 1.04)),
+		}, route)
+		planks += 1
+	end
+	-- stones along the edges, now one side, now the other, now both
+	local m = math.floor(len / (STONE_EVERY * k))
+	for i = 0, m - 1 do
+		local t = (i + rng:NextNumber(0.2, 0.8)) * (len / math.max(m, 1))
+		for _, s in ipairs({ -1, 1 }) do
+			if rng:NextNumber() < 0.55 then
+				local size = rng:NextNumber(0.65, 0.9) * k
+				local c = a + dir * t + side * s * (width / 2 + rng:NextNumber(0.15, 0.45) * k)
 				part({
-					Name = "Lawn",
-					Size = Vector3.new(bx - ax, 0.4, bz - az),
-					CFrame = CFrame.new((ax + bx) / 2, lawnTop - 0.2, (az + bz) / 2),
-					Color = (i + j) % 2 == 0 and GRASS_LIGHT or GRASS_DARK,
-				})
-				squares += 1
+					Name = "Stone",
+					Size = Vector3.new(size, size * 0.7, size * rng:NextNumber(0.8, 1.1)),
+					CFrame = CFrame.new(c.X, ground + size * 0.12, c.Z)
+						* CFrame.Angles(math.rad(rng:NextNumber(-12, 12)), rng:NextNumber(0, math.pi * 2), math.rad(rng:NextNumber(-12, 12))),
+					Color = shade(STONE, rng:NextNumber(0.9, 1.05)),
+					CanCollide = false,
+				}, route)
+				stones += 1
 			end
 		end
 	end
-end
-
--- 5. flat arrows on the main walkway, like the reference's, pointing the way to the launch
-local top = ground + LIFT + 0.03
-for _, x in ipairs(ARROWS_X) do
-	local c = Config.Map.At(x, 0, 0)
-	local tip = Vector3.new(c.X + 0.8, top, c.Z)
-	for _, side in ipairs({ -1, 1 }) do
-		local tail = Vector3.new(c.X - 1.8, top, c.Z + side * 4.2)
-		part({
-			Name = "Arrow",
-			Size = Vector3.new(ARROW_W, 0.06, (tail - tip).Magnitude + ARROW_W),
-			CFrame = CFrame.lookAt((tip + tail) / 2, tail),
-			Color = ARROW,
-			CanCollide = false,
-			CanQuery = false,
-			CanTouch = false,
-			CastShadow = false,
-		})
-	end
+	route.Parent = folder
 end
 folder.Parent = workspace
-print(TAG, ("%d walkways, %d arrows, %d lawn squares; the map's %d wooden path pieces are in ServerStorage.OldMaps.LobbyPaths"):format(#WALKS, #ARROWS_X, squares, #paths))
+print(TAG, ("%d new plank paths (%d planks, %d stones); %d of the map's own path pieces put back"):format(#ROUTES, planks, stones, restored))

@@ -63,10 +63,10 @@ local EGG_COLORS = {
 	Ocean = Color3.fromRGB(60, 160, 255),
 }
 local EGGS = { "Starter", "Woodland", "Nature", "Ocean" } -- the exclusive egg goes 5th
--- new map: a row on the eggs' walkway south-west of the plaza, beside the main walkway like the
--- reference lobby's eggs (Alex, Oct 31; the walkway is BuildLobbyWalkways'). Spot 0, nearest the spawn,
+-- new map: a row on the grass along the south side of the west plank path, facing it, so walking the
+-- path opens each egg's menu (Alex, Oct 31; the path is BuildLobbyWalkways'). Spot 0, nearest the spawn,
 -- stays free for a Robux pet or egg (Alex decides). In the map file's units: Starter's spot and the step.
-local ROW_START, ROW_STEP = Vector2.new(-75, 11), Vector2.new(-8, 0)
+local ROW_START, ROW_STEP = Vector2.new(-77, 8.5), Vector2.new(-8, 0)
 local function eggSpot(i) -- i = 0 is the free Robux spot
 	return ROW_START + ROW_STEP * (i - 1)
 end
