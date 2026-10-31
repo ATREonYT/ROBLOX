@@ -14,7 +14,7 @@
 local Config = require(game.ReplicatedStorage.GameConfig)
 
 local WIDE, TALL = 9, 6.4 -- studs: the label's size, the same on every lane
-local HEIGHT = 11.5 -- studs over the stand pad: the same on every lane
+local HEIGHT = 9 -- studs over the stand pad: the same on every lane, just over the low lane (Oct 31)
 
 local function new(class, props)
 	local i = Instance.new(class)

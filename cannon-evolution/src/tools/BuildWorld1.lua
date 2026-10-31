@@ -19,8 +19,9 @@ local ServerStorage = game:GetService("ServerStorage")
 local Config = require(game.ReplicatedStorage.GameConfig)
 
 local SIDE = 1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side (Alex, Oct 30: training on your left as you face the water, the cannonball stand on your right)
-local CANNON_HEIGHT = 6 -- studs; a default character is ~5
-local PLINTH = 1.2 -- the cannon stands on a plinth in its booth's colours, so it shows above the counter (Alex, Oct 30)
+local CANNON_HEIGHT = 5 -- studs; a default character is ~5. Low, so the lane reads as a flat pool (Oct 31 study)
+local PAD_UP = 0.08 -- the stand pad's tiles stand this far over the lane floor; the cannon sits on them (no plinth)
+local LANE_W = 11 -- the lane's width (full size): narrower than the gap math, so a wide stud walkway runs between lanes
 local TARGET_Z = 22 -- stand point to target, the same on every lane (full size, before BOOTH_SCALE)
 local FLOOR_T = 0.8 -- the lane's floor stands this far over the platform; the rim another 0.8
 
@@ -159,41 +160,32 @@ local function placeholderCannon()
 	return m
 end
 
--- the target on its own wooden stand: two legs down to ground (the booth's floor top) and a foot
-local function makeTarget(cf, ground)
+-- the target: a bullseye raft floating flat on the far end of the lane's pool, tipped back towards the
+-- cannon so you see it from the stand pad (Oct 31: nothing tall stands in the lane, like Stone Skipping's
+-- pools). cf sits on the water; its front (LookVector) points up and back at the cannon.
+local function makeTarget(cf)
 	local m = Instance.new("Model")
 	m.Name = "Target"
 	local rings = {
-		{ 6, Color3.fromRGB(235, 60, 60) },
-		{ 4.4, Color3.new(1, 1, 1) },
-		{ 2.8, Color3.fromRGB(235, 60, 60) },
-		{ 1.2, Color3.fromRGB(255, 210, 60) },
+		{ 5.2, Color3.fromRGB(235, 60, 60) },
+		{ 3.8, Color3.new(1, 1, 1) },
+		{ 2.4, Color3.fromRGB(235, 60, 60) },
+		{ 1.0, Color3.fromRGB(255, 210, 60) },
 	}
 	for i, r in ipairs(rings) do
 		local disc = part({
 			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(0.4, r[1], r[1]),
+			Size = Vector3.new(0.3, r[1], r[1]),
 			Color = r[2],
-			Material = i == #rings and Enum.Material.Neon or Enum.Material.SmoothPlastic, -- glowing bullseye
+			Material = Enum.Material.SmoothPlastic,
 			CanCollide = false,
-			CFrame = cf * CFrame.new(0, 0, -0.1 * i) * CFrame.Angles(0, math.rad(90), 0),
+			CFrame = cf * CFrame.new(0, 0, -0.08 * i) * CFrame.Angles(0, math.rad(90), 0),
 			Parent = m,
 		})
 		disc.Name = "Ring"
 	end
 	-- invisible aim point; its front faces the cannon
 	part({ Name = "Center", Size = Vector3.one * 0.5, Transparency = 1, CanCollide = false, CFrame = cf * CFrame.new(0, 0, -0.5), Parent = m })
-	local h = cf.Position.Y - ground
-	for _, x in ipairs({ -1.6, 1.6 }) do
-		part({
-			Size = Vector3.new(0.6, h, 0.6),
-			Color = Color3.fromRGB(110, 75, 45),
-			Material = Enum.Material.Wood,
-			CFrame = cf * CFrame.new(x, -h / 2, 0.55),
-			Parent = m,
-		}).Name = "Leg"
-	end
-	part({ Name = "Foot", Size = Vector3.new(4.6, 0.5, 1.6), Color = Color3.fromRGB(85, 55, 35), Material = Enum.Material.Wood, CFrame = cf * CFrame.new(0, 0.25 - h, 0.55), Parent = m })
 	m.PrimaryPart = m.Center
 	return m
 end
@@ -255,15 +247,18 @@ local function tierLook(id)
 	local look = {
 		Floor = t.Base,
 		Rim = dark(t.Base, 0.35),
-		Track = t.Base:Lerp(WHITE, 0.45),
+		Track = t.Base:Lerp(WHITE, 0.45), -- the pool's water: a light tint of the tier colour
+		Bed = dark(t.Base, 0.25), -- the pool's floor under the water
 		Pad = dark(t.Base, 0.18),
 		Accent = t.Base, -- the glow colour (neon already brightens it, so the tier's own hue), also the client's shot colour
 		Glow = t.Glow,
 		Shine = t.Shine,
 		Sparkle = t.Sparkle,
+		Lanterns = t.Shine or t.Black, -- glowing lantern posts on the far corners of the top tiers
 	}
 	if t.Black then
-		look.Floor, look.Rim, look.Track, look.Pad = rgb(30, 24, 40), rgb(16, 12, 24), rgb(48, 34, 70), rgb(22, 16, 32)
+		look.Floor, look.Rim, look.Track, look.Pad = rgb(30, 24, 40), rgb(16, 12, 24), rgb(70, 40, 100), rgb(22, 16, 32)
+		look.Bed = rgb(14, 10, 22)
 		look.Accent = t.Base
 		look.Neon = true
 	end
@@ -272,6 +267,11 @@ end
 
 -- one lane, the same for every tier: built around the stand point (standCf at the platform's top),
 -- x right, y up, z forward towards the target. Only `look` changes between lanes.
+-- What makes Stone Skipping's lanes read well (Oct 31 study, Build Playbooks/Lesson - Tiered Training Lanes):
+-- a long, low lane that is mostly a pool of light water, a tiled stand pad at the near end, a brick rim in
+-- the tier colour, and nothing tall inside it. So: a chunky brick rim, a strip of lane floor, a recessed
+-- pool with see-through water over a darker bed, and a tiled pad the cannon sits on.
+local POOL_START = 10.2 -- where the pool begins, just past the cannon's nose (full size)
 local function makeBooth(standCf, width, look)
 	local m = Instance.new("Model")
 	m.Name = "Booth"
@@ -279,16 +279,16 @@ local function makeBooth(standCf, width, look)
 	local front, back = -6, TARGET_Z + 3.2
 	local L = back - front
 	local mid = (front + back) / 2
-	local RIM = 1.6 -- the raised rim's width (chunky, like the reference's)
+	local RIM, RIM_H = 1.6, 0.8 -- the raised rim's width and height over the floor
+	local inner = W / 2 - RIM -- half the width inside the rims
+	local poolHalf = inner - 0.9 -- a strip of lane floor each side of the water
+	local z0, z1 = POOL_START, back - RIM - 0.9 -- the pool's near and far ends
+	local BED_T = FLOOR_T - 0.4 -- the pool's floor; the deck round it stands at FLOOR_T
 	local function at(x, y, z)
 		return standCf * CFrame.new(x, y, -z)
 	end
 	local function blk(name, size, x, yTop, z, color, collide)
-		local p = part({ Name = name, Size = size, CFrame = at(x, yTop - size.Y / 2, z), Color = color, Material = Enum.Material.SmoothPlastic, CanCollide = collide == true, Parent = m })
-		if look.Shine and (name == "Floor" or name == "Track") then
-			p.Reflectance = 0.18
-		end
-		return p
+		return part({ Name = name, Size = size, CFrame = at(x, yTop - size.Y / 2, z), Color = color, Material = Enum.Material.SmoothPlastic, CanCollide = collide == true, Parent = m })
 	end
 	local function glow(name, size, x, yTop, z)
 		local p = blk(name, size, x, yTop, z, look.Accent)
@@ -296,34 +296,81 @@ local function makeBooth(standCf, width, look)
 		p.CastShadow = false
 		return p
 	end
-	-- the floor in the tier colour, the raised rim down both sides and across the back (the front stays
-	-- open: you step up onto the floor), and the centre track from the stand pad to the target
-	blk("Floor", Vector3.new(W, FLOOR_T, L), 0, FLOOR_T, mid, look.Floor, true)
-	for _, sx in ipairs({ -1, 1 }) do
-		blk("Rim", Vector3.new(RIM, 0.8, L), sx * (W / 2 - RIM / 2), FLOOR_T + 0.8, mid, look.Rim, true)
+	local function shade(c, f)
+		return Color3.new(math.min(c.R * f, 1), math.min(c.G * f, 1), math.min(c.B * f, 1))
 	end
-	blk("Rim", Vector3.new(W - RIM * 2, 0.8, RIM), 0, FLOOR_T + 0.8, back - RIM / 2, look.Rim, true)
-	blk("Lip", Vector3.new(W, 0.06, 0.5), 0, FLOOR_T + 0.03, front + 0.25, look.Rim) -- the front edge, flush
-	blk("Track", Vector3.new(5, 0.08, L - RIM - 2.4), 0, FLOOR_T + 0.04, mid - RIM / 2 + 0.6, look.Track)
-	blk("StartPad", Vector3.new(6, 0.12, 6), 0, FLOOR_T + 0.1, 0, look.Pad)
+
+	-- the base slab (its top is the pool's bed) and the deck round the pool, all in the tier colour
+	blk("Floor", Vector3.new(W, BED_T, L), 0, BED_T, mid, look.Bed, true)
+	local deck = FLOOR_T - BED_T
+	blk("Deck", Vector3.new(inner * 2, deck, z0 - front), 0, FLOOR_T, (front + z0) / 2, look.Floor, true) -- the near end
+	blk("Deck", Vector3.new(inner * 2, deck, back - RIM - z1), 0, FLOOR_T, (z1 + back - RIM) / 2, look.Floor, true) -- the far end
+	for _, sx in ipairs({ -1, 1 }) do
+		blk("Deck", Vector3.new(inner - poolHalf, deck, z1 - z0), sx * (inner + poolHalf) / 2, FLOOR_T, (z0 + z1) / 2, look.Floor, true)
+	end
+	-- the water: see-through over the darker bed, glossy; named Water so the stud pass leaves it smooth
+	local water = blk("Water", Vector3.new(poolHalf * 2, 0.2, z1 - z0), 0, FLOOR_T - 0.1, (z0 + z1) / 2, look.Track)
+	water.Transparency = 0.25
+	water.Reflectance = look.Shine and 0.3 or 0.15
+	water.CastShadow = false
+
+	-- the rim: bricks about 4 studs long in two shades, so it reads as built from blocks
+	local function brickRow(len, alongZ, x, zc)
+		local n = math.max(1, math.floor(len / 4 + 0.5))
+		local each = len / n
+		for k = 1, n do
+			local off = -len / 2 + each * (k - 0.5)
+			local size = alongZ and Vector3.new(RIM, RIM_H + deck, each - 0.06) or Vector3.new(each - 0.06, RIM_H + deck, RIM)
+			local px, pz = alongZ and x or x + off, alongZ and zc + off or zc
+			blk("Rim", size, px, FLOOR_T + RIM_H, pz, shade(look.Rim, k % 2 == 0 and 1.12 or 1), true)
+		end
+	end
+	for _, sx in ipairs({ -1, 1 }) do
+		brickRow(L, true, sx * (W / 2 - RIM / 2), mid)
+	end
+	brickRow(W - RIM * 2, false, 0, back - RIM / 2)
+	blk("Lip", Vector3.new(W, 0.06, 0.5), 0, FLOOR_T + 0.03, front + 0.25, look.Rim) -- the open front edge, flush
+
+	-- the stand pad: square tiles with thin gaps, from behind the stand point to the pool, under the cannon
+	local padW, pz0, pz1 = inner * 2 - 1, -4.2, z0 - 0.4
+	local nx, nz = math.max(1, math.floor(padW / 2.2 + 0.5)), math.max(1, math.floor((pz1 - pz0) / 2.2 + 0.5))
+	local tw, tl = padW / nx, (pz1 - pz0) / nz
+	for ix = 1, nx do
+		for iz = 1, nz do
+			blk("Tile", Vector3.new(tw - 0.14, 0.12, tl - 0.14), -padW / 2 + tw * (ix - 0.5), FLOOR_T + PAD_UP, pz0 + tl * (iz - 0.5), shade(look.Pad, (ix + iz) % 2 == 0 and 1.08 or 1))
+		end
+	end
+	blk("StartPad", Vector3.new(padW + 0.4, 0.04, pz1 - pz0 + 0.4), 0, FLOOR_T + 0.02, (pz0 + pz1) / 2, dark(look.Pad, 0.3)) -- the dark lines between tiles
+
 	if look.Glow then
 		-- a neon line along the top inner edge of the rim
 		for _, sx in ipairs({ -1, 1 }) do
-			glow("Edge", Vector3.new(0.3, 0.08, L - RIM), sx * (W / 2 - RIM + 0.15), FLOOR_T + 0.84, mid - RIM / 2)
+			glow("Edge", Vector3.new(0.3, 0.08, L - RIM), sx * (inner + 0.15), FLOOR_T + RIM_H + 0.04, mid - RIM / 2)
 		end
-		glow("Edge", Vector3.new(W - RIM * 2, 0.08, 0.3), 0, FLOOR_T + 0.84, back - RIM + 0.15)
+		glow("Edge", Vector3.new(inner * 2, 0.08, 0.3), 0, FLOOR_T + RIM_H + 0.04, back - RIM + 0.15)
 	end
 	if look.Neon then
-		-- the black lane: neon down both edges of the track and round the stand pad
+		-- the black lane: neon round the pool and the stand pad
 		for _, sx in ipairs({ -1, 1 }) do
-			glow("TrackLine", Vector3.new(0.25, 0.1, L - RIM - 2.4), sx * 2.6, FLOOR_T + 0.06, mid - RIM / 2 + 0.6)
-			glow("PadLine", Vector3.new(0.25, 0.14, 6), sx * 3, FLOOR_T + 0.12, 0)
-			glow("PadLine", Vector3.new(6, 0.14, 0.25), 0, FLOOR_T + 0.12, sx * 3)
+			glow("PoolLine", Vector3.new(0.25, 0.1, z1 - z0), sx * (poolHalf + 0.13), FLOOR_T + 0.06, (z0 + z1) / 2)
+			glow("PadLine", Vector3.new(0.25, 0.14, pz1 - pz0), sx * (padW / 2 + 0.13), FLOOR_T + PAD_UP + 0.02, (pz0 + pz1) / 2)
+		end
+		glow("PoolLine", Vector3.new(poolHalf * 2 + 0.5, 0.1, 0.25), 0, FLOOR_T + 0.06, z1 + 0.13)
+		glow("PadLine", Vector3.new(padW + 0.5, 0.14, 0.25), 0, FLOOR_T + PAD_UP + 0.02, pz0 - 0.13)
+	end
+	if look.Lanterns then
+		-- lantern posts on the far corners: a post in the rim's shade and a glowing lamp in the tier colour
+		for _, sx in ipairs({ -1, 1 }) do
+			local x, z = sx * (W / 2 - RIM / 2), back - RIM / 2
+			blk("LanternPost", Vector3.new(0.5, 2.4, 0.5), x, FLOOR_T + RIM_H + 2.4, z, dark(look.Rim, 0.2))
+			local lamp = blk("Lantern", Vector3.new(0.9, 0.9, 0.9), x, FLOOR_T + RIM_H + 3.3, z, look.Accent)
+			lamp.Material = Enum.Material.Neon
+			lamp.CastShadow = false
+			blk("LanternCap", Vector3.new(1.1, 0.25, 1.1), x, FLOOR_T + RIM_H + 3.55, z, dark(look.Rim, 0.2))
 		end
 	end
 	if look.Sparkle then
-		-- slow sparkles rising off the track (Roblox's own sparkle picture; a soft twinkle, never a flash)
-		local track = m:FindFirstChild("Track")
+		-- slow sparkles rising off the water (Roblox's own sparkle picture; a soft twinkle, never a flash)
 		local e = Instance.new("ParticleEmitter")
 		e.Name = "Sparkles"
 		e.Color = ColorSequence.new(look.Accent:Lerp(WHITE, 0.4))
@@ -335,7 +382,7 @@ local function makeBooth(standCf, width, look)
 		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
 		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
 		e.EmissionDirection = Enum.NormalId.Top
-		e.Parent = track
+		e.Parent = water
 	end
 	for _, d in ipairs(m:GetDescendants()) do
 		if d:IsA("BasePart") then
@@ -354,7 +401,7 @@ table.sort(order, function(a, b)
 	local kb = b.Pass and math.huge or b.Rebirths
 	return ka < kb
 end)
-local boothWidth = 14
+local boothWidth = LANE_W
 
 for i, info in ipairs(order) do
 	local station = Instance.new("Model")
@@ -400,25 +447,23 @@ for i, info in ipairs(order) do
 	_, size = cannon:GetBoundingBox()
 	local look = tierLook(info.Id)
 	local floorY = standPos.Y -- this lane's floor top
-	local cannonPos = standPos + fireDir * (2.5 + size.Z / 2)
-	local plinthCf = CFrame.lookAt(cannonPos, cannonPos + fireDir) + Vector3.new(0, floorY + PLINTH / 2 - cannonPos.Y, 0)
-	part({ Name = "Plinth", Size = Vector3.new(size.X + 1, PLINTH, size.Z + 0.6), CFrame = plinthCf, Color = look.Rim, CanCollide = false, Parent = station })
-	part({ Name = "PlinthTop", Size = Vector3.new(size.X + 1.4, 0.3, size.Z + 1), CFrame = plinthCf + Vector3.new(0, PLINTH / 2 + 0.15, 0), Color = look.Track, CanCollide = false, Parent = station })
-	if look.Glow then
-		part({ Name = "PlinthGlow", Size = Vector3.new(size.X + 1.1, 0.15, size.Z + 0.7), CFrame = plinthCf + Vector3.new(0, PLINTH / 2 - 0.15, 0), Color = look.Accent, Material = Enum.Material.Neon, CanCollide = false, Parent = station })
-	end
+	-- the cannon sits low on the stand pad's tiles, its nose at the pool (no plinth: nothing tall in the lane)
+	local cannonPos = standPos + fireDir * (POOL_START - 0.6 - size.Z / 2)
 	-- imported cannons point their barrel along +Z, so face +Z at the target
 	cannon:PivotTo(CFrame.lookAt(cannonPos, cannonPos - fireDir))
 	local cf, sz = cannon:GetBoundingBox()
-	cannon:PivotTo(cannon:GetPivot() + Vector3.new(0, floorY + PLINTH + 0.3 - (cf.Position.Y - sz.Y / 2), 0))
+	cannon:PivotTo(cannon:GetPivot() + Vector3.new(0, floorY + PAD_UP - (cf.Position.Y - sz.Y / 2), 0))
 	cannon.Parent = station
 
-	local muzzlePos = cannonPos + fireDir * (size.Z / 2) + Vector3.new(0, floorY + PLINTH + 0.3 + size.Y * 0.62 - cannonPos.Y, 0)
+	local muzzlePos = cannonPos + fireDir * (size.Z / 2) + Vector3.new(0, floorY + PAD_UP + size.Y * 0.62 - cannonPos.Y, 0)
 	part({ Name = "Muzzle", Size = Vector3.one * 0.5, Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false, CFrame = CFrame.lookAt(muzzlePos, muzzlePos + fireDir), Parent = station })
 
-	-- the target at the same spot on every lane, at the muzzle's height
-	local targetPos = Vector3.new(standPos.X, muzzlePos.Y, standPos.Z) + fireDir * TARGET_Z
-	local target = makeTarget(CFrame.lookAt(targetPos, targetPos - fireDir), floorY) -- stands on the lane floor
+	-- the target floats on the far end of the pool, at the same spot on every lane, leaning back 25 degrees
+	-- so it faces the cannon; its near edge rests on the water
+	local TILT = math.rad(25)
+	local targetPos = Vector3.new(standPos.X, floorY - 0.1 + 2.6 * math.sin(TILT) + 0.1, standPos.Z) + fireDir * (TARGET_Z - 2.6)
+	local face = (Vector3.yAxis * math.cos(TILT) - fireDir * math.sin(TILT)).Unit
+	local target = makeTarget(CFrame.lookAt(targetPos, targetPos + face))
 	-- the same target on every lane, in the lane's colours: rim shade, white, tier colour, light bullseye
 	local rings = { look.Rim, WHITE, look.Floor, look.Track }
 	local ring = 0
@@ -427,9 +472,6 @@ for i, info in ipairs(order) do
 			ring += 1
 			d.Color = rings[ring] or d.Color
 			d.Material = (ring == #rings and (look.Glow or look.Neon)) and Enum.Material.Neon or Enum.Material.SmoothPlastic
-		elseif d.Name == "Leg" or d.Name == "Foot" then
-			d.Color = look.Rim
-			d.Material = Enum.Material.SmoothPlastic
 		end
 	end
 	target.Parent = station
