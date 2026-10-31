@@ -117,8 +117,8 @@ for _, info in ipairs(Config.Stations) do
 		-- 2. LOCKED / UNLOCKED (Effects.lua sets the words and the colour for each player)
 		local status = new("Frame", {
 			Name = "Status",
-			Position = UDim2.fromScale(0, 0.42),
-			Size = UDim2.fromScale(1, 0.16),
+			Position = UDim2.fromScale(0, 0.4),
+			Size = UDim2.fromScale(1, 0.2),
 			BackgroundTransparency = 1,
 			Parent = card,
 		})

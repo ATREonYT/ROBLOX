@@ -19,8 +19,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local Config = require(game.ReplicatedStorage.GameConfig)
 
 local SIDE = 1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side (Alex, Oct 30: training on your left as you face the water, the cannonball stand on your right)
-local CANNON_HEIGHT = 5 -- studs; a default character is ~5. Low, so the lane reads as a flat pool (Oct 31 study)
-local PAD_UP = 0.08 -- the stand pad's tiles stand this far over the lane floor; the cannon sits on them (no plinth)
+local CANNON_HEIGHT = 4.5 -- studs; a default character is ~5. Low and less than half the lane's inner width, so the lane reads as a pool (Oct 31 study)
+local PAD_UP = 0.25 -- the stand pad's tiles stand this far over the lane floor, so the pad is its own thing; the cannon sits on them
 local LANE_W = 11 -- the lane's width (full size): narrower than the gap math, so a wide stud walkway runs between lanes
 local TARGET_Z = 26.4 -- stand point to target, the same on every lane (full size, before BOOTH_SCALE); long, so the pool is most of the lane (Oct 31)
 local FLOOR_T = 0.8 -- the lane's floor stands this far over the platform; the rim another 0.8
@@ -107,8 +107,9 @@ if newMap then
 	end
 	local plat = Instance.new("Folder")
 	plat.Name = "LanePlatform"
-	-- warm sand, not pale cream: under the bright cartoony lighting a pale platform turns white (Oct 31)
-	for _, layer in ipairs({ { 0.7, PLAT_TOP - 0.12, Color3.fromRGB(170, 138, 98) }, { 0, PLAT_TOP, Color3.fromRGB(222, 194, 150) } }) do
+	-- cool light stone, like a stone dock: it sets off the warm gold and orange lanes, which vanished into sand
+	-- (Oct 31 critic; the reference's walkways contrast with every lane the same way)
+	for _, layer in ipairs({ { 0.7, PLAT_TOP - 0.12, Color3.fromRGB(128, 134, 150) }, { 0, PLAT_TOP, Color3.fromRGB(184, 190, 202) } }) do
 		local grow, top, color = layer[1], layer[2], layer[3]
 		local p = Instance.new("Part")
 		p.Name = grow > 0 and "Edge" or "Top"
@@ -240,11 +241,11 @@ local TIERS = {
 	-- Water: the pool's colour. Like Stone Skipping's, the water stays watery (light cyan to blue) and leans
 	-- towards the lane's hue only where that still reads as water: cyan in the orange and gold lanes, mint in
 	-- the green one, violet in the black VIP lane (Oct 31: tinted yellow or orange water read as murky)
-	[1] = { Base = rgb(60, 112, 225), Water = rgb(120, 195, 255) }, -- Starter: blue
-	[2] = { Base = rgb(70, 200, 225), Water = rgb(150, 235, 250) }, -- Steel: ice
-	[3] = { Base = rgb(245, 135, 35), Water = rgb(95, 215, 240), Glow = true }, -- Heavy: orange
-	[4] = { Base = rgb(245, 192, 40), Water = rgb(95, 215, 240), Glow = true, Shine = true }, -- Golden: gold
-	[5] = { Base = rgb(80, 205, 70), Water = rgb(120, 240, 200), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
+	[1] = { Base = rgb(60, 112, 225), Water = rgb(95, 175, 250) }, -- Starter: blue
+	[2] = { Base = rgb(70, 200, 225), Water = rgb(110, 215, 245) }, -- Steel: ice
+	[3] = { Base = rgb(245, 135, 35), Water = rgb(85, 195, 240), Glow = true }, -- Heavy: orange
+	[4] = { Base = rgb(245, 192, 40), Water = rgb(85, 195, 240), Glow = true, Shine = true }, -- Golden: gold
+	[5] = { Base = rgb(80, 205, 70), Water = rgb(90, 220, 180), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
 	[6] = { Base = rgb(255, 60, 230), Water = rgb(120, 60, 175), Glow = true, Sparkle = true, Black = true }, -- Dragon (VIP): black and neon pink
 }
 local function tierLook(id)
@@ -276,7 +277,7 @@ end
 -- a long, low lane that is mostly a pool of light water, a tiled stand pad at the near end, a brick rim in
 -- the tier colour, and nothing tall inside it. So: a chunky brick rim, a strip of lane floor, a recessed
 -- pool with see-through water over a darker bed, and a tiled pad the cannon sits on.
-local POOL_START = 10.2 -- where the pool begins, just past the cannon's nose (full size)
+local POOL_START = 9 -- where the pool begins, just past the cannon's nose (full size)
 local function makeBooth(standCf, width, look)
 	local m = Instance.new("Model")
 	m.Name = "Booth"
@@ -286,7 +287,7 @@ local function makeBooth(standCf, width, look)
 	local mid = (front + back) / 2
 	local RIM, RIM_H = 1.6, 0.8 -- the raised rim's width and height over the floor
 	local inner = W / 2 - RIM -- half the width inside the rims
-	local poolHalf = inner - 0.9 -- a strip of lane floor each side of the water
+	local poolHalf = inner -- the water fills the lane from rim to rim (Oct 31 critic: it has to read as a pool)
 	local z0, z1 = POOL_START, back - RIM - 0.9 -- the pool's near and far ends
 	local BED_T = FLOOR_T - 0.4 -- the pool's floor; the deck round it stands at FLOOR_T
 	local function at(x, y, z)
@@ -310,14 +311,19 @@ local function makeBooth(standCf, width, look)
 	local deck = FLOOR_T - BED_T
 	blk("Deck", Vector3.new(inner * 2, deck, z0 - front), 0, FLOOR_T, (front + z0) / 2, look.Floor, true) -- the near end
 	blk("Deck", Vector3.new(inner * 2, deck, back - RIM - z1), 0, FLOOR_T, (z1 + back - RIM) / 2, look.Floor, true) -- the far end
-	for _, sx in ipairs({ -1, 1 }) do
-		blk("Deck", Vector3.new(inner - poolHalf, deck, z1 - z0), sx * (inner + poolHalf) / 2, FLOOR_T, (z0 + z1) / 2, look.Floor, true)
-	end
 	-- the water: see-through over the darker bed, glossy; named Water so the stud pass leaves it smooth
 	local water = blk("Water", Vector3.new(poolHalf * 2, 0.2, z1 - z0), 0, FLOOR_T - 0.1, (z0 + z1) / 2, look.Track)
-	water.Transparency = 0.1 -- light and bright like Stone Skipping's water; Glass over the bed read grey
+	water.Transparency = 0.15 -- bright like Stone Skipping's water; Glass over the bed read grey
 	water.Reflectance = look.Shine and 0.3 or 0.2
 	water.CastShadow = false
+
+	-- two lily pads with a pink flower floating in every pool, like the reference's pools (never on the target)
+	for k, spot in ipairs({ { -0.55, 0.22 }, { 0.6, 0.5 } }) do
+		local x, z = spot[1] * poolHalf, z0 + (z1 - z0) * spot[2]
+		local lily = part({ Name = "LilyPad", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.12, k == 1 and 1.8 or 1.4, k == 1 and 1.8 or 1.4), Color = rgb(95, 190, 80), Material = Enum.Material.SmoothPlastic, CanCollide = false, CastShadow = false, CFrame = at(x, FLOOR_T - 0.04, z) * CFrame.Angles(0, 0, math.rad(90)), Parent = m })
+		part({ Name = "LilyFlower", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.55, Color = rgb(255, 150, 195), Material = Enum.Material.SmoothPlastic, CanCollide = false, CastShadow = false, CFrame = at(x + 0.2, FLOOR_T + 0.15, z), Parent = m })
+		lily.Anchored = true
+	end
 
 	-- the rim: bricks about 4 studs long in two shades, so it reads as built from blocks
 	local function brickRow(len, alongZ, x, zc)
@@ -342,10 +348,18 @@ local function makeBooth(standCf, width, look)
 	local tw, tl = padW / nx, (pz1 - pz0) / nz
 	for ix = 1, nx do
 		for iz = 1, nz do
-			blk("Tile", Vector3.new(tw - 0.14, 0.12, tl - 0.14), -padW / 2 + tw * (ix - 0.5), FLOOR_T + PAD_UP, pz0 + tl * (iz - 0.5), shade(look.Pad, (ix + iz) % 2 == 0 and 1.08 or 1))
+			blk("Tile", Vector3.new(tw - 0.14, PAD_UP + 0.05, tl - 0.14), -padW / 2 + tw * (ix - 0.5), FLOOR_T + PAD_UP, pz0 + tl * (iz - 0.5), shade(look.Pad, (ix + iz) % 2 == 0 and 1.08 or 1))
 		end
 	end
-	blk("StartPad", Vector3.new(padW + 0.4, 0.04, pz1 - pz0 + 0.4), 0, FLOOR_T + 0.02, (pz0 + pz1) / 2, dark(look.Pad, 0.3)) -- the dark lines between tiles
+	blk("StartPad", Vector3.new(padW + 0.4, PAD_UP - 0.02, pz1 - pz0 + 0.4), 0, FLOOR_T + PAD_UP - 0.04, (pz0 + pz1) / 2, dark(look.Pad, 0.3)) -- the dark lines between tiles
+	-- white L marks on the pad's four corners, like the reference's start pads
+	for _, sx in ipairs({ -1, 1 }) do
+		for _, sz in ipairs({ -1, 1 }) do
+			local cx, cz = sx * (padW / 2 - 0.35), (pz0 + pz1) / 2 + sz * ((pz1 - pz0) / 2 - 0.35)
+			blk("PadMark", Vector3.new(0.3, 0.04, 1.5), cx, FLOOR_T + PAD_UP + 0.04, cz - sz * 0.6, WHITE)
+			blk("PadMark", Vector3.new(1.5, 0.04, 0.3), cx - sx * 0.6, FLOOR_T + PAD_UP + 0.04, cz, WHITE)
+		end
+	end
 
 	if look.Glow then
 		-- a neon line along the top inner edge of the rim
@@ -357,7 +371,7 @@ local function makeBooth(standCf, width, look)
 	if look.Neon then
 		-- the black lane: neon round the pool and the stand pad
 		for _, sx in ipairs({ -1, 1 }) do
-			glow("PoolLine", Vector3.new(0.25, 0.1, z1 - z0), sx * (poolHalf + 0.13), FLOOR_T + 0.06, (z0 + z1) / 2)
+			glow("PoolLine", Vector3.new(0.25, 0.1, z1 - z0), sx * (poolHalf - 0.13), FLOOR_T - 0.04, (z0 + z1) / 2) -- along the rim, on the water
 			glow("PadLine", Vector3.new(0.25, 0.14, pz1 - pz0), sx * (padW / 2 + 0.13), FLOOR_T + PAD_UP + 0.02, (pz0 + pz1) / 2)
 		end
 		glow("PoolLine", Vector3.new(poolHalf * 2 + 0.5, 0.1, 0.25), 0, FLOOR_T + 0.06, z1 + 0.13)
