@@ -150,6 +150,7 @@ local function part(props, parent)
 	return p
 end
 
+-- thin posts and poles don't collide, so running kids never snag on them (found walking it in Play)
 -- a wooden board with words on both sides, its long side along cf's X
 local function board(parent, text, cf, long, tall)
 	local b = part({ Name = "Board_" .. text, Size = Vector3.new(long, tall, 0.25), CFrame = cf, Color = BOARD_WOOD, CanCollide = false }, parent)
@@ -280,7 +281,7 @@ for i, l in ipairs(LANTERNS) do
 	local lantern = Instance.new("Model")
 	lantern.Name = "Lantern" .. i
 	local top = y + 5.4
-	part({ Name = "Post", Size = Vector3.new(0.5, 5.7, 0.5), CFrame = CFrame.new(at.X, y + 5.7 / 2 - 0.3, at.Z), Color = POST_WOOD }, lantern)
+	part({ Name = "Post", Size = Vector3.new(0.5, 5.7, 0.5), CFrame = CFrame.new(at.X, y + 5.7 / 2 - 0.3, at.Z), Color = POST_WOOD, CanCollide = false }, lantern)
 	local tip = Vector3.new(at.X, top - 0.1, at.Z) + way * 1.5
 	part({ Name = "Arm", Size = Vector3.new(0.3, 0.3, 1.8), CFrame = CFrame.lookAt(Vector3.new(at.X, top - 0.1, at.Z) + way * 0.75, tip), Color = POST_WOOD, CanCollide = false }, lantern)
 	hangLantern(lantern, tip, l[4])
@@ -322,7 +323,7 @@ do
 		local a, b = Config.Map.At(span[1], 0, BUNTING_Z), Config.Map.At(span[2], 0, BUNTING_Z)
 		local y = groundAt(a.X, a.Z)
 		for _, p in ipairs({ a, b }) do
-			part({ Name = "Pole", Size = Vector3.new(0.45, POLE_H + 0.4, 0.45), CFrame = CFrame.new(p.X, y + POLE_H / 2 - 0.2, p.Z), Color = POST_WOOD }, bunting)
+			part({ Name = "Pole", Size = Vector3.new(0.45, POLE_H + 0.4, 0.45), CFrame = CFrame.new(p.X, y + POLE_H / 2 - 0.2, p.Z), Color = POST_WOOD, CanCollide = false }, bunting)
 		end
 		local len = (b - a).Magnitude
 		local n = math.floor(len / 1.6)
@@ -368,7 +369,7 @@ do
 	local y = groundAt(at.X, at.Z)
 	local sign = Instance.new("Model")
 	sign.Name = "BallSign"
-	part({ Name = "Post", Size = Vector3.new(0.6, 7, 0.6), CFrame = CFrame.new(at.X, y + 3.2, at.Z), Color = POST_WOOD }, sign)
+	part({ Name = "Post", Size = Vector3.new(0.6, 7, 0.6), CFrame = CFrame.new(at.X, y + 3.2, at.Z), Color = POST_WOOD, CanCollide = false }, sign)
 	local way = Vector3.new(1, 0, 0)
 	local cf = CFrame.fromMatrix(Vector3.new(at.X, y + 5.6, at.Z) + way * 3.4, way, Vector3.yAxis)
 	board(sign, "CANNONBALLS", cf, 6.4, 1.3)
@@ -408,7 +409,7 @@ do
 					local base = (rimCf * CFrame.new(sx * (W / 2 + 0.45), 0, z)).Position
 					local h = z > 0 and 3.6 or 3
 					local post = Vector3.new(base.X, floorY, base.Z)
-					part({ Name = "Post", Size = Vector3.new(0.55, h + 0.3, 0.55), CFrame = CFrame.new(post + Vector3.new(0, (h + 0.3) / 2 - 0.3, 0)), Color = POST_WOOD }, fences)
+					part({ Name = "Post", Size = Vector3.new(0.55, h + 0.3, 0.55), CFrame = CFrame.new(post + Vector3.new(0, (h + 0.3) / 2 - 0.3, 0)), Color = POST_WOOD, CanCollide = false }, fences)
 					local cap = part({ Name = "Cap", Shape = Enum.PartType.Ball, Size = Vector3.new(0.75, 0.75, 0.75), CFrame = CFrame.new(post + Vector3.new(0, h + 0.15, 0)), Color = BRASS, Material = Enum.Material.Metal, CanCollide = false }, fences)
 					table.insert(tops, post + Vector3.new(0, 2.4, 0))
 					if z > 0 then
@@ -434,7 +435,7 @@ do
 	local y = groundAt(at.X, at.Z)
 	local sign = Instance.new("Model")
 	sign.Name = "Signpost"
-	part({ Name = "Post", Size = Vector3.new(0.6, 7.6, 0.6), CFrame = CFrame.new(at.X, y + 7.6 / 2 - 0.3, at.Z), Color = POST_WOOD }, sign)
+	part({ Name = "Post", Size = Vector3.new(0.6, 7.6, 0.6), CFrame = CFrame.new(at.X, y + 7.6 / 2 - 0.3, at.Z), Color = POST_WOOD, CanCollide = false }, sign)
 	for _, b in ipairs(BOARDS) do
 		local way = Vector3.new(b[2][1], 0, b[2][2]).Unit
 		local mid = Vector3.new(at.X, y + b[3], at.Z) + way * 2.55
