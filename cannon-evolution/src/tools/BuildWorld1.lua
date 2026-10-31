@@ -443,7 +443,7 @@ for i, info in ipairs(order) do
 		CFrame = CFrame.new(standPos + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 		Parent = station,
 	})
-	part({ Name = "StandPoint", Size = Vector3.new(1, 0.2, 1), Transparency = 1, CanCollide = false, CanTouch = false, CFrame = standCf, Parent = station })
+	part({ Name = "StandPoint", Size = Vector3.new(1, 0.2, 1), Transparency = 1, CanCollide = false, CanTouch = false, CFrame = standCf + Vector3.new(0, PAD_UP, 0), Parent = station }) -- on the pad's tiles
 
 	-- Cannon, scaled to CANNON_HEIGHT and facing the target
 	local cannon
