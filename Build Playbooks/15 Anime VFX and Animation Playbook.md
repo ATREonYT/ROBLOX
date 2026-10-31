@@ -5,7 +5,7 @@ updated: 2026-10-31
 
 # 15 Anime VFX and Animation Playbook
 
-Back to [[00 Build Router]] · General layering, tiers, budgets: skill `roblox-vfx` · Game moments (launch, hatch, rebirth): [[11 VFX Moments Playbook]] · Animations: skill `roblox-ai-animation` · Premium layer: [[14 Premium Feel Playbook]] · Taste: [[09 Owner Taste Rules]]
+Back to [[00 Build Router]] · General layering, tiers, budgets: skill `roblox-vfx` · Game moments (launch, hatch, rebirth): [[11 VFX Moments Playbook]] · Animations: skill `roblox-ai-animation` · Premium layer: [[14 Premium Feel Playbook]] · Taste: [[09 Owner Taste Rules]] · Still looks cheap: [[16 Pro Animation and VFX Playbook]]
 
 **Goal (owner, Oct 31):** "anime style animations and VFX, like the anime games on Roblox do", "sort of Dragon Ball Z aura style". This note covers:
 - how the popular Roblox anime games get that look (§1);
