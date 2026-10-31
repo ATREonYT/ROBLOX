@@ -102,13 +102,17 @@ Config.SKIP_FIRST_HOP = 0.2 -- first arc out of the cannon, as a share of the wh
 Config.SKIP_DECAY = 0.86 -- each skip is this much shorter than the last
 Config.RETURN_DELAY = 1 -- seconds on the landing before you're home; Stone Skipping's next throw is ~1 s after
 Config.MIN_LAUNCH_DISTANCE = 160 * Config.Map.Stretch -- the first arc clears the lobby into the water
--- Rare shots (vault "Beat the Hits", our take on Stone Skipping's Secret/Colossus throws): the server
--- rolls them on every launch, free and never for sale. They multiply that launch's cash, and the
--- ball flies with its own trail; a Mega Shot is announced to the whole server.
+-- Rare shots (Alex, Oct 31): the server rolls them on every launch, rarest first, free and never for
+-- sale. Each one plays its own cutscene first (GameClient.AnimeFX, Cutscene seconds), flies further
+-- (Distance x, capped at Reach x the track) and multiplies the cash. Secret and Divine are announced
+-- to the whole server. FIRST_MYTHIC_AFTER: a guaranteed Mythic once a player has this many launches
+-- (the tutorial has 4, so it lands on the 8th: "after the user takes like 3-4 shots").
 Config.RareShots = {
-	{ Id = "Mega", Name = "MEGA SHOT", Chance = 1 / 1000, Mult = 25, Color = Color3.fromRGB(255, 120, 240) },
-	{ Id = "Golden", Name = "GOLDEN SHOT", Chance = 1 / 100, Mult = 5, Color = Color3.fromRGB(255, 205, 50) },
+	{ Id = "Divine", Name = "DIVINE SHOT", Chance = 1 / 100000, Mult = 250, Distance = 3, Reach = 1, Cutscene = 4.4, Color = Color3.fromRGB(255, 232, 150) },
+	{ Id = "Secret", Name = "SECRET SHOT", Chance = 1 / 1000, Mult = 25, Distance = 2.2, Reach = 0.93, Cutscene = 3.6, Color = Color3.fromRGB(255, 185, 30) },
+	{ Id = "Mythic", Name = "MYTHIC SHOT", Chance = 1 / 100, Mult = 5, Distance = 1.6, Reach = 0.86, Cutscene = 2.6, Color = Color3.fromRGB(255, 55, 120) },
 }
+Config.FIRST_MYTHIC_AFTER = 7
 function Config.GetRareShot(id)
 	for _, r in ipairs(Config.RareShots) do
 		if r.Id == id then
@@ -607,6 +611,12 @@ Config.Sounds = {
 	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
 	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
 	Hatch = "rbxassetid://9116384799",
+	-- the rare shots (Mythic / Secret / Divine, GameClient.AnimeFX), licensed library picks from Alex's SFX pack (Oct 31)
+	RareCharge = "rbxassetid://9125980459", -- "Spaceship Pre Blast Electric Charge Up", 1.4 s, kept quiet
+	RareSting = "rbxassetid://1843648200", -- APM "You Know Why I'm Here" stinger, 2 s: the title card
+	RareBlast = "rbxassetid://9120009740", -- "Thruster Blast 14", 1.2 s punchy blast: the release
+	RareBoom = "rbxassetid://9125401975", -- "Boom Impact Deep Distant Thumping Hits", the low layer under the blast
+	RarePoof = "rbxassetid://9116406151", -- "Magic Poofs Short Breathy Bursts Punchy 1", 0.6 s: the roar / charge burst
 	-- Roblox's free licensed library too (found with Studio's Toolbox search on Oct 30, each loaded in Studio;
 	-- picked by title and length, not yet heard by Alex: swap any one by changing its id):
 	Reward = "rbxassetid://9119668788", -- "Suction Pop 1 (SFX)", ProSoundEffects: a quick real "pop", 0.31 s
@@ -635,6 +645,7 @@ Config.DefaultData = {
 	Rebirths = 0,
 	BestDistance = 0,
 	TotalLaunches = 0,
+	FirstMythic = false, -- the guaranteed Mythic after the tutorial has been given
 	Upgrades = {},
 	Pets = {}, -- array of { Id = uid, Name = petKey, Equipped = bool }
 	NextPetUid = 1,

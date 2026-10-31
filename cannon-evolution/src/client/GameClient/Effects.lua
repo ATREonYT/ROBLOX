@@ -731,7 +731,8 @@ return function(ctx)
 		-- my shots leave my cannon's muzzle; land on the same spot the server chose
 		local landing = origin + dir * distance
 		local reported = distance -- what the counter counts up to
-		local muzzle = mine and fireMyCannon()
+		-- a Secret Shot leaves the big golden Grand Cannon instead (AnimeFX, Alex Oct 31)
+		local muzzle = (rareId and ctx.RareMuzzle and ctx.RareMuzzle(rareId)) or (mine and fireMyCannon())
 		if muzzle then
 			origin = muzzle
 			distance = math.max((landing - origin):Dot(dir), 30)

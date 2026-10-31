@@ -50,6 +50,11 @@ local LEVEL = {
 	LaunchBoom = { 0.55, 0.04, "Effects" },
 	Skip = { 0.35, 0.08, "Effects" },
 	Splash = { 0.5, 0.05, "Effects" },
+	RareCharge = { 0.25, 0, "Effects" },
+	RareSting = { 0.5, 0, "Effects" },
+	RareBlast = { 0.7, 0.03, "Effects" },
+	RareBoom = { 0.8, 0, "Effects" },
+	RarePoof = { 0.45, 0.05, "Effects" },
 }
 
 -- Roblox's own sounds standing in until ours are uploaded: { id, volume multiplier, pitch }. Only built-ins every
@@ -65,13 +70,13 @@ local FALLBACK = {
 
 -- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
 -- Alex, Oct 30: "make the earned sounds just quick, nothing long". So rewards stop by 0.7 s at most.
-local CUT = { Launch = 1.1, LaunchBoom = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.35, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
+local CUT = { Launch = 1.1, LaunchBoom = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.35, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1, RareCharge = 1.4, RareSting = 1.6, RareBlast = 1.1, RareBoom = 1.2, RarePoof = 0.6 } -- Splash: just the hit, not the long drip
 
 -- slots that use another slot's sound until they have their own
 local BORROW = { Unlock = "Reward" }
 
 -- slots that also play a second sound on top (the launch: a boom plus a whoosh flying away)
-local WITH = { Launch = "LaunchBoom" }
+local WITH = { Launch = "LaunchBoom", RareBlast = "RareBoom" }
 
 local GAP = 0.06 -- a button sound asked for again this soon is the same press
 -- The big "ta-da" sounds never stack: a rebirth that also unlocks a cannon would otherwise play two stings at once

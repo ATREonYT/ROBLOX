@@ -35,6 +35,7 @@ local Notify = remote("Notify") -- S->C: text, color
 local TrainingState = remote("TrainingState") -- S->C: stationId | nil
 local TrainingShot = remote("TrainingShot") -- S->All: player, stationId, gain, crit
 local LaunchPlayer = remote("LaunchPlayer") -- S->C: velocity
+local RareShot = remote("RareShot") -- S->All: player, rareId, origin, seconds (the cutscene before a rare shot)
 local LaunchResult = remote("LaunchResult") -- S->C: distance, cash, gems, isBest
 local Hatched = remote("Hatched") -- S->C: eggId, { petKey, ... }
 local Leaderboards = remote("Leaderboards") -- S->All: { [boardId] = { {Name, Value}, ... } }
@@ -447,22 +448,43 @@ local function launch(player)
 	local duration = Config.FlightTime(distance)
 	local cash = cashFor(player, profile, distance)
 	local rare
-	for _, r in ipairs(Config.RareShots) do
-		if math.random() < r.Chance then
-			rare = r
-			break
+	-- Studio only: set the workspace attribute ForceRareShot to "Mythic"/"Secret"/"Divine" to test one
+	local forced = game:GetService("RunService"):IsStudio() and workspace:GetAttribute("ForceRareShot")
+	if forced and Config.GetRareShot(forced) then
+		rare = Config.GetRareShot(forced)
+	elseif not data.FirstMythic and data.TotalLaunches >= Config.FIRST_MYTHIC_AFTER then
+		-- right after the tutorial, one guaranteed Mythic to show what's out there (Alex, Oct 31)
+		data.FirstMythic = true
+		rare = Config.GetRareShot("Mythic")
+	else
+		for _, r in ipairs(Config.RareShots) do
+			if math.random() < r.Chance then
+				rare = r
+				break
+			end
 		end
 	end
 	if rare then
-		cash *= rare.Mult
-		if rare.Id == "Mega" then
+		-- further than a normal shot, each tier further than the last, within the track
+		distance = math.floor(math.max(distance, math.min(distance * rare.Distance, trackLength * rare.Reach)))
+		duration = Config.FlightTime(distance)
+		cash = cashFor(player, profile, distance) * rare.Mult
+		if rare.Id ~= "Mythic" then
 			for _, other in ipairs(Players:GetPlayers()) do
-				notify(other, player.DisplayName .. " fired a MEGA SHOT! x" .. rare.Mult .. " Cash", rare.Color)
+				notify(other, player.DisplayName .. " fired a " .. rare.Name .. "! x" .. rare.Mult .. " Cash", rare.Color)
 			end
 		end
 	end
 	local walkSpeed = hum.WalkSpeed
 	hum.WalkSpeed = 0
+	if rare and rare.Cutscene then
+		-- every client plays the rare shot's cutscene (AnimeFX), then the ball flies
+		RareShot:FireAllClients(player, rare.Id, launchPoint.Position, rare.Cutscene)
+		task.wait(rare.Cutscene)
+		if not player.Parent then
+			return
+		end
+	end
 	LaunchPlayer:FireAllClients(player, launchPoint.Position, distance, duration, cash, rare and rare.Id)
 
 	local startTime = os.clock()
@@ -1017,6 +1039,13 @@ local function claimPlaytime(player, index)
 		return false, "Keep playing to unlock this!"
 	end
 	profile.PlaytimeClaimed[index] = true
+	-- a free hatch (the first gift): the egg's own odds and reveal; hatch() is defined above, grantReward isn't
+	if info.Reward.Egg then
+		local egg = Config.GetEgg(info.Reward.Egg)
+		if egg then
+			hatch(player, egg, info.Reward.Count or 1, true)
+		end
+	end
 	grantReward(player, info.Reward)
 	return true
 end

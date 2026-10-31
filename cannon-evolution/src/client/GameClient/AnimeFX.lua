@@ -292,18 +292,19 @@ return function(ctx)
 			end
 		end)
 	end
-	-- speed streaks across the screen against the ball's motion while it cruises
+	-- speed lines while the ball cruises: with the chase camera behind the ball they rush outward from it,
+	-- like flying down a tunnel (Alex, Oct 31: the flight is seen from behind now)
 	local function flightStreaks(ball, duration, look)
 		stopLines()
 		local cam = workspace.CurrentCamera
 		local view = cam.ViewportSize
-		local count = 14 + look.Rank * 6
+		local reach = view.Magnitude * 0.6
+		local count = 16 + look.Rank * 6
 		local state = {}
-		local flow = Vector2.new(1, 0)
 		local function respawn(s, anywhere)
-			local p = Vector2.new(math.random() * view.X, math.random() * view.Y)
-			s.P = anywhere and p or p + flow * view.Magnitude * 0.6
-			s.Len, s.W, s.Speed = 90 + math.random() * 280, 1 + math.random() * 2.5, 2400 + math.random() * 2000
+			s.A = math.random() * math.pi * 2
+			s.R = reach * (anywhere and (0.2 + math.random() * 0.8) or (0.18 + math.random() * 0.1))
+			s.Len, s.W, s.Speed = 60 + math.random() * 200, 1 + math.random() * 2.5, 1400 + math.random() * 1400
 		end
 		for i = 1, count do
 			state[i] = {}
@@ -323,21 +324,20 @@ return function(ctx)
 			if u > 0.7 then
 				strength *= math.max(0, (0.9 - u) / 0.2)
 			end
-			local a = cam:WorldToViewportPoint(ball.Position)
-			local b = cam:WorldToViewportPoint(ball.Position + dir * 10)
-			local f = Vector2.new(b.X - a.X, b.Y - a.Y)
-			flow = f.Magnitude > 1 and f.Unit or flow
-			local rot = math.deg(math.atan2(flow.Y, flow.X))
+			local sp, onScreen = cam:WorldToViewportPoint(ball.Position)
+			local center = onScreen and Vector2.new(sp.X, sp.Y) or view / 2
 			for i = 1, count do
 				local s, l = state[i], lines[i]
-				s.P -= flow * s.Speed * dt
-				if (s.P - view / 2):Dot(flow) < -view.Magnitude * 0.6 then
+				s.R += s.Speed * dt * (s.R / reach + 0.3) -- faster towards the edges, like perspective
+				if s.R > reach then
 					respawn(s, false)
 				end
-				l.Rotation = rot
-				l.Position = UDim2.fromOffset(s.P.X, s.P.Y)
-				l.Size = UDim2.fromOffset(s.Len, s.W)
-				l.BackgroundTransparency = 1 - 0.55 * strength
+				local c = Vector2.new(math.cos(s.A), math.sin(s.A))
+				local p = center + c * (s.R + s.Len / 2)
+				l.Rotation = math.deg(s.A)
+				l.Position = UDim2.fromOffset(p.X, p.Y)
+				l.Size = UDim2.fromOffset(s.Len * (0.5 + s.R / reach), s.W)
+				l.BackgroundTransparency = 1 - 0.55 * strength * math.min(s.R / (reach * 0.35), 1)
 			end
 		end)
 	end
