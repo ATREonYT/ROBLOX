@@ -8,7 +8,12 @@
 	its colours, effects and the tier's own cannon change. On the new map they stand on one open stud
 	platform. Run BuildRebirthSigns (one label per lane) and BuildCartoonyMap (the studs) after it. It also places the Grand Cannon LaunchPoint and Launch Zone, and
 	moves the SpawnLocation into the lobby.
-	Safe to re-run: it deletes and rebuilds Workspace.TrainingStations.
+	Alex, Oct 31: "make it seem more buyable ... we want to make money". So the lanes grew with the 2x map,
+	every cannon stands on a display turntable (a glowing ring on the glow tiers), the VIP lane is the
+	showcase (black and gold, a gold VIP arch over its entrance, its Robux price on its label), and a
+	"2x POWER" board stands by the first lane (Workspace.TrainingShop; its prompt opens the same purchase
+	as the Shop, "Coming soon!" while the pass id is 0).
+	Safe to re-run: it deletes and rebuilds Workspace.TrainingStations and Workspace.TrainingShop.
 
 	Cannon models: put the imported cannons in ReplicatedStorage > Cannons,
 	named exactly as in GameConfig (Cannon01_Starter, ...). Any that are missing
@@ -80,9 +85,11 @@ if newMap then
 	-- the dock; the VIP booth is the west one. The block's middle is in the map file's units (Config.Map.At
 	-- moves it out with the map); checked against every rock, palm and fence by tools/map/plan_check.py.
 	-- Alex, Oct 30: "make the trainings a bit bigger, bring them close to the lobby, just a little".
-	BOOTH_SCALE = 0.9
+	-- Oct 31: the map grew to 2x and the lanes looked like toys on it, so they grew too (0.9 to 1.25), and
+	-- the block moved 6 file units east so the bigger VIP lane clears the west palisade.
+	BOOTH_SCALE = 1.25
 	-- the stand points moved 4 studs towards the plaza (Oct 31) so the longer lanes end where they did
-	local MIDDLE, PITCH = Config.Map.At(-61, 0, -18.9), 14 * BOOTH_SCALE + 2.5 -- the middle stand point; booth width + gap
+	local MIDDLE, PITCH = Config.Map.At(-55, 0, -18.9), 14 * BOOTH_SCALE + 2.5 -- the middle stand point; booth width + gap
 	fireDir = Vector3.new(0, 0, -1)
 	local function x(i)
 		return MIDDLE.X - (i - (#Config.Stations + 1) / 2) * PITCH
@@ -90,7 +97,7 @@ if newMap then
 	-- one floor height for the whole block, so the booths line up: the highest ground under any of them
 	local blockY = -math.huge
 	for i = 1, #Config.Stations do
-		for _, z in ipairs({ MIDDLE.Z + 5, MIDDLE.Z, MIDDLE.Z - 12, MIDDLE.Z - 22 }) do
+		for _, z in ipairs({ MIDDLE.Z + 6, MIDDLE.Z, MIDDLE.Z - 12, MIDDLE.Z - 24, MIDDLE.Z - 36 }) do
 			blockY = math.max(blockY, floorAt(x(i), z, floorY))
 		end
 	end
@@ -208,7 +215,7 @@ end
 
 -- Lane looks (Alex, Oct 31, from Stone Skipping's lanes): one base colour per station Id (GameConfig);
 -- the floor is the base, the rim a darker shade, the centre track a lighter tint. Effects grow with the
--- tier: 1-2 plain, 3 glows, 4 glows and shines, 5 also sparkles, the VIP lane is black with neon.
+-- tier: 1-2 plain, 3 glows, 4 glows and shines, 5 also sparkles, the VIP lane is black with gold neon.
 local function rgb(r, g, b)
 	return Color3.fromRGB(r, g, b)
 end
@@ -225,7 +232,9 @@ local TIERS = {
 	[3] = { Base = rgb(245, 135, 35), Water = rgb(85, 195, 240), Glow = true }, -- Heavy: orange
 	[4] = { Base = rgb(245, 192, 40), Water = rgb(85, 195, 240), Glow = true, Shine = true }, -- Golden: gold
 	[5] = { Base = rgb(80, 205, 70), Water = rgb(90, 220, 180), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
-	[6] = { Base = rgb(255, 60, 230), Water = rgb(120, 60, 175), Glow = true, Sparkle = true, Black = true }, -- Dragon (VIP): black and neon pink
+	-- Dragon (VIP): the showcase you buy (Oct 31: "make it seem more buyable"). Black and gold reads premium:
+	-- a gold brick rim, a black floor with gold neon, gold and black pad tiles, a gold VIP arch (makeBooth)
+	[6] = { Base = rgb(255, 196, 45), Water = rgb(120, 60, 175), Glow = true, Shine = true, Sparkle = true, Black = true, Vip = true },
 }
 local function tierLook(id)
 	local t = TIERS[id] or TIERS[1]
@@ -246,6 +255,11 @@ local function tierLook(id)
 		look.Bed = rgb(14, 10, 22)
 		look.Accent = t.Base
 		look.Neon = true
+	end
+	if t.Vip then
+		look.Rim = dark(t.Base, 0.08) -- gold bricks round the black lane
+		look.PadAlt = dark(t.Base, 0.35) -- every other pad tile gold: a VIP carpet
+		look.Vip = true
 	end
 	return look
 end
@@ -332,7 +346,8 @@ local function makeBooth(standCf, width, look)
 	local tw, tl = padW / nx, (pz1 - pz0) / nz
 	for ix = 1, nx do
 		for iz = 1, nz do
-			blk("Tile", Vector3.new(tw - 0.14, PAD_UP + 0.05, tl - 0.14), -padW / 2 + tw * (ix - 0.5), FLOOR_T + PAD_UP, pz0 + tl * (iz - 0.5), shade(look.Pad, (ix + iz) % 2 == 0 and 1.08 or 1))
+			local even = (ix + iz) % 2 == 0
+			blk("Tile", Vector3.new(tw - 0.14, PAD_UP + 0.05, tl - 0.14), -padW / 2 + tw * (ix - 0.5), FLOOR_T + PAD_UP, pz0 + tl * (iz - 0.5), even and (look.PadAlt or shade(look.Pad, 1.08)) or look.Pad)
 		end
 	end
 	blk("StartPad", Vector3.new(padW + 0.4, PAD_UP - 0.02, pz1 - pz0 + 0.4), 0, FLOOR_T + PAD_UP - 0.04, (pz0 + pz1) / 2, dark(look.Pad, 0.3)) -- the dark lines between tiles
@@ -370,6 +385,55 @@ local function makeBooth(standCf, width, look)
 			lamp.Material = Enum.Material.Neon
 			lamp.CastShadow = false
 			blk("LanternCap", Vector3.new(1.1, 0.25, 1.1), x, FLOOR_T + RIM_H + 3.55, z, dark(look.Rim, 0.2))
+		end
+	end
+	if look.Vip then
+		-- the VIP arch over the lane's entrance: two gold pillars on the rim's front ends, a beam with a glowing
+		-- gold band, and a black sign with the crown and VIP on both faces. It stands at the open front, high
+		-- enough that the lane's label at the far end still shows under the beam from the plaza.
+		local ARCH_H = 8.4
+		for _, sx in ipairs({ -1, 1 }) do
+			local x = sx * (W / 2 - RIM / 2)
+			blk("ArchPillar", Vector3.new(RIM, ARCH_H, RIM), x, FLOOR_T + ARCH_H, front + RIM / 2, look.Rim, true)
+			blk("ArchFoot", Vector3.new(RIM + 0.4, 0.5, RIM + 0.4), x, FLOOR_T + RIM_H + 0.5, front + RIM / 2, shade(look.Rim, 1.12))
+			glow("ArchBand", Vector3.new(RIM + 0.12, 0.3, RIM + 0.12), x, FLOOR_T + ARCH_H - 1.2, front + RIM / 2)
+			local crown = blk("ArchCap", Vector3.new(RIM + 0.5, 0.5, RIM + 0.5), x, FLOOR_T + ARCH_H + 0.5, front + RIM / 2, shade(look.Rim, 1.12))
+			crown.Material = Enum.Material.SmoothPlastic
+		end
+		blk("ArchBeam", Vector3.new(W, 1, RIM), 0, FLOOR_T + ARCH_H, front + RIM / 2, look.Rim)
+		glow("ArchBand", Vector3.new(W - RIM * 2, 0.25, RIM + 0.1), 0, FLOOR_T + ARCH_H - 0.95, front + RIM / 2)
+		local sign = blk("VipSign", Vector3.new(5.4, 2.2, 0.4), 0, FLOOR_T + ARCH_H + 1.9, front + RIM / 2, rgb(24, 18, 32))
+		blk("VipSignRim", Vector3.new(5.8, 2.6, 0.3), 0, FLOOR_T + ARCH_H + 2.1, front + RIM / 2, look.Rim)
+		local icons = game.ReplicatedStorage:FindFirstChild("Icons")
+		local ok, Icons = pcall(require, icons)
+		for _, face in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
+			local gui = Instance.new("SurfaceGui")
+			gui.Name = "Gui_" .. face.Name
+			gui.Face = face
+			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+			gui.PixelsPerStud = 60
+			gui.LightInfluence = 0
+			gui.Parent = sign
+			local img = Instance.new("ImageLabel")
+			img.BackgroundTransparency = 1
+			img.Image = ok and Icons and Icons.VIP or ""
+			img.ScaleType = Enum.ScaleType.Fit
+			img.Size = UDim2.fromScale(0.3, 0.86)
+			img.Position = UDim2.fromScale(0.06, 0.07)
+			img.Parent = gui
+			local t = Instance.new("TextLabel")
+			t.BackgroundTransparency = 1
+			t.Font = Enum.Font.FredokaOne
+			t.TextScaled = true
+			t.Text = "VIP"
+			t.TextColor3 = rgb(255, 215, 70)
+			t.Size = UDim2.fromScale(0.56, 0.8)
+			t.Position = UDim2.fromScale(0.38, 0.1)
+			t.Parent = gui
+			local st = Instance.new("UIStroke")
+			st.Thickness = 5
+			st.Color = rgb(60, 30, 5)
+			st.Parent = t
 		end
 	end
 	if look.Sparkle then
@@ -450,15 +514,34 @@ for i, info in ipairs(order) do
 	_, size = cannon:GetBoundingBox()
 	local look = tierLook(info.Id)
 	local floorY = standPos.Y -- this lane's floor top
-	-- the cannon sits low on the stand pad's tiles, its nose at the pool (no plinth: nothing tall in the lane)
+	-- the cannon sits low on the stand pad, its nose at the pool (no plinth: nothing tall in the lane), on a
+	-- display turntable like a prize on show (Oct 31: "make the cannon look better"): a thin disc in the
+	-- lane's dark shade over a ring in the tier colour, glowing on the glow tiers, with a soft light
 	local cannonPos = standPos + fireDir * (POOL_START - 0.6 - size.Z / 2)
+	local DISC = 0.35
+	local discD = math.min(size.Z + 0.4, 7.4)
+	local discPos = Vector3.new(cannonPos.X, floorY + PAD_UP, cannonPos.Z)
+	local ringPart = part({ Name = "DisplayRing", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC - 0.1, discD + 0.7, discD + 0.7), Color = look.Accent,
+		Material = (look.Glow or look.Neon) and Enum.Material.Neon or Enum.Material.SmoothPlastic, CastShadow = false, CanCollide = false,
+		CFrame = CFrame.new(discPos + Vector3.new(0, (DISC - 0.1) / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
+	part({ Name = "DisplayDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC, discD, discD), Color = look.Vip and look.Floor or dark(look.Rim, 0.15),
+		Material = Enum.Material.SmoothPlastic, CanCollide = false,
+		CFrame = CFrame.new(discPos + Vector3.new(0, DISC / 2 + 0.01, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
+	if look.Glow then
+		local light = Instance.new("PointLight")
+		light.Color = look.Accent
+		light.Brightness = 1.2
+		light.Range = 9
+		light.Shadows = false
+		light.Parent = ringPart
+	end
 	-- imported cannons point their barrel along +Z, so face +Z at the target
 	cannon:PivotTo(CFrame.lookAt(cannonPos, cannonPos - fireDir))
 	local cf, sz = cannon:GetBoundingBox()
-	cannon:PivotTo(cannon:GetPivot() + Vector3.new(0, floorY + PAD_UP - (cf.Position.Y - sz.Y / 2), 0))
+	cannon:PivotTo(cannon:GetPivot() + Vector3.new(0, floorY + PAD_UP + DISC - (cf.Position.Y - sz.Y / 2), 0))
 	cannon.Parent = station
 
-	local muzzlePos = cannonPos + fireDir * (size.Z / 2) + Vector3.new(0, floorY + PAD_UP + size.Y * 0.62 - cannonPos.Y, 0)
+	local muzzlePos = cannonPos + fireDir * (size.Z / 2) + Vector3.new(0, floorY + PAD_UP + DISC + size.Y * 0.62 - cannonPos.Y, 0)
 	part({ Name = "Muzzle", Size = Vector3.one * 0.5, Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false, CFrame = CFrame.lookAt(muzzlePos, muzzlePos + fireDir), Parent = station })
 
 	-- the target floats on the far end of the pool, at the same spot on every lane, leaning back 25 degrees
@@ -491,6 +574,92 @@ for i, info in ipairs(order) do
 	station.Parent = folder
 end
 folder.Parent = workspace
+
+-- The "2x POWER" board by the first lane (Oct 31: "make it seem more buyable"), like Stone Skipping's
+-- "+2x SKILL ONLY R$" cards next to its lanes: a pirate signboard on two posts with the 2x Power pass, its
+-- Robux price from GameConfig, and a prompt. GameServer hooks every ProximityPrompt whose part has a BuyPass
+-- attribute to the Shop's purchase (owned: "You already own this!", no pass id yet: "Coming soon!").
+local oldShop = workspace:FindFirstChild("TrainingShop")
+if oldShop then
+	oldShop:Destroy()
+end
+local first = newMap and folder:FindFirstChild("Station_" .. order[1].Id)
+local pass = Config.Passes.DoublePower
+if first and pass then
+	local shop = Instance.new("Model")
+	shop.Name = "TrainingShop"
+	local cf, size = first.Booth:GetBoundingBox()
+	local groundY = floorAt(cf.Position.X + size.X / 2 + 7, first.StandPoint.Position.Z - 10, cf.Position.Y - size.Y / 2)
+	local base = Vector3.new(cf.Position.X + size.X / 2 + 7, groundY, first.StandPoint.Position.Z - 10)
+	local spawnAt = Config.Map.Spawn
+	local faceCf = CFrame.lookAt(base, Vector3.new(spawnAt.X, base.Y, spawnAt.Z))
+	local WOOD, BRASS = rgb(105, 68, 38), rgb(225, 175, 70)
+	local BW, BH, LIFT = 9, 5.6, 3.4 -- the board's width and height, and how high its bottom is
+	for _, sx in ipairs({ -1, 1 }) do
+		part({ Name = "Post", Size = Vector3.new(0.8, LIFT + BH + 0.6, 0.8), Color = WOOD, Material = Enum.Material.SmoothPlastic,
+			CFrame = faceCf * CFrame.new(sx * (BW / 2 - 0.6), (LIFT + BH + 0.6) / 2 - 0.3, 0.5), Parent = shop })
+		part({ Name = "PostCap", Size = Vector3.new(1.1, 0.4, 1.1), Color = BRASS, Material = Enum.Material.SmoothPlastic,
+			CFrame = faceCf * CFrame.new(sx * (BW / 2 - 0.6), LIFT + BH + 0.5, 0.5), Parent = shop })
+	end
+	part({ Name = "Frame", Size = Vector3.new(BW + 0.6, BH + 0.6, 0.5), Color = BRASS, Material = Enum.Material.SmoothPlastic,
+		CFrame = faceCf * CFrame.new(0, LIFT + BH / 2, 0.15), Parent = shop })
+	local board = part({ Name = "Board", Size = Vector3.new(BW, BH, 0.6), Color = rgb(120, 205, 60), Material = Enum.Material.SmoothPlastic,
+		CFrame = faceCf * CFrame.new(0, LIFT + BH / 2, -0.05), Parent = shop })
+	board:SetAttribute("BuyPass", "DoublePower")
+	local okIcons, Icons = pcall(require, game.ReplicatedStorage:FindFirstChild("Icons"))
+	local function icon(name)
+		return okIcons and Icons and Icons[name] or ""
+	end
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Gui"
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 50
+	gui.LightInfluence = 0
+	gui.Parent = board
+	local function text(str, color, pos, sz, stroke)
+		local t = Instance.new("TextLabel")
+		t.BackgroundTransparency = 1
+		t.Font = Enum.Font.FredokaOne
+		t.TextScaled = true
+		t.Text = str
+		t.TextColor3 = color
+		t.Position = pos
+		t.Size = sz
+		t.Parent = gui
+		local st = Instance.new("UIStroke")
+		st.Thickness = stroke
+		st.Color = rgb(30, 60, 10)
+		st.Parent = t
+		return t
+	end
+	local bolt = Instance.new("ImageLabel")
+	bolt.BackgroundTransparency = 1
+	bolt.Image = icon("DoublePower")
+	bolt.ScaleType = Enum.ScaleType.Fit
+	bolt.Position = UDim2.fromScale(0.03, 0.04)
+	bolt.Size = UDim2.fromScale(0.3, 0.6)
+	bolt.Parent = gui
+	text("2x POWER", Color3.new(1, 1, 1), UDim2.fromScale(0.32, 0.08), UDim2.fromScale(0.65, 0.42), 8)
+	text("every training shot", rgb(235, 255, 215), UDim2.fromScale(0.32, 0.5), UDim2.fromScale(0.65, 0.14), 4)
+	text("ONLY", rgb(255, 225, 60), UDim2.fromScale(0.12, 0.7), UDim2.fromScale(0.3, 0.24), 6)
+	local robux = Instance.new("ImageLabel")
+	robux.BackgroundTransparency = 1
+	robux.Image = icon("Robux")
+	robux.ScaleType = Enum.ScaleType.Fit
+	robux.Position = UDim2.fromScale(0.44, 0.7)
+	robux.Size = UDim2.fromScale(0.13, 0.24)
+	robux.Parent = gui
+	text(tostring(pass.Price), rgb(255, 225, 60), UDim2.fromScale(0.58, 0.7), UDim2.fromScale(0.3, 0.24), 6)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Buy"
+	prompt.ObjectText = pass.Name
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 14
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = board
+	shop.Parent = workspace
+end
 
 -- Launch from the start of the water (Alex, Oct 30): your cannon stands at the lobby's
 -- water edge, pointing down the long map, and the Launch Zone is right behind it so you

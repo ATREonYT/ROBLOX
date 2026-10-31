@@ -2,7 +2,8 @@
 	BuildRebirthSigns: paste into the Command Bar after BuildWorld1.
 	One label per training lane, like Stone Skipping's (Alex, Oct 31): the same size, at the same height
 	over the far end of every lane, three lines stacked the same way on each:
-	  - a dark pill with the rebirth icon and the rebirths the lane needs (VIP for the pass lane)
+	  - a dark pill with the rebirth icon and the rebirths the lane needs (for the VIP lane: the Robux icon
+	    and the pass's price in gold, Oct 31)
 	  - UNLOCKED in green or LOCKED in red (the client sets it for each player, Effects.lua)
 	  - the power it gives, big: "5x POWER"
 	Sized like the reference (measured on its label): the pill a little wider than the power line and
@@ -13,8 +14,10 @@
 
 local Config = require(game.ReplicatedStorage.GameConfig)
 
-local WIDE, TALL = 9, 6.4 -- studs: the label's size, the same on every lane
+local WIDE, TALL = 9, 6.4 -- studs: the label's size, the same on every lane (for lanes built at 0.9)
 local HEIGHT = 9 -- studs over the stand pad: the same on every lane, just over the low lane (Oct 31)
+-- the lanes grew with the 2x map (BuildWorld1 BOOTH_SCALE 1.25, Oct 31): the label grows with them
+local TUNED_AT = 0.9
 
 local function new(class, props)
 	local i = Instance.new(class)
@@ -55,6 +58,7 @@ for _, info in ipairs(Config.Stations) do
 			end
 		end
 		-- over the target (the lane's far end), at the same height on every lane
+		local k = station:GetScale() / TUNED_AT
 		local target = station:FindFirstChild("Target")
 		local over = target and target:FindFirstChild("Center") and target.Center.Position or station.Pad.Position
 		local board = new("Part", {
@@ -65,7 +69,7 @@ for _, info in ipairs(Config.Stations) do
 			CanTouch = false,
 			CastShadow = false,
 			Size = Vector3.one * 0.2,
-			CFrame = CFrame.new(over.X, station.Pad.Position.Y + HEIGHT, over.Z),
+			CFrame = CFrame.new(over.X, station.Pad.Position.Y + HEIGHT * k, over.Z),
 			Transparency = 1,
 		})
 		board:SetAttribute("Rebirths", info.Rebirths)
@@ -73,9 +77,9 @@ for _, info in ipairs(Config.Stations) do
 
 		local gui = new("BillboardGui", {
 			Name = "Gui",
-			Size = UDim2.fromScale(WIDE, TALL),
+			Size = UDim2.fromScale(WIDE * k, TALL * k),
 			LightInfluence = 0,
-			MaxDistance = 220,
+			MaxDistance = 260,
 			Parent = board,
 		})
 		local card = new("Frame", { Name = "Card", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = gui })
@@ -92,7 +96,10 @@ for _, info in ipairs(Config.Stations) do
 			Parent = card,
 		})
 		new("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = pill })
-		new("UIStroke", { Thickness = 2, Color = Color3.fromRGB(255, 255, 255), Transparency = 0.6, Parent = pill })
+		-- the VIP lane's pill shows its Robux price in gold (Oct 31: "make it seem more buyable"); the price is
+		-- the pass's own (GameConfig), never a made-up one
+		local pass = info.Pass and Config.Passes[info.Pass]
+		new("UIStroke", { Thickness = pass and 3 or 2, Color = pass and Color3.fromRGB(255, 205, 60) or Color3.fromRGB(255, 255, 255), Transparency = pass and 0 or 0.6, Parent = pill })
 		local icon = new("ImageLabel", {
 			Name = "Icon",
 			BackgroundTransparency = 1,
@@ -103,9 +110,10 @@ for _, info in ipairs(Config.Stations) do
 			ZIndex = 2,
 			Parent = card,
 		})
-		icon:SetAttribute("Icon", info.Pass and "VIP" or "RebirthSign")
-		label(icon, info.Pass and "⭐" or "🔄", { Name = "Fallback", Size = UDim2.fromScale(1, 1), StrokeSize = 0 })
-		label(card, info.Pass and "VIP" or tostring(info.Rebirths), {
+		icon:SetAttribute("Icon", pass and "Robux" or "RebirthSign")
+		label(icon, pass and "R$" or "🔄", { Name = "Fallback", Size = UDim2.fromScale(1, 1), StrokeSize = 0 })
+		label(card, pass and tostring(pass.Price) or tostring(info.Rebirths), {
+			Color = pass and Color3.fromRGB(255, 215, 70) or nil,
 			Name = "Number",
 			Anchor = Vector2.new(0, 0.5),
 			Position = UDim2.fromScale(0.35, 0.18),

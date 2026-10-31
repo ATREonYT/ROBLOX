@@ -1144,6 +1144,35 @@ local function purchase(player, kind, key)
 	return false, "Coming soon!"
 end
 
+-- Buy boards in the world (BuildWorld1's "2x POWER" board by the training lanes, Oct 31): a ProximityPrompt
+-- on a part with a BuyPass or BuyProduct attribute opens the same purchase as the Shop.
+local function hookBuyBoard(prompt)
+	local board = prompt.Parent
+	if not (board and board:IsA("BasePart")) then
+		return
+	end
+	local pass, product = board:GetAttribute("BuyPass"), board:GetAttribute("BuyProduct")
+	if not (pass or product) then
+		return
+	end
+	prompt.Triggered:Connect(function(player)
+		local ok, message = purchase(player, pass and "Pass" or "Product", pass or product)
+		if not ok and message then
+			notify(player, message, GOLD)
+		end
+	end)
+end
+for _, d in ipairs(workspace:GetDescendants()) do
+	if d:IsA("ProximityPrompt") then
+		hookBuyBoard(d)
+	end
+end
+workspace.DescendantAdded:Connect(function(d)
+	if d:IsA("ProximityPrompt") then
+		hookBuyBoard(d)
+	end
+end)
+
 ---------------------------------------------------------------------------
 -- Cash orbs around the lobby
 ---------------------------------------------------------------------------
