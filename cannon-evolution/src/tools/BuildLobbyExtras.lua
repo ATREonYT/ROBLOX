@@ -64,10 +64,12 @@ local EGG_COLORS = {
 }
 local EGGS = { "Starter", "Woodland", "Nature", "Ocean" } -- the exclusive egg goes 5th
 -- new map: a row on the grass along the south side of the west plank path, facing it, so walking the
--- path opens each egg's menu (Alex, Oct 31; the path is BuildLobbyWalkways'). Spot 0, nearest the spawn,
--- stays free for a Robux pet or egg (Alex decides). In the map file's units: Starter's spot and the step.
-local ROW_START, ROW_STEP = Vector2.new(-77, 8.5), Vector2.new(-8, 0)
-local function eggSpot(i) -- i = 0 is the free Robux spot
+-- path opens each egg's menu (Alex, Oct 31; the path is BuildLobbyWalkways'). In the map file's units:
+-- Starter's spot and the step. Oct 31, later: "the player doesnt have to walk so long to buy an egg", so the
+-- Starter Egg took the spot nearest the spawn and the row closed up (8 to 6 file units, 12 studs at 2x); the
+-- spot kept free for a Robux pet or egg (Alex decides) is now the one past the Ocean Egg.
+local ROW_START, ROW_STEP = Vector2.new(-69, 8.5), Vector2.new(-6, 0)
+local function eggSpot(i) -- i = #EGGS + 1 is the free Robux spot
 	return ROW_START + ROW_STEP * (i - 1)
 end
 for i, id in ipairs(EGGS) do

@@ -272,7 +272,7 @@ local function applyWalkSpeed(player)
 	local profile = profiles[player]
 	local _, hum = getRoot(player)
 	if profile and hum then
-		hum.WalkSpeed = 16 + Config.Level(profile.Data, "Speed")
+		hum.WalkSpeed = (Config.BASE_WALK_SPEED or 16) + Config.Level(profile.Data, "Speed")
 	end
 end
 

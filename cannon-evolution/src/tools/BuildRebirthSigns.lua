@@ -58,7 +58,7 @@ for _, info in ipairs(Config.Stations) do
 			end
 		end
 		-- over the target (the lane's far end), at the same height on every lane
-		local k = station:GetScale() / TUNED_AT
+		local k = station:GetScale() / TUNED_AT * (info.Pass and 1.3 or 1) -- the gamepass lane's label is bigger
 		local target = station:FindFirstChild("Target")
 		local over = target and target:FindFirstChild("Center") and target.Center.Position or station.Pad.Position
 		local board = new("Part", {
@@ -131,10 +131,11 @@ for _, info in ipairs(Config.Stations) do
 			Parent = card,
 		})
 		local open = info.Rebirths == 0 and not info.Pass
-		label(status, open and "UNLOCKED" or "LOCKED", {
+		-- the gamepass lane says GAMEPASS in gold until you own it (Effects.lua keeps it so for each player)
+		label(status, open and "UNLOCKED" or (pass and "GAMEPASS" or "LOCKED"), {
 			Name = "Text",
 			Size = UDim2.fromScale(1, 1),
-			Color = open and Color3.fromRGB(110, 235, 100) or Color3.fromRGB(240, 70, 70),
+			Color = open and Color3.fromRGB(110, 235, 100) or (pass and Color3.fromRGB(255, 215, 70) or Color3.fromRGB(240, 70, 70)),
 			StrokeSize = 3,
 		})
 

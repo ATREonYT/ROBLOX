@@ -236,7 +236,9 @@ local TIERS = {
 	-- Dragon (the gamepass lane): the showcase you buy, "better than all of the others" (Alex, Oct 31). Rainbow
 	-- brick rim on a gold base round a black lane with gold neon, a deep violet pool with rainbow sparkles, gold
 	-- and black pad tiles, lanterns on all four corners. No VIP sign or crown: "we dont do the VIP thing".
-	[6] = { Base = rgb(255, 196, 45), Water = rgb(120, 80, 240), Glow = true, Shine = true, Sparkle = true, Black = true, Premium = true },
+	-- Oct 31 critic: it still read dimmer than the green lane, so it also stands on a gold base 1.2 studs
+	-- higher (Raise, with two steps), its cannon on a gold turntable under a soft gold light pillar.
+	[6] = { Base = rgb(255, 196, 45), Water = rgb(120, 80, 240), Glow = true, Shine = true, Sparkle = true, Black = true, Premium = true, Raise = 1.2 },
 }
 local function tierLook(id)
 	local t = TIERS[id] or TIERS[1]
@@ -262,6 +264,7 @@ local function tierLook(id)
 		look.Rim = dark(t.Base, 0.08) -- gold bricks round the black lane
 		look.PadAlt = dark(t.Base, 0.35) -- every other pad tile gold
 		look.Premium = true
+		look.Raise = t.Raise
 	end
 	return look
 end
@@ -308,7 +311,12 @@ local function makeBooth(standCf, width, look)
 	-- the footing: the lane's own base in a dark rim shade, reaching down into the ground, with a step at the
 	-- open front so you walk straight up onto the stand pad
 	blk("Footing", Vector3.new(W, 3, L + 1.4), 0, 0, mid - 0.7, dark(look.Rim, 0.2), true)
-	blk("Step", Vector3.new(W - RIM * 2, FLOOR_T / 2, 1.2), 0, FLOOR_T / 2, front - 0.6, shade(look.Rim, 1.1), true)
+	local raise = look.Raise or 0 -- a raised lane: the ground is this far under its base, so two steps lead up
+	blk("Step", Vector3.new(W - RIM * 2, FLOOR_T / 2 + raise, 1.2), 0, FLOOR_T / 2, front - 0.6, shade(look.Rim, 1.1), true)
+	if raise > 0 then
+		blk("Step", Vector3.new(W - RIM * 2 + 1, raise / 2 + 1, 1.4), 0, -raise / 2, front - 1.9, shade(look.Rim, 1.1), true)
+		blk("Footing", Vector3.new(W + 1.2, raise + 1, L + 2), 0, -0.05, mid - 0.7, dark(look.Rim, 0.2), true) -- the gold base, a little wider than the lane
+	end
 
 	-- the base slab (its top is the pool's bed) and the deck round the pool, all in the tier colour
 	blk("Floor", Vector3.new(W, BED_T, L), 0, BED_T, mid, look.Bed, true)
@@ -439,7 +447,9 @@ for i, info in ipairs(order) do
 	station.Name = "Station_" .. info.Id
 	station:SetAttribute("StationId", info.Id)
 
+	local look = tierLook(info.Id)
 	local standPos, fireDir = slot(i)
+	standPos += Vector3.new(0, (look.Raise or 0) * BOOTH_SCALE, 0) -- the gamepass lane stands higher
 	local laneBase = standPos.Y -- the platform's top; the lane's floor is FLOOR_T over it
 	local baseCf = CFrame.lookAt(standPos, standPos + fireDir)
 	standPos += Vector3.new(0, FLOOR_T, 0)
@@ -476,7 +486,6 @@ for i, info in ipairs(order) do
 	local _, size = cannon:GetBoundingBox()
 	cannon:ScaleTo(cannon:GetScale() * CANNON_HEIGHT / size.Y)
 	_, size = cannon:GetBoundingBox()
-	local look = tierLook(info.Id)
 	local floorY = standPos.Y -- this lane's floor top
 	-- the cannon sits low on the stand pad, its nose at the pool (no plinth: nothing tall in the lane), on a
 	-- display turntable like a prize on show (Oct 31: "make the cannon look better"): a thin disc in the
@@ -488,7 +497,7 @@ for i, info in ipairs(order) do
 	local ringPart = part({ Name = "DisplayRing", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC - 0.1, discD + 0.7, discD + 0.7), Color = look.Accent,
 		Material = (look.Glow or look.Neon) and Enum.Material.Neon or Enum.Material.SmoothPlastic, CastShadow = false, CanCollide = false,
 		CFrame = CFrame.new(discPos + Vector3.new(0, (DISC - 0.1) / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
-	part({ Name = "DisplayDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC, discD, discD), Color = look.Premium and look.Floor or dark(look.Rim, 0.15),
+	part({ Name = "DisplayDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC, discD, discD), Color = look.Premium and look.Rim or dark(look.Rim, 0.15),
 		Material = Enum.Material.SmoothPlastic, CanCollide = false,
 		CFrame = CFrame.new(discPos + Vector3.new(0, DISC / 2 + 0.01, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
 	if look.Glow then
@@ -498,6 +507,26 @@ for i, info in ipairs(order) do
 		light.Range = 9
 		light.Shadows = false
 		light.Parent = ringPart
+	end
+	if look.Premium then
+		-- a soft gold light pillar rising from the turntable, seen from across the lobby (see-through, never flashing)
+		local PILLAR = 26
+		part({ Name = "LightPillar", Shape = Enum.PartType.Cylinder, Size = Vector3.new(PILLAR, discD * 0.8, discD * 0.8), Color = rgb(255, 215, 90),
+			Material = Enum.Material.Neon, Transparency = 0.82, CastShadow = false, CanCollide = false, CanQuery = false, CanTouch = false,
+			CFrame = CFrame.new(discPos + Vector3.new(0, DISC + PILLAR / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
+		-- and gold sparkles drifting up round the cannon
+		local e = Instance.new("ParticleEmitter")
+		e.Name = "CannonSparkles"
+		e.Color = ColorSequence.new(rgb(255, 225, 120))
+		e.LightEmission = 1
+		e.Rate = 8
+		e.Lifetime = NumberRange.new(1.2, 2)
+		e.Speed = NumberRange.new(1.5, 3)
+		e.SpreadAngle = Vector2.new(25, 25)
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+		e.EmissionDirection = Enum.NormalId.Top
+		e.Parent = ringPart
 	end
 	-- imported cannons point their barrel along +Z, so face +Z at the target
 	cannon:PivotTo(CFrame.lookAt(cannonPos, cannonPos - fireDir))
@@ -555,11 +584,14 @@ if first and pass then
 	local cf, size = first.Booth:GetBoundingBox()
 	-- beside the first lane's stand pad (clear of the lookout tower behind it), turned 30 degrees from facing the
 	-- plaza towards that pad, so you read it from the plaza and while you train
-	local bx, bz = cf.Position.X + size.X / 2 + 7.5, first.StandPoint.Position.Z + 1
+	-- Oct 31 critic: beside the pad it hid behind the lookout tower, so it stands forward, level with the lane
+	-- fronts, facing the spawn, and bigger
+	local bx, bz = cf.Position.X + size.X / 2 + 8, first.StandPoint.Position.Z + 9
 	local base = Vector3.new(bx, floorAt(bx, bz, cf.Position.Y - size.Y / 2), bz)
-	local faceCf = CFrame.new(base) * CFrame.Angles(0, math.rad(-30), 0) * CFrame.Angles(0, math.pi, 0)
+	local spawnAt = Config.Map.Spawn
+	local faceCf = CFrame.lookAt(base, Vector3.new(spawnAt.X, base.Y, spawnAt.Z))
 	local WOOD, BRASS = rgb(105, 68, 38), rgb(225, 175, 70)
-	local BW, BH, LIFT = 11, 7, 2.6 -- the board's width and height, and how high its bottom is
+	local BW, BH, LIFT = 13, 8, 2.4 -- the board's width and height, and how high its bottom is
 	for _, sx in ipairs({ -1, 1 }) do
 		part({ Name = "Post", Size = Vector3.new(0.8, LIFT + BH + 0.6, 0.8), Color = WOOD, Material = Enum.Material.SmoothPlastic,
 			CFrame = faceCf * CFrame.new(sx * (BW / 2 - 0.6), (LIFT + BH + 0.6) / 2 - 0.3, 0.5), Parent = shop })

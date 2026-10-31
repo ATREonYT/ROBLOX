@@ -53,7 +53,10 @@ Config.Map = {
 	LobbyCenter = Vector3.new(-56, 2, 0), -- the sand island inside the palisade
 	LobbySize = Vector3.new(100, 36, 80), -- lobby orbs fall somewhere in 80% of this, on open ground
 	Spawn = Vector3.new(-60, 2.5, 0), -- the compass plaza
-	DockEnd = Vector3.new(14, 2.5, 0), -- your cannon stands here, nose over the water
+	-- your cannon stands here, on the dock. It was the dock's far end (14); Oct 31 it moved 20 file units
+	-- (40 studs) up the dock towards the island, so the walk from the lobby is shorter (Alex: "doesnt have to
+	-- walk so long ... to launch the cannon"). The first arc (at least 49 studs) still clears the dock.
+	DockEnd = Vector3.new(-6, 2.5, 0),
 	-- stage name and where it starts along the river (X), from the map; the area walls go here
 	StageStarts = {
 		{ "Meadow Pond", 0 }, { "Mushroom Grove", 100 }, { "Sandy Shore", 233 }, { "Lighthouse Point", 400 },
@@ -90,6 +93,9 @@ function Config.Map.IsGround(name)
 	return string.find(name, "^Island_") ~= nil or string.find(name, "^Plaza_") ~= nil
 		or string.find(name, "^Path_") ~= nil or string.find(name, "^Dock_") ~= nil
 end
+-- Walk speed before Walk Speed upgrades: Roblox's 16 felt slow once the map grew to 2x (Alex, Oct 31: "the
+-- player doesnt have to walk so long")
+Config.BASE_WALK_SPEED = 20
 Config.LAUNCH_COOLDOWN = 2
 Config.FLIGHT_TIMEOUT = 25
 Config.SKIP_FIRST_HOP = 0.2 -- first arc out of the cannon, as a share of the whole distance
