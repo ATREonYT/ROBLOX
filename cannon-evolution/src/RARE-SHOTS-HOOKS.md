@@ -16,3 +16,6 @@ Studio is the source of truth and other threads were editing these files at the 
   - CUT: 1.4 / 1.6 / 1.1 / 1.2 / 0.6 s.
   - WITH: `RareBlast = "RareBoom"`.
 - **workspace.GrandCannon:** built by `tools/BuildGrandCannon.lua`. The old mesh nodes are in ServerStorage.GrandCannonOriginal.
+
+## Chase camera (Oct 31 evening, Alex: "see the ball from behind it, not from the side")
+In Studio's Effects.lua, the side-on flight-camera block in the LaunchPlayer Heartbeat (from `if mine then -- side-on camera` to `local eye, look = ...`) became a chase camera. It sits `CHASE_BACK` 16 behind and `CHASE_UP` 4.5 above the ball, rides the ball's height with smoothing, looks `CHASE_AHEAD` 40 down the river, and pulls back `CHASE_PULL` 6 as the ball speeds off. The first 0.12–0.57 s glide from behind the cannon onto the ball. The camera-vs-map raycast and the counter code after it are unchanged. The constants sit after `SIDE_RISE`. The repo's Effects.lua predates the side-on camera (that change lives in Studio only), so this file records the change.

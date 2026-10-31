@@ -748,7 +748,8 @@ return function(ctx)
 				rig.Shell.Transparency = 0.55 - 0.3 * rig.Power + 0.1 * b
 				local s = 1 + 0.06 * b + 0.15 * rig.Power
 				rig.ShellMesh.Scale = Vector3.new(s, 1.5 * s, s)
-				rig.Debt += (3 + 9 * rig.Power) * dt
+				-- on a body the pack's fire aura carries the silhouette; the big neon spikes are for cannons
+				rig.Debt += rig.K > 1 and (3 + 9 * rig.Power) * dt or 0
 				while rig.Debt >= 1 do
 					rig.Debt -= 1
 					local a = math.random() * math.pi * 2
