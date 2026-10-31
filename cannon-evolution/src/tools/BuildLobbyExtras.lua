@@ -51,7 +51,7 @@ local floorY = 8.45
 local newMap = workspace:FindFirstChild(Config.Map.Root)
 local floorParams = RaycastParams.new()
 floorParams.FilterType = Enum.RaycastFilterType.Include
-floorParams.FilterDescendantsInstances = { newMap or workspace.map1b }
+floorParams.FilterDescendantsInstances = { newMap or workspace.map1b, workspace:FindFirstChild("LobbyWalkways") }
 local function floorAt(x, z)
 	local hit = workspace:Raycast(Vector3.new(x, 200, z), Vector3.new(0, -400, 0), floorParams)
 	return hit and hit.Position.Y or floorY
@@ -63,19 +63,18 @@ local EGG_COLORS = {
 	Ocean = Color3.fromRGB(60, 160, 255),
 }
 local EGGS = { "Starter", "Woodland", "Nature", "Ocean" } -- the exclusive egg goes 5th
--- new map: Alex's curve round the west side of the plaza (Oct 30), spaced out evenly, Starter at the south
--- end. Spot 5, past the Starter egg towards the ship, stays free for a Robux pet or egg (Alex decides,
--- Oct 31). In the map file's units: the plaza's middle, the radius and degrees round from the dock.
-local ARC_CENTRE, ARC_RADIUS, ARC_FIRST, ARC_STEP = Vector2.new(-60, 0), 36, 205, -15
+-- new map: a row on the eggs' walkway south-west of the plaza, beside the main walkway like the
+-- reference lobby's eggs (Alex, Oct 31; the walkway is BuildLobbyWalkways'). Spot 0, nearest the spawn,
+-- stays free for a Robux pet or egg (Alex decides). In the map file's units: Starter's spot and the step.
+local ROW_START, ROW_STEP = Vector2.new(-75, 11), Vector2.new(-8, 0)
 local function eggSpot(i) -- i = 0 is the free Robux spot
-	local a = math.rad(ARC_FIRST + (i - 1) * ARC_STEP)
-	return ARC_CENTRE + Vector2.new(math.cos(a), -math.sin(a)) * ARC_RADIUS
+	return ROW_START + ROW_STEP * (i - 1)
 end
 for i, id in ipairs(EGGS) do
 	local egg = Config.GetEgg(id)
 	local pos = Vector3.new(-34 - (#EGGS - i) * 16, floorY, -108)
 	if newMap then
-		-- new map: on the curve (eggSpot above); Config.Map.At moves it out with the map
+		-- new map: in the row (eggSpot above); Config.Map.At moves it out with the map
 		local spot = eggSpot(i)
 		local p = Config.Map.At(spot.X, 0, spot.Y)
 		pos = Vector3.new(p.X, floorAt(p.X, p.Z), p.Z)

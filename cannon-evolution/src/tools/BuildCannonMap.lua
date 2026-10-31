@@ -15,8 +15,9 @@
 	   sea round the whole map (walk-through), so past its edges there is no empty void.
 	6. Puts the old map (map1b), the Baseplate and StudTest2 in ServerStorage.OldMaps; nothing is deleted.
 
-	Then run BuildWorld1, BuildCannonBallStand and BuildLobbyExtras, which see the new map and
-	place the spawn, dock launch, booths, cannonball stand, eggs and area walls on it.
+	Then run BuildWorld1, BuildCannonBallStand, BuildLobbyWalkways and BuildLobbyExtras, which see the
+	new map and place the spawn, dock launch, booths, cannonball stand, walkways, eggs and area walls on
+	it, then BuildRebirthSigns and BuildCartoonyMap.
 ]]
 
 local Config = require(game.ReplicatedStorage.GameConfig)
@@ -230,6 +231,7 @@ local MOVES = {
 	{ { "Props_Crate_001", "Props_Crate_002", "Props_Crate_003", "Props_Barrel_001", "Props_Barrel_002", "Props_Treasure_Chest_001" }, Vector2.new(-16, -35) }, -- the north-east corner, by the dock
 	{ { "Props_Barrel_003" }, Vector2.new(-23, -30) },
 	{ { "Trees_Palm_005" }, Vector2.new(-20, -41) }, -- a little east, clear of booth 1
+	{ { "Trees_Palm_003" }, Vector2.new(-109, 15) }, -- a little west, clear of the end of the egg row
 }
 local groundParams = RaycastParams.new()
 groundParams.FilterType = Enum.RaycastFilterType.Include
