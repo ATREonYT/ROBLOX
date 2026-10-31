@@ -130,6 +130,10 @@ Config.REBIRTH_POWER_BASE = 100 -- rebirth 2 onwards: this times REBIRTH_GROWTH 
 -- at least 120, minus 100) is the Cash, so you rebirth right after your first hatch
 Config.REBIRTH_FIRST_POWER = 30
 Config.REBIRTH_FIRST_CASH = 20
+-- the second rebirth comes about 2 minutes after the first (it was about 3.5 with only the first booth open):
+-- vault 20's ladder, rebirths at about 90 s, 4 min, 8 min (Oct 31)
+Config.REBIRTH_SECOND_POWER = 150
+Config.REBIRTH_SECOND_CASH = 100
 Config.REBIRTH_CASH_BASE = 50
 Config.REBIRTH_GROWTH = 3.2 -- R1 ~1 min, R5 ~10 min, R10 ~1.5 h, R12 ~3.5 h of training
 Config.REBIRTH_POWER_BONUS = 0.5 -- +50% Power per shot per rebirth
@@ -139,8 +143,38 @@ function Config.RebirthCost(rebirths)
 	local g = Config.REBIRTH_GROWTH ^ rebirths
 	if rebirths == 0 then
 		return Config.REBIRTH_FIRST_POWER, Config.REBIRTH_FIRST_CASH
+	elseif rebirths == 1 then
+		return Config.REBIRTH_SECOND_POWER, Config.REBIRTH_SECOND_CASH
 	end
 	return math.floor(Config.REBIRTH_POWER_BASE * g), math.floor(Config.REBIRTH_CASH_BASE * g)
+end
+
+-- Power shows as Level 1-20 inside each rebirth, like Stone Skipping's "REACH LEVEL 20" (vault 13, Oct 31):
+-- Level 20 is the Power you need to rebirth (the bar says MAX LEVEL). Levels grow a little bigger as you go,
+-- so early on one comes about every second. A progress display only: it changes nothing you earn.
+Config.MAX_LEVEL = 20
+Config.LEVEL_CURVE = 1.3
+
+-- Power needed to reach a level in this rebirth
+function Config.LevelPower(rebirths, level)
+	if level <= 1 then
+		return 0
+	end
+	local cost = Config.RebirthCost(rebirths)
+	return math.ceil(cost * ((level - 1) / (Config.MAX_LEVEL - 1)) ^ Config.LEVEL_CURVE)
+end
+
+-- level, Power into this level, Power this level needs (0, 0 at MAX_LEVEL)
+function Config.PowerLevel(data)
+	local level = 1
+	while level < Config.MAX_LEVEL and data.Power >= Config.LevelPower(data.Rebirths, level + 1) do
+		level += 1
+	end
+	if level >= Config.MAX_LEVEL then
+		return level, 0, 0
+	end
+	local from = Config.LevelPower(data.Rebirths, level)
+	return level, data.Power - from, Config.LevelPower(data.Rebirths, level + 1) - from
 end
 
 Config.RebirthRewards = {
@@ -404,9 +438,11 @@ end
 -- Model = true: Alex's imported ball (ReplicatedStorage.CannonBalls, named by Id) is used; the
 -- others are drawn from Color and Band, which also tint the trail and the shop card.
 ---------------------------------------------------------------------------
+-- Stone costs one early launch's pay: the tutorial has you buy it after your first two launches, like Stone
+-- Skipping's "equip a new stone" (Alex, Oct 31), so the tutorial takes 4 launches in all
 Config.Balls = {
 	{ Id = "Wood",    Name = "Wood",    Price = 0,         CashBonus = 0,    Model = true, Color = Color3.fromRGB(225, 110, 40),  Band = Color3.fromRGB(150, 65, 25) },
-	{ Id = "Stone",   Name = "Stone",   Price = 500,       CashBonus = 0.05, Model = true, Color = Color3.fromRGB(175, 170, 165), Band = Color3.fromRGB(115, 110, 105) },
+	{ Id = "Stone",   Name = "Stone",   Price = 40,        CashBonus = 0.05, Model = true, Color = Color3.fromRGB(175, 170, 165), Band = Color3.fromRGB(115, 110, 105) },
 	{ Id = "Steel",   Name = "Steel",   Price = 2500,      CashBonus = 0.1,  Model = true, Color = Color3.fromRGB(230, 232, 240), Band = Color3.fromRGB(150, 160, 185) },
 	{ Id = "Gold",    Name = "Gold",    Price = 10000,     CashBonus = 0.15, Color = Color3.fromRGB(255, 200, 40),  Band = Color3.fromRGB(255, 255, 255) },
 	{ Id = "Ruby",    Name = "Ruby",    Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
@@ -524,7 +560,8 @@ Config.DAILY_COOLDOWN = 20 * 3600 -- can claim again after 20h
 Config.DAILY_STREAK_RESET = 48 * 3600 -- streak resets after 48h
 
 Config.PlaytimeRewards = {
-	{ Minutes = 3,  Icon = "CashTiny",    Text = "Cash",     Reward = { CashMinutes = 3 } },
+	-- the first gift is a free egg at 3 min (vault 20: a free hatch from a playtime gift by 3 minutes)
+	{ Minutes = 3,  Icon = "StarterCrate", Text = "Free Egg", Reward = { Egg = "Starter" } },
 	{ Minutes = 8,  Icon = "Gem",  Text = "15 Gems",  Reward = { Gems = 15 } },
 	{ Minutes = 15, Icon = "Lucky",       Text = "2x Luck",  Reward = { Boost = "Luck", Minutes = 10 } },
 	{ Minutes = 25, Icon = "CashMedium",  Text = "Cash",     Reward = { CashMinutes = 15 } },

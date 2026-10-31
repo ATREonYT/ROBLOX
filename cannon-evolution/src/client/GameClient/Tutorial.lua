@@ -28,8 +28,10 @@ local TEXT = {
 	IntroLine3 = "Then stand in the Launch Zone and hit LAUNCH. Ready?",
 	Skip = "Skip",
 	Tag = "TUTORIAL",
-	Train = "TRAIN POWER",
+	GoalTag = "NEXT GOAL",
+	Train = "REACH LEVEL",
 	Launch = "LAUNCH",
+	Ball = "GET A NEW CANNONBALL",
 	Cash = "EARN CASH",
 	Hatch = "HATCH AN EGG",
 	Power = "GET REBIRTH POWER",
@@ -50,24 +52,25 @@ local TEXT = {
 --   E  back at the cannon the guide talks to you
 --   F  the camera glides over the training booths and back behind you
 local WATER_Y = 5.4
-local ESTABLISH_TIME = 3.2
-local WINDUP_TIME = 0.9
-local AFTER_TIME = 1.8
-local TALK_TIME = 3.6
-local PADS_TIME = 5.5
+-- about 15 s in all, like Stone Skipping's intro (vault 13, Oct 31; it was about 25 s)
+local ESTABLISH_TIME = 2
+local WINDUP_TIME = 0.6
+local AFTER_TIME = 1
+local TALK_TIME = 2.2
+local PADS_TIME = 3.4
 local MAX_TIME = 40 -- watchdog: the intro always hands control back by then
 -- the ball's run, as distance down the map from the muzzle: { seconds, studs }.
 -- Short skips at the near areas, then bigger and bigger ones to show the whole map.
 local CHASE = {
 	{ 0, 0 },
-	{ 1.2, 170 },
-	{ 2.1, 430 },
-	{ 3.1, 900 },
-	{ 4.2, 1800 },
-	{ 5.4, 3300 },
-	{ 6.6, 5200 },
-	{ 7.8, 7400 },
-	{ 8.6, 7600 },
+	{ 0.8, 170 },
+	{ 1.4, 430 },
+	{ 2.0, 900 },
+	{ 2.7, 1800 },
+	{ 3.5, 3300 },
+	{ 4.3, 5200 },
+	{ 5.1, 7400 },
+	{ 5.6, 7600 },
 }
 local ANIM = {
 	Idle = "rbxassetid://507766388",
@@ -157,6 +160,11 @@ return function(ctx)
 	local function launchZone()
 		return workspace:FindFirstChild("LaunchZone")
 	end
+	-- the Stone ball on the cannonball stand (BallStand.lua puts a label part over each ball)
+	local function ballPad()
+		local balls = workspace:FindFirstChild("StandBalls")
+		return balls and balls:FindFirstChild("Label_Stone")
+	end
 	local function eggStand()
 		local stands = workspace:FindFirstChild("EggStands")
 		local s = stands and stands:FindFirstChild("StarterEgg")
@@ -192,11 +200,13 @@ return function(ctx)
 	local launchBase = nil
 	local STEPS = {
 		{
+			-- Stone Skipping's REACH LEVEL 20: Level 20 is the first rebirth's Power (Config.PowerLevel), so a
+			-- level ticks up about every second while you train (vault 13, Oct 31)
 			Label = function()
-				return TEXT.Train
+				return TEXT.Train .. " " .. Config.MAX_LEVEL
 			end,
 			Count = function(data)
-				return math.min(math.floor(data.Power), TRAIN_GOAL), TRAIN_GOAL
+				return (Config.PowerLevel(data)), Config.MAX_LEVEL
 			end,
 			Target = function()
 				return stationPad(1)
@@ -211,6 +221,22 @@ return function(ctx)
 				return math.min(data.TotalLaunches - launchBase, LAUNCH_GOAL), LAUNCH_GOAL
 			end,
 			Target = launchZone,
+		},
+		{
+			-- Stone Skipping's EQUIP A NEW STONE, right after the first two throws (Alex, Oct 31: "make them buy
+			-- a cannon ball"). The Stone ball costs one launch's pay, and buying it also picks it.
+			Label = function()
+				return TEXT.Ball
+			end,
+			Count = function(data)
+				for id in pairs(data.Balls) do
+					if id ~= "Wood" then
+						return 1, 1
+					end
+				end
+				return 0, 1
+			end,
+			Target = ballPad,
 		},
 		{
 			Label = function()
@@ -328,9 +354,14 @@ return function(ctx)
 	-- Arrow line, matched to Alex's Stone Skipping recording: a tight chain
 	-- of white arrowheads (a dart with a notch at the back) with a thin dark
 	-- outline, floating on one straight line from you to the target (not on
-	-- the ground, Alex Oct 30), turned to face the camera, flowing forward.
+	-- the ground, Alex Oct 30), turned to face the camera.
+	-- Steady and exact (Alex, Oct 31: "spot on and straight forwards"): the line runs a little above your feet
+	-- to just above the target's top, the darts sit at fixed steps back from the target in the world (so they
+	-- stay put while you walk, and only fade out as you pass them), and nothing bobs or slides.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED = 30, 1.05, 2.5 -- SPACING in dart lengths on screen; FLOW_SPEED darts a second
+	local ARROWS, SPACING = 40, 2.4 -- darts in the chain, studs between them
+	local LIFT = 1.4 -- the line floats this high over your feet and over the target's top
+	local END_GAP = 1.8 -- the last dart stops this short of the target
 	local LEN, HALF, NOTCH, THICK = 1.6, 0.95, 0.5, 0.12 -- dart length, half width, notch depth, thickness
 	local RIM = 1.3 -- each dart has its own dark copy behind it, this much bigger: its outline
 	local HIDDEN = CFrame.new(0, -500, 0)
@@ -403,6 +434,22 @@ return function(ctx)
 		return pts[#pts], pts[#pts] - pts[#pts - 1]
 	end
 
+	-- the bottom of your character, from the root and the hip height (steady while you walk, unlike the root)
+	local function feetOf(root)
+		local hum = root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
+		return root.Position - Vector3.new(0, root.Size.Y / 2 + (hum and hum.HipHeight or 2), 0)
+	end
+	-- the middle of a target's top face (a pad, the Launch Zone, an egg stand)
+	local function topOf(target)
+		local cf, size
+		if target:IsA("BasePart") then
+			cf, size = target.CFrame, target.Size
+		else
+			cf, size = target:GetBoundingBox()
+		end
+		return cf.Position + Vector3.new(0, size.Y / 2, 0), size
+	end
+
 	local function drawArrows(target)
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		-- no line while you fly or while you're locked on a training pad (the jump hint shows instead)
@@ -413,37 +460,30 @@ return function(ctx)
 		if arrowFolder.Parent ~= workspace then
 			arrowFolder.Parent = workspace
 		end
-		local from = root.Position
-		setRoute({ from, target.Position })
+		local from = feetOf(root) + Vector3.new(0, LIFT, 0)
+		local to = topOf(target) + Vector3.new(0, LIFT, 0)
+		setRoute({ from, to })
 		local total = route.total
 		if total < 7 then
 			hideArrows()
 			return
 		end
-		local cam = workspace.CurrentCamera
-		local camCF = cam.CFrame
-		local camPos = camCF.Position
-		local focal = cam.ViewportSize.Y / (2 * math.tan(math.rad(cam.FieldOfView) / 2))
-		-- walk along the line and drop a dart every time the line has covered one dart length on screen,
-		-- so the chain reads tip to notch at every distance and never piles up when it runs away from you
-		local phase = (os.clock() * FLOW_SPEED) % 1
-		local placed, nextMark, progress = 0, phase, 0
-		local d, prevScreen = 2.5, nil
-		while d < total - 2 and placed < ARROWS do
-			local pos, seg = pointOnRoute(d)
-			local depth = (pos - camPos):Dot(camCF.LookVector)
-			local screen = depth > 0.5 and cam:WorldToViewportPoint(pos) or nil
-			if screen and prevScreen then
-				local gapPx = SPACING * LEN * focal / depth
-				progress += (Vector2.new(screen.X, screen.Y) - prevScreen).Magnitude / gapPx
+		local camPos = workspace.CurrentCamera.CFrame.Position
+		local line = (to - from).Unit
+		-- dart m sits m steps back from the target, so the chain never slides; start with the step nearest you
+		local placed = 0
+		for m = math.floor((total - 2.5) / SPACING), 1, -1 do
+			if placed >= ARROWS then
+				break
 			end
-			prevScreen = screen and Vector2.new(screen.X, screen.Y) or nil
-			if screen and progress >= nextMark and (pos - camPos).Magnitude > 6 then
-				nextMark += 1
+			local back = m * SPACING
+			local pos = to - line * back
+			if back >= END_GAP and (pos - camPos).Magnitude > 6 then
 				placed += 1
+				local d = total - back -- how far along from you
 				local wedges = arrows[placed]
 				local normal = (camPos - pos).Unit
-				local dir = seg.Magnitude > 0.01 and seg.Unit or Vector3.xAxis
+				local dir = line
 				-- flat to the screen like a sticker (as in the reference), pointing the way the line runs on screen
 				local flat = dir - normal * dir:Dot(normal)
 				if flat.Magnitude < 0.05 then
@@ -464,7 +504,6 @@ return function(ctx)
 					triangle(tip, notch, tail - side * (HALF * r), wedges[w + 3], wedges[w + 4])
 				end
 			end
-			d += 0.15
 		end
 		for i = placed + 1, ARROWS do
 			for _, part in ipairs(arrows[i]) do
@@ -930,6 +969,12 @@ return function(ctx)
 	-- TUTORIAL COMPLETE!
 	-----------------------------------------------------------------------
 	local function playComplete()
+		-- a white fade first, like Stone Skipping's rebirth (one flash, so kid-safe)
+		local flash = new("Frame", { Name = "Flash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = holder })
+		Kit.tween(flash, 0.22, { BackgroundTransparency = 0 }, Enum.EasingStyle.Sine)
+		task.wait(0.45)
+		Kit.tween(flash, 0.35, { BackgroundTransparency = 1 }, Enum.EasingStyle.Sine)
+		game:GetService("Debris"):AddItem(flash, 0.4)
 		local shade = new("TextButton", { Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 30, Parent = holder })
 		Kit.tween(shade, 0.4, { BackgroundTransparency = 0.45 })
 		local box = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(700, 420), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 31, Parent = shade })
@@ -983,7 +1028,16 @@ return function(ctx)
 			end
 			task.delay(0.3, function()
 				shade:Destroy()
+				-- the whole HUD arrives as you tap past the screen, then the rewards
+				if ctx.HudStage then
+					ctx.HudStage = #STEPS
+					ctx.RefreshHudStage()
+				end
+				task.wait(0.6)
 				ctx.Open("Rewards")
+				if ctx.StartGoals then
+					ctx.StartGoals()
+				end
 			end)
 		end
 		task.delay(0.9, function()
@@ -994,6 +1048,55 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Running the steps
 	-----------------------------------------------------------------------
+	-- After the tutorial the bar keeps guiding the next few rebirths, the way Stone Skipping always has a quest
+	-- on screen (vault 20: one short objective, a sawtooth to each rebirth): reach Level 20 at your best booth,
+	-- get the rebirth Cash at the Launch Zone, then rebirth. It steps aside for good at rebirth GOAL_REBIRTHS.
+	local GOAL_REBIRTHS = 4
+	local GOAL = {
+		Label = function(data)
+			local _, cash = Config.RebirthCost(data.Rebirths)
+			local tag = "REBIRTH " .. (data.Rebirths + 1) .. ": "
+			if Config.PowerLevel(data) < Config.MAX_LEVEL then
+				return tag .. "REACH LEVEL " .. Config.MAX_LEVEL
+			elseif data.Cash < cash then
+				return tag .. "GET CASH"
+			end
+			return TEXT.Rebirth
+		end,
+		Count = function(data)
+			local level = Config.PowerLevel(data)
+			if level < Config.MAX_LEVEL then
+				return level, Config.MAX_LEVEL
+			end
+			local _, cash = Config.RebirthCost(data.Rebirths)
+			if data.Cash < cash then
+				return math.floor(data.Cash), cash
+			end
+			return 0, 1
+		end,
+		Target = function(data)
+			local _, cash = Config.RebirthCost(data.Rebirths)
+			if Config.PowerLevel(data) < Config.MAX_LEVEL then
+				return bestStation(data)
+			elseif data.Cash < cash then
+				return launchZone()
+			end
+			return nil
+		end,
+		Point = function()
+			local data = State.Data
+			if not data then
+				return nil
+			end
+			local _, cash = Config.RebirthCost(data.Rebirths)
+			if Config.PowerLevel(data) < Config.MAX_LEVEL or data.Cash < cash then
+				return nil
+			end
+			return rebirthPanelButton() or menuButton("Rebirth")
+		end,
+	}
+	local goalOn = false
+
 	local step = nil -- index into STEPS, nil while finished or switching
 	local lastHave = nil
 
@@ -1050,7 +1153,7 @@ return function(ctx)
 		pointer.Visible = false
 		marker.Enabled = false
 		hideArrows()
-		task.delay(0.8, function()
+		task.delay(finished >= #STEPS and 0.15 or 0.8, function()
 			if finished >= #STEPS then
 				finish()
 				task.delay(0.3, function()
@@ -1065,11 +1168,33 @@ return function(ctx)
 			task.delay(0.2, function()
 				questGrad.Color = ColorSequence.new(Kit.Colors.HeaderTop, Kit.Colors.HeaderBottom)
 				step = finished + 1
+				-- the next step's button arrives on the HUD (HUD.lua, tutorial reveal)
+				if ctx.HudStage then
+					ctx.HudStage = finished
+					ctx.RefreshHudStage()
+				end
 				local have, goal = STEPS[step].Count(State.Data)
 				questText.Text = STEPS[step].Label(State.Data) .. " (" .. Config.Format(have) .. "/" .. Config.Format(goal) .. ")"
 				showStep()
 			end)
 		end)
+	end
+
+	function ctx.StartGoals()
+		local data = State.Data
+		if goalOn or not data or data.Rebirths >= GOAL_REBIRTHS then
+			return
+		end
+		goalOn = true
+		gui.Enabled = true
+		fit()
+		local label = tag:FindFirstChildWhichIsA("TextLabel", true)
+		if label then
+			label.Text = TEXT.GoalTag
+		end
+		local have, goal = GOAL.Count(data)
+		questText.Text = GOAL.Label(data) .. " (" .. Config.Format(have) .. "/" .. Config.Format(goal) .. ")"
+		showStep()
 	end
 
 	local started = false
@@ -1081,11 +1206,18 @@ return function(ctx)
 		started = true
 		local replay = REPLAY_IN_STUDIO and RunService:IsStudio()
 		local saved = replay and 0 or (data.Tutorial or 0)
-		if saved >= #STEPS then
+		-- done, or a save from before a step was added that has already rebirthed: no tutorial
+		if saved >= #STEPS or (data.Rebirths > 0 and not replay) then
+			ctx.StartGoals()
 			return
 		end
 		gui.Enabled = true
 		fit()
+		-- the HUD shows only what each step needs; a save that has rebirthed already keeps it all
+		if data.Rebirths == 0 and ctx.RefreshHudStage then
+			ctx.HudStage = saved
+			ctx.RefreshHudStage()
+		end
 		task.spawn(function()
 			if saved == 0 and (replay or (data.TotalLaunches == 0 and data.Rebirths == 0)) then
 				task.wait(1.5) -- let the world load in
@@ -1100,27 +1232,32 @@ return function(ctx)
 
 	local acc = 0
 	RunService.RenderStepped:Connect(function(dt)
-		if not step then
-			return
-		end
 		local data = State.Data
-		if not data then
+		if not data or not (step or goalOn) then
 			return
 		end
-		local s = STEPS[step]
+		if goalOn and not step and data.Rebirths >= GOAL_REBIRTHS then
+			goalOn = false
+			finish()
+			return
+		end
+		local s = step and STEPS[step] or GOAL
 
 		-- where to look: a part in the world, or a button in the UI
 		local target = s.Target and s.Target(data)
 		drawArrows(target)
 		if target then
 			marker.Adornee = target
-			marker.StudsOffsetWorldSpace = Vector3.new(0, 8 + math.sin(os.clock() * 4) * 1.2, 0)
+			-- straight above the middle of the target, a few studs over its top, with only a slow small bob
+			local _, size = topOf(target)
+			marker.StudsOffsetWorldSpace = Vector3.new(0, size.Y / 2 + 5 + math.sin(os.clock() * 2.5) * 0.3, 0)
 			marker.Enabled = not player:GetAttribute("Launching")
 		else
 			marker.Enabled = false
 		end
 		-- still on a training pad when the step wants you somewhere else
-		jumpHint.Visible = State.Training ~= nil and step > 1 and s.Target ~= nil and step ~= 5
+		local stations = workspace:FindFirstChild("TrainingStations")
+		jumpHint.Visible = State.Training ~= nil and target ~= nil and not (stations and target:IsDescendantOf(stations))
 		local button = s.Point and s.Point()
 		if button and button.Parent and button.AbsoluteSize.X > 0 then
 			local pad = 8
@@ -1160,7 +1297,7 @@ return function(ctx)
 			Kit.pop(quest, 1.05)
 		end
 		lastHave = have
-		if have >= goal then
+		if step and have >= goal then
 			completeStep()
 		end
 	end)
