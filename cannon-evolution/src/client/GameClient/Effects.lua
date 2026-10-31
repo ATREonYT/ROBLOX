@@ -265,8 +265,9 @@ return function(ctx)
 			local pass = s.Sign:GetAttribute("Pass")
 			local open = if pass then State.Passes[pass] == true else data.Rebirths >= (s.Sign:GetAttribute("Rebirths") or 0)
 			if s.Status then
-				s.Status.BackgroundColor3 = open and Color3.fromRGB(70, 210, 90) or Color3.fromRGB(235, 60, 60)
-				s.Status.Text.Text = open and "✅ UNLOCKED" or "🔒 LOCKED"
+				-- the lane label's middle line (BuildRebirthSigns): green UNLOCKED or red LOCKED, like Stone Skipping's
+				s.Status.Text.Text = open and "UNLOCKED" or "LOCKED"
+				s.Status.Text.TextColor3 = open and Color3.fromRGB(110, 235, 100) or Color3.fromRGB(240, 70, 70)
 			end
 			-- the over-booth sign has no ribbon: a locked booth's icon is dimmed instead
 			if s.Icon and not s.Status then

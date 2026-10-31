@@ -7,8 +7,9 @@
 	west, plaza to the cannonball stand). An earlier version of this tool put them in
 	ServerStorage.OldMaps.LobbyPaths; this one puts them back. New plank paths in the same style (the same
 	plank size, gaps, two browns and grey stones along the edges, measured off the map file) reach the
-	places the map's paths don't: a boardwalk along the front of the training booths with three links to
-	it, the west path past the eggs, and a link from the dock path to the front of the cannonball stand.
+	places the map's paths don't: three links to the training lanes' platform (BuildWorld1; its front is the
+	walk-up, so no boardwalk there, Alex Oct 31: less clutter round the lanes), the west path past the eggs,
+	and a link from the dock path to the front of the cannonball stand.
 
 	Routes are in the map file's units (Config.Map.At scales them with the map), from
 	tools/map/lobby_plan.json, where plan_check.py checks no rock, palm or prop stands on them.
@@ -26,7 +27,6 @@ local STONE = Color3.fromRGB(163, 156, 142)
 local PLANK_W, PLANK_T, PITCH, STONE_EVERY = 0.92, 0.3, 1.25, 2.3 -- file units
 local ROUTES = { -- { name, from {x, z}, to {x, z}, width } in the file's units
 	{ "PathWest", { -85.4, -0.8 }, { -105, -0.4 }, 4.4 }, -- carries on from the map's west path, past the eggs
-	{ "PathBooths", { -97.5, -15.2 }, { -24.5, -15.2 }, 5.4 }, -- along the booth fronts
 	{ "LinkPlaza", { -60, -9.0 }, { -60, -12.4 }, 4.4 }, -- spawn plaza to the booths
 	{ "LinkDock", { -30, -4.9 }, { -30, -12.4 }, 4.4 }, -- dock path to the first booth
 	{ "LinkWest", { -93, -3.1 }, { -93, -12.4 }, 4.4 }, -- west path to the last booths

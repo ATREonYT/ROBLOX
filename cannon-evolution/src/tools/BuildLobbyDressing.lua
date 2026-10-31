@@ -12,10 +12,8 @@
 	  - ship's lanterns on posts along the paths; the two by the plaza glow
 	  - a wooden signpost by the spawn plaza (TRAINING, LAUNCH, EGGS) and a CANNONBALLS board by the stand
 	  - a LAUNCH gate where the dock path reaches the dock: the lobby's focal point, framing the way out
-	  - red, white and black flag bunting on poles along the booth boardwalk
-	  - rope fences on wooden posts with brass caps down both sides of every training booth; the booths
-	    themselves keep their colours and glow (from Alex's booth pictures, Oct 30)
 	  - two palms framing the LAUNCH gate on the lobby side
+	  - nothing on or round the training lanes: they stay clean, like Stone Skipping's (Alex, Oct 31)
 
 	Spots are in the map file's units, from tools/map/lobby_plan.json (plan_check.py checks them).
 	Safe to run again: it replaces Workspace.LobbyDressing.
@@ -68,22 +66,14 @@ local GROUP = {
 	{ "SmallCrate", 2.6, 1.2, 12 },
 }
 local PALMS = { { -91, 18.5, 40 }, { -63, 20.5, 200 }, { -18.5, -10.5, 120 }, { -19, 9.5, 290 } }
-local BRASS, ROPE = Color3.fromRGB(214, 172, 74), Color3.fromRGB(196, 164, 112)
 -- lanterns: { x, z, the way the arm reaches {x, z}, glows }
 local LANTERNS = {
-	{ -37.8, -11.7, { 0, -1 } }, -- along the booth boardwalk, between booths
-	{ -49.4, -11.7, { 0, -1 } },
-	{ -72.6, -11.7, { 0, -1 } },
-	{ -84.2, -11.7, { 0, -1 } },
 	{ -81, 3.8, { 0, -1 } }, -- along the egg path, between eggs
 	{ -97, 2.2, { 0, -1 } },
 	{ -48.5, -2.6, { 0, 1 }, true }, -- framing the dock path where it leaves the plaza
 	{ -48.5, 6.4, { 0, -1 }, true },
 }
 local GATE = { { -16, -6.4 }, { -16, 3.5 } } -- its two posts, either side of the dock path
-local BUNTING = { { -97, -63.5 }, { -56.5, -25 } } -- spans along the booth boardwalk's south edge (x from, to)
-local BUNTING_Z, POLE_H, SAG = -11.7, 9, 1.4
-local FLAGS = { Color3.fromRGB(205, 45, 45), Color3.fromRGB(245, 240, 230), Color3.fromRGB(40, 36, 36) }
 local BALL_SIGN = { -46.5, 9.8 }
 local SIGN = { -53, -10.5 }
 local BOARDS = { -- { text, way it points {x, z}, height over the ground }
@@ -314,55 +304,6 @@ do
 	gate.Parent = folder
 end
 
--- 3c. flag bunting along the booth boardwalk
-do
-	local bunting = Instance.new("Model")
-	bunting.Name = "Bunting"
-	local flagN = 0
-	for _, span in ipairs(BUNTING) do
-		local a, b = Config.Map.At(span[1], 0, BUNTING_Z), Config.Map.At(span[2], 0, BUNTING_Z)
-		local y = groundAt(a.X, a.Z)
-		for _, p in ipairs({ a, b }) do
-			part({ Name = "Pole", Size = Vector3.new(0.45, POLE_H + 0.4, 0.45), CFrame = CFrame.new(p.X, y + POLE_H / 2 - 0.2, p.Z), Color = POST_WOOD, CanCollide = false }, bunting)
-		end
-		local len = (b - a).Magnitude
-		local n = math.floor(len / 1.6)
-		local function at(t)
-			local p = a:Lerp(b, t)
-			return Vector3.new(p.X, y + POLE_H - 0.3 - SAG * 4 * t * (1 - t), p.Z)
-		end
-		local dir = (b - a).Unit
-		local side = dir:Cross(Vector3.yAxis)
-		local prev = at(0)
-		for i = 1, n do
-			local t = i / n
-			local q = at(t)
-			part({ Name = "Rope", Size = Vector3.new(0.08, 0.08, (q - prev).Magnitude), CFrame = CFrame.lookAt((prev + q) / 2, q), Color = Color3.fromRGB(90, 70, 50), CanCollide = false, CastShadow = false }, bunting)
-			if i < n then
-				-- a pennant pointing down: two thin wedges side by side
-				flagN += 1
-				local c = q - Vector3.new(0, 0.55, 0)
-				local base = CFrame.fromMatrix(c, side, Vector3.yAxis)
-				local col = FLAGS[(flagN - 1) % #FLAGS + 1]
-				for _, half in ipairs({ base * CFrame.new(0, 0, 0.225) * CFrame.Angles(math.pi, 0, 0), base * CFrame.new(0, 0, -0.225) * CFrame.Angles(0, 0, math.pi) }) do
-					local w = Instance.new("WedgePart")
-					w.Name = "Flag"
-					w.Anchored = true
-					w.CanCollide = false
-					w.CastShadow = false
-					w.Size = Vector3.new(0.06, 1.1, 0.45)
-					w.CFrame = half
-					w.Color = col
-					w.Material = Enum.Material.SmoothPlastic
-					w.Parent = bunting
-				end
-			end
-			prev = q
-		end
-	end
-	bunting.Parent = folder
-end
-
 -- 3d. the CANNONBALLS board by the stand
 do
 	local at = Config.Map.At(BALL_SIGN[1], 0, BALL_SIGN[2])
@@ -375,58 +316,6 @@ do
 	board(sign, "CANNONBALLS", cf, 6.4, 1.3)
 	part({ Name = "Tip", Size = Vector3.new(0.92, 0.92, 0.25), CFrame = cf * CFrame.new(3.2, 0, 0) * CFrame.Angles(0, 0, math.rad(45)), Color = BOARD_WOOD, CanCollide = false }, sign)
 	sign.Parent = folder
-end
-
--- 3e. rope fences down both sides of every booth: posts at the front, middle and back, brass caps
-do
-	local stations = workspace:FindFirstChild("TrainingStations")
-	local fences = Instance.new("Model")
-	fences.Name = "BoothFences"
-	local function rope(a, b)
-		-- a rope from a to b, sagging a little in the middle, in four pieces
-		local prev = a
-		for i = 1, 4 do
-			local t = i / 4
-			local q = a:Lerp(b, t) - Vector3.new(0, 0.35 * 4 * t * (1 - t), 0)
-			part({ Name = "Rope", Size = Vector3.new(0.14, 0.14, (q - prev).Magnitude + 0.05), CFrame = CFrame.lookAt((prev + q) / 2, q), Color = ROPE, CanCollide = false, CastShadow = false }, fences)
-			prev = q
-		end
-	end
-	for _, st in ipairs(stations and stations:GetChildren() or {}) do
-		local booth = st:FindFirstChild("Booth")
-		local rimCf, W, L
-		for _, p in ipairs(booth and booth:GetChildren() or {}) do
-			if p.Name == "Rim" then
-				rimCf = rimCf or p.CFrame
-				W, L = math.max(W or 0, p.Size.X), math.max(L or 0, p.Size.Z)
-			end
-		end
-		if rimCf then
-			local floorY = rimCf.Y - 0.3 -- the rim's bottom
-			for _, sx in ipairs({ -1, 1 }) do
-				local tops = {}
-				for _, z in ipairs({ L / 2 - 0.4, 0, -(L / 2 - 0.4) }) do -- front (the way in), middle, back
-					local base = (rimCf * CFrame.new(sx * (W / 2 + 0.45), 0, z)).Position
-					local h = z > 0 and 3.6 or 3
-					local post = Vector3.new(base.X, floorY, base.Z)
-					part({ Name = "Post", Size = Vector3.new(0.55, h + 0.3, 0.55), CFrame = CFrame.new(post + Vector3.new(0, (h + 0.3) / 2 - 0.3, 0)), Color = POST_WOOD, CanCollide = false }, fences)
-					local cap = part({ Name = "Cap", Shape = Enum.PartType.Ball, Size = Vector3.new(0.75, 0.75, 0.75), CFrame = CFrame.new(post + Vector3.new(0, h + 0.15, 0)), Color = BRASS, Material = Enum.Material.Metal, CanCollide = false }, fences)
-					table.insert(tops, post + Vector3.new(0, 2.4, 0))
-					if z > 0 then
-						-- a little glow on the way in, in the booth's own colour
-						local glow = part({ Name = "CapGlow", Size = Vector3.new(0.62, 0.1, 0.62), CFrame = CFrame.new(post + Vector3.new(0, h - 0.12, 0)), Color = st:GetAttribute("Accent") or GLOW, Material = Enum.Material.Neon, CanCollide = false, CastShadow = false }, fences)
-						glow.Shape = Enum.PartType.Cylinder
-						glow.Size = Vector3.new(0.1, 0.62, 0.62)
-						glow.CFrame = CFrame.new(post + Vector3.new(0, h - 0.12, 0)) * CFrame.Angles(0, 0, math.rad(90))
-						cap.Size = Vector3.new(0.85, 0.85, 0.85)
-					end
-				end
-				rope(tops[1], tops[2])
-				rope(tops[2], tops[3])
-			end
-		end
-	end
-	fences.Parent = folder
 end
 
 -- 4. the signpost
@@ -447,4 +336,4 @@ do
 end
 
 folder.Parent = workspace
-print(TAG, ("%d props (map crates, barrels and palms), %d nooks, %d lanterns, the LAUNCH gate, bunting and two signs"):format(props, #NOOKS, #LANTERNS))
+print(TAG, ("%d props (map crates, barrels and palms), %d nooks, %d lanterns, the LAUNCH gate and two signs"):format(props, #NOOKS, #LANTERNS))

@@ -1,16 +1,18 @@
 --[[
-	BuildRebirthSigns: paste into the Command Bar once (already run in the place).
-	Floats a rebirth sign over each training area: the rebirth icon with the
-	rebirths it needs on it, and the Power multiplier underneath; nothing else
-	(Alex, Oct 30: the old wall boards are gone). The client fills in the icon
-	(Icons.RebirthSign) and dims it while the booth is locked.
+	BuildRebirthSigns: paste into the Command Bar after BuildWorld1.
+	One label per training lane, like Stone Skipping's (Alex, Oct 31): the same size, at the same height
+	over the far end of every lane, three lines stacked the same way on each:
+	  - a dark pill with the rebirth icon and the rebirths the lane needs (VIP for the pass lane)
+	  - UNLOCKED in green or LOCKED in red (the client sets it for each player, Effects.lua)
+	  - the power it gives, big: "5x POWER"
+	It replaces the floating rebirth tiles and the separate "x20" tags.
 	Safe to run again: it replaces each station's RebirthSign.
 ]]
 
 local Config = require(game.ReplicatedStorage.GameConfig)
 
-local SIGN = 7 -- studs across
-local LIFT = 4.5 -- studs over the top of the booth
+local WIDE, TALL = 9, 5.6 -- studs: the label's size, the same on every lane
+local HEIGHT = 11.5 -- studs over the stand pad: the same on every lane
 
 local function new(class, props)
 	local i = Instance.new(class)
@@ -50,22 +52,9 @@ for _, info in ipairs(Config.Stations) do
 				old:Destroy()
 			end
 		end
-		-- over the middle of the booth, a little above its highest point
-		local top = -math.huge
-		local lo, hi = Vector3.new(math.huge, 0, math.huge), Vector3.new(-math.huge, 0, -math.huge)
-		for _, p in ipairs(station:GetDescendants()) do
-			if p:IsA("BasePart") and p.Transparency < 1 then
-				top = math.max(top, p.Position.Y + p.Size.Y / 2)
-				lo = Vector3.new(math.min(lo.X, p.Position.X), 0, math.min(lo.Z, p.Position.Z))
-				hi = Vector3.new(math.max(hi.X, p.Position.X), 0, math.max(hi.Z, p.Position.Z))
-			end
-		end
-		-- halfway between the stand point and the target, so it works whichever way the booth faces
+		-- over the target (the lane's far end), at the same height on every lane
 		local target = station:FindFirstChild("Target")
-		local mid = target and target:FindFirstChild("Center") and (station.Pad.Position + target.Center.Position) / 2
-		local x = mid and mid.X or station.Pad.Position.X
-		local z = mid and mid.Z or (lo.Z + hi.Z) / 2
-
+		local over = target and target:FindFirstChild("Center") and target.Center.Position or station.Pad.Position
 		local board = new("Part", {
 			Name = "RebirthSign",
 			Anchored = true,
@@ -74,7 +63,7 @@ for _, info in ipairs(Config.Stations) do
 			CanTouch = false,
 			CastShadow = false,
 			Size = Vector3.one * 0.2,
-			CFrame = CFrame.new(x, top + LIFT + SIGN / 2, z),
+			CFrame = CFrame.new(over.X, station.Pad.Position.Y + HEIGHT, over.Z),
 			Transparency = 1,
 		})
 		board:SetAttribute("Rebirths", info.Rebirths)
@@ -82,43 +71,72 @@ for _, info in ipairs(Config.Stations) do
 
 		local gui = new("BillboardGui", {
 			Name = "Gui",
-			Size = UDim2.fromScale(SIGN, SIGN * 1.25),
+			Size = UDim2.fromScale(WIDE, TALL),
 			LightInfluence = 0,
 			MaxDistance = 220,
 			Parent = board,
 		})
 		local card = new("Frame", { Name = "Card", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = gui })
 
-		-- the rebirth icon (filled by the client), an emoji until then
+		-- 1. the pill: rebirth icon (filled by the client; an emoji until then) and the rebirths needed
+		local pill = new("Frame", {
+			Name = "Pill",
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.fromScale(0.5, 0),
+			Size = UDim2.fromScale(0.42, 0.27),
+			BackgroundColor3 = Color3.fromRGB(30, 24, 48),
+			BackgroundTransparency = 0.1,
+			ZIndex = 1,
+			Parent = card,
+		})
+		new("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = pill })
+		new("UIStroke", { Thickness = 2, Color = Color3.fromRGB(255, 255, 255), Transparency = 0.6, Parent = pill })
 		local icon = new("ImageLabel", {
 			Name = "Icon",
 			BackgroundTransparency = 1,
 			ScaleType = Enum.ScaleType.Fit,
-			Size = UDim2.fromScale(1, 0.8),
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.fromScale(0.3, 0.135),
+			Size = UDim2.fromScale(0.15, 0.25),
 			ZIndex = 2,
 			Parent = card,
 		})
 		icon:SetAttribute("Icon", info.Pass and "VIP" or "RebirthSign")
 		label(icon, info.Pass and "⭐" or "🔄", { Name = "Fallback", Size = UDim2.fromScale(1, 1), StrokeSize = 0 })
-		-- the rebirths it needs, big on the icon
-		label(icon, info.Pass and "VIP" or tostring(info.Rebirths), {
+		label(card, info.Pass and "VIP" or tostring(info.Rebirths), {
 			Name = "Number",
-			Size = UDim2.fromScale(0.62, 0.42),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Anchor = Vector2.new(0.5, 0.5),
-			StrokeSize = 5,
+			Anchor = Vector2.new(0, 0.5),
+			Position = UDim2.fromScale(0.46, 0.135),
+			Size = UDim2.fromScale(0.22, 0.2),
+			StrokeSize = 3,
 			ZIndex = 4,
 		})
-		-- the multiplier it gives
-		label(card, "x" .. Config.Format(info.Gain), {
+
+		-- 2. LOCKED / UNLOCKED (Effects.lua sets the words and the colour for each player)
+		local status = new("Frame", {
+			Name = "Status",
+			Position = UDim2.fromScale(0, 0.31),
+			Size = UDim2.fromScale(1, 0.2),
+			BackgroundTransparency = 1,
+			Parent = card,
+		})
+		local open = info.Rebirths == 0 and not info.Pass
+		label(status, open and "UNLOCKED" or "LOCKED", {
+			Name = "Text",
+			Size = UDim2.fromScale(1, 1),
+			Color = open and Color3.fromRGB(110, 235, 100) or Color3.fromRGB(240, 70, 70),
+			StrokeSize = 3,
+		})
+
+		-- 3. the power it gives
+		label(card, Config.Format(info.Gain) .. "x POWER", {
 			Name = "Multiplier",
-			Size = UDim2.fromScale(0.9, 0.24),
+			Size = UDim2.fromScale(1, 0.44),
 			Position = UDim2.fromScale(0.5, 1),
 			Anchor = Vector2.new(0.5, 1),
-			Color = Color3.fromRGB(255, 220, 60),
 			StrokeSize = 5,
 		})
 		board.Parent = station
 	end
 end
-print("[BuildRebirthSigns] signs placed over " .. #workspace.TrainingStations:GetChildren() .. " training areas")
+print("[BuildRebirthSigns] one label over each of " .. #workspace.TrainingStations:GetChildren() .. " training lanes")
