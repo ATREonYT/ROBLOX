@@ -257,7 +257,7 @@ local function tierLook(id)
 		Rim = dark(t.Base, 0.35),
 		Track = t.Base:Lerp(WHITE, 0.45),
 		Pad = dark(t.Base, 0.18),
-		Accent = t.Base:Lerp(WHITE, 0.3), -- the glow colour, also the client's shot colour
+		Accent = t.Base, -- the glow colour (neon already brightens it, so the tier's own hue), also the client's shot colour
 		Glow = t.Glow,
 		Shine = t.Shine,
 		Sparkle = t.Sparkle,
@@ -279,7 +279,7 @@ local function makeBooth(standCf, width, look)
 	local front, back = -6, TARGET_Z + 3.2
 	local L = back - front
 	local mid = (front + back) / 2
-	local RIM = 1.2 -- the raised rim's width
+	local RIM = 1.6 -- the raised rim's width (chunky, like the reference's)
 	local function at(x, y, z)
 		return standCf * CFrame.new(x, y, -z)
 	end
@@ -332,7 +332,7 @@ local function makeBooth(standCf, width, look)
 		e.Lifetime = NumberRange.new(1, 1.6)
 		e.Speed = NumberRange.new(1, 2.2)
 		e.SpreadAngle = Vector2.new(15, 15)
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0) })
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
 		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
 		e.EmissionDirection = Enum.NormalId.Top
 		e.Parent = track
