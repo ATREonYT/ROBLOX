@@ -220,6 +220,7 @@ end
 require(script.HUD)(ctx)
 require(script.Effects)(ctx)
 require(script.Tutorial)(ctx)
+require(script.AnimeFX)(ctx) -- anime power-up auras, impact frames and speed lines on the shots
 
 -- Refresh the open panel whenever data changes
 State.Changed:Connect(function(what)
