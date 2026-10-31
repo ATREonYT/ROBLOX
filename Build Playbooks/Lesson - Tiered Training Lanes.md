@@ -26,6 +26,32 @@ better because they follow a few rules every time. Use these rules for any row o
    player can compare every tier at once. Never stack them diagonally, where back lanes hide behind
    front ones.
 
+## Round two: why ours still looked worse, and the fix (Oct 31)
+Following the six rules was not enough. Alex said the lanes "still don't look as good", so we compared
+them frame by frame with Stone Skipping. These were the real gaps:
+- **Tall things in the lane.** A big dark cannon on a plinth and a standing target on legs filled every
+  lane. The reference lane has nothing tall in it. The fix was to set the cannon low on the start pad, with
+  no plinth and less than half the lane's inner width, and make the target a bullseye raft floating flat
+  at the far end, leaning back 25 degrees towards the cannon.
+- **No water.** Each reference lane is mostly a pool of light, bright water, from rim to rim. Ours was one
+  flat plastic slab with a thin pale strip. The fix was a recessed pool that fills the lane from the
+  cannon's nose to the far rim, with 2 lily pads.
+  - Water must stay watery: light cyan to blue, leaning to the lane's hue only where it still looks like
+    water (mint for green, violet for the black VIP lane).
+  - Yellow or orange water looked like juice, and see-through Glass over a dark bed looked grey.
+- **Stubby lanes, thin gaps.** Make lanes about 3 times longer than wide, with a walkway between them
+  about half a lane wide.
+- **The walkway colour has to contrast with every lane.** Our gold and orange lanes vanished into sand.
+  The reference uses lavender; we used cool light stone (Alex wants the pirate look, not lavender).
+- **The start pad is its own thing.** It is raised, tiled, a shade darker, with white L marks on the
+  corners.
+- **The rim is built from bricks.** Use segments about 4 studs long in two shades, with studs on top.
+- **Lighting.** A late-afternoon sun threw long dark shadows over everything. Cartoony lighting is a high
+  sun (ClockTime about 14), no cast shadows (GlobalShadows off), a bright warm OutdoorAmbient and mild
+  saturation. Phones at low quality show no shadows anyway.
+- **The label's line sizes.** The pill is about as wide as the label and LOCKED is about 55% of the power
+  line's height.
+
 ## How +1 Cannon Evolution does it
 - `cannon-evolution/src/tools/BuildWorld1.lua`:
   - `LanePlatform` is the stud platform;
@@ -34,6 +60,7 @@ better because they follow a few rules every time. Use these rules for any row o
   - `makeBooth()` builds the one lane model;
   - every lane has the same length, so the target is the same distance away.
 - `cannon-evolution/src/tools/BuildRebirthSigns.lua` builds the label.
+- `cannon-evolution/src/tools/BuildLighting.lua` sets the cartoony lighting.
 - `cannon-evolution/src/client/GameClient/Effects.lua` sets LOCKED/UNLOCKED for each player.
 - The cannon on each lane still differs per tier on purpose, because the cannons are the upgrades.
 - Picture: `cannon-evolution/previews/lanes-vs-stone-skipping.jpg`.
