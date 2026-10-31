@@ -9,7 +9,8 @@
 	     tools/studio/baseline/): every difference is a hand edit (moved, recoloured, resized, added or deleted)
 	  3. run the builders, then put every hand edit back on top (apply), and save the edits in the repo
 	     (tools/studio/hand_edits.json) so they are part of the game from then on
-	  4. snapshot again: that is the new baseline
+	  4. the new baseline is the fresh build, saved BEFORE the edits go back on (HE.saveBaseline right after the
+	     builders), so the next install's diff finds every hand edit, old and new, and puts them all back
 
 	local HE = loadstring(src)()   -- returns the functions below
 	HE.snapshot(names)              -- { [key] = fingerprint } for the named Workspace folders/models
