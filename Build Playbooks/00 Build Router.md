@@ -62,6 +62,7 @@ Playbooks in this folder:
 | Animations | `roblox-ai-animation` | [[06 Animation]] |
 | Blender models | `blender-roblox-models` | [[04 Building, Maps & 3D Models]] |
 | Game feel | | `GAME-FEEL.md`, `LihFolk/LihFolk Vault V2/47 Game Feel and Juice/` |
+| A row of tiered stations (training lanes, upgrade pads) | `roblox-cartoony-building` | [[Lesson - Tiered Training Lanes]] |
 | Final check | | [[16 Cartoony Kid-Appeal Checklist]] |
 
 ## Ship it
