@@ -106,7 +106,8 @@ if newMap then
 	end
 	local plat = Instance.new("Folder")
 	plat.Name = "LanePlatform"
-	for _, layer in ipairs({ { 0.7, PLAT_TOP - 0.12, Color3.fromRGB(176, 160, 136) }, { 0, PLAT_TOP, Color3.fromRGB(232, 222, 202) } }) do
+	-- warm sand, not pale cream: under the bright cartoony lighting a pale platform turns white (Oct 31)
+	for _, layer in ipairs({ { 0.7, PLAT_TOP - 0.12, Color3.fromRGB(170, 138, 98) }, { 0, PLAT_TOP, Color3.fromRGB(222, 194, 150) } }) do
 		local grow, top, color = layer[1], layer[2], layer[3]
 		local p = Instance.new("Part")
 		p.Name = grow > 0 and "Edge" or "Top"
@@ -247,7 +248,7 @@ local function tierLook(id)
 	local look = {
 		Floor = t.Base,
 		Rim = dark(t.Base, 0.35),
-		Track = t.Base:Lerp(WHITE, 0.45), -- the pool's water: a light tint of the tier colour
+		Track = t.Base:Lerp(WHITE, 0.55), -- the pool's water: a light tint of the tier colour
 		Bed = dark(t.Base, 0.25), -- the pool's floor under the water
 		Pad = dark(t.Base, 0.18),
 		Accent = t.Base, -- the glow colour (neon already brightens it, so the tier's own hue), also the client's shot colour
@@ -310,8 +311,8 @@ local function makeBooth(standCf, width, look)
 	end
 	-- the water: see-through over the darker bed, glossy; named Water so the stud pass leaves it smooth
 	local water = blk("Water", Vector3.new(poolHalf * 2, 0.2, z1 - z0), 0, FLOOR_T - 0.1, (z0 + z1) / 2, look.Track)
-	water.Transparency = 0.25
-	water.Reflectance = look.Shine and 0.3 or 0.15
+	water.Transparency = 0.15
+	water.Reflectance = look.Shine and 0.35 or 0.25
 	water.CastShadow = false
 
 	-- the rim: bricks about 4 studs long in two shades, so it reads as built from blocks
