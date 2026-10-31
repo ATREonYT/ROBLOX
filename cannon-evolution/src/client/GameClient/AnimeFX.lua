@@ -18,7 +18,8 @@
 	Kid-safe: one impact frame per shot (at most one flash a second), shake and impact frames off on
 	Low Graphics, the real tier colour from the first frame, the odds always on the card, and the
 	camera is always handed back (also when a second shot or a respawn cuts in).
-	Textures are our own (hood/art/vfx and the kit's make_textures.py), uploaded Oct 31.
+	Textures: our own (hood/art/vfx and the kit's make_textures.py, uploaded Oct 31) plus the effects from Alex's
+	VFX pack (RareFXPack: charge-ups, fire aura, lightning, explosion, shockwave, holy beams, stars).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -470,6 +471,160 @@ return function(ctx)
 	end
 
 	-----------------------------------------------------------------------
+	-- Alex's VFX pack (RareFXPack: the pack's effects as data). fxPlay builds
+	-- one at a point (or riding a part), scaled by S and recoloured to the
+	-- shot's look, and fires it the way the pack's VFX Forge attributes say:
+	-- Emit.Count bursts, Emit.Duration runs the emitter for that long.
+	-----------------------------------------------------------------------
+	local Pack = require(script.Parent:WaitForChild("RareFXPack"))
+	local function seq(flat, s)
+		local kp = {}
+		for i = 1, #flat, 3 do
+			table.insert(kp, NumberSequenceKeypoint.new(flat[i], flat[i + 1] * s, flat[i + 2] * s))
+		end
+		return NumberSequence.new(kp)
+	end
+	-- white parts of a pack effect take the shot's core colour, coloured parts its body colour
+	local function tint(flat, look)
+		local kp = {}
+		for i = 1, #flat, 4 do
+			local r, g, b = flat[i + 1], flat[i + 2], flat[i + 3]
+			local hi, lo = math.max(r, g, b), math.min(r, g, b)
+			local c = look and look.Color:Lerp(look.Core, hi > 0 and lo / hi or 0) or Color3.new(r, g, b)
+			table.insert(kp, ColorSequenceKeypoint.new(flat[i], c))
+		end
+		return ColorSequence.new(kp)
+	end
+	local function packEmitter(spec, s, look, parent)
+		local pe = Instance.new("ParticleEmitter")
+		pe.Texture = "rbxassetid://" .. spec.T
+		pe.Rate = spec.Rate or 20
+		pe.LightEmission, pe.LightInfluence = spec.LightEmission or 0, spec.LightInfluence or 0
+		pe.Brightness = math.min(spec.Brightness or 1, 6) -- the pack runs some at 25: too hot on a bright map
+		pe.ZOffset, pe.Drag = spec.ZOffset or 0, spec.Drag or 0
+		pe.LockedToPart = spec.LockedToPart == true
+		pe.FlipbookStartRandom = spec.FlipbookStartRandom == true
+		pe.Size = seq(spec.Size, s)
+		pe.Transparency = spec.Tr and seq(spec.Tr, 1) or NumberSequence.new(0)
+		if spec.Sq then
+			pe.Squash = seq(spec.Sq, 1)
+		end
+		pe.Color = tint(spec.Col, look)
+		local function range(v, k)
+			return v and NumberRange.new(v[1] * (k or 1), v[2] * (k or 1))
+		end
+		pe.Lifetime = range(spec.Life) or pe.Lifetime
+		pe.Rotation = range(spec.Rot) or NumberRange.new(0)
+		pe.RotSpeed = range(spec.RotS) or NumberRange.new(0)
+		pe.FlipbookFramerate = range(spec.FbR) or NumberRange.new(1)
+		pe.Speed = range(spec.Spd, s) or NumberRange.new(0)
+		pe.SpreadAngle = spec.Spr and Vector2.new(spec.Spr[1], spec.Spr[2]) or Vector2.zero
+		pe.Acceleration = spec.Acc and Vector3.new(spec.Acc[1], spec.Acc[2], spec.Acc[3]) * s or Vector3.zero
+		pe.EmissionDirection = Enum.NormalId:FromValue(spec.Dir or 0)
+		pe.Orientation = Enum.ParticleOrientation:FromValue(spec.Ori or 0)
+		pe.FlipbookLayout = Enum.ParticleFlipbookLayout:FromValue(spec.FbL or 0)
+		pe.FlipbookMode = Enum.ParticleFlipbookMode:FromValue(spec.FbM or 0)
+		if spec.Shp then
+			pe.Shape = Enum.ParticleEmitterShape:FromValue(spec.Shp)
+		end
+		pe.Enabled = false
+		pe.Parent = parent
+		table.insert(frozen, pe)
+		return pe
+	end
+	-- play a pack effect: at = CFrame (or a part to ride), s = scale, look = recolour (nil keeps the pack's colours),
+	-- hold = seconds for the effect's looping emitters (bursts always run their own course)
+	local function fxPlay(name, at, s, look, hold)
+		local t = Pack[name]
+		if not t then
+			return
+		end
+		hold = hold or 0.6
+		local host
+		if typeof(at) == "Instance" then
+			host = new("Part", { Size = Vector3.one * 0.2, Transparency = 1, Anchored = false, CanCollide = false, CanQuery = false, CanTouch = false, Massless = true, CFrame = at.CFrame })
+			new("WeldConstraint", { Part0 = at, Part1 = host, Parent = host })
+			host.Parent = fx
+		else
+			host = part({ Size = Vector3.one * 0.2, Transparency = 1, CFrame = at })
+		end
+		local atts, longest = {}, 0
+		for i, a in ipairs(t.Att) do
+			local att = new("Attachment", { Position = Vector3.new(a.At[1], a.At[2], a.At[3]) * s, Parent = host })
+			atts[i] = att
+			for _, spec in ipairs(a.E) do
+				local pe = packEmitter(spec, s, look, att)
+				longest = math.max(longest, pe.Lifetime.Max)
+				local e = spec.Emit
+				if e then
+					task.delay(e.Delay or 0, function()
+						if (e.Count or 0) > 0 then
+							pe:Emit(e.Count)
+						end
+						if (e.Duration or 0) > 0 then
+							pe.Enabled = true
+							task.delay(e.Duration, function()
+								pe.Enabled = false
+							end)
+						end
+					end)
+				elseif spec.Enabled ~= false then
+					pe.Enabled = true
+					task.delay(hold, function()
+						pe.Enabled = false
+					end)
+				end
+			end
+		end
+		for _, b in ipairs(t.Beams) do
+			local a0, a1 = atts[b.A0], atts[b.A1]
+			if a0 and a1 then
+				local B = b.B
+				new("Beam", {
+					Attachment0 = a0, Attachment1 = a1, Texture = "rbxassetid://" .. B.T, LightEmission = B.LightEmission or 1, LightInfluence = B.LightInfluence or 0,
+					Brightness = math.min(B.Brightness or 1, 6), TextureLength = B.TextureLength or 1, TextureSpeed = B.TextureSpeed or 1,
+					CurveSize0 = (B.CurveSize0 or 0) * s, CurveSize1 = (B.CurveSize1 or 0) * s, Width0 = (B.Width0 or 1) * s, Width1 = (B.Width1 or 1) * s,
+					Segments = B.Segments or 10, FaceCamera = B.FaceCamera == true, Transparency = seq(B.Tr, 1), Color = tint(B.Col, look),
+					TextureMode = Enum.TextureMode:FromValue(B.TM or 0), Parent = host,
+				})
+			end
+		end
+		Debris:AddItem(host, hold + longest + 2)
+		return host
+	end
+	-- the pack's fire aura on every body part (an R15 body or an R6 one), in the shot's colours
+	local LIMBS = { "Head", "UpperTorso", "LowerTorso", "Torso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "Left Arm", "Right Arm",
+		"LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg", "Left Leg", "Right Leg" }
+	local function fireAura(character, look, seconds)
+		local list = {}
+		for _, n in ipairs(LIMBS) do
+			local p = character:FindFirstChild(n)
+			if p and p:IsA("BasePart") then
+				local att = new("Attachment", { Name = "AnimeFireAura", Parent = p })
+				local pe = packEmitter(Pack.FireAura, math.max(p.Size.X, p.Size.Y, p.Size.Z) / 1.6, look, att)
+				pe.Enabled = true
+				table.insert(list, att)
+			end
+		end
+		task.delay(seconds, function()
+			for _, att in ipairs(list) do
+				local pe = att:FindFirstChildOfClass("ParticleEmitter")
+				if pe then
+					pe.Enabled = false
+				end
+				Debris:AddItem(att, 1.2)
+			end
+		end)
+	end
+	local function boreOf(model)
+		local bore = model and model:FindFirstChild("Bore", true)
+		if bore then
+			return bore.Position + dir * 1.5
+		end
+		return model and model:GetBoundingBox().Position + dir * 3 or nil
+	end
+
+	-----------------------------------------------------------------------
 	-- Auras (vault note 15 §3): cel flames filling a body box, a force-field
 	-- shell, white-hot core flames, spark streaks, a ground glow, arcs,
 	-- neon spikes for a sharp silhouette, one light. Works on a character
@@ -831,6 +986,7 @@ return function(ctx)
 		local cannon = mine and workspace:FindFirstChild("MyCannon")
 		local you = makeAura(char, look)
 		ramp(you, 0.15, 1, seconds * 0.55)
+		fireAura(char, look, seconds + 0.5)
 		local gun = cannon and makeAura(cannon, look)
 		if gun then
 			at(0.1, my, function()
@@ -867,11 +1023,13 @@ return function(ctx)
 			pulse(you, true)
 			shockwave(feet, look, 6)
 			crater(feet, 10)
+			fxPlay("Crack", CFrame.new(feet + Vector3.new(0, 0.3, 0)), 1.5, nil, 0.4)
 			shake(0.45, 0.3)
 		end)
 		if cannon then
 			at(seconds * 0.6, my, function()
 				chargeCannon(cannon, seconds * 0.4 - 0.05, 7)
+				fxPlay("Charge", CFrame.new(boreOf(cannon)), 2, look, seconds * 0.4)
 				Kit.playSound("RareCharge")
 				if gun then
 					pulse(gun, true)
@@ -902,6 +1060,7 @@ return function(ctx)
 		local bore = grand:FindFirstChild("Bore", true)
 		local you = makeAura(char, look)
 		ramp(you, 0.3, 1, 0.8)
+		fireAura(char, look, seconds + 0.5)
 		local gun = makeAura(grand, look)
 		if mine then
 			skyTint(Color3.fromRGB(255, 242, 220), 0, 0.6)
@@ -969,11 +1128,13 @@ return function(ctx)
 				bolt(top, hit, i % 2 == 0 and look.Core or look.Color, 1.1, 7)
 				if i % 3 == 0 then
 					shockwave(hit, look, 8)
+					fxPlay(i % 2 == 0 and "Lightning" or "Lightning2", CFrame.new(hit), 5, look, 0.3)
 				end
 			end)
 		end
 		at(seconds * 0.62, my, function()
 			chargeCannon(grand, seconds * 0.38 - 0.05, 5)
+			fxPlay("Charge", CFrame.new(boreOf(grand)), 8, look, seconds * 0.38)
 			if mine then
 				Kit.playSound("RareCharge")
 			end
@@ -1102,6 +1263,8 @@ return function(ctx)
 				if cannon then
 					angelic(cannon, look, 1.2)
 				end
+				fxPlay("HolyAura", CFrame.new(focus - Vector3.new(0, 4, 0)), 3, look, seconds)
+				fxPlay("Stars", CFrame.new(focus + Vector3.new(0, 6, 0)), 3, look, seconds)
 			end)
 			-- feathers drift down through the light
 			local cloud = part({ Size = Vector3.new(40, 1, 40), Transparency = 1, CFrame = CFrame.new(focus + Vector3.new(0, 45, 0)) })
@@ -1132,6 +1295,7 @@ return function(ctx)
 		at(2.4, my, function()
 			ramp(you, 0.3, 1, 0.8)
 			pulse(you, true)
+			fxPlay("Shiny", root, 1.5, look, 1.5)
 			if mine then
 				pose.Target, pose.Shake = 1, rad(1.5)
 				poseLayer("Sky", 0.15, 1.2, 0.5)
@@ -1319,6 +1483,11 @@ return function(ctx)
 				return
 			end
 			muzzleBlast(start, look)
+			fxPlay("Shoot", CFrame.lookAt(start, start + dir), 3 + look.Rank, look)
+			fxPlay("Flash", CFrame.new(start), 2 + look.Rank, look, 0.2)
+			if rareId == "Secret" then
+				fxPlay("Explosion", CFrame.new(start), 4, nil, 0.3)
+			end
 			if ball then
 				comet(ball, look, mine, duration)
 			end
