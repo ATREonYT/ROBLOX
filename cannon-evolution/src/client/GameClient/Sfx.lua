@@ -33,20 +33,20 @@ local Sfx = {}
 -- name = { volume, pitch spread (+/-), group }. Our files are all about the same loudness, so this is the mix:
 -- hover is barely there, clicks sit under the game sounds, the big moments are loudest.
 local LEVEL = {
-	Click = { 0.3, 0, "Interface" },
+	Click = { 0.9, 0, "Interface" }, -- the switch click is a quiet file (-35 dB mean)
 	Hover = { 0.1, 0, "Interface" },
 	Open = { 0.16, 0, "Interface" },
 	Close = { 0.14, 0, "Interface" },
 	Confirm = { 0.3, 0, "Interface" },
 	Error = { 0.3, 0, "Interface" },
-	Tab = { 0.25, 0, "Interface" },
+	Tab = { 0.6, 0, "Interface" }, -- same click as Click, a bit softer
 	Coin = { 0.25, 0.03, "Effects" },
-	Reward = { 0.45, 0, "Effects" },
+	Reward = { 0.35, 0.03, "Effects" }, -- Suction Pop 1 (-22 dB mean); a tiny spread so repeats sound natural
 	Hatch = { 0.4, 0, "Effects" },
 	Rebirth = { 0.4, 0, "Effects" },
 	Unlock = { 0.45, 0, "Effects" },
-	Shot = { 0.45, 0.06, "Effects" },
-	Launch = { 0.5, 0.03, "Effects" },
+	Shot = { 0.25, 0.06, "Effects" }, -- Balloon Pop 4 is loud (-12 dB)
+	Launch = { 0.45, 0.03, "Effects" },
 	LaunchBoom = { 0.55, 0.04, "Effects" },
 	Skip = { 0.35, 0.08, "Effects" },
 	Splash = { 0.5, 0.05, "Effects" },
@@ -65,7 +65,7 @@ local FALLBACK = {
 
 -- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
 -- Alex, Oct 30: "make the earned sounds just quick, nothing long". So rewards stop by 0.7 s at most.
-local CUT = { Shot = 0.4, Launch = 1, LaunchBoom = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.4, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
+local CUT = { Launch = 1.1, LaunchBoom = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.35, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
 
 -- slots that use another slot's sound until they have their own
 local BORROW = { Unlock = "Reward" }
@@ -123,12 +123,12 @@ local function build(name)
 		end
 		id, volume, pitch = fb[1], level[1] * fb[2], fb[3]
 	end
-	local pool = { sounds = {}, next = 1, pitch = pitch, spread = level[2], volume = math.min(volume, 1) }
+	local pool = { sounds = {}, next = 1, pitch = pitch, spread = level[2], volume = math.min(volume, 3) }
 	for i = 1, POOL do
 		local s = Instance.new("Sound")
 		s.Name = name .. i
 		s.SoundId = id
-		s.Volume = math.min(volume, 1)
+		s.Volume = math.min(volume, 3)
 		s.PlaybackSpeed = pitch
 		s.SoundGroup = groups[level[3]]
 		s.Parent = folder

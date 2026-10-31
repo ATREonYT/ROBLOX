@@ -51,7 +51,7 @@ local floorY = 8.45
 local newMap = workspace:FindFirstChild(Config.Map.Root)
 local floorParams = RaycastParams.new()
 floorParams.FilterType = Enum.RaycastFilterType.Include
-floorParams.FilterDescendantsInstances = { newMap or workspace.map1b }
+floorParams.FilterDescendantsInstances = { newMap or workspace.map1b, workspace:FindFirstChild("LobbyWalkways") }
 local function floorAt(x, z)
 	local hit = workspace:Raycast(Vector3.new(x, 200, z), Vector3.new(0, -400, 0), floorParams)
 	return hit and hit.Position.Y or floorY
@@ -63,14 +63,24 @@ local EGG_COLORS = {
 	Ocean = Color3.fromRGB(60, 160, 255),
 }
 local EGGS = { "Starter", "Woodland", "Nature", "Ocean" } -- the exclusive egg goes 5th
-local NEW_SPOTS = { Starter = Vector2.new(-87.74, 12.94), Woodland = Vector2.new(-95.13, 8.87), Nature = Vector2.new(-95.42, 0.64), Ocean = Vector2.new(-88.88, -4.75) }
+-- new map: a row on the grass along the south side of the west plank path, facing it, so walking the
+-- path opens each egg's menu (Alex, Oct 31; the path is BuildLobbyWalkways'). In the map file's units:
+-- Starter's spot and the step. Oct 31, later: "the player doesnt have to walk so long to buy an egg", so the
+-- Starter Egg took the spot nearest the spawn and the row closed up (8 to 6 file units, 12 studs at 2x); the
+-- spot kept free for a Robux pet or egg (Alex decides) is now the one past the Ocean Egg.
+-- Oct 31, evening (Alex: "make the lobby way better"; the tutorial still walked 20-30 s): the row moved to the
+-- grass south of the dock path, between the spawn plaza and the cannonball stand, so the spawn, the eggs, the
+-- stand and the launch are all a few seconds apart. World: Starter at (-86, 22), then every 12 studs west.
+local ROW_START, ROW_STEP = Vector2.new(-43, 11), Vector2.new(-6, 0)
+local function eggSpot(i) -- i = #EGGS + 1 is the free Robux spot
+	return ROW_START + ROW_STEP * (i - 1)
+end
 for i, id in ipairs(EGGS) do
 	local egg = Config.GetEgg(id)
 	local pos = Vector3.new(-34 - (#EGGS - i) * 16, floorY, -108)
 	if newMap then
-		-- new map: where Alex put them by hand (Oct 30), a curve on the west side of the plaza. In the
-		-- map file's units, so they move out with the map when Config.Map.Scale makes it bigger.
-		local spot = NEW_SPOTS[id]
+		-- new map: in the row (eggSpot above); Config.Map.At moves it out with the map
+		local spot = eggSpot(i)
 		local p = Config.Map.At(spot.X, 0, spot.Y)
 		pos = Vector3.new(p.X, floorAt(p.X, p.Z), p.Z)
 	end
@@ -111,7 +121,8 @@ for i, id in ipairs(EGGS) do
 	-- no PointLight: it washed the eggs out (Alex, Oct 30)
 	local board = Instance.new("BillboardGui")
 	board.Size = UDim2.fromScale(7, 2.6) -- sized in studs, so neighbouring signs never overlap from afar
-	board.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
+	-- every other label sits higher, so the row's labels don't overlap when seen from the spawn (Oct 31)
+	board.StudsOffsetWorldSpace = Vector3.new(0, (newMap and i % 2 == 0) and 9 or 6, 0)
 	board.LightInfluence = 0
 	board.MaxDistance = 120
 	board.Adornee = base
@@ -183,7 +194,7 @@ local HEIGHT, WIDTH = 46, 104
 local props = { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false }
 local function addBorder(areaName, color, x, z)
 	local pos = Vector3.new(x, WATER_Y + HEIGHT / 2, z)
-	local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = color, Material = Enum.Material.SmoothPlastic, Transparency = 0.35 })
+	local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = color, Material = Enum.Material.SmoothPlastic, Transparency = 0.35 }) -- shown only while you fly (Effects.showBorders); Studio's edit view always shows them
 	for k, v in pairs(props) do
 		b[k] = v
 	end

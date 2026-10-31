@@ -13,6 +13,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local PolicyService = game:GetService("PolicyService")
 
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local IS_STUDIO = RunService:IsStudio()
@@ -194,6 +195,7 @@ local GREEN = Color3.fromRGB(120, 255, 140)
 -- Currency + stats helpers
 ---------------------------------------------------------------------------
 local addPet -- defined in pets section
+local paidRandomRestricted -- defined next to onPlayerAdded
 
 local function addCash(player, amount)
 	local profile = profiles[player]
@@ -272,7 +274,7 @@ local function applyWalkSpeed(player)
 	local profile = profiles[player]
 	local _, hum = getRoot(player)
 	if profile and hum then
-		hum.WalkSpeed = 16 + Config.Level(profile.Data, "Speed")
+		hum.WalkSpeed = (Config.BASE_WALK_SPEED or 16) + Config.Level(profile.Data, "Speed")
 	end
 end
 
@@ -328,7 +330,7 @@ local function startTraining(player, station)
 			if pass.Id > 0 then
 				MarketplaceService:PromptGamePassPurchase(player, pass.Id)
 			else
-				notify(player, "The " .. info.Name .. " needs the " .. pass.Name .. " gamepass!", GOLD)
+				notify(player, "Get the " .. pass.Name .. " gamepass to train here!", GOLD)
 			end
 			return
 		end
@@ -413,7 +415,7 @@ end)()
 -- front, every client plays the ball (the owner's camera follows it), and
 -- the reward lands when the ball stops.
 local function cashFor(player, profile, distance)
-	local cash = distance * Config.CASH_PER_STUD * Config.CashMultiplier(profile.Data)
+	local cash = distance / Config.Map.Stretch * Config.CASH_PER_STUD * Config.CashMultiplier(profile.Data)
 	if hasPass(player, "DoubleCash") then
 		cash *= 2
 	end
@@ -628,8 +630,26 @@ function addPet(player, petKey)
 	return pet
 end
 
-local function rollPet(player, egg)
+local function rollPet(player, egg, forceOrder)
 	local profile = profiles[player]
+	-- pity: the guaranteed hatch rolls only among the goal tier and up, at base odds
+	if forceOrder then
+		local pool, sum = {}, 0
+		for _, entry in ipairs(egg.Pets) do
+			if Config.Rarities[Config.Pets[entry[1]].Rarity].Order >= forceOrder then
+				table.insert(pool, entry)
+				sum += entry[2]
+			end
+		end
+		local r = math.random() * sum
+		for _, entry in ipairs(pool) do
+			r -= entry[2]
+			if r <= 0 then
+				return entry[1]
+			end
+		end
+		return pool[#pool][1]
+	end
 	local luck = Config.LuckMultiplier(profile.Data)
 	if hasPass(player, "Lucky") then
 		luck *= 2
@@ -670,14 +690,31 @@ local function hatch(player, egg, count, paid)
 		data[currency] -= cost
 	end
 	local results = {}
+	local goal, pityN = Config.PityInfo(egg)
+	local best = 1
 	for _ = 1, count do
-		local key = rollPet(player, egg)
+		local streak = data.Pity[egg.Id] or 0
+		local key = rollPet(player, egg, streak + 1 >= pityN and goal or nil)
+		local order = Config.Rarities[Config.Pets[key].Rarity].Order
+		data.Pity[egg.Id] = order >= goal and 0 or streak + 1
+		best = math.max(best, order)
 		addPet(player, key)
 		table.insert(results, key)
 	end
 	data.Stats.Hatches += count
 	markDirty(player)
 	Hatched:FireClient(player, egg.Id, results)
+	-- the whole server hears about a Mythic or Secret (the client queues it like any toast)
+	if best >= Config.Rarities.Mythic.Order then
+		for _, key in ipairs(results) do
+			local info = Config.Pets[key]
+			local rarity = Config.Rarities[info.Rarity]
+			if rarity.Order == best then
+				Notify:FireAllClients(player.DisplayName .. " hatched a " .. string.upper(info.Rarity) .. " " .. info.Name .. "!", rarity.Order >= 7 and Color3.fromRGB(255, 230, 90) or rarity.Color)
+				break
+			end
+		end
+	end
 	return true
 end
 
@@ -1115,6 +1152,9 @@ local function purchase(player, kind, key)
 	if not item then
 		return false
 	end
+	if kind == "Product" and item.Grant and item.Grant.Egg and paidRandomRestricted(player) then
+		return false, "This egg isn't available in your region."
+	end
 	if kind == "Pass" and hasPass(player, key) then
 		return false, "You already own this!"
 	end
@@ -1143,6 +1183,35 @@ local function purchase(player, kind, key)
 	end
 	return false, "Coming soon!"
 end
+
+-- Buy boards in the world (BuildWorld1's "2x POWER" board by the training lanes, Oct 31): a ProximityPrompt
+-- on a part with a BuyPass or BuyProduct attribute opens the same purchase as the Shop.
+local function hookBuyBoard(prompt)
+	local board = prompt.Parent
+	if not (board and board:IsA("BasePart")) then
+		return
+	end
+	local pass, product = board:GetAttribute("BuyPass"), board:GetAttribute("BuyProduct")
+	if not (pass or product) then
+		return
+	end
+	prompt.Triggered:Connect(function(player)
+		local ok, message = purchase(player, pass and "Pass" or "Product", pass or product)
+		if not ok and message then
+			notify(player, message, GOLD)
+		end
+	end)
+end
+for _, d in ipairs(workspace:GetDescendants()) do
+	if d:IsA("ProximityPrompt") then
+		hookBuyBoard(d)
+	end
+end
+workspace.DescendantAdded:Connect(function(d)
+	if d:IsA("ProximityPrompt") then
+		hookBuyBoard(d)
+	end
+end)
 
 ---------------------------------------------------------------------------
 -- Cash orbs around the lobby
@@ -1305,6 +1374,9 @@ local actions = {
 		if not egg or egg.Currency == "Robux" then
 			return false
 		end
+		if Config.IsPaidEgg(egg) and paidRandomRestricted(player) then
+			return false, "This egg isn't available in your region."
+		end
 		-- 8x Open also covers 3x. Asking for more than you own hatches nothing
 		-- (rather than quietly hatching 1), e.g. while a pass is still loading
 		if count == 8 then
@@ -1427,7 +1499,18 @@ task.spawn(function()
 	end
 end)
 
+-- Paid random items (Robux and Gems eggs) are off where Roblox's policy restricts
+-- them. Fail closed: restricted until the check answers "not restricted".
+function paidRandomRestricted(player)
+	return player:GetAttribute("PaidRandomRestricted") ~= false
+end
+local function checkPolicy(player)
+	local ok, info = pcall(PolicyService.GetPolicyInfoForPlayerAsync, PolicyService, player)
+	player:SetAttribute("PaidRandomRestricted", not (ok and info and info.ArePaidRandomItemsRestricted == false))
+end
+
 local function onPlayerAdded(player)
+	task.spawn(checkPolicy, player)
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
 	for _, name in ipairs({ "Power", "Rebirths", "Cash" }) do

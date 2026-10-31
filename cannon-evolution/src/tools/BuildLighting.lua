@@ -1,6 +1,8 @@
--- Stone Skipping style lighting: a warm late-afternoon sun, orange haze on the
--- horizon, punchy colours and a soft glow on neon. Paste into the Command Bar.
--- The old Sky objects move to ServerStorage.OldLighting so nothing is lost.
+-- Bright cartoony lighting for the island map (Alex, Oct 31: "there is alot of shadows, remove them and add
+-- cartoony lighting"): a high early-afternoon sun, no cast shadows, a bright warm ambient so every side of a
+-- part is lit, punchy colours and a soft glow on neon. Phones at low quality show no shadows anyway
+-- (Sector Brief - Worlds, Lighting and Performance), so the map is built to read without them.
+-- Paste into the Command Bar. The old Sky objects move to ServerStorage.OldLighting so nothing is lost.
 local Lighting = game:GetService("Lighting")
 local SS = game:GetService("ServerStorage")
 
@@ -28,18 +30,18 @@ for _, s in ipairs(Lighting:GetChildren()) do
 	end
 end
 
-Lighting.ClockTime = 16.9
-Lighting.GeographicLatitude = 20
-Lighting.Brightness = 2.6
+Lighting.ClockTime = 14.2 -- a high sun: the sunny side and the shade side of a part differ only a little
+Lighting.GeographicLatitude = 25
+Lighting.Brightness = 2.5
 Lighting.ExposureCompensation = 0
-Lighting.Ambient = Color3.fromRGB(125, 100, 115)
-Lighting.OutdoorAmbient = Color3.fromRGB(160, 125, 110)
-Lighting.ColorShift_Top = Color3.fromRGB(255, 185, 120)
-Lighting.ColorShift_Bottom = Color3.fromRGB(120, 80, 140)
-Lighting.EnvironmentDiffuseScale = 0.6
-Lighting.EnvironmentSpecularScale = 0.4
-Lighting.GlobalShadows = true
-Lighting.ShadowSoftness = 0.35
+Lighting.Ambient = Color3.fromRGB(160, 150, 165)
+Lighting.OutdoorAmbient = Color3.fromRGB(180, 172, 170) -- bright: the side away from the sun stays colourful
+Lighting.ColorShift_Top = Color3.fromRGB(255, 225, 190)
+Lighting.ColorShift_Bottom = Color3.fromRGB(140, 120, 160)
+Lighting.EnvironmentDiffuseScale = 1
+Lighting.EnvironmentSpecularScale = 0.3
+Lighting.GlobalShadows = false -- no cast shadows (Alex, Oct 31)
+Lighting.ShadowSoftness = 1
 pcall(function()
 	Lighting.LightingStyle = Enum.LightingStyle.Soft
 	Lighting.PrioritizeLightingQuality = true
@@ -52,23 +54,23 @@ sky.MoonAngularSize = 0
 sky.StarCount = 0
 
 local atmo = get("Atmosphere", "Atmosphere")
-atmo.Density = 0.36
-atmo.Offset = 0.2
-atmo.Color = Color3.fromRGB(255, 160, 100)
-atmo.Decay = Color3.fromRGB(255, 110, 160)
+atmo.Density = 0.24
+atmo.Offset = 0.25
+atmo.Color = Color3.fromRGB(255, 225, 190) -- a light warm haze, not the old sunset orange
+atmo.Decay = Color3.fromRGB(150, 200, 255)
 atmo.Glare = 0
-atmo.Haze = 0.5
+atmo.Haze = 0.05 -- Oct 31: the haze turned the mountains grey; Stone Skipping's air is clear and bright
 
 local cc = get("ColorCorrectionEffect", "Warmth")
-cc.Saturation = 0.3
-cc.Contrast = 0.1
+cc.Saturation = 0.32 -- Oct 31: "fuller and brighter", like Stone Skipping's punchy colours
+cc.Contrast = 0.08
 cc.Brightness = 0
-cc.TintColor = Color3.fromRGB(255, 244, 228)
+cc.TintColor = Color3.fromRGB(255, 250, 240)
 
 -- neon stays bright but no glow spills round it, and the haze no longer washes out the eggs (Alex, Oct 30)
 local bloom = get("BloomEffect", "Bloom")
 -- a little more bloom so the booths' neon glows like Alex's booth pictures; the threshold keeps it on neon only
-bloom.Intensity = 0.15
+bloom.Intensity = 0.3 -- Oct 31: the lanterns, fires and neon glow a little more; the threshold keeps sand and white parts clean
 bloom.Size = 8
 bloom.Threshold = 1.6
 
@@ -81,4 +83,4 @@ if dof then
 	dof.Enabled = false
 end
 
-print("[Lighting] Stone Skipping style lighting applied")
+print("[Lighting] bright cartoony lighting applied (no cast shadows)")

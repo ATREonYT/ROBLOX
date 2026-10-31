@@ -4,6 +4,7 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
 return function(ctx)
 	local Kit, Config, State = ctx.Kit, ctx.Config, ctx.State
@@ -90,6 +91,12 @@ return function(ctx)
 		end
 
 		-- buy buttons, bottom right (x10 rainbow, x3 yellow, x1 green)
+		-- pity counter (house rule for paid random items; every egg gets one)
+		local _, pityN, goalName = Config.PityInfo(egg)
+		local left = math.max(1, pityN - ((State.Data.Pity or {})[egg.Id] or 0))
+		Kit.text({ Text = goalName .. " or better guaranteed in " .. left .. (left == 1 and " hatch" or " hatches"), Size = 22, StrokeSize = 3, Color = Color3.fromRGB(200, 255, 200), AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.6, 0, 0, 26), Position = UDim2.new(0.38, 2, 1, -126), ZIndex = 30, Parent = show })
+
+		local restricted = Config.IsPaidEgg(egg) and Players.LocalPlayer:GetAttribute("PaidRandomRestricted") ~= false
 		local buttons = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -22), Size = UDim2.new(0.6, 0, 0, 66), ZIndex = 28, Parent = show })
 		Kit.list(buttons, 14, true, Enum.HorizontalAlignment.Right)
 		local function eggButton(order, label, priceText, color, icon, onClick, rainbow)
@@ -101,7 +108,10 @@ return function(ctx)
 			end
 			return b
 		end
-		if egg.Currency == "Robux" then
+		if restricted then
+			-- Roblox's policy keeps paid random items off for this player (or the check hasn't answered yet)
+			Kit.text({ Text = "Not available in your region", Size = 26, StrokeSize = 3, AlignX = Enum.TextXAlignment.Right, FrameSize = UDim2.new(1, 0, 1, 0), ZIndex = 30, Parent = buttons })
+		elseif egg.Currency == "Robux" then
 			eggButton(1, "x1", Config.Products[egg.Products[1]].Price, "Green", "Robux", function()
 				ctx.Request("Purchase", "Product", egg.Products[1])
 			end)
@@ -270,7 +280,9 @@ return function(ctx)
 			end
 			if current == "Eggs" then
 				-- swap "Unlock" for the price once a hatch gamepass is bought
-				local passKey = tostring(State.Passes.TripleOpen) .. tostring(State.Passes.OctoOpen)
+				-- (and update the pity counter and the region check)
+				local pity = State.Data.Pity and State.Data.Pity[selectedEgg] or 0
+				local passKey = tostring(State.Passes.TripleOpen) .. tostring(State.Passes.OctoOpen) .. pity .. tostring(Players.LocalPlayer:GetAttribute("PaidRandomRestricted"))
 				if passKey ~= lastPassKey then
 					lastPassKey = passKey
 					buildEggs()

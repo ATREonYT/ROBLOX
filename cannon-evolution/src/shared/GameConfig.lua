@@ -53,7 +53,10 @@ Config.Map = {
 	LobbyCenter = Vector3.new(-56, 2, 0), -- the sand island inside the palisade
 	LobbySize = Vector3.new(100, 36, 80), -- lobby orbs fall somewhere in 80% of this, on open ground
 	Spawn = Vector3.new(-60, 2.5, 0), -- the compass plaza
-	DockEnd = Vector3.new(14, 2.5, 0), -- your cannon stands here, nose over the water
+	-- your cannon stands here, on the dock. It was the dock's far end (14); Oct 31 it moved 20 file units
+	-- (40 studs) up the dock towards the island, so the walk from the lobby is shorter (Alex: "doesnt have to
+	-- walk so long ... to launch the cannon"). The first arc (at least 49 studs) still clears the dock.
+	DockEnd = Vector3.new(-6, 2.5, 0),
 	-- stage name and where it starts along the river (X), from the map; the area walls go here
 	StageStarts = {
 		{ "Meadow Pond", 0 }, { "Mushroom Grove", 100 }, { "Sandy Shore", 233 }, { "Lighthouse Point", 400 },
@@ -63,9 +66,14 @@ Config.Map = {
 	},
 }
 -- The whole map is built Scale times the file's size (Alex, Oct 30: "make the map a bit bigger, it feels
--- small"). The points above are in the file's units, so they are scaled here; the build tools turn their
--- own plan points into the world with Config.Map.At. Characters, booths and the stand keep their size.
-Config.Map.Scale = 1.3
+-- small"; Oct 31: "make the map bigger, its still to miniature", so 1.3 became 2). The points above are in
+-- the file's units, so they are scaled here; the build tools turn their own plan points into the world with
+-- Config.Map.At. Characters, booths and the stand keep their size. Keep Scale at 2 or under: Roblox caps a
+-- MeshPart at 2048 studs, and the river pieces are 1,008 long in the file (tools/map/make_patch.py).
+Config.Map.Scale = 2
+-- Launches were tuned on the 1.3x map. Stretch makes every launch that much longer, so each Power still
+-- reaches the same stage, and cash and rewards divide it back out, so they don't change.
+Config.Map.Stretch = Config.Map.Scale / 1.3
 function Config.Map.At(x, y, z)
 	return Vector3.new(x, y, z) * Config.Map.Scale
 end
@@ -85,12 +93,15 @@ function Config.Map.IsGround(name)
 	return string.find(name, "^Island_") ~= nil or string.find(name, "^Plaza_") ~= nil
 		or string.find(name, "^Path_") ~= nil or string.find(name, "^Dock_") ~= nil
 end
+-- Walk speed before Walk Speed upgrades: Roblox's 16 felt slow once the map grew to 2x (Alex, Oct 31: "the
+-- player doesnt have to walk so long")
+Config.BASE_WALK_SPEED = 20
 Config.LAUNCH_COOLDOWN = 2
 Config.FLIGHT_TIMEOUT = 25
 Config.SKIP_FIRST_HOP = 0.2 -- first arc out of the cannon, as a share of the whole distance
 Config.SKIP_DECAY = 0.86 -- each skip is this much shorter than the last
 Config.RETURN_DELAY = 1 -- seconds on the landing before you're home; Stone Skipping's next throw is ~1 s after
-Config.MIN_LAUNCH_DISTANCE = 160 -- the first arc clears the lobby into the water
+Config.MIN_LAUNCH_DISTANCE = 160 * Config.Map.Stretch -- the first arc clears the lobby into the water
 -- Rare shots (vault "Beat the Hits", our take on Stone Skipping's Secret/Colossus throws): the server
 -- rolls them on every launch, free and never for sale. They multiply that launch's cash, and the
 -- ball flies with its own trail; a Mega Shot is announced to the whole server.
@@ -322,6 +333,43 @@ function Config.GetEgg(id)
 	end
 end
 
+-- Pity (house rule: paid random items show a pity counter; we give every egg one).
+-- The goal is the egg's second-best rarity tier and up; after N hatches without
+-- one, the next hatch is guaranteed to be one. N = about 3x the normal wait.
+-- Returns goalOrder, N, goalName ("Mythic"), goalChance (0..1).
+function Config.PityInfo(egg)
+	local orders, total = {}, 0
+	for _, entry in ipairs(egg.Pets) do
+		local order = Config.Rarities[Config.Pets[entry[1]].Rarity].Order
+		orders[order] = true
+		total += entry[2]
+	end
+	local list = {}
+	for order in pairs(orders) do
+		table.insert(list, order)
+	end
+	table.sort(list)
+	local goal = list[math.max(1, #list - 1)]
+	local chance = 0
+	for _, entry in ipairs(egg.Pets) do
+		if Config.Rarities[Config.Pets[entry[1]].Rarity].Order >= goal then
+			chance += entry[2] / total
+		end
+	end
+	local goalName = "Rare"
+	for name, r in pairs(Config.Rarities) do
+		if r.Order == goal then
+			goalName = name
+		end
+	end
+	return goal, math.max(10, math.ceil(3 / math.max(chance, 0.001))), goalName, chance
+end
+
+-- Eggs bought with Robux or Gems (Gems can be bought) are paid random items
+function Config.IsPaidEgg(egg)
+	return egg.Currency ~= "Cash"
+end
+
 ---------------------------------------------------------------------------
 -- Cannon collection. Equipped cannon multiplies Power per shot.
 -- Model = model name in ReplicatedStorage > Cannons.
@@ -416,7 +464,8 @@ Config.Passes = {
 	OctoOpen    = { Id = 0, Name = "8x Open",     Icon = "TripleOpen",  Price = 799, Desc = "Hatch 8 eggs at once" },
 	AutoCollect = { Id = 0, Name = "Auto Collect", Icon = "AutoCollect", Price = 349, Desc = "Collect orbs from far away", ComingSoon = true }, -- orbs are off, so it gives nothing yet
 	ExtraEquip  = { Id = 0, Name = "+2 Pets",     Icon = "ExtraEquip",  Price = 199, Desc = "Equip 2 more pets" },
-	VIP         = { Id = 0, Name = "VIP",         Icon = "VIP",         Price = 299, Desc = "Dragon Cannon station + 1.5x Gems" },
+	-- the key stays VIP in the code; players never see the word (Alex, Oct 31: "we dont do the VIP thing around here")
+	VIP         = { Id = 0, Name = "Dragon Cannon", Icon = "Cannon",    Price = 299, Desc = "Train at the Dragon Cannon lane (40x Power) + 1.5x Gems" },
 	AutoLaunch  = { Id = 0, Name = "Auto Launch", Icon = "Trophy",      Price = 25,  Desc = "Launch automatically" },
 }
 Config.PassOrder = { "DoublePower", "DoubleCash", "Lucky", "TripleOpen", "OctoOpen", "AutoCollect", "ExtraEquip", "VIP", "AutoLaunch" }
@@ -543,27 +592,33 @@ Config.Sounds = {
 	-- (Pro Sound Effects / APM): a bubble "pop" click, a coin bounce, a dry boom. Found with AssetService:SearchAudio.
 	-- Alex, Oct 30 evening: "make the ui clicking sound more smooth", "the reward sound just quick", "the launching sound
 	-- actually like a launch", "make the training sound better". Library picks until our own (assets/sfx) are uploaded:
-	Click = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s: one short soft tick (the bubble pop had a watery tail)
+	-- Oct 31: from Alex's SFX pack (project files SFX.zip, 99 MB, not in git). Only its licensed-library sounds are used (ProSoundEffects / Roblox):
+	-- they are public and play in any game; measured with huzz-valley/tools/sfx/measure_sfx.py.
+	-- Oct 31, Alex: "make the sound normal, these sound so robotic". So every button and reward sound is now a real
+	-- recorded sound (a real switch click, a real suction pop), never a synth or 8-bit blip, and never pitch-stepped.
+	Click = "rbxassetid://9119720940", -- "Switches Clicks Buttons Various Versions 7 (SFX)", ProSoundEffects: one real button click, 0.27 s
+	-- was "RBLX UI Select 01 (SFX)" 10128760939 (a synth tick)
 	Hover = "", -- silent: a tick on every hover was too much
 	Open = "rbxassetid://15675012262", -- "Roblox_UI_Whoosh_04", 0.35 s
 	Close = "rbxassetid://15675028888", -- "Roblox_UI_Whoosh_02", 0.49 s
 	Confirm = "rbxassetid://9038924756", -- "Happy Forever - Hit3", APMOfficial, ~2 s (Sfx plays its first 0.6 s)
 	Error = "rbxassetid://15675075163", -- "Roblox_UI_Delete", 0.61 s
-	Tab = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s
+	Tab = "rbxassetid://9119720940", -- the same real click as Click, quieter (was "Roblox_UI_Small_Click" 15675032796)
 	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
 	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
 	Hatch = "rbxassetid://9116384799",
 	-- Roblox's free licensed library too (found with Studio's Toolbox search on Oct 30, each loaded in Studio;
 	-- picked by title and length, not yet heard by Alex: swap any one by changing its id):
-	Reward = "rbxassetid://9119516891", -- "Spoon Saucer 19 (SFX)", ProSoundEffects: one quick bright "ting" (Sfx plays 0.4 s); assets/sfx/Reward.ogg (2-note) if uploaded
+	Reward = "rbxassetid://9119668788", -- "Suction Pop 1 (SFX)", ProSoundEffects: a quick real "pop", 0.31 s
+	-- was "Roblox_Pinball_8Bit_Blip_01" 16480580213: Alex found it robotic
 	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
 	Rebirth = "rbxassetid://1840018171",
 	Unlock = "rbxassetid://9116405618", -- "Magic Poofs Short Breathy Bursts Punchy 2 (SFX)", ProSoundEffects
 	Coin = "rbxassetid://9113848469", -- "Coin Bounce 3 (SFX)", ProSoundEffects: Sfx plays only its first 0.35 s
-	Shot = "rbxassetid://9119348667", -- training cannon: "Soccer Header 1 (SFX)", ProSoundEffects, a soft round thump (Sfx plays 0.4 s)
+	Shot = "rbxassetid://9113263647", -- training cannon: "Balloon Pop 4 (SFX)", ProSoundEffects: 0.22 s punchy pop, 430 Hz
 	-- the launch is two sounds at once: the boom, and a low whoosh flying away (assets/sfx/Launch.ogg has both, if uploaded)
-	Launch = "rbxassetid://9120737280", -- "Whoosh Sweep Low End Thumping Repetitive 2 (SFX)", ProSoundEffects
-	LaunchBoom = "rbxassetid://9043341682", -- "DRY BOOM 01", APMOfficial, 1.25 s (Sfx plays 0.8 s); set to "" once Launch.ogg is in
+	Launch = "rbxassetid://9120705982", -- "Whoosh Explosion 1 (SFX)", ProSoundEffects: a boom that whooshes away, 1.15 s, 128 Hz, no hiss
+	LaunchBoom = "", -- not needed: Whoosh Explosion 1 already has the boom ("DRY BOOM 01" = 9043341682 if wanted again)
 	Skip = "rbxassetid://9120589933", -- "Water Splash Splashes Splats Light 5 (SFX)", ProSoundEffects, 0.41 s
 	-- the ball's final landing (Alex, Oct 30: "a big splash sound"); found with Studio's Creator Store search, public and free
 	Splash = "rbxassetid://9120585530", -- "Water Splash Big Water Splash Dive In 3 (SFX)", ProSoundEffects, 2.7 s, Sfx cuts it at 1 s
@@ -590,6 +645,7 @@ Config.DefaultData = {
 	Boosts = {}, -- [boostId] = seconds remaining
 	Products = {}, -- owned product grants that are permanent (cannons), plus receipt ids
 	Stats = { Shots = 0, Launches = 0, Hatches = 0, CashEarned = 0, Rebirths = 0 },
+	Pity = {}, -- [eggId] = hatches since the egg's pity goal tier last came up
 	Missions = { DailyKey = "", WeeklyKey = "", Daily = {}, Weekly = {}, Infinite = {} },
 	Daily = { Streak = 0, LastClaim = 0 },
 	Codes = {},
@@ -668,13 +724,13 @@ end
 
 function Config.MaxRange(power, rangeMult)
 	local v = Config.LaunchSpeed(power, rangeMult)
-	return v * v * math.sin(2 * math.rad(Config.LAUNCH_ANGLE)) / workspace.Gravity
+	return v * v * math.sin(2 * math.rad(Config.LAUNCH_ANGLE)) / workspace.Gravity * Config.Map.Stretch
 end
 
 -- "Cash per minute" used for cash packs and rewards, so they stay useful
 -- at every stage of the game.
 function Config.CashPerMinute(data)
-	local distance = math.max(data.BestDistance, 100)
+	local distance = math.max(data.BestDistance / Config.Map.Stretch, 100)
 	return math.floor(distance * Config.CASH_PER_STUD * Config.CashMultiplier(data) * 10)
 end
 

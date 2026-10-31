@@ -88,7 +88,7 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Modal helper (dark full-screen with a centred card)
 	-----------------------------------------------------------------------
-	local function modal(width, height)
+	local function modal(width, height, dark)
 		local shade = new("TextButton", {
 			Text = "",
 			AutoButtonColor = false,
@@ -98,7 +98,7 @@ return function(ctx)
 			ZIndex = 70,
 			Parent = layer,
 		})
-		Kit.tween(shade, 0.25, { BackgroundTransparency = 0.45 })
+		Kit.tween(shade, 0.25, { BackgroundTransparency = dark or 0.45 })
 		local holder = new("Frame", {
 			BackgroundTransparency = 1,
 			AnchorPoint = Vector2.new(0.5, 0.5),
@@ -173,7 +173,8 @@ return function(ctx)
 	-- Reward popup ("You got...")
 	-----------------------------------------------------------------------
 	local function showRewards(done, list, title)
-		local _, holder, closeModal = modal(640, 360)
+		-- darker behind the prize: an open panel under it made the popup hard to read (play-test, Oct 31)
+		local _, holder, closeModal = modal(640, 360, 0.2)
 		local function close()
 			closeModal()
 			done()
@@ -189,7 +190,7 @@ return function(ctx)
 				local icon = Kit.icon(item.Icon, { Size = UDim2.fromOffset(110, 110), Position = UDim2.fromOffset(75, 70), Anchor = Vector2.new(0.5, 0.5), ZIndex = 74, Parent = cell })
 				Kit.bob(icon, 5, 2.5)
 			end
-			Kit.text({ Text = item.Text, Size = 24, Scaled = true, MaxSize = 26, FrameSize = UDim2.new(1, 20, 0, 40), Position = UDim2.new(0.5, 0, 1, 0), Anchor = Vector2.new(0.5, 1), ZIndex = 75, Parent = cell })
+			Kit.text({ Text = item.Text, Size = 28, Scaled = true, MaxSize = 30, StrokeSize = 3, FrameSize = UDim2.new(1, 20, 0, 40), Position = UDim2.new(0.5, 0, 1, 0), Anchor = Vector2.new(0.5, 1), ZIndex = 75, Parent = cell })
 			-- each prize lands one after another (title first, prizes, then the button: vault "Reward Moments")
 			local cs = Kit.scale(cell)
 			cs.Scale = 0
@@ -295,7 +296,7 @@ return function(ctx)
 		local rows = math.ceil(count / cols)
 		local cellW = count == 1 and 300 or (count <= 3 and 230 or (count <= 8 and 170 or 150))
 		local gap = 14
-		local rowH = cellW + 60
+		local rowH = cellW + 80
 		local width = cols * cellW + (cols - 1) * gap
 		local shade, holder, close = modal(width, rows * rowH + 70)
 		shade.Active = true
@@ -427,18 +428,64 @@ return function(ctx)
 			Kit.tween(c.Body, 0.14, { Size = UDim2.fromScale(0.74, 0.92) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 		end
 		task.wait(0.14)
-		-- one flash only (kid-safe: at most one a second), softer unless it's a big one
-		local flash = new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = best >= Config.Rarities.Legendary.Order and 0 or 0.4, Size = UDim2.fromScale(1, 1), ZIndex = 90, Parent = shade })
-		Kit.tween(flash, 0.45, { BackgroundTransparency = 1 })
-		task.delay(0.45, function()
-			flash:Destroy()
-		end)
+		-- no full-screen flash at any tier (vault R19); the burst is shards, rays and the glow
 		Kit.playSound("Hatch")
 
-		-- 4. pets pop out, one after another
+		-- odds of each pet in this egg, for the honest "1 in N" line
+		local weights, totalWeight = {}, 0
+		for _, entry in ipairs(egg and egg.Pets or {}) do
+			weights[entry[1]] = (weights[entry[1]] or 0) + entry[2]
+			totalWeight += entry[2]
+		end
+		local function oneIn(key)
+			local w = weights[key]
+			if not w or w <= 0 or totalWeight <= 0 then
+				return nil
+			end
+			local n = totalWeight / w
+			if n >= 1000 then
+				return "1 in " .. Config.Format(math.floor(n + 0.5))
+			end
+			return "1 in " .. math.floor(n + 0.5)
+		end
+
+		-- 4. pets pop out one after another; the rarest comes last, on its own
+		local order = {}
+		for i in ipairs(cells) do
+			order[i] = i
+		end
+		local star
+		if count > 1 then
+			star = 1
+			for i, c in ipairs(cells) do
+				if c.Rarity.Order > cells[star].Rarity.Order then
+					star = i
+				end
+			end
+			if cells[star].Rarity.Order < Config.Rarities.Rare.Order then
+				star = nil -- nothing special: plain cascade
+			else
+				table.remove(order, star)
+				table.insert(order, star)
+			end
+		end
+		-- a backed-up queue plays faster (R19: more than 3 waiting = half length)
+		local fast = #bigQueue > 3
+		local STAGGER = fast and 0.04 or 0.08
+		local SOLO_PAUSE = fast and 0.2 or 0.45
+		local delays, lastAt = {}, 0
+		for n, i in ipairs(order) do
+			local at = (n - 1) * STAGGER
+			if star and i == star then
+				at += SOLO_PAUSE
+			end
+			delays[i] = at
+			lastAt = math.max(lastAt, at)
+		end
 		local eggColor = Color3.fromRGB(255, 240, 200)
 		for i, c in ipairs(cells) do
-			task.delay((i - 1) * 0.07, function()
+			local solo = star == i
+			task.delay(delays[i], function()
 				c.Body:Destroy()
 				shards(c.Cell, eggColor, count > 3 and 6 or 10)
 				local rarity, info = c.Rarity, c.Info
@@ -451,7 +498,11 @@ return function(ctx)
 				end
 				-- appears big, springs back (Elastic wobble for the top tiers)
 				local vs = Kit.scale(view)
-				vs.Scale = 1.35
+				vs.Scale = solo and 1.7 or 1.35
+				if solo then
+					Kit.tween(c.Scale, 0.2, { Scale = 1.12 }, Enum.EasingStyle.Back)
+					Kit.playSound("Reward")
+				end
 				Kit.tween(vs, rarity.Order >= 5 and 0.6 or 0.35, { Scale = 1 }, rarity.Order >= 5 and Enum.EasingStyle.Elastic or Enum.EasingStyle.Back)
 				if rarity.Order >= Config.Rarities.Rare.Order then
 					Kit.sparkles(c.Cell, math.min(rarity.Order, 6), rarity.Color:Lerp(Color3.new(1, 1, 1), 0.4))
@@ -464,7 +515,12 @@ return function(ctx)
 				if rarity.Order >= 6 then
 					Kit.rainbowFill(new("UIGradient", { Parent = tag }))
 				end
-				for _, label in ipairs({ name, tag }) do
+				local labels = { name, tag }
+				local odds = rarity.Order >= Config.Rarities.Rare.Order and oneIn(c.Key)
+				if odds then
+					table.insert(labels, Kit.text({ Text = odds, Size = small and 15 or 19, StrokeSize = 2, Color = Color3.fromRGB(230, 230, 240), FrameSize = UDim2.new(1, 16, 0, 20), Position = UDim2.new(0.5, 0, 1, (small and 52 or 66) + 14), Anchor = Vector2.new(0.5, 0), ZIndex = 78, Parent = c.Cell }))
+				end
+				for _, label in ipairs(labels) do
 					local goal = label.Position - UDim2.fromOffset(0, 14)
 					local stroke = label:FindFirstChildOfClass("UIStroke")
 					label.TextTransparency = 1
@@ -479,10 +535,14 @@ return function(ctx)
 		Kit.playSound("Coin")
 
 		-- 5. the big moment: banner + confetti for Legendary and up
-		local hold = count > 3 and 2.2 or 1.8
+		-- how long it stays up grows with the best tier (R19 ladder), halved when the queue is backed up
+		local HOLD = { 1.2, 1.4, 1.8, 2.4, 3.0, 3.8, 4.5 }
+		local hold = (HOLD[math.clamp(best, 1, 7)] or 1.8) + (count > 3 and 0.4 or 0)
+		if fast then
+			hold *= 0.5
+		end
 		if best >= Config.Rarities.Legendary.Order then
-			hold = 3.4
-			task.delay(0.25, function()
+			task.delay(lastAt + 0.25, function()
 				local banner = Kit.text({ Text = RARITY_WORD[math.min(best, 7)], Size = 72, StrokeSize = 5, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 200, 0, 80), Position = UDim2.new(0.5, 0, 0, -40), Anchor = Vector2.new(0.5, 0), ZIndex = 80, Parent = holder })
 				local g = new("UIGradient", { Rotation = 90, Parent = banner })
 				if best >= 6 then
@@ -505,7 +565,7 @@ return function(ctx)
 		end
 
 		-- 6. settle: tap to skip once everything is out, otherwise close on its own
-		local revealedAt = os.clock() + count * 0.07 + 0.35
+		local revealedAt = os.clock() + lastAt + 0.35
 		local hint = Kit.text({ Text = "Tap to continue", Size = 22, Stroke = false, Color = Color3.fromRGB(220, 220, 230), FrameSize = UDim2.new(1, 0, 0, 26), Position = UDim2.new(0.5, 0, 1, 34), Anchor = Vector2.new(0.5, 0), ZIndex = 78, Parent = holder })
 		hint.TextTransparency = 1
 		task.delay(revealedAt - os.clock() + 0.3, function()
