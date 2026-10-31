@@ -13,6 +13,22 @@ Back to [[00 Build Router]] · Why and what to copy: [[17 Do It Like the Hits - 
 3. Use the kit modules where a recipe names them (`AnimeFX`, `LaunchFX`, `RareReveal`, `Spring`, `Emit`, `Flags`).
 4. Check the result on a 30 fps capture next to the reference.
 
+**Recipes the kit already does** (call the function instead of rebuilding it). The numbers are locked by `tests/VaultNumbers.spec.luau`, so the code and this book can't drift apart without a red check:
+
+| Recipe | Kit call | Test |
+|---|---|---|
+| R1 catch-up hit-stop | `AnimeFX.StopFor(strength)`, `AnimeFX.HitStop(track, d)` | VaultNumbers |
+| R3 trauma shake | `LaunchFX.Trauma.new(decay, maxDeg)`, `AnimeFX.Shake` | LaunchFX |
+| R4–R5 charge and cannon shot | `LaunchFX.Charge(model)` → `:Fire({ tier, color, direction })`, `LaunchFX.Flight(ball)` | LaunchFX, VaultNumbers |
+| R6 landing with rings | `LaunchFX.Land(pos, color, tier)` | LaunchFX |
+| R7 shockwave and crater | `AnimeFX.Shockwave`, `AnimeFX.Crater` | not yet (needs Studio) |
+| R9–R10 aura and power-up | `AnimeFX.Aura(character, { color, tier })` | not yet (needs Studio) |
+| R13, R19 rare reveal and its time budget | `RareReveal.Play(tier, opts, onDone)` | RareReveal, VaultNumbers |
+| R23 UI pop | `Spring.Run(Spring.fromPreset(0, "Pop"), apply)` | Spring, VaultNumbers |
+| R25 juice governor | `Emit.Scale`, `Emit.InRange`, `Emit.TryFlash`, `Emit.MotionScale` | Emit |
+
+Every other recipe is built by hand from its steps. When one is built twice, move it into the kit with a test.
+
 **How sure we are:**
 - `[source]` / `[cited]` numbers come from LihFolk notes, the tutorial videos or the web. Most LihFolk combat numbers were measured in one live action game, not a kids' game.
 - `[suggested]` / `[estimated]` numbers are ours.

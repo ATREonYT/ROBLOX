@@ -12,7 +12,30 @@ Back to [[00 Build Router]] · Studio practice: [[18 Studio-Level Development Pl
 **How to use it:**
 - Before designing a game, read §1 and the matching genre blueprint in §2.
 - When numbers look bad, use the symptoms table in §3.
+- To see which rules are already proved by the kit's checks, see §0.
 - Each line names the LihFolk note to open for depth.
+
+## 0. Scorecard: what our checks already prove, and what needs eyes
+Added Oct 31 (second pass). Run `sh tools/check.sh` in the game folder; it is also run on every GitHub push. A rule in the left table can't silently break. A rule in the right table needs a person or a playtest.
+
+| Proved by a check on every push | Check | Kit result today |
+|---|---|---|
+| Rule 3: a small reward fast, a big one soon | `tools/pace.luau` (a bot plays the real config) | first payoff 1 s, first buy 20 s, first hatch 37 s |
+| §2.1: first rebirth by about 90 s, then a steady ladder | `tools/pace.luau` | rebirths at 106 / 262 / 485 / 953 s against 90 / 240 / 480 / 840 s; each inside the 30% band. **Rebirth 1 is 16 s slower than the blueprint; trim its price if a game needs the 90 s beat.** |
+| Rule 13: rebirth keeps what it should | `tools/sim.luau` | keeps the Income upgrade, resets coins and walk speed, raises the multiplier (pets kept is not yet checked) |
+| Paid random items show odds that add up | `tools/sim.luau` | odds add up to 100%; paid eggs refused where Roblox's policy restricts them |
+| Purchases granted once, only after the save | `tools/sim.luau` | redelivered receipts and failed saves are handled |
+| Progress survives leaving, two servers and old saves | `tools/sim.luau` | session lock, save on leave, offline earnings, `save_v1.json` |
+| Cheating by bad input gets nothing | `tools/sim.luau` "Bad input" | 17 kinds of bad input at every remote |
+| No fake pressure, no made-up ids, flashes at most once a second | `tools/kidsafe_check.py` and `tests/VaultNumbers.spec.luau` | pass |
+
+| Needs eyes or a playtest | How to judge it |
+|---|---|
+| Rules 1, 2, 4, 5: control in 10 s, the verb is obvious, failure teaches, one short objective | Watch a new player's first minute on a 30 fps capture. Time join → first control. |
+| Rules 7–10: the verb feels good alone, the session arc, the exit hook | The feel test in note 06 §9 |
+| Discovery (thumbnail, icon, title) | Creator Hub numbers after launch: quit within 60 s, and 1–3 min sessions, count against you since June 15, 2026 |
+| Look and motion match the reference | One side-by-side per change (repo CLAUDE.md rule 2) |
+| Real purchase prompts and the odds on screen | Alex in Studio, on the owner checklist |
 
 ## 1. What every great Roblox game does (44 rules)
 

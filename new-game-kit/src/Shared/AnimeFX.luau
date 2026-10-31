@@ -58,7 +58,7 @@ local function emitter(parent: Instance, name: string, props: { [string]: any })
 	return e
 end
 
-local WHITE = Color3.new(1, 1, 1)
+local WHITE = ((Color3 :: any) and Color3.new(1, 1, 1)) :: Color3 -- (nil in the offline test mock)
 
 -- Player settings (kit Settings module publishes Setting_<key> attributes). Missing = on.
 local function isClient(): boolean

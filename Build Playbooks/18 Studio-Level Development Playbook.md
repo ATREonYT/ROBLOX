@@ -24,6 +24,14 @@ Back to [[00 Build Router]] · Whole-game craft: [[20 Whole-Game Field Guide]] �
 | Unit specs, offline play-through, pacing bot, kid-safe scan | `tools/check.sh` |
 | **New Oct 31:** checks run automatically on every GitHub push | `.github/workflows/checks.yml` |
 | **New Oct 31:** kill switches | `Shared/Flags.luau` |
+| **New Oct 31 (2nd pass):** errors grouped into one line per bug, client errors collected, failed save loads counted | `Server/ErrorLog.luau` |
+| **New Oct 31 (2nd pass):** bad input thrown at every remote (17 kinds × every remote) | `tools/sim.luau`, "Bad input" |
+| **New Oct 31 (2nd pass):** real old saves must still load, with gems and rebirths kept | `tests/fixtures/save_v1.json` + `tools/sim.luau` |
+| **New Oct 31 (2nd pass):** the timings in notes 16, 17 and 19 are checked against the kit's code | `tests/VaultNumbers.spec.luau` |
+
+**Each new check was proved to bite** (a check that never fails proves nothing):
+- the bad-input test failed when we planted a crash in the codes remote;
+- the old-save test failed when we added a migration that wiped gems (205 → 0).
 
 ## 1. Architecture
 - **One server entry and one client entry; everything else is a ModuleScript.**
@@ -52,7 +60,7 @@ Back to [[00 Build Router]] · Whole-game craft: [[20 Whole-Game Field Guide]] �
   1. a way to restore one player's save;
   2. a snapshot before any release that changes the save format (owner step);
   3. save-health numbers in production: failed loads, locked loads, and the time a save takes.
-- **Migration test saves:** keep one saved JSON per old save version in `tests/fixtures/`, and run each through the migrations in a spec.
+- **Migration test saves (built):** `tests/fixtures/save_v<N>.json` is a real save from a played session. The play-through loads every one on today's build and checks gems and rebirths survive. See §11 A for the steps when the save format changes.
 - **Limits:**
   - DataStore limits are per experience and shared with Open Cloud since July 29, 2026.
   - Storage is 500 MB plus 1 MB per lifetime player.
@@ -124,11 +132,11 @@ Back to [[00 Build Router]] · Whole-game craft: [[20 Whole-Game Field Guide]] �
    5. publish;
    6. tag the release in git;
    7. read the Error Report filtered to "new since version" the next day.
-4. **Error logging (next to build):**
-   - catch server errors with `ScriptContext.Error`;
-   - take client errors through a rate-limited remote;
-   - strip numbers from messages so one bug is one row (Roblox's Error Report tracks only 500 unique errors);
-   - count save results.
+4. **Error logging (built: `Server/ErrorLog.luau`):**
+   - server errors come from `ScriptContext.Error`; client errors come through one rate-limited remote (each new kind once, at most 20 per player per session);
+   - numbers, ids and player names are stripped, so one bug is one row with a count and a number of players (Roblox's Error Report tracks only 500 unique errors);
+   - failed save loads are counted by reason (`SaveLoadFailed:locked`, `:newer`, `:corrupt`);
+   - Output gets one `[ErrorLog]` line per kind of error per minute, never a flood. To see the top 10, see §11 C.
 5. **Live config:** Roblox's Configs (ConfigService) lets Alex change values from the Creator Hub without publishing. It takes about 15 s to 1 min, and keeps a history with one-click restore. Check the exact calls in the docs before using it.
 6. **Updates:** restarting servers from the dashboard already moves players to updated servers. Only build a custom soft shutdown if you need to control where players land.
 7. **Funnels:** AnalyticsService funnels are logged on the server, up to 10, for steps such as join, first tap, first purchase, first rebirth.
@@ -141,18 +149,19 @@ Back to [[00 Build Router]] · Whole-game craft: [[20 Whole-Game Field Guide]] �
   - caps on how often tap and action remotes can fire (silently drop extra calls; never kick);
   - suspicion scores from several signals before taking any action.
 - **Make the macro pointless:** offer auto-tap (or hold-to-repeat) as a feature, so autoclickers give no edge.
-- **Next:** a spec that throws bad input at every remote, plus a check in the play-through that coins and pets always add up, including with slow or failing saves.
+- **Built:** the play-through throws 17 kinds of bad input at every remote: NaN, infinity, negative, huge, fractions, `"__index"`, empty and 100 kB strings, broken text, empty and 40-deep tables, wrong types, and 9 extra arguments. Each remote must answer with a proper result, never crash, and move no coins, gems, upgrades, rebirths or settings.
+- **Still to do:** the same coins-and-pets check while saves are slow or failing.
 
 ## 9. Ranked to-do for the kit
 | # | Adopt | Effort | Status |
 |---|---|---|---|
 | 1 | Checks on every GitHub push | S | ✓ done Oct 31 |
 | 2 | Kill switches (`Flags`) | S | ✓ done Oct 31 (ConfigService feed not yet) |
-| 3 | Error logging module | M | to do |
+| 3 | Error logging module | M | ✓ done Oct 31 (`ErrorLog`) |
 | 4 | Release checklist and a TEST experience | S | checklist here; Alex creates the experience |
-| 5 | Migration test saves | S | to do |
-| 6 | selene, StyLua, luau-lsp in CI | M | to do |
-| 7 | Bad-input spec for every remote, plus the coins-and-pets check | M | to do |
+| 5 | Migration test saves | S | ✓ done Oct 31 |
+| 6 | selene, StyLua, luau-lsp in CI | M | to do (needs their Roblox type files pinned) |
+| 7 | Bad-input test for every remote, plus the coins-and-pets check | M | bad input ✓ done Oct 31; slow-save check to do |
 | 8 | Map check and Studio settings report | M | to do |
 | 9 | Split `KitClient`, effect budgets, debug overlay | M | to do |
 
@@ -163,3 +172,53 @@ These are steps cloud sessions can't do:
 - Read the Error Report after each publish.
 - Set the Workspace streaming properties.
 - Create Open Cloud API keys (only if we later want tests or publishing run from GitHub).
+
+## 11. Worked examples (copy these)
+
+### A. Changing the save format without losing anyone's progress
+Example: Coins become "Gold".
+1. **Before touching code**, keep a save from today's build: `SAVE_FIXTURE=1 lune run tools/sim.luau` (from the game folder). It writes `tests/fixtures/save_v1.json`. Commit it.
+2. In `GameConfig.luau`, set `schemaVersion = 2` and add the step:
+   ```lua
+   migrations = {
+       [2] = function(data)
+           local b = data.Currency.Balances
+           b.Gold = (b.Gold or 0) + (b.Coins or 0)
+           b.Coins = nil
+       end,
+   },
+   ```
+3. Run `sh tools/check.sh`. The play-through loads `save_v1.json` on the new build. If a step loses gems or rebirths, it fails and names the file.
+4. Never edit or delete an old fixture. Each save version keeps its own file forever, because some player will come back after a year.
+5. Owner step: take a save snapshot in the Creator Hub before publishing.
+
+**Rules for a migration step:** it only adds or moves fields; it never errors on a field that is missing (`or 0`); it never reads the clock or other players. A step that errors makes that player's load fail, and the save is left untouched. That is safe, but they can't play until it is fixed.
+
+### B. Turning a feature off in a live game
+1. The feature is already wrapped: `if Flags.On("RareReveal") then ... end`.
+2. Owner, in a live server: press F9 to open the Developer Console, open the **Server** side, and type in its command line (owner only; check where it sits in today's console):
+   `game.ReplicatedStorage:SetAttribute("Flag_RareReveal", false)`
+3. That server stops the feature at once. Other servers keep it until they restart, so for every server, change `Config.Flags.RareReveal = false` and publish (or use ConfigService later).
+
+### C. Reading errors the day after a publish
+1. In a live server, open F9 → Server, and type `require(game.ServerScriptService.Kit.ErrorLog).Print()`.
+2. It prints the top 10 kinds of error with counts and how many players hit each one, then the save-health counts.
+3. Fix the top one first. A `SaveLoadFailed:newer` count above 0 means an old server is still running next to a new build: restart old servers from the dashboard.
+4. The Creator Hub's Error Report shows the same server errors over days, but not client errors grouped by player. Use both.
+
+### D. Adding a new remote the studio way
+```lua
+Net.Handle("Pets.Rename", {
+    rate = { burst = 3, perSecond = 0.5 },             -- 1. a rate limit (required)
+    args = { T.guid, T.string(20, "^[%w ]+$") },      -- 2. one validator per argument
+    handler = function(player, uid, name)
+        local pet = Inventory.GetUnique(player, uid)  -- 3. does this player own it?
+        if not pet then return Net.fail("NotOwned") end
+        Inventory.SetName(player, uid, name)          -- 4. write through the owning module at once
+                                                      --    (SetName is an example: Inventory has no rename yet)
+        return Net.ok()
+    end,
+})
+```
+Then run `sh tools/check.sh`. The bad-input test finds the new remote by itself and throws all 17 kinds of bad input at it. Names that players type also need Roblox's text filter before other players see them; see the code brief.
+

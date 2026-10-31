@@ -194,6 +194,114 @@ check("paid egg refused where paid random items are restricted", not r.ok and r.
 r = A.call(q, "Eggs.Hatch", "Basic", 1)
 check("free egg still works for that player", r.ok, r.code)
 
+-- Error groups (vault note 18 §7.4) -----------------------------------------
+local ErrorLog = A.mod("ErrorLog")
+A.clock.offset += 120
+A.fire(q, "ErrorLog.Client", "Hud:118: attempt to index nil with 'Price' (pet 3)", "Players.Restricted.PlayerGui.KitHUD")
+A.clock.offset += 120
+A.fire(q, "ErrorLog.Client", "Hud:118: attempt to index nil with 'Price' (pet 41)", "Players.Restricted.PlayerGui.KitHUD")
+local groupsNow = ErrorLog.Snapshot()
+local priceGroup
+for _, group in groupsNow do
+	if string.find(group.key, "Price", 1, true) then
+		priceGroup = group
+	end
+end
+check("client errors with different numbers group into one line", priceGroup ~= nil and priceGroup.count == 2 and priceGroup.players == 1, priceGroup and priceGroup.count)
+check("error text loses numbers and player names", priceGroup ~= nil and not string.find(priceGroup.key, "41", 1, true) and not string.find(priceGroup.key, "Restricted", 1, true), priceGroup and priceGroup.key)
+
+-- Bad input at every remote (vault note 18 §8) ------------------------------
+-- A cheater can send anything. Every remote must answer with a proper result,
+-- never crash its handler, and never move coins, gems, upgrades or settings.
+local f = A.addPlayer(404, "Fuzzer")
+waitUntil(function()
+	return f:GetAttribute("DataReady") == true
+end)
+Currency.Add(f, "Coins", 1000, "test")
+Currency.Add(f, "Gems", 50, "test")
+task.wait(0.2)
+local function guarded()
+	local out = {}
+	for name, value in f:GetAttributes() do
+		if string.match(name, "^Upgrade_") or string.match(name, "^Setting_") or name == "Rebirths" or name == "Discovered" then
+			out[name] = value
+		end
+	end
+	return out
+end
+local beforeAttrs = guarded()
+assert(next(beforeAttrs) ~= nil, "fuzz: no guarded attributes found")
+local coinsBefore, gemsBefore = Currency.Get(f, "Coins"), Currency.Get(f, "Gems")
+local deep = {}
+local cursor = deep
+for _ = 1, 40 do
+	cursor.x = {}
+	cursor = cursor.x
+end
+local BAD = {
+	{ 0 / 0 }, { math.huge }, { -math.huge }, { -1 }, { 1e15 }, { 0.5 },
+	{ "__index" }, { "" }, { string.rep("x", 100000) }, { "\255\254" },
+	{ {} }, { deep }, { true }, { "Basic", 0 / 0 }, { "Basic", -5 }, { "Basic", 1e9 },
+	{ 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+}
+local logStart = #A.log
+local remotes = A.game.ReplicatedStorage.KitRemotes:GetChildren()
+local badResults, invoked = {}, 0
+for _, payload in BAD do
+	A.clock.offset += 60 -- refill every rate limit so each payload reaches the validators
+	for _, remote in remotes do
+		if remote.ClassName == "RemoteFunction" and remote.OnServerInvoke then
+			invoked += 1
+			local okCall, result = pcall(remote.OnServerInvoke, f, table.unpack(payload))
+			if not okCall or type(result) ~= "table" or type(result.ok) ~= "boolean" or type(result.code) ~= "string" then
+				badResults[remote.Name] = tostring(result)
+			end
+		elseif remote.ClassName == "RemoteEvent" then
+			invoked += 1
+			local okFire, err = pcall(function()
+				remote.OnServerEvent:Fire(f, table.unpack(payload))
+			end)
+			if not okFire then
+				badResults[remote.Name] = tostring(err)
+			end
+		end
+	end
+end
+task.wait(0.3)
+local crashed = {}
+for i = logStart + 1, #A.log do
+	local line = A.log[i]
+	if string.find(line, "errored", 1, true) or string.find(line, "non-Result", 1, true) then
+		table.insert(crashed, line)
+	end
+end
+local broken = {}
+for name, why in badResults do
+	table.insert(broken, `{name} ({why})`)
+end
+check(`bad input: {invoked} calls across {#remotes} remotes all answer properly`, #broken == 0, table.concat(broken, "; "))
+check("bad input: no handler crashed", #crashed == 0, table.concat(crashed, " | "))
+local coinsAfter, gemsAfter = Currency.Get(f, "Coins"), Currency.Get(f, "Gems")
+local function sane(n)
+	return type(n) == "number" and n == n and n >= 0 and n < math.huge
+end
+check("bad input: coins and gems stay real numbers", sane(coinsAfter) and sane(gemsAfter), `{coinsAfter} / {gemsAfter}`)
+check("bad input: no coins spent and no gems moved", coinsAfter >= coinsBefore and gemsAfter == gemsBefore, `coins {coinsBefore}->{coinsAfter}, gems {gemsBefore}->{gemsAfter}`)
+local afterAttrs = guarded()
+local moved = {}
+for name, value in afterAttrs do
+	if beforeAttrs[name] ~= value then
+		table.insert(moved, name)
+	end
+end
+for name in beforeAttrs do
+	if afterAttrs[name] == nil then
+		table.insert(moved, name)
+	end
+end
+check("bad input: no upgrade, rebirth, index or setting changed", #moved == 0, table.concat(moved, ", "))
+A.removePlayer(f)
+
 -- Session lock between two servers ------------------------------------------
 local savedCoins = Currency.Get(p, "Coins")
 local savedGems = Currency.Get(p, "Gems")
@@ -203,6 +311,14 @@ check("second server cannot open a live profile (kicked, nothing overwritten)", 
 	return #B.kicks > 0
 end, 15), #B.kicks)
 check("first server still owns the profile", A.mod("PlayerData").Get(p) ~= nil)
+local _, healthB = B.mod("ErrorLog").Snapshot()
+local lockedCount = 0
+for name, count in healthB do
+	if string.find(name, "SaveLoadFailed", 1, true) then
+		lockedCount += count
+	end
+end
+check("save health: the refused load is counted", lockedCount >= 1, lockedCount)
 
 -- Leave A (saves and releases), then join B: progress is there.
 A.removePlayer(p)
@@ -226,6 +342,60 @@ check("upgrade kept", pB2:GetAttribute("Upgrade_Income") == 1)
 check("setting kept", pB2:GetAttribute("Setting_Flashes") == false)
 check("index kept", (pB2:GetAttribute("Discovered") or 0) >= 1)
 
+-- Old saves still load (vault note 18 §3) ------------------------------------
+-- tests/fixtures/save_v<N>.json is a real save from a played session at save
+-- version N. Every one must still load on today's build, with nothing lost.
+-- When you bump schemaVersion: first run `SAVE_FIXTURE=1 lune run tools/sim.luau`
+-- on the OLD build to keep its save, then add the migration.
+local fs = require("@lune/fs")
+local serde = require("@lune/serde")
+local function findSave(userId)
+	for _, data in stores.data do
+		local entry = data["U_" .. userId]
+		if entry then
+			return entry.value
+		end
+	end
+	return nil
+end
+local CurrentConfig = B.require(B.game.ReplicatedStorage.GameConfig)
+local schema = CurrentConfig.PlayerData.schemaVersion
+if process.env.SAVE_FIXTURE == "1" then
+	local save = table.clone(findSave(101))
+	save.Session = nil
+	fs.writeFile(`tests/fixtures/save_v{schema}.json`, serde.encode("json", save, true))
+	print(`[KitSim] kept tests/fixtures/save_v{schema}.json`)
+end
+local fixtures = {}
+if fs.isDir("tests/fixtures") then
+	for _, file in fs.readDir("tests/fixtures") do
+		local version = string.match(file, "^save_v(%d+)%.json$")
+		if version then
+			table.insert(fixtures, { file = file, version = tonumber(version) })
+		end
+	end
+end
+check("at least one old save is kept as a test", #fixtures >= 1, "run SAVE_FIXTURE=1 lune run tools/sim.luau")
+for i, fixture in fixtures do
+	local raw = serde.decode("json", fs.readFile(`tests/fixtures/{fixture.file}`))
+	local userId = 9000 + i
+	local storeName = CurrentConfig.PlayerData.storeName
+	for name, data in stores.data do
+		if string.find(name, storeName, 1, true) then
+			data["U_" .. userId] = { version = 1, value = raw }
+		end
+	end
+	local oldGems = raw.Data and raw.Data.Currency and raw.Data.Currency.Balances and raw.Data.Currency.Balances.Gems
+	local player = B.addPlayer(userId, `OldSave{fixture.version}`)
+	local loaded = waitUntil(function()
+		return player:GetAttribute("DataReady") == true
+	end, 10)
+	check(`{fixture.file} loads on today's build`, loaded and fixture.version <= schema, `schema {schema}`)
+	check(`{fixture.file} keeps its gems`, oldGems == nil or CurrencyB.Get(player, "Gems") == oldGems, `{oldGems} -> {CurrencyB.Get(player, "Gems")}`)
+	check(`{fixture.file} keeps its rebirths`, (player:GetAttribute("Rebirths") or 0) >= (raw.Data.Rebirth and raw.Data.Rebirth.Count or 0))
+	B.removePlayer(player)
+end
+
 -- Studio mode: saves stay in memory (the owner's rule), real stores untouched.
 local studioStores = Mock.newStores()
 local S = boot(studioStores, "studio", true)
@@ -245,7 +415,7 @@ local _ = pB
 -- Warnings: anything unexpected the code logged.
 local unexpected = {}
 for _, line in table.move(A.log, 1, #A.log, 1, table.clone(B.log)) do
-	if not string.find(line, "mock", 1, true) and not string.find(line, "locked", 1, true) and not string.find(line, "Restricted", 1, true) then
+	if not string.find(line, "mock", 1, true) and not string.find(line, "locked", 1, true) and not string.find(line, "Restricted", 1, true) and not string.find(line, "] 404 ", 1, true) then
 		table.insert(unexpected, line)
 	end
 end

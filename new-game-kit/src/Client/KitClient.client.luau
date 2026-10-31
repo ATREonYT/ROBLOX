@@ -25,6 +25,25 @@ local Config = require(ReplicatedStorage:WaitForChild("GameConfig")) :: any
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Error reports (vault note 18 §7.4): each new kind of client error goes to the
+-- server once (at most 20 per session), where ErrorLog groups and counts them.
+do
+	local sent: { [string]: boolean } = {}
+	local count = 0
+	pcall(function()
+		game:GetService("ScriptContext").Error:Connect(function(message: string, trace: string)
+			local where = string.match(trace or "", "^[^\n]+") or ""
+			local key = where .. message
+			if sent[key] or count >= 20 then
+				return
+			end
+			sent[key] = true
+			count += 1
+			Net.Send("ErrorLog.Client", string.sub(message, 1, 300), string.sub(where, 1, 200))
+		end)
+	end)
+end
+
 -- StarterGui copies KitHUD in when the character first spawns: wait for it,
 -- and only build a copy if it never arrives (for example, it was deleted).
 local hud = playerGui:WaitForChild("KitHUD", 15) :: any

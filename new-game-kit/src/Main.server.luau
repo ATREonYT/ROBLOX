@@ -36,6 +36,10 @@ local Income = require(Server.Income)
 local Pets = require(Server.Pets)
 local PlaytimeGifts = require(Server.PlaytimeGifts)
 local Settings = require(Server.Settings)
+local ErrorLog = require(Server.ErrorLog)
+
+-- 0. Error groups and save health first, so start-up errors are counted (note 18 §7.4)
+ErrorLog.Start(PlayerData)
 
 -- 1. Data layer
 PlayerData.Configure(Config.PlayerData)
