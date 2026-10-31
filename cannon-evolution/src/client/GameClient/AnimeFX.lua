@@ -41,6 +41,8 @@ local TEX = {
 	Streak = "rbxassetid://109649184353418",
 	Arc = "rbxassetid://112355157166045", -- 2x2
 	Shaft = "rbxassetid://74053531711120",
+	Slash = "rbxassetid://88973056407413",
+	RingBroken = "rbxassetid://138198378891696",
 }
 local UPRIGHT = Enum.ParticleOrientation.FacingCameraWorldUp
 local FLAT = Enum.ParticleOrientation.VelocityPerpendicular
@@ -207,39 +209,31 @@ return function(ctx)
 
 	local grade = new("ColorCorrectionEffect", { Name = "AnimeImpact", Enabled = false, Parent = Lighting })
 	local sky = new("ColorCorrectionEffect", { Name = "AnimeSky", Enabled = false, Parent = Lighting })
+	local dim = new("ColorCorrectionEffect", { Name = "AnimeDim", Enabled = false, Parent = Lighting })
 	local lastFlash = -10
-	-- the impact frame: a hard ink beat (desaturated, high contrast, darker), the subject in a black
-	-- silhouette with a coloured rim, then colour floods back. One per second at most, never white
-	local function impactFrame(subject, look)
-		if lowGraphics() or os.clock() - lastFlash < 1 then
-			return false
-		end
-		lastFlash = os.clock()
-		grade.Enabled = true
-		grade.Saturation, grade.Contrast, grade.Brightness, grade.TintColor = -1, 2.5, -0.05, Color3.new(1, 1, 1)
-		local hl
-		if subject and subject.Parent then
-			hl = new("Highlight", {
-				FillColor = Color3.new(0, 0, 0), FillTransparency = 0, OutlineColor = look.Core, OutlineTransparency = 0,
-				DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Adornee = subject, Parent = gui,
-			})
-		end
-		task.delay(0.07, function()
-			if hl then
-				hl.FillColor, hl.FillTransparency, hl.OutlineColor = look.Core, 0.3, look.Color
-				TweenService:Create(hl, TweenInfo.new(0.3), { FillTransparency = 1, OutlineTransparency = 1 }):Play()
-				Debris:AddItem(hl, 0.35)
-			end
-			grade.Saturation, grade.Contrast, grade.Brightness, grade.TintColor = 0.5, 0.3, 0.03, look.Core
-			local back = TweenService:Create(grade, TweenInfo.new(0.25, Enum.EasingStyle.Quad), { Saturation = 0, Contrast = 0, Brightness = 0, TintColor = Color3.new(1, 1, 1) })
-			back.Completed:Connect(function(state)
+	-- the world darkens before a hit and comes back after (vault note 22 §2: contrast makes the hit)
+	local function worldDim(brightness, seconds, saturation)
+		dim.Enabled = true
+		local tw = TweenService:Create(dim, TweenInfo.new(seconds, Enum.EasingStyle.Quad), { Brightness = brightness, Saturation = saturation or 0 })
+		if brightness == 0 then
+			tw.Completed:Connect(function(state)
 				if state == Enum.PlaybackState.Completed then
-					grade.Enabled = false
+					dim.Enabled = false
 				end
 			end)
-			back:Play()
-		end)
-		return true
+		end
+		tw:Play()
+	end
+	-- ink strokes drawn over the screen during an impact frame
+	local inkLayer = new("Frame", { Name = "Ink", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = gui })
+	local inks = {}
+	for i = 1, 9 do
+		inks[i] = new("ImageLabel", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Visible = false, ZIndex = 3, Parent = inkLayer })
+	end
+	local function inkOff()
+		for _, img in ipairs(inks) do
+			img.Visible = false
+		end
 	end
 
 	local LINES = 40
@@ -912,7 +906,30 @@ return function(ctx)
 		setBars(false)
 		hideCard()
 		pose.Target, pose.Shake = 0, 0
+		local sk = gui:FindFirstChild("SkipButton", true)
+		if sk then
+			sk.Visible = false
+		end
 		saved = nil
+	end
+	local skip = Kit.button({ Text = "Skip", Color = "Gray", Size = UDim2.fromOffset(120, 44), Position = UDim2.new(1, -20, 1, -20), Anchor = Vector2.new(1, 1), ZIndex = 8, Parent = gui, OnClick = function()
+		if saved then
+			token += 1 -- stops the rest of the cutscene's camera beats
+			release()
+		end
+	end })
+	local skipFrame = skip.Instance
+	skipFrame.Name = "SkipButton"
+	if typeof(skipFrame) == "Instance" then
+		skipFrame.Visible = false
+	end
+	local function showSkip(after)
+		local my = token
+		task.delay(after, function()
+			if my == token and saved and typeof(skipFrame) == "Instance" then
+				skipFrame.Visible = true
+			end
+		end)
 	end
 	local function takeCamera(get)
 		local cam = workspace.CurrentCamera
@@ -1029,6 +1046,9 @@ return function(ctx)
 		end)
 		if cannon then
 			at(seconds * 0.6, my, function()
+				if mine then
+					worldDim(-0.15, 0.3) -- the world dims to 70% while it charges
+				end
 				chargeCannon(cannon, seconds * 0.4 - 0.05, 7)
 				fxPlay("Charge", CFrame.new(boreOf(cannon)), 2, look, seconds * 0.4)
 				Kit.playSound("RareCharge")
@@ -1074,6 +1094,7 @@ return function(ctx)
 				{ At = seconds, Eye = gpos + side * 55 + Vector3.new(0, 12, 0) + dir * 35, Look = (bore and bore.Position or gpos) + dir * 10, Fov = 74 },
 			}))
 			showCard("SECRET SHOT!", "1 in 1,000", look)
+			showSkip(1)
 			pose.Target, pose.Shake = 1, rad(1.5)
 			at(0.35, my, function()
 				poseLayer("Roar", 0.1, 0.5, 0.4)
@@ -1219,16 +1240,35 @@ return function(ctx)
 		local focus = cannon and cannon:GetBoundingBox().Position or root.Position
 		local heaven = focus + Vector3.new(0, 140, 0)
 		if mine then
-			skyTint(Color3.fromRGB(205, 215, 245), -0.08, 0.7)
+			skyTint(Color3.fromRGB(150, 165, 225), -0.12, 0.7) -- the sky goes navy
 			local p = root.Position
 			takeCamera(path({
-				{ At = 0, Eye = focus + side * 45 - dir * 18 + Vector3.new(0, 4, 0), Look = focus + Vector3.new(0, 30, 0), Fov = 70 },
-				{ At = 1.0, Eye = focus + side * 45 - dir * 18 + Vector3.new(0, 4, 0), Look = focus + Vector3.new(0, 60, 0), Fov = 72 },
+				-- a close-up on the cannon waking (its eyes and halo), then up to the sky as the heavens open
+				{ At = 0, Eye = focus + side * 13 + dir * 7 + Vector3.new(0, 2.5, 0), Look = focus + dir * 2 + Vector3.new(0, 1.5, 0), Fov = 52 },
+				{ At = 0.6, Eye = focus + side * 11 + dir * 6 + Vector3.new(0, 2.5, 0), Look = focus + dir * 2 + Vector3.new(0, 1.5, 0), Fov = 48 },
+				{ At = 1.2, Eye = focus + side * 45 - dir * 18 + Vector3.new(0, 4, 0), Look = focus + Vector3.new(0, 60, 0), Fov = 72 },
 				{ At = 2.0, Eye = focus + side * 42 - dir * 8 + Vector3.new(0, 14, 0), Look = focus + Vector3.new(0, 8, 0), Fov = 66 },
 				{ At = 3.0, Eye = p + root.CFrame.LookVector * 13 + Vector3.new(0, 1, 0), Look = p + Vector3.new(0, 2.5, 0), Fov = 64 },
 				{ At = seconds, Eye = focus + side * 28 - dir * 10 + Vector3.new(0, 8, 0), Look = focus + dir * 4, Fov = 72 },
 			}))
 			showCard("DIVINE SHOT!", "1 in 100,000", look)
+			showSkip(1)
+			if cannon then
+				-- the cannon wakes: two glowing eyes on the barrel and a spiked halo turning behind it (Ref 3)
+				local bore = boreOf(cannon)
+				for _, x in ipairs({ -1, 1 }) do
+					burstAt(CFrame.new(bore - dir * (2.2 - x * 0.8) + side * 1.8 + Vector3.new(0, 0.8, 0)), { -- on the camera's side of the barrel
+						{ Texture = TEX.Star4, Color = ColorSequence.new(look.Core, look.Dark), LightEmission = 1, LightInfluence = 0, Brightness = 2,
+							Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.15, 3.5), NumberSequenceKeypoint.new(1, 2) }),
+							Lifetime = NumberRange.new(1.4), Speed = NumberRange.new(0), Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-60, 60), ZOffset = 1, Count = 1 },
+					})
+				end
+				burstAt(CFrame.new(focus - side * 5 + Vector3.new(0, 2, 0)), { -- behind the cannon from the close-up
+					{ Texture = TEX.RingBroken, Color = ColorSequence.new(look.Core, look.Dark), LightEmission = 1, LightInfluence = 0,
+						Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(0.3, 22), NumberSequenceKeypoint.new(1, 24) }),
+						Transparency = fadeSeq(0.1, 0.3), Lifetime = NumberRange.new(1.6), Speed = NumberRange.new(0), RotSpeed = NumberRange.new(90), ZOffset = -3, Count = 1 },
+				})
+			end
 		end
 		at(0.5, my, function()
 			-- the heavens open: a bright disc in the sky with a slow star burst
@@ -1362,6 +1402,10 @@ return function(ctx)
 		local you = play(owner, seconds, mine, my)
 		if mine then
 			at(math.min(1.6, seconds * 0.5), my, hideCard) -- the title clears so the moment reads
+			-- the world darkens for the last 5 frames before the shot (note 22: the inhale)
+			at(seconds - 0.17, my, function()
+				worldDim(-0.35, 0.15)
+			end)
 			-- hand the camera back a moment before the flight starts
 			at(seconds - 0.05, my, release)
 			if lingering then
@@ -1376,6 +1420,197 @@ return function(ctx)
 			remote.OnClientEvent:Connect(onRareShot)
 		end
 	end)
+
+	-----------------------------------------------------------------------
+	-- Impact frames (vault note 22, from Alex's reference clips): 1-3 frames
+	-- of two-tone art, then the colour floods back over 6 frames.
+	--   "burst": a white ink starburst behind the subject, the subject in black (Ref 1)
+	--   "flat":  the whole screen one flat colour, black silhouettes (Ref 2)
+	--   "ink":   black ink strokes on white, a new layout every frame (Ref 3)
+	-- One flash a second at most. On Low Graphics a dark two-tone version: black
+	-- silhouettes on the tier colour at 60%, no brightness spike.
+	-----------------------------------------------------------------------
+	local FRAME = 1 / 30
+	local function inkLayout(look)
+		local view = workspace.CurrentCamera.ViewportSize
+		for i, img in ipairs(inks) do
+			img.Image = i % 3 == 0 and TEX.Star4 or TEX.Slash
+			img.ImageColor3 = Color3.new(0, 0, 0)
+			local s = view.Y * (0.5 + math.random() * 0.7)
+			img.Size = UDim2.fromOffset(s, s)
+			img.Position = UDim2.fromOffset(math.random() * view.X, math.random() * view.Y)
+			img.Rotation = math.random() * 360
+			img.ImageTransparency = 0
+			img.Visible = true
+		end
+	end
+	local function impactFrame(subjects, look, style, frames)
+		if os.clock() - lastFlash < 1 then
+			return false
+		end
+		lastFlash = os.clock()
+		local dark = lowGraphics()
+		local hls = {}
+		for _, s in ipairs(subjects) do
+			if s and s.Parent then
+				table.insert(hls, new("Highlight", {
+					FillColor = Color3.new(0, 0, 0), FillTransparency = 0, OutlineColor = dark and look.Color or look.Core, OutlineTransparency = 0,
+					DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Adornee = s, Parent = gui,
+				}))
+			end
+		end
+		grade.Enabled = true
+		if dark then
+			grade.Saturation, grade.Contrast, grade.Brightness, grade.TintColor = -0.6, 0.8, -0.35, look.Color:Lerp(Color3.new(0, 0, 0), 0.4)
+		elseif style == "flat" then
+			grade.Saturation, grade.Contrast, grade.Brightness, grade.TintColor = -1, 4, 0.8, look.Color
+		elseif style == "ink" then
+			grade.Saturation, grade.Contrast, grade.Brightness, grade.TintColor = -1, 4, 0.9, Color3.new(1, 1, 1)
+		else -- burst
+			grade.Saturation, grade.Contrast, grade.Brightness, grade.TintColor = -1, 1.5, 0.35, look.Core
+			local s = subjects[1]
+			local at = s and (s:IsA("Model") and s:GetBoundingBox().Position or s.Position)
+			if at then
+				local away = (at - workspace.CurrentCamera.CFrame.Position).Unit
+				burstAt(CFrame.new(at + away * 12), {
+					{ Texture = TEX.Star6, Color = ColorSequence.new(Color3.new(1, 1, 1)), LightEmission = 1, LightInfluence = 0, Brightness = 3,
+						Size = NumberSequence.new(60), Lifetime = NumberRange.new(frames * FRAME + 0.05), Speed = NumberRange.new(0), Rotation = NumberRange.new(0, 360), ZOffset = -4, Count = 1 },
+				})
+			end
+		end
+		-- the frames themselves: ink re-drawn every frame
+		local f = 0
+		local conn
+		conn = RunService.RenderStepped:Connect(function()
+			f += 1
+			if style == "ink" and not dark and f <= frames then
+				inkLayout(look)
+			end
+			if f < frames then
+				return
+			end
+			conn:Disconnect()
+			inkOff()
+			-- colour floods back over 6 frames (note 22 §2.3: never in one step)
+			for _, hl in ipairs(hls) do
+				hl.FillColor, hl.FillTransparency, hl.OutlineColor = look.Core, 0.4, look.Color
+				TweenService:Create(hl, TweenInfo.new(6 * FRAME + 0.1), { FillTransparency = 1, OutlineTransparency = 1 }):Play()
+				Debris:AddItem(hl, 0.4)
+			end
+			grade.Saturation, grade.Contrast, grade.Brightness, grade.TintColor = 0.4, 0.5, dark and -0.2 or 0.15, look.Core
+			local back = TweenService:Create(grade, TweenInfo.new(6 * FRAME, Enum.EasingStyle.Quad), { Saturation = 0, Contrast = 0, Brightness = 0, TintColor = Color3.new(1, 1, 1) })
+			back.Completed:Connect(function(state)
+				if state == Enum.PlaybackState.Completed then
+					grade.Enabled = false
+				end
+			end)
+			back:Play()
+		end)
+		return true
+	end
+
+	-- black lightning tendrils over a grey world for a few frames (Secret, Ref 2)
+	local function tendrils(frames)
+		if lowGraphics() then
+			return
+		end
+		local view = workspace.CurrentCamera.ViewportSize
+		dim.Enabled = true
+		dim.Saturation = -1
+		for i, img in ipairs(inks) do
+			if i <= 5 then
+				img.Image = TEX.Slash
+				img.ImageColor3 = Color3.new(0, 0, 0)
+				local s = view.Y * (0.6 + math.random() * 0.6)
+				img.Size = UDim2.fromOffset(s * 1.6, s * 0.6)
+				img.Position = UDim2.fromOffset(view.X * (0.2 + math.random() * 0.6), view.Y * (0.2 + math.random() * 0.6))
+				img.Rotation = math.random() * 360
+				img.ImageTransparency = 0.1
+				img.Visible = true
+			end
+		end
+		task.delay(frames * FRAME, function()
+			inkOff()
+			TweenService:Create(dim, TweenInfo.new(0.15), { Saturation = 0 }):Play()
+		end)
+	end
+
+	-- a pillar of light rising from a point, fading over 0.8 s (Secret landing, Ref 2)
+	local function pillar(pos, look, height)
+		local p = part({ Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = look.Core, Transparency = 0.2, Size = Vector3.new(1, 10, 10), CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, rad(90)) })
+		local glow = part({ Shape = Enum.PartType.Cylinder, Material = Enum.Material.ForceField, Color = look.Color, Transparency = 0.1, Size = Vector3.new(1, 18, 18), CFrame = p.CFrame })
+		local v = new("NumberValue", { Value = 0, Parent = p })
+		v.Changed:Connect(function(k)
+			local h = math.max(height * k, 1)
+			p.Size, glow.Size = Vector3.new(h, 10 * (1 - 0.3 * k), 10 * (1 - 0.3 * k)), Vector3.new(h, 18, 18)
+			p.CFrame = CFrame.new(pos + Vector3.new(0, h / 2, 0)) * CFrame.Angles(0, 0, rad(90))
+			glow.CFrame = p.CFrame
+		end)
+		TweenService:Create(v, TweenInfo.new(0.25, Enum.EasingStyle.Exponential), { Value = 1 }):Play()
+		task.delay(0.35, function()
+			TweenService:Create(p, TweenInfo.new(0.8, Enum.EasingStyle.Quad), { Transparency = 1 }):Play()
+			TweenService:Create(glow, TweenInfo.new(0.8, Enum.EasingStyle.Quad), { Transparency = 1 }):Play()
+		end)
+		Debris:AddItem(p, 1.3)
+		Debris:AddItem(glow, 1.3)
+	end
+	-- a dome of light that blooms over a point, then pops into petals (Divine landing, Ref 3)
+	local function dome(pos, look, radius)
+		local d = part({ Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = look.Color, Transparency = 0, Size = Vector3.one * 2, CFrame = CFrame.new(pos) })
+		TweenService:Create(d, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), { Size = Vector3.one * radius * 2 }):Play()
+		task.delay(0.6, function()
+			TweenService:Create(d, TweenInfo.new(0.2), { Transparency = 1 }):Play()
+			burstAt(CFrame.new(pos + Vector3.new(0, radius * 0.4, 0)), {
+				{ Texture = TEX.Puff, Color = ColorSequence.new(look.Core, look.Color), LightEmission = 0.3, LightInfluence = 0.2,
+					Squash = NumberSequence.new(1.2), Size = NumberSequence.new(1.6, 1), Transparency = fadeSeq(0, 0.2), Lifetime = NumberRange.new(1.5, 2.5),
+					Speed = NumberRange.new(radius * 0.6, radius * 1.2), SpreadAngle = Vector2.new(180, 180), Acceleration = Vector3.new(0, -6, 0), Drag = 1.5,
+					Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-180, 180), Count = 40 },
+			})
+		end)
+		Debris:AddItem(d, 1)
+	end
+	local function groundAt(pos)
+		floorRay.FilterDescendantsInstances = { fx, player.Character }
+		local hit = workspace:Raycast(pos + Vector3.new(0, 60, 0), Vector3.new(0, -160, 0), floorRay)
+		return hit and hit.Position or pos
+	end
+	-- the landing (note 22 §4): every tier lands with an inhale and rings; Secret adds a pillar and its
+	-- second flash, Divine a white starburst, a bloom dome and petals; then the world comes back calm
+	local function landing(rareId, look, pos)
+		local spot = groundAt(pos)
+		local inhale = rareId == "Mythic" and 3 or rareId == "Secret" and 5 or 4
+		worldDim(-0.35, inhale * FRAME)
+		task.delay(inhale * FRAME, function()
+			if rareId == "Mythic" then
+				crater(spot, 12, 2.5)
+				shockwave(spot, look, 10)
+				task.delay(2 * FRAME, function()
+					shockwave(spot, look, 7)
+				end)
+				fxPlay("Stars", CFrame.new(spot + Vector3.new(0, 3, 0)), 3, look, 0.5)
+			elseif rareId == "Secret" then
+				impactFrame({}, look, "flat", 2)
+				for i = 0, 2 do
+					task.delay(i * 0.06, function()
+						shockwave(spot, look, 9 + i * 5)
+					end)
+				end
+				pillar(spot, look, 120)
+				fxPlay("HolyAura", CFrame.new(spot), 4, look, 0.8)
+				shake(0.5, 0.3)
+			else
+				impactFrame({}, look, "burst", 2)
+				fxPlay("Explosion", CFrame.new(spot + Vector3.new(0, 4, 0)), 3, look, 0.2)
+				task.delay(0.2, function()
+					dome(spot, look, 18)
+				end)
+				shockwave(spot, look, 14)
+				shake(0.5, 0.3)
+			end
+			-- calm: the world comes back over 0.3-0.5 s
+			worldDim(0, rareId == "Divine" and 0.5 or 0.3)
+		end)
+	end
 
 	-----------------------------------------------------------------------
 	-- The rare flight: the release (impact frame, focus lines, muzzle
@@ -1426,6 +1661,11 @@ return function(ctx)
 			spikes[i] = { Part = p, Jitter = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * (core and 0.25 or 0.8), Core = core, Phase = math.random() * 6 }
 		end
 		local shell = part({ Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = look.Color, Size = Vector3.one * size, Transparency = 0 })
+		if mine then
+			-- a rim-lit outline on the ball (Ref 1 and 3: the hero reads against the sky)
+			local hl = new("Highlight", { FillTransparency = 1, OutlineColor = look.Color, OutlineTransparency = 0.2, DepthMode = Enum.HighlightDepthMode.Occluded, Adornee = ball, Parent = ball })
+			TweenService:Create(hl, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { OutlineTransparency = 0.6 }):Play()
+		end
 		local att = new("Attachment", { Parent = ball })
 		local trail = emitter(att, {
 			Texture = TEX.CelFlame, FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4, FlipbookMode = Enum.ParticleFlipbookMode.Loop,
@@ -1496,12 +1736,43 @@ return function(ctx)
 				return
 			end
 			Kit.playSound("RareBlast")
-			local subject = rareId == "Secret" and grandCannon() or workspace:FindFirstChild("MyCannon") or ball
-			if impactFrame(subject, look) then
-				hitStop(0.06 + 0.02 * look.Rank, false) -- the flight camera is cutting in: freeze the effects, not the view
+			-- the release (note 22 §4): two-tone impact frames, then the colour floods back, rings on the water
+			local cannon = workspace:FindFirstChild("MyCannon")
+			local char = player.Character
+			if rareId == "Mythic" then
+				impactFrame({ cannon or ball }, look, "burst", 1)
+			elseif rareId == "Secret" then
+				if impactFrame({ grandCannon(), char }, look, "flat", 2) then
+					task.delay(2 * FRAME, function()
+						tendrils(4)
+					end)
+				end
+			else
+				if impactFrame({ cannon or ball, char }, look, "ink", 3) then
+					-- then 3 frames of dark rim silhouette with a sky-blue edge
+					task.delay(3 * FRAME, function()
+						worldDim(-0.3, 0)
+						for _, s in ipairs({ cannon, char }) do
+							if s then
+								local hl = new("Highlight", { FillColor = Color3.new(0, 0, 0), FillTransparency = 0, OutlineColor = look.Dark, OutlineTransparency = 0, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop, Adornee = s, Parent = gui })
+								TweenService:Create(hl, TweenInfo.new(0.2), { FillTransparency = 1, OutlineTransparency = 1 }):Play()
+								Debris:AddItem(hl, 0.3)
+							end
+						end
+					end)
+				end
 			end
+			hitStop(0.06 + 0.02 * look.Rank, false) -- the flight camera is cutting in: freeze the effects, not the view
+			task.delay(0.12, function()
+				worldDim(0, 0.3)
+			end)
+			local water = groundAt(start + dir * 6)
+			shockwave(water, look, 8)
+			task.delay(2 * FRAME, function()
+				shockwave(water, look, 6)
+			end)
 			local sp = workspace.CurrentCamera:WorldToViewportPoint(start)
-			focusLines(Vector2.new(sp.X, sp.Y), look, 0.3, false)
+			focusLines(Vector2.new(sp.X, sp.Y), look, rareId == "Divine" and 0.6 or 0.3, false)
 			shake(0.5 + look.Rank * 0.25, 0.35 + look.Rank * 0.05)
 			skyBack(1.2)
 			if ball then
@@ -1511,6 +1782,10 @@ return function(ctx)
 					end
 				end)
 			end
+			-- the landing beat where the server put the ball
+			task.delay(duration, function()
+				landing(rareId, look, origin + dir * distance)
+			end)
 			-- the angel cannon turns back after the landing; your aura settles to a glow for a while
 			task.delay(duration + Config.RETURN_DELAY + 0.5, restoreCannon)
 			local rig = lingering
