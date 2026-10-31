@@ -60,6 +60,20 @@ local function bit(cls, props, parent)
 	q.Parent = parent
 	return q
 end
+-- the same stud texture the map's lawn and paths wear (BuildCartoonyMap's, already in the game's inventory)
+local STUDS = "rbxassetid://18878365966"
+local function studs(part, faces)
+	for _, face in ipairs(faces) do
+		local t = Instance.new("Texture")
+		t.Name = "CartoonStuds"
+		t.Texture = STUDS
+		t.Face = face
+		t.StudsPerTileU = 2
+		t.StudsPerTileV = 2
+		t.Parent = part
+	end
+	return part
+end
 local function disc(name, centre, topY, radius, thick, color, parent)
 	return bit("Part", { Name = name, Shape = Enum.PartType.Cylinder, Size = Vector3.new(thick, radius * 2, radius * 2), Color = color, CanCollide = false, CanQuery = false,
 		CFrame = CFrame.new(centre.X, topY - thick / 2, centre.Z) * CFrame.Angles(0, 0, math.rad(90)) }, parent)
@@ -119,17 +133,20 @@ for k, pit in ipairs(pits) do
 			local h = (pit.featured and 1.9 or 1.6) + (i % 3) * 0.12
 			local face = CFrame.lookAt(base, base + out) -- -Z points away from the hole
 			local dirt = pit.featured and (i % 2 == 0 and GOLD or DIRT) or DIRT:Lerp(LOOSE, rng:NextNumber(0, 0.25))
-			bit("Part", { Name = "Bank", Size = Vector3.new(width, h, BANK_T), Color = dirt,
+			local bank = bit("Part", { Name = "Bank", Size = Vector3.new(width, h, BANK_T), Color = dirt,
 				CFrame = face * CFrame.new(0, h / 2 - 0.1, 0) * CFrame.Angles(math.rad(-10), 0, 0) }, model)
-			bit("Part", { Name = "Top", Size = Vector3.new(width * 1.02, 0.35, 1.6), Color = pit.featured and GOLD or GRASS,
+			studs(bank, { Enum.NormalId.Back }) -- the inside wall
+			local top = bit("Part", { Name = "Top", Size = Vector3.new(width * 1.02, 0.35, 1.6), Color = pit.featured and GOLD or GRASS,
 				CFrame = face * CFrame.new(0, h - 0.05, -0.25) }, model)
+			studs(top, { Enum.NormalId.Top })
 			banks += 1
 			-- the slope only where it can't run into the next pit
 			local mid = flat(centre + out * (pit.r + BANK_T / 2 + SLOPE_L / 2))
 			local tip = flat(centre + out * pit.outer)
 			if not inOther(k, mid, BANK_T / 2 + 0.3) and not inOther(k, tip, BANK_T / 2 + 0.3) then
-				bit("WedgePart", { Name = "Slope", Size = Vector3.new(slopeW, h - 0.1, SLOPE_L), Color = GRASS,
+				local slope = bit("WedgePart", { Name = "Slope", Size = Vector3.new(slopeW, h - 0.1, SLOPE_L), Color = GRASS,
 					CFrame = face * CFrame.new(0, (h - 0.1) / 2, -(BANK_T / 2 + SLOPE_L / 2)) }, model)
+				studs(slope, { Enum.NormalId.Top, Enum.NormalId.Front })
 			end
 		end
 	end
@@ -177,10 +194,10 @@ for k, pit in ipairs(pits) do
 		local back = centre - Vector3.new(pit.outer + 1, 0, 0)
 		for _, side in ipairs({ -1, 1 }) do
 			bit("Part", { Name = "Post", Size = Vector3.new(0.5, 5, 0.5), Color = Color3.fromRGB(102, 66, 38), CanCollide = false, CanQuery = false,
-				CFrame = CFrame.new(back + Vector3.new(0, 2.4, side * 2.6)) }, model)
+				CFrame = CFrame.new(back + Vector3.new(0, 2.4, side * 3.6)) }, model)
 		end
 		local boardPos = back + Vector3.new(0, 4, 0)
-		local board = bit("Part", { Name = "Board", Size = Vector3.new(6, 1.8, 0.3), Color = Color3.fromRGB(196, 140, 80), CanCollide = false, CanQuery = false,
+		local board = bit("Part", { Name = "Board", Size = Vector3.new(8, 2.4, 0.3), Color = Color3.fromRGB(196, 140, 80), CanCollide = false, CanQuery = false,
 			CFrame = CFrame.lookAt(boardPos, boardPos + Vector3.new(1, 0, 0)) }, model)
 		local gui = Instance.new("SurfaceGui")
 		gui.Face = Enum.NormalId.Front
@@ -190,8 +207,8 @@ for k, pit in ipairs(pits) do
 		gui.Parent = board
 		local t = Instance.new("TextLabel")
 		t.BackgroundTransparency = 1
-		t.Size = UDim2.fromScale(0.9, 0.8)
-		t.Position = UDim2.fromScale(0.05, 0.1)
+		t.Size = UDim2.fromScale(0.84, 0.72)
+		t.Position = UDim2.fromScale(0.08, 0.14)
 		t.Font = Enum.Font.FredokaOne
 		t.TextScaled = true
 		t.Text = "COMING SOON"
