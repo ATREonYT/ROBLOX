@@ -10,7 +10,7 @@
 	moves the SpawnLocation into the lobby.
 	Alex, Oct 31: "make it seem more buyable ... we want to make money". So the lanes grew with the 2x map,
 	every cannon stands on a display turntable (a glowing ring on the glow tiers), the VIP lane is the
-	showcase (black and gold, a gold VIP arch over its entrance, its Robux price on its label), and a
+	showcase (black and gold, its Robux price on its label; Alex had the VIP arch over it taken off), and a
 	"2x POWER" board stands by the first lane (Workspace.TrainingShop; its prompt opens the same purchase
 	as the Shop, "Coming soon!" while the pass id is 0).
 	Safe to re-run: it deletes and rebuilds Workspace.TrainingStations and Workspace.TrainingShop.
@@ -233,7 +233,8 @@ local TIERS = {
 	[4] = { Base = rgb(245, 192, 40), Water = rgb(85, 195, 240), Glow = true, Shine = true }, -- Golden: gold
 	[5] = { Base = rgb(80, 205, 70), Water = rgb(90, 220, 180), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
 	-- Dragon (VIP): the showcase you buy (Oct 31: "make it seem more buyable"). Black and gold reads premium:
-	-- a gold brick rim, a black floor with gold neon, gold and black pad tiles, a gold VIP arch (makeBooth)
+	-- a gold brick rim, a black floor with gold neon, gold and black pad tiles. No arch over it (Alex, Oct 31:
+	-- "remove the VIP thing")
 	[6] = { Base = rgb(255, 196, 45), Water = rgb(120, 60, 175), Glow = true, Shine = true, Sparkle = true, Black = true, Vip = true },
 }
 local function tierLook(id)
@@ -385,55 +386,6 @@ local function makeBooth(standCf, width, look)
 			lamp.Material = Enum.Material.Neon
 			lamp.CastShadow = false
 			blk("LanternCap", Vector3.new(1.1, 0.25, 1.1), x, FLOOR_T + RIM_H + 3.55, z, dark(look.Rim, 0.2))
-		end
-	end
-	if look.Vip then
-		-- the VIP arch over the lane's entrance: two gold pillars on the rim's front ends, a beam with a glowing
-		-- gold band, and a black sign with the crown and VIP on both faces. It stands at the open front, high
-		-- enough that the lane's label at the far end still shows under the beam from the plaza.
-		local ARCH_H = 8.4
-		for _, sx in ipairs({ -1, 1 }) do
-			local x = sx * (W / 2 - RIM / 2)
-			blk("ArchPillar", Vector3.new(RIM, ARCH_H, RIM), x, FLOOR_T + ARCH_H, front + RIM / 2, look.Rim, true)
-			blk("ArchFoot", Vector3.new(RIM + 0.4, 0.5, RIM + 0.4), x, FLOOR_T + RIM_H + 0.5, front + RIM / 2, shade(look.Rim, 1.12))
-			glow("ArchBand", Vector3.new(RIM + 0.12, 0.3, RIM + 0.12), x, FLOOR_T + ARCH_H - 1.2, front + RIM / 2)
-			local crown = blk("ArchCap", Vector3.new(RIM + 0.5, 0.5, RIM + 0.5), x, FLOOR_T + ARCH_H + 0.5, front + RIM / 2, shade(look.Rim, 1.12))
-			crown.Material = Enum.Material.SmoothPlastic
-		end
-		blk("ArchBeam", Vector3.new(W, 1, RIM), 0, FLOOR_T + ARCH_H, front + RIM / 2, look.Rim)
-		glow("ArchBand", Vector3.new(W - RIM * 2, 0.25, RIM + 0.1), 0, FLOOR_T + ARCH_H - 0.95, front + RIM / 2)
-		local sign = blk("VipSign", Vector3.new(5.4, 2.2, 0.4), 0, FLOOR_T + ARCH_H + 1.9, front + RIM / 2, rgb(24, 18, 32))
-		blk("VipSignRim", Vector3.new(5.8, 2.6, 0.3), 0, FLOOR_T + ARCH_H + 2.1, front + RIM / 2, look.Rim)
-		local icons = game.ReplicatedStorage:FindFirstChild("Icons")
-		local ok, Icons = pcall(require, icons)
-		for _, face in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
-			local gui = Instance.new("SurfaceGui")
-			gui.Name = "Gui_" .. face.Name
-			gui.Face = face
-			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-			gui.PixelsPerStud = 60
-			gui.LightInfluence = 0
-			gui.Parent = sign
-			local img = Instance.new("ImageLabel")
-			img.BackgroundTransparency = 1
-			img.Image = ok and Icons and Icons.VIP or ""
-			img.ScaleType = Enum.ScaleType.Fit
-			img.Size = UDim2.fromScale(0.3, 0.86)
-			img.Position = UDim2.fromScale(0.06, 0.07)
-			img.Parent = gui
-			local t = Instance.new("TextLabel")
-			t.BackgroundTransparency = 1
-			t.Font = Enum.Font.FredokaOne
-			t.TextScaled = true
-			t.Text = "VIP"
-			t.TextColor3 = rgb(255, 215, 70)
-			t.Size = UDim2.fromScale(0.56, 0.8)
-			t.Position = UDim2.fromScale(0.38, 0.1)
-			t.Parent = gui
-			local st = Instance.new("UIStroke")
-			st.Thickness = 5
-			st.Color = rgb(60, 30, 5)
-			st.Parent = t
 		end
 	end
 	if look.Sparkle then
