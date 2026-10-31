@@ -305,6 +305,43 @@ function Config.GetEgg(id)
 	end
 end
 
+-- Pity (house rule: paid random items show a pity counter; we give every egg one).
+-- The goal is the egg's second-best rarity tier and up; after N hatches without
+-- one, the next hatch is guaranteed to be one. N = about 3x the normal wait.
+-- Returns goalOrder, N, goalName ("Mythic"), goalChance (0..1).
+function Config.PityInfo(egg)
+	local orders, total = {}, 0
+	for _, entry in ipairs(egg.Pets) do
+		local order = Config.Rarities[Config.Pets[entry[1]].Rarity].Order
+		orders[order] = true
+		total += entry[2]
+	end
+	local list = {}
+	for order in pairs(orders) do
+		table.insert(list, order)
+	end
+	table.sort(list)
+	local goal = list[math.max(1, #list - 1)]
+	local chance = 0
+	for _, entry in ipairs(egg.Pets) do
+		if Config.Rarities[Config.Pets[entry[1]].Rarity].Order >= goal then
+			chance += entry[2] / total
+		end
+	end
+	local goalName = "Rare"
+	for name, r in pairs(Config.Rarities) do
+		if r.Order == goal then
+			goalName = name
+		end
+	end
+	return goal, math.max(10, math.ceil(3 / math.max(chance, 0.001))), goalName, chance
+end
+
+-- Eggs bought with Robux or Gems (Gems can be bought) are paid random items
+function Config.IsPaidEgg(egg)
+	return egg.Currency ~= "Cash"
+end
+
 ---------------------------------------------------------------------------
 -- Cannon collection. Equipped cannon multiplies Power per shot.
 -- Model = model name in ReplicatedStorage > Cannons.
@@ -576,6 +613,7 @@ Config.DefaultData = {
 	Boosts = {}, -- [boostId] = seconds remaining
 	Products = {}, -- owned product grants that are permanent (cannons), plus receipt ids
 	Stats = { Shots = 0, Launches = 0, Hatches = 0, CashEarned = 0, Rebirths = 0 },
+	Pity = {}, -- [eggId] = hatches since the egg's pity goal tier last came up
 	Missions = { DailyKey = "", WeeklyKey = "", Daily = {}, Weekly = {}, Infinite = {} },
 	Daily = { Streak = 0, LastClaim = 0 },
 	Codes = {},
