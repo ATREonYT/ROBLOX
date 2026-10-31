@@ -61,6 +61,7 @@ Compared across our games (`cannon-evolution/`, `huzz-valley/`) and the October 
 | Launch shots (cannon, throw) | Slow charge, 1-2 frame release, recoil on a spring, muzzle flash/sparks/ring/smoke, FOV punch and trauma shake, stretched ball with trails, landing squash and dust, all scaled by shot tier | `src/Shared/LaunchFX.luau`, vault notes 16 and 17 |
 | Rare reveals | Tiered cinematic (Rare 0.6 s up to Secret 4.5 s): card with real odds, outline, colour wash, push-in, black bars, orbit camera, sky tint, skip button; always hands the camera back | `src/Shared/RareReveal.luau`, vault note 17 |
 | Springs and effect timelines | Bouncy motion from code (`Spring`), and one-call effects tuned by EmitCount/EmitDelay/EmitDuration attributes, with the one-flash-a-second and reduced-motion gates | `src/Shared/Spring.luau`, `src/Shared/Emit.luau` |
+| Kill switches and automatic checks | `Flags.On("Name")` turns a feature off live via a `Flag_<Name>` attribute; GitHub runs `tools/check.sh` and the kid-safe check on every push | `src/Shared/Flags.luau`, `.github/workflows/checks.yml`, vault note 18 |
 | Our own VFX textures | 13 white-on-alpha textures and 4x4 flipbooks made by code (glow, rings, stars, sparks, cel puff, slash, noise, beam, shockwave, smoke, flame); the owner uploads them (picture: `assets/vfx/_sheet.png`) | `tools/vfx/make_textures.py` |
 | Pacing proven before anyone plays | A bot plays the economy; first rebirth ~1.5 min, each run ~1.5x longer; fails if a beat misses | `tools/pace.luau`, `Config.Pacing` |
 | HUD revealed by the tutorial (premium) | Only the bar at join; each step brings its button, spotlit; the rest pops in after the first rebirth | `Config.HudStages`, `src/Shared/HudStages.luau`, wired in `KitClient` (picture: `previews/hud-stages.png`) |
@@ -84,7 +85,7 @@ music and sound assets.
 
 ## Folder map
 - `src/Server/`: one ModuleScript per system (`ServerScriptService/Kit`). `src/Main.server.luau` wires them in order.
-- `src/Shared/`: Net (remotes and validators), Odds, Format, HudBuilder, Signal, Janitor, RateLimit, Feedback, Progression, HudStages, AnimeFX, Spring, Emit, LaunchFX, RareReveal (`ReplicatedStorage/Kit`).
+- `src/Shared/`: Net (remotes and validators), Odds, Format, HudBuilder, Signal, Janitor, RateLimit, Feedback, Progression, HudStages, AnimeFX, Spring, Emit, LaunchFX, RareReveal, Flags (`ReplicatedStorage/Kit`).
 - `src/Client/KitClient.client.luau`: the HUD's behaviour. `src/StarterGui/KitHUD.rbxm`: the HUD parts.
 - `src/Config/`: `GameConfig` (display-safe) and `GameSecrets` (server only).
 - `tests/`: specs. `tools/`: offline checks, play-through, place build, previews (`tools/preview/`), new-game script.

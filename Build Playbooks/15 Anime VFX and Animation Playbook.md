@@ -7,6 +7,8 @@ updated: 2026-10-31
 
 Back to [[00 Build Router]] · General layering, tiers, budgets: skill `roblox-vfx` · Game moments (launch, hatch, rebirth): [[11 VFX Moments Playbook]] · Animations: skill `roblox-ai-animation` · Premium layer: [[14 Premium Feel Playbook]] · Taste: [[09 Owner Taste Rules]] · Still looks cheap: [[16 Pro Animation and VFX Playbook]]
 
+> **Oct 31 update:** step-by-step recipes for every moment in this note (catch-up hit-stop, impact order, cheap auras, slashes, dashes, ultimates) are in [[19 Animation and VFX Recipe Book]]. Where they differ, note 19 is newer.
+
 **Goal (owner, Oct 31):** "anime style animations and VFX, like the anime games on Roblox do", "sort of Dragon Ball Z aura style". This note covers:
 - how the popular Roblox anime games get that look (§1);
 - where each piece already lives in the vault (§2);
@@ -53,7 +55,7 @@ Preview: `new-game-kit/previews/anime-aura.png` (tiers 1.0, 0.6, 0.3, left to ri
 | Streaks | Speed and power: thin sparks shooting straight up | sparkles, VelocityParallel, Squash 2.5, 10–16 studs/s, Life 0.2–0.4, Brightness 2 | 0.4 |
 | Ground | Weight: dust pushed out along the floor and a glow disc under the feet | smoke at the feet, Spread 85°, Drag 3; glow.png flat (VelocityPerpendicular), Size 5–6.5 | 0.5 |
 | Crackle | Electric arcs round the body, ~4 a second | 2–3 scripted Beams, 6 segments, random curve, width 0.18→0.08, live 0.08 s | 0.75 |
-| Outline | The body glows in the aura colour | one Highlight (fill 0.85, outline 0.35), **local player only** (Roblox caps Highlights at 31 at a time) | 0.9 |
+| Outline | The body glows in the aura colour | one Highlight (fill 0.85, outline 0.35), **local player only** (Roblox now allows 255, but the first costs up to 1 ms on phones; keep one and toggle it) | 0.9 |
 | Light | Colour spill on the floor | one PointLight, Brightness 0.8–2.2, Range 12, Shadows off | 0 |
 
 **Tier ladder:** each step adds one channel (core, streaks, ground, crackle, outline) and grows the flames about 10–20%. That's the `roblox-vfx` rule: escalate by channel, not by count. Colour by tier or rarity, e.g. yellow, then blue, then violet. Avoid copying one show's exact colour sequence and names.
@@ -89,7 +91,7 @@ Preview: `new-game-kit/previews/anime-aura.png` (tiers 1.0, 0.6, 0.3, left to ri
 - **Shockwave** (kit: `AnimeFX.Shockwave`): a flat ring (VelocityPerpendicular) at about 2× the radius over 0.5 s, plus a dust ring.
 
 ## 5. Beams, slashes and dashes
-- **Slashes, dashes, thrusts:** use `LihFolkVFX` presets as they are. They follow the frontal rule (arcs only in front of the character) and the three-tone rule, and the vault holds their review scores.
+- **Slashes, dashes, thrusts:** start from the `LihFolkVFX` presets, but they are **not plug-and-play**: they need textures and meshes from a LihFolk asset pack that isn't in this repo, and most are unreviewed drafts (note 19, Part 4). Rebuild them with our own textures (`new-game-kit/tools/vfx/make_textures.py`) and the slash recipe (note 19, R8). They follow the frontal rule (arcs only in front of the character) and the three-tone rule, and the vault holds their review scores.
 - **Energy beam (charged blast):**
   1. **Charge orb:** a glow core at the hands growing over 0.6 s, with motes pulled in (LihFolk `ChargeUp`).
   2. **Fire:** a Beam from the hands to the hit point, FaceCamera, Width 1→4 over 0.15 s, LightEmission 1, TextureSpeed 2–4 with a scrolling streak texture.
