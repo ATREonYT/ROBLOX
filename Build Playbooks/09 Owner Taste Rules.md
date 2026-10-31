@@ -43,6 +43,10 @@ Back to [[00 Build Router]] · Process: [[08 Few-Prompt Game Building with AI]]
 - **The launch: the ball flies upward, left to right across the screen** (Oct 31): a side-on flight camera, not a chase from behind.
 - **Area walls show only while you fly**, so their names don't stack in the lobby.
 
+## Passes and paid tiers
+- **No "VIP" anything** (Oct 31: "we dont do the VIP thing around here"). Never name or brand a pass, area, chat tag or tier "VIP".
+- **The paid top tier is a plain gamepass that looks better than every other tier** (Oct 31: "we are just gonna make it gamepasss so make it look good"). Give it the loudest tier look: [[11 VFX Moments Playbook]] tier ladder, or [[15 Anime VFX and Animation Playbook]] §3 for auras. It still follows the kid-safe rules: a real benefit, no fake scarcity.
+
 ## Pace and progression
 - **The reference pace is the target.** Its first rebirth comes at ~85 s; Cannon's Config now aims at ~1.5 min of training (an earlier build took ~7 min). Hood's World 1 was set to 25–30 minutes on their call (Oct 27).
 - **"Coming soon" instead of fake features:** Auto Collect shows Coming soon until it's real.

@@ -57,6 +57,7 @@ Compared across our games (`cannon-evolution/`, `huzz-valley/`) and the October 
 | Big readable numbers | 1.53K, 25.5M, 12T (never rounds up) | `src/Shared/Format.luau` |
 | Level-ups every second (premium) | The grind split into 20 small levels per run, with a Level Up! [xN] streak; display only | `src/Shared/Progression.luau` (for a grind stat that isn't spent; the kit's coins are, so it's ready to use but not wired) |
 | Every gain is felt (premium) | The Coins/Gems pill bumps and "+N" rises under it; fast gains are added together | `KitClient` TopBar section |
+| Anime-style effects | Power-up aura with tiers and a charge-up, hits, craters, shockwaves, impact frames (kid-safe), speed lines, hit-stop, shake (picture: `previews/anime-aura.png`) | `src/Shared/AnimeFX.luau`, vault note 15 |
 | Pacing proven before anyone plays | A bot plays the economy; first rebirth ~1.5 min, each run ~1.5x longer; fails if a beat misses | `tools/pace.luau`, `Config.Pacing` |
 | HUD revealed by the tutorial (premium) | Only the bar at join; each step brings its button, spotlit; the rest pops in after the first rebirth | `Config.HudStages`, `src/Shared/HudStages.luau`, wired in `KitClient` (picture: `previews/hud-stages.png`) |
 
@@ -79,7 +80,7 @@ music and sound assets.
 
 ## Folder map
 - `src/Server/`: one ModuleScript per system (`ServerScriptService/Kit`). `src/Main.server.luau` wires them in order.
-- `src/Shared/`: Net (remotes and validators), Odds, Format, HudBuilder, Signal, Janitor, RateLimit, Feedback, Progression, HudStages (`ReplicatedStorage/Kit`).
+- `src/Shared/`: Net (remotes and validators), Odds, Format, HudBuilder, Signal, Janitor, RateLimit, Feedback, Progression, HudStages, AnimeFX (`ReplicatedStorage/Kit`).
 - `src/Client/KitClient.client.luau`: the HUD's behaviour. `src/StarterGui/KitHUD.rbxm`: the HUD parts.
 - `src/Config/`: `GameConfig` (display-safe) and `GameSecrets` (server only).
 - `tests/`: specs. `tools/`: offline checks, play-through, place build, previews (`tools/preview/`), new-game script.
