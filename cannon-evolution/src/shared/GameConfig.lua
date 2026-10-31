@@ -53,7 +53,10 @@ Config.Map = {
 	LobbyCenter = Vector3.new(-56, 2, 0), -- the sand island inside the palisade
 	LobbySize = Vector3.new(100, 36, 80), -- lobby orbs fall somewhere in 80% of this, on open ground
 	Spawn = Vector3.new(-60, 2.5, 0), -- the compass plaza
-	DockEnd = Vector3.new(14, 2.5, 0), -- your cannon stands here, nose over the water
+	-- your cannon stands here, on the dock. It was the dock's far end (14); Oct 31 it moved 20 file units
+	-- (40 studs) up the dock towards the island, so the walk from the lobby is shorter (Alex: "doesnt have to
+	-- walk so long ... to launch the cannon"). The first arc (at least 49 studs) still clears the dock.
+	DockEnd = Vector3.new(-6, 2.5, 0),
 	-- stage name and where it starts along the river (X), from the map; the area walls go here
 	StageStarts = {
 		{ "Meadow Pond", 0 }, { "Mushroom Grove", 100 }, { "Sandy Shore", 233 }, { "Lighthouse Point", 400 },
@@ -63,9 +66,14 @@ Config.Map = {
 	},
 }
 -- The whole map is built Scale times the file's size (Alex, Oct 30: "make the map a bit bigger, it feels
--- small"). The points above are in the file's units, so they are scaled here; the build tools turn their
--- own plan points into the world with Config.Map.At. Characters, booths and the stand keep their size.
-Config.Map.Scale = 1.3
+-- small"; Oct 31: "make the map bigger, its still to miniature", so 1.3 became 2). The points above are in
+-- the file's units, so they are scaled here; the build tools turn their own plan points into the world with
+-- Config.Map.At. Characters, booths and the stand keep their size. Keep Scale at 2 or under: Roblox caps a
+-- MeshPart at 2048 studs, and the river pieces are 1,008 long in the file (tools/map/make_patch.py).
+Config.Map.Scale = 2
+-- Launches were tuned on the 1.3x map. Stretch makes every launch that much longer, so each Power still
+-- reaches the same stage, and cash and rewards divide it back out, so they don't change.
+Config.Map.Stretch = Config.Map.Scale / 1.3
 function Config.Map.At(x, y, z)
 	return Vector3.new(x, y, z) * Config.Map.Scale
 end
@@ -85,12 +93,15 @@ function Config.Map.IsGround(name)
 	return string.find(name, "^Island_") ~= nil or string.find(name, "^Plaza_") ~= nil
 		or string.find(name, "^Path_") ~= nil or string.find(name, "^Dock_") ~= nil
 end
+-- Walk speed before Walk Speed upgrades: Roblox's 16 felt slow once the map grew to 2x (Alex, Oct 31: "the
+-- player doesnt have to walk so long")
+Config.BASE_WALK_SPEED = 20
 Config.LAUNCH_COOLDOWN = 2
 Config.FLIGHT_TIMEOUT = 25
 Config.SKIP_FIRST_HOP = 0.2 -- first arc out of the cannon, as a share of the whole distance
 Config.SKIP_DECAY = 0.86 -- each skip is this much shorter than the last
 Config.RETURN_DELAY = 1 -- seconds on the landing before you're home; Stone Skipping's next throw is ~1 s after
-Config.MIN_LAUNCH_DISTANCE = 160 -- the first arc clears the lobby into the water
+Config.MIN_LAUNCH_DISTANCE = 160 * Config.Map.Stretch -- the first arc clears the lobby into the water
 -- Rare shots (vault "Beat the Hits", our take on Stone Skipping's Secret/Colossus throws): the server
 -- rolls them on every launch, free and never for sale. They multiply that launch's cash, and the
 -- ball flies with its own trail; a Mega Shot is announced to the whole server.
@@ -388,7 +399,8 @@ Config.Passes = {
 	OctoOpen    = { Id = 0, Name = "8x Open",     Icon = "TripleOpen",  Price = 799, Desc = "Hatch 8 eggs at once" },
 	AutoCollect = { Id = 0, Name = "Auto Collect", Icon = "AutoCollect", Price = 349, Desc = "Collect orbs from far away", ComingSoon = true }, -- orbs are off, so it gives nothing yet
 	ExtraEquip  = { Id = 0, Name = "+2 Pets",     Icon = "ExtraEquip",  Price = 199, Desc = "Equip 2 more pets" },
-	VIP         = { Id = 0, Name = "VIP",         Icon = "VIP",         Price = 299, Desc = "Dragon Cannon station + 1.5x Gems" },
+	-- the key stays VIP in the code; players never see the word (Alex, Oct 31: "we dont do the VIP thing around here")
+	VIP         = { Id = 0, Name = "Dragon Cannon", Icon = "Cannon",    Price = 299, Desc = "Train at the Dragon Cannon lane (40x Power) + 1.5x Gems" },
 	AutoLaunch  = { Id = 0, Name = "Auto Launch", Icon = "Trophy",      Price = 25,  Desc = "Launch automatically" },
 }
 Config.PassOrder = { "DoublePower", "DoubleCash", "Lucky", "TripleOpen", "OctoOpen", "AutoCollect", "ExtraEquip", "VIP", "AutoLaunch" }
@@ -640,13 +652,13 @@ end
 
 function Config.MaxRange(power, rangeMult)
 	local v = Config.LaunchSpeed(power, rangeMult)
-	return v * v * math.sin(2 * math.rad(Config.LAUNCH_ANGLE)) / workspace.Gravity
+	return v * v * math.sin(2 * math.rad(Config.LAUNCH_ANGLE)) / workspace.Gravity * Config.Map.Stretch
 end
 
 -- "Cash per minute" used for cash packs and rewards, so they stay useful
 -- at every stage of the game.
 function Config.CashPerMinute(data)
-	local distance = math.max(data.BestDistance, 100)
+	local distance = math.max(data.BestDistance / Config.Map.Stretch, 100)
 	return math.floor(distance * Config.CASH_PER_STUD * Config.CashMultiplier(data) * 10)
 end
 

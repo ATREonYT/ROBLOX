@@ -97,3 +97,8 @@ is something we got wrong first and then fixed.
   branch) before connecting Rojo, or not to connect Rojo when testing a downloaded file.
 - Stamp every build: Huzz Valley shows "build <date>" small in the corner in Studio (`Config/Build`, written by
   `build_place.sh`), so any recording tells you which code ran.
+
+## 11. Tiered stations read as one system
+- Build one lane model and clone it for every tier. Colour the whole lane in the tier colour, give each
+  lane one label at the same height and make higher tiers fancier. The full rules are in
+  `Build Playbooks/Lesson - Tiered Training Lanes.md` (from Stone Skipping, Oct 31).

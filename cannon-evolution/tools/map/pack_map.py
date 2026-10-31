@@ -10,7 +10,7 @@ import json, struct, sys
 import numpy as np
 
 MAX_TRIS = 12000
-MAX_SPAN = 1500  # Roblox caps a MeshPart at 2048 studs a side: Import 3D squashes a bigger mesh (Oct 30: two volcano pieces)
+MAX_SPAN = 1020  # Roblox caps a MeshPart at 2048 studs a side: Import 3D squashes a bigger mesh (Oct 30: two volcano pieces); the map is built 2x (Oct 31)
 LONG = 100  # a triangle longer than this along a slice is a big ground piece, cut into cells instead
 COMP = {5126: np.float32, 5125: np.uint32, 5123: np.uint16, 5121: np.uint8}
 NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}

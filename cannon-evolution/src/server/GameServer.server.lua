@@ -272,7 +272,7 @@ local function applyWalkSpeed(player)
 	local profile = profiles[player]
 	local _, hum = getRoot(player)
 	if profile and hum then
-		hum.WalkSpeed = 16 + Config.Level(profile.Data, "Speed")
+		hum.WalkSpeed = (Config.BASE_WALK_SPEED or 16) + Config.Level(profile.Data, "Speed")
 	end
 end
 
@@ -328,7 +328,7 @@ local function startTraining(player, station)
 			if pass.Id > 0 then
 				MarketplaceService:PromptGamePassPurchase(player, pass.Id)
 			else
-				notify(player, "The " .. info.Name .. " needs the " .. pass.Name .. " gamepass!", GOLD)
+				notify(player, "Get the " .. pass.Name .. " gamepass to train here!", GOLD)
 			end
 			return
 		end
@@ -413,7 +413,7 @@ end)()
 -- front, every client plays the ball (the owner's camera follows it), and
 -- the reward lands when the ball stops.
 local function cashFor(player, profile, distance)
-	local cash = distance * Config.CASH_PER_STUD * Config.CashMultiplier(profile.Data)
+	local cash = distance / Config.Map.Stretch * Config.CASH_PER_STUD * Config.CashMultiplier(profile.Data)
 	if hasPass(player, "DoubleCash") then
 		cash *= 2
 	end
@@ -1143,6 +1143,35 @@ local function purchase(player, kind, key)
 	end
 	return false, "Coming soon!"
 end
+
+-- Buy boards in the world (BuildWorld1's "2x POWER" board by the training lanes, Oct 31): a ProximityPrompt
+-- on a part with a BuyPass or BuyProduct attribute opens the same purchase as the Shop.
+local function hookBuyBoard(prompt)
+	local board = prompt.Parent
+	if not (board and board:IsA("BasePart")) then
+		return
+	end
+	local pass, product = board:GetAttribute("BuyPass"), board:GetAttribute("BuyProduct")
+	if not (pass or product) then
+		return
+	end
+	prompt.Triggered:Connect(function(player)
+		local ok, message = purchase(player, pass and "Pass" or "Product", pass or product)
+		if not ok and message then
+			notify(player, message, GOLD)
+		end
+	end)
+end
+for _, d in ipairs(workspace:GetDescendants()) do
+	if d:IsA("ProximityPrompt") then
+		hookBuyBoard(d)
+	end
+end
+workspace.DescendantAdded:Connect(function(d)
+	if d:IsA("ProximityPrompt") then
+		hookBuyBoard(d)
+	end
+end)
 
 ---------------------------------------------------------------------------
 -- Cash orbs around the lobby

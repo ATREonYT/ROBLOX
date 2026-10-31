@@ -38,6 +38,7 @@ The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 
 ## Build guides
 - [[GAME-FEEL|Game feel]] and [[VFX-ITEMS|item VFX]]
+- [[Build Playbooks/Lesson - Tiered Training Lanes|Lesson: tiered training lanes]] (Oct 31, from Stone Skipping)
 - [[CLAUDE|How we build with Claude (general rules)]]
 
 ## +1 Cannon Evolution
