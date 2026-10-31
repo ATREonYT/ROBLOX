@@ -83,7 +83,7 @@ for _, info in ipairs(Config.Stations) do
 			Name = "Pill",
 			AnchorPoint = Vector2.new(0.5, 0),
 			Position = UDim2.fromScale(0.5, 0),
-			Size = UDim2.fromScale(0.42, 0.27),
+			Size = UDim2.fromScale(0.5, 0.31),
 			BackgroundColor3 = Color3.fromRGB(30, 24, 48),
 			BackgroundTransparency = 0.1,
 			ZIndex = 1,
@@ -96,8 +96,8 @@ for _, info in ipairs(Config.Stations) do
 			BackgroundTransparency = 1,
 			ScaleType = Enum.ScaleType.Fit,
 			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.fromScale(0.3, 0.135),
-			Size = UDim2.fromScale(0.15, 0.25),
+			Position = UDim2.fromScale(0.27, 0.155),
+			Size = UDim2.fromScale(0.17, 0.27),
 			ZIndex = 2,
 			Parent = card,
 		})
@@ -106,8 +106,8 @@ for _, info in ipairs(Config.Stations) do
 		label(card, info.Pass and "VIP" or tostring(info.Rebirths), {
 			Name = "Number",
 			Anchor = Vector2.new(0, 0.5),
-			Position = UDim2.fromScale(0.46, 0.135),
-			Size = UDim2.fromScale(0.22, 0.2),
+			Position = UDim2.fromScale(0.45, 0.155),
+			Size = UDim2.fromScale(0.27, 0.23),
 			StrokeSize = 3,
 			ZIndex = 4,
 		})
@@ -115,8 +115,8 @@ for _, info in ipairs(Config.Stations) do
 		-- 2. LOCKED / UNLOCKED (Effects.lua sets the words and the colour for each player)
 		local status = new("Frame", {
 			Name = "Status",
-			Position = UDim2.fromScale(0, 0.31),
-			Size = UDim2.fromScale(1, 0.2),
+			Position = UDim2.fromScale(0, 0.34),
+			Size = UDim2.fromScale(1, 0.24),
 			BackgroundTransparency = 1,
 			Parent = card,
 		})
@@ -131,7 +131,7 @@ for _, info in ipairs(Config.Stations) do
 		-- 3. the power it gives
 		label(card, Config.Format(info.Gain) .. "x POWER", {
 			Name = "Multiplier",
-			Size = UDim2.fromScale(1, 0.44),
+			Size = UDim2.fromScale(1, 0.38),
 			Position = UDim2.fromScale(0.5, 1),
 			Anchor = Vector2.new(0.5, 1),
 			StrokeSize = 5,
