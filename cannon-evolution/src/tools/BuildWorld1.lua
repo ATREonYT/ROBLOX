@@ -94,35 +94,14 @@ if newMap then
 			blockY = math.max(blockY, floorAt(x(i), z, floorY))
 		end
 	end
-	-- one open stud platform under the whole row and the walk-up in front of it (like Stone Skipping's
-	-- lanes); the lanes stand on its top
-	local PLAT_TOP = blockY + 0.35
-	local halfW = 14 * BOOTH_SCALE / 2 + 2.2
-	local x0, x1 = x(#Config.Stations) - halfW, x(1) + halfW
-	local zBack = MIDDLE.Z - (TARGET_Z + 3.2) * BOOTH_SCALE - 1.2 -- clear of the rocks by the palisade
-	local zFront = Config.Map.At(0, 0, -12.5).Z -- where the plank links from the plaza arrive
+	-- the lanes stand straight on the island's ground (Alex, Oct 31: "removing the grey blocks which they are
+	-- on"); each lane has its own footing in its colours down into the ground, so none floats where the
+	-- ground dips. An earlier version built a stud platform (LanePlatform) under the row; it is removed.
+	local PLAT_TOP = blockY + 0.1
 	local oldPlat = workspace:FindFirstChild("LanePlatform")
 	if oldPlat then
 		oldPlat:Destroy()
 	end
-	local plat = Instance.new("Folder")
-	plat.Name = "LanePlatform"
-	-- cool light stone, like a stone dock: it sets off the warm gold and orange lanes, which vanished into sand
-	-- (Oct 31 critic; the reference's walkways contrast with every lane the same way)
-	for _, layer in ipairs({ { 0.7, PLAT_TOP - 0.12, Color3.fromRGB(128, 134, 150) }, { 0, PLAT_TOP, Color3.fromRGB(184, 190, 202) } }) do
-		local grow, top, color = layer[1], layer[2], layer[3]
-		local p = Instance.new("Part")
-		p.Name = grow > 0 and "Edge" or "Top"
-		p.Anchored = true
-		p.Material = Enum.Material.SmoothPlastic
-		p.TopSurface = Enum.SurfaceType.Smooth
-		p.BottomSurface = Enum.SurfaceType.Smooth
-		p.Color = color
-		p.Size = Vector3.new(x1 - x0 + grow * 2, 1.2, math.abs(zFront - zBack) + grow * 2)
-		p.CFrame = CFrame.new((x0 + x1) / 2, top - 0.6, (zFront + zBack) / 2)
-		p.Parent = plat
-	end
-	plat.Parent = workspace
 	slot = function(i)
 		return Vector3.new(x(i), PLAT_TOP, MIDDLE.Z), fireDir
 	end
@@ -305,6 +284,11 @@ local function makeBooth(standCf, width, look)
 	local function shade(c, f)
 		return Color3.new(math.min(c.R * f, 1), math.min(c.G * f, 1), math.min(c.B * f, 1))
 	end
+
+	-- the footing: the lane's own base in a dark rim shade, reaching down into the ground, with a step at the
+	-- open front so you walk straight up onto the stand pad
+	blk("Footing", Vector3.new(W, 3, L + 1.4), 0, 0, mid - 0.7, dark(look.Rim, 0.2), true)
+	blk("Step", Vector3.new(W - RIM * 2, FLOOR_T / 2, 1.2), 0, FLOOR_T / 2, front - 0.6, shade(look.Rim, 1.1), true)
 
 	-- the base slab (its top is the pool's bed) and the deck round the pool, all in the tier colour
 	blk("Floor", Vector3.new(W, BED_T, L), 0, BED_T, mid, look.Bed, true)
