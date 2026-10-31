@@ -94,7 +94,7 @@ return function(ctx)
 		-- pity counter (house rule for paid random items; every egg gets one)
 		local _, pityN, goalName = Config.PityInfo(egg)
 		local left = math.max(1, pityN - ((State.Data.Pity or {})[egg.Id] or 0))
-		Kit.text({ Text = goalName .. " or better guaranteed in " .. left .. (left == 1 and " hatch" or " hatches"), Size = 22, StrokeSize = 3, Color = Color3.fromRGB(200, 255, 200), AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.6, 0, 0, 26), Position = UDim2.new(0.38, 2, 1, -126), ZIndex = 30, Parent = show })
+		Kit.text({ Text = goalName .. " or better guaranteed in " .. left .. (left == 1 and " hatch" or " hatches"), Size = 22, StrokeSize = 3, Color = Color3.fromRGB(200, 255, 200), AlignX = Enum.TextXAlignment.Left, FrameSize = UDim2.new(0.6, 0, 0, 26), Position = UDim2.new(0.38, 2, 1, -134), ZIndex = 30, Parent = show })
 
 		local restricted = Config.IsPaidEgg(egg) and Players.LocalPlayer:GetAttribute("PaidRandomRestricted") ~= false
 		local buttons = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -20, 1, -22), Size = UDim2.new(0.6, 0, 0, 66), ZIndex = 28, Parent = show })
