@@ -76,6 +76,7 @@ Run `AI Video Library/16 Cartoony Kid-Appeal Checklist.md` before showing a new 
   - `plus-one-speed/`, `snatch-a-brainrot/`, `steal-an-egg/`: small single-script prototypes. Leave them alone unless asked.
   - `LihFolk/`: LihFolk Vault V2, a third-party Roblox knowledge base (notes in `LihFolk/LihFolk Vault V2/`, start from its `ROUTER.md`; skills and Luau systems in `LihFolk/skills/`). Treat it as reference, check it against the owner's rules here.
   - `AI Video Library/`, `new-game-kit/`, `GAME-FEEL.md`, `VFX-ITEMS.md`, `reports/`, `research_notes/`: shared knowledge for every new game.
+- **The owner edits in Studio by hand (Oct 31).** Before installing any script or part, read the live Studio copy and merge into it. Never overwrite the owner's edits, and copy them back into the repo.
 - **Getting the owner's Studio work:** they paste `tools/export-for-claude.lua` into Studio's Command Bar and send the `ServerStorage > ClaudeExport > PartN` text.
 - In Studio, saves run in ProfileStore **Mock** mode, so progress resets on Stop. That is on purpose.
 - **Offline tools** (no Studio needed) live in `<game>/tools/preview`:
