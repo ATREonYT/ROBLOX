@@ -96,6 +96,28 @@ function Vector3.new(x, y, z)
 	mt.__tostring = function()
 		return `{v.X}, {v.Y}, {v.Z}`
 	end
+	-- Vector maths like real Roblox (a + b, a - b, a * n, n * a, a / n, -a).
+	mt.__add = function(a, b)
+		return Vector3.new(a.X + b.X, a.Y + b.Y, a.Z + b.Z)
+	end
+	mt.__sub = function(a, b)
+		return Vector3.new(a.X - b.X, a.Y - b.Y, a.Z - b.Z)
+	end
+	mt.__mul = function(a, b)
+		if type(a) == "number" then
+			a, b = b, a
+		end
+		if type(b) == "number" then
+			return Vector3.new(a.X * b, a.Y * b, a.Z * b)
+		end
+		return Vector3.new(a.X * b.X, a.Y * b.Y, a.Z * b.Z)
+	end
+	mt.__div = function(a, b)
+		return Vector3.new(a.X / b, a.Y / b, a.Z / b)
+	end
+	mt.__unm = function(a)
+		return Vector3.new(-a.X, -a.Y, -a.Z)
+	end
 	vectors[proxy] = true
 	return proxy
 end
