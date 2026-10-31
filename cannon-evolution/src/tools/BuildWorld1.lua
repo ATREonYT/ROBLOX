@@ -743,5 +743,16 @@ if spawn then
 	spawn.CFrame = CFrame.lookAt(p, p + dirL)
 	spawn.Anchored = true
 end
+-- The spawn's compass floor flickered (Alex, Oct 31: "make the spawn not flicker"): the map draws it as two
+-- halves that are the same size in the same place, each with a sliver of the other's planks, so the two
+-- fight to be seen. Lifting one half 0.05 studs lets it always win. Once only (attribute BaseY).
+if newMap then
+	local half = newMap:FindFirstChild("Plaza_Compass_Spawn_001_2", true)
+	if half and half:IsA("BasePart") then
+		local baseY = half:GetAttribute("BaseY") or half.Position.Y
+		half:SetAttribute("BaseY", baseY)
+		half.CFrame = half.CFrame + Vector3.new(0, baseY + 0.05 - half.Position.Y, 0)
+	end
+end
 
 print("[BuildWorld1] Built " .. #Config.Stations .. " stations")

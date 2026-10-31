@@ -86,7 +86,7 @@ local SIGN = { -53, -10.5 }
 local FLAG_POLES = { { -44, -2.5, 6.25 }, { -37, -4, 5 }, { -30, -4.25, 1.75 } }
 local FLAG_COLORS = { Color3.fromRGB(235, 60, 60), Color3.fromRGB(255, 205, 50), Color3.fromRGB(60, 150, 255), Color3.fromRGB(80, 210, 90), Color3.fromRGB(255, 255, 255) }
 -- bush and flower clumps at the plaza edges: { x, z, bushes } (never on a path, a booth front, an egg or the stand)
-local CLUMPS = { { -68, 7, 2 }, { -76, 9.5, 3 }, { -86, 7.5, 2 }, { -68.5, -7, 2 }, { -47, -7, 1 }, { -20, -7, 2 }, { -20, 6, 2 }, { -50, -5, 1 }, { -51, 4.5, 1 }, { -23, 4, 1 } }
+local CLUMPS = { { -68, 7, 2 }, { -76, 9.5, 3 }, { -91, 9, 2 }, { -68.5, -7, 2 }, { -47, -7, 1 }, { -20, -7, 2 }, { -20, 6, 2 }, { -50, -5, 1 }, { -51, 4.5, 1 }, { -23, 4, 1 } }
 local GOLD, NEON_GOLD, SIGN_RED = Color3.fromRGB(255, 196, 60), Color3.fromRGB(255, 214, 90), Color3.fromRGB(205, 48, 48)
 local BOARDS = { -- { text, way it points {x, z}, height over the ground }
 	{ "TRAINING", { 0, -1 }, 6.3 },
