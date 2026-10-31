@@ -163,6 +163,9 @@ return function(ctx)
 
 	-- "+48% MORE": how much more you get per Robux than the smallest pack of the same kind (only shown when it's real)
 	local function valueTag(amount, price, baseAmount, basePrice)
+		if not (amount and price and baseAmount and basePrice) then
+			return nil
+		end
 		local more = math.floor((amount / price) / (baseAmount / basePrice) * 100 - 100 + 0.5)
 		return more >= 10 and ("+" .. more .. "% MORE") or nil
 	end
@@ -193,8 +196,12 @@ return function(ctx)
 					amount = "+" .. Config.Format(Config.PowerPerMinute(data, State.Passes.VIP) * p.Grant.PowerMinutes) .. " Power"
 				end
 				local base = Config.Products[p.Grant.CashMinutes and "CashSmall" or "PowerPack1"]
-				local value = p.Grant.CashMinutes and valueTag(p.Grant.CashMinutes, p.Price, base.Grant.CashMinutes, base.Price)
-					or valueTag(p.Grant.PowerMinutes, p.Price, base.Grant.PowerMinutes, base.Price)
+				local value
+				if p.Grant.CashMinutes then
+					value = valueTag(p.Grant.CashMinutes, p.Price, base.Grant.CashMinutes, base.Price)
+				else
+					value = valueTag(p.Grant.PowerMinutes, p.Price, base.Grant.PowerMinutes, base.Price)
+				end
 				tile(grid, {
 					Title = p.Name, Icon = p.Icon, Order = i, Desc = amount, Price = p.Price, Texture = "StudTile", Value = value,
 					Color = p.Grant.CashMinutes and Color3.fromRGB(60, 190, 70) or Color3.fromRGB(255, 170, 30),
