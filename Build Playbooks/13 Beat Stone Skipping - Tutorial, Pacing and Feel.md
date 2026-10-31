@@ -64,3 +64,9 @@ Back to [[00 Build Router]] · Full teardown: [[Teardown - Stone Skipping]] · R
 3. **Spotlight the one button** the step needs: dim everything else.
 4. **Chain the reward beats**: fade, celebration screen, HUD reveal, daily reward.
 5. **Measure from the recording, not from memory**: the numbers above are from frames.
+
+## 4. Oct 31 follow-ups
+- **Cash coins fly into the counter** when you land home (`GameClient/CoinFly.lua`): 6 to 12 coins spray off your character, swoop up into the Cash icon and bump it one by one with a rising coin tick. The money buttons sit next to the number they raise, and now the money visibly lands there too.
+- **The tutorial has you buy a cannonball** (Alex: "make them buy a cannon ball"), as step 3, right after the first two launches, like Stone Skipping's EQUIP A NEW STONE. The Stone ball now costs 40 (one early launch's pay, was 500), and buying it also equips it. Steps: Reach Level 20, Launch ×2, Get a New Cannonball, Earn Cash (100), Hatch, Rebirth Power/Cash, Rebirth. The HUD reveal stages moved up by one (`FULL = 7`).
+- **Timed in Studio with no walking:** intro done at about 9 s; Level 20 at 35 s; two launches by 59 s; ball bought at 68 s; Starter Egg cash at 92 s (two more launches); rebirth at about 103 s. Four launches in all, so the guaranteed first Mythic (6th launch) lands on the second launch after the tutorial. Walking adds roughly 20 to 30 s on the Oct 31 map; launches take about 11 s each, which is now the biggest cost.
+- **Lesson:** a cheap first purchase in the tutorial must cost less than one or two payoffs; a price set for the long game (500) blocks the tutorial for minutes.

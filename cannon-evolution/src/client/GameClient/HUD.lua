@@ -291,11 +291,12 @@ return function(ctx)
 	-- Rebirth tile, and the rest pops in after TUTORIAL COMPLETE. The stage is how many tutorial steps are
 	-- done; Tutorial sets ctx.HudStage while it runs. Everyone else gets the full HUD.
 	-----------------------------------------------------------------------
-	local FULL = 6
+	-- steps: 1 level, 2 launch, 3 cannonball, 4 cash, 5 hatch, 6 rebirth Power/Cash, 7 rebirth
+	local FULL = 7
 	local gated = {
-		{ shopBtn, FULL }, { tiles.Rebirth, 5 }, { tiles.Eggs, 3 }, { tiles.Cannons, FULL }, { tiles.Upgrades, FULL },
+		{ shopBtn, FULL }, { tiles.Rebirth, 6 }, { tiles.Eggs, 4 }, { tiles.Cannons, FULL }, { tiles.Upgrades, FULL },
 		{ tiles.Inventory, FULL }, { tiles.Worlds, FULL }, { right, FULL }, { autoBtn, FULL }, { promos, FULL },
-		{ amounts.Cash.Parent, 1 }, { amounts.Rebirths.Parent, 5 }, { amounts.Gems.Parent, FULL },
+		{ amounts.Cash.Parent, 1 }, { amounts.Rebirths.Parent, 6 }, { amounts.Gems.Parent, FULL },
 	}
 	for _, card in pairs(packCards) do
 		table.insert(gated, { card, FULL })
@@ -353,7 +354,7 @@ return function(ctx)
 
 	local spotOn = false
 	RunService.Heartbeat:Connect(function()
-		local want = lastStage == 5 and not ctx.Player:GetAttribute("Launching")
+		local want = lastStage == FULL - 1 and not ctx.Player:GetAttribute("Launching")
 		if want then
 			for _, panel in pairs(ctx.Panels) do
 				if panel.Frame.Visible then

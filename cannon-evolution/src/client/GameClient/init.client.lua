@@ -220,6 +220,7 @@ end
 require(script.HUD)(ctx)
 require(script.Effects)(ctx)
 require(script.Tutorial)(ctx)
+require(script.CoinFly)(ctx) -- cash coins fly into the counter after a launch
 
 -- Refresh the open panel whenever data changes
 State.Changed:Connect(function(what)

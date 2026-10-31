@@ -395,9 +395,11 @@ end
 -- Model = true: Alex's imported ball (ReplicatedStorage.CannonBalls, named by Id) is used; the
 -- others are drawn from Color and Band, which also tint the trail and the shop card.
 ---------------------------------------------------------------------------
+-- Stone costs one early launch's pay: the tutorial has you buy it after your first two launches, like Stone
+-- Skipping's "equip a new stone" (Alex, Oct 31), so the tutorial takes 4 launches in all
 Config.Balls = {
 	{ Id = "Wood",    Name = "Wood",    Price = 0,         CashBonus = 0,    Model = true, Color = Color3.fromRGB(225, 110, 40),  Band = Color3.fromRGB(150, 65, 25) },
-	{ Id = "Stone",   Name = "Stone",   Price = 500,       CashBonus = 0.05, Model = true, Color = Color3.fromRGB(175, 170, 165), Band = Color3.fromRGB(115, 110, 105) },
+	{ Id = "Stone",   Name = "Stone",   Price = 40,        CashBonus = 0.05, Model = true, Color = Color3.fromRGB(175, 170, 165), Band = Color3.fromRGB(115, 110, 105) },
 	{ Id = "Steel",   Name = "Steel",   Price = 2500,      CashBonus = 0.1,  Model = true, Color = Color3.fromRGB(230, 232, 240), Band = Color3.fromRGB(150, 160, 185) },
 	{ Id = "Gold",    Name = "Gold",    Price = 10000,     CashBonus = 0.15, Color = Color3.fromRGB(255, 200, 40),  Band = Color3.fromRGB(255, 255, 255) },
 	{ Id = "Ruby",    Name = "Ruby",    Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },

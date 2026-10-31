@@ -30,6 +30,7 @@ local TEXT = {
 	Tag = "TUTORIAL",
 	Train = "REACH LEVEL",
 	Launch = "LAUNCH",
+	Ball = "GET A NEW CANNONBALL",
 	Cash = "EARN CASH",
 	Hatch = "HATCH AN EGG",
 	Power = "GET REBIRTH POWER",
@@ -158,6 +159,11 @@ return function(ctx)
 	local function launchZone()
 		return workspace:FindFirstChild("LaunchZone")
 	end
+	-- the Stone ball on the cannonball stand (BallStand.lua puts a label part over each ball)
+	local function ballPad()
+		local balls = workspace:FindFirstChild("StandBalls")
+		return balls and balls:FindFirstChild("Label_Stone")
+	end
 	local function eggStand()
 		local stands = workspace:FindFirstChild("EggStands")
 		local s = stands and stands:FindFirstChild("StarterEgg")
@@ -214,6 +220,22 @@ return function(ctx)
 				return math.min(data.TotalLaunches - launchBase, LAUNCH_GOAL), LAUNCH_GOAL
 			end,
 			Target = launchZone,
+		},
+		{
+			-- Stone Skipping's EQUIP A NEW STONE, right after the first two throws (Alex, Oct 31: "make them buy
+			-- a cannon ball"). The Stone ball costs one launch's pay, and buying it also picks it.
+			Label = function()
+				return TEXT.Ball
+			end,
+			Count = function(data)
+				for id in pairs(data.Balls) do
+					if id ~= "Wood" then
+						return 1, 1
+					end
+				end
+				return 0, 1
+			end,
+			Target = ballPad,
 		},
 		{
 			Label = function()
@@ -1101,7 +1123,8 @@ return function(ctx)
 		started = true
 		local replay = REPLAY_IN_STUDIO and RunService:IsStudio()
 		local saved = replay and 0 or (data.Tutorial or 0)
-		if saved >= #STEPS then
+		-- done, or a save from before a step was added that has already rebirthed: no tutorial
+		if saved >= #STEPS or (data.Rebirths > 0 and not replay) then
 			return
 		end
 		gui.Enabled = true
