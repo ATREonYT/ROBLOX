@@ -1017,6 +1017,13 @@ local function claimPlaytime(player, index)
 		return false, "Keep playing to unlock this!"
 	end
 	profile.PlaytimeClaimed[index] = true
+	-- a free hatch (the first gift): the egg's own odds and reveal; hatch() is defined above, grantReward isn't
+	if info.Reward.Egg then
+		local egg = Config.GetEgg(info.Reward.Egg)
+		if egg then
+			hatch(player, egg, info.Reward.Count or 1, true)
+		end
+	end
 	grantReward(player, info.Reward)
 	return true
 end

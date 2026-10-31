@@ -130,6 +130,10 @@ Config.REBIRTH_POWER_BASE = 100 -- rebirth 2 onwards: this times REBIRTH_GROWTH 
 -- at least 120, minus 100) is the Cash, so you rebirth right after your first hatch
 Config.REBIRTH_FIRST_POWER = 30
 Config.REBIRTH_FIRST_CASH = 20
+-- the second rebirth comes about 2 minutes after the first (it was about 3.5 with only the first booth open):
+-- vault 20's ladder, rebirths at about 90 s, 4 min, 8 min (Oct 31)
+Config.REBIRTH_SECOND_POWER = 150
+Config.REBIRTH_SECOND_CASH = 100
 Config.REBIRTH_CASH_BASE = 50
 Config.REBIRTH_GROWTH = 3.2 -- R1 ~1 min, R5 ~10 min, R10 ~1.5 h, R12 ~3.5 h of training
 Config.REBIRTH_POWER_BONUS = 0.5 -- +50% Power per shot per rebirth
@@ -139,6 +143,8 @@ function Config.RebirthCost(rebirths)
 	local g = Config.REBIRTH_GROWTH ^ rebirths
 	if rebirths == 0 then
 		return Config.REBIRTH_FIRST_POWER, Config.REBIRTH_FIRST_CASH
+	elseif rebirths == 1 then
+		return Config.REBIRTH_SECOND_POWER, Config.REBIRTH_SECOND_CASH
 	end
 	return math.floor(Config.REBIRTH_POWER_BASE * g), math.floor(Config.REBIRTH_CASH_BASE * g)
 end
@@ -554,7 +560,8 @@ Config.DAILY_COOLDOWN = 20 * 3600 -- can claim again after 20h
 Config.DAILY_STREAK_RESET = 48 * 3600 -- streak resets after 48h
 
 Config.PlaytimeRewards = {
-	{ Minutes = 3,  Icon = "CashTiny",    Text = "Cash",     Reward = { CashMinutes = 3 } },
+	-- the first gift is a free egg at 3 min (vault 20: a free hatch from a playtime gift by 3 minutes)
+	{ Minutes = 3,  Icon = "StarterCrate", Text = "Free Egg", Reward = { Egg = "Starter" } },
 	{ Minutes = 8,  Icon = "Gem",  Text = "15 Gems",  Reward = { Gems = 15 } },
 	{ Minutes = 15, Icon = "Lucky",       Text = "2x Luck",  Reward = { Boost = "Luck", Minutes = 10 } },
 	{ Minutes = 25, Icon = "CashMedium",  Text = "Cash",     Reward = { CashMinutes = 15 } },

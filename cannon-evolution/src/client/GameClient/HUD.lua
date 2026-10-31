@@ -122,6 +122,33 @@ return function(ctx)
 	badges.Rewards = Kit.badge(roundButton("Rewards", "Rewards", 1, function()
 		ctx.Toggle("Rewards")
 	end))
+	-- the next playtime gift counts down under the gift button, so there's always something a minute away
+	-- (vault 20 rule 10, the exit hook; Stone Skipping's gift timers)
+	local giftTimer = Kit.text({ Name = "GiftTimer", Text = "", Size = 18, StrokeSize = 2.5, Color = Kit.Colors.Yellow, FrameSize = UDim2.fromOffset(90, 22), Position = UDim2.new(0.5, 0, 1, 2), Anchor = Vector2.new(0.5, 0), ZIndex = 6, Parent = right:FindFirstChild("Rewards") })
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			local play = State.Data and State.CurrentPlaytime and State.CurrentPlaytime()
+			local nextAt
+			if play and State.PlaytimeClaimed then
+				for i, r in ipairs(Config.PlaytimeRewards) do
+					if not State.PlaytimeClaimed[i] then
+						nextAt = r.Minutes * 60
+						break
+					end
+				end
+			end
+			if not nextAt then
+				giftTimer.Text = ""
+			elseif play >= nextAt then
+				giftTimer.Text = "READY!"
+				giftTimer.TextColor3 = Kit.Colors.Green
+			else
+				giftTimer.Text = Config.FormatTime(nextAt - play)
+				giftTimer.TextColor3 = Kit.Colors.Yellow
+			end
+		end
+	end)
 	badges.Missions = Kit.badge(roundButton("Missions", "Missions", 2, function()
 		ctx.Toggle("Missions")
 	end))

@@ -28,6 +28,7 @@ local TEXT = {
 	IntroLine3 = "Then stand in the Launch Zone and hit LAUNCH. Ready?",
 	Skip = "Skip",
 	Tag = "TUTORIAL",
+	GoalTag = "NEXT GOAL",
 	Train = "REACH LEVEL",
 	Launch = "LAUNCH",
 	Ball = "GET A NEW CANNONBALL",
@@ -1021,6 +1022,9 @@ return function(ctx)
 				end
 				task.wait(0.6)
 				ctx.Open("Rewards")
+				if ctx.StartGoals then
+					ctx.StartGoals()
+				end
 			end)
 		end
 		task.delay(0.9, function()
@@ -1031,6 +1035,55 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Running the steps
 	-----------------------------------------------------------------------
+	-- After the tutorial the bar keeps guiding the next few rebirths, the way Stone Skipping always has a quest
+	-- on screen (vault 20: one short objective, a sawtooth to each rebirth): reach Level 20 at your best booth,
+	-- get the rebirth Cash at the Launch Zone, then rebirth. It steps aside for good at rebirth GOAL_REBIRTHS.
+	local GOAL_REBIRTHS = 4
+	local GOAL = {
+		Label = function(data)
+			local _, cash = Config.RebirthCost(data.Rebirths)
+			local tag = "REBIRTH " .. (data.Rebirths + 1) .. ": "
+			if Config.PowerLevel(data) < Config.MAX_LEVEL then
+				return tag .. "REACH LEVEL " .. Config.MAX_LEVEL
+			elseif data.Cash < cash then
+				return tag .. "GET CASH"
+			end
+			return TEXT.Rebirth
+		end,
+		Count = function(data)
+			local level = Config.PowerLevel(data)
+			if level < Config.MAX_LEVEL then
+				return level, Config.MAX_LEVEL
+			end
+			local _, cash = Config.RebirthCost(data.Rebirths)
+			if data.Cash < cash then
+				return math.floor(data.Cash), cash
+			end
+			return 0, 1
+		end,
+		Target = function(data)
+			local _, cash = Config.RebirthCost(data.Rebirths)
+			if Config.PowerLevel(data) < Config.MAX_LEVEL then
+				return bestStation(data)
+			elseif data.Cash < cash then
+				return launchZone()
+			end
+			return nil
+		end,
+		Point = function()
+			local data = State.Data
+			if not data then
+				return nil
+			end
+			local _, cash = Config.RebirthCost(data.Rebirths)
+			if Config.PowerLevel(data) < Config.MAX_LEVEL or data.Cash < cash then
+				return nil
+			end
+			return rebirthPanelButton() or menuButton("Rebirth")
+		end,
+	}
+	local goalOn = false
+
 	local step = nil -- index into STEPS, nil while finished or switching
 	local lastHave = nil
 
@@ -1114,6 +1167,23 @@ return function(ctx)
 		end)
 	end
 
+	function ctx.StartGoals()
+		local data = State.Data
+		if goalOn or not data or data.Rebirths >= GOAL_REBIRTHS then
+			return
+		end
+		goalOn = true
+		gui.Enabled = true
+		fit()
+		local label = tag:FindFirstChildWhichIsA("TextLabel", true)
+		if label then
+			label.Text = TEXT.GoalTag
+		end
+		local have, goal = GOAL.Count(data)
+		questText.Text = GOAL.Label(data) .. " (" .. Config.Format(have) .. "/" .. Config.Format(goal) .. ")"
+		showStep()
+	end
+
 	local started = false
 	local function start()
 		local data = State.Data
@@ -1125,6 +1195,7 @@ return function(ctx)
 		local saved = replay and 0 or (data.Tutorial or 0)
 		-- done, or a save from before a step was added that has already rebirthed: no tutorial
 		if saved >= #STEPS or (data.Rebirths > 0 and not replay) then
+			ctx.StartGoals()
 			return
 		end
 		gui.Enabled = true
@@ -1148,14 +1219,16 @@ return function(ctx)
 
 	local acc = 0
 	RunService.RenderStepped:Connect(function(dt)
-		if not step then
-			return
-		end
 		local data = State.Data
-		if not data then
+		if not data or not (step or goalOn) then
 			return
 		end
-		local s = STEPS[step]
+		if goalOn and not step and data.Rebirths >= GOAL_REBIRTHS then
+			goalOn = false
+			finish()
+			return
+		end
+		local s = step and STEPS[step] or GOAL
 
 		-- where to look: a part in the world, or a button in the UI
 		local target = s.Target and s.Target(data)
@@ -1168,7 +1241,8 @@ return function(ctx)
 			marker.Enabled = false
 		end
 		-- still on a training pad when the step wants you somewhere else
-		jumpHint.Visible = State.Training ~= nil and step > 1 and s.Target ~= nil and step ~= 5
+		local stations = workspace:FindFirstChild("TrainingStations")
+		jumpHint.Visible = State.Training ~= nil and target ~= nil and not (stations and target:IsDescendantOf(stations))
 		local button = s.Point and s.Point()
 		if button and button.Parent and button.AbsoluteSize.X > 0 then
 			local pad = 8
@@ -1208,7 +1282,7 @@ return function(ctx)
 			Kit.pop(quest, 1.05)
 		end
 		lastHave = have
-		if have >= goal then
+		if step and have >= goal then
 			completeStep()
 		end
 	end)
