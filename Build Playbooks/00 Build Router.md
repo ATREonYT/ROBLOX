@@ -26,6 +26,7 @@ Playbooks in this folder:
 - [[Teardown - Stone Skipping]]: the +1 reference measured frame by frame (first 90 s, one throw, HUD, shop, retention)
 - [[15 Anime VFX and Animation Playbook]]: ⭐ anime-style effects: Dragon Ball-style power-up aura, impact frames, hit sizes, craters, speed lines, snappy attack timing, ultimates, kid-safe rules; kit module `AnimeFX`
 - [[16 Pro Animation and VFX Playbook]]: ⭐ when animations or effects look cheap: fix order (timing, shape, colour), cheap-vs-pro table, flipbook and mesh pipeline, cannon shot timeline, camera, character animation workflow
+- [[17 Do It Like the Hits - Animation, VFX and Feel]]: ⭐ Oct 31 deep dive: measured Stone Skipping timings (quiet normal shots), rare-shot reveal ladder, cutscene camera, own textures by code, springs and rigs, phone budgets, anime-game patterns, sound layers, 2026 discovery signals; kit modules `Spring`, `Emit`, `LaunchFX`, `RareReveal`
 - [[14 Premium Feel Playbook]]: ⭐ the premium layer every game gets: staged HUD, level-up streaks, one motion table, reward beat chains, feel numbers per family, the kid-safe check, five prompts per game
 - [[13 Beat Stone Skipping - Tutorial, Pacing and Feel]]: ⭐ hide the UI until the tutorial needs it, a level-up every second, spotlight the one button, chained reward beats (Oct 31 recording)
 - [[08 Few-Prompt Game Building with AI]]: how to get a good game in a few prompts (what works, templates, self-checks)
@@ -70,7 +71,7 @@ Playbooks in this folder:
 |---|---|---|
 | Map, props, lighting | `roblox-cartoony-building` | [[10 Map Design Playbook]], [[13 Cartoony & Low-Poly Building]], `reports/Cartoony Roblox building UI and animation.md` |
 | UI | `roblox-cartoony-ui` | [[14 Cartoony UI & Juice]] |
-| Effects | `roblox-vfx` | [[11 VFX Moments Playbook]], anime style: [[15 Anime VFX and Animation Playbook]], looks cheap: [[16 Pro Animation and VFX Playbook]] + `LihFolk/skills/lihfolk-vfx`, `VFX-ITEMS.md`, [[05 VFX]] |
+| Effects | `roblox-vfx` | [[11 VFX Moments Playbook]], anime style: [[15 Anime VFX and Animation Playbook]], looks cheap: [[16 Pro Animation and VFX Playbook]], like the hits: [[17 Do It Like the Hits - Animation, VFX and Feel]] + `LihFolk/skills/lihfolk-vfx`, `VFX-ITEMS.md`, [[05 VFX]] |
 | Animations | `roblox-ai-animation` | [[06 Animation]] |
 | Blender models | `blender-roblox-models` | [[04 Building, Maps & 3D Models]] |
 | Game feel | | [[14 Premium Feel Playbook]], [[06 Beat the Hits - Polish Playbook]], `GAME-FEEL.md`, `LihFolk/LihFolk Vault V2/47 Game Feel and Juice/` |

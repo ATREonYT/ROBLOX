@@ -20,7 +20,7 @@ Back to [[00 Build Router]] · Full teardown: [[Teardown - Stone Skipping]] · R
 | 14–33 | On the pad. Every tick: "⚡+3" pops off the stone, Skill +9 to +12 a second, and **a level-up about every second** with confetti on the character, "Level Up! [x3] … [x13]" (the bracket counts level-ups in a row) next to the bar, and the quest number ticks with it. Levels 6 → 19 in ~19 s. Level sizes grow slowly: 10, 10, 10, 12, 14, 15, 17, 19, 22. |
 | 34 | Level 20 = MAX LEVEL. Quest: REBIRTH NOW. The **whole screen dims**, and only now does the left menu appear, with the Rebirth tile lit, outlined and showing 100%. |
 | 36–37 | Rebirth panel: Before → After (x1 → x2 Skill), "Level 20 / Level 20", big green Rebirth and a small Skip. |
-| 38 | Tap Rebirth: the screen fades to **white** (~0.25 s in, ~0.5 s held, ~0.3 s out). |
+| 38 | Tap Rebirth: the screen fades to **white** (0.2 s in, 0.4 s held, 0.1 s out; frame-measured Oct 31, see note 17). |
 | 39–42 | TUTORIAL COMPLETE! on spinning rays: Rebirth #1, x2 SKILL, Tap to continue. |
 | 42 | Tap. **The full HUD is there at once**: Auto Throw and the event pill on top, the 2×3 menu grid with Shop on the left, the pass cards and Starter Pack on the right. Confetti. The multiplier reads x2. |
 | 44–48 | Daily Rewards opens by itself. Claim day 1, a big green tick, "Next reward in 24:00:00". |

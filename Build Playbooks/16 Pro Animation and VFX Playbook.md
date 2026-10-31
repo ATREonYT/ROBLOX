@@ -49,6 +49,8 @@ To match a game one-to-one, record it at 30 fps and step through it frame by fra
 - **Limits:** a Lifetime cap of 20 s; Rate up to 400/s (100 on mobile). Keep to **about 100 live particles per shot** on phones, one PointLight and at most two Trails.
 
 ## 4. Cannon shot recipe (s)
+
+> **Update Oct 31 (note 17 §1):** the measured reference has no shake, zoom, squash or hit-stop on a normal throw. Use this recipe's loud parts for rare tiers only, and keep the charge at 0.25–0.3 s. The kit's `LaunchFX` does this by tier.
 | Phase | Time | Motion | Easing |
 |---|---|---|---|
 | Charge | 0.25–0.45 s | Barrel tips up 4–8°, body squashes (1.1 wide, 0.9 tall), creeps back 0.1–0.2 studs, trembles ±0.5° at the end | Sine InOut |
