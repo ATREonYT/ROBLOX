@@ -88,7 +88,7 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Modal helper (dark full-screen with a centred card)
 	-----------------------------------------------------------------------
-	local function modal(width, height)
+	local function modal(width, height, dark)
 		local shade = new("TextButton", {
 			Text = "",
 			AutoButtonColor = false,
@@ -98,7 +98,7 @@ return function(ctx)
 			ZIndex = 70,
 			Parent = layer,
 		})
-		Kit.tween(shade, 0.25, { BackgroundTransparency = 0.45 })
+		Kit.tween(shade, 0.25, { BackgroundTransparency = dark or 0.45 })
 		local holder = new("Frame", {
 			BackgroundTransparency = 1,
 			AnchorPoint = Vector2.new(0.5, 0.5),
@@ -173,7 +173,8 @@ return function(ctx)
 	-- Reward popup ("You got...")
 	-----------------------------------------------------------------------
 	local function showRewards(done, list, title)
-		local _, holder, closeModal = modal(640, 360)
+		-- darker behind the prize: an open panel under it made the popup hard to read (play-test, Oct 31)
+		local _, holder, closeModal = modal(640, 360, 0.2)
 		local function close()
 			closeModal()
 			done()
@@ -189,7 +190,7 @@ return function(ctx)
 				local icon = Kit.icon(item.Icon, { Size = UDim2.fromOffset(110, 110), Position = UDim2.fromOffset(75, 70), Anchor = Vector2.new(0.5, 0.5), ZIndex = 74, Parent = cell })
 				Kit.bob(icon, 5, 2.5)
 			end
-			Kit.text({ Text = item.Text, Size = 24, Scaled = true, MaxSize = 26, FrameSize = UDim2.new(1, 20, 0, 40), Position = UDim2.new(0.5, 0, 1, 0), Anchor = Vector2.new(0.5, 1), ZIndex = 75, Parent = cell })
+			Kit.text({ Text = item.Text, Size = 28, Scaled = true, MaxSize = 30, StrokeSize = 3, FrameSize = UDim2.new(1, 20, 0, 40), Position = UDim2.new(0.5, 0, 1, 0), Anchor = Vector2.new(0.5, 1), ZIndex = 75, Parent = cell })
 			-- each prize lands one after another (title first, prizes, then the button: vault "Reward Moments")
 			local cs = Kit.scale(cell)
 			cs.Scale = 0
