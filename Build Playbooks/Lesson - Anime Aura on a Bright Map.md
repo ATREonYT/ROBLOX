@@ -33,3 +33,11 @@ From +1 Cannon Evolution (Oct 31): Alex asked for "crazy cannon shots" with a Dr
 ## Testing tips
 - `screen_capture` can't follow a 4 s flight, and running `execute_luau` resets the camera type. To judge the ball: on the client, clone the ball and the live effect parts into an anchored snapshot folder, wait for the flight to end, bind a Scriptable camera at priority 2000 beside the snapshot, then capture.
 - Each fresh play re-runs the intro cutscene, which owns the camera. Wait for it to finish before capturing.
+
+## Update (Oct 31 evening): rare shots only
+Alex then asked for the anime effects **only on rare shots** (normal shots stay clean, note 17 §1):
+- **Mythic 1/100** (2.6 s cutscene), **Secret 1/1000** (3.6 s, fires from the blocky Grand Cannon, `tools/BuildGrandCannon.lua`), **Divine 1/100,000** (4.4 s, a column of light, the cannon turns white and gold with wings and a halo). Each flies further: Distance ×1.6 / ×2.2 / ×3, capped at 86% / 93% / 100% of the track.
+- **Server pattern:** fire `RareShot` (player, id, origin, seconds), `task.wait(seconds)`, then the usual `LaunchPlayer`. Effects needed one hook only (`ctx.RareMuzzle`). The guaranteed Mythic lands on `TotalLaunches >= Config.FIRST_MYTHIC_AFTER` (7) with a `FirstMythic` flag.
+- **Testing in Studio:** `execute_luau` runs in its own module cache, so changing `Config` from the Server datamodel does nothing. Use a Studio-only attribute hook instead (`workspace:SetAttribute("ForceRareShot", "Secret")`). Each fresh Play re-runs the 13 s intro, so wait it out and call `SetTutorial 20` first.
+- **Textures:** we can upload our own PNGs without Alex. Serve the folder with `python3 -m http.server` and call Studio MCP `upload_image` with the localhost URLs. The kit's cel textures (`make_textures.py`: cel flame, cel puff, shockwave flipbook, stars) read far better than the built-ins.
+- **Looks that failed first:** a pale white-gold aura in close-up washes the whole screen white, so the Divine aura went gold (255, 200, 60). An opaque neon light column hides the cannon, so keep it thin (9 studs), half see-through, fading to 0.82 once the wings appear. A hit-stop that freezes the camera while the flight camera cuts in shows the old shot, so freeze only the effects there.
