@@ -9,8 +9,9 @@
 	platform. Run BuildRebirthSigns (one label per lane) and BuildCartoonyMap (the studs) after it. It also places the Grand Cannon LaunchPoint and Launch Zone, and
 	moves the SpawnLocation into the lobby.
 	Alex, Oct 31: "make it seem more buyable ... we want to make money". So the lanes grew with the 2x map,
-	every cannon stands on a display turntable (a glowing ring on the glow tiers), the VIP lane is the
-	showcase (black and gold, its Robux price on its label; Alex had the VIP arch over it taken off), and a
+	every cannon stands on a display turntable (a glowing ring on the glow tiers), the gamepass lane is the
+	showcase, the fanciest of all (black and gold with rainbow neon, rainbow sparkles, lanterns on all four
+	corners, its Robux price on its label; Alex: "we dont do the VIP thing around here", so no VIP sign), and a
 	"2x POWER" board stands by the first lane (Workspace.TrainingShop; its prompt opens the same purchase
 	as the Shop, "Coming soon!" while the pass id is 0).
 	Safe to re-run: it deletes and rebuilds Workspace.TrainingStations and Workspace.TrainingShop.
@@ -203,7 +204,7 @@ local function makeSign(cf, info)
 	line("+" .. Config.Format(info.Gain) .. " Power per shot", 0.4, 0.32, Color3.fromRGB(255, 215, 70))
 	local req
 	if info.Pass then
-		req = "VIP GAMEPASS"
+		req = "GAMEPASS"
 	elseif info.Rebirths > 0 then
 		req = "Requires " .. info.Rebirths .. " Rebirths"
 	else
@@ -215,7 +216,7 @@ end
 
 -- Lane looks (Alex, Oct 31, from Stone Skipping's lanes): one base colour per station Id (GameConfig);
 -- the floor is the base, the rim a darker shade, the centre track a lighter tint. Effects grow with the
--- tier: 1-2 plain, 3 glows, 4 glows and shines, 5 also sparkles, the VIP lane is black with gold neon.
+-- tier: 1-2 plain, 3 glows, 4 glows and shines, 5 also sparkles, the gamepass lane is black, gold and rainbow.
 local function rgb(r, g, b)
 	return Color3.fromRGB(r, g, b)
 end
@@ -232,10 +233,10 @@ local TIERS = {
 	[3] = { Base = rgb(245, 135, 35), Water = rgb(85, 195, 240), Glow = true }, -- Heavy: orange
 	[4] = { Base = rgb(245, 192, 40), Water = rgb(85, 195, 240), Glow = true, Shine = true }, -- Golden: gold
 	[5] = { Base = rgb(80, 205, 70), Water = rgb(90, 220, 180), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
-	-- Dragon (VIP): the showcase you buy (Oct 31: "make it seem more buyable"). Black and gold reads premium:
-	-- a gold brick rim, a black floor with gold neon, gold and black pad tiles. No arch over it (Alex, Oct 31:
-	-- "remove the VIP thing")
-	[6] = { Base = rgb(255, 196, 45), Water = rgb(120, 60, 175), Glow = true, Shine = true, Sparkle = true, Black = true, Vip = true },
+	-- Dragon (the gamepass lane): the showcase you buy, "better than all of the others" (Alex, Oct 31). A gold
+	-- brick rim round a black lane, rainbow neon along the rim, a bright violet pool with rainbow sparkles, gold
+	-- and black pad tiles, lanterns on all four corners. No VIP sign or crown: "we dont do the VIP thing".
+	[6] = { Base = rgb(255, 196, 45), Water = rgb(150, 90, 230), Glow = true, Shine = true, Sparkle = true, Black = true, Premium = true },
 }
 local function tierLook(id)
 	local t = TIERS[id] or TIERS[1]
@@ -257,10 +258,10 @@ local function tierLook(id)
 		look.Accent = t.Base
 		look.Neon = true
 	end
-	if t.Vip then
+	if t.Premium then
 		look.Rim = dark(t.Base, 0.08) -- gold bricks round the black lane
-		look.PadAlt = dark(t.Base, 0.35) -- every other pad tile gold: a VIP carpet
-		look.Vip = true
+		look.PadAlt = dark(t.Base, 0.35) -- every other pad tile gold
+		look.Premium = true
 	end
 	return look
 end
@@ -361,12 +362,33 @@ local function makeBooth(standCf, width, look)
 		end
 	end
 
-	if look.Glow then
-		-- a neon line along the top inner edge of the rim
-		for _, sx in ipairs({ -1, 1 }) do
-			glow("Edge", Vector3.new(0.3, 0.08, L - RIM), sx * (inner + 0.15), FLOOR_T + RIM_H + 0.04, mid - RIM / 2)
+	-- the gamepass lane's rainbow: neon pieces about 2 studs long cycling red, orange, yellow, green, blue, violet
+	local RAINBOW = { rgb(255, 70, 70), rgb(255, 150, 40), rgb(255, 225, 50), rgb(80, 220, 90), rgb(60, 170, 255), rgb(170, 90, 255) }
+	local function rainbowStrip(len, alongZ, x, y, zc)
+		local n = math.max(6, math.floor(len / 2 + 0.5))
+		local each = len / n
+		for k = 1, n do
+			local off = -len / 2 + each * (k - 0.5)
+			local size = alongZ and Vector3.new(0.3, 0.08, each) or Vector3.new(each, 0.08, 0.3)
+			local p = blk("Edge", size, alongZ and x or x + off, y, alongZ and zc + off or zc, RAINBOW[(k - 1) % #RAINBOW + 1])
+			p.Material = Enum.Material.Neon
+			p.CastShadow = false
 		end
-		glow("Edge", Vector3.new(inner * 2, 0.08, 0.3), 0, FLOOR_T + RIM_H + 0.04, back - RIM + 0.15)
+	end
+	if look.Glow then
+		-- a neon line along the top inner edge of the rim (a rainbow on the gamepass lane)
+		for _, sx in ipairs({ -1, 1 }) do
+			if look.Premium then
+				rainbowStrip(L - RIM, true, sx * (inner + 0.15), FLOOR_T + RIM_H + 0.04, mid - RIM / 2)
+			else
+				glow("Edge", Vector3.new(0.3, 0.08, L - RIM), sx * (inner + 0.15), FLOOR_T + RIM_H + 0.04, mid - RIM / 2)
+			end
+		end
+		if look.Premium then
+			rainbowStrip(inner * 2, false, 0, FLOOR_T + RIM_H + 0.04, back - RIM + 0.15)
+		else
+			glow("Edge", Vector3.new(inner * 2, 0.08, 0.3), 0, FLOOR_T + RIM_H + 0.04, back - RIM + 0.15)
+		end
 	end
 	if look.Neon then
 		-- the black lane: neon round the pool and the stand pad
@@ -378,23 +400,29 @@ local function makeBooth(standCf, width, look)
 		glow("PadLine", Vector3.new(padW + 0.5, 0.14, 0.25), 0, FLOOR_T + PAD_UP + 0.02, pz0 - 0.13)
 	end
 	if look.Lanterns then
-		-- lantern posts on the far corners: a post in the rim's shade and a glowing lamp in the tier colour
-		for _, sx in ipairs({ -1, 1 }) do
-			local x, z = sx * (W / 2 - RIM / 2), back - RIM / 2
-			blk("LanternPost", Vector3.new(0.5, 2.4, 0.5), x, FLOOR_T + RIM_H + 2.4, z, dark(look.Rim, 0.2))
-			local lamp = blk("Lantern", Vector3.new(0.9, 0.9, 0.9), x, FLOOR_T + RIM_H + 3.3, z, look.Accent)
-			lamp.Material = Enum.Material.Neon
-			lamp.CastShadow = false
-			blk("LanternCap", Vector3.new(1.1, 0.25, 1.1), x, FLOOR_T + RIM_H + 3.55, z, dark(look.Rim, 0.2))
+		-- lantern posts on the far corners (all four on the gamepass lane): a post in the rim's shade and a
+		-- glowing lamp in the tier colour
+		for _, z in ipairs(look.Premium and { back - RIM / 2, front + RIM / 2 } or { back - RIM / 2 }) do
+			for _, sx in ipairs({ -1, 1 }) do
+				local x = sx * (W / 2 - RIM / 2)
+				blk("LanternPost", Vector3.new(0.5, 2.4, 0.5), x, FLOOR_T + RIM_H + 2.4, z, dark(look.Rim, 0.2))
+				local lamp = blk("Lantern", Vector3.new(0.9, 0.9, 0.9), x, FLOOR_T + RIM_H + 3.3, z, look.Accent)
+				lamp.Material = Enum.Material.Neon
+				lamp.CastShadow = false
+				blk("LanternCap", Vector3.new(1.1, 0.25, 1.1), x, FLOOR_T + RIM_H + 3.55, z, dark(look.Rim, 0.2))
+			end
 		end
 	end
 	if look.Sparkle then
 		-- slow sparkles rising off the water (Roblox's own sparkle picture; a soft twinkle, never a flash)
 		local e = Instance.new("ParticleEmitter")
 		e.Name = "Sparkles"
-		e.Color = ColorSequence.new(look.Accent:Lerp(WHITE, 0.4))
+		e.Color = look.Premium and ColorSequence.new({
+			ColorSequenceKeypoint.new(0, RAINBOW[1]), ColorSequenceKeypoint.new(0.2, RAINBOW[2]), ColorSequenceKeypoint.new(0.4, RAINBOW[3]),
+			ColorSequenceKeypoint.new(0.6, RAINBOW[4]), ColorSequenceKeypoint.new(0.8, RAINBOW[5]), ColorSequenceKeypoint.new(1, RAINBOW[6]),
+		}) or ColorSequence.new(look.Accent:Lerp(WHITE, 0.4))
 		e.LightEmission = 1
-		e.Rate = 6
+		e.Rate = look.Premium and 10 or 6
 		e.Lifetime = NumberRange.new(1, 1.6)
 		e.Speed = NumberRange.new(1, 2.2)
 		e.SpreadAngle = Vector2.new(15, 15)
@@ -476,7 +504,7 @@ for i, info in ipairs(order) do
 	local ringPart = part({ Name = "DisplayRing", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC - 0.1, discD + 0.7, discD + 0.7), Color = look.Accent,
 		Material = (look.Glow or look.Neon) and Enum.Material.Neon or Enum.Material.SmoothPlastic, CastShadow = false, CanCollide = false,
 		CFrame = CFrame.new(discPos + Vector3.new(0, (DISC - 0.1) / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
-	part({ Name = "DisplayDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC, discD, discD), Color = look.Vip and look.Floor or dark(look.Rim, 0.15),
+	part({ Name = "DisplayDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC, discD, discD), Color = look.Premium and look.Floor or dark(look.Rim, 0.15),
 		Material = Enum.Material.SmoothPlastic, CanCollide = false,
 		CFrame = CFrame.new(discPos + Vector3.new(0, DISC / 2 + 0.01, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
 	if look.Glow then

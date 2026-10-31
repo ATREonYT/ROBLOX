@@ -328,7 +328,7 @@ local function startTraining(player, station)
 			if pass.Id > 0 then
 				MarketplaceService:PromptGamePassPurchase(player, pass.Id)
 			else
-				notify(player, "The " .. info.Name .. " needs the " .. pass.Name .. " gamepass!", GOLD)
+				notify(player, "Get the " .. pass.Name .. " gamepass to train here!", GOLD)
 			end
 			return
 		end

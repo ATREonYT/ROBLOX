@@ -2,7 +2,7 @@
 	BuildRebirthSigns: paste into the Command Bar after BuildWorld1.
 	One label per training lane, like Stone Skipping's (Alex, Oct 31): the same size, at the same height
 	over the far end of every lane, three lines stacked the same way on each:
-	  - a dark pill with the rebirth icon and the rebirths the lane needs (for the VIP lane: the Robux icon
+	  - a dark pill with the rebirth icon and the rebirths the lane needs (for the gamepass lane: the Robux icon
 	    and the pass's price in gold, Oct 31)
 	  - UNLOCKED in green or LOCKED in red (the client sets it for each player, Effects.lua)
 	  - the power it gives, big: "5x POWER"
@@ -96,7 +96,7 @@ for _, info in ipairs(Config.Stations) do
 			Parent = card,
 		})
 		new("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = pill })
-		-- the VIP lane's pill shows its Robux price in gold (Oct 31: "make it seem more buyable"); the price is
+		-- the gamepass lane's pill shows its Robux price in gold (Oct 31: "make it seem more buyable"); the price is
 		-- the pass's own (GameConfig), never a made-up one
 		local pass = info.Pass and Config.Passes[info.Pass]
 		new("UIStroke", { Thickness = pass and 3 or 2, Color = pass and Color3.fromRGB(255, 205, 60) or Color3.fromRGB(255, 255, 255), Transparency = pass and 0 or 0.6, Parent = pill })
@@ -141,6 +141,7 @@ for _, info in ipairs(Config.Stations) do
 		-- 3. the power it gives
 		label(card, Config.Format(info.Gain) .. "x POWER", {
 			Name = "Multiplier",
+			Color = pass and Color3.fromRGB(255, 215, 70) or nil, -- gold on the gamepass lane
 			Size = UDim2.fromScale(0.78, 0.38),
 			Position = UDim2.fromScale(0.5, 1),
 			Anchor = Vector2.new(0.5, 1),
