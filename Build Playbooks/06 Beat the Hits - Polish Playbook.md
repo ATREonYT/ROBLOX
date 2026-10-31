@@ -131,7 +131,7 @@ One scrolling shop, in this order:
 1. starter pack (a real one-time discount is OK);
 2. featured egg with odds;
 3. aura/roll offers with odds;
-4. passes (2x stat, 2x payout, Auto launch, Auto rebirth, pet slots, VIP training pads);
+4. passes (2x stat, 2x payout, Auto launch, Auto rebirth, pet slots, paid training pads (never called "VIP", [[09 Owner Taste Rules]]));
 5. 10-minute boosts + a bundle;
 6. currency packs (5 sizes);
 7. codes.
