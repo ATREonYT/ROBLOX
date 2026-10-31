@@ -36,7 +36,7 @@ return function(ctx)
 			local claimed = i <= doneInCycle
 			local isNext = i == nextDay
 			local big = i == #Config.DailyRewards
-			local color = big and Kit.Colors.Purple or (isNext and Kit.Colors.Yellow or Kit.Colors.Card)
+			local color = big and Kit.Colors.Purple or (isNext and Kit.Colors.Yellow or Kit.Colors.Blue) -- days to come: bright, not dark grey
 			local card = Kit.card({ Color = color, Size = UDim2.fromOffset(big and 150 or 100, 240), Order = i, Parent = row, ZIndex = 24 })
 			if isNext and ready then
 				Kit.movingPattern(card, { Lite = true, Texture = "Stripes", Speed = 30, ImageTransparency = 0.6, ZIndex = 24 })
@@ -62,7 +62,7 @@ return function(ctx)
 			ctx.Request("ClaimDaily")
 		end })
 		Kit.shine(btn.Instance, 3)
-		Kit.text({ Text = "Come back every day for bigger rewards! Streak: " .. streak, Size = 20, FrameSize = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0, 0, 1, -96), ZIndex = 26, Parent = content })
+		Kit.text({ Text = "Come back every day for bigger rewards! Streak: " .. streak, Size = 22, FrameSize = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 254), ZIndex = 26, Parent = content }) -- just under the cards (it sat under the button)
 		tick = function()
 			local _, ok, wait = dailyState(State.Data)
 			if ok then
