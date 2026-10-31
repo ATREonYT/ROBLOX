@@ -194,7 +194,7 @@ local HEIGHT, WIDTH = 46, 104
 local props = { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false }
 local function addBorder(areaName, color, x, z)
 	local pos = Vector3.new(x, WATER_Y + HEIGHT / 2, z)
-	local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = color, Material = Enum.Material.SmoothPlastic, Transparency = 0.75 }) -- Oct 31: more see-through, so the first border no longer hides the LAUNCH arch from the spawn
+	local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = color, Material = Enum.Material.SmoothPlastic, Transparency = 0.35 }) -- shown only while you fly (Effects.showBorders); Studio's edit view always shows them
 	for k, v in pairs(props) do
 		b[k] = v
 	end

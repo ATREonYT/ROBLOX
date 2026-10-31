@@ -74,8 +74,8 @@ local GROUP = {
 local PALMS = { { -91, 18.5, 40 }, { -63, 20.5, 200 }, { -18.5, -10.5, 120 }, { -19, 9.5, 290 } }
 -- lanterns: { x, z, the way the arm reaches {x, z}, glows }
 local LANTERNS = {
-	{ -81, 3.8, { 0, -1 } }, -- along the egg path, between eggs
-	{ -97, 2.2, { 0, -1 } },
+	{ -81, 3.8, { 0, -1 }, true }, -- along the west plank path (all four glow since Oct 31: "fuller and brighter")
+	{ -97, 2.2, { 0, -1 }, true },
 	{ -48.5, -2.6, { 0, 1 }, true }, -- framing the dock path where it leaves the plaza
 	{ -48.5, 6.4, { 0, -1 }, true },
 }
@@ -86,7 +86,7 @@ local SIGN = { -53, -10.5 }
 local FLAG_POLES = { { -44, -2.5, 6.25 }, { -37, -4, 5 }, { -30, -4.25, 1.75 } }
 local FLAG_COLORS = { Color3.fromRGB(235, 60, 60), Color3.fromRGB(255, 205, 50), Color3.fromRGB(60, 150, 255), Color3.fromRGB(80, 210, 90), Color3.fromRGB(255, 255, 255) }
 -- bush and flower clumps at the plaza edges: { x, z, bushes } (never on a path, a booth front, an egg or the stand)
-local CLUMPS = { { -68, 7, 2 }, { -76, 9.5, 3 }, { -86, 7.5, 2 }, { -68.5, -7, 2 }, { -47, -7, 1 }, { -20, -7, 2 }, { -20, 6, 2 } }
+local CLUMPS = { { -68, 7, 2 }, { -76, 9.5, 3 }, { -86, 7.5, 2 }, { -68.5, -7, 2 }, { -47, -7, 1 }, { -20, -7, 2 }, { -20, 6, 2 }, { -50, -5, 1 }, { -51, 4.5, 1 }, { -23, 4, 1 } }
 local GOLD, NEON_GOLD, SIGN_RED = Color3.fromRGB(255, 196, 60), Color3.fromRGB(255, 214, 90), Color3.fromRGB(205, 48, 48)
 local BOARDS = { -- { text, way it points {x, z}, height over the ground }
 	{ "TRAINING", { 0, -1 }, 6.3 },
@@ -317,12 +317,12 @@ do
 	gate.Name = "LaunchGate"
 	local across = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
 	local toPlaza = Vector3.new(-1, 0, 0) -- the spawn is west of the dock
-	local H = 15
+	local H = 20 -- taller than the lookout towers' platforms, so it is the hero from the spawn (critic, Oct 31)
 	for _, p in ipairs({ a, b }) do
 		local base = Vector3.new(p.X, y, p.Z)
 		part({ Name = "Plinth", Size = Vector3.new(3.8, 1.2, 3.8), CFrame = CFrame.new(base + Vector3.new(0, 0.4, 0)), Color = Color3.fromRGB(150, 150, 162) }, gate)
 		part({ Name = "Pillar", Size = Vector3.new(2.6, H, 2.6), CFrame = CFrame.new(base + Vector3.new(0, H / 2, 0)), Color = POST_WOOD }, gate)
-		for _, h in ipairs({ 2.6, 7.5, 12.4 }) do
+		for _, h in ipairs({ 2.6, 8.2, 13.8, 17.6 }) do
 			part({ Name = "Band", Size = Vector3.new(2.85, 0.5, 2.85), CFrame = CFrame.new(base + Vector3.new(0, h, 0)), Color = GOLD, CanCollide = false }, gate)
 		end
 		-- a glowing gold strip up the side that faces the spawn (steady, never flashing)
@@ -333,15 +333,15 @@ do
 		local bowl = part({ Name = "FireBowl", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.2, 2.8, 2.8),
 			CFrame = CFrame.new(base + Vector3.new(0, H + 1.4, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color = IRON, CanCollide = false }, gate)
 		local fire = Instance.new("Fire")
-		fire.Size = 6
-		fire.Heat = 10
+		fire.Size = 8
+		fire.Heat = 12
 		fire.Color = Color3.fromRGB(255, 140, 40)
 		fire.SecondaryColor = Color3.fromRGB(255, 225, 90)
 		fire.Parent = bowl
 		local light = Instance.new("PointLight")
 		light.Color = Color3.fromRGB(255, 170, 80)
-		light.Range = 22
-		light.Brightness = 2.2
+		light.Range = 30
+		light.Brightness = 2.5
 		light.Shadows = false
 		light.Parent = bowl
 	end
@@ -349,7 +349,7 @@ do
 	local top = Vector3.new((a.X + b.X) / 2, y + H - 1.6, (a.Z + b.Z) / 2)
 	part({ Name = "Beam", Size = Vector3.new(1.8, 1.8, across.Magnitude + 3.6), CFrame = CFrame.lookAt(top, top + across), Color = POST_WOOD }, gate)
 	local signCf = CFrame.fromMatrix(top - Vector3.new(0, 3.1, 0), across.Unit, Vector3.yAxis)
-	local SW, SH = 15, 4
+	local SW, SH = 17, 4.6
 	part({ Name = "SignFrame", Size = Vector3.new(SW + 0.8, SH + 0.8, 0.4), CFrame = signCf, Color = GOLD, CanCollide = false }, gate)
 	local sign = part({ Name = "Board_LAUNCH", Size = Vector3.new(SW, SH, 0.55), CFrame = signCf, Color = SIGN_RED, CanCollide = false }, gate)
 	for _, face in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
@@ -394,7 +394,14 @@ do
 			local y = groundAt(at.X, at.Z)
 			local H = 9.4
 			part({ Name = "Pole", Size = Vector3.new(0.5, H, 0.5), CFrame = CFrame.new(at.X, y + H / 2 - 0.3, at.Z), Color = POST_WOOD, CanCollide = false }, avenue)
-			part({ Name = "Knob", Shape = Enum.PartType.Ball, Size = Vector3.new(0.9, 0.9, 0.9), CFrame = CFrame.new(at.X, y + H - 0.1, at.Z), Color = GOLD, CanCollide = false }, avenue)
+			-- a warm glowing bulb on top of every pole (steady light, never flashing)
+			local knob = part({ Name = "Knob", Shape = Enum.PartType.Ball, Size = Vector3.new(1, 1, 1), CFrame = CFrame.new(at.X, y + H - 0.1, at.Z), Color = Color3.fromRGB(255, 214, 120), Material = Enum.Material.Neon, CanCollide = false, CanQuery = false }, avenue)
+			local bulb = Instance.new("PointLight")
+			bulb.Color = Color3.fromRGB(255, 190, 110)
+			bulb.Range = 12
+			bulb.Brightness = 1.4
+			bulb.Shadows = false
+			bulb.Parent = knob
 			part({ Name = "Pennant", Size = Vector3.new(0.08, 1.1, 1.7), CFrame = CFrame.new(at.X, y + H - 1.2, at.Z + 0.9), Color = FLAG_COLORS[(i + side) % 3 + 1], CanCollide = false, CanQuery = false }, avenue)
 			tops[i][side] = Vector3.new(at.X, y + H - 1.6, at.Z)
 		end
