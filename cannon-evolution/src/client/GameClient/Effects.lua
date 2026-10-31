@@ -875,7 +875,7 @@ return function(ctx)
 				splash(Vector3.new(p.X, done[5] - BALL_RADIUS + 0.2, p.Z), hopIndex == 2)
 				if mine then
 					-- each skip a semitone higher than the last, up to seven (vault: rising pitch reads as a streak)
-					Kit.playSound("Skip", 2 ^ (math.min(hopIndex - 2, 7) / 12))
+					Kit.playSound("Skip", 1 + math.min(hopIndex - 2, 5) * 0.015) -- a gentle rise; whole-semitone steps sounded robotic (Alex, Oct 31)
 					local share = math.floor(cash * done[2] / distance) - paid
 					if share > 0 then
 						paid += share
@@ -934,7 +934,7 @@ return function(ctx)
 				local g = gates[nextGate]
 				if g and dist * reported / distance >= g.At then
 					nextGate += 1
-					Kit.playSound("Coin", 1 + math.min(nextGate, 8) * 0.04)
+					Kit.playSound("Coin", 1 + math.min(nextGate, 8) * 0.01) -- a gentle rise; bigger steps sounded robotic (Alex, Oct 31)
 				end
 				if bestFlag and not passedBest and dist * reported / distance > best then
 					passedBest = true

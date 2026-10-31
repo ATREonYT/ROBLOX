@@ -497,23 +497,26 @@ for i, info in ipairs(order) do
 	local ringPart = part({ Name = "DisplayRing", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC - 0.1, discD + 0.7, discD + 0.7), Color = look.Accent,
 		Material = (look.Glow or look.Neon) and Enum.Material.Neon or Enum.Material.SmoothPlastic, CastShadow = false, CanCollide = false,
 		CFrame = CFrame.new(discPos + Vector3.new(0, (DISC - 0.1) / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
-	part({ Name = "DisplayDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC, discD, discD), Color = look.Premium and look.Rim or dark(look.Rim, 0.15),
+	part({ Name = "DisplayDisc", Shape = Enum.PartType.Cylinder, Size = Vector3.new(DISC, discD, discD), Color = look.Premium and rgb(62, 34, 128) or dark(look.Rim, 0.15), -- the gamepass disc is dark violet so its pink cannon pops (Oct 31)
 		Material = Enum.Material.SmoothPlastic, CanCollide = false,
 		CFrame = CFrame.new(discPos + Vector3.new(0, DISC / 2 + 0.01, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
 	if look.Glow then
 		local light = Instance.new("PointLight")
-		light.Color = look.Accent
-		light.Brightness = 1.2
-		light.Range = 9
+		-- the gamepass lane gets a bright white light, so its pink cannon isn't tinted gold (Oct 31)
+		light.Color = look.Premium and rgb(255, 246, 236) or look.Accent
+		light.Brightness = look.Premium and 2.2 or 1.2
+		light.Range = look.Premium and 11 or 9
 		light.Shadows = false
 		light.Parent = ringPart
 	end
 	if look.Premium then
 		-- a soft gold light pillar rising from the turntable, seen from across the lobby (see-through, never flashing)
-		local PILLAR = 26
+		-- it starts above the cannon (Oct 31): inside the gold glow the pink cannon was hard to see
+		local CLEAR = size.Y + 1
+		local PILLAR = 26 - CLEAR
 		part({ Name = "LightPillar", Shape = Enum.PartType.Cylinder, Size = Vector3.new(PILLAR, discD * 0.8, discD * 0.8), Color = rgb(255, 215, 90),
 			Material = Enum.Material.Neon, Transparency = 0.82, CastShadow = false, CanCollide = false, CanQuery = false, CanTouch = false,
-			CFrame = CFrame.new(discPos + Vector3.new(0, DISC + PILLAR / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
+			CFrame = CFrame.new(discPos + Vector3.new(0, DISC + CLEAR + PILLAR / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
 		-- and gold sparkles drifting up round the cannon
 		local e = Instance.new("ParticleEmitter")
 		e.Name = "CannonSparkles"
@@ -721,7 +724,7 @@ local board = Instance.new("BillboardGui")
 board.Size = UDim2.fromOffset(220, 50)
 board.StudsOffset = Vector3.new(0, 3, 0) -- under the cannon's name tag, not on top of it
 board.LightInfluence = 0
-board.MaxDistance = 250
+board.MaxDistance = 45 -- only up close (Oct 31): from the plaza the LAUNCH! arch shows the way and this label sat under its sign
 board.Parent = zone
 local boardText = label:Clone()
 boardText.Rotation = 0
