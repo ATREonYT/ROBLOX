@@ -74,12 +74,13 @@ local GROUP = {
 local PALMS = { { -91, 18.5, 40 }, { -63, 20.5, 200 }, { -18.5, -10.5, 120 }, { -19, 9.5, 290 } }
 -- lanterns: { x, z, the way the arm reaches {x, z}, glows }
 local LANTERNS = {
-	{ -81, 3.8, { 0, -1 }, true }, -- along the west plank path (all four glow since Oct 31: "fuller and brighter")
+	{ -74.1, 3, { -0.242, -0.97 }, true }, -- by the spawn, where Alex moved it in Studio (Oct 31; it was on the west path); all four glow since Oct 31
 	{ -97, 2.2, { 0, -1 }, true },
 	{ -48.5, -2.6, { 0, 1 }, true }, -- framing the dock path where it leaves the plaza
 	{ -48.5, 6.4, { 0, -1 }, true },
 }
 local GATE = { { -16, -6.4 }, { -16, 3.5 } } -- its two posts, either side of the dock path
+local LAUNCH_ARCH = false -- Alex deleted the LAUNCH! arch in Studio (Oct 31), so it's no longer built; true brings it back
 local BALL_SIGN = { -31, 8 } -- between the dock path and the stand's west end (the eggs took the old spot, Oct 31)
 local SIGN = { -53, -10.5 }
 -- festival poles in pairs either side of the dock path, from the plaza to the arch: { x, z one side, z other side }
@@ -310,7 +311,7 @@ local function bunting(parent, a, b)
 end
 
 -- 3b. the LAUNCH arch over the dock path: the lobby's hero, the tallest and brightest thing the spawn faces
-do
+if LAUNCH_ARCH then
 	local a, b = Config.Map.At(GATE[1][1], 0, GATE[1][2]), Config.Map.At(GATE[2][1], 0, GATE[2][2])
 	local y = math.max(groundAt(a.X, a.Z), groundAt(b.X, b.Z))
 	local gate = Instance.new("Model")
@@ -492,4 +493,4 @@ do
 end
 
 folder.Parent = workspace
-print(TAG, ("%d props (map crates, barrels and palms), %d nooks, %d lanterns, the LAUNCH arch, %d flag poles, %d flower clumps and two signs"):format(props, #NOOKS, #LANTERNS, #FLAG_POLES * 2, #CLUMPS))
+print(TAG, ("%d props (map crates, barrels and palms), %d nooks, %d lanterns, %s%d flag poles, %d flower clumps and two signs"):format(props, #NOOKS, #LANTERNS, LAUNCH_ARCH and "the LAUNCH arch, " or "", #FLAG_POLES * 2, #CLUMPS))
