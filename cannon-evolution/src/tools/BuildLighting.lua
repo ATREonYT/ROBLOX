@@ -32,10 +32,10 @@ end
 
 Lighting.ClockTime = 14.2 -- a high sun: the sunny side and the shade side of a part differ only a little
 Lighting.GeographicLatitude = 25
-Lighting.Brightness = 3
-Lighting.ExposureCompensation = 0.1
-Lighting.Ambient = Color3.fromRGB(175, 165, 180)
-Lighting.OutdoorAmbient = Color3.fromRGB(200, 190, 185) -- bright: the side away from the sun stays colourful
+Lighting.Brightness = 2.5
+Lighting.ExposureCompensation = 0
+Lighting.Ambient = Color3.fromRGB(160, 150, 165)
+Lighting.OutdoorAmbient = Color3.fromRGB(180, 172, 170) -- bright: the side away from the sun stays colourful
 Lighting.ColorShift_Top = Color3.fromRGB(255, 225, 190)
 Lighting.ColorShift_Bottom = Color3.fromRGB(140, 120, 160)
 Lighting.EnvironmentDiffuseScale = 1
@@ -64,7 +64,7 @@ atmo.Haze = 0.3
 local cc = get("ColorCorrectionEffect", "Warmth")
 cc.Saturation = 0.25
 cc.Contrast = 0.05
-cc.Brightness = 0.02
+cc.Brightness = 0
 cc.TintColor = Color3.fromRGB(255, 250, 240)
 
 -- neon stays bright but no glow spills round it, and the haze no longer washes out the eggs (Alex, Oct 30)

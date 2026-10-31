@@ -22,7 +22,7 @@ local SIDE = 1 -- -1 = stations on the -Z side of the lobby, 1 = +Z side (Alex, 
 local CANNON_HEIGHT = 5 -- studs; a default character is ~5. Low, so the lane reads as a flat pool (Oct 31 study)
 local PAD_UP = 0.08 -- the stand pad's tiles stand this far over the lane floor; the cannon sits on them (no plinth)
 local LANE_W = 11 -- the lane's width (full size): narrower than the gap math, so a wide stud walkway runs between lanes
-local TARGET_Z = 22 -- stand point to target, the same on every lane (full size, before BOOTH_SCALE)
+local TARGET_Z = 26.4 -- stand point to target, the same on every lane (full size, before BOOTH_SCALE); long, so the pool is most of the lane (Oct 31)
 local FLOOR_T = 0.8 -- the lane's floor stands this far over the platform; the rim another 0.8
 
 -- Alex's new map (Workspace.CannonMap, Oct 30) or the old one
@@ -81,7 +81,8 @@ if newMap then
 	-- moves it out with the map); checked against every rock, palm and fence by tools/map/plan_check.py.
 	-- Alex, Oct 30: "make the trainings a bit bigger, bring them close to the lobby, just a little".
 	BOOTH_SCALE = 0.9
-	local MIDDLE, PITCH = Config.Map.At(-61, 0, -22), 14 * BOOTH_SCALE + 2.5 -- the middle stand point; booth width + gap
+	-- the stand points moved 4 studs towards the plaza (Oct 31) so the longer lanes end where they did
+	local MIDDLE, PITCH = Config.Map.At(-61, 0, -18.9), 14 * BOOTH_SCALE + 2.5 -- the middle stand point; booth width + gap
 	fireDir = Vector3.new(0, 0, -1)
 	local function x(i)
 		return MIDDLE.X - (i - (#Config.Stations + 1) / 2) * PITCH
@@ -249,7 +250,7 @@ local function tierLook(id)
 		Floor = t.Base,
 		Rim = dark(t.Base, 0.35),
 		Track = t.Base:Lerp(WHITE, 0.55), -- the pool's water: a light tint of the tier colour
-		Bed = dark(t.Base, 0.25), -- the pool's floor under the water
+		Bed = dark(t.Base, 0.4), -- the pool's floor under the water: dark, so the pool looks deep
 		Pad = dark(t.Base, 0.18),
 		Accent = t.Base, -- the glow colour (neon already brightens it, so the tier's own hue), also the client's shot colour
 		Glow = t.Glow,
@@ -277,7 +278,7 @@ local function makeBooth(standCf, width, look)
 	local m = Instance.new("Model")
 	m.Name = "Booth"
 	local W = width
-	local front, back = -6, TARGET_Z + 3.2
+	local front, back = -5, TARGET_Z + 3.2
 	local L = back - front
 	local mid = (front + back) / 2
 	local RIM, RIM_H = 1.6, 0.8 -- the raised rim's width and height over the floor
@@ -311,8 +312,9 @@ local function makeBooth(standCf, width, look)
 	end
 	-- the water: see-through over the darker bed, glossy; named Water so the stud pass leaves it smooth
 	local water = blk("Water", Vector3.new(poolHalf * 2, 0.2, z1 - z0), 0, FLOOR_T - 0.1, (z0 + z1) / 2, look.Track)
-	water.Transparency = 0.15
-	water.Reflectance = look.Shine and 0.35 or 0.25
+	water.Material = Enum.Material.Glass -- glassy and see-through: reads as water over the darker bed
+	water.Transparency = 0.3
+	water.Reflectance = look.Shine and 0.3 or 0.2
 	water.CastShadow = false
 
 	-- the rim: bricks about 4 studs long in two shades, so it reads as built from blocks
@@ -333,7 +335,7 @@ local function makeBooth(standCf, width, look)
 	blk("Lip", Vector3.new(W, 0.06, 0.5), 0, FLOOR_T + 0.03, front + 0.25, look.Rim) -- the open front edge, flush
 
 	-- the stand pad: square tiles with thin gaps, from behind the stand point to the pool, under the cannon
-	local padW, pz0, pz1 = inner * 2 - 1, -4.2, z0 - 0.4
+	local padW, pz0, pz1 = inner * 2 - 1, -3.6, z0 - 0.4
 	local nx, nz = math.max(1, math.floor(padW / 2.2 + 0.5)), math.max(1, math.floor((pz1 - pz0) / 2.2 + 0.5))
 	local tw, tl = padW / nx, (pz1 - pz0) / nz
 	for ix = 1, nx do
