@@ -10,7 +10,7 @@
 	moves the SpawnLocation into the lobby.
 	Alex, Oct 31: "make it seem more buyable ... we want to make money". So the lanes grew with the 2x map,
 	every cannon stands on a display turntable (a glowing ring on the glow tiers), the gamepass lane is the
-	showcase, the fanciest of all (black and gold with rainbow neon, rainbow sparkles, lanterns on all four
+	showcase, the fanciest of all (a rainbow brick rim on gold round a black lane, rainbow sparkles, lanterns on all four
 	corners, its Robux price on its label; Alex: "we dont do the VIP thing around here", so no VIP sign), and a
 	"2x POWER" board stands by the first lane (Workspace.TrainingShop; its prompt opens the same purchase
 	as the Shop, "Coming soon!" while the pass id is 0).
@@ -233,10 +233,10 @@ local TIERS = {
 	[3] = { Base = rgb(245, 135, 35), Water = rgb(85, 195, 240), Glow = true }, -- Heavy: orange
 	[4] = { Base = rgb(245, 192, 40), Water = rgb(85, 195, 240), Glow = true, Shine = true }, -- Golden: gold
 	[5] = { Base = rgb(80, 205, 70), Water = rgb(90, 220, 180), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
-	-- Dragon (the gamepass lane): the showcase you buy, "better than all of the others" (Alex, Oct 31). A gold
-	-- brick rim round a black lane, rainbow neon along the rim, a bright violet pool with rainbow sparkles, gold
+	-- Dragon (the gamepass lane): the showcase you buy, "better than all of the others" (Alex, Oct 31). Rainbow
+	-- brick rim on a gold base round a black lane with gold neon, a deep violet pool with rainbow sparkles, gold
 	-- and black pad tiles, lanterns on all four corners. No VIP sign or crown: "we dont do the VIP thing".
-	[6] = { Base = rgb(255, 196, 45), Water = rgb(150, 90, 230), Glow = true, Shine = true, Sparkle = true, Black = true, Premium = true },
+	[6] = { Base = rgb(255, 196, 45), Water = rgb(120, 80, 240), Glow = true, Shine = true, Sparkle = true, Black = true, Premium = true },
 }
 local function tierLook(id)
 	local t = TIERS[id] or TIERS[1]
@@ -300,6 +300,10 @@ local function makeBooth(standCf, width, look)
 	local function shade(c, f)
 		return Color3.new(math.min(c.R * f, 1), math.min(c.G * f, 1), math.min(c.B * f, 1))
 	end
+	-- the gamepass lane's rainbow: its rim bricks cycle red, orange, yellow, green, blue, violet, and so do
+	-- its sparkles (Oct 31: a gold rim alone didn't stand out from the gold lane)
+	local RAINBOW = { rgb(255, 70, 70), rgb(255, 150, 40), rgb(255, 225, 50), rgb(80, 220, 90), rgb(60, 170, 255), rgb(170, 90, 255) }
+	local brickNo = 0
 
 	-- the footing: the lane's own base in a dark rim shade, reaching down into the ground, with a step at the
 	-- open front so you walk straight up onto the stand pad
@@ -313,7 +317,7 @@ local function makeBooth(standCf, width, look)
 	blk("Deck", Vector3.new(inner * 2, deck, back - RIM - z1), 0, FLOOR_T, (z1 + back - RIM) / 2, look.Floor, true) -- the far end
 	-- the water: see-through over the darker bed, glossy; named Water so the stud pass leaves it smooth
 	local water = blk("Water", Vector3.new(poolHalf * 2, 0.2, z1 - z0), 0, FLOOR_T - 0.1, (z0 + z1) / 2, look.Track)
-	water.Transparency = 0.15 -- bright like Stone Skipping's water; Glass over the bed read grey
+	water.Transparency = look.Premium and 0.05 or 0.15 -- bright like Stone Skipping's water; Glass over the bed read grey
 	water.Reflectance = look.Shine and 0.3 or 0.2
 	water.CastShadow = false
 
@@ -333,7 +337,8 @@ local function makeBooth(standCf, width, look)
 			local off = -len / 2 + each * (k - 0.5)
 			local size = alongZ and Vector3.new(RIM, RIM_H + deck, each - 0.06) or Vector3.new(each - 0.06, RIM_H + deck, RIM)
 			local px, pz = alongZ and x or x + off, alongZ and zc + off or zc
-			blk("Rim", size, px, FLOOR_T + RIM_H, pz, shade(look.Rim, k % 2 == 0 and 1.12 or 1), true)
+			brickNo += 1
+			blk("Rim", size, px, FLOOR_T + RIM_H, pz, look.Premium and RAINBOW[(brickNo - 1) % #RAINBOW + 1] or shade(look.Rim, k % 2 == 0 and 1.12 or 1), true)
 		end
 	end
 	for _, sx in ipairs({ -1, 1 }) do
@@ -362,33 +367,12 @@ local function makeBooth(standCf, width, look)
 		end
 	end
 
-	-- the gamepass lane's rainbow: neon pieces about 2 studs long cycling red, orange, yellow, green, blue, violet
-	local RAINBOW = { rgb(255, 70, 70), rgb(255, 150, 40), rgb(255, 225, 50), rgb(80, 220, 90), rgb(60, 170, 255), rgb(170, 90, 255) }
-	local function rainbowStrip(len, alongZ, x, y, zc)
-		local n = math.max(6, math.floor(len / 2 + 0.5))
-		local each = len / n
-		for k = 1, n do
-			local off = -len / 2 + each * (k - 0.5)
-			local size = alongZ and Vector3.new(0.3, 0.08, each) or Vector3.new(each, 0.08, 0.3)
-			local p = blk("Edge", size, alongZ and x or x + off, y, alongZ and zc + off or zc, RAINBOW[(k - 1) % #RAINBOW + 1])
-			p.Material = Enum.Material.Neon
-			p.CastShadow = false
-		end
-	end
 	if look.Glow then
-		-- a neon line along the top inner edge of the rim (a rainbow on the gamepass lane)
+		-- a neon line along the top inner edge of the rim
 		for _, sx in ipairs({ -1, 1 }) do
-			if look.Premium then
-				rainbowStrip(L - RIM, true, sx * (inner + 0.15), FLOOR_T + RIM_H + 0.04, mid - RIM / 2)
-			else
-				glow("Edge", Vector3.new(0.3, 0.08, L - RIM), sx * (inner + 0.15), FLOOR_T + RIM_H + 0.04, mid - RIM / 2)
-			end
+			glow("Edge", Vector3.new(0.3, 0.08, L - RIM), sx * (inner + 0.15), FLOOR_T + RIM_H + 0.04, mid - RIM / 2)
 		end
-		if look.Premium then
-			rainbowStrip(inner * 2, false, 0, FLOOR_T + RIM_H + 0.04, back - RIM + 0.15)
-		else
-			glow("Edge", Vector3.new(inner * 2, 0.08, 0.3), 0, FLOOR_T + RIM_H + 0.04, back - RIM + 0.15)
-		end
+		glow("Edge", Vector3.new(inner * 2, 0.08, 0.3), 0, FLOOR_T + RIM_H + 0.04, back - RIM + 0.15)
 	end
 	if look.Neon then
 		-- the black lane: neon round the pool and the stand pad
