@@ -33,15 +33,15 @@ local Sfx = {}
 -- name = { volume, pitch spread (+/-), group }. Our files are all about the same loudness, so this is the mix:
 -- hover is barely there, clicks sit under the game sounds, the big moments are loudest.
 local LEVEL = {
-	Click = { 2, 0, "Interface" }, -- RBLX UI Select 01 is a very quiet file (-34 dB)
+	Click = { 0.9, 0, "Interface" }, -- the switch click is a quiet file (-35 dB mean)
 	Hover = { 0.1, 0, "Interface" },
 	Open = { 0.16, 0, "Interface" },
 	Close = { 0.14, 0, "Interface" },
 	Confirm = { 0.3, 0, "Interface" },
 	Error = { 0.3, 0, "Interface" },
-	Tab = { 0.25, 0, "Interface" },
+	Tab = { 0.6, 0, "Interface" }, -- same click as Click, a bit softer
 	Coin = { 0.25, 0.03, "Effects" },
-	Reward = { 0.6, 0, "Effects" },
+	Reward = { 0.35, 0.03, "Effects" }, -- Suction Pop 1 (-22 dB mean); a tiny spread so repeats sound natural
 	Hatch = { 0.4, 0, "Effects" },
 	Rebirth = { 0.4, 0, "Effects" },
 	Unlock = { 0.45, 0, "Effects" },
@@ -65,7 +65,7 @@ local FALLBACK = {
 
 -- Library sounds longer than the moment: play only their start, then fade out quickly (seconds)
 -- Alex, Oct 30: "make the earned sounds just quick, nothing long". So rewards stop by 0.7 s at most.
-local CUT = { Launch = 1.1, LaunchBoom = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.4, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
+local CUT = { Launch = 1.1, LaunchBoom = 0.8, Confirm = 0.6, Coin = 0.35, Reward = 0.35, Unlock = 0.6, Rebirth = 0.7, Hatch = 0.8, Splash = 1 } -- Splash: just the hit, not the long drip
 
 -- slots that use another slot's sound until they have their own
 local BORROW = { Unlock = "Reward" }

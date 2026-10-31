@@ -566,19 +566,23 @@ Config.Sounds = {
 	-- actually like a launch", "make the training sound better". Library picks until our own (assets/sfx) are uploaded:
 	-- Oct 31: from Alex's SFX pack (project files SFX.zip, 99 MB, not in git). Only its licensed-library sounds are used (ProSoundEffects / Roblox):
 	-- they are public and play in any game; measured with huzz-valley/tools/sfx/measure_sfx.py.
-	Click = "rbxassetid://10128760939", -- "RBLX UI Select 01 (SFX)": 0.12 s, soft front, 607 Hz, no hiss (a quiet file: Sfx plays it louder)
+	-- Oct 31, Alex: "make the sound normal, these sound so robotic". So every button and reward sound is now a real
+	-- recorded sound (a real switch click, a real suction pop), never a synth or 8-bit blip, and never pitch-stepped.
+	Click = "rbxassetid://9119720940", -- "Switches Clicks Buttons Various Versions 7 (SFX)", ProSoundEffects: one real button click, 0.27 s
+	-- was "RBLX UI Select 01 (SFX)" 10128760939 (a synth tick)
 	Hover = "", -- silent: a tick on every hover was too much
 	Open = "rbxassetid://15675012262", -- "Roblox_UI_Whoosh_04", 0.35 s
 	Close = "rbxassetid://15675028888", -- "Roblox_UI_Whoosh_02", 0.49 s
 	Confirm = "rbxassetid://9038924756", -- "Happy Forever - Hit3", APMOfficial, ~2 s (Sfx plays its first 0.6 s)
 	Error = "rbxassetid://15675075163", -- "Roblox_UI_Delete", 0.61 s
-	Tab = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s
+	Tab = "rbxassetid://9119720940", -- the same real click as Click, quieter (was "Roblox_UI_Small_Click" 15675032796)
 	-- "Magic Burst 2 (SFX)" by @ProSoundEffects, Roblox's free licensed library (public, no upload):
 	-- https://create.roblox.com/store/asset/9116384799/Magic-Burst-2-SFX
 	Hatch = "rbxassetid://9116384799",
 	-- Roblox's free licensed library too (found with Studio's Toolbox search on Oct 30, each loaded in Studio;
 	-- picked by title and length, not yet heard by Alex: swap any one by changing its id):
-	Reward = "rbxassetid://16480580213", -- "Roblox_Pinball_8Bit_Blip_01" (by Roblox): a quick game "blip" (Sfx plays 0.4 s)
+	Reward = "rbxassetid://9119668788", -- "Suction Pop 1 (SFX)", ProSoundEffects: a quick real "pop", 0.31 s
+	-- was "Roblox_Pinball_8Bit_Blip_01" 16480580213: Alex found it robotic
 	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
 	Rebirth = "rbxassetid://1840018171",
 	Unlock = "rbxassetid://9116405618", -- "Magic Poofs Short Breathy Bursts Punchy 2 (SFX)", ProSoundEffects
