@@ -24,6 +24,7 @@ Playbooks in this folder:
 - [[06 Beat the Hits - Polish Playbook]]: ⭐ the feel and polish spec (launch by phase, juice sizes, sound, HUD, onboarding numbers, feel test)
 - [[07 Borrow List - Game by Game]]: every good idea from Stone Skipping, Steal an Egg, the +1 family and Grow a Garden, with how to build it
 - [[Teardown - Stone Skipping]]: the +1 reference measured frame by frame (first 90 s, one throw, HUD, shop, retention)
+- [[14 Premium Feel Playbook]]: ⭐ the premium layer every game gets: staged HUD, level-up streaks, one motion table, reward beat chains, feel numbers per family, the kid-safe check, five prompts per game
 - [[13 Beat Stone Skipping - Tutorial, Pacing and Feel]]: ⭐ hide the UI until the tutorial needs it, a level-up every second, spotlight the one button, chained reward beats (Oct 31 recording)
 - [[08 Few-Prompt Game Building with AI]]: how to get a good game in a few prompts (what works, templates, self-checks)
 - [[09 Owner Taste Rules]]: the owner's calls on UI, sound, look and pace; load for every look/feel job
@@ -70,7 +71,7 @@ Playbooks in this folder:
 | Effects | `roblox-vfx` | [[11 VFX Moments Playbook]], `VFX-ITEMS.md`, [[05 VFX]] |
 | Animations | `roblox-ai-animation` | [[06 Animation]] |
 | Blender models | `blender-roblox-models` | [[04 Building, Maps & 3D Models]] |
-| Game feel | | [[06 Beat the Hits - Polish Playbook]], `GAME-FEEL.md`, `LihFolk/LihFolk Vault V2/47 Game Feel and Juice/` |
+| Game feel | | [[14 Premium Feel Playbook]], [[06 Beat the Hits - Polish Playbook]], `GAME-FEEL.md`, `LihFolk/LihFolk Vault V2/47 Game Feel and Juice/` |
 | Match or beat a hit | | [[07 Borrow List - Game by Game]], the game's Teardown note, [[09 Owner Taste Rules]] |
 | A row of tiered stations (training lanes, upgrade pads) | `roblox-cartoony-building` | [[Lesson - Tiered Training Lanes]] |
 | Final check | | [[16 Cartoony Kid-Appeal Checklist]] |

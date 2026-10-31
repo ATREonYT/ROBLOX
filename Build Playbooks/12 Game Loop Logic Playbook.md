@@ -112,7 +112,7 @@ end
 Reusable kit versions of each system (Currency, Rebirth, EggHatch, Shop, Receipts, DailyRewards, Codes, Quests, Leaderboard, Inventory) are in `new-game-kit/examples/`.
 
 ## 6. Prove the loop before a human plays it
-- **Pacing sim** (Lune, offline): a bot that plays optimally from a fresh save. Every simulated second it trains, launches when ready, buys the best upgrade or egg, and rebirths when it can. Log the time of each beat in §3 and **fail the check if any beat misses its target by more than 30%**. Put it in `tools/check.sh` (new-game-kit has the harness; Hood and Huzz Valley run full-loop sims).
+- **Pacing sim** (Lune, offline): a bot that plays optimally from a fresh save. Every simulated second it trains, launches when ready, buys the best upgrade or egg, and rebirths when it can. Log the time of each beat in §3 and **fail the check if any beat misses its target by more than 30%**. Put it in `tools/check.sh`. The kit has one ready: `tools/pace.luau` with targets in `Config.Pacing` ([[14 Premium Feel Playbook]] §8). Hood and Huzz Valley run full-loop sims.
 - **Rule specs:** cost formulas, odds that sum to 100%, rebirth resets the right fields, pity counter, offline cap.
 - **A Studio playtest** with the MCP playtest subagent: "fresh save, follow the tutorial, report the time to first rebirth".
 - **After launch:** Roblox's funnel events and retention (D1/D7) in Creator Analytics; A/B test the first rebirth price with Experiments ([[Brief - Game Design, Retention and Growth]]).

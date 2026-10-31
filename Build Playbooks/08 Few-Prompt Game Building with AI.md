@@ -79,8 +79,8 @@ From [Analytics Vidhya's write-up](https://www.analyticsvidhya.com/blog/2026/08/
 - **Name the reference game every time.** "Like Stone Skipping's throw" is worth ten adjectives.
 
 ## 6. Building the vault so prompts stay short (next steps)
-1. **A systems library:** each system from Cannon Evolution (eggs/pets, rebirth, shop, playtime, daily, codes, missions, leaderboard, tutorial, launch/flight, Sfx, UI Kit) as a drop-in module with its own spec and Config block, so a new game copies a folder instead of a game. `new-game-kit/` is the start.
+1. **A systems library:** each system from Cannon Evolution (eggs/pets, rebirth, shop, playtime, daily, codes, missions, leaderboard, tutorial, launch/flight, Sfx, UI Kit) as a drop-in module with its own spec and Config block, so a new game copies a folder instead of a game. `new-game-kit/` is the start; Oct 31 added `Progression` (level-ups) and `HudStages` (staged HUD) to it.
 2. **A reference pack per game family:** 2–3 measured recordings + a teardown note ([[Teardown - Stone Skipping]] is the model).
 3. **The owner's taste rules in one place** ([[09 Owner Taste Rules]]), loaded for every UI, sound and feel job.
-4. **One kid-safe check script** shared by all games.
-5. **A "feel numbers" table per family** (throw length, counter speed, first rebirth time) that the feel test compares against.
+4. **One kid-safe check script** shared by all games: done, `tools/kidsafe_check.py` (Oct 31, [[14 Premium Feel Playbook]] §8).
+5. **A "feel numbers" table per family** (throw length, counter speed, first rebirth time) that the feel test compares against: started in [[14 Premium Feel Playbook]] §7 (family A measured, B–D estimates to measure).

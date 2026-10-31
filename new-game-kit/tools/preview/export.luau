@@ -103,6 +103,37 @@ local SAMPLES = {
 	Gifts = { { "Daily reward (day 2)", "200 Coins", "Claim" }, { "Gift 1", "Claimed" }, { "Gift 2", "3:12", "Claim" } },
 	Settings = { { "Flashes", "On", "Turn off" }, { "Music", "On", "Turn off" }, { "LowGraphics", "Off", "Turn on" } },
 }
+-- "Stage1" .. "Stage5": the HUD as a new player sees it at that tutorial stage (Config.HudStages),
+-- with the spotlit button's white rim at its brightest.
+local stageN = PANEL and tonumber(string.match(PANEL, "^Stage(%d+)$"))
+if stageN then
+	PANEL = nil
+	local luau = require("@lune/luau")
+	local config = luau.load(fs.readFile("src/Config/GameConfig.luau"), { debugName = "GameConfig" })()
+	local HudStages = luau.load(fs.readFile("src/Shared/HudStages.luau"), { debugName = "HudStages" })()
+	local stages = config.HudStages
+	local all = { "Tap" }
+	for _, pill in hud.TopBar:GetChildren() do
+		if pill:IsA("Frame") then table.insert(all, "TopBar." .. pill.Name) end
+	end
+	for _, b in hud.Menu:GetChildren() do table.insert(all, "Menu." .. b.Name) end
+	for _, name in all do
+		local gui = HudStages.Find(hud, name)
+		if gui then gui.Visible = HudStages.Visible(stages, stageN, name) end
+	end
+	local prog = hud.Menu.Rebirth.Face:FindFirstChild("Progress")
+	if prog then prog.Text = "94%" end
+	local spot = HudStages.Spotlight(stages, stageN)
+	local target = spot and HudStages.Find(hud, spot)
+	local face = target and (target:FindFirstChild("Face") or target)
+	if face then
+		local stroke = roblox.Instance.new("UIStroke")
+		stroke.Color = Color3.new(1, 1, 1)
+		stroke.Thickness = 4
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		stroke.Parent = face
+	end
+end
 if PANEL then
 	local target = if PANEL == "Popup" then hud.Popup else hud.Panels[PANEL]
 	target.Visible = true
