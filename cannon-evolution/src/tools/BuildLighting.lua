@@ -54,23 +54,23 @@ sky.MoonAngularSize = 0
 sky.StarCount = 0
 
 local atmo = get("Atmosphere", "Atmosphere")
-atmo.Density = 0.3
+atmo.Density = 0.24
 atmo.Offset = 0.25
 atmo.Color = Color3.fromRGB(255, 225, 190) -- a light warm haze, not the old sunset orange
 atmo.Decay = Color3.fromRGB(150, 200, 255)
 atmo.Glare = 0
-atmo.Haze = 0.3
+atmo.Haze = 0.05 -- Oct 31: the haze turned the mountains grey; Stone Skipping's air is clear and bright
 
 local cc = get("ColorCorrectionEffect", "Warmth")
-cc.Saturation = 0.25
-cc.Contrast = 0.05
+cc.Saturation = 0.32 -- Oct 31: "fuller and brighter", like Stone Skipping's punchy colours
+cc.Contrast = 0.08
 cc.Brightness = 0
 cc.TintColor = Color3.fromRGB(255, 250, 240)
 
 -- neon stays bright but no glow spills round it, and the haze no longer washes out the eggs (Alex, Oct 30)
 local bloom = get("BloomEffect", "Bloom")
 -- a little more bloom so the booths' neon glows like Alex's booth pictures; the threshold keeps it on neon only
-bloom.Intensity = 0.15
+bloom.Intensity = 0.3 -- Oct 31: the lanterns, fires and neon glow a little more; the threshold keeps sand and white parts clean
 bloom.Size = 8
 bloom.Threshold = 1.6
 

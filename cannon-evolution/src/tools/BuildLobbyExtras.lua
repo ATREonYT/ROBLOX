@@ -68,7 +68,10 @@ local EGGS = { "Starter", "Woodland", "Nature", "Ocean" } -- the exclusive egg g
 -- Starter's spot and the step. Oct 31, later: "the player doesnt have to walk so long to buy an egg", so the
 -- Starter Egg took the spot nearest the spawn and the row closed up (8 to 6 file units, 12 studs at 2x); the
 -- spot kept free for a Robux pet or egg (Alex decides) is now the one past the Ocean Egg.
-local ROW_START, ROW_STEP = Vector2.new(-69, 8.5), Vector2.new(-6, 0)
+-- Oct 31, evening (Alex: "make the lobby way better"; the tutorial still walked 20-30 s): the row moved to the
+-- grass south of the dock path, between the spawn plaza and the cannonball stand, so the spawn, the eggs, the
+-- stand and the launch are all a few seconds apart. World: Starter at (-86, 22), then every 12 studs west.
+local ROW_START, ROW_STEP = Vector2.new(-43, 11), Vector2.new(-6, 0)
 local function eggSpot(i) -- i = #EGGS + 1 is the free Robux spot
 	return ROW_START + ROW_STEP * (i - 1)
 end
@@ -190,7 +193,7 @@ local HEIGHT, WIDTH = 46, 104
 local props = { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false }
 local function addBorder(areaName, color, x, z)
 	local pos = Vector3.new(x, WATER_Y + HEIGHT / 2, z)
-	local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = color, Material = Enum.Material.SmoothPlastic, Transparency = 0.35 })
+	local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = color, Material = Enum.Material.SmoothPlastic, Transparency = 0.6 }) -- Oct 31: more see-through, so the first border no longer hides the LAUNCH arch from the spawn
 	for k, v in pairs(props) do
 		b[k] = v
 	end
