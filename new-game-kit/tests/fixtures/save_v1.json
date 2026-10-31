@@ -1,0 +1,109 @@
+{
+  "Data": {
+    "Codes": {
+      "Redeemed": {
+        "RELEASE": 1793475192
+      }
+    },
+    "Currency": {
+      "Balances": {
+        "Coins": 16,
+        "Gems": 205
+      },
+      "Earned": {
+        "Coins": 120739,
+        "Gems": 205
+      }
+    },
+    "Daily": {
+      "LastDay": 20757,
+      "Streak": 1
+    },
+    "Eggs": {
+      "Boosts": {},
+      "Hatched": 1,
+      "Obtained": {},
+      "Pity": {
+        "Basic": 1
+      }
+    },
+    "Income": {
+      "LastSeen": 1793476281
+    },
+    "Inventory": {
+      "Equipped": {
+        "070c3ccd-0000-4000-8000-000000000002": true
+      },
+      "Stacks": {},
+      "Uniques": {
+        "070c3ccd-0000-4000-8000-000000000002": {
+          "Created": 1793475186,
+          "Item": "Dog",
+          "Level": 1,
+          "Paid": false
+        }
+      }
+    },
+    "Leaderboards": {
+      "AllTime": {},
+      "Values": {
+        "WeeklyHatches": 1
+      },
+      "Week": 2964
+    },
+    "Pets": {
+      "Discovered": {
+        "Dog": true
+      }
+    },
+    "Purchases": {
+      "Gems100": 2
+    },
+    "Quests": {
+      "Claimed": {},
+      "Progress": {
+        "FirstCoins": [
+          0
+        ]
+      }
+    },
+    "Rebirth": {
+      "Count": 1
+    },
+    "Settings": {
+      "Flashes": false
+    },
+    "ShopBought": {},
+    "Upgrades": {
+      "Levels": {
+        "Income": 1
+      }
+    }
+  },
+  "Meta": {
+    "Created": 1793475184,
+    "PurchaseLog": [
+      {
+        "Id": "PURCHASE-1",
+        "Product": "Gems100",
+        "Robux": 10,
+        "Time": 1793475187
+      },
+      {
+        "Id": "PURCHASE-3",
+        "Product": "Gems100",
+        "Robux": 10,
+        "Time": 1793475187
+      }
+    ],
+    "ReceiptOrder": [
+      "PURCHASE-1",
+      "PURCHASE-3"
+    ],
+    "Receipts": {
+      "PURCHASE-1": 1793475187,
+      "PURCHASE-3": 1793475187
+    }
+  },
+  "Schema": 1
+}

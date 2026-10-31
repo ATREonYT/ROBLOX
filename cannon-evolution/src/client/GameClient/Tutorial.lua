@@ -28,7 +28,7 @@ local TEXT = {
 	IntroLine3 = "Then stand in the Launch Zone and hit LAUNCH. Ready?",
 	Skip = "Skip",
 	Tag = "TUTORIAL",
-	Train = "TRAIN POWER",
+	Train = "REACH LEVEL",
 	Launch = "LAUNCH",
 	Cash = "EARN CASH",
 	Hatch = "HATCH AN EGG",
@@ -192,11 +192,13 @@ return function(ctx)
 	local launchBase = nil
 	local STEPS = {
 		{
+			-- Stone Skipping's REACH LEVEL 20: Level 20 is the first rebirth's Power (Config.PowerLevel), so a
+			-- level ticks up about every second while you train (vault 13, Oct 31)
 			Label = function()
-				return TEXT.Train
+				return TEXT.Train .. " " .. Config.MAX_LEVEL
 			end,
 			Count = function(data)
-				return math.min(math.floor(data.Power), TRAIN_GOAL), TRAIN_GOAL
+				return (Config.PowerLevel(data)), Config.MAX_LEVEL
 			end,
 			Target = function()
 				return stationPad(1)
@@ -930,6 +932,12 @@ return function(ctx)
 	-- TUTORIAL COMPLETE!
 	-----------------------------------------------------------------------
 	local function playComplete()
+		-- a white fade first, like Stone Skipping's rebirth (one flash, so kid-safe)
+		local flash = new("Frame", { Name = "Flash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = holder })
+		Kit.tween(flash, 0.22, { BackgroundTransparency = 0 }, Enum.EasingStyle.Sine)
+		task.wait(0.45)
+		Kit.tween(flash, 0.35, { BackgroundTransparency = 1 }, Enum.EasingStyle.Sine)
+		game:GetService("Debris"):AddItem(flash, 0.4)
 		local shade = new("TextButton", { Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 30, Parent = holder })
 		Kit.tween(shade, 0.4, { BackgroundTransparency = 0.45 })
 		local box = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(700, 420), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 31, Parent = shade })
@@ -983,6 +991,12 @@ return function(ctx)
 			end
 			task.delay(0.3, function()
 				shade:Destroy()
+				-- the whole HUD arrives as you tap past the screen, then the rewards
+				if ctx.HudStage then
+					ctx.HudStage = #STEPS
+					ctx.RefreshHudStage()
+				end
+				task.wait(0.6)
 				ctx.Open("Rewards")
 			end)
 		end
@@ -1050,7 +1064,7 @@ return function(ctx)
 		pointer.Visible = false
 		marker.Enabled = false
 		hideArrows()
-		task.delay(0.8, function()
+		task.delay(finished >= #STEPS and 0.15 or 0.8, function()
 			if finished >= #STEPS then
 				finish()
 				task.delay(0.3, function()
@@ -1065,6 +1079,11 @@ return function(ctx)
 			task.delay(0.2, function()
 				questGrad.Color = ColorSequence.new(Kit.Colors.HeaderTop, Kit.Colors.HeaderBottom)
 				step = finished + 1
+				-- the next step's button arrives on the HUD (HUD.lua, tutorial reveal)
+				if ctx.HudStage then
+					ctx.HudStage = finished
+					ctx.RefreshHudStage()
+				end
 				local have, goal = STEPS[step].Count(State.Data)
 				questText.Text = STEPS[step].Label(State.Data) .. " (" .. Config.Format(have) .. "/" .. Config.Format(goal) .. ")"
 				showStep()
@@ -1086,6 +1105,11 @@ return function(ctx)
 		end
 		gui.Enabled = true
 		fit()
+		-- the HUD shows only what each step needs; a save that has rebirthed already keeps it all
+		if data.Rebirths == 0 and ctx.RefreshHudStage then
+			ctx.HudStage = saved
+			ctx.RefreshHudStage()
+		end
 		task.spawn(function()
 			if saved == 0 and (replay or (data.TotalLaunches == 0 and data.Rebirths == 0)) then
 				task.wait(1.5) -- let the world load in

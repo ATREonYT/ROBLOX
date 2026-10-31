@@ -19,10 +19,30 @@ local Net = require(Shared:WaitForChild("Net"))
 local Feedback = require(Shared:WaitForChild("Feedback"))
 local Format = require(Shared:WaitForChild("Format"))
 local HudBuilder = require(Shared:WaitForChild("HudBuilder"))
+local HudStages = require(Shared:WaitForChild("HudStages"))
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig")) :: any
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+
+-- Error reports (vault note 18 §7.4): each new kind of client error goes to the
+-- server once (at most 20 per session), where ErrorLog groups and counts them.
+do
+	local sent: { [string]: boolean } = {}
+	local count = 0
+	pcall(function()
+		game:GetService("ScriptContext").Error:Connect(function(message: string, trace: string)
+			local where = string.match(trace or "", "^[^\n]+") or ""
+			local key = where .. message
+			if sent[key] or count >= 20 then
+				return
+			end
+			sent[key] = true
+			count += 1
+			Net.Send("ErrorLog.Client", string.sub(message, 1, 300), string.sub(where, 1, 200))
+		end)
+	end)
+end
 
 -- StarterGui copies KitHUD in when the character first spawns: wait for it,
 -- and only build a copy if it never arrives (for example, it was deleted).
@@ -197,6 +217,63 @@ safely("TopBar", function()
 	bind("Coins", hud.TopBar.Coins)
 	bind("Gems", hud.TopBar.Gems)
 	bind("Rebirths", hud.TopBar.Rebirths)
+
+	-- Every gain is felt (vault note 14 §1 "something every second"): the pill bumps and a
+	-- "+N" rises under it. Gains closer than 0.15 s are added together, so taps never spam.
+	local BUMP = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	local RISE = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local readyAt: number? = if attr("DataReady") == true then os.clock() - 2 else nil
+	player:GetAttributeChangedSignal("DataReady"):Connect(function()
+		if attr("DataReady") == true then
+			readyAt = os.clock()
+		end
+	end)
+	local function gains(attrName: string, pill: any, color: Color3)
+		local scale = Instance.new("UIScale")
+		scale.Name = "GainBump"
+		scale.Parent = pill
+		local last = attr(attrName) or 0
+		local pending, flushing = 0, false
+		player:GetAttributeChangedSignal(attrName):Connect(function()
+			local now = attr(attrName) or 0
+			local delta = now - last
+			last = now
+			-- (the save loading in isn't a gain: balances arrive just after DataReady)
+			if delta <= 0 or readyAt == nil or os.clock() - readyAt < 1.5 then
+				return
+			end
+			pending += delta
+			if flushing then
+				return
+			end
+			flushing = true
+			task.delay(0.15, function()
+				flushing = false
+				local amount = pending
+				pending = 0
+				scale.Scale = 1.12
+				TweenService:Create(scale, BUMP, { Scale = 1 }):Play()
+				local pop = HudBuilder.Label("Gain", `+{Format.Short(amount)}`, 20, {
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = UDim2.new(0.5, math.random(-12, 12), 1, 2),
+					Size = UDim2.fromOffset(120, 24),
+					TextColor3 = color,
+					ZIndex = 5,
+					Parent = pill,
+				})
+				TweenService:Create(pop, RISE, { Position = pop.Position + UDim2.fromOffset(0, 18), TextTransparency = 1 }):Play()
+				local stroke = pop:FindFirstChildOfClass("UIStroke")
+				if stroke then
+					TweenService:Create(stroke, RISE, { Transparency = 1 }):Play()
+				end
+				task.delay(0.65, function()
+					pop:Destroy()
+				end)
+			end)
+		end)
+	end
+	gains("Coins", hud.TopBar.Coins, Color3.fromRGB(255, 226, 90))
+	gains("Gems", hud.TopBar.Gems, Color3.fromRGB(120, 210, 255))
 end)
 
 -- Tap -------------------------------------------------------------------------------
@@ -351,6 +428,19 @@ safely("Rebirth", function()
 		local cost = math.floor(c.baseCost * c.growth ^ n)
 		body.Info.Text = `Costs {Format.Short(cost)} {c.currency}.\nYour coins reset, your pets stay.\nBoost x{1 + n * c.bonusPerRebirth} -> x{1 + (n + 1) * c.bonusPerRebirth}`
 	end
+	-- How close the next rebirth is, on the menu tile (100% = ready).
+	local progress = hud.Menu.Rebirth.Face:FindFirstChild("Progress")
+	if progress then
+		local function update()
+			local c = Config.Rebirth
+			local cost = math.floor(c.baseCost * c.growth ^ (attr("Rebirths") or 0))
+			local have = attr(c.currency) or 0
+			progress.Text = `{math.min(100, math.floor(have / math.max(cost, 1) * 100))}%`
+		end
+		player:GetAttributeChangedSignal(Config.Rebirth.currency):Connect(update)
+		player:GetAttributeChangedSignal("Rebirths"):Connect(update)
+		update()
+	end
 	body.Confirm.Face.Activated:Connect(function()
 		showResult(Net.Request("Rebirth.Request", 1), "Rebirth!")
 		refreshers.Rebirth()
@@ -426,6 +516,117 @@ safely("Settings", function()
 			end)
 		end
 	end
+end)
+
+-- HUD stages: the HUD arrives a piece at a time (Config.HudStages, vault note 14 §2) -------
+safely("HudStages", function()
+	local stages = Config.HudStages
+	if not stages then
+		return
+	end
+	local all = if (Config.Income.tap or 0) > 0 then { "Tap" } else {}
+	for _, pill in hud.TopBar:GetChildren() do
+		if pill:IsA("Frame") then
+			table.insert(all, `TopBar.{pill.Name}`)
+		end
+	end
+	for _, entry in HudBuilder.Menu do
+		table.insert(all, `Menu.{entry[1]}`)
+	end
+	local function find(name: string): GuiObject?
+		return HudStages.Find(hud, name) :: GuiObject?
+	end
+	local POP = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	local GLOW = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+	local function popIn(gui: GuiObject)
+		local scale = gui:FindFirstChild("StageScale") :: UIScale?
+		if not scale then
+			scale = Instance.new("UIScale")
+			scale.Name = "StageScale"
+			scale.Parent = gui
+		end
+		scale.Scale = 0.6
+		gui.Visible = true
+		TweenService:Create(scale, POP, { Scale = 1 }):Play()
+	end
+	-- The spotlit button gets a soft white rim that breathes (1.2 s a cycle: a glow, not a flash).
+	local glow: UIStroke? = nil
+	local glowTween: Tween? = nil
+	local function spotlight(name: string?)
+		if glowTween then
+			glowTween:Cancel()
+		end
+		if glow then
+			glow:Destroy()
+		end
+		glow, glowTween = nil, nil
+		local target = if name then find(name) else nil
+		local face = target and target:FindFirstChild("Face") or target
+		if face then
+			local stroke = Instance.new("UIStroke")
+			stroke.Name = "StageGlow"
+			stroke.Color = Color3.new(1, 1, 1)
+			stroke.Thickness = 4
+			stroke.Transparency = 0.7
+			stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			stroke.Parent = face
+			glow = stroke
+			glowTween = TweenService:Create(stroke, GLOW, { Transparency = 0 })
+			glowTween:Play()
+		end
+	end
+	local best = 0
+	local current: number? = nil
+	local function apply()
+		best = math.max(best, HudStages.StepsDone(stages, attr))
+		local stage = HudStages.StageFor(stages, best, (attr("Rebirths") or 0) > 0)
+		if stage == current then
+			return
+		end
+		local from = current
+		current = stage
+		if from == nil then
+			for _, name in all do
+				local gui = find(name)
+				if gui then
+					gui.Visible = HudStages.Visible(stages, stage, name)
+				end
+			end
+		else
+			for i, name in HudStages.Arriving(stages, from, stage, all) do
+				task.delay((i - 1) * 0.06, function()
+					local gui = find(name)
+					if gui then
+						popIn(gui)
+					end
+				end)
+			end
+		end
+		spotlight(HudStages.Spotlight(stages, stage))
+	end
+	local watched: { [string]: boolean } = { Rebirths = true }
+	for _, s in stages do
+		if s.DoneWhen then
+			watched[s.DoneWhen.attr] = true
+		end
+	end
+	for name in watched do
+		player:GetAttributeChangedSignal(name):Connect(apply)
+	end
+	-- Hide the staged pieces until the save loads, then show the right ones at once (no flicker
+	-- of the full HUD for a new player, and no tutorial HUD for a returning one).
+	for _, name in all do
+		local gui = find(name)
+		if gui then
+			gui.Visible = false
+		end
+	end
+	task.spawn(function()
+		if attr("DataReady") ~= true then
+			player:GetAttributeChangedSignal("DataReady"):Wait()
+		end
+		apply()
+	end)
 end)
 
 -- Offline earnings popup ------------------------------------------------------------

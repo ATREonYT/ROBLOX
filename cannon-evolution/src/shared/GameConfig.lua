@@ -143,6 +143,34 @@ function Config.RebirthCost(rebirths)
 	return math.floor(Config.REBIRTH_POWER_BASE * g), math.floor(Config.REBIRTH_CASH_BASE * g)
 end
 
+-- Power shows as Level 1-20 inside each rebirth, like Stone Skipping's "REACH LEVEL 20" (vault 13, Oct 31):
+-- Level 20 is the Power you need to rebirth (the bar says MAX LEVEL). Levels grow a little bigger as you go,
+-- so early on one comes about every second. A progress display only: it changes nothing you earn.
+Config.MAX_LEVEL = 20
+Config.LEVEL_CURVE = 1.3
+
+-- Power needed to reach a level in this rebirth
+function Config.LevelPower(rebirths, level)
+	if level <= 1 then
+		return 0
+	end
+	local cost = Config.RebirthCost(rebirths)
+	return math.ceil(cost * ((level - 1) / (Config.MAX_LEVEL - 1)) ^ Config.LEVEL_CURVE)
+end
+
+-- level, Power into this level, Power this level needs (0, 0 at MAX_LEVEL)
+function Config.PowerLevel(data)
+	local level = 1
+	while level < Config.MAX_LEVEL and data.Power >= Config.LevelPower(data.Rebirths, level + 1) do
+		level += 1
+	end
+	if level >= Config.MAX_LEVEL then
+		return level, 0, 0
+	end
+	local from = Config.LevelPower(data.Rebirths, level)
+	return level, data.Power - from, Config.LevelPower(data.Rebirths, level + 1) - from
+end
+
 Config.RebirthRewards = {
 	{ Icon = "World", Text = "New Worlds" },
 	{ Icon = "Evolve", Text = "Stronger Cannons" },

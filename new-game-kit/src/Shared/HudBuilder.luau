@@ -283,6 +283,14 @@ function HudBuilder.Build(): ScreenGui
 		button.Position = UDim2.fromOffset(((i - 1) % 2) * 82, ((i - 1) // 2) * 82)
 		button.Parent = menu
 	end
+	-- Rebirth progress on its tile ("94%", like Stone Skipping's menu): the client fills it in.
+	label("Progress", "", 14, {
+		Parent = menu.Rebirth.Face,
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -4),
+		Size = UDim2.new(1, 0, 0, 16),
+		TextColor3 = Color3.fromRGB(255, 236, 120),
+	})
 
 	-- Big tap button, bottom right (thumb reach on phones).
 	local tap = HudBuilder.ToyButton("Tap", "TAP!", "Green", UDim2.fromOffset(150, 96), 34)
