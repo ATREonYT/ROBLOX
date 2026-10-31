@@ -1,0 +1,21 @@
+# Offline checks on every push and pull request (vault note 18 §4). No Roblox access needed:
+# the kit's tests, economy sim, pacing check and place build run in Lune, and the kid-safe check
+# runs in Python over every game.
+name: checks
+on:
+  push:
+  pull_request:
+jobs:
+  kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lune 0.10.5
+        run: |
+          curl -sSL -o lune.zip https://github.com/lune-org/lune/releases/download/v0.10.5/lune-0.10.5-linux-x86_64.zip
+          unzip -q lune.zip -d "$HOME/bin" && chmod +x "$HOME/bin/lune"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: New Game Kit checks (tests, sim, pacing, place build, kid-safe)
+        run: sh new-game-kit/tools/check.sh
+      - name: Kid-safe check, every game
+        run: python3 tools/kidsafe_check.py

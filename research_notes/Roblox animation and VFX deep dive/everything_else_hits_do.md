@@ -151,7 +151,7 @@ The biggest hit of 2025, Grow a Garden, credits weekly updates and a persistent 
     - if a boost is triggered by a free event, say so.
   - **[NOT ALLOWED]** any timer that resets, invents urgency or lies about time left.
 - **Group join reward [est].**
-  - Check `player:IsInGroup(GROUP_ID)` on the server (cache it, recheck on a "Verify" button) and give a small permanent perk (for example +10% coins).
+  - Check `player:IsInGroupAsync(GROUP_ID)` on the server (cache it, recheck on a "Verify" button) and give a small permanent perk (for example +10% coins).
   - Must be a one-time, small, non-Robux reward.
   - `GROUP_ID` stays 0 until the owner supplies it (repo rule: never invent IDs).
 - **Friends multiplier [est].**

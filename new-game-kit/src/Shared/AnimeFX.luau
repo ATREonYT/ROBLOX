@@ -12,7 +12,7 @@
 --   AnimeFX.Crater(position, radius)             -- rocks pop up in a ring, then sink away
 --   AnimeFX.ImpactFrame()                         -- one 0.07 s black-and-white frame (finishers only)
 --   AnimeFX.SpeedLines(duration)                  -- radial lines on screen (dashes, charges)
---   AnimeFX.HitStop(animationTrack, seconds)      -- freezes an attack for 0.04-0.12 s
+--   AnimeFX.HitStop(animationTrack, seconds)      -- catch-up hit-stop (slow 0.12x, then 1.88x); StopFor(strength)
 --   AnimeFX.Shake(strength, seconds)
 --
 -- Kid-safe (repo CLAUDE.md): ImpactFrame is at most one a second and skipped when the player's
@@ -58,7 +58,7 @@ local function emitter(parent: Instance, name: string, props: { [string]: any })
 	return e
 end
 
-local WHITE = Color3.new(1, 1, 1)
+local WHITE = ((Color3 :: any) and Color3.new(1, 1, 1)) :: Color3 -- (nil in the offline test mock)
 
 -- Player settings (kit Settings module publishes Setting_<key> attributes). Missing = on.
 local function isClient(): boolean
@@ -365,9 +365,9 @@ local function burstAt(position: Vector3): (Part, Attachment)
 end
 
 local HIT = {
-	Light = { flash = 2.5, ring = 5, sparks = 10, shake = 0, stop = 0.04 },
-	Heavy = { flash = 4, ring = 9, sparks = 18, shake = 0.5, stop = 0.07 },
-	Finisher = { flash = 6, ring = 14, sparks = 28, shake = 1, stop = 0.1 },
+	Light = { flash = 2.5, ring = 5, sparks = 10, shake = 0, stop = 0 }, -- light hits: no stop (note 19 R1)
+	Heavy = { flash = 4, ring = 9, sparks = 18, shake = 0.5, stop = 0.066 },
+	Finisher = { flash = 6, ring = 14, sparks = 28, shake = 1, stop = 0.089 },
 }
 AnimeFX.HitSizes = HIT
 
@@ -551,13 +551,32 @@ function AnimeFX.Shake(strength: number, seconds: number)
 	end)
 end
 
--- Freeze an attack on its contact frame (hit-stop). Light 0.04, heavy 0.07, finisher 0.1 s.
+-- Hit-stop on the contact frame, the catch-up way (note 19 R1): the attack slows to 0.12x for
+-- `seconds`, then plays at 1.88x for the same time, so the body ends exactly where it would have
+-- been and stays in step with marker- and clock-timed effects (a plain freeze makes it fall behind).
+-- Only slow the attack track, never walking. Stops are capped at 0.12 s.
+--   AnimeFX.HitStop(track, AnimeFX.StopFor(strength))   -- strength: 0.3 light .. 1.3 ultimate
+function AnimeFX.StopFor(strength: number): number
+	if strength < 0.45 then
+		return 0 -- light hits: glint and sound only
+	end
+	return math.min(0.12, 0.03 + 0.045 * strength)
+end
+
 function AnimeFX.HitStop(track: AnimationTrack, seconds: number)
-	local speed = track.Speed
-	track:AdjustSpeed(0)
+	if seconds <= 0 or not track.IsPlaying then
+		return
+	end
+	local speed = if track.Speed > 0 then track.Speed else 1
+	track:AdjustSpeed(speed * 0.12)
 	task.delay(seconds, function()
 		if track.IsPlaying then
-			track:AdjustSpeed(if speed > 0 then speed else 1)
+			track:AdjustSpeed(speed * 1.88)
+			task.delay(seconds, function()
+				if track.IsPlaying then
+					track:AdjustSpeed(speed)
+				end
+			end)
 		end
 	end)
 end

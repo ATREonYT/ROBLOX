@@ -143,9 +143,9 @@ Each tier keeps everything below it and adds one new kind of layer. The colour o
   - a reverb tail on the body only.
   - Saturate the layers so the hit cuts through phone speakers. Make them with `tools/sfx/make_sfx.py`.
 - A normal shot uses only the crack and the body. Rare tiers add the sub, the tail, a riser during the tease, and their own sting.
-- **Duck the music** with a CompressorSoundEffect on the Music group, side-chained to the stinger group, using small amounts.
+- **Duck the music:** the simplest reliable way is to tween the Music SoundGroup down 3–6 dB for the sting and back. A CompressorSoundEffect side-chained to the stinger group is the docs' way; test that it works in Studio before relying on it (note 19, Part 4).
 - **Pitch:**
-  - ±8% random pitch on repeated clicks and coins;
+  - ±3–6% random pitch on repeated clicks and coins, never on stings or other signature sounds (note 19, R24);
   - one semitone up per skip, capped at +12, so a long flight plays a rising scale.
 - Other players' rare shots play in 3D, with a mute toggle.
 
