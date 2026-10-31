@@ -121,7 +121,8 @@ for i, id in ipairs(EGGS) do
 	-- no PointLight: it washed the eggs out (Alex, Oct 30)
 	local board = Instance.new("BillboardGui")
 	board.Size = UDim2.fromScale(7, 2.6) -- sized in studs, so neighbouring signs never overlap from afar
-	board.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
+	-- every other label sits higher, so the row's labels don't overlap when seen from the spawn (Oct 31)
+	board.StudsOffsetWorldSpace = Vector3.new(0, (newMap and i % 2 == 0) and 9 or 6, 0)
 	board.LightInfluence = 0
 	board.MaxDistance = 120
 	board.Adornee = base
@@ -193,7 +194,7 @@ local HEIGHT, WIDTH = 46, 104
 local props = { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false }
 local function addBorder(areaName, color, x, z)
 	local pos = Vector3.new(x, WATER_Y + HEIGHT / 2, z)
-	local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = color, Material = Enum.Material.SmoothPlastic, Transparency = 0.6 }) -- Oct 31: more see-through, so the first border no longer hides the LAUNCH arch from the spawn
+	local b = part({ Name = areaName, Size = Vector3.new(0.4, HEIGHT, WIDTH), CFrame = CFrame.new(pos), Color = color, Material = Enum.Material.SmoothPlastic, Transparency = 0.75 }) -- Oct 31: more see-through, so the first border no longer hides the LAUNCH arch from the spawn
 	for k, v in pairs(props) do
 		b[k] = v
 	end

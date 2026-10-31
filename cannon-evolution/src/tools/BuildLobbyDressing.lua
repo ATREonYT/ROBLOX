@@ -356,7 +356,7 @@ do
 		local gui = Instance.new("SurfaceGui")
 		gui.Face = face
 		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		gui.PixelsPerStud = 50
+		gui.PixelsPerStud = 24 -- low on purpose: TextScaled stops at 100 px, so a dense canvas left the words small
 		gui.LightInfluence = 0
 		local label = Instance.new("TextLabel")
 		label.Size = UDim2.fromScale(0.92, 0.84)
