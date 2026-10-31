@@ -11,7 +11,8 @@
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "GameClient": { "$path": "src/client/GameClient" }
+        "GameClient": { "$path": "src/client/GameClient" },
+        "LaneMotion": { "$path": "src/client/LaneMotion.client.lua" }
       }
     }
   }

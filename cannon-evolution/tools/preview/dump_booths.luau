@@ -116,6 +116,26 @@ local env = setmetatable({
 	NumberSequenceKeypoint = roblox.NumberSequenceKeypoint, NumberRange = roblox.NumberRange,
 	Vector2 = roblox.Vector2, UDim2 = roblox.UDim2, UDim = roblox.UDim, Font = roblox.Font,
 	warn = print,
+	-- Lune has no RaycastParams or Random: a stand-in for each (the stand-in lobby has nothing to hit anyway)
+	RaycastParams = { new = function()
+		return {}
+	end },
+	Random = { new = function(seed)
+		local state = (seed or 1) % 2147483647
+		local function nxt()
+			state = (state * 16807) % 2147483647
+			return state / 2147483647
+		end
+		return {
+			NextNumber = function(_, a, b)
+				a, b = a or 0, b or 1
+				return a + (b - a) * nxt()
+			end,
+			NextInteger = function(_, a, b)
+				return a + math.floor(nxt() * (b - a + 1))
+			end,
+		}
+	end },
 }, { __index = _G })
 local config = luau.load(fs.readFile("src/shared/GameConfig.lua"), { debugName = "GameConfig", environment = env })()
 env.require = function()
@@ -248,10 +268,52 @@ for _, st in workspace.TrainingStations:GetChildren() do
 				neon = p.Material == roblox.Enum.Material.Neon,
 				alpha = p.Transparency,
 				cannon = p:FindFirstAncestor("Cannon") ~= nil,
+				name = p.Name,
+				spin = p:FindFirstAncestor("Spin") ~= nil,
+				belt = p:FindFirstChild("BeltStuds") ~= nil,
+			})
+			-- the console screen's words (scene3d draws them on the screen)
+			local gui = p:FindFirstChildOfClass("SurfaceGui")
+			if gui then
+				local lines = {}
+				for _, t in gui:GetChildren() do
+					if t:IsA("TextLabel") then
+						table.insert(lines, { text = t.Text, y = t.Position.Y.Scale, h = t.Size.Y.Scale, color = { t.TextColor3.R, t.TextColor3.G, t.TextColor3.B } })
+					end
+				end
+				list[#list].gui = { face = gui.Face.Name, lines = lines }
+			end
+		end
+	end
+	-- lights and particle sources, for scene3d's preview
+	local lights, motes = {}, {}
+	for _, d in st:GetDescendants() do
+		if d:IsA("PointLight") and d.Parent:IsA("BasePart") then
+			local c = d.Parent.CFrame.Position
+			table.insert(lights, { pos = { c.X, c.Y, c.Z }, color = { d.Color.R, d.Color.G, d.Color.B }, brightness = d.Brightness, range = d.Range })
+		elseif d:IsA("ParticleEmitter") and d.Parent:IsA("BasePart") then
+			local k = d.Color.Keypoints
+			table.insert(motes, {
+				cf = { d.Parent.CFrame:GetComponents() },
+				size = { d.Parent.Size.X, d.Parent.Size.Y, d.Parent.Size.Z },
+				colors = { { k[1].Value.R, k[1].Value.G, k[1].Value.B }, { k[#k].Value.R, k[#k].Value.G, k[#k].Value.B } },
+				rate = d.Rate,
+				life = (d.Lifetime.Min + d.Lifetime.Max) / 2,
+				speed = (d.Speed.Min + d.Speed.Max) / 2,
+				size0 = d.Size.Keypoints[1].Value,
 			})
 		end
 	end
-	out[tostring(st:GetAttribute("StationId"))] = { parts = list, x = st.PrimaryPart.CFrame.Position.X }
+	local axis = st:FindFirstChild("Axis", true)
+	out[tostring(st:GetAttribute("StationId"))] = {
+		parts = list,
+		x = st.PrimaryPart.CFrame.Position.X,
+		lights = lights,
+		motes = motes,
+		axis = axis and { axis.CFrame:GetComponents() } or nil,
+		spinPeriod = axis and axis.Parent:GetAttribute("SpinPeriod") or nil,
+		stand = { st.StandPoint.CFrame:GetComponents() },
+	}
 end
 fs.writeFile(process.args[1], serde.encode("json", out))
 print("dumped " .. #workspace.TrainingStations:GetChildren() .. " booths")
