@@ -33,18 +33,30 @@ PICKS = {
     "Confirm": ("uisfx", "rubber/purchase"),
     "Error": ("uisfx", "rubber/error"),
     "Tab": ("uisfx", "rubber/select"),
-    "Reward": ("uisfx", "rubber/reward"),
+    "Reward": ("kenney", "kenney_digital-audio/twoTone1"),
     "Rebirth": ("uisfx", "rubber/level-up"),
     "Unlock": ("uisfx", "rubber/unlock"),
     "Coin": ("kenney", "kenney_casino-audio/chips-collide-1"),
 }
-SHOT = [("kenney_sci-fi-sounds/explosionCrunch_000", "lowpass=f=3500,volume=0.6"),
-        ("kenney_sci-fi-sounds/lowFrequency_explosion_001", "bass=g=3:f=90,volume=0.36")]
+# Alex, Oct 30 (evening): "make the launching sound actually like a launch, make the training sound better ...
+# make the reward sound just quick ... very quick and understandable". So:
+#   Launch: the cannon crack + deep boom, with a soft air whoosh (pink noise, 400-2500 Hz) flying away, 0.9 s
+#   Shot (the training cannon, fired again and again): a light crack + punch, 0.4 s, gone by 0.4
+#   Reward: Kenney digital-audio twoTone1, a warm 2-note "collect" (0.37 s, 354 Hz, no hiss)
+MIXES = {
+    "Launch": ([("kenney_sci-fi-sounds/explosionCrunch_000", "lowpass=f=3500,volume=0.55"),
+                ("kenney_sci-fi-sounds/lowFrequency_explosion_001", "bass=g=3:f=90,volume=0.33"),
+                ("noise", "highpass=f=400,lowpass=f=2500,afade=t=in:st=0:d=0.1,afade=t=out:st=0.2:d=0.9,volume=0.75,adelay=40")],
+               "atrim=0:1.1,afade=t=out:st=0.6:d=0.5"),
+    "Shot": ([("kenney_sci-fi-sounds/explosionCrunch_000", "lowpass=f=3000,volume=0.55"),
+              ("kenney_impact-sounds/impactPunch_heavy_000", "volume=0.7")],
+             "atrim=0:0.4,afade=t=out:st=0.12:d=0.28"),
+}
 # GameClient/Sfx LEVEL (keep in step); the uisfx files sit ~6 dB under Kenney's, so their levels are higher
-LEVEL = {"Click": 0.6, "Hover": 0.25, "Open": 0.45, "Close": 0.4, "Confirm": 0.55, "Error": 0.5, "Tab": 0.5,
-         "Reward": 0.6, "Rebirth": 0.6, "Unlock": 0.6, "Coin": 0.35, "Shot": 0.6}
+LEVEL = {"Launch": 0.6, "Click": 0.6, "Hover": 0.25, "Open": 0.45, "Close": 0.4, "Confirm": 0.55, "Error": 0.5, "Tab": 0.5,
+         "Reward": 0.35, "Rebirth": 0.6, "Unlock": 0.6, "Coin": 0.35, "Shot": 0.6}
 ORDER = [("Hover", 0.3), ("Click", 0.5), ("Open", 0.6), ("Tab", 0.4), ("Click", 0.4), ("Confirm", 0.9),
-         ("Coin", 0.25), ("Coin", 0.25), ("Coin", 0.6), ("Error", 0.8), ("Close", 0.8), ("Shot", 0.9),
+         ("Coin", 0.25), ("Coin", 0.25), ("Coin", 0.6), ("Error", 0.8), ("Close", 0.8), ("Shot", 0.5), ("Shot", 0.5), ("Launch", 1.0),
          ("Reward", 0.9), ("Unlock", 0.9), ("Rebirth", 1.0)]
 COMPARE = ["press", "open", "select", "purchase", "error", "close", "reward", "level-up"]
 
@@ -79,14 +91,19 @@ def main():
         run(["ffmpeg", "-y", "-loglevel", "error", "-i", src_path(roots, kind, rel), "-af",
              "aformat=channel_layouts=mono", "-c:a", "libvorbis", "-q:a", "6", os.path.join(out, slot + ".ogg")])
         print("wrote", slot, "from", kind, rel)
-    inputs, parts = [], []
-    for i, (rel, af) in enumerate(SHOT):
-        inputs += ["-i", src_path(roots, "kenney", rel)]
-        parts.append(f"[{i}:a]aformat=channel_layouts=mono,{af}[s{i}]")
-    graph = ";".join(parts) + ";[s0][s1]amix=inputs=2:normalize=0,atrim=0:0.8,afade=t=out:st=0.35:d=0.45[o]"
-    run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", graph, "-map", "[o]", "-c:a", "libvorbis",
-         "-q:a", "6", os.path.join(out, "Shot.ogg")])
-    print("wrote Shot (crack + boom)")
+    for slot, (layers, tail) in MIXES.items():
+        inputs, parts = [], []
+        for i, (rel, af) in enumerate(layers):
+            if rel == "noise":
+                inputs += ["-f", "lavfi", "-t", "1.1", "-i", "anoisesrc=color=pink:amplitude=0.6:seed=7"]
+            else:
+                inputs += ["-i", src_path(roots, "kenney", rel)]
+            parts.append(f"[{i}:a]aformat=channel_layouts=mono:sample_rates=44100,{af}[s{i}]")
+        graph = ";".join(parts) + ";" + "".join(f"[s{i}]" for i in range(len(layers))) + \
+            f"amix=inputs={len(layers)}:normalize=0,{tail}[o]"
+        run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", graph, "-map", "[o]", "-c:a", "libvorbis",
+             "-q:a", "6", os.path.join(out, slot + ".ogg")])
+        print("wrote", slot, "(mix)")
     concat([(os.path.join(out, s + ".ogg"), LEVEL[s], g) for s, g in ORDER],
            os.path.join(game, "previews", "sounds-satisfying.ogg"))
     items = []

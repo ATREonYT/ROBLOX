@@ -22,17 +22,15 @@ Config.SHOT_INTERVAL = 0.8
 Config.MIN_SHOT_INTERVAL = 0.35
 Config.STATION_LEAVE_COOLDOWN = 1.5
 
+-- Six booths (Alex, Oct 30: "make like 5 or 6 so we can fit them better into the lobby"): one every
+-- 3 rebirths, each about 4x the last, plus the VIP one. Ids are list positions.
 Config.Stations = {
-	{ Id = 1, Name = "Starter Cannon",    Model = "Cannon01_Starter",    Gain = 1,   Rebirths = 0 },
-	{ Id = 2, Name = "Iron Cannon",       Model = "Cannon02_Iron",       Gain = 3,   Rebirths = 2 },
-	{ Id = 3, Name = "Steel Cannon",      Model = "Cannon03_Steel",      Gain = 8,   Rebirths = 4 },
-	{ Id = 4, Name = "Heavy Cannon",      Model = "Cannon04_Heavy",      Gain = 20,  Rebirths = 6 },
-	{ Id = 5, Name = "Industrial Cannon", Model = "Cannon06_Industrial", Gain = 50,  Rebirths = 8 },
-	{ Id = 6, Name = "Golden Cannon",     Model = "Cannon05_Golden",     Gain = 125, Rebirths = 10 },
-	{ Id = 7, Name = "Dragon Cannon",     Model = "Cannon19_Dragon",     Gain = 40,  Rebirths = 0, Pass = "VIP" },
-	-- 8th station (Alex, Oct 30). Ids are list positions, so it goes after the VIP one;
-	-- BuildWorld1 still places the VIP booth last in the row.
-	{ Id = 8, Name = "Plasma Cannon",     Model = "Cannon09_Plasma",     Gain = 300, Rebirths = 12 },
+	{ Id = 1, Name = "Starter Cannon", Model = "Cannon01_Starter", Gain = 1,   Rebirths = 0 },
+	{ Id = 2, Name = "Steel Cannon",   Model = "Cannon03_Steel",   Gain = 5,   Rebirths = 3 },
+	{ Id = 3, Name = "Heavy Cannon",   Model = "Cannon04_Heavy",   Gain = 20,  Rebirths = 6 },
+	{ Id = 4, Name = "Golden Cannon",  Model = "Cannon05_Golden",  Gain = 80,  Rebirths = 9 },
+	{ Id = 5, Name = "Plasma Cannon",  Model = "Cannon09_Plasma",  Gain = 300, Rebirths = 12 },
+	{ Id = 6, Name = "Dragon Cannon",  Model = "Cannon19_Dragon",  Gain = 40,  Rebirths = 0, Pass = "VIP" },
 }
 
 ---------------------------------------------------------------------------
@@ -42,13 +40,72 @@ Config.LAUNCH_BASE_SPEED = 180
 Config.LAUNCH_SPEED_PER_SQRT = 1.6
 Config.LAUNCH_MAX_SPEED = 1900
 Config.LAUNCH_ANGLE = 30
-Config.LAUNCH_DIRECTION = Vector3.new(-1, 0, 0) -- zones run along -X
+Config.LAUNCH_DIRECTION = Vector3.new(1, 0, 0) -- the river runs along +X from the dock (CannonMap)
+
+-- Alex's map (mapeg.glb, packed by tools/map/pack_map.py and imported as Workspace.CannonMap). These points
+-- are read straight off the file (its units are studs), then scaled by Config.Map.Scale below.
+Config.Map = {
+	Root = "CannonMap",
+	River = "03_River", -- the water meshes; flights skim their surface
+	Stages = "02_Stages", -- slices named <stage>_<nn>, e.g. 05_Shipwreck_Bay_03
+	Sky = "04_Sky_Kingdom",
+	WaterY = -0.5, -- the river's surface
+	LobbyCenter = Vector3.new(-56, 2, 0), -- the sand island inside the palisade
+	LobbySize = Vector3.new(100, 36, 80), -- lobby orbs fall somewhere in 80% of this, on open ground
+	Spawn = Vector3.new(-60, 2.5, 0), -- the compass plaza
+	DockEnd = Vector3.new(14, 2.5, 0), -- your cannon stands here, nose over the water
+	-- stage name and where it starts along the river (X), from the map; the area walls go here
+	StageStarts = {
+		{ "Meadow Pond", 0 }, { "Mushroom Grove", 100 }, { "Sandy Shore", 233 }, { "Lighthouse Point", 400 },
+		{ "Shipwreck Bay", 620 }, { "Skull Rock", 905 }, { "Red Mesa", 1276 }, { "Ancient Ruins", 1760 },
+		{ "Maple Woods", 2388 }, { "Fortress Walls", 3204 }, { "Igloo Camp", 4264 }, { "Aurora Peaks", 5644 },
+		{ "Crystal Caverns", 7436 }, { "Volcano Core", 9763 }, { "Sky Kingdom", 12780 },
+	},
+}
+-- The whole map is built Scale times the file's size (Alex, Oct 30: "make the map a bit bigger, it feels
+-- small"). The points above are in the file's units, so they are scaled here; the build tools turn their
+-- own plan points into the world with Config.Map.At. Characters, booths and the stand keep their size.
+Config.Map.Scale = 1.3
+function Config.Map.At(x, y, z)
+	return Vector3.new(x, y, z) * Config.Map.Scale
+end
+do
+	local m, k = Config.Map, Config.Map.Scale
+	m.WaterY *= k
+	m.LobbyCenter *= k
+	m.LobbySize *= k
+	m.Spawn *= k
+	m.DockEnd *= k
+	for _, st in ipairs(m.StageStarts) do
+		st[2] *= k
+	end
+end
+-- the map's walkable floor pieces (sand, plaza, paths, dock), by their names from the map file
+function Config.Map.IsGround(name)
+	return string.find(name, "^Island_") ~= nil or string.find(name, "^Plaza_") ~= nil
+		or string.find(name, "^Path_") ~= nil or string.find(name, "^Dock_") ~= nil
+end
 Config.LAUNCH_COOLDOWN = 2
 Config.FLIGHT_TIMEOUT = 25
 Config.SKIP_FIRST_HOP = 0.2 -- first arc out of the cannon, as a share of the whole distance
 Config.SKIP_DECAY = 0.86 -- each skip is this much shorter than the last
-Config.RETURN_DELAY = 1.5 -- seconds on the result before you can throw again
+Config.RETURN_DELAY = 1 -- seconds on the landing before you're home; Stone Skipping's next throw is ~1 s after
 Config.MIN_LAUNCH_DISTANCE = 160 -- the first arc clears the lobby into the water
+-- Rare shots (vault "Beat the Hits", our take on Stone Skipping's Secret/Colossus throws): the server
+-- rolls them on every launch, free and never for sale. They multiply that launch's cash, and the
+-- ball flies with its own trail; a Mega Shot is announced to the whole server.
+Config.RareShots = {
+	{ Id = "Mega", Name = "MEGA SHOT", Chance = 1 / 1000, Mult = 25, Color = Color3.fromRGB(255, 120, 240) },
+	{ Id = "Golden", Name = "GOLDEN SHOT", Chance = 1 / 100, Mult = 5, Color = Color3.fromRGB(255, 205, 50) },
+}
+function Config.GetRareShot(id)
+	for _, r in ipairs(Config.RareShots) do
+		if r.Id == id then
+			return r
+		end
+	end
+	return nil
+end
 Config.CASH_PER_STUD = 0.25
 Config.GEM_CHANCE_PER_LAUNCH = 0.15 -- chance of a few bonus gems on landing
 Config.AUTO_LAUNCH_INTERVAL = 4 -- seconds between launches with Auto Launch on
@@ -56,7 +113,12 @@ Config.AUTO_LAUNCH_INTERVAL = 4 -- seconds between launches with Auto Launch on
 ---------------------------------------------------------------------------
 -- Rebirth: needs Power AND Cash, resets both (and upgrades stay).
 ---------------------------------------------------------------------------
-Config.REBIRTH_POWER_BASE = 100 -- first rebirth in about a minute and a half of training
+Config.REBIRTH_POWER_BASE = 100 -- rebirth 2 onwards: this times REBIRTH_GROWTH ^ rebirths
+-- The first rebirth ends the tutorial at about 90 s, like Stone Skipping's 85 s (vault teardown, Oct 30):
+-- the tutorial's 30 training shots are the Power, and the cash left after the Starter Egg (3 launches,
+-- at least 120, minus 100) is the Cash, so you rebirth right after your first hatch
+Config.REBIRTH_FIRST_POWER = 30
+Config.REBIRTH_FIRST_CASH = 20
 Config.REBIRTH_CASH_BASE = 50
 Config.REBIRTH_GROWTH = 3.2 -- R1 ~1 min, R5 ~10 min, R10 ~1.5 h, R12 ~3.5 h of training
 Config.REBIRTH_POWER_BONUS = 0.5 -- +50% Power per shot per rebirth
@@ -64,6 +126,9 @@ Config.REBIRTH_CASH_BONUS = 0.25 -- +25% Cash per rebirth
 
 function Config.RebirthCost(rebirths)
 	local g = Config.REBIRTH_GROWTH ^ rebirths
+	if rebirths == 0 then
+		return Config.REBIRTH_FIRST_POWER, Config.REBIRTH_FIRST_CASH
+	end
 	return math.floor(Config.REBIRTH_POWER_BASE * g), math.floor(Config.REBIRTH_CASH_BASE * g)
 end
 
@@ -109,17 +174,27 @@ function Config.UpgradeCost(upgrade, level)
 end
 
 ---------------------------------------------------------------------------
--- Worlds (teleports along the map). Zone = model name in StoneSkipMap.
+-- Worlds (teleports along the map). Zone = a stage name in Config.Map.StageStarts.
 ---------------------------------------------------------------------------
 Config.Worlds = {
-	{ Id = 1, Name = "Spawn",        Zone = "Lobby",                            Rebirths = 0,  Color = Color3.fromRGB(110, 200, 90) },
-	{ Id = 2, Name = "Pirate Cove",  Zone = "Pirate_Cove_1_SHIPWRECK_BAY",      Rebirths = 1,  Color = Color3.fromRGB(70, 140, 210) },
-	{ Id = 3, Name = "Desert",       Zone = "Desert_Canyon_1_RED_MESA",         Rebirths = 3,  Color = Color3.fromRGB(220, 150, 70) },
-	{ Id = 4, Name = "Autumn",       Zone = "Autumn_Fortress_1_MAPLE_WOODS",    Rebirths = 5,  Color = Color3.fromRGB(220, 110, 50) },
-	{ Id = 5, Name = "Snow",         Zone = "Frozen_Valley_1_IGLOO_CAMP",       Rebirths = 8,  Color = Color3.fromRGB(150, 210, 255) },
-	{ Id = 6, Name = "Lava",         Zone = "Volcanic_Island_1_CRYSTAL_CAVERNS", Rebirths = 10, Color = Color3.fromRGB(230, 70, 40) },
-	{ Id = 7, Name = "Sky Kingdom",  Zone = "Sky_Kingdom",                      Rebirths = 15, Color = Color3.fromRGB(255, 220, 120) },
+	{ Id = 1, Name = "Spawn",        Zone = "Lobby",           Rebirths = 0,  Color = Color3.fromRGB(110, 200, 90) },
+	{ Id = 2, Name = "Pirate Cove",  Zone = "Shipwreck Bay",   Rebirths = 1,  Color = Color3.fromRGB(70, 140, 210) },
+	{ Id = 3, Name = "Desert",       Zone = "Red Mesa",        Rebirths = 3,  Color = Color3.fromRGB(220, 150, 70) },
+	{ Id = 4, Name = "Autumn",       Zone = "Maple Woods",     Rebirths = 5,  Color = Color3.fromRGB(220, 110, 50) },
+	{ Id = 5, Name = "Snow",         Zone = "Igloo Camp",      Rebirths = 8,  Color = Color3.fromRGB(150, 210, 255) },
+	{ Id = 6, Name = "Lava",         Zone = "Volcano Core",    Rebirths = 10, Color = Color3.fromRGB(230, 70, 40) },
+	{ Id = 7, Name = "Sky Kingdom",  Zone = "Sky Kingdom",     Rebirths = 15, Color = Color3.fromRGB(255, 220, 120) },
 }
+
+-- where a stage starts along the river, or nil
+function Config.StageStart(name)
+	for _, st in ipairs(Config.Map.StageStarts) do
+		if st[1] == name then
+			return st[2]
+		end
+	end
+	return nil
+end
 
 ---------------------------------------------------------------------------
 -- Pets. Boost = multiplier added to Power (0.1 = +10%).
@@ -289,9 +364,9 @@ Config.Balls = {
 	{ Id = "Ruby",    Name = "Ruby",    Price = 50000,     CashBonus = 0.2,  Color = Color3.fromRGB(225, 40, 70),   Band = Color3.fromRGB(255, 170, 190) },
 	{ Id = "Neon",    Name = "Neon",    Price = 250000,    CashBonus = 0.3,  Model = true, Color = Color3.fromRGB(45, 20, 70),    Band = Color3.fromRGB(210, 70, 255) },
 	{ Id = "Frost",   Name = "Frost",   Price = 1000000,   CashBonus = 0.4,  Color = Color3.fromRGB(190, 235, 255), Band = Color3.fromRGB(70, 180, 255) },
-	{ Id = "Rainbow", Name = "Rainbow", Price = 5000000,   CashBonus = 0.5,  Model = true, Color = Color3.fromRGB(255, 190, 40),  Band = Color3.fromRGB(255, 80, 60) },
-	{ Id = "Hacker",  Name = "Hacker",  Price = 25000000,  CashBonus = 0.75, Model = true, Color = Color3.fromRGB(15, 30, 20),    Band = Color3.fromRGB(60, 255, 100) },
-	{ Id = "Galaxy",  Name = "Galaxy",  Price = 100000000, CashBonus = 1,    Model = true, Color = Color3.fromRGB(50, 25, 95),    Band = Color3.fromRGB(200, 110, 255) },
+	{ Id = "Rainbow", Name = "Rainbow", Price = 5000000,   CashBonus = 0.5,  Model = true, CardZoom = 1.5, Color = Color3.fromRGB(255, 190, 40),  Band = Color3.fromRGB(255, 80, 60) },
+	{ Id = "Hacker",  Name = "Hacker",  Price = 25000000,  CashBonus = 0.75, Model = true, CardZoom = 1.5, Color = Color3.fromRGB(15, 30, 20),    Band = Color3.fromRGB(60, 255, 100) },
+	{ Id = "Galaxy",  Name = "Galaxy",  Price = 100000000, CashBonus = 1,    Model = true, CardZoom = 1.5, Color = Color3.fromRGB(50, 25, 95),    Band = Color3.fromRGB(200, 110, 255) },
 }
 
 function Config.GetBall(id)
@@ -438,7 +513,9 @@ Config.Sounds = {
 	-- (UI_*.ogg, CC0) are the alternative if uploaded.
 	-- Alex, Oct 30: "find out what sounds other popular games use". Big simulators use this same licensed library
 	-- (Pro Sound Effects / APM): a bubble "pop" click, a coin bounce, a dry boom. Found with AssetService:SearchAudio.
-	Click = "rbxassetid://9112872239", -- "Small Bubbles Water Surface Float Up Pop 5 (SFX)", ProSoundEffects (Sfx plays 0.25 s)
+	-- Alex, Oct 30 evening: "make the ui clicking sound more smooth", "the reward sound just quick", "the launching sound
+	-- actually like a launch", "make the training sound better". Library picks until our own (assets/sfx) are uploaded:
+	Click = "rbxassetid://15675032796", -- "Roblox_UI_Small_Click", 0.13 s: one short soft tick (the bubble pop had a watery tail)
 	Hover = "", -- silent: a tick on every hover was too much
 	Open = "rbxassetid://15675012262", -- "Roblox_UI_Whoosh_04", 0.35 s
 	Close = "rbxassetid://15675028888", -- "Roblox_UI_Whoosh_02", 0.49 s
@@ -450,13 +527,15 @@ Config.Sounds = {
 	Hatch = "rbxassetid://9116384799",
 	-- Roblox's free licensed library too (found with Studio's Toolbox search on Oct 30, each loaded in Studio;
 	-- picked by title and length, not yet heard by Alex: swap any one by changing its id):
-	Reward = "rbxassetid://1840076509", -- "Through the Roof (sting)", APMOfficial, 2.25 s: a playful organ sting
+	Reward = "rbxassetid://9119516891", -- "Spoon Saucer 19 (SFX)", ProSoundEffects: one quick bright "ting" (Sfx plays 0.4 s); assets/sfx/Reward.ogg (2-note) if uploaded
 	-- "Through the Looking Glass (sting)", APMOfficial, 8 s: a magical glockenspiel "ta-da" (Huzz Valley's Secret sting)
 	Rebirth = "rbxassetid://1840018171",
 	Unlock = "rbxassetid://9116405618", -- "Magic Poofs Short Breathy Bursts Punchy 2 (SFX)", ProSoundEffects
 	Coin = "rbxassetid://9113848469", -- "Coin Bounce 3 (SFX)", ProSoundEffects: Sfx plays only its first 0.35 s
-	Shot = "rbxassetid://9043341682", -- "DRY BOOM 01", APMOfficial, ~1 s (Sfx plays 0.8 s); assets/sfx/Shot.ogg (crack + boom) if uploaded
-	Launch = "rbxassetid://9125805579", -- "Rising Whoosh Hissing Build Up Ascending Swo (SFX)", ProSoundEffects, 1.14 s
+	Shot = "rbxassetid://9119348667", -- training cannon: "Soccer Header 1 (SFX)", ProSoundEffects, a soft round thump (Sfx plays 0.4 s)
+	-- the launch is two sounds at once: the boom, and a low whoosh flying away (assets/sfx/Launch.ogg has both, if uploaded)
+	Launch = "rbxassetid://9120737280", -- "Whoosh Sweep Low End Thumping Repetitive 2 (SFX)", ProSoundEffects
+	LaunchBoom = "rbxassetid://9043341682", -- "DRY BOOM 01", APMOfficial, 1.25 s (Sfx plays 0.8 s); set to "" once Launch.ogg is in
 	Skip = "rbxassetid://9120589933", -- "Water Splash Splashes Splats Light 5 (SFX)", ProSoundEffects, 0.41 s
 	-- the ball's final landing (Alex, Oct 30: "a big splash sound"); found with Studio's Creator Store search, public and free
 	Splash = "rbxassetid://9120585530", -- "Water Splash Big Water Splash Dive In 3 (SFX)", ProSoundEffects, 2.7 s, Sfx cuts it at 1 s

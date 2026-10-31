@@ -327,8 +327,9 @@ return function(ctx)
 	local waterParams = RaycastParams.new()
 	waterParams.FilterType = Enum.RaycastFilterType.Include
 	local function waterAt(pos, fallback)
+		local newMap = workspace:FindFirstChild(Config.Map.Root)
 		local mapRoot = workspace:FindFirstChild("map1b")
-		local ocean = mapRoot and mapRoot:FindFirstChild("Ocean", true)
+		local ocean = newMap and newMap:FindFirstChild(Config.Map.River) or mapRoot and mapRoot:FindFirstChild("Ocean", true)
 		if not ocean then
 			return fallback
 		end
@@ -489,7 +490,7 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- the floor at the start of the water, behind the Launch Zone (BuildWorld1 places MyCannonSpot)
 	local spotPart = workspace:FindFirstChild("MyCannonSpot")
-	local MY_CANNON_SPOT = spotPart and spotPart.Position or Vector3.new(-145, 8.45, -144.25)
+	local MY_CANNON_SPOT = spotPart and spotPart.Position or Config.Map.DockEnd
 	local MY_CANNON_HEIGHT = 9
 	local myCannon = { Model = nil, Id = nil, Home = nil, Muzzle = nil }
 
@@ -613,6 +614,17 @@ return function(ctx)
 		})
 		smoke:Emit(18)
 		Debris:AddItem(flash, 1.5)
+		-- a ring of air blown out of the muzzle along the shot (Alex, Oct 30: "make the launching animation better")
+		local ring = new("Part", {
+			Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false,
+			Shape = Enum.PartType.Cylinder, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(255, 255, 255),
+			Transparency = 0.25, Size = Vector3.new(0.3, 3, 3),
+			CFrame = CFrame.lookAt(muzzle, muzzle + dir) * CFrame.Angles(0, math.rad(90), 0), Parent = workspace,
+		})
+		TweenService:Create(ring, TweenInfo.new(0.35, Enum.EasingStyle.Quad), {
+			Size = Vector3.new(0.1, 11, 11), Transparency = 1, CFrame = ring.CFrame + dir * 6,
+		}):Play()
+		Debris:AddItem(ring, 0.4)
 		return muzzle
 	end
 
@@ -630,13 +642,70 @@ return function(ctx)
 		placeMyCannon(data.EquippedCannon)
 	end)
 
-	Remotes.LaunchPlayer.OnClientEvent:Connect(function(owner, origin, distance, duration, cash)
+	-- a yellow flag on the river where your best throw landed: pass it and it's a NEW BEST
+	local function bestMarker(pos, best)
+		local m = new("Model", { Name = "BestFlag" })
+		local base = waterAt(pos, workspace:FindFirstChild(Config.Map.Root) and Config.Map.WaterY or 5.5)
+		local foot = Vector3.new(pos.X, base, pos.Z) + Config.LAUNCH_DIRECTION.Unit:Cross(Vector3.yAxis) * 7 -- beside the ball's line
+		local props = { Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.SmoothPlastic, Parent = m }
+		local pole = new("Part", props)
+		pole.Shape, pole.Size, pole.Color = Enum.PartType.Cylinder, Vector3.new(12, 0.35, 0.35), Color3.fromRGB(250, 250, 250)
+		pole.CFrame = CFrame.new(foot + Vector3.new(0, 6, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		local flag = new("Part", props)
+		flag.Size, flag.Color = Vector3.new(3.6, 2.4, 0.15), Kit.Colors.Yellow
+		local flagAt = foot + Vector3.new(0, 10.6, 0) + Config.LAUNCH_DIRECTION.Unit:Cross(Vector3.yAxis) * 1.85
+		flag.CFrame = CFrame.lookAt(flagAt, flagAt + Config.LAUNCH_DIRECTION.Unit) -- faces the chase camera
+		local float = new("Part", props)
+		float.Shape, float.Size, float.Color = Enum.PartType.Cylinder, Vector3.new(0.6, 2.2, 2.2), Color3.fromRGB(240, 70, 60)
+		float.CFrame = CFrame.new(foot + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		local tag = new("BillboardGui", { Size = UDim2.fromOffset(170, 56), StudsOffset = Vector3.new(0, 8.5, 0), LightInfluence = 0, AlwaysOnTop = true, Adornee = pole, Parent = m })
+		Kit.text({ Text = "BEST", Size = 22, Color = Kit.Colors.Yellow, FrameSize = UDim2.new(1, 0, 0.45, 0), Parent = tag })
+		Kit.text({ Text = commas(best) .. " m", Size = 26, FrameSize = UDim2.new(1, 0, 0.55, 0), Position = UDim2.fromScale(0, 0.45), Parent = tag })
+		m.Parent = workspace
+		return m
+	end
+
+	-- every 1,000 m an arch over the river with the distance on it; the ball flies under it
+	local function milestoneGate(pos, metres)
+		local m = new("Model", { Name = "Milestone" })
+		local dir = Config.LAUNCH_DIRECTION.Unit
+		local side = dir:Cross(Vector3.yAxis)
+		local base = waterAt(pos, workspace:FindFirstChild(Config.Map.Root) and Config.Map.WaterY or 5.5)
+		local props = { Anchored = true, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Material = Enum.Material.SmoothPlastic, Parent = m }
+		local H, W = 16, 22
+		for _, k in ipairs({ -1, 1 }) do
+			local post = new("Part", props)
+			post.Size, post.Color = Vector3.new(1.6, H, 1.6), Color3.fromRGB(250, 250, 250)
+			post.CFrame = CFrame.lookAt(Vector3.new(pos.X, base + H / 2, pos.Z) + side * k * W / 2, Vector3.new(pos.X, base + H / 2, pos.Z) + side * k * W / 2 + dir)
+		end
+		local beam = new("Part", props)
+		beam.Size, beam.Color = Vector3.new(W + 3, 4, 1.2), Kit.Colors.Yellow
+		local top = Vector3.new(pos.X, base + H + 1.2, pos.Z)
+		beam.CFrame = CFrame.lookAt(top, top + dir)
+		local gui = new("SurfaceGui", { Face = Enum.NormalId.Back, LightInfluence = 0, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = 20, Parent = beam })
+		Kit.text({ Text = commas(metres) .. " m", Size = 64, StrokeSize = 5, Parent = gui })
+		m.Parent = workspace
+		return m
+	end
+
+	Remotes.LaunchPlayer.OnClientEvent:Connect(function(owner, origin, distance, duration, cash, rareId)
 		local mine = owner == player
 		local settings = State.Data and State.Data.Settings
 		if not mine and settings and settings.ShowPlayers == false then
 			return
 		end
 		local dir = Config.LAUNCH_DIRECTION.Unit
+		-- your best so far, as a flag on the water (the server measures from this origin)
+		local best = mine and State.Data and State.Data.BestDistance or 0
+		local bestFlag = mine and best > 0 and bestMarker(origin + dir * best, best)
+		local passedBest = false
+		local gates = {}
+		if mine then
+			for metres = 1000, distance - 200, 1000 do
+				table.insert(gates, { At = metres, Model = milestoneGate(origin + dir * metres, metres) })
+			end
+		end
+		local nextGate = 1
 		-- my shots leave my cannon's muzzle; land on the same spot the server chose
 		local landing = origin + dir * distance
 		local reported = distance -- what the counter counts up to
@@ -665,7 +734,7 @@ return function(ctx)
 			d += len
 			len *= Config.SKIP_DECAY
 		end
-		local water = waterAt(pointAt(distance), 5.5)
+		local water = waterAt(pointAt(distance), workspace:FindFirstChild(Config.Map.Root) and Config.Map.WaterY or 5.5)
 		for i, h in ipairs(hops) do
 			h[4] = i == 1 and origin.Y or hops[i - 1][5]
 			h[5] = waterAt(pointAt(h[2]), water) + BALL_RADIUS
@@ -707,11 +776,30 @@ return function(ctx)
 		end
 		local a0 = new("Attachment", { Position = Vector3.new(0, 0.9, 0), Parent = ball })
 		local a1 = new("Attachment", { Position = Vector3.new(0, -0.9, 0), Parent = ball })
+		local rare = rareId and Config.GetRareShot(rareId)
+		local trailColor = ColorSequence.new(look.Band, look.Band:Lerp(look.Color, 0.5))
+		if rare and rare.Id == "Mega" then
+			trailColor = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 90, 90)), ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 210, 60)),
+				ColorSequenceKeypoint.new(0.5, Color3.fromRGB(90, 230, 120)), ColorSequenceKeypoint.new(0.75, Color3.fromRGB(80, 170, 255)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 110, 255)),
+			})
+		elseif rare then
+			trailColor = ColorSequence.new(rare.Color, Color3.fromRGB(255, 250, 200))
+		end
 		new("Trail", {
-			Attachment0 = a0, Attachment1 = a1, Lifetime = 0.45, LightEmission = 0.4, FaceCamera = true,
-			Color = ColorSequence.new(look.Band, look.Band:Lerp(look.Color, 0.5)),
-			Transparency = NumberSequence.new(0.1, 1), WidthScale = NumberSequence.new(1, 0.2), Parent = ball,
+			Attachment0 = a0, Attachment1 = a1, Lifetime = rare and 0.9 or 0.45, LightEmission = rare and 0.7 or 0.4, FaceCamera = true,
+			Color = trailColor,
+			Transparency = NumberSequence.new(0.1, 1), WidthScale = NumberSequence.new(rare and 1.6 or 1, 0.2), Parent = ball,
 		})
+		if rare then
+			-- a steady shower of sparkles behind the ball (built-in texture; steady, so no flashing)
+			new("ParticleEmitter", {
+				Texture = "rbxasset://textures/particles/sparkles_main.dds", Rate = 40, Lifetime = NumberRange.new(0.5, 0.9),
+				Speed = NumberRange.new(1, 3), SpreadAngle = Vector2.new(180, 180), Color = ColorSequence.new(rare.Color),
+				Size = NumberSequence.new(1.2, 0), LightEmission = 0.6, Parent = a0,
+			})
+		end
 
 		local borders, nextBorder = {}, 1
 		local cam = workspace.CurrentCamera
@@ -727,23 +815,44 @@ return function(ctx)
 			setSideMenu(false)
 			cam.CameraType = Enum.CameraType.Scriptable
 			Kit.playSound("Launch")
+			if rare then
+				popBanner(rare.Name .. "!  x" .. rare.Mult .. " CASH", rare.Color)
+				Kit.playSound("Unlock")
+			end
+			-- a punch of the lens on the shot (wide, then settles in half a second), so the launch feels fast
+			local fov = cam.FieldOfView
+			cam.FieldOfView = fov + 14
+			TweenService:Create(cam, TweenInfo.new(0.45, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { FieldOfView = fov }):Play()
 		end
 		splash(origin, true)
 
 		local start = os.clock()
 		local hopIndex, lastShown, paid = 1, -1, 0
+		local bumpAt = -10
+		-- a new best gets a slow-motion finish: its last 0.4 s play at 0.4x (only then, so it stays special)
+		local slowFrom = (mine and best > 0 and reported > best) and duration - 0.4 or math.huge
 		local camPos = nil
 		local conn
 		conn = RunService.Heartbeat:Connect(function(dt)
-			local u = math.clamp((os.clock() - start) / duration, 0, 1)
-			local dist = distance * (1 - (1 - u) ^ 2) -- fast out of the cannon, slows to a stop
+			local t = os.clock() - start
+			if t > slowFrom then
+				t = slowFrom + (t - slowFrom) * 0.4
+			end
+			local u = math.clamp(t / duration, 0, 1)
+			-- a steady speed, slowing only at the end (Stone Skipping's throw keeps ~60 m/s and eases
+			-- out in its last second): constant to CRUISE, then the speed falls evenly to zero
+			local CRUISE = 0.8
+			local speed = 2 * distance / (1 + CRUISE)
+			local dist = u <= CRUISE and speed * u
+				or speed * CRUISE + speed * ((u - CRUISE) - (u - CRUISE) ^ 2 / (2 * (1 - CRUISE)))
 			while hops[hopIndex + 1] and dist >= hops[hopIndex][2] do
 				local done = hops[hopIndex]
 				hopIndex += 1
 				local p = pointAt(done[2])
 				splash(Vector3.new(p.X, done[5] - BALL_RADIUS + 0.2, p.Z), hopIndex == 2)
 				if mine then
-					Kit.playSound("Skip")
+					-- each skip a semitone higher than the last, up to seven (vault: rising pitch reads as a streak)
+					Kit.playSound("Skip", 2 ^ (math.min(hopIndex - 2, 7) / 12))
 					local share = math.floor(cash * done[2] / distance) - paid
 					if share > 0 then
 						paid += share
@@ -761,22 +870,44 @@ return function(ctx)
 			if mine then
 				-- low chase camera, eased in so the first frame isn't a jump
 				local want = p - dir * 16 + Vector3.new(0, 4.5, 0)
-				camPos = camPos and camPos:Lerp(want, math.min(dt * 12, 1)) or want
-				if (camPos - want).Magnitude > 40 then
+				-- the first half second the camera sits behind the cannon and the ball shoots away from it,
+				-- then it catches up (quick, but you see the launch); after that the usual tight chase
+				camPos = camPos or (origin - dir * 9 + Vector3.new(0, 5, 0))
+				camPos = camPos:Lerp(want, math.min(dt * math.min(12, 2 + t * 24), 1))
+				if t > 1.2 and (camPos - want).Magnitude > 40 then
 					camPos = want
 				end
-				cam.CFrame = CFrame.lookAt(camPos, p + dir * 40 + Vector3.new(0, 1, 0))
+				local shake = Vector3.zero
+				if t < 0.25 then
+					local a = (1 - t / 0.25) * 0.5
+					shake = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * a
+				end
+				cam.CFrame = CFrame.lookAt(camPos + shake, p + dir * 40 + Vector3.new(0, 1, 0))
 
 				local shown = math.floor(dist)
 				if shown ~= lastShown then
 					lastShown = shown
 					counter.Text = commas(math.floor(shown * reported / distance)) .. " m"
-					counterScale.Scale = 1 + 0.05 * math.sin(os.clock() * 22) * (1 - u)
+					-- a little wobble while it climbs, plus a bump each time you enter a new area
+					local kb = (os.clock() - bumpAt) / 0.3
+					local bump = kb < 1 and 0.12 * math.sin(kb * math.pi) or 0
+					counterScale.Scale = 1 + 0.05 * math.sin(os.clock() * 22) * (1 - u) + bump
+				end
+				local g = gates[nextGate]
+				if g and dist * reported / distance >= g.At then
+					nextGate += 1
+					Kit.playSound("Coin", 1 + math.min(nextGate, 8) * 0.04)
+				end
+				if bestFlag and not passedBest and dist * reported / distance > best then
+					passedBest = true
+					popBanner("NEW BEST!", Kit.Colors.Yellow)
+					Kit.playSound("Unlock")
 				end
 				local b = borders[nextBorder]
 				if b and dist >= b.At then
 					nextBorder += 1
 					popBanner(b.Name, b.Color:Lerp(Color3.new(1, 1, 1), 0.35))
+					bumpAt = os.clock()
 					Kit.playSound("Open")
 				end
 			end
@@ -797,6 +928,12 @@ return function(ctx)
 				end
 				TweenService:Create(ball, TweenInfo.new(0.8), { Transparency = 1 }):Play()
 				Debris:AddItem(ball, Config.RETURN_DELAY + 1)
+				if bestFlag then
+					Debris:AddItem(bestFlag, Config.RETURN_DELAY + 0.5)
+				end
+				for _, g in ipairs(gates) do
+					Debris:AddItem(g.Model, Config.RETURN_DELAY + 0.5)
+				end
 			end
 		end)
 	end)
@@ -856,7 +993,9 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Water: Stone Skipping style light lines drifting over the ocean
 	-----------------------------------------------------------------------
-	local ocean = workspace:FindFirstChild("map1b") and workspace.map1b:FindFirstChild("Ocean", true)
+	local newMap = workspace:FindFirstChild(Config.Map.Root)
+	local ocean = newMap and newMap:FindFirstChild(Config.Map.River)
+		or workspace:FindFirstChild("map1b") and workspace.map1b:FindFirstChild("Ocean", true)
 	if ocean and Icons.Caustics and Icons.Caustics ~= "" then
 		local layers = {}
 		for _, p in ipairs(ocean:GetDescendants()) do
@@ -944,4 +1083,6 @@ return function(ctx)
 
 	-- the cannonball stand in the lobby (its own module)
 	task.spawn(require(script.Parent.BallStand), ctx)
+	-- the LAUNCH button over your head in the Launch Zone (its own module)
+	task.spawn(require(script.Parent.LaunchButton), ctx)
 end

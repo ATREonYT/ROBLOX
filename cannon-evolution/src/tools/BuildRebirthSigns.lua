@@ -60,8 +60,11 @@ for _, info in ipairs(Config.Stations) do
 				hi = Vector3.new(math.max(hi.X, p.Position.X), 0, math.max(hi.Z, p.Position.Z))
 			end
 		end
-		local x = station.Pad.Position.X
-		local z = (lo.Z + hi.Z) / 2
+		-- halfway between the stand point and the target, so it works whichever way the booth faces
+		local target = station:FindFirstChild("Target")
+		local mid = target and target:FindFirstChild("Center") and (station.Pad.Position + target.Center.Position) / 2
+		local x = mid and mid.X or station.Pad.Position.X
+		local z = mid and mid.Z or (lo.Z + hi.Z) / 2
 
 		local board = new("Part", {
 			Name = "RebirthSign",

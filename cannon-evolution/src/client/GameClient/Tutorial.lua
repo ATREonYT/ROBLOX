@@ -25,7 +25,7 @@ local TEXT = {
 	IntroLine0 = "Welcome to Cannon Evolution!",
 	IntroLine1 = "This cannon can fire you across the whole sea!",
 	IntroLine2 = "Train your Power at the booths to fly further!",
-	IntroLine3 = "Then walk into the Launch Zone. Ready?",
+	IntroLine3 = "Then stand in the Launch Zone and hit LAUNCH. Ready?",
 	Skip = "Skip",
 	Tag = "TUTORIAL",
 	Train = "TRAIN POWER",
@@ -882,7 +882,8 @@ return function(ctx)
 				local pad = stationPad(1)
 				local padPos = pad and pad.Position or (feet + facing * 30)
 				-- the booths open towards the middle of the lobby, whichever side they stand on
-				local open = pad and padPos.Z > -144.27 and -1 or 1
+				local centreZ = workspace:FindFirstChild(Config.Map.Root) and Config.Map.LobbyCenter.Z or -144.27
+				local open = pad and padPos.Z > centreZ and -1 or 1
 				local startCF = cam.CFrame
 				local camPath = {
 					startCF.Position,
@@ -995,6 +996,18 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	local step = nil -- index into STEPS, nil while finished or switching
 	local lastHave = nil
+
+	-- the flight's distance counter sits right where this bar is: step aside while you fly
+	local hidForFlight = false
+	player:GetAttributeChangedSignal("Launching"):Connect(function()
+		if player:GetAttribute("Launching") == true then
+			hidForFlight = quest.Visible
+			quest.Visible = false
+		elseif hidForFlight then
+			hidForFlight = false
+			quest.Visible = true
+		end
+	end)
 
 	-- the bar slides down into place for a new step
 	local questLow = false -- the bar drops to the bottom of the screen while a menu is open

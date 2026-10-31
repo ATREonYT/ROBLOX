@@ -402,7 +402,8 @@ local lastLaunch = {}
 
 -- Furthest the track goes along LAUNCH_DIRECTION from the Grand Cannon
 local trackLength = (function()
-	local cf, size = workspace.map1b:GetBoundingBox()
+	local map = workspace:FindFirstChild(Config.Map.Root) or workspace:FindFirstChild("map1b")
+	local cf, size = map:GetBoundingBox()
 	local far = cf.Position + Config.LAUNCH_DIRECTION.Unit * size.X / 2
 	return math.max((far - launchPoint.Position):Dot(Config.LAUNCH_DIRECTION.Unit) - 60, 200)
 end)()
@@ -443,9 +444,24 @@ local function launch(player)
 	local distance = math.floor(math.clamp(maxRange * (0.9 + math.random() * 0.1), Config.MIN_LAUNCH_DISTANCE, trackLength))
 	local duration = Config.FlightTime(distance)
 	local cash = cashFor(player, profile, distance)
+	local rare
+	for _, r in ipairs(Config.RareShots) do
+		if math.random() < r.Chance then
+			rare = r
+			break
+		end
+	end
+	if rare then
+		cash *= rare.Mult
+		if rare.Id == "Mega" then
+			for _, other in ipairs(Players:GetPlayers()) do
+				notify(other, player.DisplayName .. " fired a MEGA SHOT! x" .. rare.Mult .. " Cash", rare.Color)
+			end
+		end
+	end
 	local walkSpeed = hum.WalkSpeed
 	hum.WalkSpeed = 0
-	LaunchPlayer:FireAllClients(player, launchPoint.Position, distance, duration, cash)
+	LaunchPlayer:FireAllClients(player, launchPoint.Position, distance, duration, cash, rare and rare.Id)
 
 	local startTime = os.clock()
 	while player.Parent and os.clock() - startTime < duration + 0.2 do
@@ -475,22 +491,19 @@ local function launch(player)
 	if hum then
 		hum.WalkSpeed = walkSpeed
 	end
-	-- step back out of the Launch Zone so walking in again throws again
-	if root and launchZone and (root.Position - launchZone.Position).Magnitude < 20 then
-		-- the zone's lobby side (the cannon and the water are on the other side), facing the cannon
-		local back = launchZone.Position - Config.LAUNCH_DIRECTION.Unit * (launchZone.Size.X / 2 + 6) + Vector3.new(0, 3, 0)
-		player.Character:PivotTo(CFrame.lookAt(back, back + Config.LAUNCH_DIRECTION.Unit))
-	end
+	-- you stay in the Launch Zone and the LAUNCH button comes back (Stone Skipping's THROW zone)
 	player:SetAttribute("Launching", false)
 end
 
-if launchZone then
-	launchZone.Touched:Connect(function(hit)
-		local player = Players:GetPlayerFromCharacter(hit.Parent)
-		if player and not training[player] and not player:GetAttribute("Launching") then
-			task.spawn(launch, player)
-		end
-	end)
+-- Like Stone Skipping's THROW zone: stand in the Launch Zone and press the LAUNCH button over your
+-- head (LaunchButton.lua). The server checks you really are in the zone.
+local function inLaunchZone(player)
+	local root = getRoot(player)
+	if not (root and launchZone) then
+		return false
+	end
+	local rel = launchZone.CFrame:PointToObjectSpace(root.Position)
+	return math.abs(rel.X) <= launchZone.Size.X / 2 + 2 and math.abs(rel.Z) <= launchZone.Size.Z / 2 + 2 and rel.Y > -3 and rel.Y < 10
 end
 
 -- Auto Launch gamepass
@@ -813,17 +826,49 @@ local function teleportToWorld(player, worldId)
 		player.Character:PivotTo(lobbySpawnCFrame())
 		return true
 	end
-	local zone = workspace.map1b.StoneSkipMap:FindFirstChild(world.Zone)
-	if not zone then
+	-- a little way into the stage, on the right-hand bank of the river
+	local startX = Config.StageStart(world.Zone)
+	local map = workspace:FindFirstChild(Config.Map.Root)
+	if not (startX and map) then
 		return false, "World not found"
 	end
-	local cf, size = zone:GetBoundingBox()
-	local top = cf.Position + Vector3.new(0, size.Y / 2 + 50, 0)
-	local hit = workspace:Raycast(top, Vector3.new(0, -size.Y - 100, 0))
-	local pos = hit and hit.Position + Vector3.new(0, 4, 0) or top
+	local top = Vector3.new(startX + 40 * Config.Map.Scale, 400, 60 * Config.Map.Scale)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { map:FindFirstChild(Config.Map.River), player.Character }
+	pcall(player.RequestStreamAroundAsync, player, top - Vector3.new(0, 380, 0))
+	local hit = workspace:Raycast(top, Vector3.new(0, -500, 0), params)
+	local pos = hit and hit.Position + Vector3.new(0, 4, 0) or Vector3.new(top.X, Config.Map.WaterY + 20, top.Z)
 	player.Character:PivotTo(CFrame.lookAt(pos, pos + Config.LAUNCH_DIRECTION))
 	return true
 end
+
+-- Fell in the river or off a world's edge (the water is see-through, not a floor): back to the last
+-- place you stood, instead of falling until you die. The lobby has its own edge walls (BuildCannonMap).
+local lastGround = {}
+task.spawn(function()
+	while true do
+		task.wait(0.4)
+		if workspace:FindFirstChild(Config.Map.Root) then
+			for _, player in ipairs(Players:GetPlayers()) do
+				local char = player.Character
+				local root = char and char:FindFirstChild("HumanoidRootPart")
+				local hum = char and char:FindFirstChildOfClass("Humanoid")
+				if root and hum and hum.Health > 0 then
+					if root.Position.Y < Config.Map.WaterY - 10 then
+						root.AssemblyLinearVelocity = Vector3.zero
+						char:PivotTo(lastGround[player] or lobbySpawnCFrame())
+					elseif hum.FloorMaterial ~= Enum.Material.Air and root.Position.Y > Config.Map.WaterY + 1 then
+						lastGround[player] = root.CFrame + Vector3.new(0, 2, 0)
+					end
+				end
+			end
+		end
+	end
+end)
+Players.PlayerRemoving:Connect(function(player)
+	lastGround[player] = nil
+end)
 
 ---------------------------------------------------------------------------
 -- Missions
@@ -1107,7 +1152,11 @@ orbFolder.Name = "Orbs"
 orbFolder.Parent = workspace
 
 local function lobbyArea()
-	local lobby = workspace.map1b.StoneSkipMap:FindFirstChild("Lobby")
+	if workspace:FindFirstChild(Config.Map.Root) then
+		return CFrame.new(Config.Map.LobbyCenter), Config.Map.LobbySize
+	end
+	local old = workspace:FindFirstChild("map1b")
+	local lobby = old and old.StoneSkipMap:FindFirstChild("Lobby")
 	if lobby then
 		return lobby:GetBoundingBox()
 	end
@@ -1132,7 +1181,9 @@ local function spawnOrb()
 	for _ = 1, 10 do
 		local p = cf.Position + Vector3.new((math.random() - 0.5) * size.X * 0.8, size.Y, (math.random() - 0.5) * size.Z * 0.8)
 		local hit = workspace:Raycast(p, Vector3.new(0, -size.Y * 2, 0))
-		if hit and not hit.Instance:IsDescendantOf(stationsFolder) then
+		-- new map: only on the open ground (not on the ship, a tower or a stand, where you can't reach)
+		local onGround = hit and (not workspace:FindFirstChild(Config.Map.Root) or Config.Map.IsGround(hit.Instance.Name))
+		if hit and onGround and not hit.Instance:IsDescendantOf(stationsFolder) then
 			local isGem = math.random() < Config.ORB_GEM_CHANCE
 			local orb = Instance.new("Part")
 			orb.Shape = Enum.PartType.Ball
@@ -1234,6 +1285,13 @@ end)
 -- Request router
 ---------------------------------------------------------------------------
 local actions = {
+	Launch = function(player)
+		if training[player] or player:GetAttribute("Launching") or not inLaunchZone(player) then
+			return false
+		end
+		task.spawn(launch, player)
+		return true
+	end,
 	StopTraining = function(player)
 		stopTraining(player, true)
 		return true

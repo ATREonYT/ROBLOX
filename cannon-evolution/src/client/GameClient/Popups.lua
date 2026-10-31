@@ -12,6 +12,23 @@ return function(ctx)
 	local Kit, Config, State = ctx.Kit, ctx.Config, ctx.State
 	local new = Kit.new
 	local Popups = {}
+	-- Alex's drawn pet/egg pictures (Icons "Pet_<key>" / "Egg_<id>") when uploaded,
+	-- otherwise the 3D model in a viewport
+	local function art(parent, iconName, m, props)
+		if Kit.hasImage(iconName) then
+			local img = Kit.icon(iconName, { Size = props.Size, Position = props.Position or UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = props.ZIndex, Parent = parent })
+			img.Name = "Art"
+			return img
+		end
+		if m then
+			return Kit.viewport(parent, m, props)
+		end
+		return nil
+	end
+	local function model(folder, name)
+		local f = ReplicatedStorage:FindFirstChild(folder)
+		return f and name and f:FindFirstChild(name)
+	end
 
 	local layer = new("Frame", {
 		Name = "Popups",
@@ -167,10 +184,8 @@ return function(ctx)
 		for i, item in ipairs(list) do
 			local cell = new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(150, 180), LayoutOrder = i, ZIndex = 72, Parent = row })
 			Kit.rays(cell, { Size = UDim2.fromOffset(220, 220), Position = UDim2.fromOffset(75, 70), Color = Kit.Colors.Yellow, ZIndex = 72 })
-			local petModel = item.Pet and ReplicatedStorage:FindFirstChild("Pets") and ReplicatedStorage.Pets:FindFirstChild(item.Pet)
-			if petModel then
-				Kit.viewport(cell, petModel, { Size = UDim2.fromOffset(130, 130), Position = UDim2.fromOffset(75, 70), Spin = 40, ZIndex = 74 })
-			else
+			local petArt = item.Pet and art(cell, "Pet_" .. item.Pet, model("Pets", item.Pet), { Size = UDim2.fromOffset(130, 130), Position = UDim2.fromOffset(75, 70), Spin = 40, ZIndex = 74 })
+			if not petArt then
 				local icon = Kit.icon(item.Icon, { Size = UDim2.fromOffset(110, 110), Position = UDim2.fromOffset(75, 70), Anchor = Vector2.new(0.5, 0.5), ZIndex = 74, Parent = cell })
 				Kit.bob(icon, 5, 2.5)
 			end
@@ -284,9 +299,7 @@ return function(ctx)
 		local width = cols * cellW + (cols - 1) * gap
 		local shade, holder, close = modal(width, rows * rowH + 70)
 		shade.Active = true
-		local eggsFolder = ReplicatedStorage:FindFirstChild("Eggs")
-		local eggModel = egg and eggsFolder and eggsFolder:FindFirstChild(egg.Model)
-		local petsFolder = ReplicatedStorage:FindFirstChild("Pets")
+		local eggModel = egg and model("Eggs", egg.Model)
 
 		-- the best pet decides the size of the moment
 		local best = 1
@@ -331,9 +344,7 @@ return function(ctx)
 				ZIndex = 73,
 				Parent = cell,
 			})
-			if eggModel then
-				Kit.viewport(body, eggModel, { Size = UDim2.fromScale(1, 1), ZIndex = 73 })
-			else
+			if not art(body, "Egg_" .. eggId, eggModel, { Size = UDim2.fromScale(1, 1), ZIndex = 73 }) then
 				Kit.text({ Text = "🥚", Scaled = true, Stroke = false, FrameSize = UDim2.fromScale(1, 1), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 73, Parent = body })
 			end
 			-- three cracks, one per knock
@@ -433,13 +444,9 @@ return function(ctx)
 				local rarity, info = c.Rarity, c.Info
 				Kit.tween(c.Glow, 0.3, { BackgroundColor3 = rarity.Color, BackgroundTransparency = 0.5 })
 				Kit.rays(c.Cell, { Size = UDim2.fromScale(1.45, 1.45), Color = rarity.Color, Transparency = 0.35, Speed = rarity.Order >= 5 and 60 or 30, ZIndex = 72 })
-				local petModel = petsFolder and petsFolder:FindFirstChild(c.Key)
-				local view
-				if petModel then
-					-- face to camera (no spin), so every pet in a big grid reads at a glance;
-					-- Kit's default yaw looks at a model's back (+Z), its front is -Z
-					view = Kit.viewport(c.Cell, petModel, { Size = UDim2.fromScale(0.9, 0.9), Yaw = 215, ZIndex = 75 })
-				else
+				-- face to camera (no spin), so every pet in a big grid reads at a glance
+				local view = art(c.Cell, "Pet_" .. c.Key, model("Pets", c.Key), { Size = UDim2.fromScale(0.9, 0.9), ZIndex = 75 })
+				if not view then
 					view = Kit.icon("Favorite", { Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), Anchor = Vector2.new(0.5, 0.5), ZIndex = 75, Parent = c.Cell })
 				end
 				-- appears big, springs back (Elastic wobble for the top tiers)

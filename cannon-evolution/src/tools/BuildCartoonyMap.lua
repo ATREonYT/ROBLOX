@@ -3,7 +3,10 @@
 
 	Stone Skipping look (Alex, Oct 30): classic round studs on every blocky
 	surface of the map, the training booths and the cannons. Trees, leaves,
-	water and see-through parts are left alone.
+	water and see-through parts are left alone. Alex's new map (CannonMap)
+	gets them too (Oct 30: "also make the map studded"): its ground, rocks,
+	buildings and stages; the river, the sky's clouds and the far mountains
+	stay plain.
 
 	Every texture it adds is named "CartoonStuds". A run first removes only
 	those, so it is safe to run again. Nothing else on a part is touched
@@ -11,11 +14,11 @@
 	Undo: run it with UNDO = true.
 
 	SCOPE: "lobby" studs only the lobby, booths and cannons (the golden slice);
-	"all" does the whole map.
+	"all" does the whole map. Run it again after BuildWorld1 or BuildCannonMap.
 ]]
 
 local UNDO = false
-local SCOPE = "lobby"
+local SCOPE = "all"
 
 -- "Classic stud texture", already in this game's inventory (found with Studio's asset search)
 local STUDS = "rbxassetid://18878365966"
@@ -23,12 +26,20 @@ local NAME = "CartoonStuds"
 local TILE = 2 -- studs per stud
 local SIDES = { Enum.NormalId.Top, Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }
 
-local map = workspace.map1b.StoneSkipMap
+local oldMap = workspace:FindFirstChild("map1b")
+local map = oldMap and oldMap:FindFirstChild("StoneSkipMap")
 local roots = {}
-if SCOPE == "all" then
-	table.insert(roots, map)
-else
-	table.insert(roots, map.Lobby)
+if map then
+	table.insert(roots, SCOPE == "all" and map or map.Lobby)
+end
+-- the new map: its lobby, and with "all" the stages and the Sky Kingdom too; never the river
+local newMap = workspace:FindFirstChild("CannonMap")
+if newMap then
+	for _, g in ipairs(newMap:GetChildren()) do
+		if g.Name ~= "03_River" and (SCOPE == "all" or g.Name == "01_Lobby") then
+			table.insert(roots, g)
+		end
+	end
 end
 for _, n in ipairs({ "TrainingStations", "EggStands", "AreaBorders", "LaunchZone" }) do
 	if workspace:FindFirstChild(n) then
@@ -42,6 +53,7 @@ local function skip(p)
 	return n:find("ocean") or n:find("water") or n:find("river") or n:find("tree") or n:find("leaf")
 		or n:find("leaves") or n:find("bush") or n:find("flower") or n:find("grass_tuft")
 		or p.Name == "Bore" -- the dark muzzle hole stays plain
+		or p.Name:find("^Sky_") or p.Name:find("^Mountains") -- the new map's clouds and far mountains
 end
 
 local function clear(p)
@@ -90,7 +102,7 @@ local function run(root, transparency)
 				local alpha = transparency
 				if model and model:GetAttribute("Blocky") then
 					alpha = 0.1
-				elseif p:FindFirstAncestor("Cannon") then
+				elseif p:FindFirstAncestor("Cannon") or p.Name:find("^Grand_Cannon") then
 					alpha = 0.45
 				end
 				stud(p, alpha)
