@@ -32,6 +32,7 @@ Playbooks in this folder:
 - [[20 Whole-Game Field Guide]]: ⭐ 44 rules every great Roblox game follows, blueprints for 7 genres (+1/launch, tycoon, pets, battlegrounds, tower defense, obby, RNG), symptoms → fixes, gaps, conflicts with our rules
 - [[21 Money and Retention at Studio Level]]: ⭐ what to sell in a kids' simulator, the price ladder rules, when an unasked offer may pop up, the six numbers to read weekly, and return hooks for D1, D2–7 and D8–28. Kit: `Shared/Offers.luau`.
 - [[22 Rare Shot VFX Spec from Alex's References]]: frame-by-frame study of Alex's 4 favourite VFX clips (impact frames, dark inhale, fast-in slow-out) and a frame-timed build spec for the Mythic, Secret and Divine cannon shots, kid-safe.
+- [[23 Training Lane Style Guide (Alex's Treadmill References)]]: Alex's favourite treadmill look (dark voxel body, neon edges, one colour plus white), the "alive but not too crazy" motion budget, why gamepass lanes beat free ones by shape and life, and 8 kid-safe themes. Sheets in `references/treadmill-lanes/`.
 - [[14 Premium Feel Playbook]]: ⭐ the premium layer every game gets: staged HUD, level-up streaks, one motion table, reward beat chains, feel numbers per family, the kid-safe check, five prompts per game
 - [[13 Beat Stone Skipping - Tutorial, Pacing and Feel]]: ⭐ hide the UI until the tutorial needs it, a level-up every second, spotlight the one button, chained reward beats (Oct 31 recording)
 - [[08 Few-Prompt Game Building with AI]]: how to get a good game in a few prompts (what works, templates, self-checks)
