@@ -50,24 +50,25 @@ local TEXT = {
 --   E  back at the cannon the guide talks to you
 --   F  the camera glides over the training booths and back behind you
 local WATER_Y = 5.4
-local ESTABLISH_TIME = 3.2
-local WINDUP_TIME = 0.9
-local AFTER_TIME = 1.8
-local TALK_TIME = 3.6
-local PADS_TIME = 5.5
+-- about 15 s in all, like Stone Skipping's intro (vault 13, Oct 31; it was about 25 s)
+local ESTABLISH_TIME = 2
+local WINDUP_TIME = 0.6
+local AFTER_TIME = 1
+local TALK_TIME = 2.2
+local PADS_TIME = 3.4
 local MAX_TIME = 40 -- watchdog: the intro always hands control back by then
 -- the ball's run, as distance down the map from the muzzle: { seconds, studs }.
 -- Short skips at the near areas, then bigger and bigger ones to show the whole map.
 local CHASE = {
 	{ 0, 0 },
-	{ 1.2, 170 },
-	{ 2.1, 430 },
-	{ 3.1, 900 },
-	{ 4.2, 1800 },
-	{ 5.4, 3300 },
-	{ 6.6, 5200 },
-	{ 7.8, 7400 },
-	{ 8.6, 7600 },
+	{ 0.8, 170 },
+	{ 1.4, 430 },
+	{ 2.0, 900 },
+	{ 2.7, 1800 },
+	{ 3.5, 3300 },
+	{ 4.3, 5200 },
+	{ 5.1, 7400 },
+	{ 5.6, 7600 },
 }
 local ANIM = {
 	Idle = "rbxassetid://507766388",

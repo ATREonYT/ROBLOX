@@ -696,6 +696,14 @@ return function(ctx)
 	local SIDE_LEAD = 30
 	local SIDE_HEIGHT = 10
 	local SIDE_RISE = 26
+	-- the camera never looks through the riverbank: it rays from the ball's line out to where it wants to be
+	-- and pulls in in front of any piece of the map in the way (at launch it stood inside the lobby's bank)
+	local camRay = RaycastParams.new()
+	camRay.FilterType = Enum.RaycastFilterType.Include
+	local function refreshCamRay()
+		local map = workspace:FindFirstChild(Config.Map.Root)
+		camRay.FilterDescendantsInstances = map and { map } or {}
+	end
 	local function smoothstep(x)
 		x = math.clamp(x, 0, 1)
 		return x * x * (3 - 2 * x)
@@ -843,7 +851,8 @@ return function(ctx)
 		local bumpAt = -10
 		-- a new best gets a slow-motion finish: its last 0.4 s play at 0.4x (only then, so it stays special)
 		local slowFrom = (mine and best > 0 and reported > best) and duration - 0.4 or math.huge
-		local camLift = nil
+		local camLift, camRoom = nil, nil
+		refreshCamRay()
 		local conn
 		conn = RunService.Heartbeat:Connect(function(dt)
 			local t = os.clock() - start
@@ -902,7 +911,14 @@ return function(ctx)
 					local a = (1 - t / 0.25) * 0.5
 					shake = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * a
 				end
-				cam.CFrame = CFrame.lookAt(startPos:Lerp(want, b) + shake, startAim:Lerp(aim, b))
+				local eye, look = startPos:Lerp(want, b), startAim:Lerp(aim, b)
+				-- pull in at once in front of the bank, ease back out once it's clear
+				local away = eye - look
+				local hit = workspace:Raycast(look, away, camRay)
+				local room = hit and math.max(hit.Distance - 2, 8) or away.Magnitude
+				camRoom = camRoom and (room < camRoom and room or camRoom + (room - camRoom) * math.min(dt * 3, 1)) or room
+				eye = look + away.Unit * math.min(camRoom, away.Magnitude)
+				cam.CFrame = CFrame.lookAt(eye + shake, look)
 
 				local shown = math.floor(dist)
 				if shown ~= lastShown then

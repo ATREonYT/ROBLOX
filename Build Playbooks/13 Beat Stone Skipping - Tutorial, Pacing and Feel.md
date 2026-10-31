@@ -41,12 +41,12 @@ Back to [[00 Build Router]] · Full teardown: [[Teardown - Stone Skipping]] · R
 ### C. Pacing: the first rebirth at about 85 s
 - **Them:** first throw about 40 s after the intro, first rebirth about 85 s.
 - **Us:** already tuned on Oct 30 (`REBIRTH_FIRST_POWER = 30`, `REBIRTH_FIRST_CASH = 20`, three launches pay for the Starter Egg plus the rebirth). The intro cutscene (about 25 s) is still longer than theirs (about 15 s); it has a Skip button.
-- **Next:** time it from join on a fresh save in Studio after the six-booth map; trim the intro's `PADS_TIME` and `TALK_TIME` if the first launch lands after 45 s.
+- **Done (Oct 31, later):** the intro is now about 13 s of camera plus 1.5 s of loading (measured in Studio), down from about 25 s. Every shot is shorter (`ESTABLISH_TIME` 2, `WINDUP_TIME` 0.6, `AFTER_TIME` 1, `TALK_TIME` 2.2, `PADS_TIME` 3.4) and the chase covers the same map in 5.6 s instead of 8.6 s.
 
 ### D. The throw reads at a glance
 - **Them:** chase camera behind the stone, the counter is the star, a hard cut home, the next throw a second later.
 - **Alex's call for us (Oct 31):** the ball flies **upward and left to right across the screen**, like a side-on shot, so the arc out of the cannon is the show.
-- **Done:** the flight camera sits off to the side of the river, a little above the water, with the ball on the left third and the open water ahead of it on the right. It rises with the ball's big first arc and settles back down for the skips. The launch shake, lens punch, counter, area banners and gates are untouched.
+- **Done:** the flight camera sits off to the side of the river, a little above the water, with the ball on the left third and the open water ahead of it on the right. It rises with the ball's big first arc and settles back down for the skips. The launch shake, lens punch, counter, area banners and gates are untouched. At launch the camera used to stand inside the lobby's bank, so it now rays out from the ball's line and pulls in, in front of any map piece in the way, then eases back out. Measured in Studio: the ball starts at 31% across the screen, climbs from 40% to 23% from the top, then drifts to 63%, and nothing blocks the view.
 
 ### E. Transitions are part of the reward
 - **Them:** the white fade on Rebirth, then the TUTORIAL COMPLETE rays, then the HUD arriving, then Daily Rewards: four beats in eight seconds, each one a little gift.
