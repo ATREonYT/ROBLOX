@@ -272,12 +272,13 @@ for _, p in ipairs(model:GetChildren()) do
 	hi = Vector3.new(math.max(hi.X, p.Position.X), 0, math.max(hi.Z, p.Position.Z))
 end
 local centre, turn = (lo + hi) / 2, math.pi
--- New map (CannonMap): where Alex put it by hand (Oct 30), by the pirate ship, turned to face the plaza.
--- Its own stone deck is left out (the island is the floor) and it is built a little smaller. The spot
--- is in the map file's units, so it moves out with the map when Config.Map.Scale makes it bigger.
+-- New map (CannonMap): south-east of the plaza, facing the main walkway, at the end of its own walkway
+-- (BuildLobbyWalkways; Alex, Oct 31: lobby like the references). Its own stone deck is left out (the
+-- island is the floor) and it is built a little smaller. The spot is in the map file's units, so it
+-- moves out with the map when Config.Map.Scale makes it bigger.
 local Config = require(game.ReplicatedStorage.GameConfig)
 local newMap = workspace:FindFirstChild(Config.Map.Root)
-local NEW_SPOT, NEW_TURN = Config.Map.At(-41.48, 0, 25.84), math.rad(37.2)
+local NEW_SPOT, NEW_TURN = Config.Map.At(-33, 0, 17.5), 0
 local NEW_SCALE, BASE_Y = 0.78, 9.33 -- BASE_Y: the apron's underside
 local floor
 if newMap then

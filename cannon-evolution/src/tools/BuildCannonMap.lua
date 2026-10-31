@@ -4,8 +4,8 @@
 
 	1. Finds the imported map, names it CannonMap and sizes and places it (the importer can scale it,
 	   turn it or drop it in front of the camera): the compass plaza is the yardstick, 18.8 studs across
-	   with its middle at (-60, 2.15, 0) in the file, all times Config.Map.Scale (1.3: Alex wanted the
-	   map bigger, Oct 30). Running it again after changing the scale resizes the map.
+	   with its middle at (-60, 2.15, 0) in the file, all times Config.Map.Scale (2: Alex wanted the
+	   map bigger, Oct 30 and again Oct 31). Running it again after changing the scale resizes the map.
 	2. Collisions: sand, plaza, paths and dock you walk on; fences, rocks, towers, the ship and
 	   the crates are solid; palms, mountains and water are not. The far stages are solid too, for
 	   the world teleports. Mountains cast no shadow, so the lobby stays bright.
@@ -15,8 +15,9 @@
 	   sea round the whole map (walk-through), so past its edges there is no empty void.
 	6. Puts the old map (map1b), the Baseplate and StudTest2 in ServerStorage.OldMaps; nothing is deleted.
 
-	Then run BuildWorld1, BuildCannonBallStand and BuildLobbyExtras, which see the new map and
-	place the spawn, dock launch, booths, cannonball stand, eggs and area walls on it.
+	Then run BuildWorld1, BuildCannonBallStand, BuildLobbyWalkways and BuildLobbyExtras, which see the
+	new map and place the spawn, dock launch, booths, cannonball stand, walkways, eggs and area walls on
+	it, then BuildRebirthSigns and BuildCartoonyMap.
 ]]
 
 local Config = require(game.ReplicatedStorage.GameConfig)
@@ -229,6 +230,8 @@ local MOVES = {
 	{ { "Trees_Palm_001" }, Vector2.new(-106, -31) }, -- by the west palisade, behind the VIP booth
 	{ { "Props_Crate_001", "Props_Crate_002", "Props_Crate_003", "Props_Barrel_001", "Props_Barrel_002", "Props_Treasure_Chest_001" }, Vector2.new(-16, -35) }, -- the north-east corner, by the dock
 	{ { "Props_Barrel_003" }, Vector2.new(-23, -30) },
+	{ { "Trees_Palm_005" }, Vector2.new(-20, -41) }, -- a little east, clear of booth 1
+	{ { "Trees_Palm_003" }, Vector2.new(-109, 15) }, -- a little west, clear of the end of the egg row
 }
 local groundParams = RaycastParams.new()
 groundParams.FilterType = Enum.RaycastFilterType.Include

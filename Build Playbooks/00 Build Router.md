@@ -79,6 +79,7 @@ Playbooks in this folder:
 | Blender models | `blender-roblox-models` | [[04 Building, Maps & 3D Models]] |
 | Game feel | | [[14 Premium Feel Playbook]], [[06 Beat the Hits - Polish Playbook]], `GAME-FEEL.md`, `LihFolk/LihFolk Vault V2/47 Game Feel and Juice/` |
 | Match or beat a hit | | [[07 Borrow List - Game by Game]], the game's Teardown note, [[09 Owner Taste Rules]] |
+| A row of tiered stations (training lanes, upgrade pads) | `roblox-cartoony-building` | [[Lesson - Tiered Training Lanes]] |
 | Final check | | [[16 Cartoony Kid-Appeal Checklist]] |
 
 ## Ship it

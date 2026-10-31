@@ -79,7 +79,7 @@ def draw(nodes, plan, out):
     d = ImageDraw.Draw(im)
     polys = []
     for n, m, v in nodes:
-        if n.startswith("Mountains"):
+        if n.startswith(("Mountains", "Path_")):  # the map's wooden paths are shelved by BuildLobbyWalkways
             continue
         a = np.asarray(m.visual.material.baseColorTexture.convert("RGB"))
         h, w = a.shape[:2]
