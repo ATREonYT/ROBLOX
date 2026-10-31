@@ -60,8 +60,9 @@ return function(ctx)
 		Kit.bob(icon, 3, 2.2)
 		Kit.hoverLift(card, icon)
 		if props.Value then
-			-- a true value tag, worked out from the prices (vs the smallest pack of the same kind)
-			local tag = new("Frame", { Name = "Value", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(92, 30), Position = UDim2.new(1, 4, 0, -6), AnchorPoint = Vector2.new(1, 0), Rotation = 8, ZIndex = 33, Parent = card })
+			-- a true value tag, worked out from the prices (vs the smallest pack of the same kind); it sits on the
+			-- picture's corner, under the title (at the top it hid the end of the name)
+			local tag = new("Frame", { Name = "Value", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(92, 28), Position = UDim2.new(1, -2, 0, 36), AnchorPoint = Vector2.new(1, 0), Rotation = 8, ZIndex = 33, Parent = card })
 			Kit.corner(8, tag)
 			Kit.stroke(3, nil, tag)
 			Kit.gradient(Kit.Colors.Yellow, Kit.Colors.YellowDark, tag)
