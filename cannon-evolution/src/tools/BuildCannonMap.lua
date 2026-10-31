@@ -4,8 +4,8 @@
 
 	1. Finds the imported map, names it CannonMap and sizes and places it (the importer can scale it,
 	   turn it or drop it in front of the camera): the compass plaza is the yardstick, 18.8 studs across
-	   with its middle at (-60, 2.15, 0) in the file, all times Config.Map.Scale (1.3: Alex wanted the
-	   map bigger, Oct 30). Running it again after changing the scale resizes the map.
+	   with its middle at (-60, 2.15, 0) in the file, all times Config.Map.Scale (2: Alex wanted the
+	   map bigger, Oct 30 and again Oct 31). Running it again after changing the scale resizes the map.
 	2. Collisions: sand, plaza, paths and dock you walk on; fences, rocks, towers, the ship and
 	   the crates are solid; palms, mountains and water are not. The far stages are solid too, for
 	   the world teleports. Mountains cast no shadow, so the lobby stays bright.
