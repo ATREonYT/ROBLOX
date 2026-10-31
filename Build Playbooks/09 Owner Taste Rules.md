@@ -40,7 +40,7 @@ Back to [[00 Build Router]] · Process: [[08 Few-Prompt Game Building with AI]]
 - **Glow that grows with tier**, but bloom nearly off. No floating orbs (they turned them off).
 - **Water:** real ripple rings, not flat neon discs; turquoise water.
 - **Tutorial arrows like the reference:** a chain of white notched arrowheads with a thin dark outline, flat to the screen, floating straight to the target, evenly spaced.
-- **The launch: the ball flies upward, left to right across the screen** (Oct 31): a side-on flight camera, not a chase from behind.
+- **The launch camera is behind the ball** (Alex, Oct 31 evening: "make you see the ball from behind it, not from the side"). This replaces the side-on view they asked for that morning. Try a change like this in one playtest before rolling it out.
 - **Area walls show only while you fly**, so their names don't stack in the lobby.
 
 ## Pace and progression

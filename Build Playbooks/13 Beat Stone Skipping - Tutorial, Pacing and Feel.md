@@ -78,3 +78,14 @@ Back to [[00 Build Router]] · Full teardown: [[Teardown - Stone Skipping]] · R
 - **First playtime gift = a free Starter Egg at 3 min** (it was 3 minutes of cash): a free hatch inside 3 minutes, from vault 20's "+1 genre" first five minutes. The server's `claimPlaytime` hatches `Reward.Egg` with the normal odds and reveal.
 - **Rebirth 2 is cheaper:** 150 Power / 100 Cash (it was 320 / 160). With only the first booth open it took about 3.5 min; now it's about 1.5 to 2. The ladder aims at rebirths at about 1.5, 4 and 8 min.
 - **Timed in Studio (Oct 31, scripted, no walking):** Level 20 at 42 s, two launches by 55 s, ball at 58 s, egg cash at 70 s, REBIRTH NOW at 82 s. Launches now take about 6 s each.
+
+> [!note] Oct 31 evening: Alex tried the side-on camera and asked for the ball seen from behind again. The rare-shot thread's chase camera (`CHASE_*` in Effects) now handles normal launches. Lesson: when the owner asks for a big feel change, ship it, then ask them to try it in a playtest before building on it.
+
+## 6. Tutorial arrows that look professional (Oct 31)
+Alex: "they don't correctly point at things, move around a lot". Why they did:
+1. **Spacing was measured on screen**, so every camera move re-spaced the whole chain, and the darts slid.
+2. **The chain flowed forward all the time**, so nothing was ever still.
+3. **It aimed at the target's centre** (inside the pad or crate), not at where you stand.
+4. **The marker bobbed 1.2 studs** at 4 rad/s.
+
+Fix (`Tutorial.lua`, `drawArrows`): one straight line from just above your feet (root minus hip height, steady while you walk) to just above the middle of the target's top. Darts sit at fixed 2.4-stud steps counted **back from the target**, so they stay put while you walk; you only pass them. The last dart stops 1.8 studs short. There is no flow. The marker sits 5 studs over the target's top and moves 0.3 studs, slowly. **Rule:** guidance arrows are anchored in the world at the target end, never laid out in screen space.

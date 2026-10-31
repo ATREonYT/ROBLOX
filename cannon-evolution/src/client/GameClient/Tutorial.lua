@@ -354,9 +354,14 @@ return function(ctx)
 	-- Arrow line, matched to Alex's Stone Skipping recording: a tight chain
 	-- of white arrowheads (a dart with a notch at the back) with a thin dark
 	-- outline, floating on one straight line from you to the target (not on
-	-- the ground, Alex Oct 30), turned to face the camera, flowing forward.
+	-- the ground, Alex Oct 30), turned to face the camera.
+	-- Steady and exact (Alex, Oct 31: "spot on and straight forwards"): the line runs a little above your feet
+	-- to just above the target's top, the darts sit at fixed steps back from the target in the world (so they
+	-- stay put while you walk, and only fade out as you pass them), and nothing bobs or slides.
 	-----------------------------------------------------------------------
-	local ARROWS, SPACING, FLOW_SPEED = 30, 1.05, 2.5 -- SPACING in dart lengths on screen; FLOW_SPEED darts a second
+	local ARROWS, SPACING = 40, 2.4 -- darts in the chain, studs between them
+	local LIFT = 1.4 -- the line floats this high over your feet and over the target's top
+	local END_GAP = 1.8 -- the last dart stops this short of the target
 	local LEN, HALF, NOTCH, THICK = 1.6, 0.95, 0.5, 0.12 -- dart length, half width, notch depth, thickness
 	local RIM = 1.3 -- each dart has its own dark copy behind it, this much bigger: its outline
 	local HIDDEN = CFrame.new(0, -500, 0)
@@ -429,6 +434,22 @@ return function(ctx)
 		return pts[#pts], pts[#pts] - pts[#pts - 1]
 	end
 
+	-- the bottom of your character, from the root and the hip height (steady while you walk, unlike the root)
+	local function feetOf(root)
+		local hum = root.Parent and root.Parent:FindFirstChildOfClass("Humanoid")
+		return root.Position - Vector3.new(0, root.Size.Y / 2 + (hum and hum.HipHeight or 2), 0)
+	end
+	-- the middle of a target's top face (a pad, the Launch Zone, an egg stand)
+	local function topOf(target)
+		local cf, size
+		if target:IsA("BasePart") then
+			cf, size = target.CFrame, target.Size
+		else
+			cf, size = target:GetBoundingBox()
+		end
+		return cf.Position + Vector3.new(0, size.Y / 2, 0), size
+	end
+
 	local function drawArrows(target)
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		-- no line while you fly or while you're locked on a training pad (the jump hint shows instead)
@@ -439,37 +460,30 @@ return function(ctx)
 		if arrowFolder.Parent ~= workspace then
 			arrowFolder.Parent = workspace
 		end
-		local from = root.Position
-		setRoute({ from, target.Position })
+		local from = feetOf(root) + Vector3.new(0, LIFT, 0)
+		local to = topOf(target) + Vector3.new(0, LIFT, 0)
+		setRoute({ from, to })
 		local total = route.total
 		if total < 7 then
 			hideArrows()
 			return
 		end
-		local cam = workspace.CurrentCamera
-		local camCF = cam.CFrame
-		local camPos = camCF.Position
-		local focal = cam.ViewportSize.Y / (2 * math.tan(math.rad(cam.FieldOfView) / 2))
-		-- walk along the line and drop a dart every time the line has covered one dart length on screen,
-		-- so the chain reads tip to notch at every distance and never piles up when it runs away from you
-		local phase = (os.clock() * FLOW_SPEED) % 1
-		local placed, nextMark, progress = 0, phase, 0
-		local d, prevScreen = 2.5, nil
-		while d < total - 2 and placed < ARROWS do
-			local pos, seg = pointOnRoute(d)
-			local depth = (pos - camPos):Dot(camCF.LookVector)
-			local screen = depth > 0.5 and cam:WorldToViewportPoint(pos) or nil
-			if screen and prevScreen then
-				local gapPx = SPACING * LEN * focal / depth
-				progress += (Vector2.new(screen.X, screen.Y) - prevScreen).Magnitude / gapPx
+		local camPos = workspace.CurrentCamera.CFrame.Position
+		local line = (to - from).Unit
+		-- dart m sits m steps back from the target, so the chain never slides; start with the step nearest you
+		local placed = 0
+		for m = math.floor((total - 2.5) / SPACING), 1, -1 do
+			if placed >= ARROWS then
+				break
 			end
-			prevScreen = screen and Vector2.new(screen.X, screen.Y) or nil
-			if screen and progress >= nextMark and (pos - camPos).Magnitude > 6 then
-				nextMark += 1
+			local back = m * SPACING
+			local pos = to - line * back
+			if back >= END_GAP and (pos - camPos).Magnitude > 6 then
 				placed += 1
+				local d = total - back -- how far along from you
 				local wedges = arrows[placed]
 				local normal = (camPos - pos).Unit
-				local dir = seg.Magnitude > 0.01 and seg.Unit or Vector3.xAxis
+				local dir = line
 				-- flat to the screen like a sticker (as in the reference), pointing the way the line runs on screen
 				local flat = dir - normal * dir:Dot(normal)
 				if flat.Magnitude < 0.05 then
@@ -490,7 +504,6 @@ return function(ctx)
 					triangle(tip, notch, tail - side * (HALF * r), wedges[w + 3], wedges[w + 4])
 				end
 			end
-			d += 0.15
 		end
 		for i = placed + 1, ARROWS do
 			for _, part in ipairs(arrows[i]) do
@@ -1235,7 +1248,9 @@ return function(ctx)
 		drawArrows(target)
 		if target then
 			marker.Adornee = target
-			marker.StudsOffsetWorldSpace = Vector3.new(0, 8 + math.sin(os.clock() * 4) * 1.2, 0)
+			-- straight above the middle of the target, a few studs over its top, with only a slow small bob
+			local _, size = topOf(target)
+			marker.StudsOffsetWorldSpace = Vector3.new(0, size.Y / 2 + 5 + math.sin(os.clock() * 2.5) * 0.3, 0)
 			marker.Enabled = not player:GetAttribute("Launching")
 		else
 			marker.Enabled = false
