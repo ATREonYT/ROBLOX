@@ -237,19 +237,22 @@ local function dark(c, a)
 	return c:Lerp(Color3.new(0, 0, 0), a or 0.3)
 end
 local TIERS = {
-	[1] = { Base = rgb(60, 112, 225) }, -- Starter: blue
-	[2] = { Base = rgb(70, 200, 225) }, -- Steel: ice
-	[3] = { Base = rgb(245, 135, 35), Glow = true }, -- Heavy: orange
-	[4] = { Base = rgb(245, 192, 40), Glow = true, Shine = true }, -- Golden: gold
-	[5] = { Base = rgb(80, 205, 70), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
-	[6] = { Base = rgb(255, 60, 230), Glow = true, Sparkle = true, Black = true }, -- Dragon (VIP): black and neon pink
+	-- Water: the pool's colour. Like Stone Skipping's, the water stays watery (light cyan to blue) and leans
+	-- towards the lane's hue only where that still reads as water: cyan in the orange and gold lanes, mint in
+	-- the green one, violet in the black VIP lane (Oct 31: tinted yellow or orange water read as murky)
+	[1] = { Base = rgb(60, 112, 225), Water = rgb(120, 195, 255) }, -- Starter: blue
+	[2] = { Base = rgb(70, 200, 225), Water = rgb(150, 235, 250) }, -- Steel: ice
+	[3] = { Base = rgb(245, 135, 35), Water = rgb(95, 215, 240), Glow = true }, -- Heavy: orange
+	[4] = { Base = rgb(245, 192, 40), Water = rgb(95, 215, 240), Glow = true, Shine = true }, -- Golden: gold
+	[5] = { Base = rgb(80, 205, 70), Water = rgb(120, 240, 200), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
+	[6] = { Base = rgb(255, 60, 230), Water = rgb(120, 60, 175), Glow = true, Sparkle = true, Black = true }, -- Dragon (VIP): black and neon pink
 }
 local function tierLook(id)
 	local t = TIERS[id] or TIERS[1]
 	local look = {
 		Floor = t.Base,
 		Rim = dark(t.Base, 0.35),
-		Track = t.Base:Lerp(WHITE, 0.55), -- the pool's water: a light tint of the tier colour
+		Track = t.Water or t.Base:Lerp(WHITE, 0.55), -- the pool's water
 		Bed = dark(t.Base, 0.4), -- the pool's floor under the water: dark, so the pool looks deep
 		Pad = dark(t.Base, 0.18),
 		Accent = t.Base, -- the glow colour (neon already brightens it, so the tier's own hue), also the client's shot colour
@@ -259,7 +262,7 @@ local function tierLook(id)
 		Lanterns = t.Shine or t.Black, -- glowing lantern posts on the far corners of the top tiers
 	}
 	if t.Black then
-		look.Floor, look.Rim, look.Track, look.Pad = rgb(30, 24, 40), rgb(16, 12, 24), rgb(70, 40, 100), rgb(22, 16, 32)
+		look.Floor, look.Rim, look.Pad = rgb(30, 24, 40), rgb(16, 12, 24), rgb(22, 16, 32)
 		look.Bed = rgb(14, 10, 22)
 		look.Accent = t.Base
 		look.Neon = true
@@ -312,8 +315,7 @@ local function makeBooth(standCf, width, look)
 	end
 	-- the water: see-through over the darker bed, glossy; named Water so the stud pass leaves it smooth
 	local water = blk("Water", Vector3.new(poolHalf * 2, 0.2, z1 - z0), 0, FLOOR_T - 0.1, (z0 + z1) / 2, look.Track)
-	water.Material = Enum.Material.Glass -- glassy and see-through: reads as water over the darker bed
-	water.Transparency = 0.3
+	water.Transparency = 0.1 -- light and bright like Stone Skipping's water; Glass over the bed read grey
 	water.Reflectance = look.Shine and 0.3 or 0.2
 	water.CastShadow = false
 
@@ -467,8 +469,8 @@ for i, info in ipairs(order) do
 	local targetPos = Vector3.new(standPos.X, floorY - 0.1 + 2.6 * math.sin(TILT) + 0.1, standPos.Z) + fireDir * (TARGET_Z - 2.6)
 	local face = (Vector3.yAxis * math.cos(TILT) - fireDir * math.sin(TILT)).Unit
 	local target = makeTarget(CFrame.lookAt(targetPos, targetPos + face))
-	-- the same target on every lane, in the lane's colours: rim shade, white, tier colour, light bullseye
-	local rings = { look.Rim, WHITE, look.Floor, look.Track }
+	-- the same target on every lane: tier colour, white, tier colour and a gold bullseye (glowing on glow lanes)
+	local rings = { look.Floor, WHITE, look.Floor, rgb(255, 215, 70) }
 	local ring = 0
 	for _, d in ipairs(target:GetChildren()) do
 		if d.Name == "Ring" then
