@@ -41,7 +41,7 @@ if newMap then
 		end
 	end
 end
-for _, n in ipairs({ "TrainingStations", "EggStands", "AreaBorders", "LaunchZone", "LobbyWalkways" }) do
+for _, n in ipairs({ "TrainingStations", "EggStands", "AreaBorders", "LaunchZone", "LobbyWalkways", "LobbyDressing" }) do
 	if workspace:FindFirstChild(n) then
 		table.insert(roots, workspace[n])
 	end
