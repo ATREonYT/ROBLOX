@@ -413,7 +413,7 @@ end)()
 -- front, every client plays the ball (the owner's camera follows it), and
 -- the reward lands when the ball stops.
 local function cashFor(player, profile, distance)
-	local cash = distance * Config.CASH_PER_STUD * Config.CashMultiplier(profile.Data)
+	local cash = distance / Config.Map.Stretch * Config.CASH_PER_STUD * Config.CashMultiplier(profile.Data)
 	if hasPass(player, "DoubleCash") then
 		cash *= 2
 	end
