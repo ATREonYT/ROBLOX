@@ -5,7 +5,7 @@ updated: 2026-11-01
 
 # 34 Realistic Lighting and Atmosphere
 
-Back to [[33 Realistic World Building Playbook]] · [[00 Build Router]] · Deep reference: `LihFolk/LihFolk Vault V2/07 Lighting VFX and Audio/` (Lighting Technologies and Settings, Atmosphere Sky Clouds and Post-Processing, Light Sources and Shadows, Lighting Mood and Time of Day)
+Back to [[33 Realistic World Building Playbook]] · [[00 Build Router]] · Presets measured from Alex's Larp photos: [[41 Larp Reference Study - Atmosphere, Surfaces and Feel]] §3 · Deep reference: `LihFolk/LihFolk Vault V2/07 Lighting VFX and Audio/` (Lighting Technologies and Settings, Atmosphere Sky Clouds and Post-Processing, Light Sources and Shadows, Lighting Mood and Time of Day)
 
 > **TL;DR**
 > - **Realistic maps use `LightingStyle = Realistic` + `PrioritizeLightingQuality = true`** (the old "Future"). The cartoony rule in [[Brief - Worlds, Lighting and Performance]] (Soft + true) is for our cartoony games only.

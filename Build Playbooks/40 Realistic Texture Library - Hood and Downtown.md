@@ -7,7 +7,7 @@ updated: 2026-11-01
 
 Back to [[35 Realistic Materials, Decals and Wear]] · [[33 Realistic World Building Playbook]] · [[00 Build Router]]
 
-**68 free, CC0 textures picked for a realistic RP city**, split into a worn **hood** look and a cleaner **downtown** look, plus shared roads, metal, roofs, ground and coast. Every one is CC0 (public domain, no credit needed, safe for a paid game) from **Poly Haven** or **ambientCG**. Write them in `<game>/art/LICENSES.md` anyway so we always know where a texture came from.
+**152 free, CC0 textures picked for a realistic RP city** (68 in the first pass, 84 more matched to Alex's Larp photos), split into a worn **hood** look and a cleaner **downtown** look, plus shared roads, metal, roofs, ground and coast. Every one is CC0 (public domain, no credit needed, safe for a paid game) from **Poly Haven** or **ambientCG**. Write them in `<game>/art/LICENSES.md` anyway so we always know where a texture came from.
 
 Files (all in `Build Playbooks/realistic-kit/textures/`):
 - `texture-manifest.json`: every texture with source page, direct 1K map links, real-world size, StudsPerTile, base material and use. The single source of truth.
@@ -131,6 +131,99 @@ Files (all in `Build Playbooks/realistic-kit/textures/`):
 | `DecalManholeCover` | [ManholeCover011](https://ambientcg.com/view?id=ManholeCover011) (ambientCG) | Concrete | n/a | by eye | Regular | Manhole cover decal |
 | `DecalRoadLinesYellow` | [RoadLines022A](https://ambientcg.com/view?id=RoadLines022A) (ambientCG) | Concrete | n/a | by eye | Regular | Road line decal (yellow) |
 | `DecalWaterLeak` | [Leaking013A](https://ambientcg.com/view?id=Leaking013A) (ambientCG) | Concrete | n/a | by eye | Regular | Water streak / leak decal for walls |
+
+## Batch 2: matched to Alex's Larp photos (84 more, Nov 1)
+
+Picked surface by surface from the 49 Larp screenshots. Which variant matches which shot, plus the tint to use, is in [[41 Larp Reference Study - Atmosphere, Surfaces and Feel]] §4.
+
+| Variant name | Source texture (CC0) | Base material | Real size | StudsPerTile | Style | Use it for |
+|---|---|---|---|---|---|---|
+| `RoadDamagedB` | [road_damaged_2](https://polyhaven.com/a/road_damaged_2) (Poly Haven) | Asphalt | 2.2 m | 8 | hood | Second broken-road set; mix with HoodRoadPotholes so damage does not repeat |
+| `AsphaltDarkFresh` | [asphalt_06](https://polyhaven.com/a/asphalt_06) (Poly Haven) | Asphalt | 3.0 m | 11 | both | Dark, near-black asphalt like the Larp night streets |
+| `AsphaltPlain` | [asphalt_01](https://polyhaven.com/a/asphalt_01) (Poly Haven) | Asphalt | 2.08 m | 7 | downtown | Calm, even asphalt for main boulevards |
+| `ParkingLotAsphalt` | [asphalt_floor](https://polyhaven.com/a/asphalt_floor) (Poly Haven) | Asphalt | 2.35 m | 8 | both | Store and motel parking lots |
+| `AsphaltTarPatch` | [tarred_gravel](https://polyhaven.com/a/tarred_gravel) (Poly Haven) | Asphalt | 2.2 m | 8 | hood | Tar-sealed patch pieces laid over road (the dark patches with pale outlines in the Larp photos) |
+| `AsphaltAerialWide` | [aerial_asphalt_01](https://polyhaven.com/a/aerial_asphalt_01) (Poly Haven) | Asphalt | 30.0 m | 107 | both | Huge 30 m tile for wide roads and freeways; kills visible repeats |
+| `SidewalkWornStained` | [concrete_floor_worn_001](https://polyhaven.com/a/concrete_floor_worn_001) (Poly Haven) | Concrete | 3.0 m | 11 | hood | Blotchy, oil-stained pale sidewalk (Larp 142438) |
+| `SidewalkCrackedB` | [cracked_concrete](https://polyhaven.com/a/cracked_concrete) (Poly Haven) | Concrete | 2.0 m | 7 | hood | Cracked sidewalk second variant |
+| `LotConcreteWorn` | [worn_concrete_floor](https://polyhaven.com/a/worn_concrete_floor) (Poly Haven) | Concrete | 2.0 m | 7 | hood | Worn concrete aprons, driveways and lots |
+| `ConcretePlain` | [concrete](https://polyhaven.com/a/concrete) (Poly Haven) | Concrete | 4.0 m | 14 | both | Clean large-scale concrete for curbs, slabs and medians |
+| `ChannelConcreteDirty` | [dirty_concrete](https://polyhaven.com/a/dirty_concrete) (Poly Haven) | Concrete | 3.0 m | 11 | hood | Flood channel floor and banks (Larp 142344) |
+| `ChannelConcreteDamaged` | [concrete_floor_damaged_01](https://polyhaven.com/a/concrete_floor_damaged_01) (Poly Haven) | Concrete | 5.0 m | 18 | hood | Large damaged concrete for the channel bottom and empty lots |
+| `ConcreteLayers` | [concrete_layers_02](https://polyhaven.com/a/concrete_layers_02) (Poly Haven) | Concrete | 2.0 m | 7 | hood | Layered, stained concrete for retaining walls |
+| `OverpassConcrete` | [smooth_concrete_floor](https://polyhaven.com/a/smooth_concrete_floor) (Poly Haven) | Concrete | 2.0 m | 7 | downtown | Smooth concrete for overpass decks and footbridges |
+| `OverpassPrecast` | [preconcrete_wall_001](https://polyhaven.com/a/preconcrete_wall_001) (Poly Haven) | Concrete | 4.0 m | 14 | both | Precast panel walls under bridges and freeway sides |
+| `ChannelWall` | [concrete_wall_008](https://polyhaven.com/a/concrete_wall_008) (Poly Haven) | Concrete | 2.71 m | 10 | hood | Tall channel and underpass walls with water stains |
+| `BoardFormedConcrete` | [wood_textured_concrete](https://polyhaven.com/a/wood_textured_concrete) (Poly Haven) | Concrete | 1.8 m | 6 | hood | Board-formed concrete walls (Larp 142048) |
+| `CinderBlockB` | [concrete_block_wall](https://polyhaven.com/a/concrete_block_wall) (Poly Haven) | Concrete | 2.0 m | 7 | hood | Second cinder block for fences and garages |
+| `StuccoWhite` | [white_stucco](https://polyhaven.com/a/white_stucco) (Poly Haven) | Plaster | 2.0 m | 7 | both | White stucco shops and houses |
+| `StuccoBlueWeathered` | [blue_plaster_weathered](https://polyhaven.com/a/blue_plaster_weathered) (Poly Haven) | Plaster | 2.0 m | 7 | hood | Blue strip-mall stucco (Larp 142209) |
+| `StuccoPinkWeathered` | [red_plaster_weathered](https://polyhaven.com/a/red_plaster_weathered) (Poly Haven) | Plaster | 2.0 m | 7 | both | Pink/salmon stucco for motels and mission-style blocks (Larp 142133, 142845) |
+| `StuccoYellow` | [yellow_plaster_02](https://polyhaven.com/a/yellow_plaster_02) (Poly Haven) | Plaster | 2.0 m | 7 | hood | Yellow painted shops (Larp 143304) |
+| `StuccoBeige` | [beige_wall_001](https://polyhaven.com/a/beige_wall_001) (Poly Haven) | Plaster | 3.0 m | 11 | both | Tan/terracotta stucco (Larp 142140) |
+| `PlasterWorn` | [worn_plaster_wall](https://polyhaven.com/a/worn_plaster_wall) (Poly Haven) | Plaster | 1.8 m | 6 | hood | Heavily worn plaster |
+| `PlasterCrackedB` | [worn_cracked_plaster](https://polyhaven.com/a/worn_cracked_plaster) (Poly Haven) | Plaster | 1.8 m | 6 | hood | Cracked plaster second variant |
+| `StuccoGreyFine` | [grey_plaster](https://polyhaven.com/a/grey_plaster) (Poly Haven) | Plaster | 1.0 m | 4 | downtown | Fine grey render for apartment blocks |
+| `PlasterMossyHumid` | [worn_mossy_plasterwall](https://polyhaven.com/a/worn_mossy_plasterwall) (Poly Haven) | Plaster | 1.8 m | 6 | coast | Humid Florida walls with moss and mildew |
+| `HoodBrickDark` | [dark_brick_wall](https://polyhaven.com/a/dark_brick_wall) (Poly Haven) | Brick | 1.05 m | 4 | hood | Dark blue-grey brick (Larp alley 142330, shop bases 142159) |
+| `BrickRedClassic` | [brick_wall_001](https://polyhaven.com/a/brick_wall_001) (Poly Haven) | Brick | 3.0 m | 11 | both | Classic red brick walk-ups (Larp 142245, 143242) |
+| `BrickBrownOld` | [brick_wall_02](https://polyhaven.com/a/brick_wall_02) (Poly Haven) | Brick | 2.0 m | 7 | both | Older brown brick |
+| `BrickMixed` | [mixed_brick_wall](https://polyhaven.com/a/mixed_brick_wall) (Poly Haven) | Brick | 1.7 m | 6 | hood | Mixed-colour brick for variety |
+| `BrickBroken` | [broken_brick_wall](https://polyhaven.com/a/broken_brick_wall) (Poly Haven) | Brick | 1.8 m | 6 | hood | Broken brick for damaged corners |
+| `ConcreteBrick` | [concrete_brick_wall_001](https://polyhaven.com/a/concrete_brick_wall_001) (Poly Haven) | Brick | 3.0 m | 11 | hood | Grey concrete-brick walls |
+| `ShutterRustedB` | [rusted_shutter](https://polyhaven.com/a/rusted_shutter) (Poly Haven) | CorrodedMetal | 1.8 m | 6 | hood | Second rusty roll-down shutter |
+| `ShutterWorn` | [worn_shutter](https://polyhaven.com/a/worn_shutter) (Poly Haven) | Metal | 1.37 m | 5 | hood | Worn painted shutter (tint green/blue like Larp 142159) |
+| `CorrugatedPlain` | [corrugated_iron](https://polyhaven.com/a/corrugated_iron) (Poly Haven) | Metal | 1.12 m | 4 | hood | Clean corrugated sheet |
+| `CorrugatedB` | [corrugated_iron_02](https://polyhaven.com/a/corrugated_iron_02) (Poly Haven) | Metal | 2.7 m | 10 | hood | Corrugated second variant |
+| `DumpsterGreenRust` | [green_metal_rust](https://polyhaven.com/a/green_metal_rust) (Poly Haven) | CorrodedMetal | 1.0 m | 4 | both | Green painted metal with rust: dumpsters, utility boxes (Larp 142330) |
+| `RustyGrate` | [rusty_metal_grid](https://polyhaven.com/a/rusty_metal_grid) (Poly Haven) | CorrodedMetal | 1.8 m | 6 | hood | Rusty grate for fire escapes and vents |
+| `MetalBluePlate` | [blue_metal_plate](https://polyhaven.com/a/blue_metal_plate) (Poly Haven) | Metal | 2.5 m | 9 | both | Blue painted metal panels |
+| `RustySheet` | [rusty_metal_sheet](https://polyhaven.com/a/rusty_metal_sheet) (Poly Haven) | CorrodedMetal | 2.0 m | 7 | hood | Rusty sheet for billboard backs and sheds |
+| `RustCoarse` | [rust_coarse_01](https://polyhaven.com/a/rust_coarse_01) (Poly Haven) | CorrodedMetal | 2.2 m | 8 | hood | Heavy rust for billboard legs and old poles |
+| `SidingBlue` | [blue_painted_planks](https://polyhaven.com/a/blue_painted_planks) (Poly Haven) | WoodPlanks | 1.0 m | 4 | hood | Blue painted wood siding |
+| `SidingBlack` | [black_painted_planks](https://polyhaven.com/a/black_painted_planks) (Poly Haven) | WoodPlanks | 1.6 m | 6 | both | Dark painted siding |
+| `FenceWoodRaw` | [raw_plank_wall](https://polyhaven.com/a/raw_plank_wall) (Poly Haven) | WoodPlanks | 1.87 m | 7 | hood | Raw plank fences |
+| `FenceGreenRough` | [green_rough_planks](https://polyhaven.com/a/green_rough_planks) (Poly Haven) | WoodPlanks | 1.5 m | 5 | hood | Green rough boards |
+| `RoofSlatesDark` | [roof_slates_02](https://polyhaven.com/a/roof_slates_02) (Poly Haven) | Slate | 3.0 m | 11 | hood | Dark tile roof with grid (Larp 142651) |
+| `RoofClayMission` | [clay_roof_tiles](https://polyhaven.com/a/clay_roof_tiles) (Poly Haven) | ClayRoofTiles | 4.0 m | 14 | coast | Spanish clay tiles for Florida and mission buildings |
+| `RoofCeramic` | [ceramic_roof_01](https://polyhaven.com/a/ceramic_roof_01) (Poly Haven) | ClayRoofTiles | 3.5 m | 12 | coast | Ceramic roof second variant |
+| `RoofRedSlate` | [red_slate_roof_tiles_01](https://polyhaven.com/a/red_slate_roof_tiles_01) (Poly Haven) | Slate | 2.5 m | 9 | both | Red slate tiles |
+| `PalmBark` | [palm_bark](https://polyhaven.com/a/palm_bark) (Poly Haven) | Wood | 1.86 m | 7 | both | Palm trunks |
+| `PalmBarkB` | [palm_tree_bark](https://polyhaven.com/a/palm_tree_bark) (Poly Haven) | Wood | 1.3 m | 5 | both | Palm trunks second variant |
+| `EucalyptusBark` | [eucalyptus_bark](https://polyhaven.com/a/eucalyptus_bark) (Poly Haven) | Wood | 1.81 m | 6 | hood | Eucalyptus trunks (LA street trees) |
+| `SycamoreBark` | [bark_platanus](https://polyhaven.com/a/bark_platanus) (Poly Haven) | Wood | 1.5 m | 5 | both | Sycamore/plane tree trunks |
+| `ParkDirt` | [park_dirt](https://polyhaven.com/a/park_dirt) (Poly Haven) | Ground | 3.0 m | 11 | both | Park paths and bare lawn patches (Larp 142801) |
+| `DryGround` | [dry_ground_01](https://polyhaven.com/a/dry_ground_01) (Poly Haven) | Ground | 4.0 m | 14 | hood | Dry empty lots |
+| `LeafLitter` | [forest_leaves_02](https://polyhaven.com/a/forest_leaves_02) (Poly Haven) | LeafyGrass | 3.0 m | 11 | both | Dead leaves under trees (Larp 142053) |
+| `DryLeaves` | [dry_decay_leaves](https://polyhaven.com/a/dry_decay_leaves) (Poly Haven) | LeafyGrass | 2.0 m | 7 | both | Dry decaying leaves |
+| `MudLeaves` | [brown_mud_leaves_01](https://polyhaven.com/a/brown_mud_leaves_01) (Poly Haven) | Mud | 1.3 m | 5 | coast | Wet mud with leaves for humid Florida |
+| `DryMudField` | [dry_mud_field_001](https://polyhaven.com/a/dry_mud_field_001) (Poly Haven) | Mud | 3.0 m | 11 | hood | Cracked dry field |
+| `GravelRoad` | [gravel_road](https://polyhaven.com/a/gravel_road) (Poly Haven) | Pebble | 2.0 m | 7 | hood | Gravel alleys and lot edges |
+| `GravelLeaves` | [leaf_scattered_gravel](https://polyhaven.com/a/leaf_scattered_gravel) (Poly Haven) | Pebble | 1.8 m | 6 | both | Gravel with leaves |
+| `CoralGravel` | [coral_gravel](https://polyhaven.com/a/coral_gravel) (Poly Haven) | Pebble | 2.0 m | 7 | coast | White coral gravel (Florida) |
+| `BeachSandB` | [coast_sand_04](https://polyhaven.com/a/coast_sand_04) (Poly Haven) | Sand | 3.94 m | 14 | coast | Second beach sand (Larp 143109) |
+| `HerringbonePavers` | [herringbone_pavement_02](https://polyhaven.com/a/herringbone_pavement_02) (Poly Haven) | Pavement | 2.48 m | 9 | downtown | Herringbone plaza pavers |
+| `InterlockPavers` | [interlocking_concrete_pavers](https://polyhaven.com/a/interlocking_concrete_pavers) (Poly Haven) | Pavement | 1.8 m | 6 | downtown | Interlocking pavers |
+| `BrickPavementB` | [brick_pavement](https://polyhaven.com/a/brick_pavement) (Poly Haven) | Pavement | 2.0 m | 7 | downtown | Brick pavement second variant |
+| `LawnGrassA` | [Grass001](https://ambientcg.com/view?id=Grass001) (ambientCG) | Grass | not stated | by eye | both | Lawn grass ground for terrain grass areas |
+| `LawnGrassB` | [Grass004](https://ambientcg.com/view?id=Grass004) (ambientCG) | Grass | not stated | by eye | both | Lawn grass second variant |
+| `LawnGrassC` | [Grass005](https://ambientcg.com/view?id=Grass005) (ambientCG) | Grass | not stated | by eye | both | Lawn grass third variant |
+| `RoadOldB` | [Road007](https://ambientcg.com/view?id=Road007) (ambientCG) | Asphalt | not stated | by eye | hood | Old road surface |
+| `RoadWithLinesA` | [Road008A](https://ambientcg.com/view?id=Road008A) (ambientCG) | Asphalt | not stated | by eye | both | Road with lines painted in |
+| `RoadWithLinesB` | [Road008B](https://ambientcg.com/view?id=Road008B) (ambientCG) | Asphalt | not stated | by eye | both | Road with lines, variant B |
+| `AsphaltDarkB` | [Asphalt031](https://ambientcg.com/view?id=Asphalt031) (ambientCG) | Asphalt | not stated | by eye | both | Dark asphalt |
+| `AsphaltGreyB` | [Asphalt033](https://ambientcg.com/view?id=Asphalt033) (ambientCG) | Asphalt | not stated | by eye | both | Grey asphalt |
+| `DecalRoadSymbols` | [RoadLines019A](https://ambientcg.com/view?id=RoadLines019A) (ambientCG) | Asphalt | not stated | by eye | both | Road symbols and checker markings decal |
+| `DecalRoadLinesWorn` | [RoadLines020B](https://ambientcg.com/view?id=RoadLines020B) (ambientCG) | Asphalt | not stated | by eye | both | Worn yellow lines decal |
+| `DecalWaterLeakB` | [Leaking012A](https://ambientcg.com/view?id=Leaking012A) (ambientCG) | Concrete | not stated | by eye | both | Leak streak decal B |
+| `DecalWaterLeakC` | [Leaking017B](https://ambientcg.com/view?id=Leaking017B) (ambientCG) | Concrete | not stated | by eye | both | Leak streak decal C |
+| `DecalWaterLeakD` | [Leaking019A](https://ambientcg.com/view?id=Leaking019A) (ambientCG) | Concrete | not stated | by eye | both | Leak streak decal D |
+| `DecalGraffitiSet` | [GraffitiSet001](https://ambientcg.com/view?id=GraffitiSet001) (ambientCG) | Concrete | not stated | by eye | hood | Graffiti decal set. CHECK EVERY PIECE BY EYE for kid-safety before use |
+| `PaintedMetalA` | [PaintedMetal004](https://ambientcg.com/view?id=PaintedMetal004) (ambientCG) | Metal | not stated | by eye | both | Painted metal for poles, boxes, rails |
+| `PaintedMetalB` | [PaintedMetal006](https://ambientcg.com/view?id=PaintedMetal006) (ambientCG) | Metal | not stated | by eye | both | Painted metal variant |
+| `CorrugatedSteelB` | [CorrugatedSteel005](https://ambientcg.com/view?id=CorrugatedSteel005) (ambientCG) | Metal | not stated | by eye | hood | Corrugated steel |
+
+**Quality:** every texture is the full PBR set (colour, OpenGL normal, roughness, and metalness for metals) at 1024 px. 1024 is the most Roblox uses for MaterialVariant maps, so bigger downloads would add memory on phones without adding detail on screen.
 
 ## Ready-made combos
 

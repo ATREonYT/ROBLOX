@@ -12,7 +12,8 @@ Not for cartoony games: those use `roblox-cartoony-building`. Read the playbook 
 | Process, reading a reference, critic sheet, symptoms | `Build Playbooks/33 Realistic World Building Playbook.md` |
 | Lighting presets (Command Bar code), day/night, graphics menu | `Build Playbooks/34 Realistic Lighting and Atmosphere.md` |
 | MaterialVariant library, SurfaceAppearance, wear and graffiti | `Build Playbooks/35 Realistic Materials, Decals and Wear.md` |
-| The 68 picked CC0 textures for hood and downtown, download and install scripts | `Build Playbooks/40 Realistic Texture Library - Hood and Downtown.md`, `Build Playbooks/realistic-kit/textures/` |
+| The 152 picked CC0 textures for hood and downtown, download and install scripts | `Build Playbooks/40 Realistic Texture Library - Hood and Downtown.md`, `Build Playbooks/realistic-kit/textures/` |
+| Alex's Larp reference photos: measured day/pink/night presets, surface-to-texture map, prop list, road paint sizes, sound, game feel | `Build Playbooks/41 Larp Reference Study - Atmosphere, Surfaces and Feel.md`, `Build Playbooks/references/larp/` |
 | Road widths, city plan, road and facade kits, power lines, furniture | `Build Playbooks/36 Roads, Blocks and City Layout Kit.md` |
 | Terrain, water settings, trees, palms, bushes, scatter, wind | `Build Playbooks/37 Terrain, Water and Foliage.md` |
 | Blender export, LOD, streaming, triangle and phone budgets, audit | `Build Playbooks/38 Mesh Pipeline, LOD and Mobile Budgets.md` |

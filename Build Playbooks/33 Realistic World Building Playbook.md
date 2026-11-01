@@ -17,6 +17,8 @@ Back to [[00 Build Router]] · RP game design: [[26 Fun and Roleplay Playbook]],
 | Terrain, water, foliage, palms and wind | [[37 Terrain, Water and Foliage]] |
 | Blender to Roblox, LODs, streaming, phone budgets | [[38 Mesh Pipeline, LOD and Mobile Budgets]] |
 | Traffic, pedestrians, ambience sound, day and night | [[39 Living World - Traffic, NPCs and Ambience]] |
+| The texture library (152 CC0 textures) with install scripts | [[40 Realistic Texture Library - Hood and Downtown]] |
+| Alex's Larp photos decoded: measured presets, surface map, props, road paint, sound, feel | [[41 Larp Reference Study - Atmosphere, Surfaces and Feel]] |
 
 Skill to load before building: `.claude/skills/roblox-realistic-building/SKILL.md`.
 

@@ -147,7 +147,8 @@ Skill: `roblox-realistic-building`. Alex's references: [[References - Realistic 
 | Start here: process, reading a reference, critic sheet | [[33 Realistic World Building Playbook]] |
 | Lighting presets, atmosphere, day/night, graphics menu | [[34 Realistic Lighting and Atmosphere]] |
 | PBR materials, MaterialVariants, wear, graffiti | [[35 Realistic Materials, Decals and Wear]] |
-| The 68 picked CC0 textures (hood, downtown) and how to install them | [[40 Realistic Texture Library - Hood and Downtown]] |
+| The 152 picked CC0 textures (hood, downtown) and how to install them | [[40 Realistic Texture Library - Hood and Downtown]] |
+| Alex's Larp photos decoded: day, pink and foggy-night presets, surface map, props, road paint, sound, game feel | [[41 Larp Reference Study - Atmosphere, Surfaces and Feel]] |
 | Roads, city plan, building and street kits, power lines | [[36 Roads, Blocks and City Layout Kit]] |
 | Terrain, water, trees, palms, bushes, wind | [[37 Terrain, Water and Foliage]] |
 | Blender export, LOD, streaming, phone budgets | [[38 Mesh Pipeline, LOD and Mobile Budgets]] |

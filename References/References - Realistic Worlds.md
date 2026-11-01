@@ -22,3 +22,16 @@ Dense three-height foliage, tall leaning palms, heavy haze, clean curving roads 
 ![[Build Playbooks/references/realistic-worlds/coast-03-winding-road.jpg]]
 ![[Build Playbooks/references/realistic-worlds/coast-04-town-aerial-haze.jpg]]
 ![[Build Playbooks/references/realistic-worlds/coast-05-bridge-water-jetty.jpg]]
+
+## Larp photos (Alex, Nov 1): 49 shots of a realistic hood RP
+
+Decoded in [[41 Larp Reference Study - Atmosphere, Surfaces and Feel]]. A few key shots (all 49 are in `Build Playbooks/references/larp/`):
+
+![[Build Playbooks/references/larp/larp-142140.jpg]]
+![[Build Playbooks/references/larp/larp-142209.jpg]]
+![[Build Playbooks/references/larp/larp-142330.jpg]]
+![[Build Playbooks/references/larp/larp-142344.jpg]]
+![[Build Playbooks/references/larp/larp-142546.jpg]]
+![[Build Playbooks/references/larp/larp-142845.jpg]]
+![[Build Playbooks/references/larp/larp-142939.jpg]]
+![[Build Playbooks/references/larp/larp-143109.jpg]]
