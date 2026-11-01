@@ -9,7 +9,7 @@ Back to [[00 Build Router]] · Starter code: [[05 New Game Kit]] · UI style: [[
 
 Every reference picture the owner has shared in this project, plus the ones saved with each game. **Claude: give the matching picture with every UI or map prompt** (the `roblox-cartoony-ui` skill says words alone give generic results). These are references to match, not assets to ship: the owner uploads real icons to Roblox.
 
-Per game: [[References - Cannon Evolution]] · [[References - Huzz Valley]] · [[References - Hood]]
+Per game: [[References - Cannon Evolution]] · [[References - Huzz Valley]] · [[References - Hood]] · Realistic RP maps: [[References - Realistic Worlds]]
 
 ## HUD and menus
 The full menu set for a +1 game (shop, cannons, pets, rebirth, worlds, upgrades, missions, rewards, leaderboard, settings):

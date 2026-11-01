@@ -137,3 +137,17 @@ Playbooks in this folder:
 | Installing into the owner's open Studio | [[24 Working Live in Studio - Saves, Turns and Hand Edits]] |
 | AI workflow (MCP, Rojo, skills) | [[08 Few-Prompt Game Building with AI]], [[04 AI Tools Landscape October 2026]], [[01 Setup & Workflow]], [[00 Video Notes Index]] |
 | New Roblox features to use | [[03 What's New on Roblox - RDC 2026 and October]] |
+
+## Build a realistic world (RP city, hood, coastal town)
+
+Skill: `roblox-realistic-building`. Alex's references: [[References - Realistic Worlds]]. Game design for RP: [[26 Fun and Roleplay Playbook]], [[Blueprint - Roleplay Town]].
+
+| Job | Open |
+|---|---|
+| Start here: process, reading a reference, critic sheet | [[33 Realistic World Building Playbook]] |
+| Lighting presets, atmosphere, day/night, graphics menu | [[34 Realistic Lighting and Atmosphere]] |
+| PBR materials, MaterialVariants, wear, graffiti | [[35 Realistic Materials, Decals and Wear]] |
+| Roads, city plan, building and street kits, power lines | [[36 Roads, Blocks and City Layout Kit]] |
+| Terrain, water, trees, palms, bushes, wind | [[37 Terrain, Water and Foliage]] |
+| Blender export, LOD, streaming, phone budgets | [[38 Mesh Pipeline, LOD and Mobile Budgets]] |
+| Ambient traffic, pedestrians, ambience sound | [[39 Living World - Traffic, NPCs and Ambience]] |
