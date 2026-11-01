@@ -246,6 +246,8 @@ Picked surface by surface from the 49 Larp screenshots. Which variant matches wh
 2. **Upload:** Studio's Asset Manager → Bulk Import the `downloaded/` PNGs (or let Claude upload them through Studio). Moderation takes a few minutes.
 3. **Build:** paste the image IDs into `BuildMaterialVariants.lua`, run it in the Command Bar, then **Cmd+S**. Apply a variant by setting a part's `MaterialVariant` to its name (Studio sets the base material).
 
+**Already done (Nov 1):** all 152 are uploaded (472 maps) and built as MaterialVariants in **Miami Trap Life** (place 95405231186296), in `MaterialService > Realistic`, with no overrides. Every image ID is in `realistic-kit/textures/texture-ids.json` (`{"VariantName": {"ColorMap": "rbxassetid://…", …}}`). For another place, reuse those IDs: no need to download or upload again. ambientCG variants with no real size got StudsPerTile 20 (roads), 4 (decals, fences) or 10 (the rest): check them by eye.
+
 ## Honest notes
 - The picks come from the source sites' tags, sizes and descriptions; **each still needs an in-Studio look** under the realistic lighting preset ([[34 Realistic Lighting and Atmosphere]]). Swap any that look wrong for a neighbour in the same Poly Haven category (lists at polyhaven.com/textures).
 - Some metal sets may have no metalness map; the script skips missing maps.
