@@ -1729,7 +1729,7 @@
   "style": "both",
   "use": "Classic red brick walk-ups (Larp 142245, 143242)",
   "maps": {
-   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_001/brick_wall_001_diff_1k.png",
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_001/brick_wall_001_diffuse_1k.png",
    "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_001/brick_wall_001_nor_gl_1k.png",
    "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_001/brick_wall_001_rough_1k.png"
   },
@@ -1805,7 +1805,7 @@
   "style": "hood",
   "use": "Grey concrete-brick walls",
   "maps": {
-   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_brick_wall_001/concrete_brick_wall_001_diff_1k.png",
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_brick_wall_001/concrete_brick_wall_001_diffuse_1k.png",
    "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_brick_wall_001/concrete_brick_wall_001_nor_gl_1k.png",
    "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_brick_wall_001/concrete_brick_wall_001_rough_1k.png"
   },
@@ -2270,7 +2270,7 @@
   "style": "both",
   "use": "Dead leaves under trees (Larp 142053)",
   "maps": {
-   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_diff_1k.png",
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_diffuse_1k.png",
    "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_nor_gl_1k.png",
    "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forest_leaves_02/forest_leaves_02_rough_1k.png"
   },
