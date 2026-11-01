@@ -1,6 +1,6 @@
 ---
 name: roblox-vfx
-description: Build, tune and preview Roblox visual effects (ParticleEmitter, Beam, Trail, lights, Neon) that look professional and stay cheap - auras, mist and smoke clouds, curly wisps, sparks, fire, electricity, god rays, ground rings, item glows, punch impacts and tiered "rarity" escalation. Use it whenever you add or change effects in this repo (HoodVFX, station auras, gun pedestals, Juice bursts), make particle/flipbook textures, or need to check an effect in the offline harness + renderer before it ships.
+description: Build, tune and preview Roblox visual effects, including cannon/launch shots, rare-shot reveals and anime moments, (ParticleEmitter, Beam, Trail, lights, Neon) that look professional and stay cheap - auras, mist and smoke clouds, curly wisps, sparks, fire, electricity, god rays, ground rings, item glows, punch impacts and tiered "rarity" escalation. Use it whenever you add or change effects in this repo (HoodVFX, station auras, gun pedestals, Juice bursts), make particle/flipbook textures, or need to check an effect in the offline harness + renderer before it ships.
 ---
 
 # Roblox VFX: layered, tiered, cheap
@@ -9,6 +9,28 @@ The house module is `hood/src/ReplicatedStorage/Shared/HoodVFX.lua` (`station`, 
 `setDensity`, `Textures`, `TierColors`). Reuse it before writing new emitters. Longer sourced notes:
 `research_notes/Roblox VFX/aura_vfx_notes.md` and `research_notes/Tiered props VFX and vibrant maps/vfx_handbook.md`
 (every property, built-in texture list, punch-impact recipe, budgets).
+
+
+## 0. Start here (updated Oct 31, 2026)
+- **New games use the starter-kit modules, not HoodVFX.** Hood is the game the owner isn't happy with.
+  The modules live in `new-game-kit/src/Shared/`:
+  - `Emit`: one-call effects tuned by the EmitCount, EmitDelay and EmitDuration attributes. It also holds the gates: one flash per second, reduced motion, distance.
+  - `LaunchFX`: the cannon or throw shot, by tier.
+  - `RareReveal`: the tiered rare cinematic.
+  - `AnimeFX`: auras, hits, craters, catch-up hit-stop.
+  - `Spring`: bouncy motion.
+  - `Flags`: kill switches.
+- **Read in this order:**
+  1. `Build Playbooks/17` §1. Normal actions stay quiet (measured from the owner's videos); loud layers are for rare moments.
+  2. `Build Playbooks/19 Animation and VFX Recipe Book.md`: 25 step-by-step recipes plus 8 anime combat recipes.
+  3. `16`: timing-first fixes when something looks cheap.
+  4. `15`: anime auras and hits.
+- **Our own textures:** `new-game-kit/tools/vfx/make_textures.py` makes white-on-alpha textures and flipbooks. The owner uploads them; never invent IDs.
+- **Corrections to older numbers below:**
+  - the Highlight limit is 255, not 31 (keep one and toggle it);
+  - random pitch is ±3–6%;
+  - hit-stop uses the catch-up method (slow to 0.12×, then 1.88×), with no stop on light hits;
+  - particle flipbooks may use non-square grids (beta since Oct 2025).
 
 ## 1. Principles
 

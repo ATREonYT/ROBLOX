@@ -30,6 +30,29 @@ local hud = builder.Build()
 fs.writeFile("src/StarterGui/KitHUD.rbxm", roblox.serializeModel({ hud }))
 print(`[build] src/StarterGui/KitHUD.rbxm ({#hud:GetDescendants()} parts)`)
 
+-- Every name in Config.HudStages must be a real HUD piece, spelled with the exact case
+-- (Roblox names are case-sensitive; vault note 14 §2).
+do
+	local config = luau.load(fs.readFile("src/Config/GameConfig.luau"), { debugName = "GameConfig" })()
+	local stagesLib = luau.load(fs.readFile("src/Shared/HudStages.luau"), { debugName = "HudStages" })()
+	local missing = {}
+	for _, stage in config.HudStages or {} do
+		local names = if type(stage.Show) == "table" then table.clone(stage.Show) else {}
+		if stage.Spotlight then
+			table.insert(names, stage.Spotlight)
+		end
+		for _, name in names do
+			if not stagesLib.Find(hud, name) then
+				table.insert(missing, `{stage.Step}: {name}`)
+			end
+		end
+	end
+	if #missing > 0 then
+		error("[build] Config.HudStages names HUD pieces that don't exist: " .. table.concat(missing, ", "))
+	end
+	print(`[build] Config.HudStages: {#(config.HudStages or {})} stages, every name found in the HUD`)
+end
+
 -- 2. Place -------------------------------------------------------------------
 local game = Instance.new("DataModel")
 local function classAndName(fileName)

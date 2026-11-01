@@ -71,6 +71,7 @@ return function(ctx)
 	end)
 	badges.Shop = Kit.badge(shopBtn)
 
+	local tiles = {}
 	local grid = {
 		{ "Rebirth", "Rebirth", "Rebirth" },
 		{ "Cannons", "Cannon", "Cannons" },
@@ -94,6 +95,7 @@ return function(ctx)
 			ctx.Toggle(m[3], m[4])
 		end)
 		badges[m[1]] = Kit.badge(card)
+		tiles[m[1]] = card
 	end
 	-- Shop always has a rainbow "!" to draw the eye
 	badges.Shop:Set("!")
@@ -219,6 +221,7 @@ return function(ctx)
 	local barRight = Kit.text({ Text = "", Size = 30, StrokeSize = 3.5, AlignX = Enum.TextXAlignment.Right, FrameSize = UDim2.new(0.5, -16, 1, 0), Position = UDim2.new(1, -16, 0, -1), Anchor = Vector2.new(1, 0), ZIndex = 6, Parent = barBack })
 
 	local packs = {}
+	local packCards = {}
 	local packColors = {
 		{ Kit.Colors.Yellow, Kit.Colors.YellowDark },
 		{ Kit.Colors.Red, Kit.Colors.RedDark },
@@ -241,6 +244,7 @@ return function(ctx)
 			ctx.Request("Purchase", "Product", key)
 		end)
 		packs[key] = label
+		packCards[key] = card
 	end
 
 	-----------------------------------------------------------------------
@@ -281,6 +285,134 @@ return function(ctx)
 	-----------------------------------------------------------------------
 	-- Refresh
 	-----------------------------------------------------------------------
+	-----------------------------------------------------------------------
+	-- Tutorial reveal (vault 13, from the Stone Skipping recording, Oct 31): a new player starts with only the
+	-- Power bar. Each tutorial step brings in the one button it needs, REBIRTH NOW dims everything but the
+	-- Rebirth tile, and the rest pops in after TUTORIAL COMPLETE. The stage is how many tutorial steps are
+	-- done; Tutorial sets ctx.HudStage while it runs. Everyone else gets the full HUD.
+	-----------------------------------------------------------------------
+	local FULL = 6
+	local gated = {
+		{ shopBtn, FULL }, { tiles.Rebirth, 5 }, { tiles.Eggs, 3 }, { tiles.Cannons, FULL }, { tiles.Upgrades, FULL },
+		{ tiles.Inventory, FULL }, { tiles.Worlds, FULL }, { right, FULL }, { autoBtn, FULL }, { promos, FULL },
+		{ amounts.Cash.Parent, 1 }, { amounts.Rebirths.Parent, 5 }, { amounts.Gems.Parent, FULL },
+	}
+	for _, card in pairs(packCards) do
+		table.insert(gated, { card, FULL })
+	end
+	for _, g in ipairs(gated) do
+		g[1].Visible = false -- until the save loads, so nothing flashes up and away again
+	end
+
+	-- dims the screen behind the left menu while REBIRTH NOW is the step
+	local spotlight = new("Frame", { Name = "Spotlight", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, ZIndex = 2, Parent = hud })
+	side.ZIndex = 3
+
+	local function hudStage(data)
+		if ctx.HudStage then
+			return ctx.HudStage
+		end
+		if (data.Tutorial or 0) >= FULL or data.Rebirths > 0 then
+			return FULL
+		end
+		return data.Tutorial or 0
+	end
+
+	local lastStage = nil
+	local function applyStage(data)
+		local stage = hudStage(data)
+		if stage == lastStage then
+			return
+		end
+		local arriving = {}
+		for _, g in ipairs(gated) do
+			local on = stage >= g[2]
+			if on and not g[1].Visible and lastStage ~= nil then
+				table.insert(arriving, g[1])
+			end
+			g[1].Visible = on
+		end
+		lastStage = stage
+		-- new buttons pop in one after another
+		for i, inst in ipairs(arriving) do
+			local sc = Kit.scale(inst)
+			sc.Scale = 0
+			task.delay((i - 1) * 0.06, function()
+				Kit.tween(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+			end)
+		end
+		if #arriving > 0 then
+			Kit.playSound("Unlock")
+		end
+	end
+	function ctx.RefreshHudStage()
+		if State.Data then
+			applyStage(State.Data)
+		end
+	end
+
+	local spotOn = false
+	RunService.Heartbeat:Connect(function()
+		local want = lastStage == 5 and not ctx.Player:GetAttribute("Launching")
+		if want then
+			for _, panel in pairs(ctx.Panels) do
+				if panel.Frame.Visible then
+					want = false
+					break
+				end
+			end
+		end
+		if want ~= spotOn then
+			spotOn = want
+			spotlight.Visible = true
+			Kit.tween(spotlight, 0.35, { BackgroundTransparency = want and 0.45 or 1 })
+		end
+	end)
+
+	-- "Level Up! [xN]" by the bar on every level, with confetti on your character (Stone Skipping: about one a
+	-- second while training; the number in brackets counts level-ups in a row)
+	local levelUp = Kit.text({ Name = "LevelUp", Text = "", Size = 28, StrokeSize = 3, Color = Color3.fromRGB(150, 250, 25), FrameSize = UDim2.fromOffset(220, 40), Position = UDim2.new(0.5, 0, 0, 2), Anchor = Vector2.new(0.5, 0), ZIndex = 6, Parent = bottom })
+	levelUp.Visible = false
+	local CONFETTI = { Color3.fromRGB(255, 80, 90), Color3.fromRGB(255, 210, 50), Color3.fromRGB(90, 220, 110), Color3.fromRGB(80, 170, 255), Color3.fromRGB(210, 110, 255) }
+	local function confetti()
+		local char = ctx.Player.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if not root then
+			return
+		end
+		local at = new("Attachment", { Position = Vector3.new(0, 2.5, 0), Parent = root })
+		for _, c in ipairs(CONFETTI) do
+			local e = new("ParticleEmitter", {
+				Texture = "rbxasset://textures/particles/sparkles_main.dds", Rate = 0, Color = ColorSequence.new(c),
+				Lifetime = NumberRange.new(0.6, 1), Speed = NumberRange.new(10, 16), SpreadAngle = Vector2.new(60, 60),
+				Acceleration = Vector3.new(0, -30, 0), Drag = 2, Size = NumberSequence.new(0.5, 0.2),
+				Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-200, 200), Parent = at,
+			})
+			e:Emit(4)
+		end
+		game:GetService("Debris"):AddItem(at, 1.5)
+	end
+	local lastLevel, lastRebirths, streak, streakAt = nil, nil, 0, 0
+	local function checkLevel(data)
+		local level = Config.PowerLevel(data)
+		if lastLevel and data.Rebirths == lastRebirths and level > lastLevel then
+			local now = os.clock()
+			streak = now - streakAt < 3 and streak + (level - lastLevel) or 1
+			streakAt = now
+			levelUp.Text = streak > 1 and ("Level Up! [x" .. streak .. "]") or "Level Up!"
+			levelUp.Visible = true
+			Kit.pop(levelUp, 1.3)
+			task.delay(1.6, function()
+				if streakAt == now then
+					levelUp.Visible = false
+				end
+			end)
+			confetti()
+			Kit.playSound("Reward", 1 + math.min(streak - 1, 12) * 0.025)
+		end
+		lastLevel, lastRebirths = level, data.Rebirths
+	end
+
 	local shown = { Power = 0, Cash = 0, Gems = 0, Rebirths = 0 }
 	-- Numbers roll up to their new value instead of jumping (vault "Reward Moments": stats count up), with a pop,
 	-- a quick green flash on a gain and a soft coin tick for Cash and Gems. Losses (spending) snap straight down.
@@ -372,12 +504,15 @@ return function(ctx)
 		local pct = math.floor(math.min(data.Power / powerCost, data.Cash / cashCost, 1) * 100)
 		badges.Rebirth:Set(pct >= 100 and "!" or (pct > 0 and pct .. "%" or nil))
 
-		-- bottom bar: progress towards the next rebirth's Power
-		local alpha = math.clamp(data.Power / powerCost, 0, 1)
+		-- bottom bar: Level 1-20 in this rebirth (Stone Skipping); MAX LEVEL = enough Power to rebirth
+		local level, into, need = Config.PowerLevel(data)
+		local alpha = need > 0 and math.clamp(into / need, 0, 1) or 1
 		barFill.Size = UDim2.fromScale(alpha, 1)
 		barFill.Visible = alpha > 0.01
-		barLeft.Text = "Rebirth " .. (data.Rebirths + 1)
-		barRight.Text = Config.Format(data.Power) .. " / " .. Config.Format(powerCost)
+		barLeft.Text = "Level " .. level
+		barRight.Text = need > 0 and (Config.Format(into) .. " / " .. Config.Format(need)) or "MAX LEVEL"
+		checkLevel(data)
+		applyStage(data)
 		multText.Text = "x" .. (math.floor(Config.PowerMultiplier(data) * 10) / 10) .. " Multiplier"
 		-- what each pack gives right now (the server grants at least this)
 		local perMinute = Config.PowerPerMinute(data, false)

@@ -9,6 +9,24 @@ Sources: `AI Video Library/Video Notes/Animation/` (SyphoDev R6+R15 skill, fwjel
 plus `VFX/` notes for animation markers. Repo rule: animations from the owner's files are raw KeyframeSequences;
 see `CLAUDE.md` (Repo mechanics) for extract, preview and publish.
 
+## 0. Start here (updated Oct 31, 2026)
+- **Step-by-step recipes:** `Build Playbooks/19 Animation and VFX Recipe Book.md`.
+  - R14: combo attack clip.
+  - R15: breathing idle.
+  - R16: hit reaction.
+  - R1: catch-up hit-stop.
+  - Part 2: anime combat (combo, dash, guard, ultimate), with stuns capped near 2 s for kids.
+- **Motion from code:** `Build Playbooks/17` §4 and `18`.
+  - Use springs (`new-game-kit/src/Shared/Spring.luau`), not restarted tweens.
+  - **Since Jan 26, 2026, new R15 player characters use AnimationConstraint joints, not Motor6D.** `IsA("Motor6D")` misses them, and setting C0/C1 errors. Multiply onto `Transform` in PreSimulation.
+- **Rules from the video library:**
+  - Use five poses per strike: idle, anticipation, contact, follow-through, recovery.
+  - Use FK, never IK, when AI writes angles.
+  - When an animation is shortened, move its markers with the keys.
+  - A stance idle animates only the arms and torso.
+  - Start each clip within 90° of the idle pose and end within 75° of it.
+- **Studio has no text-to-animation** (Oct 2026). Use CubicV2 easing, never the old Cubic.
+
 ## 1. Best input: a reference VIDEO
 - Give a short MP4 of the move (recorded on a phone or found online). fwjelaa: a video beat images by a lot.
 - No video? Describe the move in one line with its length ("a half second punch") and the rig (R6 or R15).
