@@ -1,0 +1,208 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lane preview</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}</style>
+<script type="importmap">
+{ "imports": {
+  "three": "./node_modules/three/build/three.module.js",
+  "three/addons/": "./node_modules/three/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<script type="module">
+// Offline look at the training lanes, closer to Studio than render_booths.py: real 3D with shadows, Neon parts
+// glowing through a bloom pass, point lights, the console screens' words, the belt studs and a snapshot of the
+// particles. Still a stand-in: no Roblox studs on the body parts, no Roblox lighting or post effects.
+// Driven by render.mjs: window.renderLane({ data, station, mode: "day"|"studio", view: "lane"|"row", t }).
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const W = 1280, H = 800;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H);
+renderer.setPixelRatio(1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+function studTexture(dot, base, alphaOnly) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  if (!alphaOnly) { g.fillStyle = base; g.fillRect(0, 0, 64, 64); }
+  g.fillStyle = dot; g.beginPath(); g.arc(32, 32, 17, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.25)'; g.lineWidth = 3; g.beginPath(); g.arc(33, 34, 17, 0.2, Math.PI * 0.9); g.stroke();
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function cfMatrix(c) {
+  const m = new THREE.Matrix4();
+  m.set(c[3], c[4], c[5], c[0], c[6], c[7], c[8], c[1], c[9], c[10], c[11], c[2], 0, 0, 0, 1);
+  return m;
+}
+const geos = {};
+function geometry(shape) {
+  if (geos[shape]) return geos[shape];
+  let g;
+  if (shape === 'Cylinder') { g = new THREE.CylinderGeometry(0.5, 0.5, 1, 28); g.rotateZ(-Math.PI / 2); }
+  else if (shape === 'Ball') g = new THREE.SphereGeometry(0.5, 28, 18);
+  else if (shape === 'Wedge') {
+    // Roblox wedge: the slope rises from front-bottom (-Z) to back-top (+Z)
+    const v = [[-.5, -.5, -.5], [.5, -.5, -.5], [.5, -.5, .5], [-.5, -.5, .5], [-.5, .5, .5], [.5, .5, .5]];
+    const tri = [[0, 2, 1], [0, 3, 2], [3, 5, 2], [3, 4, 5], [0, 1, 5], [0, 5, 4], [0, 4, 3], [1, 2, 5]];
+    const pos = []; tri.forEach(t => t.forEach(i => pos.push(...v[i])));
+    g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+  } else g = new THREE.BoxGeometry(1, 1, 1);
+  geos[shape] = g;
+  return g;
+}
+const arr = x => Array.isArray(x) ? x : (x ? Object.values(x) : []); // Lune writes empty lists as {}
+function lin(c, k = 1) { return new THREE.Color().setRGB(c[0] * k, c[1] * k, c[2] * k, THREE.SRGBColorSpace); }
+
+function screenTexture(gui, w, h) {
+  const c = document.createElement('canvas'); c.width = Math.round(w * 60); c.height = Math.round(h * 60);
+  const g = c.getContext('2d');
+  g.fillStyle = '#080a12'; g.fillRect(0, 0, c.width, c.height);
+  for (const l of arr(gui.lines)) {
+    const px = l.h * c.height * 0.86;
+    g.font = `bold ${px}px "DejaVu Sans", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const col = `rgb(${l.color.map(v => Math.round(v * 255)).join(',')})`;
+    g.lineWidth = px * 0.08; g.strokeStyle = 'rgba(0,0,0,0.7)';
+    g.strokeText(l.text, c.width / 2, (l.y + l.h / 2) * c.height);
+    g.fillStyle = col; g.fillText(l.text, c.width / 2, (l.y + l.h / 2) * c.height);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+function skyTexture(top, bottom) {
+  const c = document.createElement('canvas'); c.width = 2; c.height = 256;
+  const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, top); gr.addColorStop(1, bottom); g.fillStyle = gr; g.fillRect(0, 0, 2, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+window.renderLane = function (o) {
+  const data = o.data;
+  const scene = new THREE.Scene();
+  const day = o.mode !== 'studio';
+  const focus = data[o.station];
+  const accent = (focus.parts.find(p => p.neon) || { color: [0.4, 0.6, 1] }).color;
+  scene.background = day ? skyTexture('#5aa9ff', '#cfe8ff')
+    : skyTexture(`rgb(${accent.map(v => Math.round(30 + v * 60)).join(',')})`, '#1c2232');
+  scene.add(new THREE.HemisphereLight(day ? 0xcfe6ff : 0x8090b0, day ? 0x5a7a40 : 0x202430, day ? 1.4 : 0.45));
+  const sun = new THREE.DirectionalLight(0xffffff, day ? 2.6 : 0.7);
+  sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096);
+  const sc = sun.shadow.camera; sc.left = sc.bottom = -90; sc.right = sc.top = 90; sc.near = 1; sc.far = 500;
+  scene.add(sun); scene.add(sun.target);
+
+  // the ground: level with the free lanes' footing tops (a raised lane's ground is lower than its own base)
+  const groundY = Math.min(...Object.keys(data).filter(k => k !== 'start' && k !== 'stand')
+    .flatMap(k => data[k].parts.filter(p => p.name === 'Footing').map(p => p.cf[1] + p.size[1] / 2))) - 0.02;
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200),
+    new THREE.MeshStandardMaterial({ map: studTexture(day ? '#7fd36a' : '#3a3f52', day ? '#68c255' : '#30343f'), roughness: 0.9 }));
+  ground.material.map.repeat.set(600, 600);
+  ground.rotation.x = -Math.PI / 2; ground.position.y = groundY - (focus.parts.some(p => p.name === 'Rubble') ? 0 : 0); ground.receiveShadow = true;
+  scene.add(ground);
+
+  const stations = o.view === 'row' ? Object.keys(data).filter(k => k !== 'start' && k !== 'stand') : [o.station];
+  if (o.view === 'lane') for (const k of Object.keys(data)) if (k !== 'start' && k !== 'stand' && k !== o.station) stations.push(k);
+  for (const k of stations) {
+    const b = data[k];
+    const axisM = b.axis ? cfMatrix(b.axis) : null;
+    const spinM = axisM ? axisM.clone().multiply(new THREE.Matrix4().makeRotationZ((o.t || 0) / (b.spinPeriod || 9) * Math.PI * 2)).multiply(axisM.clone().invert()) : null;
+    for (const p of b.parts) {
+      if (p.alpha >= 0.95) continue;
+      let mat;
+      if (p.neon) mat = new THREE.MeshBasicMaterial({ color: lin(p.color, 1.9) });
+      else mat = new THREE.MeshStandardMaterial({ color: lin(p.color), roughness: 0.62, metalness: 0.04 });
+      if (p.alpha > 0) { mat.transparent = true; mat.opacity = 1 - p.alpha; mat.depthWrite = false; }
+      let material = mat;
+      if (p.gui && p.shape === 'Block') {
+        const face = new THREE.MeshBasicMaterial({ map: screenTexture(p.gui, p.size[0], p.size[1]), color: new THREE.Color(1.25, 1.25, 1.25) });
+        material = [mat, mat, mat, mat, mat, mat];
+        material[p.gui.face === 'Back' ? 4 : 5] = face;
+      }
+      const mesh = new THREE.Mesh(geometry(p.shape), material);
+      let m = cfMatrix(p.cf);
+      if (p.spin && spinM) m = spinM.clone().multiply(m);
+      const s = p.shape === 'Ball' ? Math.min(...p.size) : null;
+      const scale = p.shape === 'Ball' ? new THREE.Matrix4().makeScale(s, s, s)
+        : p.shape === 'Cylinder' ? new THREE.Matrix4().makeScale(p.size[0], Math.min(p.size[1], p.size[2]), Math.min(p.size[1], p.size[2]))
+        : new THREE.Matrix4().makeScale(...p.size);
+      mesh.matrixAutoUpdate = false;
+      mesh.matrix.copy(m.clone().multiply(scale));
+      mesh.castShadow = !p.neon && p.alpha < 0.5; mesh.receiveShadow = !p.neon;
+      scene.add(mesh);
+      if (p.belt) {
+        // the belt's moving studs: a see-through stud layer on its top, tinted like the BeltStuds texture
+        const tex = studTexture('rgba(255,255,255,0.9)', null, true);
+        tex.repeat.set(p.size[0] / 2, p.size[2] / 2); tex.offset.y = ((o.t || 0) * 2) / 2;
+        const tint = (b.parts.find(q => q.name === 'BeltLine') || p).color;
+        const ov = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex, color: lin(tint, 0.9), transparent: true, opacity: 0.45, depthWrite: false }));
+        ov.matrixAutoUpdate = false;
+        ov.matrix.copy(m.clone().multiply(new THREE.Matrix4().makeTranslation(0, p.size[1] / 2 + 0.01, 0))
+          .multiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2)).multiply(new THREE.Matrix4().makeScale(p.size[0], p.size[2], 1)));
+        scene.add(ov);
+      }
+    }
+    for (const l of arr(b.lights)) {
+      const pl = new THREE.PointLight(lin(l.color), l.brightness * 5, l.range * 1.2, 2);
+      pl.position.set(...l.pos); scene.add(pl);
+    }
+    // a still of the particles: each source's live motes at random ages, rising and shrinking
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (const e of arr(b.motes)) {
+      const n = Math.round(e.rate * e.life);
+      const m = cfMatrix(e.cf);
+      for (let i = 0; i < n; i++) {
+        const age = rnd();
+        const local = new THREE.Vector3((rnd() - 0.5) * e.size[0], (rnd() - 0.5) * e.size[1], (rnd() - 0.5) * e.size[2]).applyMatrix4(m);
+        local.y += age * e.life * e.speed;
+        const c = lin(e.colors[0]).lerp(lin(e.colors[1]), age).multiplyScalar(2.2);
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ color: c, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.9 * (1 - age), depthWrite: false }));
+        const sz = Math.max(0.12, e.size0 * (1 - age));
+        sp.scale.set(sz, sz, sz); sp.position.copy(local); scene.add(sp);
+      }
+    }
+  }
+
+  // camera: three-quarter from behind the stand pad and to its left, like the reference sheets' angle
+  const st = focus.stand;
+  const pos = new THREE.Vector3(st[0], st[1], st[2]);
+  const right = new THREE.Vector3(st[3], st[6], st[9]);
+  const fwd = new THREE.Vector3(-st[5], -st[8], -st[11]);
+  const cam = new THREE.PerspectiveCamera(o.fov || 50, W / H, 0.5, 2000);
+  if (o.view === 'row') {
+    const all = stations.map(k => data[k].stand).map(s => new THREE.Vector3(s[0], s[1], s[2]));
+    const mid = all.reduce((a, v) => a.add(v), new THREE.Vector3()).multiplyScalar(1 / all.length);
+    cam.position.copy(mid).addScaledVector(fwd, -48).addScaledVector(right, -12).add(new THREE.Vector3(0, 26, 0));
+    cam.lookAt(mid.clone().addScaledVector(fwd, 16).add(new THREE.Vector3(0, 2, 0)));
+  } else if (o.view === 'high') { // a high three-quarter view of the whole lane, like the reference sheets
+    const d = o.dist || 1;
+    cam.position.copy(pos).addScaledVector(right, -19 * d).addScaledVector(fwd, -9 * d).add(new THREE.Vector3(0, 21 * d, 0));
+    cam.lookAt(pos.clone().addScaledVector(fwd, 15).add(new THREE.Vector3(0, 1, 0)));
+  } else {
+    const d = o.dist || 0.8;
+    cam.position.copy(pos).addScaledVector(right, -17 * d).addScaledVector(fwd, -12 * d).add(new THREE.Vector3(0, 13 * d, 0));
+    cam.lookAt(pos.clone().addScaledVector(fwd, 17).add(new THREE.Vector3(0, 3, 0)));
+  }
+  sun.position.copy(pos).add(new THREE.Vector3(-60, 120, 40)); sun.target.position.copy(pos);
+
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, cam));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), day ? 0.4 : 0.75, 0.35, 0.95));
+  composer.addPass(new OutputPass());
+  composer.render();
+  return true;
+};
+window.ready = true;
+</script>
+</body>
+</html>

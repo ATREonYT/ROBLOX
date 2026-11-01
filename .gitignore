@@ -10,3 +10,7 @@ __pycache__/
 
 # Obsidian vault settings (the owner opens this folder as a vault)
 .obsidian/
+
+# offline preview tools install their own packages (npm install)
+node_modules/
+package-lock.json

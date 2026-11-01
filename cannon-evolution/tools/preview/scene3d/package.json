@@ -1,0 +1,6 @@
+{
+  "name": "scene3d",
+  "private": true,
+  "description": "Offline 3D preview of the training lanes (three.js + the pre-installed Playwright Chromium). npm install, then node render.mjs <lanes.json> <outdir>",
+  "dependencies": { "three": "0.160.0" }
+}

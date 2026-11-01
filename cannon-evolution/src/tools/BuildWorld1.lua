@@ -214,9 +214,15 @@ local function makeSign(cf, info)
 	return sign
 end
 
--- Lane looks (Alex, Oct 31, from Stone Skipping's lanes): one base colour per station Id (GameConfig);
--- the floor is the base, the rim a darker shade, the centre track a lighter tint. Effects grow with the
--- tier: 1-2 plain, 3 glows, 4 glows and shines, 5 also sparkles, the gamepass lane is black, gold and rainbow.
+-- Lane looks (Alex, Oct 31: "I really like these designs ... this is the style I am aiming at ... I want them to
+-- look like they have life, but also not too crazy ... especially the gamepass ones will look better than the
+-- plain ones"; his treadmill reference sheets, Build Playbooks/23 Training Lane Style Guide). Our own build in
+-- that style, not a copy: every lane is a chunky dark voxel body with neon along its edges, glowing corner
+-- blocks, a moving belt where the pool was and a console at the far end facing the stand pad, in ONE colour per
+-- lane plus white. Free lanes stay clean and simple (the colour tells them apart). The gamepass lane also gets a
+-- theme: a shape on its console, ground spill round its base, one moving prop and its own floating bits, so it
+-- wins by shape and life, not by being brighter. The motion (belt, the neon's slow breathing, the turning prop)
+-- is LaneMotion's, one client script for every lane. Nothing ever flashes.
 local function rgb(r, g, b)
 	return Color3.fromRGB(r, g, b)
 end
@@ -224,204 +230,379 @@ local WHITE = rgb(245, 245, 250)
 local function dark(c, a)
 	return c:Lerp(Color3.new(0, 0, 0), a or 0.3)
 end
+local BODY = rgb(30, 34, 45) -- the dark body every lane shares
+local STUDS = "rbxassetid://18878365966" -- the classic stud picture already in the game (BuildCartoonyMap's)
 local TIERS = {
-	-- Water: the pool's colour. Like Stone Skipping's, the water stays watery (light cyan to blue) and leans
-	-- towards the lane's hue only where that still reads as water: cyan in the orange and gold lanes, mint in
-	-- the green one, violet in the black VIP lane (Oct 31: tinted yellow or orange water read as murky)
-	[1] = { Base = rgb(60, 112, 225), Water = rgb(95, 175, 250) }, -- Starter: blue
-	[2] = { Base = rgb(70, 200, 225), Water = rgb(110, 215, 245) }, -- Steel: ice
-	[3] = { Base = rgb(245, 135, 35), Water = rgb(85, 195, 240), Glow = true }, -- Heavy: orange
-	[4] = { Base = rgb(245, 192, 40), Water = rgb(85, 195, 240), Glow = true, Shine = true }, -- Golden: gold
-	[5] = { Base = rgb(80, 205, 70), Water = rgb(90, 220, 180), Glow = true, Shine = true, Sparkle = true }, -- Plasma: toxic green
-	-- Dragon (the gamepass lane): the showcase you buy, "better than all of the others" (Alex, Oct 31). Rainbow
-	-- brick rim on a gold base round a black lane with gold neon, a deep violet pool with rainbow sparkles, gold
-	-- and black pad tiles, lanterns on all four corners. No VIP sign or crown: "we dont do the VIP thing".
-	-- Oct 31 critic: it still read dimmer than the green lane, so it also stands on a gold base 1.2 studs
-	-- higher (Raise, with two steps), its cannon on a gold turntable under a soft gold light pillar.
-	[6] = { Base = rgb(255, 196, 45), Water = rgb(120, 80, 240), Glow = true, Shine = true, Sparkle = true, Black = true, Premium = true, Raise = 1.2 },
+	[1] = { Neon = rgb(60, 150, 255) }, -- Starter: blue
+	[2] = { Neon = rgb(90, 230, 255) }, -- Steel: ice
+	[3] = { Neon = rgb(255, 140, 40) }, -- Heavy: orange
+	[4] = { Neon = rgb(255, 205, 60) }, -- Golden: gold
+	[5] = { Neon = rgb(80, 240, 110), Motes = true }, -- Plasma: green, with a few slow sparkles over its belt
+	-- Dragon (the gamepass lane): the Void theme, purple and pink-white like its purple and pink cannon: a dark
+	-- portal with a turning spiral on its console, dark rubble with star specks, rising purple motes. It still
+	-- stands 1.2 studs higher on two steps. No VIP wording anywhere ("we dont do the VIP thing").
+	[6] = { Neon = rgb(160, 80, 255), Second = rgb(255, 205, 250), Theme = "Void", Raise = 1.2 },
 }
 local function tierLook(id)
 	local t = TIERS[id] or TIERS[1]
-	local look = {
-		Floor = t.Base,
-		Rim = dark(t.Base, 0.35),
-		Track = t.Water or t.Base:Lerp(WHITE, 0.55), -- the pool's water
-		Bed = dark(t.Base, 0.4), -- the pool's floor under the water: dark, so the pool looks deep
-		Pad = dark(t.Base, 0.18),
-		Accent = t.Base, -- the glow colour (neon already brightens it, so the tier's own hue), also the client's shot colour
-		Glow = t.Glow,
-		Shine = t.Shine,
-		Sparkle = t.Sparkle,
-		Lanterns = t.Shine or t.Black, -- glowing lantern posts on the far corners of the top tiers
+	local body = t.Theme and rgb(28, 23, 40) or BODY -- a themed lane's body leans a little to its colour
+	return {
+		Accent = t.Neon, -- every neon part; also the client's shot colour for this lane
+		Tube = dark(t.Neon, 0.12), -- the long neon tubes, a touch deeper so they stay coloured instead of white-hot
+		Second = t.Second or WHITE, -- the "plus white": corner lights, handle ends, the portal's heart
+		Body = body,
+		Rim = body:Lerp(WHITE, 0.05),
+		Frame = t.Theme and rgb(86, 68, 124) or rgb(150, 156, 170), -- the light-grey caps, corner frames and posts
+		Footing = dark(body, 0.3),
+		Deck = dark(body, 0.2), -- near-black, so the neon carries the colour
+		Pad = body:Lerp(WHITE, 0.07),
+		PadAlt = body:Lerp(t.Neon, 0.07),
+		Belt = rgb(15, 17, 23),
+		Floor = t.Neon, -- the target's coloured rings
+		Glow = true,
+		Theme = t.Theme,
+		Motes = t.Motes,
+		Raise = t.Raise,
+		Premium = t.Theme ~= nil,
+		Breathe = t.Theme and 2.5 or 3, -- seconds for one slow glow cycle
 	}
-	if t.Black then
-		look.Floor, look.Rim, look.Pad = rgb(30, 24, 40), rgb(16, 12, 24), rgb(22, 16, 32)
-		look.Bed = rgb(14, 10, 22)
-		look.Accent = t.Base
-		look.Neon = true
-	end
-	if t.Premium then
-		look.Rim = dark(t.Base, 0.08) -- gold bricks round the black lane
-		look.PadAlt = dark(t.Base, 0.35) -- every other pad tile gold
-		look.Premium = true
-		look.Raise = t.Raise
-	end
-	return look
 end
 
--- one lane, the same for every tier: built around the stand point (standCf at the platform's top),
--- x right, y up, z forward towards the target. Only `look` changes between lanes.
--- What makes Stone Skipping's lanes read well (Oct 31 study, Build Playbooks/Lesson - Tiered Training Lanes):
--- a long, low lane that is mostly a pool of light water, a tiled stand pad at the near end, a brick rim in
--- the tier colour, and nothing tall inside it. So: a chunky brick rim, a strip of lane floor, a recessed
--- pool with see-through water over a darker bed, and a tiled pad the cannon sits on.
-local POOL_START = 9 -- where the pool begins, just past the cannon's nose (full size)
-local function makeBooth(standCf, width, look)
+-- one lane, the same build for every tier: built around the stand point (standCf at the platform's top),
+-- x right, y up, z forward towards the target. Only `look` (and the gamepass theme) changes between lanes.
+-- The layout is still Stone Skipping's (Build Playbooks/Lesson - Tiered Training Lanes): long and low, a tiled
+-- stand pad at the near end, a rim, the target at the far end, nothing tall between the cannon and the target.
+local POOL_START = 9 -- where the belt begins, just past the cannon's nose (full size; the pool's old start)
+local function makeBooth(standCf, width, look, info)
 	local m = Instance.new("Model")
 	m.Name = "Booth"
+	m:SetAttribute("BreathePeriod", look.Breathe)
 	local W = width
 	local front, back = -5, TARGET_Z + 3.2
 	local L = back - front
 	local mid = (front + back) / 2
-	local RIM, RIM_H = 1.6, 0.8 -- the raised rim's width and height over the floor
+	local RIM, RIM_H = 1.6, 1.3 -- the rails' width and height over the floor: chunky, like the treadmills' sides
 	local inner = W / 2 - RIM -- half the width inside the rims
-	local poolHalf = inner -- the water fills the lane from rim to rim (Oct 31 critic: it has to read as a pool)
-	local z0, z1 = POOL_START, back - RIM - 0.9 -- the pool's near and far ends
-	local BED_T = FLOOR_T - 0.4 -- the pool's floor; the deck round it stands at FLOOR_T
+	local z0, z1 = POOL_START, back - RIM - 0.9 -- the belt's near and far ends
+	local BED_T = FLOOR_T - 0.4
+	local deck = FLOOR_T - BED_T
 	local function at(x, y, z)
 		return standCf * CFrame.new(x, y, -z)
 	end
 	local function blk(name, size, x, yTop, z, color, collide)
 		return part({ Name = name, Size = size, CFrame = at(x, yTop - size.Y / 2, z), Color = color, Material = Enum.Material.SmoothPlastic, CanCollide = collide == true, Parent = m })
 	end
-	local function glow(name, size, x, yTop, z)
-		local p = blk(name, size, x, yTop, z, look.Accent)
+	-- a neon piece: never collides or blocks clicks, and LaneMotion lets it breathe slowly
+	local function glow(name, size, x, yTop, z, color)
+		local p = blk(name, size, x, yTop, z, color or look.Accent)
 		p.Material = Enum.Material.Neon
 		p.CastShadow = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p:SetAttribute("Breathe", true)
 		return p
 	end
 	local function shade(c, f)
 		return Color3.new(math.min(c.R * f, 1), math.min(c.G * f, 1), math.min(c.B * f, 1))
 	end
-	-- the gamepass lane's rainbow: its rim bricks cycle red, orange, yellow, green, blue, violet, and so do
-	-- its sparkles (Oct 31: a gold rim alone didn't stand out from the gold lane)
-	local RAINBOW = { rgb(255, 70, 70), rgb(255, 150, 40), rgb(255, 225, 50), rgb(80, 220, 90), rgb(60, 170, 255), rgb(170, 90, 255) }
-	local brickNo = 0
+	local function deco(p) -- decoration: no collisions, clicks or touches
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		return p
+	end
 
-	-- the footing: the lane's own base in a dark rim shade, reaching down into the ground, with a step at the
-	-- open front so you walk straight up onto the stand pad
-	blk("Footing", Vector3.new(W, 3, L + 1.4), 0, 0, mid - 0.7, dark(look.Rim, 0.2), true)
+	-- the footing: the lane's own dark base reaching down into the ground, with a step at the open front
+	blk("Footing", Vector3.new(W, 3, L + 1.4), 0, 0, mid - 0.7, look.Footing, true)
 	local raise = look.Raise or 0 -- a raised lane: the ground is this far under its base, so two steps lead up
-	blk("Step", Vector3.new(W - RIM * 2, FLOOR_T / 2 + raise, 1.2), 0, FLOOR_T / 2, front - 0.6, shade(look.Rim, 1.1), true)
+	blk("Step", Vector3.new(W - RIM * 2, FLOOR_T / 2 + raise, 1.2), 0, FLOOR_T / 2, front - 0.6, look.Frame, true)
+	glow("StepLight", Vector3.new(W - RIM * 2, 0.08, 0.14), 0, FLOOR_T / 2 + 0.02, front - 1.13)
 	if raise > 0 then
-		blk("Step", Vector3.new(W - RIM * 2 + 1, raise / 2 + 1, 1.4), 0, -raise / 2, front - 1.9, shade(look.Rim, 1.1), true)
-		blk("Footing", Vector3.new(W + 1.2, raise + 1, L + 2), 0, -0.05, mid - 0.7, dark(look.Rim, 0.2), true) -- the gold base, a little wider than the lane
+		blk("Step", Vector3.new(W - RIM * 2 + 1, raise / 2 + 1, 1.4), 0, -raise / 2, front - 1.9, look.Frame, true)
+		glow("StepLight", Vector3.new(W - RIM * 2 + 1, 0.08, 0.14), 0, -raise / 2 + 0.02, front - 2.53)
+		blk("Footing", Vector3.new(W + 1.2, raise + 1, L + 2), 0, -0.05, mid - 0.7, look.Footing, true)
 	end
 
-	-- the base slab (its top is the pool's bed) and the deck round the pool, all in the tier colour
-	blk("Floor", Vector3.new(W, BED_T, L), 0, BED_T, mid, look.Bed, true)
-	local deck = FLOOR_T - BED_T
-	blk("Deck", Vector3.new(inner * 2, deck, z0 - front), 0, FLOOR_T, (front + z0) / 2, look.Floor, true) -- the near end
-	blk("Deck", Vector3.new(inner * 2, deck, back - RIM - z1), 0, FLOOR_T, (z1 + back - RIM) / 2, look.Floor, true) -- the far end
-	-- the water: see-through over the darker bed, glossy; named Water so the stud pass leaves it smooth
-	local water = blk("Water", Vector3.new(poolHalf * 2, 0.2, z1 - z0), 0, FLOOR_T - 0.1, (z0 + z1) / 2, look.Track)
-	water.Transparency = look.Premium and 0.05 or 0.15 -- bright like Stone Skipping's water; Glass over the bed read grey
-	water.Reflectance = look.Shine and 0.3 or 0.2
-	water.CastShadow = false
-
-	-- two lily pads with a pink flower floating in every pool, like the reference's pools (never on the target)
-	for k, spot in ipairs({ { -0.55, 0.22 }, { 0.6, 0.5 } }) do
-		local x, z = spot[1] * poolHalf, z0 + (z1 - z0) * spot[2]
-		local lily = part({ Name = "LilyPad", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.12, k == 1 and 1.8 or 1.4, k == 1 and 1.8 or 1.4), Color = rgb(95, 190, 80), Material = Enum.Material.SmoothPlastic, CanCollide = false, CastShadow = false, CFrame = at(x, FLOOR_T - 0.04, z) * CFrame.Angles(0, 0, math.rad(90)), Parent = m })
-		part({ Name = "LilyFlower", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.55, Color = rgb(255, 150, 195), Material = Enum.Material.SmoothPlastic, CanCollide = false, CastShadow = false, CFrame = at(x + 0.2, FLOOR_T + 0.15, z), Parent = m })
-		lily.Anchored = true
+	-- the base slab and the decks at both ends
+	blk("Floor", Vector3.new(W, BED_T, L), 0, BED_T, mid, dark(look.Body, 0.25), true)
+	blk("Deck", Vector3.new(inner * 2, deck, z0 - front), 0, FLOOR_T, (front + z0) / 2, look.Deck, true) -- the near end
+	blk("Deck", Vector3.new(inner * 2, deck, back - RIM - z1), 0, FLOOR_T, (z1 + back - RIM) / 2, look.Deck, true) -- the far end
+	-- the belt (where the pool was): dark, with the game's stud picture faintly in the lane colour on top, which
+	-- LaneMotion scrolls towards the target, so the lane reads as a running treadmill; rollers at both ends
+	local belt = blk("Belt", Vector3.new(inner * 2, deck - 0.06, z1 - z0), 0, FLOOR_T - 0.06, (z0 + z1) / 2, look.Belt, true)
+	belt:SetAttribute("BeltSpeed", look.Premium and 2.5 or 2)
+	local tex = Instance.new("Texture")
+	tex.Name = "BeltStuds"
+	tex.Texture = STUDS
+	tex.Face = Enum.NormalId.Top
+	tex.StudsPerTileU = 2
+	tex.StudsPerTileV = 2
+	tex.Color3 = look.Accent
+	tex.Transparency = 0.55
+	tex.Parent = belt
+	for _, z in ipairs({ z0, z1 }) do
+		deco(part({ Name = "Roller", Shape = Enum.PartType.Cylinder, Size = Vector3.new(inner * 2 - 0.1, 0.8, 0.8), Color = look.Rim, Material = Enum.Material.SmoothPlastic, CFrame = at(0, FLOOR_T - 0.36, z), Parent = m }))
+	end
+	for _, sx in ipairs({ -1, 1 }) do
+		glow("BeltLine", Vector3.new(0.2, 0.08, z1 - z0), sx * (inner - 0.1), FLOOR_T + 0.02, (z0 + z1) / 2)
 	end
 
-	-- the rim: bricks about 4 studs long in two shades, so it reads as built from blocks
-	local function brickRow(len, alongZ, x, zc)
+	-- the rails: chunky dark bricks about 4 studs long in two shades, so they read as built from blocks, the
+	-- nearest brick of each side a light-grey cap; along each side's outer face a thick neon tube set into a dark
+	-- groove, broken at every brick, and a long tube down the inner face next to the belt
+	local function brickRow(len, alongZ, x, zc, sx)
 		local n = math.max(1, math.floor(len / 4 + 0.5))
 		local each = len / n
 		for k = 1, n do
 			local off = -len / 2 + each * (k - 0.5)
 			local size = alongZ and Vector3.new(RIM, RIM_H + deck, each - 0.06) or Vector3.new(each - 0.06, RIM_H + deck, RIM)
 			local px, pz = alongZ and x or x + off, alongZ and zc + off or zc
-			brickNo += 1
-			blk("Rim", size, px, FLOOR_T + RIM_H, pz, look.Premium and RAINBOW[(brickNo - 1) % #RAINBOW + 1] or shade(look.Rim, k % 2 == 0 and 1.12 or 1), true)
+			local color = (alongZ and k == 1) and look.Frame or (k % 2 == 0 and shade(look.Rim, 1.18) or look.Rim)
+			blk("Rim", size, px, FLOOR_T + RIM_H, pz, color, true)
+			if alongZ and k > 1 then
+				local ox = x + sx * (RIM / 2)
+				deco(blk("Groove", Vector3.new(0.12, 0.62, each - 0.4), ox + sx * 0.04, FLOOR_T + 0.86, pz, dark(look.Body, 0.6)))
+				glow("Tube", Vector3.new(0.2, 0.36, each - 0.7), ox + sx * 0.08, FLOOR_T + 0.73, pz, look.Tube)
+			end
 		end
 	end
 	for _, sx in ipairs({ -1, 1 }) do
-		brickRow(L, true, sx * (W / 2 - RIM / 2), mid)
+		brickRow(L, true, sx * (W / 2 - RIM / 2), mid, sx)
+		glow("Edge", Vector3.new(0.2, 0.3, back - RIM - front - 4), sx * (inner - 0.07), FLOOR_T + RIM_H - 0.12, (front + 2 + back - RIM - 2) / 2, look.Tube)
 	end
 	brickRow(W - RIM * 2, false, 0, back - RIM / 2)
 	blk("Lip", Vector3.new(W, 0.06, 0.5), 0, FLOOR_T + 0.03, front + 0.25, look.Rim) -- the open front edge, flush
+	-- big corner cubes at all four corners: a light-grey frame round a glowing panel on each open face and the top
+	local CB = 2.4
+	local cTop = FLOOR_T + RIM_H + 0.7
+	local cBot = -raise
+	local cH = cTop - cBot
+	for _, sx in ipairs({ -1, 1 }) do
+		for _, sz in ipairs({ -1, 1 }) do
+			local cx, cz = sx * (W / 2 - CB / 2 + 0.25), sz < 0 and front + CB / 2 or back - CB / 2 + 0.25
+			blk("Corner", Vector3.new(CB, cH, CB), cx, cTop, cz, look.Frame, true)
+			local light = look.Accent:Lerp(look.Second, 0.15)
+			local pH, pW = cH - 0.7, CB - 0.6
+			glow("CornerLight", Vector3.new(0.08, pH, pW), cx + sx * (CB / 2 + 0.03), cTop - 0.35, cz, light)
+			glow("CornerLight", Vector3.new(pW, pH, 0.08), cx, cTop - 0.35, cz + sz * (CB / 2 + 0.03), light)
+			glow("CornerLight", Vector3.new(pW, 0.06, pW), cx, cTop + 0.03, cz, light)
+		end
+	end
 
-	-- the stand pad: square tiles with thin gaps, from behind the stand point to the pool, under the cannon
+	-- the stand pad: square tiles with thin gaps, from behind the stand point to the belt, under the cannon
 	local padW, pz0, pz1 = inner * 2 - 1, -3.6, z0 - 0.4
 	local nx, nz = math.max(1, math.floor(padW / 2.2 + 0.5)), math.max(1, math.floor((pz1 - pz0) / 2.2 + 0.5))
 	local tw, tl = padW / nx, (pz1 - pz0) / nz
 	for ix = 1, nx do
 		for iz = 1, nz do
 			local even = (ix + iz) % 2 == 0
-			blk("Tile", Vector3.new(tw - 0.14, PAD_UP + 0.05, tl - 0.14), -padW / 2 + tw * (ix - 0.5), FLOOR_T + PAD_UP, pz0 + tl * (iz - 0.5), even and (look.PadAlt or shade(look.Pad, 1.08)) or look.Pad)
+			blk("Tile", Vector3.new(tw - 0.14, PAD_UP + 0.05, tl - 0.14), -padW / 2 + tw * (ix - 0.5), FLOOR_T + PAD_UP, pz0 + tl * (iz - 0.5), even and look.PadAlt or look.Pad)
 		end
 	end
-	blk("StartPad", Vector3.new(padW + 0.4, PAD_UP - 0.02, pz1 - pz0 + 0.4), 0, FLOOR_T + PAD_UP - 0.04, (pz0 + pz1) / 2, dark(look.Pad, 0.3)) -- the dark lines between tiles
-	-- white L marks on the pad's four corners, like the reference's start pads
+	blk("StartPad", Vector3.new(padW + 0.4, PAD_UP - 0.02, pz1 - pz0 + 0.4), 0, FLOOR_T + PAD_UP - 0.04, (pz0 + pz1) / 2, dark(look.Pad, 0.4)) -- the dark lines between tiles
 	for _, sx in ipairs({ -1, 1 }) do
 		for _, sz in ipairs({ -1, 1 }) do
 			local cx, cz = sx * (padW / 2 - 0.35), (pz0 + pz1) / 2 + sz * ((pz1 - pz0) / 2 - 0.35)
 			blk("PadMark", Vector3.new(0.3, 0.04, 1.5), cx, FLOOR_T + PAD_UP + 0.04, cz - sz * 0.6, WHITE)
 			blk("PadMark", Vector3.new(1.5, 0.04, 0.3), cx - sx * 0.6, FLOOR_T + PAD_UP + 0.04, cz, WHITE)
 		end
+		glow("PadLine", Vector3.new(0.2, 0.1, pz1 - pz0 + 0.4), sx * (padW / 2 + 0.3), FLOOR_T + PAD_UP, (pz0 + pz1) / 2)
 	end
+	glow("PadLine", Vector3.new(padW + 0.8, 0.1, 0.2), 0, FLOOR_T + PAD_UP, pz0 - 0.3)
 
-	if look.Glow then
-		-- a neon line along the top inner edge of the rim
-		for _, sx in ipairs({ -1, 1 }) do
-			glow("Edge", Vector3.new(0.3, 0.08, L - RIM), sx * (inner + 0.15), FLOOR_T + RIM_H + 0.04, mid - RIM / 2)
+	-- the console at the far end, facing the stand pad like the treadmills' (low, so the lane's label floats
+	-- clear above it): a dark hood across the lane, then the screen, or on the gamepass lane its theme's shape
+	local cz = back - 1.3
+	local hoodTop = FLOOR_T + 2 -- kept low whatever the rails do, so the lane's label floats clear above
+	blk("ConsoleBase", Vector3.new(W - CB * 2 + 0.4, 2, 2.6), 0, hoodTop, cz, look.Body, true)
+	glow("ConsoleEdge", Vector3.new(W - CB * 2, 0.16, 0.16), 0, hoodTop - 0.02, cz - 1.33, look.Tube)
+	local lamp -- the console's light (the client swells it a little on a hit, at most once a second)
+	if not look.Theme then
+		-- the screen: the lane's power per shot, in its colour, framed in neon, on a dark box with two posts
+		-- whose handle ends glow white
+		blk("ConsoleBox", Vector3.new(7, 3.6, 1.0), 0, hoodTop + 3.6, cz + 0.3, look.Body, true)
+		local sz = cz + 0.3 - 0.54
+		local screen = blk("ConsoleScreen", Vector3.new(6, 2.6, 0.08), 0, hoodTop + 3.2, sz, rgb(8, 10, 18))
+		deco(screen)
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = Enum.NormalId.Back -- the side facing the stand pad
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 40
+		gui.LightInfluence = 0
+		gui.Parent = screen
+		local function line(text, y, h)
+			local t = Instance.new("TextLabel")
+			t.BackgroundTransparency = 1
+			t.Position = UDim2.fromScale(0.06, y)
+			t.Size = UDim2.fromScale(0.88, h)
+			t.Font = Enum.Font.FredokaOne
+			t.TextScaled = true
+			t.Text = text
+			t.TextColor3 = look.Accent:Lerp(WHITE, 0.25)
+			local s = Instance.new("UIStroke")
+			s.Thickness = 2
+			s.Color = dark(look.Accent, 0.6)
+			s.Parent = t
+			t.Parent = gui
 		end
-		glow("Edge", Vector3.new(inner * 2, 0.08, 0.3), 0, FLOOR_T + RIM_H + 0.04, back - RIM + 0.15)
-	end
-	if look.Neon then
-		-- the black lane: neon round the pool and the stand pad
-		for _, sx in ipairs({ -1, 1 }) do
-			glow("PoolLine", Vector3.new(0.25, 0.1, z1 - z0), sx * (poolHalf - 0.13), FLOOR_T - 0.04, (z0 + z1) / 2) -- along the rim, on the water
-			glow("PadLine", Vector3.new(0.25, 0.14, pz1 - pz0), sx * (padW / 2 + 0.13), FLOOR_T + PAD_UP + 0.02, (pz0 + pz1) / 2)
+		line("+" .. Config.Format(info.Gain), 0.08, 0.6)
+		line("POWER", 0.66, 0.26)
+		for _, y in ipairs({ hoodTop + 3.42, hoodTop + 0.72 }) do
+			glow("ScreenFrame", Vector3.new(6.3, 0.14, 0.14), 0, y, sz - 0.04)
 		end
-		glow("PoolLine", Vector3.new(poolHalf * 2 + 0.5, 0.1, 0.25), 0, FLOOR_T + 0.06, z1 + 0.13)
-		glow("PadLine", Vector3.new(padW + 0.5, 0.14, 0.25), 0, FLOOR_T + PAD_UP + 0.02, pz0 - 0.13)
-	end
-	if look.Lanterns then
-		-- lantern posts on the far corners (all four on the gamepass lane): a post in the rim's shade and a
-		-- glowing lamp in the tier colour
-		for _, z in ipairs(look.Premium and { back - RIM / 2, front + RIM / 2 } or { back - RIM / 2 }) do
-			for _, sx in ipairs({ -1, 1 }) do
-				local x = sx * (W / 2 - RIM / 2)
-				blk("LanternPost", Vector3.new(0.5, 2.4, 0.5), x, FLOOR_T + RIM_H + 2.4, z, dark(look.Rim, 0.2))
-				local lamp = blk("Lantern", Vector3.new(0.9, 0.9, 0.9), x, FLOOR_T + RIM_H + 3.3, z, look.Accent)
-				lamp.Material = Enum.Material.Neon
-				lamp.CastShadow = false
-				blk("LanternCap", Vector3.new(1.1, 0.25, 1.1), x, FLOOR_T + RIM_H + 3.55, z, dark(look.Rim, 0.2))
+		for _, sx in ipairs({ -1, 1 }) do
+			glow("ScreenFrame", Vector3.new(0.14, 2.84, 0.14), sx * 3.08, hoodTop + 3.42, sz - 0.04)
+			local px = sx * 3.9
+			blk("ConsolePost", Vector3.new(0.8, 4.4, 0.8), px, hoodTop + 4.4, cz + 0.3, look.Frame, true)
+			deco(blk("ConsoleArm", Vector3.new(0.5, 0.5, 2.4), px, hoodTop + 4.1, cz - 1.1, look.Frame))
+			glow("ArmLight", Vector3.new(0.56, 0.56, 0.3), px, hoodTop + 4.13, cz - 2.4, look.Second)
+		end
+		lamp = glow("Glow", Vector3.new(6, 0.16, 0.12), 0, hoodTop + 0.5, sz - 0.04)
+	elseif look.Theme == "Void" then
+		-- a dark portal of blocks standing on the hood, a dark hole inside it and a glowing spiral that turns
+		-- slowly (one turn every 9 seconds), with a pink-white heart; the spiral, its dashes and the heart are in
+		-- the Spin model, which LaneMotion turns round the Axis part
+		local R = 3.1
+		local cy = hoodTop + 0.45 + R
+		local centre = at(0, cy, cz + 0.2)
+		local N = 18
+		for k = 1, N do
+			local a = (k - 0.5) / N * math.pi * 2
+			part({ Name = "PortalRing", Size = Vector3.new(0.95, 2 * math.pi * R / N * 1.1, 1.2), Color = k % 2 == 0 and look.Rim or shade(look.Rim, 1.6), Material = Enum.Material.SmoothPlastic,
+				CanCollide = false, CFrame = centre * CFrame.Angles(0, 0, a) * CFrame.new(R, 0, 0), Parent = m })
+			-- a thin neon line round the outside and the inside of the ring, so its shape reads from afar
+			for _, rr in ipairs({ R + 0.5, R - 0.5 }) do
+				glow("PortalEdge", Vector3.new(0.14, 2 * math.pi * rr / N * 1.05, 0.14), 0, 0, 0).CFrame = centre * CFrame.Angles(0, 0, a) * CFrame.new(rr, 0, 0.62)
 			end
 		end
+		deco(part({ Name = "PortalHole", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, (R - 0.3) * 2, (R - 0.3) * 2), Color = rgb(12, 6, 24), Material = Enum.Material.SmoothPlastic,
+			CFrame = centre * CFrame.new(0, 0, -0.3) * CFrame.Angles(0, math.rad(90), 0), Parent = m })) -- behind the spiral (local +Z faces the pad)
+		deco(blk("PortalFoot", Vector3.new(2.6, 0.7, 1.4), 0, hoodTop + 0.6, cz + 0.2, look.Rim))
+		local spin = Instance.new("Model")
+		spin.Name = "Spin"
+		spin:SetAttribute("SpinPeriod", 9)
+		local axis = part({ Name = "Axis", Size = Vector3.one * 0.2, Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false, CFrame = centre, Parent = spin })
+		axis:SetAttribute("Axis", true)
+		local function spinGlow(name, size, cf, color)
+			local p = part({ Name = name, Size = size, Color = color, Material = Enum.Material.Neon, CastShadow = false, CanCollide = false, CanQuery = false, CanTouch = false, CFrame = cf, Parent = spin })
+			p:SetAttribute("Breathe", true)
+			return p
+		end
+		for k = 1, 12 do -- dashes just inside the ring
+			local a = k / 12 * math.pi * 2
+			spinGlow("PortalDash", Vector3.new(0.28, 0.95, 0.3), centre * CFrame.Angles(0, 0, a) * CFrame.new(R - 0.85, 0, 0.1), look.Accent)
+		end
+		local STEPS = 26
+		for k = 1, STEPS do -- the spiral, pink-white at the heart to purple at the edge
+			local t = k / STEPS
+			local a = t * math.pi * 3.4
+			local r = 0.55 + (R - 1.45) * t
+			local s = 0.5 - 0.2 * t
+			spinGlow("Spiral", Vector3.new(s, s, 0.25), centre * CFrame.Angles(0, 0, a) * CFrame.new(r, 0, 0.05), look.Second:Lerp(look.Accent, t))
+		end
+		spinGlow("Heart", Vector3.new(0.9, 0.9, 0.4), centre * CFrame.new(0, 0, 0.2) * CFrame.Angles(0, 0, math.rad(45)), look.Second)
+		for _, a0 in ipairs({ 0.35, 0.35 + math.pi }) do -- two short arcs just outside the ring, orbiting with the spiral
+			for k = 0, 5 do
+				local a = a0 + k * 0.17
+				spinGlow("Orbit", Vector3.new(0.3, 0.42, 0.3), centre * CFrame.Angles(0, 0, a) * CFrame.new(R + 1.05, 0, 0.3), look.Accent:Lerp(look.Second, k / 6))
+			end
+		end
+		spin.Parent = m
+		-- still crystal shards floating round the portal's sides and foot (pink-white and purple voxels on end)
+		for k, a in ipairs({ -0.15, -0.55, -1.0, math.pi + 0.15, math.pi + 0.55, math.pi + 1.0, 0.75, math.pi - 0.75 }) do
+			local r = R + 1.6 + (k % 3) * 0.35
+			local s = k % 2 == 0 and 0.36 or 0.5
+			local shard = glow("Shard", Vector3.new(s, s * 1.6, s), 0, 0, 0, k % 2 == 0 and look.Second or look.Accent)
+			shard.CFrame = centre * CFrame.Angles(0, 0, a) * CFrame.new(r, 0, 0.4) * CFrame.Angles(0, 0.6, -a + 0.4)
+			shard:SetAttribute("Breathe", nil)
+		end
+		lamp = part({ Name = "Glow", Size = Vector3.one * 0.3, Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false, CFrame = centre * CFrame.new(0, 0, 0.8), Parent = m })
+		-- the ground spill: dark rubble round the far end and the open west side (the gamepass lane is the row's
+		-- west end; the walkway to the next lane stays clear), some with tiny glowing star specks
+		local rng = Random.new(66)
+		local function rubble(x, z, s, h)
+			local top = -raise + h
+			local r = deco(blk("Rubble", Vector3.new(s, h + raise + 2.4, s * rng:NextNumber(0.8, 1.2)), x, top, z, look.Body:Lerp(Color3.new(0, 0, 0), rng:NextNumber(0, 0.35))))
+			r.CFrame = r.CFrame * CFrame.Angles(0, rng:NextNumber(-0.5, 0.5), 0)
+			if s > 1.4 and rng:NextNumber() < 0.5 then -- a smaller block on top, so it reads as a heap
+				local s2 = s * rng:NextNumber(0.45, 0.65)
+				local h2 = s2 * rng:NextNumber(0.6, 1)
+				deco(blk("Rubble", Vector3.new(s2, h2, s2), x + rng:NextNumber(-0.3, 0.3), top + h2, z + rng:NextNumber(-0.3, 0.3), look.Body:Lerp(look.Accent, 0.08))).CFrame *= CFrame.Angles(0, rng:NextNumber(0, 1.5), 0)
+				top += h2
+			end
+			if rng:NextNumber() < 0.8 then
+				for _ = 1, rng:NextInteger(1, 3) do
+					local speck = glow("Speck", Vector3.one * 0.24, x + rng:NextNumber(-s / 3, s / 3), top + 0.1, z + rng:NextNumber(-s / 3, s / 3), rng:NextNumber() < 0.5 and look.Accent or look.Second)
+					speck:SetAttribute("Breathe", nil) -- specks stay still
+				end
+			end
+		end
+		for k = 1, 20 do -- two rows along the west side, taller towards the far end
+			local outer = k % 2 == 0
+			rubble(-(W / 2 + (outer and rng:NextNumber(2.4, 3.8) or rng:NextNumber(0.7, 2))), front + 1 + (L - 1) * (k - 0.5) / 20 + rng:NextNumber(-0.7, 0.7), rng:NextNumber(1.1, 2.3), rng:NextNumber(0.4, (k > 12 and 2.8 or 1.5) * (outer and 0.6 or 1)))
+		end
+		for k = 1, 12 do -- behind the far end, in front of and behind each other
+			rubble(-W / 2 - 2 + (W + 3.5) * (k - 0.5) / 12 + rng:NextNumber(-0.4, 0.4), back + (k % 2 == 0 and rng:NextNumber(2.4, 3.6) or rng:NextNumber(0.6, 1.8)), rng:NextNumber(1.1, 2.4), rng:NextNumber(0.8, 3))
+		end
+		for k = 1, 5 do -- low ones round the near-west corner
+			rubble(-(W / 2 + rng:NextNumber(0.5, 2.6)), front + 0.5 - rng:NextNumber(0, 2.6), rng:NextNumber(0.9, 1.6), rng:NextNumber(0.3, 0.8))
+		end
+		for k = 1, 7 do -- a low, narrow strip along the east side's far half (the walkway beside it stays clear)
+			rubble(W / 2 + rng:NextNumber(0.5, 1.2), mid + 1 + (back - mid) * (k - 0.5) / 7, rng:NextNumber(0.8, 1.3), rng:NextNumber(0.3, 0.8))
+		end
+		-- tiny star specks on the decks and along the rail tops (still, never blinking)
+		for k = 1, 22 do
+			local x, y, z
+			if k <= 8 then -- the far deck and the near deck's edges round the pad
+				x, z = rng:NextNumber(-inner + 0.3, inner - 0.3), k <= 4 and rng:NextNumber(z1 + 0.2, back - RIM - 0.2) or front + rng:NextNumber(0.2, 1.2)
+				y = FLOOR_T + 0.06
+			else -- the rail tops
+				x, z = (k % 2 == 0 and 1 or -1) * (W / 2 - rng:NextNumber(0.3, RIM - 0.3)), rng:NextNumber(front + 2.6, back - 2.6)
+				y = FLOOR_T + RIM_H + 0.06
+			end
+			local star = glow("Star", Vector3.one * rng:NextNumber(0.14, 0.22), x, y, z, rng:NextNumber() < 0.6 and look.Second or look.Accent)
+			star:SetAttribute("Breathe", nil)
+		end
+		-- slow purple and pink motes rising off the rubble (about 10 at a time)
+		for _, spot in ipairs({ { -(W / 2 + 1.8), mid + 4, 2.6, L * 0.55 }, { -0.5, back + 1.9, W + 2, 2.4 } }) do
+			local src = deco(blk("MoteSource", Vector3.new(spot[3], 0.2, spot[4]), spot[1], -raise + 0.6, spot[2], look.Body))
+			src.Transparency = 1
+			local e = Instance.new("ParticleEmitter")
+			e.Name = "Motes"
+			e.Color = ColorSequence.new(look.Accent, look.Second)
+			e.LightEmission = 1
+			e.Rate = 2
+			e.Lifetime = NumberRange.new(2, 3)
+			e.Speed = NumberRange.new(0.6, 1.4)
+			e.SpreadAngle = Vector2.new(20, 20)
+			e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0) })
+			e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 1) })
+			e.EmissionDirection = Enum.NormalId.Top
+			e.Parent = src
+		end
 	end
-	if look.Sparkle then
-		-- slow sparkles rising off the water (Roblox's own sparkle picture; a soft twinkle, never a flash)
+	if lamp then
+		local light = Instance.new("PointLight")
+		light.Color = look.Accent
+		light.Brightness = look.Premium and 1 or 0.5
+		light.Range = look.Premium and 9 or 6
+		light.Shadows = false
+		light.Parent = lamp
+	end
+	if look.Motes then
+		-- a few slow sparkles over the belt (Roblox's own sparkle picture; a soft twinkle, never a flash)
 		local e = Instance.new("ParticleEmitter")
 		e.Name = "Sparkles"
-		e.Color = look.Premium and ColorSequence.new({
-			ColorSequenceKeypoint.new(0, RAINBOW[1]), ColorSequenceKeypoint.new(0.2, RAINBOW[2]), ColorSequenceKeypoint.new(0.4, RAINBOW[3]),
-			ColorSequenceKeypoint.new(0.6, RAINBOW[4]), ColorSequenceKeypoint.new(0.8, RAINBOW[5]), ColorSequenceKeypoint.new(1, RAINBOW[6]),
-		}) or ColorSequence.new(look.Accent:Lerp(WHITE, 0.4))
+		e.Color = ColorSequence.new(look.Accent:Lerp(WHITE, 0.4))
 		e.LightEmission = 1
-		e.Rate = look.Premium and 10 or 6
-		e.Lifetime = NumberRange.new(1, 1.6)
-		e.Speed = NumberRange.new(1, 2.2)
+		e.Rate = 2
+		e.Lifetime = NumberRange.new(1.2, 1.8)
+		e.Speed = NumberRange.new(0.8, 1.6)
 		e.SpreadAngle = Vector2.new(15, 15)
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
 		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
 		e.EmissionDirection = Enum.NormalId.Top
-		e.Parent = water
+		e.Parent = belt
 	end
 	for _, d in ipairs(m:GetDescendants()) do
 		if d:IsA("BasePart") then
@@ -504,32 +685,10 @@ for i, info in ipairs(order) do
 		local light = Instance.new("PointLight")
 		-- the gamepass lane gets a bright white light, so its pink cannon isn't tinted gold (Oct 31)
 		light.Color = look.Premium and rgb(255, 246, 236) or look.Accent
-		light.Brightness = look.Premium and 2.2 or 1.2
-		light.Range = look.Premium and 11 or 9
+		light.Brightness = look.Premium and 0.9 or 0.7
+		light.Range = look.Premium and 8 or 7
 		light.Shadows = false
 		light.Parent = ringPart
-	end
-	if look.Premium then
-		-- a soft gold light pillar rising from the turntable, seen from across the lobby (see-through, never flashing)
-		-- it starts above the cannon (Oct 31): inside the gold glow the pink cannon was hard to see
-		local CLEAR = size.Y + 1
-		local PILLAR = 26 - CLEAR
-		part({ Name = "LightPillar", Shape = Enum.PartType.Cylinder, Size = Vector3.new(PILLAR, discD * 0.8, discD * 0.8), Color = rgb(255, 215, 90),
-			Material = Enum.Material.Neon, Transparency = 0.82, CastShadow = false, CanCollide = false, CanQuery = false, CanTouch = false,
-			CFrame = CFrame.new(discPos + Vector3.new(0, DISC + CLEAR + PILLAR / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Parent = station })
-		-- and gold sparkles drifting up round the cannon
-		local e = Instance.new("ParticleEmitter")
-		e.Name = "CannonSparkles"
-		e.Color = ColorSequence.new(rgb(255, 225, 120))
-		e.LightEmission = 1
-		e.Rate = 8
-		e.Lifetime = NumberRange.new(1.2, 2)
-		e.Speed = NumberRange.new(1.5, 3)
-		e.SpreadAngle = Vector2.new(25, 25)
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
-		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
-		e.EmissionDirection = Enum.NormalId.Top
-		e.Parent = ringPart
 	end
 	-- imported cannons point their barrel along +Z, so face +Z at the target
 	cannon:PivotTo(CFrame.lookAt(cannonPos, cannonPos - fireDir))
@@ -557,7 +716,7 @@ for i, info in ipairs(order) do
 		end
 	end
 	target.Parent = station
-	makeBooth(baseCf, boothWidth, look).Parent = station
+	makeBooth(baseCf, boothWidth, look, info).Parent = station
 
 	-- the lane's glow colour, used by the client for its shots and hit effects
 	station:SetAttribute("Accent", look.Accent)
@@ -565,7 +724,7 @@ for i, info in ipairs(order) do
 	station:ScaleTo(BOOTH_SCALE)
 	-- scaling pulls everything towards the pad: stand the lane back on the platform
 	local floorPart = station.Booth:FindFirstChild("Floor")
-	local bottom = floorPart.Position.Y - floorPart.Size.Y / 2
+	local bottom = floorPart.CFrame.Position.Y - floorPart.Size.Y / 2 -- (CFrame.Position: the offline preview has no .Position)
 	station:PivotTo(station:GetPivot() - Vector3.new(0, bottom - laneBase, 0))
 	station.Parent = folder
 end
