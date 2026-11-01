@@ -1,0 +1,778 @@
+{
+ "HoodAsphaltCracked": {
+  "ColorMap": "rbxassetid://98564092105686",
+  "NormalMap": "rbxassetid://119729528306174",
+  "RoughnessMap": "rbxassetid://94199957986551"
+ },
+ "HoodAsphaltFaded": {
+  "ColorMap": "rbxassetid://137033738205018",
+  "NormalMap": "rbxassetid://92461726935749",
+  "RoughnessMap": "rbxassetid://130589051612616"
+ },
+ "HoodRoadPotholes": {
+  "ColorMap": "rbxassetid://139464265470001",
+  "NormalMap": "rbxassetid://128402649927074",
+  "RoughnessMap": "rbxassetid://140073339172385"
+ },
+ "AsphaltWorn": {
+  "ColorMap": "rbxassetid://132539224631725",
+  "NormalMap": "rbxassetid://140545859193045",
+  "RoughnessMap": "rbxassetid://136115523247198"
+ },
+ "DowntownAsphaltClean": {
+  "ColorMap": "rbxassetid://137808376721319",
+  "NormalMap": "rbxassetid://92669017349428",
+  "RoughnessMap": "rbxassetid://73727297315003"
+ },
+ "AsphaltGranular": {
+  "ColorMap": "rbxassetid://86134678792582",
+  "NormalMap": "rbxassetid://89030928338210",
+  "RoughnessMap": "rbxassetid://81504144859992"
+ },
+ "SidewalkConcrete": {
+  "ColorMap": "rbxassetid://118267138287100",
+  "NormalMap": "rbxassetid://123792534491103",
+  "RoughnessMap": "rbxassetid://72747794108653"
+ },
+ "HoodSidewalkCracked": {
+  "ColorMap": "rbxassetid://109153526932939",
+  "NormalMap": "rbxassetid://113973495305242",
+  "RoughnessMap": "rbxassetid://112560031243317"
+ },
+ "DowntownSidewalkTiles": {
+  "ColorMap": "rbxassetid://82737244752600",
+  "NormalMap": "rbxassetid://112618041953550",
+  "RoughnessMap": "rbxassetid://132717003885868"
+ },
+ "DowntownPavers": {
+  "ColorMap": "rbxassetid://120605400401847",
+  "NormalMap": "rbxassetid://124316542359159",
+  "RoughnessMap": "rbxassetid://108510174831816"
+ },
+ "SidewalkSlabs": {
+  "ColorMap": "rbxassetid://96334505190419",
+  "NormalMap": "rbxassetid://123267672727103",
+  "RoughnessMap": "rbxassetid://111695297841766"
+ },
+ "DowntownBrickPavers": {
+  "ColorMap": "rbxassetid://101716724135987",
+  "NormalMap": "rbxassetid://129861245299570",
+  "RoughnessMap": "rbxassetid://127017921930943"
+ },
+ "ConcreteDriveway": {
+  "ColorMap": "rbxassetid://131387164337576",
+  "NormalMap": "rbxassetid://84627090788407",
+  "RoughnessMap": "rbxassetid://124546025174012"
+ },
+ "ParkingLotStained": {
+  "ColorMap": "rbxassetid://99320524319479",
+  "NormalMap": "rbxassetid://129174559153269",
+  "RoughnessMap": "rbxassetid://81591366629507"
+ },
+ "ConcreteStained": {
+  "ColorMap": "rbxassetid://88235023949066",
+  "NormalMap": "rbxassetid://138592568222631",
+  "RoughnessMap": "rbxassetid://139803563895668"
+ },
+ "HoodStuccoWorn": {
+  "ColorMap": "rbxassetid://116872347540526",
+  "NormalMap": "rbxassetid://121451914070620",
+  "RoughnessMap": "rbxassetid://109124014392986"
+ },
+ "HoodPaintedConcrete": {
+  "ColorMap": "rbxassetid://102705518137079",
+  "NormalMap": "rbxassetid://134258180489280",
+  "RoughnessMap": "rbxassetid://123530952560630"
+ },
+ "HoodConcreteDirty": {
+  "ColorMap": "rbxassetid://138810089218817",
+  "NormalMap": "rbxassetid://128944076433901",
+  "RoughnessMap": "rbxassetid://85711070657870"
+ },
+ "HoodStuccoCracked": {
+  "ColorMap": "rbxassetid://93898664730726",
+  "NormalMap": "rbxassetid://118121390391327",
+  "RoughnessMap": "rbxassetid://140165601308850"
+ },
+ "HoodPlasterChipped": {
+  "ColorMap": "rbxassetid://113616867529040",
+  "NormalMap": "rbxassetid://98392166412606",
+  "RoughnessMap": "rbxassetid://113197067650408"
+ },
+ "HoodPlasterExposedBrick": {
+  "ColorMap": "rbxassetid://140154250630667",
+  "NormalMap": "rbxassetid://75728049482638",
+  "RoughnessMap": "rbxassetid://135237520608057"
+ },
+ "HoodPaintedBrick": {
+  "ColorMap": "rbxassetid://76231256712995",
+  "NormalMap": "rbxassetid://88477576456742",
+  "RoughnessMap": "rbxassetid://77950285031710"
+ },
+ "HoodPaintedBrickYellow": {
+  "ColorMap": "rbxassetid://97865621659745",
+  "NormalMap": "rbxassetid://108821774768202",
+  "RoughnessMap": "rbxassetid://122467886644736"
+ },
+ "HoodBrickDamaged": {
+  "ColorMap": "rbxassetid://84899512062892",
+  "NormalMap": "rbxassetid://134876389372429",
+  "RoughnessMap": "rbxassetid://136020552983537"
+ },
+ "HoodCinderBlock": {
+  "ColorMap": "rbxassetid://129646178428255",
+  "NormalMap": "rbxassetid://125822203397871",
+  "RoughnessMap": "rbxassetid://125233175796359"
+ },
+ "StuccoSuburb": {
+  "ColorMap": "rbxassetid://105461780703361",
+  "NormalMap": "rbxassetid://88818164114530",
+  "RoughnessMap": "rbxassetid://129569323919014"
+ },
+ "DowntownBrickRed": {
+  "ColorMap": "rbxassetid://117409772976100",
+  "NormalMap": "rbxassetid://77539593052727",
+  "RoughnessMap": "rbxassetid://125067819201430"
+ },
+ "DowntownBrickOld": {
+  "ColorMap": "rbxassetid://122283272983156",
+  "NormalMap": "rbxassetid://91053923900941",
+  "RoughnessMap": "rbxassetid://93773681659716"
+ },
+ "DowntownPrecastPanel": {
+  "ColorMap": "rbxassetid://102802238292106",
+  "NormalMap": "rbxassetid://122886811768208",
+  "RoughnessMap": "rbxassetid://72772209955705"
+ },
+ "DowntownConcreteFacade": {
+  "ColorMap": "rbxassetid://125489383867001",
+  "NormalMap": "rbxassetid://116580123985029",
+  "RoughnessMap": "rbxassetid://87532031562190"
+ },
+ "DowntownRibbedConcrete": {
+  "ColorMap": "rbxassetid://71649314661222",
+  "NormalMap": "rbxassetid://99312050605944",
+  "RoughnessMap": "rbxassetid://127558736370130"
+ },
+ "DowntownStoneBlocks": {
+  "ColorMap": "rbxassetid://85007031668602",
+  "NormalMap": "rbxassetid://92348443787110",
+  "RoughnessMap": "rbxassetid://103938644392337"
+ },
+ "DowntownRender": {
+  "ColorMap": "rbxassetid://134540417878818",
+  "NormalMap": "rbxassetid://112604111331007",
+  "RoughnessMap": "rbxassetid://106284979894931"
+ },
+ "BridgeConcretePanels": {
+  "ColorMap": "rbxassetid://91054946006706",
+  "NormalMap": "rbxassetid://137898282688442",
+  "RoughnessMap": "rbxassetid://84529759104882"
+ },
+ "LobbyMarble": {
+  "ColorMap": "rbxassetid://90258796018555",
+  "NormalMap": "rbxassetid://114216342206202",
+  "RoughnessMap": "rbxassetid://117357151580793"
+ },
+ "PlazaTiles": {
+  "ColorMap": "rbxassetid://115157517321920",
+  "NormalMap": "rbxassetid://117400627936357",
+  "RoughnessMap": "rbxassetid://70463221961783"
+ },
+ "ShutterRusty": {
+  "ColorMap": "rbxassetid://107539778712864",
+  "NormalMap": "rbxassetid://97123559432479",
+  "RoughnessMap": "rbxassetid://107856511001359"
+ },
+ "ShutterPainted": {
+  "ColorMap": "rbxassetid://100181121330744",
+  "NormalMap": "rbxassetid://120928192992681",
+  "RoughnessMap": "rbxassetid://139938690567573"
+ },
+ "CorrugatedWorn": {
+  "ColorMap": "rbxassetid://135986184827641",
+  "NormalMap": "rbxassetid://118544985205983",
+  "RoughnessMap": "rbxassetid://87739674137583"
+ },
+ "CorrugatedRusty": {
+  "ColorMap": "rbxassetid://98381450000642",
+  "NormalMap": "rbxassetid://110431181519222",
+  "RoughnessMap": "rbxassetid://117831258098333"
+ },
+ "ShippingContainer": {
+  "ColorMap": "rbxassetid://138841041108992",
+  "NormalMap": "rbxassetid://99458727488581",
+  "RoughnessMap": "rbxassetid://116052903369032"
+ },
+ "MetalPaintedRusty": {
+  "ColorMap": "rbxassetid://115047850787663",
+  "NormalMap": "rbxassetid://130177561197151",
+  "RoughnessMap": "rbxassetid://91624977628076"
+ },
+ "MetalPlate": {
+  "ColorMap": "rbxassetid://124449191003075",
+  "NormalMap": "rbxassetid://140605292926389",
+  "RoughnessMap": "rbxassetid://131768899893320",
+  "MetalnessMap": "rbxassetid://134539710805140"
+ },
+ "IndustrialWall": {
+  "ColorMap": "rbxassetid://122089446709927",
+  "NormalMap": "rbxassetid://95435823341944",
+  "RoughnessMap": "rbxassetid://118158281201287"
+ },
+ "RoofBoxProfile": {
+  "ColorMap": "rbxassetid://94689719432220",
+  "NormalMap": "rbxassetid://120688444622824",
+  "RoughnessMap": "rbxassetid://131621886628043",
+  "MetalnessMap": "rbxassetid://113000648116541"
+ },
+ "WoodPaintedDistressed": {
+  "ColorMap": "rbxassetid://98812220748381",
+  "NormalMap": "rbxassetid://92721474936435",
+  "RoughnessMap": "rbxassetid://132723745276549"
+ },
+ "WoodPlanksOld": {
+  "ColorMap": "rbxassetid://132994011470308",
+  "NormalMap": "rbxassetid://93838436360105",
+  "RoughnessMap": "rbxassetid://90616096455625"
+ },
+ "RoofShinglesGrey": {
+  "ColorMap": "rbxassetid://124831956245084",
+  "NormalMap": "rbxassetid://129556821137690",
+  "RoughnessMap": "rbxassetid://137622046595521"
+ },
+ "RoofClayTiles": {
+  "ColorMap": "rbxassetid://111723972675656",
+  "NormalMap": "rbxassetid://91143624290908",
+  "RoughnessMap": "rbxassetid://86868431815466"
+ },
+ "RoofFlatBitumen": {
+  "ColorMap": "rbxassetid://111778627280875",
+  "NormalMap": "rbxassetid://73084066009393",
+  "RoughnessMap": "rbxassetid://116412582975570"
+ },
+ "DirtLot": {
+  "ColorMap": "rbxassetid://118175806818413",
+  "NormalMap": "rbxassetid://86959440883315",
+  "RoughnessMap": "rbxassetid://99157815895904"
+ },
+ "GravelLot": {
+  "ColorMap": "rbxassetid://126939492151210",
+  "NormalMap": "rbxassetid://75910926741634",
+  "RoughnessMap": "rbxassetid://80390075710107"
+ },
+ "BeachSand": {
+  "ColorMap": "rbxassetid://85581467636625",
+  "NormalMap": "rbxassetid://112090838726764",
+  "RoughnessMap": "rbxassetid://122921748575927"
+ },
+ "RockGrey": {
+  "ColorMap": "rbxassetid://110421297493875",
+  "NormalMap": "rbxassetid://88768610345454",
+  "RoughnessMap": "rbxassetid://132611202971823"
+ },
+ "RockMossy": {
+  "ColorMap": "rbxassetid://87979461258674",
+  "NormalMap": "rbxassetid://123273966368491",
+  "RoughnessMap": "rbxassetid://125367925770588"
+ },
+ "MudDry": {
+  "ColorMap": "rbxassetid://119723383686451",
+  "NormalMap": "rbxassetid://115009349041145",
+  "RoughnessMap": "rbxassetid://118853188593580"
+ },
+ "DowntownGlassFacadeA": {
+  "ColorMap": "rbxassetid://100393166173405",
+  "NormalMap": "rbxassetid://122668262490644",
+  "RoughnessMap": "rbxassetid://125360395382145",
+  "MetalnessMap": "rbxassetid://118295920841240"
+ },
+ "DowntownGlassFacadeB": {
+  "ColorMap": "rbxassetid://131204010504946",
+  "NormalMap": "rbxassetid://140519384999362",
+  "RoughnessMap": "rbxassetid://93911070135691",
+  "MetalnessMap": "rbxassetid://117362977400309"
+ },
+ "DowntownTowerWindowsNight": {
+  "ColorMap": "rbxassetid://88541841549552",
+  "NormalMap": "rbxassetid://110522277945144",
+  "RoughnessMap": "rbxassetid://129694336359977"
+ },
+ "ChainLinkFence": {
+  "ColorMap": "rbxassetid://138979512827185",
+  "NormalMap": "rbxassetid://97574420840868",
+  "RoughnessMap": "rbxassetid://99788716134508",
+  "MetalnessMap": "rbxassetid://106601529911282"
+ },
+ "ChainLinkFenceB": {
+  "ColorMap": "rbxassetid://133874695943401",
+  "NormalMap": "rbxassetid://73030386953491",
+  "RoughnessMap": "rbxassetid://94504849153861",
+  "MetalnessMap": "rbxassetid://102525497477199"
+ },
+ "RoadAsphaltOld": {
+  "ColorMap": "rbxassetid://118106907625263",
+  "NormalMap": "rbxassetid://107488265804393",
+  "RoughnessMap": "rbxassetid://107289009963463"
+ },
+ "RoadAsphaltCrackedLayers": {
+  "ColorMap": "rbxassetid://78096689694576",
+  "NormalMap": "rbxassetid://103339774409311",
+  "RoughnessMap": "rbxassetid://86103962657513"
+ },
+ "PaintedPlasterBroken": {
+  "ColorMap": "rbxassetid://136442080035508",
+  "NormalMap": "rbxassetid://112920154194997",
+  "RoughnessMap": "rbxassetid://83112651748055"
+ },
+ "RoofingTilesSlate": {
+  "ColorMap": "rbxassetid://88135452966071",
+  "NormalMap": "rbxassetid://111538669695285",
+  "RoughnessMap": "rbxassetid://122269894737241"
+ },
+ "DecalManholeCover": {
+  "ColorMap": "rbxassetid://92423756029836",
+  "NormalMap": "rbxassetid://100627404710697",
+  "RoughnessMap": "rbxassetid://94238198595706",
+  "MetalnessMap": "rbxassetid://137591895617808"
+ },
+ "DecalRoadLinesYellow": {
+  "ColorMap": "rbxassetid://102597468151851",
+  "NormalMap": "rbxassetid://132224378451241",
+  "RoughnessMap": "rbxassetid://91756052629887"
+ },
+ "DecalWaterLeak": {
+  "ColorMap": "rbxassetid://119906872132738",
+  "NormalMap": "rbxassetid://100013811919947",
+  "RoughnessMap": "rbxassetid://138404095052854",
+  "MetalnessMap": "rbxassetid://75874357331055"
+ },
+ "RoadDamagedB": {
+  "ColorMap": "rbxassetid://95357236073168",
+  "NormalMap": "rbxassetid://89096025776526",
+  "RoughnessMap": "rbxassetid://72997799436023"
+ },
+ "AsphaltDarkFresh": {
+  "ColorMap": "rbxassetid://76057190282422",
+  "NormalMap": "rbxassetid://89254498735683",
+  "RoughnessMap": "rbxassetid://94326876604792"
+ },
+ "AsphaltPlain": {
+  "ColorMap": "rbxassetid://123227765186828",
+  "NormalMap": "rbxassetid://138315214617656",
+  "RoughnessMap": "rbxassetid://118916174038440"
+ },
+ "ParkingLotAsphalt": {
+  "ColorMap": "rbxassetid://122043651875487",
+  "NormalMap": "rbxassetid://131073904091553",
+  "RoughnessMap": "rbxassetid://99074643466926"
+ },
+ "AsphaltTarPatch": {
+  "ColorMap": "rbxassetid://135891697819335",
+  "NormalMap": "rbxassetid://121037574059845",
+  "RoughnessMap": "rbxassetid://113267849403985"
+ },
+ "AsphaltAerialWide": {
+  "ColorMap": "rbxassetid://76748750284486",
+  "NormalMap": "rbxassetid://78317045100444",
+  "RoughnessMap": "rbxassetid://134474923038551"
+ },
+ "SidewalkWornStained": {
+  "ColorMap": "rbxassetid://101726661541153",
+  "NormalMap": "rbxassetid://107610210323920",
+  "RoughnessMap": "rbxassetid://136489289468685"
+ },
+ "SidewalkCrackedB": {
+  "ColorMap": "rbxassetid://116483274099241",
+  "NormalMap": "rbxassetid://107256494432341",
+  "RoughnessMap": "rbxassetid://85968229986238"
+ },
+ "LotConcreteWorn": {
+  "ColorMap": "rbxassetid://117208184087479",
+  "NormalMap": "rbxassetid://136837207802640",
+  "RoughnessMap": "rbxassetid://110970326126764"
+ },
+ "ConcretePlain": {
+  "ColorMap": "rbxassetid://84066571105134",
+  "NormalMap": "rbxassetid://95689357709835",
+  "RoughnessMap": "rbxassetid://121825325291169"
+ },
+ "ChannelConcreteDirty": {
+  "ColorMap": "rbxassetid://139728993014503",
+  "NormalMap": "rbxassetid://86569403359979",
+  "RoughnessMap": "rbxassetid://92711833909891"
+ },
+ "ChannelConcreteDamaged": {
+  "ColorMap": "rbxassetid://114576249871383",
+  "NormalMap": "rbxassetid://121517545130316",
+  "RoughnessMap": "rbxassetid://118997058697094"
+ },
+ "ConcreteLayers": {
+  "ColorMap": "rbxassetid://82688867650071",
+  "NormalMap": "rbxassetid://90101165650271",
+  "RoughnessMap": "rbxassetid://82812909226027"
+ },
+ "OverpassConcrete": {
+  "ColorMap": "rbxassetid://120311622455410",
+  "NormalMap": "rbxassetid://93328528173608",
+  "RoughnessMap": "rbxassetid://71534584495429"
+ },
+ "OverpassPrecast": {
+  "ColorMap": "rbxassetid://103749810716918",
+  "NormalMap": "rbxassetid://114687138193982",
+  "RoughnessMap": "rbxassetid://121601897176980"
+ },
+ "ChannelWall": {
+  "ColorMap": "rbxassetid://86257691144983",
+  "NormalMap": "rbxassetid://120202482109770",
+  "RoughnessMap": "rbxassetid://119793517009247"
+ },
+ "BoardFormedConcrete": {
+  "ColorMap": "rbxassetid://127251566064570",
+  "NormalMap": "rbxassetid://127066236999488",
+  "RoughnessMap": "rbxassetid://137624866799450"
+ },
+ "CinderBlockB": {
+  "ColorMap": "rbxassetid://77114064771468",
+  "NormalMap": "rbxassetid://82611394247526",
+  "RoughnessMap": "rbxassetid://105247206629650"
+ },
+ "StuccoWhite": {
+  "ColorMap": "rbxassetid://104720812666638",
+  "NormalMap": "rbxassetid://105854189483175",
+  "RoughnessMap": "rbxassetid://100135148601793"
+ },
+ "StuccoBlueWeathered": {
+  "ColorMap": "rbxassetid://111296577620452",
+  "NormalMap": "rbxassetid://110060285405680",
+  "RoughnessMap": "rbxassetid://112281607699577"
+ },
+ "StuccoPinkWeathered": {
+  "ColorMap": "rbxassetid://99485640119215",
+  "NormalMap": "rbxassetid://90829756521315",
+  "RoughnessMap": "rbxassetid://137372935433782"
+ },
+ "StuccoYellow": {
+  "ColorMap": "rbxassetid://138228656813754",
+  "NormalMap": "rbxassetid://119144107662543",
+  "RoughnessMap": "rbxassetid://140697502264780"
+ },
+ "StuccoBeige": {
+  "ColorMap": "rbxassetid://96658332970979",
+  "NormalMap": "rbxassetid://84980579992111",
+  "RoughnessMap": "rbxassetid://123650365178948"
+ },
+ "PlasterWorn": {
+  "ColorMap": "rbxassetid://70965530801288",
+  "NormalMap": "rbxassetid://110522644357306",
+  "RoughnessMap": "rbxassetid://98171431250692"
+ },
+ "PlasterCrackedB": {
+  "ColorMap": "rbxassetid://139055281695467",
+  "NormalMap": "rbxassetid://110193275594280",
+  "RoughnessMap": "rbxassetid://80661495856773"
+ },
+ "StuccoGreyFine": {
+  "ColorMap": "rbxassetid://81359533657129",
+  "NormalMap": "rbxassetid://132239059635475",
+  "RoughnessMap": "rbxassetid://117831135619462"
+ },
+ "PlasterMossyHumid": {
+  "ColorMap": "rbxassetid://105042835249451",
+  "NormalMap": "rbxassetid://110094261564020",
+  "RoughnessMap": "rbxassetid://98934858250327"
+ },
+ "HoodBrickDark": {
+  "ColorMap": "rbxassetid://81200810275399",
+  "NormalMap": "rbxassetid://85098148500977",
+  "RoughnessMap": "rbxassetid://128511982207658"
+ },
+ "BrickRedClassic": {
+  "ColorMap": "rbxassetid://90609557506672",
+  "NormalMap": "rbxassetid://98212751297433",
+  "RoughnessMap": "rbxassetid://132497798660214"
+ },
+ "BrickBrownOld": {
+  "ColorMap": "rbxassetid://139345475760622",
+  "NormalMap": "rbxassetid://116296088339474",
+  "RoughnessMap": "rbxassetid://115790209633217"
+ },
+ "BrickMixed": {
+  "ColorMap": "rbxassetid://72713604529457",
+  "NormalMap": "rbxassetid://91233553568601",
+  "RoughnessMap": "rbxassetid://105570607328382"
+ },
+ "BrickBroken": {
+  "ColorMap": "rbxassetid://135699637982187",
+  "NormalMap": "rbxassetid://80650173695326",
+  "RoughnessMap": "rbxassetid://116574916007237"
+ },
+ "ConcreteBrick": {
+  "ColorMap": "rbxassetid://82613297349642",
+  "NormalMap": "rbxassetid://91739549613800",
+  "RoughnessMap": "rbxassetid://136720745921171"
+ },
+ "ShutterRustedB": {
+  "ColorMap": "rbxassetid://97604421242936",
+  "NormalMap": "rbxassetid://78819988846553",
+  "RoughnessMap": "rbxassetid://104547115754993"
+ },
+ "ShutterWorn": {
+  "ColorMap": "rbxassetid://75279677755816",
+  "NormalMap": "rbxassetid://130531856456672",
+  "RoughnessMap": "rbxassetid://88191832004143"
+ },
+ "CorrugatedPlain": {
+  "ColorMap": "rbxassetid://77228684052625",
+  "NormalMap": "rbxassetid://91634381705928",
+  "RoughnessMap": "rbxassetid://128912868365239",
+  "MetalnessMap": "rbxassetid://99088048728700"
+ },
+ "CorrugatedB": {
+  "ColorMap": "rbxassetid://95096613316939",
+  "NormalMap": "rbxassetid://82391654931785",
+  "RoughnessMap": "rbxassetid://128846321332463",
+  "MetalnessMap": "rbxassetid://107982937827911"
+ },
+ "DumpsterGreenRust": {
+  "ColorMap": "rbxassetid://122663041507013",
+  "NormalMap": "rbxassetid://133998884649934",
+  "RoughnessMap": "rbxassetid://102459782929219"
+ },
+ "RustyGrate": {
+  "ColorMap": "rbxassetid://73438397240570",
+  "NormalMap": "rbxassetid://138958736351645",
+  "RoughnessMap": "rbxassetid://111465113255870"
+ },
+ "MetalBluePlate": {
+  "ColorMap": "rbxassetid://79353781420472",
+  "NormalMap": "rbxassetid://93090268140138",
+  "RoughnessMap": "rbxassetid://83292667386746"
+ },
+ "RustySheet": {
+  "ColorMap": "rbxassetid://128176823507130",
+  "NormalMap": "rbxassetid://79554058898097",
+  "RoughnessMap": "rbxassetid://86451176410706"
+ },
+ "RustCoarse": {
+  "ColorMap": "rbxassetid://102491803794315",
+  "NormalMap": "rbxassetid://82079847153289",
+  "RoughnessMap": "rbxassetid://104024902469745"
+ },
+ "SidingBlue": {
+  "ColorMap": "rbxassetid://71644487660001",
+  "NormalMap": "rbxassetid://112325805144939",
+  "RoughnessMap": "rbxassetid://98564005070609"
+ },
+ "SidingBlack": {
+  "ColorMap": "rbxassetid://87409283030269",
+  "NormalMap": "rbxassetid://113434564565911",
+  "RoughnessMap": "rbxassetid://111613369435350"
+ },
+ "FenceWoodRaw": {
+  "ColorMap": "rbxassetid://110638234504515",
+  "NormalMap": "rbxassetid://83783874032512",
+  "RoughnessMap": "rbxassetid://137092777085368"
+ },
+ "FenceGreenRough": {
+  "ColorMap": "rbxassetid://117764838475927",
+  "NormalMap": "rbxassetid://95578504369448",
+  "RoughnessMap": "rbxassetid://119907344775279"
+ },
+ "RoofSlatesDark": {
+  "ColorMap": "rbxassetid://90289958093584",
+  "NormalMap": "rbxassetid://72191587883142",
+  "RoughnessMap": "rbxassetid://124265432067560"
+ },
+ "RoofClayMission": {
+  "ColorMap": "rbxassetid://140483084281823",
+  "NormalMap": "rbxassetid://137777528660474",
+  "RoughnessMap": "rbxassetid://127627027798630"
+ },
+ "RoofCeramic": {
+  "ColorMap": "rbxassetid://90249148538080",
+  "NormalMap": "rbxassetid://88075911232301",
+  "RoughnessMap": "rbxassetid://116351576592308"
+ },
+ "RoofRedSlate": {
+  "ColorMap": "rbxassetid://122126943438543",
+  "NormalMap": "rbxassetid://102236887911133",
+  "RoughnessMap": "rbxassetid://115308359721756"
+ },
+ "PalmBark": {
+  "ColorMap": "rbxassetid://133612535399767",
+  "NormalMap": "rbxassetid://109863043914429",
+  "RoughnessMap": "rbxassetid://111784814352627"
+ },
+ "PalmBarkB": {
+  "ColorMap": "rbxassetid://92445951803912",
+  "NormalMap": "rbxassetid://118852215185258",
+  "RoughnessMap": "rbxassetid://115975370790229"
+ },
+ "EucalyptusBark": {
+  "ColorMap": "rbxassetid://72294818238823",
+  "NormalMap": "rbxassetid://127258896379286",
+  "RoughnessMap": "rbxassetid://117025654969450"
+ },
+ "SycamoreBark": {
+  "ColorMap": "rbxassetid://100509775830395",
+  "NormalMap": "rbxassetid://113191081063828",
+  "RoughnessMap": "rbxassetid://87982374404694"
+ },
+ "ParkDirt": {
+  "ColorMap": "rbxassetid://132597552604528",
+  "NormalMap": "rbxassetid://111408015074896",
+  "RoughnessMap": "rbxassetid://125425663671936"
+ },
+ "DryGround": {
+  "ColorMap": "rbxassetid://113087975298447",
+  "NormalMap": "rbxassetid://136054503338304",
+  "RoughnessMap": "rbxassetid://91392750458017"
+ },
+ "LeafLitter": {
+  "ColorMap": "rbxassetid://121152207070485",
+  "NormalMap": "rbxassetid://74334706173173",
+  "RoughnessMap": "rbxassetid://105408711963842"
+ },
+ "DryLeaves": {
+  "ColorMap": "rbxassetid://101674893000045",
+  "NormalMap": "rbxassetid://133368017382376",
+  "RoughnessMap": "rbxassetid://135368011168860"
+ },
+ "MudLeaves": {
+  "ColorMap": "rbxassetid://110732069021538",
+  "NormalMap": "rbxassetid://78683304773667",
+  "RoughnessMap": "rbxassetid://110132269684043"
+ },
+ "DryMudField": {
+  "ColorMap": "rbxassetid://78612438793261",
+  "NormalMap": "rbxassetid://91507439424698",
+  "RoughnessMap": "rbxassetid://76610967583795"
+ },
+ "GravelRoad": {
+  "ColorMap": "rbxassetid://133749149011129",
+  "NormalMap": "rbxassetid://71838649084747",
+  "RoughnessMap": "rbxassetid://72403964143058"
+ },
+ "GravelLeaves": {
+  "ColorMap": "rbxassetid://108406522725192",
+  "NormalMap": "rbxassetid://128849595085082",
+  "RoughnessMap": "rbxassetid://139845240151240"
+ },
+ "CoralGravel": {
+  "ColorMap": "rbxassetid://116321392832388",
+  "NormalMap": "rbxassetid://87575844325107",
+  "RoughnessMap": "rbxassetid://83076578823941"
+ },
+ "BeachSandB": {
+  "ColorMap": "rbxassetid://114176846551055",
+  "NormalMap": "rbxassetid://125070740032779",
+  "RoughnessMap": "rbxassetid://103409594505256"
+ },
+ "HerringbonePavers": {
+  "ColorMap": "rbxassetid://117197425813048",
+  "NormalMap": "rbxassetid://80990558305633",
+  "RoughnessMap": "rbxassetid://126187542784247"
+ },
+ "InterlockPavers": {
+  "ColorMap": "rbxassetid://118480314367315",
+  "NormalMap": "rbxassetid://70960912012436",
+  "RoughnessMap": "rbxassetid://74531921366220"
+ },
+ "BrickPavementB": {
+  "ColorMap": "rbxassetid://107587192228434",
+  "NormalMap": "rbxassetid://104057089073674",
+  "RoughnessMap": "rbxassetid://89973116461344"
+ },
+ "LawnGrassA": {
+  "ColorMap": "rbxassetid://126129990117341",
+  "NormalMap": "rbxassetid://136647989814280",
+  "RoughnessMap": "rbxassetid://73665645677414"
+ },
+ "LawnGrassB": {
+  "ColorMap": "rbxassetid://95615251693800",
+  "NormalMap": "rbxassetid://81581990726277",
+  "RoughnessMap": "rbxassetid://101232305985885"
+ },
+ "LawnGrassC": {
+  "ColorMap": "rbxassetid://91860486975991",
+  "NormalMap": "rbxassetid://96932988418923",
+  "RoughnessMap": "rbxassetid://139291056276731"
+ },
+ "RoadOldB": {
+  "ColorMap": "rbxassetid://91684150497690",
+  "NormalMap": "rbxassetid://83664875289129",
+  "RoughnessMap": "rbxassetid://119786760726594"
+ },
+ "RoadWithLinesA": {
+  "ColorMap": "rbxassetid://122793355288078",
+  "NormalMap": "rbxassetid://104999730524202",
+  "RoughnessMap": "rbxassetid://117783265996964"
+ },
+ "RoadWithLinesB": {
+  "ColorMap": "rbxassetid://118775757430777",
+  "NormalMap": "rbxassetid://84009613910576",
+  "RoughnessMap": "rbxassetid://103129089575548"
+ },
+ "AsphaltDarkB": {
+  "ColorMap": "rbxassetid://73403188014323",
+  "NormalMap": "rbxassetid://118151330689705",
+  "RoughnessMap": "rbxassetid://89292709675324"
+ },
+ "AsphaltGreyB": {
+  "ColorMap": "rbxassetid://99171200077853",
+  "NormalMap": "rbxassetid://124092081232671",
+  "RoughnessMap": "rbxassetid://127631505685908"
+ },
+ "DecalRoadSymbols": {
+  "ColorMap": "rbxassetid://85735539250862",
+  "NormalMap": "rbxassetid://121946727629812",
+  "RoughnessMap": "rbxassetid://119539862224002"
+ },
+ "DecalRoadLinesWorn": {
+  "ColorMap": "rbxassetid://81966920983632",
+  "NormalMap": "rbxassetid://112720440453450",
+  "RoughnessMap": "rbxassetid://121632836960995"
+ },
+ "DecalWaterLeakB": {
+  "ColorMap": "rbxassetid://99981977195339",
+  "NormalMap": "rbxassetid://91143404641938",
+  "RoughnessMap": "rbxassetid://100777324187015",
+  "MetalnessMap": "rbxassetid://133391737287048"
+ },
+ "DecalWaterLeakC": {
+  "ColorMap": "rbxassetid://102885646752059",
+  "NormalMap": "rbxassetid://91927457491911",
+  "RoughnessMap": "rbxassetid://93188871658352",
+  "MetalnessMap": "rbxassetid://85962434705650"
+ },
+ "DecalWaterLeakD": {
+  "ColorMap": "rbxassetid://101096161961408",
+  "NormalMap": "rbxassetid://76363219183163",
+  "RoughnessMap": "rbxassetid://92062188550478",
+  "MetalnessMap": "rbxassetid://133391737287048"
+ },
+ "DecalGraffitiSet": {
+  "ColorMap": "rbxassetid://72208245502161",
+  "NormalMap": "rbxassetid://123467220282832",
+  "RoughnessMap": "rbxassetid://138946277356954"
+ },
+ "PaintedMetalA": {
+  "ColorMap": "rbxassetid://122543181829460",
+  "NormalMap": "rbxassetid://134742770007562",
+  "RoughnessMap": "rbxassetid://137392965372786",
+  "MetalnessMap": "rbxassetid://83818612366512"
+ },
+ "PaintedMetalB": {
+  "ColorMap": "rbxassetid://111620503915697",
+  "NormalMap": "rbxassetid://93640270548564",
+  "RoughnessMap": "rbxassetid://126877136023774",
+  "MetalnessMap": "rbxassetid://114668531713757"
+ },
+ "CorrugatedSteelB": {
+  "ColorMap": "rbxassetid://75975993849070",
+  "NormalMap": "rbxassetid://111541241616362",
+  "RoughnessMap": "rbxassetid://86000183548880",
+  "MetalnessMap": "rbxassetid://76886694766905"
+ }
+}

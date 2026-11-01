@@ -7,6 +7,7 @@ Back to [[00 Build Router]] · All briefs: [[Sector Briefs Index]]
 
 > TL;DR
 > - **Lighting is `LightingStyle` + `PrioritizeLightingQuality` now.** `Lighting.Technology` is deprecated and scripts can't set it. For our cartoony games use `Soft` + `true`. That is the old "ShadowMap" look. Ignore any video that says "set Technology to Future".
+> - **Realistic maps are the exception:** an RP city or coastal town uses `Realistic` + `true` (the old Future). See [[34 Realistic Lighting and Atmosphere]].
 > - **Pick one lighting preset and tune it on a phone.** Use one `Atmosphere` (Density 0.3 to 0.4), no fog on top, and only Sky, ColorCorrection, Atmosphere and Bloom as post effects. Phones turn shadows off below quality level 4, so the map must read without them.
 > - **Build from parts that repeat.** Identical meshes with identical appearance share one draw call, so import a prop once and clone it in Studio. Use SmoothPlastic and a small palette.
 > - **Decoration gets no physics.** Anchor everything static. Turn off `CanCollide`, `CanTouch` and `CanQuery` on decoration. Use `CollisionFidelity = Box` on small meshes and `CastShadow = false` on small or far details.
