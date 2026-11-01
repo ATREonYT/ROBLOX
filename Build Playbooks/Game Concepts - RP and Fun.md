@@ -7,7 +7,7 @@ updated: 2026-11-01
 
 Back to [[00 Build Router]] · Rules behind these: [[26 Fun and Roleplay Playbook]] · Town build: [[Blueprint - Roleplay Town]]
 
-Seven original ideas for after Cannon Evolution. Each takes a proven *kind* of fun (see the ten ingredients in note 26 §2) and adds a mechanic we haven't seen on the charts. None copies a game's name, map, art or items. All are kid-safe by design and can start from `new-game-kit/`.
+Seven original ideas for after Cannon Evolution. Each takes a proven *kind* of fun (see the ten ingredients in note 26 §2) and adds a mechanic we haven't seen on the charts. None copies a game's name, map, art or items. All are kid-safe by design and can start from `new-game-kit/`. Each one is **gameplay-first, not a hangout** (a hangout is 16+ under the 2026 rules; see [[Blueprint - Roleplay Town]] §0), and round-based ones can use kit `Rounds.luau` ([[32 Round-Based Games Playbook]]).
 
 Score = how many of the ten fun ingredients it hits, plus build size (S = 1-2 weeks, M = 3-5, L = 6+).
 

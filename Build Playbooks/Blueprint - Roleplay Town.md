@@ -13,6 +13,12 @@ Back to [[00 Build Router]] · Why it's fun: [[26 Fun and Roleplay Playbook]] ·
 
 Reference games (learn feel, don't copy): Brookhaven RP (breadth, zero friction), Bloxburg (depth), Berry Avenue and LifeTogether (careers, phone menu), Emergency Hamburg (services). Related older notes: `LihFolk/LihFolk Vault V2/24 Worked Builds/Weekend Build - Roleplay Town with Jobs and Paychecks.md`, `10 Game Design and Genres/Genre Playbook - Roleplay and Social Hangouts.md`.
 
+## 0. Age-rating check (day 1, before anything else)
+- A game Roblox classes as a **social hangout is 16+**; a hangout with **private spaces (lockable rooms, bedrooms, bathrooms) is ID-verified 18+**; hangouts are excluded by default from Roblox Kids and Select ([[Policy and Age Rules 2026]]).
+- So this town must be **gameplay-first**: jobs with real tasks, town events, a pet or rank to raise. Write down the main goal in one sentence that is not "hang out".
+- Fill the Maturity & Compliance questionnaire honestly and aim for **Minimal or Mild**. Every new game starts 16+ only until selection (Sector Brief Game Design).
+- Keep kit house locking **off** (`Houses.LockingAllowed = false`). No bedrooms, bathrooms or lockable rooms on the map.
+
 ## 1. Pick the twist (day 1, one sentence)
 A plain town loses to Brookhaven. Pick one twist that changes *what you do*, not only the theme: "the weather changes the town every 5 minutes", "every job rescues pets", "the whole town is toy-sized in a giant garden". Write it on the thumbnail.
 
@@ -34,8 +40,8 @@ spawn on busy plaza ─► job board glows ─► pick job (outfit pops on, tag 
 | 1 | Spawn plaza, 8-12 buildings, loop road, ambient life | [[10 Map Design Playbook]] |
 | 2 | Interact: doors, seats, switches, mailbox, horn (all one press) | `Shared/Interact.luau` |
 | 3 | Job board + caps + job tags + outfits | `Roleplay.CanJoin`, `Roleplay.Paycheck` |
-| 4 | House book: claim, lock, guests, kick, release on leave | `Roleplay` house book; instanced interiors note |
-| 5 | Cars: one each, server cap 20, cooldown, Replace | `Roleplay.CanSpawnVehicle` |
+| 4 | House book: claim, guests, kick, release on leave (locking stays off) | `Roleplay` house book; instanced interiors note |
+| 5 | Cars: one each, server cap 20, cooldown, Replace (swapping your own car works even on a full server) | `Roleplay.CanSpawnVehicle` |
 | 6 | Job tasks (one tool and one customer each) + self-serve events | [[26 Fun and Roleplay Playbook]] §4 |
 | 7 | Emote wheel + Quick Words | Creator Hub > Configure > Chat |
 | 8 | Phone menu (jobs, house, cars, outfits, map, friends) | [[14 Premium Feel Playbook]] staged HUD |
@@ -59,7 +65,7 @@ spawn on busy plaza ─► job board glows ─► pick job (outfit pops on, tag 
 | New toy drop | weekly, 6 planned before launch |
 
 ## 5. Safety for a kids' town (must pass before launch)
-- Homes are play spaces: kitchen, garage, garden, playroom, pets. No bathrooms, no private bedroom hangouts, no romance or carry emotes (Roblox can restrict private-space hangouts to ID-verified 17+).
+- Homes are play spaces: kitchen, garage, garden, playroom, pets. No bedrooms, bathrooms or lockable rooms, no romance or carry emotes (private spaces push a hangout to ID-verified 18+).
 - All sign and name text through Roblox filtering; no user images or drawings.
 - Opt-in roles for any chase, jail or fling. Block and report in the phone menu.
 - `python3 tools/kidsafe_check.py <game>` and [[Policy and Age Rules 2026]].

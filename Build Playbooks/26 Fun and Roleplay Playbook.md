@@ -11,7 +11,10 @@ Back to [[00 Build Router]] · Build it: [[Blueprint - Roleplay Town]] · Pick a
 
 Older, deeper notes this builds on (grep, don't read whole): `LihFolk/LihFolk Vault V2/10 Game Design and Genres/Genre Playbook - Roleplay and Social Hangouts.md`, `Social Design and Multiplayer Play.md`, `Genre Playbook - Open-World City and Crime Roleplay.md`, `Genre Playbook - Social Deduction and Murder Mystery.md`, `Genre Playbook - Party and Minigame Collections.md`, `32 Case Studies of Top Roblox Games/Case Study - Brookhaven RP.md`, `Case Study - Adopt Me.md`, `Case Study - Jailbreak.md`, `Case Study - Dress to Impress.md`, `24 Worked Builds/Weekend Build - Roleplay Town with Jobs and Paychecks.md`, `33 Level Design/Instanced Interiors - Pooled House and Room Copies for Many Players.md`, `59 Viral and Trend Game Teardowns/Teardown - Fling Things and People.md`, `Teardown - Natural Disaster Survival.md`, `Teardown - PLS DONATE.md`.
 
-Kit code: `new-game-kit/src/Server/Roleplay.luau` (job caps, pay for work seen by the server, one house each with owner lock, car caps, prop caps, short jail) and `new-game-kit/src/Shared/Interact.luau` (one server check for every "press E"). Specs in `new-game-kit/tests/`.
+Kit code: `new-game-kit/src/Server/Roleplay.luau` (job caps, pay for work seen by the server, one house each with guests and kick, house locking off by default for the age rules, car caps, prop caps, short jail) and `new-game-kit/src/Shared/Interact.luau` (one server check for every "press E"). Specs in `new-game-kit/tests/`.
+
+> [!warning] Age rating decides who can even find the game
+> Under the 2026 rules ([[Policy and Age Rules 2026]], Sector Brief Game Design §11): a game that Roblox classes as a **social hangout is 16+**, and a **hangout with private spaces (lockable rooms, bedrooms, bathrooms, stalls, tents) needs ID-verified 18+**. Hangouts are also excluded by default from Roblox Kids (5-8) and Select (9-15). So a kids' RP game must be **gameplay-first, not a hangout**: jobs with tasks, events, rounds, a pet or rank to raise. Chatting is a side effect, never the main purpose. Every new game also starts 16+ only until it passes selection (Sector Brief Game Design). Check this on day 1, before the map.
 
 ## 0. The one-paragraph version
 A fun social game hands players **toys, a stage and a reason to meet**, then gets out of the way. Toys are things that do something funny or satisfying when you press them (a car horn, a door that slams, a fling, a costume swap). The stage is a small, readable map full of places that suggest a story (a school, a hospital, a police station, a beach). The reason to meet is a light goal that needs other people (a job someone else uses, a round with roles, a vote, a trade). Make every toy work in one press, make other players visible and loud, keep rounds or goals short, and let players' own stories be the content. Safety is not a side system in this genre: it is the floor the whole game stands on.
@@ -39,7 +42,7 @@ Score a design against these. A hit has at least five.
 2. **Instant ownership.** Within 10 seconds you have *your* thing: a house, a car, a pet, an outfit. Brookhaven gives a house and car at the start; Bloxburg made you earn it and stayed small.
 3. **Other people are the content.** Players watch, chase, help, prank and copy each other. Design so actions are **visible from far away** (big name tags with the job, siren lights, a glow on the rare pet, a podium).
 4. **Roles that need each other.** A cop needs a robber, a doctor needs a patient, a shop needs a customer, a murderer needs innocents. Every job should create a reason for a *different* player to come over.
-5. **Short loops with a reset.** MM2 rounds last a couple of minutes, DTI a few minutes per theme. A short round makes losing cheap, makes clutch moments feel earned, and fits kids hopping between games.
+5. **Short loops with a reset.** MM2 rounds last a couple of minutes, DTI a few minutes per theme. A short round makes losing cheap, makes clutch moments feel earned, and fits kids hopping between games. Build rounds on kit `Rounds.luau` ([[32 Round-Based Games Playbook]]).
 6. **Secrets and surprise.** Hidden roles, mystery boxes, an event that changes the map, a rare pet in the egg. The unknown keeps the chat buzzing.
 7. **A stage that suggests stories.** A school with a principal's office, a hospital with a stretcher, a bank with a vault. Each place hands players a script without words.
 8. **Show-off moments.** A podium, a runway, a parade lane, a garage door that opens on your car, a pet that flies. Status is the reward kids chase most in social games.
@@ -79,9 +82,9 @@ Sources: [Bloxburg vs Brookhaven](https://rowatcher.com/news/bloxburg-vs-brookha
 
 ## 6. Houses (the home is the heart)
 - **One house each, claimed at the start, free.** Premium houses are a look, not a power (bigger windows, a pool, a garage that opens).
-- **Owner lock, guest list, kick, release on leave** (kit `Roleplay` house book). The lock must be server-checked: a locked door stays locked even if a client lies.
+- **Guest list, kick, release on leave** (kit `Roleplay` house book). **House locking is off** in the kit (`Houses.LockingAllowed = false`, `SetLocked` returns `"LockingOff"`) because lockable private rooms push a hangout to 18+. Owners control their house with guests and kick instead; houses start unlocked. Only turn locking on after a rating check says the game is not a hangout.
 - **Furniture props with caps** (kit cap 40 per player) so one player can't lag a server.
-- **Keep homes daytime and public-feeling:** big windows, a front garden, a porch. Per Roblox's Aug 2025 policy, **hangouts that depict private spaces such as bedrooms and bathrooms can be restricted to ID-verified 17+**. A bed in a dollhouse-style home isn't the target, but the overall scenario is judged. For a kids' game, make homes about *play* (kitchen, garage, pets, garden, playroom), skip bathrooms, and keep bedrooms as a small optional room, never a private hangout.
+- **Keep homes daytime and public-feeling:** big windows, a front garden, a porch. Roblox's Aug 2025 policy put hangouts that depict private spaces behind ID verification, and the 2026 table makes that **18+** ([[Policy and Age Rules 2026]]). A bed in a dollhouse-style home isn't the target, but the overall scenario is judged. For a kids' game, make homes about *play* (kitchen, garage, pets, garden, playroom), with **no bedrooms, no bathrooms and no lockable rooms**.
 - **Instanced interiors** (one copy of the inside, many doors) save memory: see `Instanced Interiors - Pooled House and Room Copies for Many Players.md`.
 
 ## 7. Social systems after the 2026 age checks
@@ -104,7 +107,7 @@ Sources: [Roblox age-check rules](https://about.roblox.com/newsroom/2025/11/robl
 ## 9. Safety is the floor (non-negotiable for kids)
 - **Roblox auto-shuts servers with a high volume of violative behaviour** and then works with the developer on changes. A game whose servers keep getting shut down dies. Design out the risky scenarios up front.
 - **No user-made images, drawings, signs or photos** shared with others unless they pass Roblox's own moderation. Text on signs only through `TextService` filtering.
-- **No private enclosed spaces that are the point of the game.** No bathrooms, no locked bedroom hangouts, no "date" or romance actions, no carry/kidnap emotes, no cuddling poses.
+- **No private or lockable spaces.** No bedrooms, no bathrooms, no lockable rooms, no "date" or romance actions, no carry/kidnap emotes, no cuddling poses.
 - **Block and mute work instantly in-game,** a "Report" button sits in the menu (Roblox's built-in report), and a kicked guest can't come back into that house this session.
 - **Anti-grief:** no damage to players outside opt-in rounds, flings only in a fling zone or minigame, cars pass through players on sidewalks, jail ≤ 60 s.
 - Run `python3 tools/kidsafe_check.py <game>` and the questionnaire in [[Policy and Age Rules 2026]] before launch.
@@ -133,7 +136,7 @@ Sources: [Roblox age-check rules](https://about.roblox.com/newsroom/2025/11/robl
 ## 13. Tech architecture for a 30-50 player town
 | Concern | Rule |
 |---|---|
-| Authority | Server owns money, jobs, house ownership, locks, caps, jail. Clients only ask. Every "press E" goes through kit `Interact` (distance + slack, cooldown, permission, one user at a time). |
+| Authority | Server owns money, jobs, house ownership, guest lists, caps, jail. Clients only ask. Every "press E" goes through kit `Interact` (distance + slack, cooldown, permission, one user at a time). |
 | Network | Remotes through kit `Net` with `RateLimit`. Never trust a client's position for rewards. Driver owns their car physics; server spot-checks. |
 | Data | Kit `PlayerData` with session locking: owned houses, cars, outfits, pets, job ranks, settings. Furniture layout saved as a compact list (prop id, position, rotation). |
 | Map size and streaming | StreamingEnabled on; keep building interiors instanced; ~1,500-3,000 parts in view on phones. Low-poly town, one tiled texture per surface type. |
@@ -155,4 +158,4 @@ Sources: [Roblox age-check rules](https://about.roblox.com/newsroom/2025/11/robl
 ## 15. Honest gaps in this research
 - **YouTube was not reachable** from the cloud container or Alex's Mac shell on 2026-11-01 (proxy blocks youtube.com and the Adlicio YouTube tools need a paid plan), so no frame-by-frame video study yet. Next step: Alex records 30 s of Brookhaven (first spawn) and DTI (one round) and drops them in the project, and we measure them like [[Teardown - Stone Skipping]].
 - Live player counts are tracker snapshots, not Roblox's numbers.
-- The private-spaces policy has no exact enforcement date in Roblox's post; re-check before launch.
+- Age-rating rules moved several times in 2026; re-check [[Policy and Age Rules 2026]] and the Sector Brief before launch.
