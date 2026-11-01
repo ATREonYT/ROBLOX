@@ -108,9 +108,9 @@ Config.MIN_LAUNCH_DISTANCE = 160 * Config.Map.Stretch -- the first arc clears th
 -- to the whole server. FIRST_MYTHIC_AFTER: a guaranteed Mythic once a player has this many launches
 -- (the tutorial has 4, so it lands on the 8th: "after the user takes like 3-4 shots").
 Config.RareShots = {
-	{ Id = "Divine", Name = "DIVINE SHOT", Chance = 1 / 100000, Mult = 250, Distance = 3, Reach = 1, Cutscene = 4.4, Color = Color3.fromRGB(255, 232, 150) },
-	{ Id = "Secret", Name = "SECRET SHOT", Chance = 1 / 1000, Mult = 25, Distance = 2.2, Reach = 0.93, Cutscene = 3.6, Color = Color3.fromRGB(255, 185, 30) },
-	{ Id = "Mythic", Name = "MYTHIC SHOT", Chance = 1 / 100, Mult = 5, Distance = 1.6, Reach = 0.86, Cutscene = 2.6, Color = Color3.fromRGB(255, 55, 120) },
+	{ Id = "Divine", Name = "DIVINE SHOT", Chance = 1 / 100000, Mult = 250, Distance = 3, Reach = 1, Cutscene = 7, Color = Color3.fromRGB(255, 232, 150) },
+	{ Id = "Secret", Name = "SECRET SHOT", Chance = 1 / 1000, Mult = 25, Distance = 2.2, Reach = 0.93, Cutscene = 4.2, Color = Color3.fromRGB(255, 185, 30) },
+	{ Id = "Mythic", Name = "MYTHIC SHOT", Chance = 1 / 100, Mult = 5, Distance = 1.6, Reach = 0.86, Cutscene = 3.2, Color = Color3.fromRGB(255, 55, 120) },
 }
 Config.FIRST_MYTHIC_AFTER = 7
 function Config.GetRareShot(id)

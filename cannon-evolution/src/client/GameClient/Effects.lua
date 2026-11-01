@@ -762,6 +762,10 @@ return function(ctx)
 			h[4] = i == 1 and origin.Y or hops[i - 1][5]
 			h[5] = waterAt(pointAt(h[2]), water) + BALL_RADIUS
 		end
+		-- a rare shot leaves its cannon on a high arc instead of dropping off the crag (Alex, Oct 31: "make it launch")
+		if rareId and hops[1] then
+			hops[1][3] = math.max(hops[1][3], 45 + math.max(origin.Y - water, 0) * 0.6)
+		end
 
 		-- the owner's picked cannonball from the stand (its colour and band)
 		local look = Config.GetBall(owner:GetAttribute("Ball")) or Config.Balls[1]

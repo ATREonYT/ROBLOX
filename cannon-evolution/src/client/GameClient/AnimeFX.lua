@@ -539,6 +539,19 @@ return function(ctx)
 			host = new("Part", { Size = Vector3.one * 0.2, Transparency = 1, Anchored = false, CanCollide = false, CanQuery = false, CanTouch = false, Massless = true, CFrame = at.CFrame })
 			new("WeldConstraint", { Part0 = at, Part1 = host, Parent = host })
 			host.Parent = fx
+		elseif type(at) == "function" then
+			-- follow: the host is moved to at() every frame (a ball in flight: no roll, facing the way it flies)
+			host = part({ Size = Vector3.one * 0.2, Transparency = 1, CFrame = at() })
+			local t0 = os.clock()
+			local conn
+			conn = RunService.Heartbeat:Connect(function()
+				local cf = os.clock() - t0 < hold and at()
+				if not cf or not host.Parent then
+					conn:Disconnect()
+					return
+				end
+				host.CFrame = cf
+			end)
 		else
 			host = part({ Size = Vector3.one * 0.2, Transparency = 1, CFrame = at })
 		end
@@ -548,6 +561,8 @@ return function(ctx)
 			atts[i] = att
 			for _, spec in ipairs(a.E) do
 				local pe = packEmitter(spec, s, look, att)
+				-- the pack built its effects facing -Z: turn their pull with the host
+				pe.Acceleration = host.CFrame:VectorToWorldSpace(pe.Acceleration)
 				longest = math.max(longest, pe.Lifetime.Max)
 				local e = spec.Emit
 				if e then
@@ -581,6 +596,24 @@ return function(ctx)
 					Segments = B.Segments or 10, FaceCamera = B.FaceCamera == true, Transparency = seq(B.Tr, 1), Color = tint(B.Col, look),
 					TextureMode = Enum.TextureMode:FromValue(B.TM or 0), Parent = host,
 				})
+			end
+		end
+		for _, b in ipairs(t.Trails or {}) do
+			local a0, a1 = atts[b.A0], atts[b.A1]
+			if a0 and a1 then
+				local B = b.B
+				local tr = new("Trail", {
+					Attachment0 = a0, Attachment1 = a1, LightEmission = B.LightEmission or 0, LightInfluence = B.LightInfluence or 0,
+					Brightness = math.min(B.Brightness or 1, 6), Lifetime = (B.Lifetime or 0.3) * math.max(1, s / 3), TextureLength = B.TextureLength or 1,
+					MinLength = B.MinLength or 0.1, MaxLength = B.MaxLength or 0, FaceCamera = B.FaceCamera == true,
+					Transparency = seq(B.Tr, 1), WidthScale = seq(B.W, 1), Color = tint(B.Col, look), TextureMode = Enum.TextureMode:FromValue(B.TM or 0), Parent = host,
+				})
+				if B.T then
+					tr.Texture = "rbxassetid://" .. B.T
+				end
+				task.delay(hold, function()
+					tr.Enabled = false
+				end)
 			end
 		end
 		Debris:AddItem(host, hold + longest + 2)
@@ -739,7 +772,7 @@ return function(ctx)
 			elseif rig.Power > 0 then
 				local b = 0.5 + 0.5 * math.sin(t * 7)
 				rig.Shell.CFrame = rig.Box.CFrame * CFrame.new(0, rig.Box.Size.Y * 0.2, 0)
-				rig.Shell.Transparency = 0.55 - 0.3 * rig.Power + 0.1 * b
+				rig.Shell.Transparency = rig.K > 1 and 0.55 - 0.3 * rig.Power + 0.1 * b or 1
 				local s = 1 + 0.06 * b + 0.15 * rig.Power
 				rig.ShellMesh.Scale = Vector3.new(s, 1.5 * s, s)
 				-- on a body the pack's fire aura carries the silhouette; the big neon spikes are for cannons
@@ -941,8 +974,15 @@ return function(ctx)
 		cine = { Get = get, T0 = os.clock() }
 		setBars(true)
 	end
-	-- a camera path through shots: { { At = t, Eye = v3, Look = v3, Fov = n }, ... }, smoothstepped between
+	-- a camera path through shots: { { At = t, Eye = v3, Look = v3, Fov = n }, ... }, smoothstepped between.
+	-- A key can carry Get = function(k) -> eye, look, fov instead, for an orbit or a follow over its segment.
+	-- The eye is pulled in front of any piece of the map between it and what it looks at (Alex, Oct 31:
+	-- "better angles so we see what's going on")
+	local camRay = RaycastParams.new()
+	camRay.FilterType = Enum.RaycastFilterType.Include
 	local function path(keys)
+		local map = workspace:FindFirstChild(Config.Map.Root)
+		camRay.FilterDescendantsInstances = map and { map } or {}
 		return function(t)
 			local a, b = keys[#keys], keys[#keys]
 			for i = 1, #keys - 1 do
@@ -951,8 +991,33 @@ return function(ctx)
 					break
 				end
 			end
-			local k = b.At > a.At and ease((t - a.At) / (b.At - a.At)) or 1
-			return CFrame.lookAt(a.Eye:Lerp(b.Eye, k), a.Look:Lerp(b.Look, k)), a.Fov + (b.Fov - a.Fov) * k
+			local eye, look, fov
+			if a.Get then
+				local k = b.At > a.At and math.clamp((t - a.At) / (b.At - a.At), 0, 1) or 1
+				eye, look, fov = a.Get(k)
+			else
+				local k = b.At > a.At and ease((t - a.At) / (b.At - a.At)) or 1
+				local be, bl = b.Eye, b.Look
+				if b.Get then
+					be, bl = b.Get(0)
+				end
+				eye, look, fov = a.Eye:Lerp(be or a.Eye, k), a.Look:Lerp(bl or a.Look, k), a.Fov + ((b.Fov or a.Fov) - a.Fov) * k
+			end
+			local hit = workspace:Raycast(look, eye - look, camRay)
+			if hit then
+				eye = hit.Position + (look - eye).Unit * 1.5
+			end
+			return CFrame.lookAt(eye, look), fov
+		end
+	end
+	-- an orbit segment for path(): round `center` from angle a0 to a1 (radians, 0 = the side the camera
+	-- usually stands), at `radius` and `height`, looking at `center` + lookUp
+	local function orbit(center, radius, height, a0, a1, fov0, fov1, lookUp)
+		return function(k)
+			local e = ease(k)
+			local ang = a0 + (a1 - a0) * e
+			local eye = center + (side * math.cos(ang) + dir * math.sin(ang)) * radius + Vector3.new(0, height, 0)
+			return eye, center + Vector3.new(0, lookUp or 0, 0), fov0 + (fov1 - fov0) * e
 		end
 	end
 	local function skyTint(color, brightness, seconds)
@@ -974,6 +1039,21 @@ return function(ctx)
 				f()
 			end
 		end)
+	end
+
+	-- colour grading that shifts through a cutscene (Alex: "add some change of colour")
+	local function grade(tint, saturation, contrast, seconds)
+		sky.Enabled = true
+		TweenService:Create(sky, TweenInfo.new(seconds or 0.6, Enum.EasingStyle.Sine), { TintColor = tint, Saturation = saturation or 0, Contrast = contrast or 0 }):Play()
+	end
+	-- a rumble that builds: small shakes growing from `from` to `to` over `seconds` (off on Low Graphics)
+	local function rumble(my, from, to, seconds)
+		local steps = math.max(math.floor(seconds / 0.2), 1)
+		for i = 0, steps - 1 do
+			at(i * 0.2, my, function()
+				shake(from + (to - from) * i / steps, 0.3)
+			end)
+		end
 	end
 
 	local lingering = nil -- the aura a rare shot leaves on you for a while
@@ -1005,6 +1085,11 @@ return function(ctx)
 		local you = makeAura(char, look)
 		ramp(you, 0.15, 1, seconds * 0.55)
 		fireAura(char, look, seconds + 0.5)
+		-- wind spirals up round you and energy gathers at your chest (pack tornado and charge-up)
+		fxPlay("Tornado", CFrame.new(root.Position - Vector3.new(0, 2.6, 0)), 0.45, look, seconds * 0.55)
+		at(0.2, my, function()
+			fxPlay("Charge", root, 1.2, look, seconds * 0.3)
+		end)
 		local gun = cannon and makeAura(cannon, look)
 		if gun then
 			at(0.1, my, function()
@@ -1015,13 +1100,23 @@ return function(ctx)
 		local target = cannon and cannon:GetBoundingBox().Position or root.Position + dir * 10
 		if mine then
 			local f, r, p = root.CFrame.LookVector, root.CFrame.RightVector, root.Position
+			local mid = (p + target) / 2
+			local span = (target - p).Magnitude
 			takeCamera(path({
-				{ At = 0, Eye = p + f * 10 + r * 3.5 - Vector3.new(0, 0.8, 0), Look = p + Vector3.new(0, 0.8, 0), Fov = 62 },
-				{ At = seconds * 0.45, Eye = p + f * 8 - r * 3 - Vector3.new(0, 1.2, 0), Look = p + Vector3.new(0, 1.2, 0), Fov = 58 },
-				{ At = seconds * 0.6, Eye = (p + target) / 2 + side * 30 + Vector3.new(0, 12, 0), Look = (p + target) / 2, Fov = 66 },
-				{ At = seconds, Eye = target + side * 20 + Vector3.new(0, 8, 0) - dir * 4, Look = target + dir * 2, Fov = 72 },
+				-- a low hero shot in front of you, slowly pushing in while the aura builds
+				{ At = 0, Eye = p + f * 11 + r * 4 - Vector3.new(0, 1, 0), Look = p + Vector3.new(0, 1, 0), Fov = 60 },
+				{ At = seconds * 0.36, Eye = p + f * 8 + r * 2.5 - Vector3.new(0, 1.2, 0), Look = p + Vector3.new(0, 1.3, 0), Fov = 54 },
+				-- the roar: a quick pull back so the whole burst reads
+				{ At = seconds * 0.42, Eye = p + f * 12 + r * 5 + Vector3.new(0, 1, 0), Look = p + Vector3.new(0, 1, 0), Fov = 66 },
+				-- a raised two-shot: you, the stream of energy and the cannon all in frame
+				{ At = seconds * 0.55, Eye = mid + side * (span * 0.9 + 16) - dir * 6 + Vector3.new(0, 9, 0), Look = mid + Vector3.new(0, 1.5, 0), Fov = 64 },
+				{ At = seconds * 0.78, Eye = mid + side * (span * 0.8 + 14) + dir * 2 + Vector3.new(0, 7, 0), Look = mid + Vector3.new(0, 1.5, 0), Fov = 60 },
+				-- over the charging cannon, looking down the river where the ball will fly
+				{ At = seconds, Eye = target - dir * 13 + side * 5 + Vector3.new(0, 6, 0), Look = target + dir * 30 + Vector3.new(0, 2, 0), Fov = 70 },
 			}))
 			showCard("MYTHIC SHOT!", "1 in 100", look)
+			grade(Color3.fromRGB(255, 205, 235), 0.25, 0.15, 0.8) -- the world tints magenta
+			rumble(my, 0.05, 0.35, seconds)
 			pose.Target, pose.Shake = 1, rad(1)
 			focusLines(workspace.CurrentCamera.ViewportSize / 2, look, seconds * 0.45, true)
 		end
@@ -1042,7 +1137,11 @@ return function(ctx)
 			shockwave(feet, look, 6)
 			crater(feet, 10)
 			fxPlay("Crack", CFrame.new(feet + Vector3.new(0, 0.3, 0)), 1.5, nil, 0.4)
-			shake(0.45, 0.3)
+			fxPlay("Wind", CFrame.new(feet + Vector3.new(0, 1, 0)), 1.5, look, 0.3)
+			shake(0.6, 0.35)
+			if mine then
+				grade(Color3.fromRGB(255, 170, 215), 0.45, 0.3, 0.15) -- the colour kicks up on the roar
+			end
 		end)
 		if cannon then
 			at(seconds * 0.6, my, function()
@@ -1084,17 +1183,23 @@ return function(ctx)
 		fireAura(char, look, seconds + 0.5)
 		local gun = makeAura(grand, look)
 		if mine then
-			skyTint(Color3.fromRGB(255, 242, 220), 0, 0.6)
+			grade(Color3.fromRGB(255, 225, 160), 0.3, 0.2, 0.6) -- the world goes gold
 			local p, f = root.Position, root.CFrame.LookVector
+			local bp = bore and bore.Position or gpos
 			takeCamera(path({
-				{ At = 0, Eye = p + f * 7 - Vector3.new(0, 1, 0), Look = p + Vector3.new(0, 1, 0), Fov = 60 },
-				{ At = 0.8, Eye = p + f * 9 + Vector3.new(0, 2, 0), Look = p + Vector3.new(0, 3, 0), Fov = 64 },
-				{ At = 1.5, Eye = gpos + side * 95 + Vector3.new(0, 10, 0) - dir * 30, Look = gpos, Fov = 70 },
-				{ At = seconds * 0.8, Eye = gpos + side * 75 + Vector3.new(0, 18, 0) + dir * 10, Look = gpos + Vector3.new(0, 6, 0), Fov = 66 },
-				{ At = seconds, Eye = gpos + side * 55 + Vector3.new(0, 12, 0) + dir * 35, Look = (bore and bore.Position or gpos) + dir * 10, Fov = 74 },
+				-- you power up gold, then the camera follows your energy up to the crag
+				{ At = 0, Eye = p + f * 11 - Vector3.new(0, 0.8, 0), Look = p + Vector3.new(0, 1.2, 0), Fov = 60 },
+				{ At = 0.8, Eye = p + f * 15 + Vector3.new(0, 7, 0), Look = p:Lerp(gpos, 0.35) + Vector3.new(0, 6, 0), Fov = 66 },
+				{ At = 1.5, Eye = gpos + side * 95 - dir * 30 + Vector3.new(0, 10, 0), Look = gpos, Fov = 70 },
+				-- a slow orbit round the Grand Cannon while the lightning hits it
+				{ At = 1.6, Get = orbit(gpos, 92, 16, -0.32, 0.55, 68, 58, 6) },
+				-- low under the barrel as it tips up, then over its shoulder down the river
+				{ At = seconds * 0.8, Eye = gpos + side * 30 + dir * 4 + Vector3.new(0, -10, 0), Look = bp + dir * 25 + Vector3.new(0, 12, 0), Fov = 72 },
+				{ At = seconds, Eye = bp - dir * 22 + side * 12 + Vector3.new(0, 10, 0), Look = bp + dir * 70, Fov = 76 },
 			}))
 			showCard("SECRET SHOT!", "1 in 1,000", look)
 			showSkip(1)
+			rumble(my, 0.05, 0.25, 1.4)
 			pose.Target, pose.Shake = 1, rad(1.5)
 			at(0.35, my, function()
 				poseLayer("Roar", 0.1, 0.5, 0.4)
@@ -1154,6 +1259,14 @@ return function(ctx)
 				end
 			end)
 		end
+		at(1.5, my, function()
+			-- a gold storm winds up round the Grand Cannon
+			fxPlay("Tornado", CFrame.new(gpos - Vector3.new(0, gsize.Y * 0.4, 0)), 4, look, seconds - 1.6)
+			if mine then
+				rumble(my, 0.15, 0.6, seconds - 1.6)
+				grade(Color3.fromRGB(255, 205, 120), 0.45, 0.35, seconds - 1.6)
+			end
+		end)
 		at(seconds * 0.62, my, function()
 			chargeCannon(grand, seconds * 0.38 - 0.05, 5)
 			fxPlay("Charge", CFrame.new(boreOf(grand)), 8, look, seconds * 0.38)
@@ -1188,18 +1301,22 @@ return function(ctx)
 			end
 		end
 		local cf, size = cannon:GetBoundingBox()
-		local s = size.Y / 5
+		local s = size.Y / 4
 		for _, x in ipairs({ -1, 1 }) do
 			local hinge = cf.Position + side * x * size.X * 0.45 + Vector3.new(0, size.Y * 0.15, 0) - dir * size.Z * 0.1
 			local wing = new("Model", { Name = "Wing", Parent = fx })
-			for i = 1, 5 do
-				local len = (5.5 - i * 0.7) * s
-				part({
-					Name = "Feather", Color = i == 1 and look.Color or Color3.fromRGB(252, 252, 255), Material = i == 1 and Enum.Material.Neon or Enum.Material.SmoothPlastic,
-					Size = Vector3.new(0.5 * s, len, 0.9 * s),
-					CFrame = CFrame.new(hinge + side * x * (0.6 + i * 0.75) * s + Vector3.new(0, len / 2 - i * 0.35 * s, 0) - dir * i * 0.4 * s) * CFrame.fromAxisAngle(dir, -x * rad(10 + i * 9)),
-					Parent = wing,
-				})
+			for i = 1, 7 do
+				local len = (6 - i * 0.6) * s
+				-- two layers of blocky feathers: white on top, a pale gold row underneath, a glowing gold leading edge
+				for layer = 0, 1 do
+					part({
+						Name = "Feather", Color = i == 1 and look.Color or (layer == 0 and Color3.fromRGB(252, 252, 255) or Color3.fromRGB(255, 236, 190)),
+						Material = i == 1 and Enum.Material.Neon or Enum.Material.SmoothPlastic,
+						Size = Vector3.new(0.45 * s, len * (1 - layer * 0.25), 0.8 * s),
+						CFrame = CFrame.new(hinge + side * x * (0.6 + i * 0.7) * s + Vector3.new(0, len / 2 - i * 0.3 * s - layer * 0.5 * s, 0) - dir * (i * 0.35 + layer * 0.5) * s) * CFrame.fromAxisAngle(dir, -x * rad(8 + i * 8)),
+						Parent = wing,
+					})
+				end
 			end
 			local open = wing:GetPivot()
 			local offset = CFrame.new(hinge):ToObjectSpace(open)
@@ -1208,7 +1325,21 @@ return function(ctx)
 				wing:PivotTo(CFrame.new(hinge) * CFrame.fromAxisAngle(dir, x * rad(95) * k) * offset)
 			end)
 			wing:PivotTo(CFrame.new(hinge) * CFrame.fromAxisAngle(dir, x * rad(95)) * offset)
-			TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Back), { Value = 0 }):Play()
+			local open = TweenService:Create(v, TweenInfo.new(0.7, Enum.EasingStyle.Back), { Value = 0 })
+			open.Completed:Connect(function()
+				-- then a slow, gentle flap while it waits (slower than once a second: calm, kid-safe)
+				local t0 = os.clock()
+				local flap
+				flap = RunService.Heartbeat:Connect(function()
+					if not wing.Parent then
+						flap:Disconnect()
+						return
+					end
+					local a = math.sin((os.clock() - t0) * 2.4) * rad(9)
+					wing:PivotTo(CFrame.new(hinge) * CFrame.fromAxisAngle(dir, x * a) * offset)
+				end)
+			end)
+			open:Play()
 			table.insert(extras, wing)
 		end
 		local halo = new("Model", { Name = "Halo", Parent = fx })
@@ -1217,6 +1348,9 @@ return function(ctx)
 			local a = i / 12 * math.pi * 2
 			part({ Name = "HaloBlock", Color = look.Color, Material = Enum.Material.Neon, Size = Vector3.new(0.6, 0.4, 1) * s, CFrame = CFrame.new(hc + Vector3.new(math.cos(a), 0, math.sin(a)) * 1.8 * s) * CFrame.Angles(0, -a, 0), Parent = halo })
 		end
+		local glowPart = part({ Name = "HaloGlow", Size = Vector3.one * 0.2, Transparency = 1, CFrame = CFrame.new(hc), Parent = halo })
+		new("PointLight", { Color = look.Color, Brightness = 3, Range = 18, Shadows = false, Parent = glowPart })
+		fxPlay("Shiny", CFrame.new(hc), 2.5, look, 6)
 		local spin = RunService.Heartbeat:Connect(function(dt)
 			if halo.Parent then
 				halo:PivotTo(halo:GetPivot() * CFrame.Angles(0, dt * 1.6, 0))
@@ -1245,11 +1379,17 @@ return function(ctx)
 			takeCamera(path({
 				-- a close-up on the cannon waking (its eyes and halo), then up to the sky as the heavens open
 				{ At = 0, Eye = focus + side * 13 + dir * 7 + Vector3.new(0, 2.5, 0), Look = focus + dir * 2 + Vector3.new(0, 1.5, 0), Fov = 52 },
-				{ At = 0.6, Eye = focus + side * 11 + dir * 6 + Vector3.new(0, 2.5, 0), Look = focus + dir * 2 + Vector3.new(0, 1.5, 0), Fov = 48 },
-				{ At = 1.2, Eye = focus + side * 45 - dir * 18 + Vector3.new(0, 4, 0), Look = focus + Vector3.new(0, 60, 0), Fov = 72 },
-				{ At = 2.0, Eye = focus + side * 42 - dir * 8 + Vector3.new(0, 14, 0), Look = focus + Vector3.new(0, 8, 0), Fov = 66 },
-				{ At = 3.0, Eye = p + root.CFrame.LookVector * 13 + Vector3.new(0, 1, 0), Look = p + Vector3.new(0, 2.5, 0), Fov = 64 },
-				{ At = seconds, Eye = focus + side * 28 - dir * 10 + Vector3.new(0, 8, 0), Look = focus + dir * 4, Fov = 72 },
+				{ At = 0.9, Eye = focus + side * 11 + dir * 6 + Vector3.new(0, 2.5, 0), Look = focus + dir * 2 + Vector3.new(0, 1.5, 0), Fov = 48 },
+				-- up to the sky as the heavens open, then wide as the column comes down
+				{ At = 1.5, Eye = focus + side * 45 - dir * 18 + Vector3.new(0, 4, 0), Look = focus + Vector3.new(0, 60, 0), Fov = 72 },
+				{ At = 2.3, Eye = focus + side * 42 - dir * 8 + Vector3.new(0, 14, 0), Look = focus + Vector3.new(0, 8, 0), Fov = 66 },
+				-- the showcase: a slow orbit round the angel cannon so you really see it
+				{ At = 2.6, Get = orbit(focus, 24, 6, 0.1, 3.3, 58, 50, 3) },
+				-- behind you, looking up past the cannon to the light
+				{ At = seconds - 1.4, Eye = p + (p - focus).Unit * 10 + Vector3.new(0, 4, 0), Look = focus + Vector3.new(0, 7, 0), Fov = 62 },
+				-- over the cannon, down the river
+				{ At = seconds - 0.6, Eye = focus - dir * 14 + side * 6 + Vector3.new(0, 7, 0), Look = focus + dir * 40 + Vector3.new(0, 2, 0), Fov = 70 },
+				{ At = seconds, Eye = focus - dir * 13 + side * 5 + Vector3.new(0, 6.5, 0), Look = focus + dir * 45 + Vector3.new(0, 2, 0), Fov = 74 },
 			}))
 			showCard("DIVINE SHOT!", "1 in 100,000", look)
 			showSkip(1)
@@ -1270,7 +1410,7 @@ return function(ctx)
 				})
 			end
 		end
-		at(0.5, my, function()
+		at(0.9, my, function()
 			-- the heavens open: a bright disc in the sky with a slow star burst
 			local disc = part({ Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = look.Core, Transparency = 1, Size = Vector3.new(1, 1, 1), CFrame = CFrame.new(heaven) * FLOOR })
 			TweenService:Create(disc, TweenInfo.new(0.9, Enum.EasingStyle.Exponential), { Size = Vector3.new(1, 60, 60), Transparency = 0.25 }):Play()
@@ -1285,7 +1425,7 @@ return function(ctx)
 				Debris:AddItem(disc, 0.9)
 			end)
 		end)
-		at(1.1, my, function()
+		at(1.6, my, function()
 			-- the column of light grows down from the sky onto the cannon
 			local height = heaven.Y - focus.Y
 			local col = part({ Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = look.Core, Transparency = 0.5, Size = Vector3.new(1, 9, 9), CFrame = CFrame.new(heaven) * FLOOR })
@@ -1303,6 +1443,10 @@ return function(ctx)
 				shake(0.5, 0.35)
 				if cannon then
 					angelic(cannon, look, 1.2)
+				end
+				if mine then
+					grade(Color3.fromRGB(255, 240, 215), 0.2, 0.2, 0.8) -- navy turns to warm white-gold
+					rumble(my, 0.25, 0.05, 0.8)
 				end
 				fxPlay("HolyAura", CFrame.new(focus - Vector3.new(0, 4, 0)), 3, look, seconds)
 				fxPlay("Stars", CFrame.new(focus + Vector3.new(0, 6, 0)), 3, look, seconds)
@@ -1333,7 +1477,7 @@ return function(ctx)
 			end)
 		end)
 		local you = makeAura(char, look)
-		at(2.4, my, function()
+		at(seconds - 1.5, my, function()
 			ramp(you, 0.3, 1, 0.8)
 			pulse(you, true)
 			fxPlay("Shiny", root, 1.5, look, 1.5)
@@ -1350,11 +1494,15 @@ return function(ctx)
 		end)
 		if cannon then
 			local gun = makeAura(cannon, look)
-			at(2.3, my, function()
-				ramp(gun, 0.2, 1, seconds - 2.4)
+			at(2.4, my, function()
+				ramp(gun, 0.2, 1, seconds - 2.6)
 			end)
-			at(seconds * 0.72, my, function()
-				chargeCannon(cannon, seconds * 0.28 - 0.05, 6)
+			at(seconds - 1.2, my, function()
+				if mine then
+					rumble(my, 0.1, 0.5, 1.15)
+				end
+				fxPlay("Charge", CFrame.new(boreOf(cannon)), 2.5, look, 1.15)
+				chargeCannon(cannon, 1.15, 6)
 				Kit.playSound("RareCharge")
 				pulse(gun, true)
 			end)
@@ -1651,58 +1799,51 @@ return function(ctx)
 		TweenService:Create(light, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
 		Debris:AddItem(att, 0.5)
 	end
+	-- the ball in flight (Alex, Oct 31: "actual vfx from the pack", not pill shapes): the pack's fireball
+	-- and projectile trail ride the ball, facing the way it flies; Secret adds crackle, Divine stars
 	local function comet(ball, look, mine, duration)
-		local size = 4 + look.Rank
-		local spikes = {}
-		for i = 1, mine and 8 or 4 do
-			local core = i % 3 == 0
-			local p = part({ Material = Enum.Material.Neon, Color = core and look.Core or (i % 4 == 0 and look.Dark or look.Color), Transparency = core and 0.2 or 0.1 })
-			new("SpecialMesh", { MeshType = Enum.MeshType.Sphere, Parent = p })
-			spikes[i] = { Part = p, Jitter = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * (core and 0.25 or 0.8), Core = core, Phase = math.random() * 6 }
+		local last, heading = ball.Position, dir
+		local cf = CFrame.lookAt(last, last + dir)
+		local track
+		track = RunService.Heartbeat:Connect(function()
+			if not ball.Parent then
+				track:Disconnect()
+				return
+			end
+			local p = ball.Position
+			local v = p - last
+			if v.Magnitude > 0.05 then
+				heading = heading:Lerp(v.Unit, 0.35).Unit
+			end
+			last = p
+			cf = CFrame.lookAt(p, p + heading)
+		end)
+		task.delay(duration + 1, function()
+			track:Disconnect()
+		end)
+		local function follow()
+			return ball.Parent and cf or nil
 		end
-		local shell = part({ Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = look.Color, Size = Vector3.one * size, Transparency = 0 })
+		fxPlay("Ball", follow, 1 + 0.2 * look.Rank, look, duration)
+		fxPlay("Projectile", follow, 0.9 + 0.15 * look.Rank, look, duration)
+		if look.Rank >= 3 then
+			fxPlay("Stars", follow, 1.6, look, duration)
+		end
 		if mine then
 			-- a rim-lit outline on the ball (Ref 1 and 3: the hero reads against the sky)
 			local hl = new("Highlight", { FillTransparency = 1, OutlineColor = look.Color, OutlineTransparency = 0.2, DepthMode = Enum.HighlightDepthMode.Occluded, Adornee = ball, Parent = ball })
 			TweenService:Create(hl, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { OutlineTransparency = 0.6 }):Play()
+			if look.Rank >= 2 and not lowGraphics() then
+				-- crackle left hanging in the air behind the ball
+				task.spawn(function()
+					local t0 = os.clock()
+					while ball.Parent and os.clock() - t0 < duration * 0.85 do
+						fxPlay("Lightning2", CFrame.new(ball.Position - heading * 3), 2.5, look, 0.12)
+						task.wait(0.28)
+					end
+				end)
+			end
 		end
-		local att = new("Attachment", { Parent = ball })
-		local trail = emitter(att, {
-			Texture = TEX.CelFlame, FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4, FlipbookMode = Enum.ParticleFlipbookMode.Loop,
-			FlipbookFramerate = NumberRange.new(20, 24), FlipbookStartRandom = true, Color = ColorSequence.new(look.Core, look.Color),
-			LightEmission = 0.4, LightInfluence = 0, Size = NumberSequence.new(size * 0.8, 0), Lifetime = NumberRange.new(0.3, 0.5),
-			Rate = mine and 40 or 15, Speed = NumberRange.new(1, 3), SpreadAngle = Vector2.new(180, 180), Rotation = NumberRange.new(0, 360),
-		})
-		local t0 = os.clock()
-		local conn
-		conn = RunService.Heartbeat:Connect(function()
-			local t = os.clock() - t0
-			if not ball.Parent or t > duration then
-				conn:Disconnect()
-				trail.Enabled = false
-				for _, sp in ipairs(spikes) do
-					TweenService:Create(sp.Part, TweenInfo.new(0.2), { Transparency = 1 }):Play()
-					Debris:AddItem(sp.Part, 0.25)
-				end
-				TweenService:Create(shell, TweenInfo.new(0.3), { Transparency = 1 }):Play()
-				Debris:AddItem(shell, 0.35)
-				return
-			end
-			local fade = t > duration * 0.8 and 0.3 or 1
-			local p = ball.Position
-			shell.CFrame = CFrame.new(p)
-			for _, sp in ipairs(spikes) do
-				local d = (-dir + sp.Jitter + Vector3.new(0, 0.15, 0)).Unit
-				local len = size * fade * ((sp.Core and 1.2 or 1.9) + 0.5 * math.sin(t * 26 + sp.Phase) + math.random() * 0.3)
-				local w = size * (sp.Core and 0.28 or 0.4)
-				sp.Part.Size = Vector3.new(w, len, w)
-				sp.Part.CFrame = CFrame.fromMatrix(p + d * len * 0.38, d:Cross(Vector3.yAxis).Unit, d)
-			end
-			if mine and look.Rank >= 2 and math.random() < 0.25 and not lowGraphics() then
-				local off = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5).Unit * size * 0.6
-				bolt(p + off * 0.4, p + off - dir * size, look.Core, 0.25)
-			end
-		end)
 	end
 
 	Remotes.LaunchPlayer.OnClientEvent:Connect(function(owner, origin, distance, duration, cash, rareId)

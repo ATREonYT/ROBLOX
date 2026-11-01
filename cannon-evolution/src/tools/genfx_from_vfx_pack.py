@@ -77,8 +77,19 @@ def beam(it):
     L.append(f"Col={flat(text(p['Color']),5,drop={4})}")
     L.append(f"TM={int(float(text(p['TextureMode'])))}")
     return "{" + ",".join(L) + "}", text(p.get('Attachment0')), text(p.get('Attachment1'))
+def trail(it):
+    p = props(it); tid = re.sub(r'\D', '', text(p.get('TextureContent')) or '')
+    L = [f'T={tid}'] if tid else []
+    for k in ['LightEmission','LightInfluence','Brightness','Lifetime','TextureLength','MinLength','MaxLength']:
+        if k in p: L.append(f"{k}={g(text(p[k]))}")
+    if 'FaceCamera' in p and text(p['FaceCamera']) == 'true': L.append("FaceCamera=true")
+    L.append(f"Tr={flat(text(p['Transparency']),3)}")
+    L.append(f"W={flat(text(p['WidthScale']),3)}")
+    L.append(f"Col={flat(text(p['Color']),5,drop={4})}")
+    L.append(f"TM={int(float(text(p['TextureMode'])))}")
+    return "{" + ",".join(L) + "}", text(p.get('Attachment0')), text(p.get('Attachment1'))
 def template(key, g0):
-    atts, beams = [], []
+    atts, beams, trails = [], [], []
     def walk(it, part):
         cls = it.get('class')
         if cls in ('Part', 'MeshPart'): part = it
@@ -88,6 +99,8 @@ def template(key, g0):
             if c.get('class') == 'Beam':
                 b = beam(c)
                 if b: beams.append(b)
+            if c.get('class') == 'Trail':
+                trails.append(trail(c))
         if cls == 'Attachment' or ems:
             pos = text(props(it)['CFrame']) if cls == 'Attachment' else {'X':'0','Y':'0','Z':'0'}
             atts.append((it.get('referent'), nm(part) if part is not None else '', [g(pos[k]) for k in 'XYZ'], ems))
@@ -97,11 +110,14 @@ def template(key, g0):
     s = f"\t{key} = {{\n\t\tAtt = {{\n"
     for ref, pn, pos, ems in atts:
         s += f'\t\t\t{{P="{pn}",At={{{",".join(pos)}}},E={{' + (",\n\t\t\t\t".join(ems) if ems else "") + "}},\n"
-    s += "\t\t},\n\t\tBeams = {" + ",".join(f"{{A0={idx.get(a0,0)},A1={idx.get(a1,0)},B={b}}}" for b, a0, a1 in beams) + "},\n\t},"
+    s += "\t\t},\n\t\tBeams = {" + ",".join(f"{{A0={idx.get(a0,0)},A1={idx.get(a1,0)},B={b}}}" for b, a0, a1 in beams) + "},\n"
+    s += "\t\tTrails = {" + ",".join(f"{{A0={idx.get(a0,0)},A1={idx.get(a1,0)},B={b}}}" for b, a0, a1 in trails) + "},\n\t},"
     return s
 SEL = [('Charge', ['Anime','Charge-01']), ('Shoot', ['Anime','Shoot-01']), ('Stars', ['Anime','Stars-01']), ('Shiny', ['Anime','Shiny-01']),
  ('Lightning', ['Big','Lighting-01']), ('Lightning2', ['Anime','Lighting-03']), ('Explosion', ['Big','Explosion-01']),
- ('Crack', ['Big','Big-Crack-01']), ('HolyAura', ['Auras','RNG-Aura-02'])]
+ ('Crack', ['Big','Big-Crack-01']), ('HolyAura', ['Auras','RNG-Aura-02']),
+ ('Ball', ['Big','Ball-01']), ('Projectile', ['vfx pack','Projectile']), ('Tornado', ['Big','Tornado-01']), ('Wind', ['Anime','Wind-02']),
+ ('SlashImpact', ['Anime','Slash-Impact-01']), ('Burst', ['vfx pack','Explosion'])]
 parts = [template(k, find(ws, p)) for k, p in SEL]
 # fire aura: one emitter spec, used on every limb
 fa = find(ws, ['Auras','Fire-Aura-01']); fe = [emitter(e) for e in fa.iter('Item') if e.get('class') == 'ParticleEmitter' and nm(e) == 'T'][0]
