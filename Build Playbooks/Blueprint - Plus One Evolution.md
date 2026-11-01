@@ -11,7 +11,7 @@ Back to [[00 Build Router]] · Family overview: [[01 Current Hits October 2026]]
 
 **One line:** do one simple action that gives +1 to a stat, then spend that stat on a big, visible payoff (a launch, a throw, a punch, a body that grows) that pays cash. Cash buys multipliers, and rebirths reset for a bigger multiplier.
 
-Reference games: +1 Venom Evolution, +1 Anime Eyes, Bug Evolution, Throw Food For Animals, Feed A Mosquito, Tap Simulator REBORN. **Our working reference implementation is `cannon-evolution/`** (+1 Cannon Evolution). Read its `README.md` and `GameConfig.lua` before building another one, and reuse its structure. Build history: `reports/+1 Cannon Evolution build notes.md`.
+Reference games: +1 Venom Evolution, +1 Anime Eyes, Bug Evolution, Throw Food For Animals, Feed A Mosquito, Tap Simulator REBORN. Measured reference: [[Teardown - Stone Skipping]]; what to borrow and how to beat it: [[07 Borrow List - Game by Game]], [[06 Beat the Hits - Polish Playbook]]. **Our working reference implementation is `cannon-evolution/`** (+1 Cannon Evolution). Read its `README.md` and `GameConfig.lua` before building another one, and reuse its structure. Build history: `reports/+1 Cannon Evolution build notes.md`.
 
 ## 1. Pick the twist
 - **Stat:** Power, Size, Strength, Speed, Eyes, Venom, Weight.

@@ -27,7 +27,7 @@ return function(ctx)
 		chevrons.TextColor3 = Color3.fromRGB(40, 170, 250)
 	end
 
-	Kit.text({
+	local beforeAfter = Kit.text({
 		Text = "Every rebirth: +" .. math.floor(Config.REBIRTH_POWER_BONUS * 100) .. "% Power, +" .. math.floor(Config.REBIRTH_CASH_BONUS * 100) .. "% Cash, new cannons and worlds",
 		Size = 17,
 		Color = Kit.Colors.Yellow,
@@ -79,6 +79,10 @@ return function(ctx)
 			bar:Set(c, Config.Format(data.Cash) .. " / " .. Config.Format(cashCost) .. " Cash")
 		end
 		rebirthBtn:SetColor((p >= 1 and c >= 1) and "Green" or "Gray")
+		-- Before >> After, like Stone Skipping's rebirth panel: your Power multiplier now and right after
+		local now = Config.PowerMultiplier(data)
+		local after = now * (1 + (data.Rebirths + 1) * Config.REBIRTH_POWER_BONUS) / (1 + data.Rebirths * Config.REBIRTH_POWER_BONUS)
+		beforeAfter.Text = string.format("Power x%s  >>  x%s   +%d%% Cash, new cannons and worlds", tostring(math.floor(now * 10) / 10), tostring(math.floor(after * 10) / 10), math.floor(Config.REBIRTH_CASH_BONUS * 100))
 	end
 
 	return { Frame = panel.Frame, OnOpen = refresh, Refresh = refresh }
