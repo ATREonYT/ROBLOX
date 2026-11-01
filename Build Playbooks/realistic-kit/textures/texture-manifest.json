@@ -1,0 +1,1187 @@
+[
+ {
+  "name": "HoodAsphaltCracked",
+  "source": "Poly Haven",
+  "sourceId": "asphalt_02",
+  "page": "https://polyhaven.com/a/asphalt_02",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "Asphalt",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Main hood streets: grey, cracked, tar lines",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_02/asphalt_02_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_02/asphalt_02_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_02/asphalt_02_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodAsphaltFaded",
+  "source": "Poly Haven",
+  "sourceId": "asphalt_04",
+  "page": "https://polyhaven.com/a/asphalt_04",
+  "license": "CC0",
+  "realSizeMeters": 4.04,
+  "studsPerTile": 14,
+  "baseMaterial": "Asphalt",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Sun-bleached side streets and alleys",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_04/asphalt_04_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_04/asphalt_04_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_04/asphalt_04_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodRoadPotholes",
+  "source": "Poly Haven",
+  "sourceId": "road_damaged",
+  "page": "https://polyhaven.com/a/road_damaged",
+  "license": "CC0",
+  "realSizeMeters": 2.2,
+  "studsPerTile": 8,
+  "baseMaterial": "Asphalt",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Worst blocks, alleys, vacant lots (use sparingly)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/road_damaged/road_damaged_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/road_damaged/road_damaged_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/road_damaged/road_damaged_rough_1k.png"
+  }
+ },
+ {
+  "name": "AsphaltWorn",
+  "source": "Poly Haven",
+  "sourceId": "asphalt_03",
+  "page": "https://polyhaven.com/a/asphalt_03",
+  "license": "CC0",
+  "realSizeMeters": 2.05,
+  "studsPerTile": 7,
+  "baseMaterial": "Asphalt",
+  "pattern": "Organic",
+  "style": "both",
+  "use": "Everyday city road, parking lots",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_03/asphalt_03_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_03/asphalt_03_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_03/asphalt_03_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownAsphaltClean",
+  "source": "Poly Haven",
+  "sourceId": "asphalt_pit_lane",
+  "page": "https://polyhaven.com/a/asphalt_pit_lane",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Asphalt",
+  "pattern": "Organic",
+  "style": "downtown",
+  "use": "New downtown avenues, highways, bridge deck",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_pit_lane/asphalt_pit_lane_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_pit_lane/asphalt_pit_lane_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_pit_lane/asphalt_pit_lane_rough_1k.png"
+  }
+ },
+ {
+  "name": "AsphaltGranular",
+  "source": "Poly Haven",
+  "sourceId": "asphalt_07",
+  "page": "https://polyhaven.com/a/asphalt_07",
+  "license": "CC0",
+  "realSizeMeters": 2.5,
+  "studsPerTile": 9,
+  "baseMaterial": "Asphalt",
+  "pattern": "Organic",
+  "style": "both",
+  "use": "Coastal roads, shoulders",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_07/asphalt_07_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_07/asphalt_07_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/asphalt_07/asphalt_07_rough_1k.png"
+  }
+ },
+ {
+  "name": "SidewalkConcrete",
+  "source": "Poly Haven",
+  "sourceId": "concrete_pavement",
+  "page": "https://polyhaven.com/a/concrete_pavement",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Standard sidewalk slabs",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_pavement/concrete_pavement_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_pavement/concrete_pavement_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_pavement/concrete_pavement_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodSidewalkCracked",
+  "source": "Poly Haven",
+  "sourceId": "floor_pavement",
+  "page": "https://polyhaven.com/a/floor_pavement",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Cracked hood sidewalks",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/floor_pavement/floor_pavement_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/floor_pavement/floor_pavement_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/floor_pavement/floor_pavement_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownSidewalkTiles",
+  "source": "Poly Haven",
+  "sourceId": "concrete_pavement_03",
+  "page": "https://polyhaven.com/a/concrete_pavement_03",
+  "license": "CC0",
+  "realSizeMeters": 2.1,
+  "studsPerTile": 8,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Downtown tiled sidewalks",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_pavement_03/concrete_pavement_03_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_pavement_03/concrete_pavement_03_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_pavement_03/concrete_pavement_03_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownPavers",
+  "source": "Poly Haven",
+  "sourceId": "square_concrete_pavers",
+  "page": "https://polyhaven.com/a/square_concrete_pavers",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Plazas, bank and hotel fronts",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/square_concrete_pavers/square_concrete_pavers_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/square_concrete_pavers/square_concrete_pavers_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/square_concrete_pavers/square_concrete_pavers_rough_1k.png"
+  }
+ },
+ {
+  "name": "SidewalkSlabs",
+  "source": "Poly Haven",
+  "sourceId": "concrete_tiles_02",
+  "page": "https://polyhaven.com/a/concrete_tiles_02",
+  "license": "CC0",
+  "realSizeMeters": 1.82,
+  "studsPerTile": 7,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Alternate sidewalk slabs (mix with SidewalkConcrete)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_tiles_02/concrete_tiles_02_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_tiles_02/concrete_tiles_02_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_tiles_02/concrete_tiles_02_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownBrickPavers",
+  "source": "Poly Haven",
+  "sourceId": "herringbone_brick",
+  "page": "https://polyhaven.com/a/herringbone_brick",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "Brick",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Pedestrian streets, crosswalk inlays",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/herringbone_brick/herringbone_brick_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/herringbone_brick/herringbone_brick_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/herringbone_brick/herringbone_brick_rough_1k.png"
+  }
+ },
+ {
+  "name": "ConcreteDriveway",
+  "source": "Poly Haven",
+  "sourceId": "grooved_concrete_driveway",
+  "page": "https://polyhaven.com/a/grooved_concrete_driveway",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "Concrete",
+  "pattern": "Organic",
+  "style": "both",
+  "use": "Driveways, fire-station apron, ramps",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grooved_concrete_driveway/grooved_concrete_driveway_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grooved_concrete_driveway/grooved_concrete_driveway_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grooved_concrete_driveway/grooved_concrete_driveway_rough_1k.png"
+  }
+ },
+ {
+  "name": "ParkingLotStained",
+  "source": "Poly Haven",
+  "sourceId": "garage_floor",
+  "page": "https://polyhaven.com/a/garage_floor",
+  "license": "CC0",
+  "realSizeMeters": 1.89,
+  "studsPerTile": 7,
+  "baseMaterial": "Concrete",
+  "pattern": "Organic",
+  "style": "both",
+  "use": "Garages, alleys, parking lots, gas station",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/garage_floor/garage_floor_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/garage_floor/garage_floor_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/garage_floor/garage_floor_rough_1k.png"
+  }
+ },
+ {
+  "name": "ConcreteStained",
+  "source": "Poly Haven",
+  "sourceId": "brushed_concrete_2",
+  "page": "https://polyhaven.com/a/brushed_concrete_2",
+  "license": "CC0",
+  "realSizeMeters": 2.5,
+  "studsPerTile": 9,
+  "baseMaterial": "Concrete",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Lots, flood channel floor, schoolyard",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brushed_concrete_2/brushed_concrete_2_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brushed_concrete_2/brushed_concrete_2_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brushed_concrete_2/brushed_concrete_2_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodStuccoWorn",
+  "source": "Poly Haven",
+  "sourceId": "painted_plaster_wall",
+  "page": "https://polyhaven.com/a/painted_plaster_wall",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Plaster",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Main hood building walls (tint pink, mint, blue, sand)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_plaster_wall/painted_plaster_wall_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_plaster_wall/painted_plaster_wall_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_plaster_wall/painted_plaster_wall_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodPaintedConcrete",
+  "source": "Poly Haven",
+  "sourceId": "concrete_wall_004",
+  "page": "https://polyhaven.com/a/concrete_wall_004",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Concrete",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Stained painted walls, liquor-store sides",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_wall_004/concrete_wall_004_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_wall_004/concrete_wall_004_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_wall_004/concrete_wall_004_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodConcreteDirty",
+  "source": "Poly Haven",
+  "sourceId": "concrete_wall_007",
+  "page": "https://polyhaven.com/a/concrete_wall_007",
+  "license": "CC0",
+  "realSizeMeters": 2.16,
+  "studsPerTile": 8,
+  "baseMaterial": "Concrete",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Grey dirty walls, flood channel sides, underpasses",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_wall_007/concrete_wall_007_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_wall_007/concrete_wall_007_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_wall_007/concrete_wall_007_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodStuccoCracked",
+  "source": "Poly Haven",
+  "sourceId": "cracked_concrete_wall",
+  "page": "https://polyhaven.com/a/cracked_concrete_wall",
+  "license": "CC0",
+  "realSizeMeters": 1.0,
+  "studsPerTile": 4,
+  "baseMaterial": "Plaster",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Old beige stucco with cracks",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/cracked_concrete_wall/cracked_concrete_wall_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/cracked_concrete_wall/cracked_concrete_wall_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/cracked_concrete_wall/cracked_concrete_wall_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodPlasterChipped",
+  "source": "Poly Haven",
+  "sourceId": "blue_plaster_wall",
+  "page": "https://polyhaven.com/a/blue_plaster_wall",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Plaster",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Peeling paint walls (tint for any colour)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/blue_plaster_wall/blue_plaster_wall_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/blue_plaster_wall/blue_plaster_wall_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/blue_plaster_wall/blue_plaster_wall_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodPlasterExposedBrick",
+  "source": "Poly Haven",
+  "sourceId": "damaged_plaster",
+  "page": "https://polyhaven.com/a/damaged_plaster",
+  "license": "CC0",
+  "realSizeMeters": 1.85,
+  "studsPerTile": 7,
+  "baseMaterial": "Plaster",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Hero walls: plaster falling off brick",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/damaged_plaster/damaged_plaster_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/damaged_plaster/damaged_plaster_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/damaged_plaster/damaged_plaster_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodPaintedBrick",
+  "source": "Poly Haven",
+  "sourceId": "painted_brick",
+  "page": "https://polyhaven.com/a/painted_brick",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "Brick",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Painted brick shops and corner stores",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_brick/painted_brick_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_brick/painted_brick_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_brick/painted_brick_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodPaintedBrickYellow",
+  "source": "Poly Haven",
+  "sourceId": "painted_worn_brick",
+  "page": "https://polyhaven.com/a/painted_worn_brick",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "Brick",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Grungy painted brick, laundromat, barber",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_worn_brick/painted_worn_brick_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_worn_brick/painted_worn_brick_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_worn_brick/painted_worn_brick_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodBrickDamaged",
+  "source": "Poly Haven",
+  "sourceId": "brick_wall_006",
+  "page": "https://polyhaven.com/a/brick_wall_006",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "Brick",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Old red brick apartments",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_006/brick_wall_006_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_006/brick_wall_006_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_006/brick_wall_006_rough_1k.png"
+  }
+ },
+ {
+  "name": "HoodCinderBlock",
+  "source": "Poly Haven",
+  "sourceId": "concrete_block_wall_03",
+  "page": "https://polyhaven.com/a/concrete_block_wall_03",
+  "license": "CC0",
+  "realSizeMeters": 1.81,
+  "studsPerTile": 6,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Cinder-block walls, yard walls, garages",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_block_wall_03/concrete_block_wall_03_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_block_wall_03/concrete_block_wall_03_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_block_wall_03/concrete_block_wall_03_rough_1k.png"
+  }
+ },
+ {
+  "name": "StuccoSuburb",
+  "source": "Poly Haven",
+  "sourceId": "beige_wall_002",
+  "page": "https://polyhaven.com/a/beige_wall_002",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "Plaster",
+  "pattern": "Organic",
+  "style": "both",
+  "use": "Clean textured stucco for houses (tint)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/beige_wall_002/beige_wall_002_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/beige_wall_002/beige_wall_002_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/beige_wall_002/beige_wall_002_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownBrickRed",
+  "source": "Poly Haven",
+  "sourceId": "red_bricks_04",
+  "page": "https://polyhaven.com/a/red_bricks_04",
+  "license": "CC0",
+  "realSizeMeters": 2.5,
+  "studsPerTile": 9,
+  "baseMaterial": "Brick",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Clean red brick (fire station, offices)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_bricks_04/red_bricks_04_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_bricks_04/red_bricks_04_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_bricks_04/red_bricks_04_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownBrickOld",
+  "source": "Poly Haven",
+  "sourceId": "factory_brick",
+  "page": "https://polyhaven.com/a/factory_brick",
+  "license": "CC0",
+  "realSizeMeters": 1.5,
+  "studsPerTile": 5,
+  "baseMaterial": "Brick",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Old warehouses, lofts, train district",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/factory_brick/factory_brick_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/factory_brick/factory_brick_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/factory_brick/factory_brick_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownPrecastPanel",
+  "source": "Poly Haven",
+  "sourceId": "concrete_slab_wall_02",
+  "page": "https://polyhaven.com/a/concrete_slab_wall_02",
+  "license": "CC0",
+  "realSizeMeters": 2.1,
+  "studsPerTile": 8,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Office towers, parking garages",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_slab_wall_02/concrete_slab_wall_02_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_slab_wall_02/concrete_slab_wall_02_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_slab_wall_02/concrete_slab_wall_02_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownConcreteFacade",
+  "source": "Poly Haven",
+  "sourceId": "concrete_tile_facade",
+  "page": "https://polyhaven.com/a/concrete_tile_facade",
+  "license": "CC0",
+  "realSizeMeters": 2.09,
+  "studsPerTile": 7,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Modern grooved concrete facades",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_tile_facade/concrete_tile_facade_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_tile_facade/concrete_tile_facade_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_tile_facade/concrete_tile_facade_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownRibbedConcrete",
+  "source": "Poly Haven",
+  "sourceId": "ribbed_concrete_wall",
+  "page": "https://polyhaven.com/a/ribbed_concrete_wall",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Feature walls, stairwells, police station",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/ribbed_concrete_wall/ribbed_concrete_wall_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/ribbed_concrete_wall/ribbed_concrete_wall_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/ribbed_concrete_wall/ribbed_concrete_wall_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownStoneBlocks",
+  "source": "Poly Haven",
+  "sourceId": "large_sandstone_blocks_01",
+  "page": "https://polyhaven.com/a/large_sandstone_blocks_01",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "Sandstone",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Bank, city hall, courthouse base",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/large_sandstone_blocks_01/large_sandstone_blocks_01_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/large_sandstone_blocks_01/large_sandstone_blocks_01_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/large_sandstone_blocks_01/large_sandstone_blocks_01_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownRender",
+  "source": "Poly Haven",
+  "sourceId": "exterior_wall_cladding_03",
+  "page": "https://polyhaven.com/a/exterior_wall_cladding_03",
+  "license": "CC0",
+  "realSizeMeters": 1.96,
+  "studsPerTile": 7,
+  "baseMaterial": "Plaster",
+  "pattern": "Organic",
+  "style": "downtown",
+  "use": "Painted render on modern buildings",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/exterior_wall_cladding_03/exterior_wall_cladding_03_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/exterior_wall_cladding_03/exterior_wall_cladding_03_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/exterior_wall_cladding_03/exterior_wall_cladding_03_rough_1k.png"
+  }
+ },
+ {
+  "name": "BridgeConcretePanels",
+  "source": "Poly Haven",
+  "sourceId": "concrete_panels",
+  "page": "https://polyhaven.com/a/concrete_panels",
+  "license": "CC0",
+  "realSizeMeters": 8.0,
+  "studsPerTile": 29,
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Bridges, underpasses, retaining walls",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_panels/concrete_panels_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_panels/concrete_panels_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_panels/concrete_panels_rough_1k.png"
+  }
+ },
+ {
+  "name": "LobbyMarble",
+  "source": "Poly Haven",
+  "sourceId": "floor_tiles_02",
+  "page": "https://polyhaven.com/a/floor_tiles_02",
+  "license": "CC0",
+  "realSizeMeters": 4.0,
+  "studsPerTile": 14,
+  "baseMaterial": "Marble",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Lobbies, bank floors, mall",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/floor_tiles_02/floor_tiles_02_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/floor_tiles_02/floor_tiles_02_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/floor_tiles_02/floor_tiles_02_rough_1k.png"
+  }
+ },
+ {
+  "name": "PlazaTiles",
+  "source": "Poly Haven",
+  "sourceId": "anti_skid_tiles",
+  "page": "https://polyhaven.com/a/anti_skid_tiles",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "CeramicTiles",
+  "pattern": "Regular",
+  "style": "downtown",
+  "use": "Outdoor plazas and steps",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/anti_skid_tiles/anti_skid_tiles_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/anti_skid_tiles/anti_skid_tiles_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/anti_skid_tiles/anti_skid_tiles_rough_1k.png"
+  }
+ },
+ {
+  "name": "ShutterRusty",
+  "source": "Poly Haven",
+  "sourceId": "rusty_metal_shutter",
+  "page": "https://polyhaven.com/a/rusty_metal_shutter",
+  "license": "CC0",
+  "realSizeMeters": 1.9,
+  "studsPerTile": 7,
+  "baseMaterial": "CorrodedMetal",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Roll-up shop shutters (hood)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_metal_shutter/rusty_metal_shutter_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_metal_shutter/rusty_metal_shutter_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_metal_shutter/rusty_metal_shutter_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_metal_shutter/rusty_metal_shutter_metal_1k.png"
+  }
+ },
+ {
+  "name": "ShutterPainted",
+  "source": "Poly Haven",
+  "sourceId": "painted_metal_shutter",
+  "page": "https://polyhaven.com/a/painted_metal_shutter",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Metal",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Roll-up shutters, garage doors",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_metal_shutter/painted_metal_shutter_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_metal_shutter/painted_metal_shutter_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_metal_shutter/painted_metal_shutter_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/painted_metal_shutter/painted_metal_shutter_metal_1k.png"
+  }
+ },
+ {
+  "name": "CorrugatedWorn",
+  "source": "Poly Haven",
+  "sourceId": "worn_corrugated_iron",
+  "page": "https://polyhaven.com/a/worn_corrugated_iron",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "CorrodedMetal",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Fences, shacks, rooftop sheds",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/worn_corrugated_iron/worn_corrugated_iron_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/worn_corrugated_iron/worn_corrugated_iron_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/worn_corrugated_iron/worn_corrugated_iron_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/worn_corrugated_iron/worn_corrugated_iron_metal_1k.png"
+  }
+ },
+ {
+  "name": "CorrugatedRusty",
+  "source": "Poly Haven",
+  "sourceId": "rusty_corrugated_iron",
+  "page": "https://polyhaven.com/a/rusty_corrugated_iron",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "CorrodedMetal",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Rustier corrugated sheets",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_corrugated_iron/rusty_corrugated_iron_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_corrugated_iron/rusty_corrugated_iron_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_corrugated_iron/rusty_corrugated_iron_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_corrugated_iron/rusty_corrugated_iron_metal_1k.png"
+  }
+ },
+ {
+  "name": "ShippingContainer",
+  "source": "Poly Haven",
+  "sourceId": "container_side",
+  "page": "https://polyhaven.com/a/container_side",
+  "license": "CC0",
+  "realSizeMeters": 1.94,
+  "studsPerTile": 7,
+  "baseMaterial": "Metal",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Port containers (tint per container)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/container_side/container_side_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/container_side/container_side_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/container_side/container_side_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/container_side/container_side_metal_1k.png"
+  }
+ },
+ {
+  "name": "MetalPaintedRusty",
+  "source": "Poly Haven",
+  "sourceId": "rusty_painted_metal",
+  "page": "https://polyhaven.com/a/rusty_painted_metal",
+  "license": "CC0",
+  "realSizeMeters": 2.2,
+  "studsPerTile": 8,
+  "baseMaterial": "CorrodedMetal",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Hydrants, dumpsters, poles, railings",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_painted_metal/rusty_painted_metal_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_painted_metal/rusty_painted_metal_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_painted_metal/rusty_painted_metal_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_painted_metal/rusty_painted_metal_metal_1k.png"
+  }
+ },
+ {
+  "name": "MetalPlate",
+  "source": "Poly Haven",
+  "sourceId": "metal_plate_02",
+  "page": "https://polyhaven.com/a/metal_plate_02",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "DiamondPlate",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Trucks, steps, ramps",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_metal_1k.png"
+  }
+ },
+ {
+  "name": "IndustrialWall",
+  "source": "Poly Haven",
+  "sourceId": "factory_wall",
+  "page": "https://polyhaven.com/a/factory_wall",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "Metal",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Warehouses, factories",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/factory_wall/factory_wall_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/factory_wall/factory_wall_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/factory_wall/factory_wall_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/factory_wall/factory_wall_metal_1k.png"
+  }
+ },
+ {
+  "name": "RoofBoxProfile",
+  "source": "Poly Haven",
+  "sourceId": "box_profile_metal_sheet",
+  "page": "https://polyhaven.com/a/box_profile_metal_sheet",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Metal",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Warehouse and strip-mall roofs",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/box_profile_metal_sheet/box_profile_metal_sheet_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/box_profile_metal_sheet/box_profile_metal_sheet_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/box_profile_metal_sheet/box_profile_metal_sheet_rough_1k.png",
+   "MetalnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/box_profile_metal_sheet/box_profile_metal_sheet_metal_1k.png"
+  }
+ },
+ {
+  "name": "WoodPaintedDistressed",
+  "source": "Poly Haven",
+  "sourceId": "distressed_painted_planks",
+  "page": "https://polyhaven.com/a/distressed_painted_planks",
+  "license": "CC0",
+  "realSizeMeters": 1.6,
+  "studsPerTile": 6,
+  "baseMaterial": "WoodPlanks",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Siding, porches, fences (tint)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/distressed_painted_planks/distressed_painted_planks_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/distressed_painted_planks/distressed_painted_planks_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/distressed_painted_planks/distressed_painted_planks_rough_1k.png"
+  }
+ },
+ {
+  "name": "WoodPlanksOld",
+  "source": "Poly Haven",
+  "sourceId": "old_planks_02",
+  "page": "https://polyhaven.com/a/old_planks_02",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "WoodPlanks",
+  "pattern": "Regular",
+  "style": "hood",
+  "use": "Boarded windows, old fences, pier deck",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/old_planks_02/old_planks_02_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/old_planks_02/old_planks_02_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/old_planks_02/old_planks_02_rough_1k.png"
+  }
+ },
+ {
+  "name": "RoofShinglesGrey",
+  "source": "Poly Haven",
+  "sourceId": "grey_roof_tiles",
+  "page": "https://polyhaven.com/a/grey_roof_tiles",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "RoofShingles",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Pitched house roofs (coastal look)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grey_roof_tiles/grey_roof_tiles_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grey_roof_tiles/grey_roof_tiles_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/grey_roof_tiles/grey_roof_tiles_rough_1k.png"
+  }
+ },
+ {
+  "name": "RoofClayTiles",
+  "source": "Poly Haven",
+  "sourceId": "clay_roof_tiles_02",
+  "page": "https://polyhaven.com/a/clay_roof_tiles_02",
+  "license": "CC0",
+  "realSizeMeters": 2.5,
+  "studsPerTile": 9,
+  "baseMaterial": "ClayRoofTiles",
+  "pattern": "Regular",
+  "style": "both",
+  "use": "Spanish-style roofs (West Coast)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/clay_roof_tiles_02/clay_roof_tiles_02_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/clay_roof_tiles_02/clay_roof_tiles_02_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/clay_roof_tiles_02/clay_roof_tiles_02_rough_1k.png"
+  }
+ },
+ {
+  "name": "RoofFlatBitumen",
+  "source": "Poly Haven",
+  "sourceId": "roof_07",
+  "page": "https://polyhaven.com/a/roof_07",
+  "license": "CC0",
+  "realSizeMeters": 2.0,
+  "studsPerTile": 7,
+  "baseMaterial": "Asphalt",
+  "pattern": "Organic",
+  "style": "both",
+  "use": "Flat roofs (check look; swap to bitumen if needed)",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/roof_07/roof_07_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/roof_07/roof_07_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/roof_07/roof_07_rough_1k.png"
+  }
+ },
+ {
+  "name": "DirtLot",
+  "source": "Poly Haven",
+  "sourceId": "dirt_floor",
+  "page": "https://polyhaven.com/a/dirt_floor",
+  "license": "CC0",
+  "realSizeMeters": 2.07,
+  "studsPerTile": 7,
+  "baseMaterial": "Ground",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Empty lots, yards",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dirt_floor/dirt_floor_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dirt_floor/dirt_floor_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/dirt_floor/dirt_floor_rough_1k.png"
+  }
+ },
+ {
+  "name": "GravelLot",
+  "source": "Poly Haven",
+  "sourceId": "gravel_ground_01",
+  "page": "https://polyhaven.com/a/gravel_ground_01",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "Pebble",
+  "pattern": "Organic",
+  "style": "both",
+  "use": "Rail yards, shoulders, rooftops",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gravel_ground_01/gravel_ground_01_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gravel_ground_01/gravel_ground_01_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gravel_ground_01/gravel_ground_01_rough_1k.png"
+  }
+ },
+ {
+  "name": "BeachSand",
+  "source": "Poly Haven",
+  "sourceId": "coast_sand_03",
+  "page": "https://polyhaven.com/a/coast_sand_03",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "Sand",
+  "pattern": "Organic",
+  "style": "coast",
+  "use": "Beaches",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/coast_sand_03/coast_sand_03_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/coast_sand_03/coast_sand_03_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/coast_sand_03/coast_sand_03_rough_1k.png"
+  }
+ },
+ {
+  "name": "RockGrey",
+  "source": "Poly Haven",
+  "sourceId": "gray_rocks",
+  "page": "https://polyhaven.com/a/gray_rocks",
+  "license": "CC0",
+  "realSizeMeters": 1.8,
+  "studsPerTile": 6,
+  "baseMaterial": "Rock",
+  "pattern": "Organic",
+  "style": "both",
+  "use": "Breakwaters, cliffs",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gray_rocks/gray_rocks_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gray_rocks/gray_rocks_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/gray_rocks/gray_rocks_rough_1k.png"
+  }
+ },
+ {
+  "name": "RockMossy",
+  "source": "Poly Haven",
+  "sourceId": "mossy_rock",
+  "page": "https://polyhaven.com/a/mossy_rock",
+  "license": "CC0",
+  "realSizeMeters": 3.0,
+  "studsPerTile": 11,
+  "baseMaterial": "Rock",
+  "pattern": "Organic",
+  "style": "coast",
+  "use": "Damp shaded rocks",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mossy_rock/mossy_rock_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mossy_rock/mossy_rock_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/mossy_rock/mossy_rock_rough_1k.png"
+  }
+ },
+ {
+  "name": "MudDry",
+  "source": "Poly Haven",
+  "sourceId": "brown_mud_dry",
+  "page": "https://polyhaven.com/a/brown_mud_dry",
+  "license": "CC0",
+  "realSizeMeters": 1.3,
+  "studsPerTile": 5,
+  "baseMaterial": "Mud",
+  "pattern": "Organic",
+  "style": "hood",
+  "use": "Dry mud patches, canal beds",
+  "maps": {
+   "ColorMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brown_mud_dry/brown_mud_dry_diff_1k.png",
+   "NormalMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brown_mud_dry/brown_mud_dry_nor_gl_1k.png",
+   "RoughnessMap": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brown_mud_dry/brown_mud_dry_rough_1k.png"
+  }
+ },
+ {
+  "name": "DowntownGlassFacadeA",
+  "source": "ambientCG",
+  "sourceId": "Facade001",
+  "page": "https://ambientcg.com/view?id=Facade001",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=Facade001_1K-PNG.zip",
+  "style": "downtown",
+  "use": "Reflective glass curtain wall (towers)",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "DowntownGlassFacadeB",
+  "source": "ambientCG",
+  "sourceId": "Facade006",
+  "page": "https://ambientcg.com/view?id=Facade006",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=Facade006_1K-PNG.zip",
+  "style": "downtown",
+  "use": "Second glass tower facade",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "DowntownTowerWindowsNight",
+  "source": "ambientCG",
+  "sourceId": "Facade017",
+  "page": "https://ambientcg.com/view?id=Facade017",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=Facade017_1K-PNG.zip",
+  "style": "downtown",
+  "use": "Window grid for far towers (has night lit version)",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "ChainLinkFence",
+  "source": "ambientCG",
+  "sourceId": "Fence003",
+  "page": "https://ambientcg.com/view?id=Fence003",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=Fence003_1K-PNG.zip",
+  "style": "hood",
+  "use": "Chain-link fence (alpha: use AlphaMode Transparency on a mesh)",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "ChainLinkFenceB",
+  "source": "ambientCG",
+  "sourceId": "Fence006",
+  "page": "https://ambientcg.com/view?id=Fence006",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=Fence006_1K-PNG.zip",
+  "style": "hood",
+  "use": "Second wire-mesh fence",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "RoadAsphaltOld",
+  "source": "ambientCG",
+  "sourceId": "Road012A",
+  "page": "https://ambientcg.com/view?id=Road012A",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=Road012A_1K-PNG.zip",
+  "style": "hood",
+  "use": "Old worn road with patches",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "RoadAsphaltCrackedLayers",
+  "source": "ambientCG",
+  "sourceId": "Road013A",
+  "page": "https://ambientcg.com/view?id=Road013A",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=Road013A_1K-PNG.zip",
+  "style": "hood",
+  "use": "Cracked layered asphalt",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "PaintedPlasterBroken",
+  "source": "ambientCG",
+  "sourceId": "PaintedPlaster006",
+  "page": "https://ambientcg.com/view?id=PaintedPlaster006",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=PaintedPlaster006_1K-PNG.zip",
+  "style": "hood",
+  "use": "Broken painted plaster facade",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "RoofingTilesSlate",
+  "source": "ambientCG",
+  "sourceId": "RoofingTiles003",
+  "page": "https://ambientcg.com/view?id=RoofingTiles003",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=RoofingTiles003_1K-PNG.zip",
+  "style": "both",
+  "use": "Clean slate roof tiles",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "DecalManholeCover",
+  "source": "ambientCG",
+  "sourceId": "ManholeCover011",
+  "page": "https://ambientcg.com/view?id=ManholeCover011",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=ManholeCover011_1K-PNG.zip",
+  "style": "both",
+  "use": "Manhole cover decal",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "DecalRoadLinesYellow",
+  "source": "ambientCG",
+  "sourceId": "RoadLines022A",
+  "page": "https://ambientcg.com/view?id=RoadLines022A",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=RoadLines022A_1K-PNG.zip",
+  "style": "both",
+  "use": "Road line decal (yellow)",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ },
+ {
+  "name": "DecalWaterLeak",
+  "source": "ambientCG",
+  "sourceId": "Leaking013A",
+  "page": "https://ambientcg.com/view?id=Leaking013A",
+  "license": "CC0",
+  "zip1k": "https://ambientcg.com/get?file=Leaking013A_1K-PNG.zip",
+  "style": "both",
+  "use": "Water streak / leak decal for walls",
+  "baseMaterial": "Concrete",
+  "pattern": "Regular",
+  "studsPerTile": null,
+  "note": "Real size not stated by the API; set StudsPerTile by eye next to a 5-stud avatar"
+ }
+]
