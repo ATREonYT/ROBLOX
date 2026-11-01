@@ -36,6 +36,7 @@ Back to [[00 Build Router]] · Process: [[08 Few-Prompt Game Building with AI]]
 
 ## Look
 - **Blocky, studded, cartoony** (classic studs on the lobby, booths and cannons).
+- **Realistic RP maps are now a goal too** (Nov 1: "I want this project to be the best game of RP on Roblox", with 8 reference shots of a worn sunny hood and a humid coastal town). For those, the cartoony look rules above don't apply: use [[33 Realistic World Building Playbook]] and [[References - Realistic Worlds]]. Kid-safe still: worn streets and graffiti art yes, gang or drug imagery no.
 - **Booths copied from their pictures:** no lamp posts, neon only where their picture has it.
 - **Glow that grows with tier**, but bloom nearly off. No floating orbs (they turned them off).
 - **Water:** real ripple rings, not flat neon discs; turquoise water.
