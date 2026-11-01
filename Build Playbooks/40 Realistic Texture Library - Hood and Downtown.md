@@ -7,7 +7,7 @@ updated: 2026-11-01
 
 Back to [[35 Realistic Materials, Decals and Wear]] · [[33 Realistic World Building Playbook]] · [[00 Build Router]]
 
-**152 free, CC0 textures picked for a realistic RP city** (68 in the first pass, 84 more matched to Alex's Larp photos), split into a worn **hood** look and a cleaner **downtown** look, plus shared roads, metal, roofs, ground and coast. Every one is CC0 (public domain, no credit needed, safe for a paid game) from **Poly Haven** or **ambientCG**. Write them in `<game>/art/LICENSES.md` anyway so we always know where a texture came from.
+**179 free, CC0 textures picked for a realistic RP city** (68 in the first pass, 84 matched to Alex's Larp photos, 27 for villas, towers and interiors from the Vice Bay references), split into a worn **hood** look and a cleaner **downtown** look, plus shared roads, metal, roofs, ground and coast. Every one is CC0 (public domain, no credit needed, safe for a paid game) from **Poly Haven** or **ambientCG**. Write them in `<game>/art/LICENSES.md` anyway so we always know where a texture came from.
 
 Files (all in `Build Playbooks/realistic-kit/textures/`):
 - `texture-manifest.json`: every texture with source page, direct 1K map links, real-world size, StudsPerTile, base material and use. The single source of truth.
@@ -225,6 +225,40 @@ Picked surface by surface from the 49 Larp screenshots. Which variant matches wh
 
 **Quality:** every texture is the full PBR set (colour, OpenGL normal, roughness, and metalness for metals) at 1024 px. 1024 is the most Roblox uses for MaterialVariant maps, so bigger downloads would add memory on phones without adding detail on screen.
 
+## Batch 3: villas, towers and interiors from Alex's Vice Bay references (27 more, Nov 1)
+
+Picked from the Vice Bay pictures; what matches which shot is in [[42 Vice Bay Reference Study - Downtown, Towers, Villas and Interiors]] §5. **Not uploaded to Studio yet.**
+
+| Variant name | Source texture (CC0) | Base material | Real size | StudsPerTile | Style | Use it for |
+|---|---|---|---|---|---|---|
+| `VillaStackedSlate` | [castle_wall_slates](https://polyhaven.com/a/castle_wall_slates) (Poly Haven) | Slate | 2.5 m | 9 | villa | Stacked slate walls (Vice Bay villa house_01, ref_12 penthouse feature walls) |
+| `VillaFieldstone` | [rock_wall_10](https://polyhaven.com/a/rock_wall_10) (Poly Haven) | Rock | 1.8 m | 6 | villa | Rough fieldstone columns and planters (house_01-03) |
+| `PlasteredStoneWall` | [plastered_stone_wall](https://polyhaven.com/a/plastered_stone_wall) (Poly Haven) | Plaster | 2.5 m | 9 | villa | Stone peeking through plaster |
+| `PatioStoneTiles` | [rock_tile_floor_02](https://polyhaven.com/a/rock_tile_floor_02) (Poly Haven) | Slate | 2.4 m | 9 | villa | Pool deck and patio stone tiles |
+| `InteriorLaminate` | [laminate_floor_02](https://polyhaven.com/a/laminate_floor_02) (Poly Haven) | WoodPlanks | 1.7 m | 6 | interior | Warm wood floor for apartments and penthouses (ref_16-20) |
+| `InteriorParquet` | [herringbone_parquet](https://polyhaven.com/a/herringbone_parquet) (Poly Haven) | WoodPlanks | 3.4 m | 12 | interior | Herringbone parquet for upscale rooms |
+| `InteriorOakPlanks` | [oak_wood_planks](https://polyhaven.com/a/oak_wood_planks) (Poly Haven) | WoodPlanks | 1.2 m | 4 | interior | Light oak planks |
+| `DeckPlanks` | [plank_flooring_02](https://polyhaven.com/a/plank_flooring_02) (Poly Haven) | WoodPlanks | 1.98 m | 7 | villa | Pool deck boards (house_16-19) |
+| `CeilingInterior` | [ceiling_interior](https://polyhaven.com/a/ceiling_interior) (Poly Haven) | Plaster | 2.0 m | 7 | interior | Office and lobby ceilings |
+| `WhiteBrickInterior` | [castle_brick_02_white](https://polyhaven.com/a/castle_brick_02_white) (Poly Haven) | Brick | 2.5 m | 9 | interior | White-painted brick feature walls |
+| `PolishedConcreteFloor` | [concrete_floor_01](https://polyhaven.com/a/concrete_floor_01) (Poly Haven) | Concrete | 2.0 m | 7 | interior | Polished concrete floors (lofts, garages, tower lobby) |
+| `ConcreteWallTower` | [concrete_wall_006](https://polyhaven.com/a/concrete_wall_006) (Poly Haven) | Concrete | 2.0 m | 7 | downtown | Clean grey concrete for tower podiums and parking garages (city_13) |
+| `MarbleWhiteVeined` | [Marble012](https://ambientcg.com/view?id=Marble012) (ambientCG) | Marble | not stated | by eye | interior | White veined marble: kitchen islands, lobby floors (ref_16, tower_09) |
+| `MarbleBlackShiny` | [Marble016](https://ambientcg.com/view?id=Marble016) (ambientCG) | Marble | not stated | by eye | interior | Black shiny marble: lobby columns, counters (tower_02, tower_09) |
+| `MarbleDarkGrey` | [Marble006](https://ambientcg.com/view?id=Marble006) (ambientCG) | Marble | not stated | by eye | interior | Dark grey veined marble |
+| `TravertineBeige` | [Travertine009](https://ambientcg.com/view?id=Travertine009) (ambientCG) | Marble | not stated | by eye | villa | Beige travertine for villa floors and pool edges |
+| `MarbleFloorTiles` | [Tiles074](https://ambientcg.com/view?id=Tiles074) (ambientCG) | Marble | not stated | by eye | interior | Marble floor tiles for lobbies and malls |
+| `OnyxWhite` | [Onyx015](https://ambientcg.com/view?id=Onyx015) (ambientCG) | Marble | not stated | by eye | interior | Polished white onyx for luxury counters |
+| `WoodFloorClean` | [WoodFloor051](https://ambientcg.com/view?id=WoodFloor051) (ambientCG) | WoodPlanks | not stated | by eye | interior | Clean brown wood floor |
+| `WoodFloorDarkParquet` | [WoodFloor064](https://ambientcg.com/view?id=WoodFloor064) (ambientCG) | WoodPlanks | not stated | by eye | interior | Dark parquet |
+| `WoodFloorPlanks` | [WoodFloor043](https://ambientcg.com/view?id=WoodFloor043) (ambientCG) | WoodPlanks | not stated | by eye | interior | Plank parquet |
+| `PoolMosaicBlue` | [Tiles069](https://ambientcg.com/view?id=Tiles069) (ambientCG) | CeramicTiles | not stated | by eye | villa | Blue hexagon pool mosaic (house_16-19) |
+| `PoolMosaicBlack` | [Tiles072](https://ambientcg.com/view?id=Tiles072) (ambientCG) | CeramicTiles | not stated | by eye | villa | Black hex mosaic for pool coping and showers (house_14) |
+| `PoolMosaicCyan` | [Tiles019](https://ambientcg.com/view?id=Tiles019) (ambientCG) | CeramicTiles | not stated | by eye | villa | Small cyan pool mosaic |
+| `FabricGreyCloth` | [Fabric030](https://ambientcg.com/view?id=Fabric030) (ambientCG) | Fabric | not stated | by eye | interior | Grey sofa and cushion fabric |
+| `FabricFineGrey` | [Fabric082A](https://ambientcg.com/view?id=Fabric082A) (ambientCG) | Fabric | not stated | by eye | interior | Fine smooth fabric for bedding and curtains |
+| `CarpetBeige` | [Carpet016](https://ambientcg.com/view?id=Carpet016) (ambientCG) | Fabric | not stated | by eye | interior | Beige carpet for offices and bedrooms (tower_08) |
+
 ## Ready-made combos
 
 | Building or place | Walls | Trim / details | Ground |
@@ -246,7 +280,7 @@ Picked surface by surface from the 49 Larp screenshots. Which variant matches wh
 2. **Upload:** Studio's Asset Manager → Bulk Import the `downloaded/` PNGs (or let Claude upload them through Studio). Moderation takes a few minutes.
 3. **Build:** paste the image IDs into `BuildMaterialVariants.lua`, run it in the Command Bar, then **Cmd+S**. Apply a variant by setting a part's `MaterialVariant` to its name (Studio sets the base material).
 
-**Already done (Nov 1):** all 152 are uploaded (472 maps) and built as MaterialVariants in **Miami Trap Life** (place 95405231186296), in `MaterialService > Realistic`, with no overrides. Every image ID is in `realistic-kit/textures/texture-ids.json` (`{"VariantName": {"ColorMap": "rbxassetid://…", …}}`). For another place, reuse those IDs: no need to download or upload again. ambientCG variants with no real size got StudsPerTile 20 (roads), 4 (decals, fences) or 10 (the rest): check them by eye.
+**Already done (Nov 1):** the first 152 are uploaded (472 maps) and built as MaterialVariants in **Miami Trap Life** (place 95405231186296), in `MaterialService > Realistic`, with no overrides. Every image ID is in `realistic-kit/textures/texture-ids.json` (`{"VariantName": {"ColorMap": "rbxassetid://…", …}}`). For another place, reuse those IDs: no need to download or upload again. ambientCG variants with no real size got StudsPerTile 20 (roads), 4 (decals, fences) or 10 (the rest): check them by eye.
 
 ## Honest notes
 - The picks come from the source sites' tags, sizes and descriptions; **each still needs an in-Studio look** under the realistic lighting preset ([[34 Realistic Lighting and Atmosphere]]). Swap any that look wrong for a neighbour in the same Poly Haven category (lists at polyhaven.com/textures).

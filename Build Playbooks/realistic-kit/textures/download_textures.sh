@@ -15,6 +15,8 @@ for t in m:
             f = os.path.join(d, k + ".png")
             if os.path.exists(f) and os.path.getsize(f) > 1000: ok += 1; continue
             r = subprocess.run(["curl", "-sfL", "-o", f, url])
+            if r.returncode != 0 and "_diff_" in url:  # some Poly Haven sets name it _diffuse_
+                r = subprocess.run(["curl", "-sfL", "-o", f, url.replace("_diff_", "_diffuse_")])
             if r.returncode == 0: ok += 1
             else:
                 miss += 1

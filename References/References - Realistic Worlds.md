@@ -35,3 +35,16 @@ Decoded in [[41 Larp Reference Study - Atmosphere, Surfaces and Feel]]. A few ke
 ![[Build Playbooks/references/larp/larp-142845.jpg]]
 ![[Build Playbooks/references/larp/larp-142939.jpg]]
 ![[Build Playbooks/references/larp/larp-143109.jpg]]
+
+## Vice Bay references (Alex, Nov 1): downtown, tower, villa, interiors
+
+Decoded in [[42 Vice Bay Reference Study - Downtown, Towers, Villas and Interiors]]. Key shots (all 57 are in `Build Playbooks/references/vice-bay/`):
+
+![[Build Playbooks/references/vice-bay/city_06.jpg]]
+![[Build Playbooks/references/vice-bay/city_07.jpg]]
+![[Build Playbooks/references/vice-bay/city_14.jpg]]
+![[Build Playbooks/references/vice-bay/tower_04.jpg]]
+![[Build Playbooks/references/vice-bay/house_02.jpg]]
+![[Build Playbooks/references/vice-bay/house_18.jpg]]
+![[Build Playbooks/references/vice-bay/penthouse-ref_12.jpg]]
+![[Build Playbooks/references/vice-bay/miami-night-ref_03.jpg]]
