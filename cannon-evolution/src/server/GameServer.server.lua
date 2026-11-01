@@ -47,7 +47,32 @@ remotes.Parent = ReplicatedStorage
 ---------------------------------------------------------------------------
 -- Data
 ---------------------------------------------------------------------------
-local store = DataStoreService:GetDataStore(Config.DATASTORE_NAME)
+-- a Save-to-File copy that was never published can't reach DataStores, so it plays on a memory store
+local function offlineStore()
+	local mem = {}
+	return {
+		GetAsync = function(_, key)
+			return mem[key]
+		end,
+		SetAsync = function(_, key, value)
+			mem[key] = value
+		end,
+		UpdateAsync = function(_, key, fn)
+			mem[key] = fn(mem[key])
+			return mem[key]
+		end,
+		GetSortedAsync = function()
+			return { IsFinished = true, GetCurrentPage = function()
+				return {}
+			end, AdvanceToNextPageAsync = function() end }
+		end,
+	}
+end
+local storeOk, store = pcall(DataStoreService.GetDataStore, DataStoreService, Config.DATASTORE_NAME)
+if not storeOk then
+	warn("[GameServer] DataStores are off in this copy, so progress won't save:", store)
+	store = offlineStore()
+end
 local profiles = {} -- [player] = { Data, Loaded, JoinTime, PlaytimeClaimed = {}, Passes = {} }
 
 local function deepCopy(t)
@@ -1329,7 +1354,8 @@ end)
 ---------------------------------------------------------------------------
 local boardStores = {}
 for _, board in ipairs(Config.LEADERBOARDS) do
-	boardStores[board.Id] = DataStoreService:GetOrderedDataStore(Config.DATASTORE_NAME .. "_LB_" .. board.Id)
+	local ok, boardStore = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, Config.DATASTORE_NAME .. "_LB_" .. board.Id)
+	boardStores[board.Id] = ok and boardStore or offlineStore()
 end
 local nameCache = {}
 local latestBoards = {}

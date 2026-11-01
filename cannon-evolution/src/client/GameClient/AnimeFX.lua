@@ -565,7 +565,7 @@ return function(ctx)
 				pe.Acceleration = host.CFrame:VectorToWorldSpace(pe.Acceleration)
 				longest = math.max(longest, pe.Lifetime.Max)
 				local e = spec.Emit
-				if e then
+				if e and hold < 1.5 then
 					task.delay(e.Delay or 0, function()
 						if (e.Count or 0) > 0 then
 							pe:Emit(e.Count)
@@ -578,6 +578,7 @@ return function(ctx)
 						end
 					end)
 				elseif spec.Enabled ~= false then
+					-- held effects (a ball in flight, a long charge) run every emitter for the whole hold
 					pe.Enabled = true
 					task.delay(hold, function()
 						pe.Enabled = false
@@ -1042,7 +1043,7 @@ return function(ctx)
 	end
 
 	-- colour grading that shifts through a cutscene (Alex: "add some change of colour")
-	local function grade(tint, saturation, contrast, seconds)
+	local function tintWorld(tint, saturation, contrast, seconds)
 		sky.Enabled = true
 		TweenService:Create(sky, TweenInfo.new(seconds or 0.6, Enum.EasingStyle.Sine), { TintColor = tint, Saturation = saturation or 0, Contrast = contrast or 0 }):Play()
 	end
@@ -1115,7 +1116,7 @@ return function(ctx)
 				{ At = seconds, Eye = target - dir * 13 + side * 5 + Vector3.new(0, 6, 0), Look = target + dir * 30 + Vector3.new(0, 2, 0), Fov = 70 },
 			}))
 			showCard("MYTHIC SHOT!", "1 in 100", look)
-			grade(Color3.fromRGB(255, 205, 235), 0.25, 0.15, 0.8) -- the world tints magenta
+			tintWorld(Color3.fromRGB(255, 205, 235), 0.25, 0.15, 0.8) -- the world tints magenta
 			rumble(my, 0.05, 0.35, seconds)
 			pose.Target, pose.Shake = 1, rad(1)
 			focusLines(workspace.CurrentCamera.ViewportSize / 2, look, seconds * 0.45, true)
@@ -1140,7 +1141,7 @@ return function(ctx)
 			fxPlay("Wind", CFrame.new(feet + Vector3.new(0, 1, 0)), 1.5, look, 0.3)
 			shake(0.6, 0.35)
 			if mine then
-				grade(Color3.fromRGB(255, 170, 215), 0.45, 0.3, 0.15) -- the colour kicks up on the roar
+				tintWorld(Color3.fromRGB(255, 170, 215), 0.45, 0.3, 0.15) -- the colour kicks up on the roar
 			end
 		end)
 		if cannon then
@@ -1183,7 +1184,7 @@ return function(ctx)
 		fireAura(char, look, seconds + 0.5)
 		local gun = makeAura(grand, look)
 		if mine then
-			grade(Color3.fromRGB(255, 225, 160), 0.3, 0.2, 0.6) -- the world goes gold
+			tintWorld(Color3.fromRGB(255, 225, 160), 0.3, 0.2, 0.6) -- the world goes gold
 			local p, f = root.Position, root.CFrame.LookVector
 			local bp = bore and bore.Position or gpos
 			takeCamera(path({
@@ -1264,7 +1265,7 @@ return function(ctx)
 			fxPlay("Tornado", CFrame.new(gpos - Vector3.new(0, gsize.Y * 0.4, 0)), 4, look, seconds - 1.6)
 			if mine then
 				rumble(my, 0.15, 0.6, seconds - 1.6)
-				grade(Color3.fromRGB(255, 205, 120), 0.45, 0.35, seconds - 1.6)
+				tintWorld(Color3.fromRGB(255, 205, 120), 0.45, 0.35, seconds - 1.6)
 			end
 		end)
 		at(seconds * 0.62, my, function()
@@ -1384,7 +1385,8 @@ return function(ctx)
 				{ At = 1.5, Eye = focus + side * 45 - dir * 18 + Vector3.new(0, 4, 0), Look = focus + Vector3.new(0, 60, 0), Fov = 72 },
 				{ At = 2.3, Eye = focus + side * 42 - dir * 8 + Vector3.new(0, 14, 0), Look = focus + Vector3.new(0, 8, 0), Fov = 66 },
 				-- the showcase: a slow orbit round the angel cannon so you really see it
-				{ At = 2.6, Get = orbit(focus, 24, 6, 0.1, 3.3, 58, 50, 3) },
+				-- (high and wide enough to clear the dock props, so the camera never gets pulled into the wings)
+				{ At = 2.6, Get = orbit(focus, 34, 13, 0.1, 3.3, 60, 52, 4) },
 				-- behind you, looking up past the cannon to the light
 				{ At = seconds - 1.4, Eye = p + (p - focus).Unit * 10 + Vector3.new(0, 4, 0), Look = focus + Vector3.new(0, 7, 0), Fov = 62 },
 				-- over the cannon, down the river
@@ -1445,7 +1447,7 @@ return function(ctx)
 					angelic(cannon, look, 1.2)
 				end
 				if mine then
-					grade(Color3.fromRGB(255, 240, 215), 0.2, 0.2, 0.8) -- navy turns to warm white-gold
+					tintWorld(Color3.fromRGB(255, 240, 215), 0.2, 0.2, 0.8) -- navy turns to warm white-gold
 					rumble(my, 0.25, 0.05, 0.8)
 				end
 				fxPlay("HolyAura", CFrame.new(focus - Vector3.new(0, 4, 0)), 3, look, seconds)
@@ -1547,6 +1549,15 @@ return function(ctx)
 			cancel()
 		end
 		local my = token
+		-- the cannon's name tag would sit over the close-ups, so it hides for the cutscene
+		local myCannon = mine and workspace:FindFirstChild("MyCannon")
+		local tag = myCannon and myCannon:FindFirstChild("Tag")
+		if tag and tag:IsA("BillboardGui") and tag.Enabled then
+			tag.Enabled = false
+			task.delay(seconds + 0.5, function()
+				tag.Enabled = true
+			end)
+		end
 		local you = play(owner, seconds, mine, my)
 		if mine then
 			at(math.min(1.6, seconds * 0.5), my, hideCard) -- the title clears so the moment reads
