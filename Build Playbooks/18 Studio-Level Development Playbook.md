@@ -72,7 +72,8 @@ Back to [[00 Build Router]] Â· Whole-game craft: [[20 Whole-Game Field Guide]] Â
 - **Luau's new type checker** has been the default since early 2026. Expect new warnings the first time you run it.
 - **Studio's Script Sync** is still a beta and names files differently from Rojo. Don't mix the two.
 - **Tests:** TestEZ is unmaintained; Jest-Lua is the maintained Roblox test framework. Our Lune `tests/Runner.luau` needs no Roblox and stays.
-- **CI:** `.github/workflows/checks.yml` runs `new-game-kit/tools/check.sh` and `tools/kidsafe_check.py` on every push and pull request. When a check is red, fix it; never skip a test.
+- **CI:** `.github/workflows/checks.yml` runs `new-game-kit/tools/check.sh`, `tools/kidsafe_check.py` and `tools/windows_names_check.py` on every push and pull request. When a check is red, fix it; never skip a test.
+- **Windows-safe file names (Nov 2026 lesson):** Alex also clones the repo on a Windows PC, and one bad name makes GitHub Desktop fail the whole clone with "invalid path". In every file and folder name, never use `< > : " | ? *` or `\`, never end a name with a dot or space, never use `CON`, `PRN`, `AUX`, `NUL`, `COM1`-`COM9` or `LPT1`-`LPT9`, keep the whole path under 200 characters, and never have two names that differ only by upper/lower case. Write `Report - topic` instead of `Report: topic`, and drop a title's `?` from its file name (an Obsidian alias such as `[[Name|Name?]]` keeps the display text). Run `python3 tools/windows_names_check.py` before pushing.
 - **Next, the cheapest way to catch made-up APIs in AI-written code:** add `selene` (linter), `StyLua` (formatter) and `luau-lsp analyze` (type check), with Roblox's type definitions committed.
 - **Before every push, look for the old API names:** `:GetProductInfo(`, `:AwardBadge(`, `:LoadCharacter(`, `:IsInGroup(`, `:ReserveServer(`. Use the `Async` versions.
 - **Review checklist for any change:**

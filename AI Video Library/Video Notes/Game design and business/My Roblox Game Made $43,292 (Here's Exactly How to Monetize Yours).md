@@ -56,5 +56,5 @@ None stated in the video (no AI prompts).
 
 - Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[10 Business, Monetization & Case Studies]] · [[15 Kid Appeal & Game Design]]
 - Playbooks: [[01 Current Hits October 2026]] · [[02 Launch and Discovery Cheat Sheet]]
-- More in Game design and business: [[I Made 4 Roblox Games with AI… Did I Get Rich?]] · [[Roblox Game Design Explained Like You're 5 Yrs Old]] · [[Why 90% of Roblox Games Never Get Players]]
+- More in Game design and business: [[I Made 4 Roblox Games with AI… Did I Get Rich|I Made 4 Roblox Games with AI… Did I Get Rich?]] · [[Roblox Game Design Explained Like You're 5 Yrs Old]] · [[Why 90% of Roblox Games Never Get Players]]
 <!-- related:end -->
