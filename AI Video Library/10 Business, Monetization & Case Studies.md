@@ -42,7 +42,7 @@ Back to [[00 Start Here]]
 <!-- related:start -->
 ## Step-by-step notes from the transcripts
 
-- [[I Made 4 Roblox Games with AI… Did I Get Rich?]]
+- [[I Made 4 Roblox Games with AI… Did I Get Rich|I Made 4 Roblox Games with AI… Did I Get Rich?]]
 - [[My Roblox Game Made $43,292 (Here's Exactly How to Monetize Yours)]]
 - [[Roblox Game Design Explained Like You're 5 Yrs Old]]
 - [[Why 90% of Roblox Games Never Get Players]]

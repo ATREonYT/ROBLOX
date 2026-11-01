@@ -19,3 +19,5 @@ jobs:
         run: sh new-game-kit/tools/check.sh
       - name: Kid-safe check, every game
         run: python3 tools/kidsafe_check.py
+      - name: Windows-safe file names (so the repo clones on Windows)
+        run: python3 tools/windows_names_check.py

@@ -70,6 +70,7 @@ Run `AI Video Library/16 Cartoony Kid-Appeal Checklist.md` before showing a new 
 
 ## Repo mechanics
 - One folder per game, with a Rojo `default.project.json` mapping `src/` into Studio services. Setup for the owner is in `ROJO-SETUP.md`.
+- **File names must work on Windows** (the owner also clones on a Windows PC): no `< > : " | ? *`, no trailing dot or space, no names that differ only by case. Use ` - ` instead of `:`. `tools/windows_names_check.py` checks this in CI (vault note 18 §4).
 - **Which game is where:**
   - `cannon-evolution/`: +1 Cannon Evolution, the current game. Setup in its README, history in `reports/+1 Cannon Evolution build notes.md`.
   - `huzz-valley/`: Huzz Valley (Huss Anime Girls). Read `huzz-valley/CLAUDE.md` first; deep notes in `huzz-valley/docs/notes/`.
