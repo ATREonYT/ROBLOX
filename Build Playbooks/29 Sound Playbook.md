@@ -49,7 +49,7 @@ Free tools: Audacity (trim, fade, Loudness Normalization), Youlean Loudness Mete
 ## 5. Mixing
 - **SoundGroups:** Music, Ambience, SFX, UI. Each player setting controls a group.
 - **Priority:** the player's own actions loudest, other players' below, UI quietly on top, music and ambience as a bed.
-- **Ducking:** tween the Music group down 3–6 dB for a sting and back over 250–500 ms. The classic `CompressorSoundEffect` can't listen to another group (C18).
+- **Ducking:** tween the Music group down 3–6 dB for a sting and back over 250–500 ms. Or put a `CompressorSoundEffect` in the Music group with its `SideChain` set to the sting group (C30). Tweening is simpler to reason about, so it's the default.
 - **Other players' rare shots** play in 3D from their cannon, with a mute toggle; their UI sounds never reach you.
 - **Voice cap:** at most 16 sounds at once on phones (24 on PC); give each sound name a 30 ms cooldown so twenty coins in a frame make one sound, not twenty.
 

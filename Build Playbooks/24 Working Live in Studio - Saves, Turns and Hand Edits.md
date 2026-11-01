@@ -33,7 +33,7 @@ Back to [[00 Build Router]] · Code and release rules: [[18 Studio-Level Develop
 - **Order big installs.** On Nov 1 the rare-shot rework went first, then the training lanes. The second thread waited for the first to finish *and* for Alex's save.
 - **Keep each install narrow.** The lanes install only rebuilt `TrainingStations` and added one LocalScript (`LaneMotion`). A narrow install can't step on another thread's work, and it is easy to undo.
 - **Play mode is not edit mode.** Changes made while Play is running vanish on Stop. Stop Play before installing; play-test after.
-- **Team Create** lets Alex and a helper edit at once, but scripts can still clash: two people editing one script means the last save wins. Keep to one editor per script.
+- **Team Create** lets Alex and a helper edit at once. With Collaborative Editing on (the default), several people can type in one script live and see each other's changes; with it off (Drafts), each person commits their draft and a later commit can overwrite an earlier one. Either way, keep to one editor per script as a habit.
 
 ## 4. Keeping Alex's hand edits
 Alex judges by eye and fixes things in Studio directly. Those edits are the most valuable thing in the place, because they are the owner's taste.
@@ -62,7 +62,7 @@ The Studio connection drops when the Mac sleeps or the lid closes (on Oct 31–N
   1. **File → Open from File…**, pick the pack (for example `Downloads/VFX PACK.rbxl`). It opens in its own tab.
   2. In that tab's Explorer, select the folders and press **Cmd+C**.
   3. Switch to the game's tab, click **ServerStorage**, and press **Cmd+V**. In ServerStorage it never shows in the game.
-- **Check a pack before using it:** does it have scripts? (The Oct 31 VFX pack had none: good.) Are any textures ripped from other games? (We left those out.) Is the sound licensed? (SFX came from Roblox's licensed library.)
+- **Check a pack before using it:** does it have scripts? (The Oct 31 VFX pack had none: good.) Are any textures ripped from other games? (We left those out.) Is the sound licensed? (The 5 SFX used are Roblox-licensed library sounds.)
 - More on using pack effects well: [[25 Rare Shot Cameras and Using a VFX Pack]].
 
 ## 8. Checklist before and after a live install

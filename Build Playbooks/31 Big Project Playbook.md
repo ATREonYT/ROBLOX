@@ -12,7 +12,7 @@ Back to [[00 Build Router]] · Rules: repo `CLAUDE.md` "How we build" · Numbers
 ## 1. Phases and their exit tests
 | Phase | Goal | Exit test (all must be true) | Typical length |
 |---|---|---|---|
-| **0. Pitch** | One page: the fantasy, the 30-second hook, the loop, the reference game, what we do better | Alex says yes to one of 2–3 pitches ([[Game Concepts - RP and Fun]] has examples) | 1 session |
+| **0. Pitch** | One page: the fantasy, the 30-second hook, the loop, the reference game, what we do better | Alex says yes to one of 2–3 pitches ([[Game Concepts - RP and Fun]] has examples), and the pitch passes the **age-rating check**: no private spaces (lockable rooms, bedrooms, bathrooms) in a social game, or it becomes 16+ / ID-verified 18+ (note 27 C31) | 1 session |
 | **1. Golden slice** | The smallest piece that proves the look and feel: one place, one action, one reward, one cinematic moment | A side-by-side with the reference; a fresh critic's worst-gaps list is short; Alex says "yes, more of this" | 1–3 days |
 | **2. Core loop** | Everything a player does in the first 10 minutes works and saves | The first-session timeline matches the targets (27 §10); `check.sh` green; saves migrate | 3–7 days |
 | **3. Systems** | Shop, passes, daily gifts, quests, settings, codes, leaderboards (mostly from the kit) | Kit specs green; kid-safe check green; every unbuilt item says "Coming soon" | 3–7 days |
@@ -84,6 +84,7 @@ Cut in this order, and say plainly what was cut:
 | The phone is slow | Client scripts over 2 ms, particles over 300, crashes over 2–3% | A performance pass before more content |
 | The look drifts from the reference | Alex asks for changes twice on the same thing | A fresh side-by-side and a critic pass |
 | Studio work isn't in git | A Studio-only diff exists | Pull it back the same day (note 24 §5) |
+| The age rating jumps | A social hangout gets lockable rooms or private spaces | Keep spaces open; re-answer the maturity questionnaire before publishing (note 27 C31) |
 | Scope grows | The phase's exit test keeps moving | Write the cut list (§7) and ask Alex once |
 
 ## 9. Checklist for starting a big project

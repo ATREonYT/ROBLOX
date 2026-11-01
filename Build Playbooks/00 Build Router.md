@@ -11,7 +11,7 @@ updated: 2026-11-01
 
 **Starting code: [[05 New Game Kit]].** Every new game starts from `new-game-kit/` (saving, cash, upgrades, rebirth, eggs, pets, shop, gifts, codes, HUD, all tested offline). Build only the game's own loop.
 
-**The numbers: [[27 Studio Standard - One Sheet per Craft]].** One sheet per craft (rule, numbers, recipe, test). Where an older note's number disagrees, the sheet wins (clashes C1–C27 settled).
+**The numbers: [[27 Studio Standard - One Sheet per Craft]].** One sheet per craft (rule, numbers, recipe, test). Where an older note's number disagrees, the sheet wins (clashes C1–C31 settled).
 
 ## By craft (start here for a look, feel or code job)
 

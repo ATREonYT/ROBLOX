@@ -18,7 +18,7 @@ Back to [[00 Build Router]] · Fun with friends: [[26 Fun and Roleplay Playbook]
 | **Playing** | 60–180 s | The goal, a timer, who's left | Checks every win or lose condition; ends early when one (or no) player is left |
 | **Results** | 6 s (5–8) | Winners on a podium, rewards flying to the counter | Pays only real rounds (≥ 20 s, enough players at the start) |
 
-Kit: `Rounds.new({ minPlayers, intermission, countdown, roundLength, results, joinInProgress, minPaidSeconds, endWhenAlive })`, ticked by the server; it returns events (`Intermission`, `Countdown`, `Started`, `Ended`, `EndedUnpaid`, `Cancelled`). Every round has an id, so a timer from an old round can never end a new one.
+Kit: `Rounds.new({ minPlayers, intermission, countdown, roundLength, results, joinInProgress, minPaidSeconds, endWhenAlive })`, ticked by the server; it returns events (`Intermission`, `Countdown`, `Started`, `Ended`, `EndedUnpaid`, `Cancelled`). Every round has an id (`r.round`): capture it when you start a timer and pass it to `Eliminate`, `Revive` or `End`, and a stale id is ignored. The game logic can end a round itself with `r:End(now, round)` (same pay rule), and `r:Revive(userId, round)` puts a player back in (only players who started the round). Caught players can't re-join the same round.
 
 ## 2. The rules that keep rounds fun
 1. **Never wait with nothing to do.** The lobby has toys: a trampoline, a mini obby, a pet to pat, a leaderboard to look at. A bored kid leaves during intermission.
@@ -49,7 +49,7 @@ Kit: `Rounds.new({ minPlayers, intermission, countdown, roundLength, results, jo
 ## 5. Server must-haves (the bugs every round game ships with)
 | Bug | Fix |
 |---|---|
-| An old round's timer ends a new round | Every timer checks its round id (the kit does this) |
+| An old round's timer ends a new round | Capture `r.round` when the timer starts and pass it to `End` / `Eliminate`; the kit ignores stale ids |
 | A player leaves mid-round and the round never ends | `Leave` on PlayerRemoving; the round checks who's left every tick |
 | Players walk out of the arena or hide under the map | Kill planes below the map, invisible walls, and a server check that teleports out-of-bounds players back |
 | Tools or roles leak into the next round | Clear tools, teams and attributes in Results, every time |
@@ -57,11 +57,11 @@ Kit: `Rounds.new({ minPlayers, intermission, countdown, roundLength, results, jo
 | Spectators can still affect the round | Spectators are a separate team with no tools and no collision |
 
 ## 6. Worked example: a 6-player freeze-tag round
-1. `Rounds.new({ minPlayers = 3, intermission = 15, countdown = 5, roundLength = 120, joinInProgress = 15, endWhenAlive = 0 })`. Freeze tag ends when everyone is frozen, so the game decides the end itself, not the "one left" rule.
+1. `Rounds.new({ minPlayers = 3, intermission = 15, countdown = 5, roundLength = 120, joinInProgress = 15, endWhenAlive = 0 })`. Freeze tag ends when everyone is frozen, so the game calls `r:End(now, round)` itself instead of the "one left" rule.
 2. **Intermission:** a vote between 3 maps; the lobby has a trampoline.
 3. **Countdown:** pick 1 "it" fairly (whoever was "it" least); teleport runners to spread-out spawns and "it" to the centre, frozen for the 5 s.
-4. **Playing:** "it" has a dash (cooldown 4 s). A tag is a server-checked touch within 6 studs (`Interact`-style distance check). A frozen runner turns to ice (a Highlight, no flash) and can be unfrozen by a friend standing next to them for 2 s.
-5. **End:** all frozen ("it" wins) or the timer runs out (runners win). Results show a podium with a confetti burst and a "+25 coins" fly-in.
+4. **Playing:** "it" has a dash (cooldown 4 s). A tag is a server-checked touch within 6 studs (`Interact`-style distance check). A frozen runner turns to ice (a Highlight, no flash) and can be unfrozen by a friend standing next to them for 2 s (`r:Revive(userId, round)`). Freezing is `r:Eliminate(userId, round)`.
+5. **End:** all frozen ("it" wins, `r:End(now, round)`), "it" leaves (runners win, `r:End`), or the timer runs out (runners win). Results show a podium with a confetti burst and a "+25 coins" fly-in.
 6. **Test:** with 4 test clients in Studio, run 10 rounds. No round starts with fewer than 3; a player leaving as "it" ends the round fairly (runners win, no pay if under 20 s); nobody keeps a tool after Results.
 
 ## 7. Checklist

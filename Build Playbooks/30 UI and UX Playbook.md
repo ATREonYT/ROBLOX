@@ -47,11 +47,11 @@ Back to [[00 Build Router]] · Numbers: [[27 Studio Standard - One Sheet per Cra
 ## 5. Menus that kids understand
 | Menu | Must have | Avoid |
 |---|---|---|
-| Shop | big pictures, the price in Robux from `GetProductInfoAsync`, "Owned ✓" for owned items, "Coming soon" for unbuilt ones | Hard-coded prices; more than 8 items on one page; any "VIP" |
+| Shop | big pictures, the price in Robux from `GetProductInfoAsync`, "Owned" (or Alex's tick icon) for owned items, "Coming soon" for unbuilt ones | Hard-coded prices; more than 8 items on one page; any "VIP" |
 | Inventory | a grid, "Equip Best", "Delete Mode", a filter, a close button | Tiny cells; no empty state |
 | Daily rewards | the calendar, today highlighted, what tomorrow gives | Countdown pressure; a reset streak |
 | Settings | Music, Sounds, Screen Shake, Flashes, Reduced Motion; remembered | Hiding them deep |
-| Codes | one text box, a clear "✓ Got 100 Coins" or a friendly "That code didn't work" | Error codes |
+| Codes | one text box, a clear "Got 100 Coins!" or a friendly "That code didn't work" | Error codes |
 
 **Open and close:** panels open in 0.2–0.25 s (Back) and close in 0.12 s (closing is always faster). Only one panel is open at a time; opening one closes the other.
 
@@ -59,7 +59,7 @@ Back to [[00 Build Router]] · Numbers: [[27 Studio Standard - One Sheet per Cra
 - Every button press shows something within 0.1 s (a press scale), even if the server answer comes later.
 - **Server says no?** Show a friendly line on the message line ("Get closer!", "Not enough coins"), using `Interact.Lines` or the shop's reasons. Never a silent fail.
 - Counters roll, never jump (0.35–0.6 s); a gain bumps the counter and flashes it green for 0.15 s.
-- Toasts are small, bottom-left of centre, for 2 s.
+- **Toasts only for a new item unlock** ("NEW STONE!", as in the reference: small, bottom-left of centre, 2 s, note 14 §4). Every other piece of feedback text goes through the one message line.
 
 ## 7. Accessibility for kids
 - Read nothing to play: icons and arrows first, words second.

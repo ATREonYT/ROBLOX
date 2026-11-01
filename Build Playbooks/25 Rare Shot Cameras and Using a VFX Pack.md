@@ -29,7 +29,7 @@ Normal shots never cut. Alex's call (Oct 31, note 09): a **side-on flight camera
 | Divine | 1. **close-up** on the cannon · 2. **slow half-circle orbit** round the angel cannon · 3. wide for the finale | The longest and slowest; one big flash at most per second (note 22 §3) |
 
 **Camera rules that held up:**
-- **Every shot avoids walls.** Raycast from the subject to the planned camera spot; if something is hit, put the camera just in front of it.
+- **Every shot avoids walls.** Spherecast (radius 0.5–1) from the subject to the planned camera spot; if something is hit, put the camera just in front of it (note 28 §4).
 - **Cuts, not spins.** Orbits are slow (a half circle over seconds); nothing spins fast. Spinning cameras make kids feel sick.
 - **A rumble builds before every rare shot.** A small shake that grows over the charge, inside the `Setting_ScreenShake` limit, then one kick on the fire.
 - **Colour grading shifts per tier:** magenta for Mythic, gold for Secret, navy turning to white-gold for Divine. Use one ColorCorrection, tween it in, and tween it fully back.
@@ -48,7 +48,7 @@ Alex's pack (`VFX PACK.rbxl`, about 330 effects, no scripts) was the source for 
 6. **Offer the originals.** "If you'd rather have any of them exactly as in the pack, tell me which." Alex decides.
 
 ## 4. Using a sound pack well
-Alex's `SFX.zip` has **812** sounds. The rare shots use **5**, all from Roblox's licensed library:
+Alex's `SFX.zip` has **812** sounds. The rare shots use **5**. They are Roblox-licensed library sounds that are also in the pack (the UI and sounds thread checked them):
 - **Charge-up:** a rising electric charge.
 - **Title card:** a short stinger.
 - **Release:** a thruster blast, with a deep boom under it.

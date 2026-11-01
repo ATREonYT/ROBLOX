@@ -11,6 +11,12 @@
 --   Roleplay.CanPlaceProp(placed, cap)          -> ok, reason
 --   Roleplay.JailSeconds(asked)                 -> clamped seconds (nobody is trapped for long)
 -- Status: covered by tests/Roleplay.spec.luau (offline).
+--
+-- POLICY WARNING (2026 age rules, LihFolk "Policy and Age Rules 2026" and Brief - Game Design §11):
+-- a social hangout is rated 16+, and one with PRIVATE SPACES (lockable rooms, bedrooms, bathrooms,
+-- tents) needs ID-verified 18+. For a kids' game: houses start UNLOCKED, locking is off unless the
+-- maturity questionnaire result allows it (Houses.LockingAllowed = false by default), and never add
+-- lockable bedrooms or bathrooms. Re-check the policy before turning locking on.
 
 local Roleplay = {}
 
@@ -109,7 +115,12 @@ function Houses.CanEnter(self: HouseBook, userId: number, id: string): boolean
 	return h.owner == userId or h.guests[userId] == true
 end
 
+Houses.LockingAllowed = false -- see the POLICY WARNING at the top before setting this to true
+
 function Houses.SetLocked(self: HouseBook, userId: number, id: string, locked: boolean): (boolean, string)
+	if locked and not Houses.LockingAllowed then
+		return false, "LockingOff"
+	end
 	local h = self.houses[id]
 	if not h or h.owner ~= userId then
 		return false, "NotOwner"
@@ -162,12 +173,13 @@ function Roleplay.CanSpawnVehicle(state: VehicleState, now: number): (boolean, s
 	if state.lastSpawn and now - state.lastSpawn < r.vehicleCooldown then
 		return false, "Wait"
 	end
-	if state.server >= r.vehiclesPerServer then
-		return false, "ServerFull"
-	end
-	-- At the per-player cap the caller despawns the old car first (Brookhaven-style "swap").
+	-- At the per-player cap the caller despawns the old car first (a swap doesn't change the count,
+	-- so it is allowed even on a full server).
 	if state.mine >= r.vehiclesPerPlayer then
 		return true, "Replace"
+	end
+	if state.server >= r.vehiclesPerServer then
+		return false, "ServerFull"
 	end
 	return true, "Ok"
 end

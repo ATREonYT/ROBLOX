@@ -39,7 +39,8 @@ end
 
 -- kicks: { [name] = degrees } (sprint, boost, rare-shot punch...). Positive kicks share one cap,
 -- negative ones (zoom-ins) are allowed down to minFov. The result is always inside min..max.
-function CameraMath.FovStack(base: number?, kicks: { [string]: number }, caps: { maxKick: number?, minFov: number?, maxFov: number? }?): number
+-- caps.reduced (Reduced Motion or Screen Shake off) halves every kick.
+function CameraMath.FovStack(base: number?, kicks: { [string]: number }, caps: { maxKick: number?, minFov: number?, maxFov: number?, reduced: boolean? }?): number
 	local d = CameraMath.Defaults
 	local b = base or d.baseFov
 	local up, down = 0, 0
@@ -52,6 +53,9 @@ function CameraMath.FovStack(base: number?, kicks: { [string]: number }, caps: {
 	end
 	local c = caps or {}
 	up = math.min(up, c.maxKick or d.maxKick)
+	if c.reduced then
+		up, down = up / 2, down / 2
+	end
 	return math.clamp(b + up + down, c.minFov or d.minFov, c.maxFov or d.maxFov)
 end
 

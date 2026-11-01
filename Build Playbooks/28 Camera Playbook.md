@@ -21,9 +21,9 @@ Back to [[00 Build Router]] · Numbers: [[27 Studio Standard - One Sheet per Cra
 |---|---|---|---|
 | **Default third person** | Walking, lobbies, RP towns, obbies | FOV 70; zoom 10–25 studs | Pick an occlusion mode per area: Zoom outdoors, Invisicam indoors (split huge walls into pieces first) |
 | **Side-on flight** | +1 launch games (Alex's call for Cannon, note 09) | Distance = `CameraMath.SideOnDistance(height, fov)` for the height you want on screen; ball about ⅓ from the left, moving right and up | Lock the camera to one plane; follow X with a 0.1–0.15 s half-life, Y with 0.25 s, so the arc reads as an arc |
-| **Chase (behind)** | Cars, boats, sliding, racing | Position half-life 0.08–0.15 s; yaw 0.15–0.3 s; pull back 1–3 studs and FOV 70 → 85 with speed | Follow **yaw only**, never the full roll and pitch of the vehicle |
+| **Chase (behind)** | Cars, boats, sliding, racing | Position half-life 0.08–0.15 s; yaw 0.15–0.3 s; pull back 1–3 studs and FOV 70 → 82 with speed (the +12° cap) | Follow **yaw only**, never the full roll and pitch of the vehicle |
 | **Top-down / fixed** | Tycoon plots, tower defence, board-style minigames | Pitch 55–70°; FOV 40–55 for less distortion | Pan with a drag, zoom with a pinch, clamp both to the plot |
-| **Scripted shot** | Reveals, rare shots, boss intros, a new zone | 1–4 shots per moment (§4) | Always through the cutscene recipe (R13) with Skip after 1 s if it's 3 s or more |
+| **Scripted shot** | Reveals, rare shots, boss intros, a new zone | 1–4 shots per moment (§4) | Always through the cutscene recipe (R13) with Skip after 1 s if it's longer than 3 s |
 | **First person** | Rare: horror-lite, cockpit views | FOV 70–80 | Kids get dizzy faster in first person; keep it optional |
 
 ## 3. Selling speed without shaking
@@ -61,9 +61,9 @@ A big moment is a **sequence of shots**, like a film. Plan it as a table before 
 - **Where:** never on repeated actions (each normal shot, each coin). Only rare shots, landings of big tiers, explosions and boss slams.
 
 ## 6. Comfort and settings (kids' game minimum)
-- **A Screen Shake toggle** (0 or 100% is enough; a slider is better) and **Reduced Motion** both halve FOV moves and remove shake.
+- **A Screen Shake toggle** (0 or 100% is enough; a slider is better) and **Reduced Motion** both halve FOV moves (`FovStack` with `reduced = true`) and remove shake (`ShakeScale`).
 - **No head bob by default.** No camera roll during gameplay.
-- **Skip** on every reveal of 3 s or more, after 1 s.
+- **Skip** on every reveal longer than 3 s, after 1 s.
 - Custom cameras read the player's Roblox mouse sensitivity and invert setting.
 - Test at 30 fps and 120 fps, and on a low-end phone (smoothing must feel the same).
 
