@@ -5,7 +5,7 @@ updated: 2026-11-01
 
 # Blueprint - Roleplay Town
 
-Back to [[00 Build Router]] · Why it's fun: [[26 Fun and Roleplay Playbook]] · Concepts to pick from: [[Game Concepts - RP and Fun]]
+Back to [[00 Build Router]] · Why it's fun: [[26 Fun and Roleplay Playbook]] · Concepts to pick from: [[Game Concepts - RP and Fun]] · Realistic city / hood version (guns, police, fuel, phone): [[00 Start Here - Realistic City RP]]
 
 **Code:** start from [[05 New Game Kit]] (`sh new-game-kit/tools/new_game.sh`), then add kit `Server/Roleplay.luau` (jobs, paychecks, house book, car and prop caps, jail) and `Shared/Interact.luau` (the one server check for every "press E"). Build only the town's own toys, jobs and map.
 
