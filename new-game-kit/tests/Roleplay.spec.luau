@@ -11,6 +11,14 @@ local JOBS = {
 
 return function()
 	describe("Roleplay", function()
+		it("keeps house locking off until the age rating allows it", function()
+			local book = Roleplay.Houses.new({ "A" })
+			book:Claim(1, "A")
+			Roleplay.Houses.LockingAllowed = false
+			expect(select(2, book:SetLocked(1, "A", true))).to.equal("LockingOff")
+			expect(book:CanEnter(2, "A")).to.equal(true)
+			Roleplay.Houses.LockingAllowed = true
+		end)
 		it("caps jobs so the town stays balanced", function()
 			expect((Roleplay.CanJoin(JOBS, "Police", { Police = 1 }))).to.equal(true)
 			expect(select(2, Roleplay.CanJoin(JOBS, "Police", { Police = 2 }))).to.equal("Full")
@@ -63,6 +71,7 @@ return function()
 			expect(select(2, Roleplay.CanSpawnVehicle({ mine = 1, server = 3, lastSpawn = 0 }, 20))).to.equal("Replace")
 			expect(select(2, Roleplay.CanSpawnVehicle({ mine = 0, server = 3, lastSpawn = 15 }, 20))).to.equal("Wait")
 			expect(select(2, Roleplay.CanSpawnVehicle({ mine = 0, server = 20 }, 99))).to.equal("ServerFull")
+			expect(select(2, Roleplay.CanSpawnVehicle({ mine = 1, server = 20 }, 99))).to.equal("Replace")
 		end)
 		it("caps props and never jails anyone for long", function()
 			expect((Roleplay.CanPlaceProp(39))).to.equal(true)

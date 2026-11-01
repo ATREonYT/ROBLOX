@@ -23,7 +23,7 @@ Stack, bottom to top:
 - In Roblox: either export Figma slices as ImageLabels, or rebuild with UICorner + UIGradient + UIStroke + a darker offset frame for the lip.
 
 ## 2. Layout and colour
-- Opaque toy panels, never dark see-through glass. One dominant button per screen.
+- Opaque toy panels, never dark see-through glass (for Alex's games, their Oct 30 call wins: see-through panels with floating titles, vault note 27 C27). One dominant button per screen.
 - Colour = meaning: yellow primary, green confirm, red close, blue navigate.
 - Inventory template from the video: grid of pet frames, plus "Equip Best", "Delete Mode", "Filter", "Exit".
 - A left-side column of menu buttons (shop, quests, map...) is a proven sim HUD.
