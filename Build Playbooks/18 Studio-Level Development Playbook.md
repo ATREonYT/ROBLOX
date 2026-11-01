@@ -5,7 +5,7 @@ updated: 2026-10-31
 
 # 18 Studio-Level Development Playbook
 
-Back to [[00 Build Router]] · Whole-game craft: [[20 Whole-Game Field Guide]] · Recipes: [[19 Animation and VFX Recipe Book]] · Code brief: `Sector Briefs/Brief - Code, Networking and Security.md`
+Back to [[00 Build Router]] · Whole-game craft: [[20 Whole-Game Field Guide]] · Recipes: [[19 Animation and VFX Recipe Book]] · Code brief: `Sector Briefs/Brief - Code, Networking and Security.md` · Installing into the owner's open Studio: [[24 Working Live in Studio - Saves, Turns and Hand Edits]]
 
 **Why this note exists.** On Oct 31 Alex asked us to "learn studio level developing". This note is how professional Roblox studios build, tuned for us: Claude writes all the code from the cloud, and Alex tests in Studio.
 

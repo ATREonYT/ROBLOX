@@ -33,6 +33,8 @@ Playbooks in this folder:
 - [[21 Money and Retention at Studio Level]]: ⭐ what to sell in a kids' simulator, the price ladder rules, when an unasked offer may pop up, the six numbers to read weekly, and return hooks for D1, D2–7 and D8–28. Kit: `Shared/Offers.luau`.
 - [[22 Rare Shot VFX Spec from Alex's References]]: frame-by-frame study of Alex's 4 favourite VFX clips (impact frames, dark inhale, fast-in slow-out) and a frame-timed build spec for the Mythic, Secret and Divine cannon shots, kid-safe.
 - [[23 Training Lane Style Guide (Alex's Treadmill References)]]: Alex's favourite treadmill look (dark voxel body, neon edges, one colour plus white), the "alive but not too crazy" motion budget, why gamepass lanes beat free ones by shape and life, and 8 kid-safe themes. Sheets in `references/treadmill-lanes/`.
+- [[24 Working Live in Studio - Saves, Turns and Hand Edits]]: ⭐ how to work inside Alex's open Studio without losing anything: which save button really saves, one thread at a time, merge into live scripts and keep hand edits, bring Studio-only changes back to git, bringing in a pack.
+- [[25 Rare Shot Cameras and Using a VFX Pack]]: what Alex pushed back on in the rare shots and the fixes, a camera plan per tier, and how to use an effects or sound pack (pick by job, recolour, cap brightness, skip ripped textures).
 - [[14 Premium Feel Playbook]]: ⭐ the premium layer every game gets: staged HUD, level-up streaks, one motion table, reward beat chains, feel numbers per family, the kid-safe check, five prompts per game
 - [[13 Beat Stone Skipping - Tutorial, Pacing and Feel]]: ⭐ hide the UI until the tutorial needs it, a level-up every second, spotlight the one button, chained reward beats (Oct 31 recording)
 - [[08 Few-Prompt Game Building with AI]]: how to get a good game in a few prompts (what works, templates, self-checks)
@@ -83,6 +85,10 @@ Playbooks in this folder:
 | Game feel | | [[14 Premium Feel Playbook]], [[06 Beat the Hits - Polish Playbook]], `GAME-FEEL.md`, `LihFolk/LihFolk Vault V2/47 Game Feel and Juice/` |
 | Match or beat a hit | | [[07 Borrow List - Game by Game]], the game's Teardown note, [[09 Owner Taste Rules]] |
 | A row of tiered stations (training lanes, upgrade pads) | `roblox-cartoony-building` | [[Lesson - Tiered Training Lanes]] |
+| Sound | | [[17 Do It Like the Hits - Animation, VFX and Feel]] (sound layers), [[19 Animation and VFX Recipe Book]] (sound recipe), [[25 Rare Shot Cameras and Using a VFX Pack]] §4, `<game>/tools/sfx/make_sfx.py`, [[09 Owner Taste Rules]] |
+| Camera for shots and cutscenes | `roblox-vfx` | [[25 Rare Shot Cameras and Using a VFX Pack]] §2, [[19 Animation and VFX Recipe Book]] (chase cam, ultimate cutscene), [[22 Rare Shot VFX Spec from Alex's References]] |
+| Use an effects or sound pack the owner sent | `roblox-vfx` | [[25 Rare Shot Cameras and Using a VFX Pack]] §3, [[24 Working Live in Studio - Saves, Turns and Hand Edits]] §7 |
+| Lane or station looks (neon, themes, free vs gamepass) | `roblox-cartoony-building` | [[23 Training Lane Style Guide (Alex's Treadmill References)]] |
 | Final check | | [[16 Cartoony Kid-Appeal Checklist]] |
 
 ## Ship it
@@ -92,6 +98,8 @@ Playbooks in this folder:
 | Algorithm, rules, launch steps | [[02 Launch and Discovery Cheat Sheet]] |
 | Thumbnails and icon | [[Thumbnails and CTR Start Here]], [[08 Thumbnails, Icons & Marketing]] |
 | Retention and come-back hooks | [[Retention and Return Hooks]], [[Live Ops Deep Dive Start Here]] |
-| Money | [[10 Business, Monetization & Case Studies]], `LihFolk/skills/roblox-monetization-compliance/` |
+| Money | [[21 Money and Retention at Studio Level]], [[10 Business, Monetization & Case Studies]], `LihFolk/skills/roblox-monetization-compliance/` |
+| Code quality, tests, release checklist | [[18 Studio-Level Development Playbook]] |
+| Installing into the owner's open Studio | [[24 Working Live in Studio - Saves, Turns and Hand Edits]] |
 | AI workflow (MCP, Rojo, skills) | [[08 Few-Prompt Game Building with AI]], [[04 AI Tools Landscape October 2026]], [[01 Setup & Workflow]], [[00 Video Notes Index]] |
 | New Roblox features to use | [[03 What's New on Roblox - RDC 2026 and October]] |

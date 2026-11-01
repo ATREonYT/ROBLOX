@@ -97,5 +97,5 @@ Times are from the moment the player fires. Frame counts are at 30 fps. Colours 
 
 ## 6. Honest gaps
 - Brightness numbers were measured on screen recordings of Studio inside TikTok frames. The timing is reliable; the exact colours are not.
-- The VFX pack's effect names come from the rare-shot thread's list. We haven't opened the pack from the cloud.
+- The VFX pack's effect names come from the rare-shot thread, which read the whole pack on Alex's Mac (about 330 effects, no scripts) and uses 18. What shipped and why: [[25 Rare Shot Cameras and Using a VFX Pack]].
 - Ref 4's monster head is left out on purpose (kid-safe and not ours).
