@@ -1,6 +1,6 @@
 ---
 tags: [build-playbooks, owner, taste, rules, lessons]
-updated: 2026-10-30
+updated: 2026-11-01
 ---
 
 # 09 Owner Taste Rules
@@ -16,6 +16,7 @@ Back to [[00 Build Router]] · Process: [[08 Few-Prompt Game Building with AI]]
 - **Borrow every well-made idea from the competition and do it well** (Oct 30). Use the Borrow List: [[07 Borrow List - Game by Game]].
 - **Quality bar: release-ready, as polished as the front page, and beat it** (Oct 30). They judge by eye, against the reference, side by side.
 - **"Use the vault and make it crazy"** (Oct 30): go big on juice and effects, within the kid-safe rules.
+- **Next up: roleplay and "fun with friends" games, and they must be genuinely fun** (Nov 1: "I want these games to be fun"). Start from [[26 Fun and Roleplay Playbook]] and [[Game Concepts - RP and Fun]].
 - **Mobile matters:** they ask whether it loads fast on phones. Keep part counts low (the Cannon map went from 9,162 to 187 pieces) and test the phone view.
 
 ## UI
