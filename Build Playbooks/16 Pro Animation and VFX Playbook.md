@@ -76,9 +76,9 @@ A Model can't be tweened: tween a `CFrameValue` and call `PivotTo` on each chang
 - Add speed lines above a set speed, a drop shadow and the distance number.
 
 **Camera:**
-- FOV goes from 70 to 80–85 in 0.08 s, eases to 75 in flight and returns to 70 at landing.
+- FOV goes from 70 to 80–85 in 0.08 s, eases to 75 in flight and returns to 70 at landing. **[Settled: rare tiers only (Legendary and up); none on normal shots, note 27 C21.]**
 - Hold on the cannon for 2–5 frames, then chase from 12–18 studs behind and 4–6 up, smoothed by `1 − exp(−8·dt)`.
-- Shake = trauma² (+0.4 at the shot, decaying 0.5/s), pushed opposite to the shot. It is never stronger than EZ Camera Shake's Bump (2.5, 4, 0.1, 0.75) and always follows `Setting_ScreenShake`.
+- Shake = trauma² (+0.4 at the shot, decaying 0.5/s), pushed opposite to the shot. It is never stronger than EZ Camera Shake's Bump (2.5, 4, 0.1, 0.75) and always follows `Setting_ScreenShake`. **[Settled: decay 1.0–1.5/s, note 27 C22.]**
 
 **Landing mirrors launch:**
 - The ball squashes to 0.6 tall and 1.3 wide, then springs back with `spr` (0.4, 6).

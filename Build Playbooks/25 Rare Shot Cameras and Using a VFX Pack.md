@@ -20,7 +20,7 @@ Back to [[00 Build Router]] · The spec: [[22 Rare Shot VFX Spec from Alex's Ref
 | "Are these the pack's effects or copies?" | It wasn't said plainly | Say it in the first message: same textures and settings from the pack, only colour, size and brightness changed (§4) |
 
 ## 2. The camera plan per tier
-Normal shots never cut: a **chase camera** sits behind the ball, low over the water, and hands back the moment the ball lands (recipe in note 19). Rare shots earn cuts; the rarer the shot, the more angles.
+Normal shots never cut. Alex's call (Oct 31, note 09): a **side-on flight camera**, with the ball flying upward from left to right across the screen. Older notes (06, the build notes) describe a chase camera low behind the ball; the owner's call wins (settled in note 27). The camera hands back the moment the ball lands (follow-camera recipe in note 19). Rare shots earn cuts: the rarer the shot, the more angles.
 
 | Tier | Shots, in order | Notes |
 |---|---|---|
