@@ -58,6 +58,8 @@ Playbooks in this folder:
 - [[28 Camera Playbook]]: ⭐ every camera a kids' game needs (default, side-on flight, chase, top-down, scripted), cutscene grammar, shake, comfort, a worked Mythic shot. Kit: `CameraMath`.
 - [[29 Sound Playbook]]: ⭐ Alex's smooth-and-short sound rules, file prep (−18 LUFS), the sound ladder by moment, variety without going off-key, mixing, music, a worked coin pickup.
 - [[30 UI and UX Playbook]]: ⭐ UI rules in build order, the HUD by tutorial stage, phone layout, the button recipe in Roblox parts, kid-friendly menus, feedback, accessibility, a worked Shop button.
+- [[31 Big Project Playbook]]: ⭐ how to run a big build (roleplay, party games): phases with exit tests, the save file on day one, system order, threads and shared files, what to ask Alex for, a live ops calendar, what to cut.
+- [[32 Round-Based Games Playbook]]: ⭐ lobby → countdown → round → results for party minigames, tag, hide-and-seek, mystery roles, horror-lite, obby races and friendly arenas; rules, per-genre table, server must-haves, a worked freeze-tag round. Kit: `Rounds`.
 - [[14 Premium Feel Playbook]]: ⭐ the premium layer every game gets: staged HUD, level-up streaks, one motion table, reward beat chains, feel numbers per family, the kid-safe check, five prompts per game
 - [[13 Beat Stone Skipping - Tutorial, Pacing and Feel]]: ⭐ hide the UI until the tutorial needs it, a level-up every second, spotlight the one button, chained reward beats (Oct 31 recording)
 - [[08 Few-Prompt Game Building with AI]]: how to get a good game in a few prompts (what works, templates, self-checks)
@@ -72,10 +74,11 @@ Playbooks in this folder:
 
 | Want | Open |
 |---|---|
+| A big project (plan, phases, threads, live ops) | [[31 Big Project Playbook]] |
 | What to build next | [[01 Current Hits October 2026]], [[Viral Game Anatomy - Hooks, Loops and Timing]], `LihFolk/skills/roblox-trend-game/SKILL.md` |
 | A game in a known family | The matching Blueprint above, then [[12 Game Loop Logic Playbook]] for pacing and numbers |
 | Roleplay town (jobs, houses, cars, outfits) | [[26 Fun and Roleplay Playbook]], [[Blueprint - Roleplay Town]], `LihFolk/LihFolk Vault V2/32 Case Studies of Top Roblox Games/Case Study - Brookhaven RP.md`, `LihFolk/LihFolk Vault V2/24 Worked Builds/Weekend Build - Roleplay Town with Jobs and Paychecks.md` |
-| A fun party, minigame, obby or action game | [[26 Fun and Roleplay Playbook]], [[Game Concepts - RP and Fun]], `LihFolk/LihFolk Vault V2/43 Genre Systems End to End/` |
+| A fun party, minigame, obby or action game | [[32 Round-Based Games Playbook]], [[26 Fun and Roleplay Playbook]], [[Game Concepts - RP and Fun]], `LihFolk/LihFolk Vault V2/43 Genre Systems End to End/` |
 | A genre not listed | `LihFolk/LihFolk Vault V2/10 Game Design and Genres/` (Genre Playbook notes) |
 | The 7-day plan | `LihFolk/skills/roblox-trend-game/references/trend-games-research.md` section 9 |
 
@@ -100,6 +103,7 @@ Playbooks in this folder:
 | Jobs, paychecks, houses, props (roleplay) | [[Blueprint - Roleplay Town]], LihFolk `Weekend Build - Roleplay Town with Jobs and Paychecks`, `Instanced Interiors - Pooled House and Room Copies for Many Players` | `new-game-kit/src/Server/Roleplay.luau` |
 | Vehicles (spawn, drive, ownership, phone controls) | `LihFolk/LihFolk Vault V2/25 Physics and Vehicles/` (start with `Vehicle Spawner and Garage`, `Vehicle Ownership and Anti-Exploit`, `Vehicle Controls on Phone and Gamepad`) | `Roleplay.CanSpawnVehicle` |
 | Avatar, outfits, uniforms | `LihFolk/LihFolk Vault V2/37 Avatars and UGC/HumanoidDescription and Outfit Systems.md`, `AvatarEditorService and In-Game Avatar Editors.md` | |
+| Rounds (lobby, countdown, round, results) | [[32 Round-Based Games Playbook]] | `new-game-kit/src/Shared/Rounds.luau` |
 | Camera systems | [[28 Camera Playbook]] | `new-game-kit/src/Shared/CameraMath.luau` |
 | Tutorial / first 60 s | [[First-Time User Experience and Onboarding]] | Cannon Evolution `Tutorial.lua` |
 
