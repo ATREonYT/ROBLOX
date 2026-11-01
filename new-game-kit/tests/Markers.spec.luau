@@ -1,0 +1,61 @@
+--!nonstrict
+-- New Game Kit spec: Markers (world-icon size, fade, edge clamping, budget). Vault "Realistic City RP/01".
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Markers = require(ReplicatedStorage:WaitForChild("Kit"):WaitForChild("Markers"))
+
+local VIEW = { width = 1000, height = 600, insetTop = 0 }
+
+return function()
+	describe("Markers", function()
+		it("is big near, small far", function()
+			expect(Markers.Size(0)).to.equal(46)
+			expect(Markers.Size(30)).to.equal(46)
+			expect(Markers.Size(600)).to.equal(22)
+			expect(Markers.Size(5000)).to.equal(22)
+			local mid = Markers.Size(300)
+			expect(mid < 46 and mid > 22).to.equal(true)
+		end)
+		it("fades out when you're standing at it, hides far ones unless tracked", function()
+			expect(Markers.Alpha(5)).to.equal(1)
+			expect(Markers.Alpha(16)).to.be.near(0.5)
+			expect(Markers.Alpha(100)).to.equal(0)
+			expect(Markers.Alpha(1000)).to.equal(1)
+			expect(Markers.Alpha(1000, true)).to.equal(0)
+		end)
+		it("keeps on-screen icons where they are", function()
+			local x, y, on, angle = Markers.Place(500, 300, 10, VIEW, true)
+			expect(x).to.equal(500)
+			expect(y).to.equal(300)
+			expect(on).to.equal(true)
+			expect(angle).to.equal(nil)
+		end)
+		it("sticks off-screen icons to the edge with an arrow", function()
+			local x, y, on, angle = Markers.Place(1500, 300, 10, VIEW, true)
+			expect(x).to.be.near(964)
+			expect(y).to.be.near(300)
+			expect(on).to.equal(false)
+			expect(angle).to.be.near(0)
+			x, y = Markers.Place(-500, -300, 10, VIEW, true)
+			expect(x).to.be.near(60)
+			expect(y).to.be.near(36)
+		end)
+		it("points behind-the-camera icons down, not the mirrored way", function()
+			local x, y, _, angle = Markers.Place(500, 300, -10, VIEW, true)
+			expect(x).to.be.near(500)
+			expect(y).to.be.near(564)
+			expect(angle).to.be.near(90)
+			expect(select(3, Markers.Place(1500, 300, 10, VIEW, false))).to.equal(false)
+		end)
+		it("draws tracked first, then priority, then nearest, within budget", function()
+			local picked = Markers.Pick({
+				{ id = "a", distance = 10, priority = 1 },
+				{ id = "b", distance = 5, priority = 1 },
+				{ id = "c", distance = 2000, priority = 9 },
+				{ id = "d", distance = 2000, priority = 0, tracked = true },
+			}, 2)
+			expect(#picked).to.equal(2)
+			expect(picked[1].id).to.equal("d")
+			expect(picked[2].id).to.equal("b")
+		end)
+	end)
+end

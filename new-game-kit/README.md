@@ -67,6 +67,13 @@ Compared across our games (`cannon-evolution/`, `huzz-valley/`) and the October 
 | Fair prices and polite offers | `Offers.Ladder` computes the bonus labels and refuses a bigger pack that's worse value; `Offers.CanShow` paces offers the player didn't ask for (none in the first 3 min, 8 s gap, 1 per session for non-buyers); `Offers.Bucket` for A/B tests of timing | `src/Shared/Offers.luau`, vault note 21 |
 | One server check for every "press E" | `Interact.new{ range, cooldown, busy }:Try(userId, target, { distance, allowed }, now)` checks the distance on the server (+2 studs for lag), the cooldown, permission and one user at a time, with friendly reason lines | `src/Shared/Interact.luau`, vault notes 26 and 27 |
 | Roleplay rules | Job caps, pay for work the server saw (never for time online), one house per player with owner-only locks, guests and kick, one car each with a server cap, a props cap, jail clamped to 10–60 s | `src/Server/Roleplay.luau`, vault note 26 |
+| City money (realistic RP) | `Wallet`: cash and bank pockets, pay by cash/card/either, ATM deposit and withdraw, phone transfers with a daily cap, named and hourly-capped faucets, a 10% (max 5,000) cash drop on knockout, a 50-line ledger | `src/Server/Wallet.luau`, vault "Realistic City RP/02" |
+| Server hit checks | `HitCheck.Shot` (fire rate, ammo, muzzle near the head, angle, range, target vs the server's rewound position, walls), `HitCheck.Melee` (range and front cone), damage falloff, `HitCheck.History` for lag-compensated rewind | `src/Shared/HitCheck.luau`, vault "Realistic City RP/04" |
+| Sprint and stamina | Same maths on client (instant feel) and server (checks): 8 s sprint, 0.8 s regen delay, locked until 30% after running dry, frame-hitch safe | `src/Shared/Stamina.luau`, vault "Realistic City RP/05" |
+| Cars you own | `Garage`: dealership checks (owned, level, pass, garage slots), fuel burned by real distance, pump prices, repairs, impound, sell-back | `src/Server/Garage.luau`, vault "Realistic City RP/03" |
+| Wanted levels | `Wanted`: heat from crimes the server saw, 0-5 stars, fade after 45 s unseen, arrests need stars and range, bounty and 12 s-per-star jail (10-60 s); crime roles are opt-in | `src/Server/Wanted.luau`, vault "Realistic City RP/08" |
+| World icons | `Markers`: size by distance, fade when you're at it, stick off-screen icons to the edge with an arrow (behind-camera safe), keep the 24 most useful | `src/Shared/Markers.luau`, vault "Realistic City RP/01" |
+| Day and night | `WorldClock`: one shared clock (14-min day, 6-min night), street lights with no flicker, store hours that wrap midnight, phone clock label | `src/Shared/WorldClock.luau`, vault "Realistic City RP/09" |
 | Round-based games | `Rounds` runs waiting → intermission → countdown → playing → results with round ids, late joins, early end and no pay for short or empty rounds | `src/Shared/Rounds.luau`, vault note 32 |
 | Camera maths | Frame-rate independent smoothing, side-on distance, one FOV owner with caps, trauma decay, shake scaling for settings and Reduced Motion, whole-pixel letterbox | `src/Shared/CameraMath.luau`, vault note 28 |
 | Our own VFX textures | 13 white-on-alpha textures and 4x4 flipbooks made by code (glow, rings, stars, sparks, cel puff, slash, noise, beam, shockwave, smoke, flame); the owner uploads them (picture: `assets/vfx/_sheet.png`) | `tools/vfx/make_textures.py` |
@@ -92,7 +99,7 @@ music and sound assets.
 
 ## Folder map
 - `src/Server/`: one ModuleScript per system (`ServerScriptService/Kit`). `src/Main.server.luau` wires them in order.
-- `src/Shared/`: Net (remotes and validators), Odds, Format, HudBuilder, Signal, Janitor, RateLimit, Feedback, Progression, HudStages, AnimeFX, Spring, Emit, LaunchFX, RareReveal, Flags, Offers, Interact, Rounds, CameraMath (`ReplicatedStorage/Kit`).
+- `src/Shared/`: Net (remotes and validators), Odds, Format, HudBuilder, Signal, Janitor, RateLimit, Feedback, Progression, HudStages, AnimeFX, Spring, Emit, LaunchFX, RareReveal, Flags, Offers, Interact, Rounds, CameraMath, HitCheck, Stamina, Markers, WorldClock (`ReplicatedStorage/Kit`).
 - `src/Client/KitClient.client.luau`: the HUD's behaviour. `src/StarterGui/KitHUD.rbxm`: the HUD parts.
 - `src/Config/`: `GameConfig` (display-safe) and `GameSecrets` (server only).
 - `tests/`: specs. `tools/`: offline checks, play-through, place build, previews (`tools/preview/`), new-game script.
