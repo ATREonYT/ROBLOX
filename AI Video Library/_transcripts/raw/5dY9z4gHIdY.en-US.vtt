@@ -1,0 +1,168 @@
+WEBVTT
+Kind: captions
+Language: en-US
+
+00:00:00.080 --> 00:00:05.360
+What if the Roblox AI assistant could remember&nbsp;
+exactly how you want it to work? With the new&nbsp;&nbsp;
+
+00:00:05.360 --> 00:00:11.200
+custom skills feature, you can give it reusable&nbsp;
+instructions for your coding style, workflows, and&nbsp;&nbsp;
+
+00:00:11.200 --> 00:00:18.320
+repeatable tasks. These skills can also be used&nbsp;
+with supported AI tools outside of Roblox Studio. I'm going&nbsp;&nbsp;
+
+00:00:18.320 --> 00:00:23.920
+to be showing you two different ways to create&nbsp;
+your own skill directly inside of Roblox Studio.&nbsp;&nbsp;
+
+00:00:23.920 --> 00:00:30.560
+The first thing that you're going to want to&nbsp;
+do is open up Roblox Studio. You can open up&nbsp;&nbsp;
+
+00:00:30.560 --> 00:00:39.280
+one of your existing projects, but for the sake of&nbsp;
+this tutorial, I'll just create a new experience.
+
+00:00:39.280 --> 00:00:44.720
+Have the AI assistant open right here. And I'm now&nbsp;
+going to show you method one, which requires you&nbsp;&nbsp;
+
+00:00:44.720 --> 00:00:52.560
+to prompt it. Go over to the three dots right here&nbsp;
+and press manage skills. Then click create new.&nbsp;&nbsp;
+
+00:00:52.560 --> 00:00:57.520
+I'll just paste in a prompt that I already&nbsp;
+typed in earlier. When writing out your prompt,&nbsp;&nbsp;
+
+00:00:57.520 --> 00:01:02.640
+first state what you want the skill to be called.&nbsp;
+Then describe how you want the skill to function.&nbsp;&nbsp;
+
+00:01:02.640 --> 00:01:09.280
+And you could also explain how you want the skill&nbsp;
+to be formatted. But that's completely optional&nbsp;&nbsp;
+
+00:01:09.280 --> 00:01:18.640
+since Roblox's default model will probably handle&nbsp;
+it just fine. And I'm now going to send my prompt.
+
+00:01:29.440 --> 00:01:35.760
+If we go back to the three dots right here and&nbsp;
+click manage skills, we can verify that has&nbsp;&nbsp;
+
+00:01:35.760 --> 00:01:41.840
+successfully created the Roblox lead system&nbsp;
+architect skill I asked for. If you'd like&nbsp;&nbsp;
+
+00:01:41.840 --> 00:01:50.000
+to edit your skill, select a skill, press open,&nbsp;
+make sure that this editor toggle is turned on,&nbsp;&nbsp;
+
+00:01:50.000 --> 00:01:56.480
+and you can begin changing the specific details&nbsp;
+of your skill. If you want to delete your skill,&nbsp;&nbsp;
+
+00:01:56.480 --> 00:02:02.160
+then select the skill that you want to be deleted&nbsp;
+and press the delete button right here. Method one&nbsp;&nbsp;
+
+00:02:02.160 --> 00:02:08.240
+is better in my opinion because it's fast, easy,&nbsp;
+and you can still fix mistakes later. But if you&nbsp;&nbsp;
+
+00:02:08.240 --> 00:02:13.440
+want absolute control over the first draft,&nbsp;
+then method two is probably better for you,&nbsp;&nbsp;
+
+00:02:13.440 --> 00:02:19.840
+which I'm about to show you now. Go over to the&nbsp;
+three dots right here and click manage skills.&nbsp;&nbsp;
+
+00:02:19.840 --> 00:02:28.560
+Then click add. I'll just type in Roblox&nbsp;
+lead systems architect skill. Now write a&nbsp;&nbsp;
+
+00:02:28.560 --> 00:02:35.280
+description for your skill. I'll just paste in a&nbsp;
+description I already wrote. Then click create.&nbsp;&nbsp;
+
+00:02:35.280 --> 00:02:41.200
+Click on the open button right here and make sure&nbsp;
+that editor mode is toggled on. Write what your&nbsp;&nbsp;
+
+00:02:41.200 --> 00:02:47.360
+skill does here. The agent reads this content when&nbsp;
+it invokes your skill. But because I already made&nbsp;&nbsp;
+
+00:02:47.360 --> 00:02:53.360
+this skill before, I'll just go over here and&nbsp;
+paste it in just like that. Once you're done,&nbsp;&nbsp;
+
+00:02:53.360 --> 00:02:59.760
+click save and press the X icon next to your&nbsp;
+skills name. I'm going to compare the Roblox&nbsp;&nbsp;
+
+00:02:59.760 --> 00:03:06.080
+AI assistant without my custom skill to the&nbsp;
+Roblox AI assistant with my custom skill. The&nbsp;&nbsp;
+
+00:03:06.080 --> 00:03:12.160
+Roblox lead systems architect skill is going&nbsp;
+to be disabled. So, we can test how the Roblox&nbsp;&nbsp;
+
+00:03:12.160 --> 00:03:17.840
+AI assistant would normally respond. If you&nbsp;
+go into the chat bar right here and type in,&nbsp;&nbsp;
+
+00:03:17.840 --> 00:03:30.160
+can you make the tool in starter pack damage&nbsp;
+the clone of my Roblox avatar? Play a sparkling&nbsp;&nbsp;
+
+00:03:30.160 --> 00:03:42.320
+effect for everyone and track the amount of&nbsp;
+times I killed my clone in leader stats. All
+
+00:04:07.600 --> 00:04:14.720
+Alright, the original Roblox AI assistant is done.&nbsp;
+I have this other experience open right here. So,&nbsp;&nbsp;
+
+00:04:14.720 --> 00:04:20.560
+I'm just gonna go ahead and copy&nbsp;
+and paste this prompt right here&nbsp;&nbsp;
+
+00:04:20.560 --> 00:04:33.200
+into the chat of this experience right&nbsp;
+here. And I'm going to press enter.
+
+00:04:39.760 --> 00:04:45.760
+The custom skill AI assistant is also done.&nbsp;
+Let's see if there's any differences. So,&nbsp;&nbsp;
+
+00:04:45.760 --> 00:05:00.080
+I'm just going to make this [music] full&nbsp;
+screen so it's easier to see for you guys.
+
+00:05:00.080 --> 00:05:07.040
+All right. For some reason, the custom skill&nbsp;
+AI assistant didn't invoke the skill. So,&nbsp;&nbsp;
+
+00:05:07.040 --> 00:05:12.720
+if you're ever in the situation, just&nbsp;
+simply ask it, can you use the whatever&nbsp;&nbsp;
+
+00:05:12.720 --> 00:05:29.280
+your skill is called to update the&nbsp;
+scripts or whatever you want updated.
+
+00:05:41.040 --> 00:05:48.240
+And as we can see here, the custom skill AI&nbsp;
+assistant has finally listened and called the&nbsp;&nbsp;
+
+00:05:48.240 --> 00:05:54.000
+skill my Roblox lead systems architect&nbsp;
+skill. Listened to its instructions.
+

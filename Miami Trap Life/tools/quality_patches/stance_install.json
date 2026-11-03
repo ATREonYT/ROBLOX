@@ -1,0 +1,29 @@
+[
+ {
+  "path": "ReplicatedStorage/MTL/Net.lua",
+  "edits": [
+   {
+    "old": "\tWaypointArrived = \"RemoteEvent\", -- {id} (hint only; the server checks the distance itself)\n",
+    "new": "\tWaypointArrived = \"RemoteEvent\", -- {id} (hint only; the server checks the distance itself)\n\tStanceAction = \"RemoteEvent\", -- quality: {crouch = bool} (StanceService sets the character attribute MTL_Stance)\n"
+   }
+  ]
+ },
+ {
+  "path": "ServerScriptService/MTL/Main.server.lua",
+  "edits": [
+   {
+    "old": "\t\"SpawnProtection\", -- 30 s no-damage",
+    "new": "\t\"StanceService\", -- quality: crouch (character attribute MTL_Stance, posed on every client by Crouch)\n\t\"SpawnProtection\", -- 30 s no-damage"
+   }
+  ]
+ },
+ {
+  "path": "StarterPlayer/StarterPlayerScripts/MTL/Client.client.lua",
+  "edits": [
+   {
+    "old": "\t\"GunController\", -- Piece 5",
+    "new": "\t\"SplitAim\", -- quality: while aiming, hips + legs turn toward the way you move, chest stays on target (before GunController)\n\t\"Crouch\", -- quality: C / D-pad down / touch CROUCH, procedural crouch + crouch-walk on every character (before GunController)\n\t\"GunController\", -- Piece 5"
+   }
+  ]
+ }
+]

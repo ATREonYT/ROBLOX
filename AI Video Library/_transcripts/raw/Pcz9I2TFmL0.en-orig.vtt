@@ -1,0 +1,2256 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.000 --> 00:00:02.230 align:start position:0%
+ 
+In<00:00:00.160><c> today's</c><00:00:00.600><c> video,</c><00:00:01.280><c> I'm</c><00:00:01.480><c> going</c><00:00:01.720><c> to</c><00:00:01.800><c> show</c><00:00:02.040><c> you</c>
+
+00:00:02.230 --> 00:00:02.240 align:start position:0%
+In today's video, I'm going to show you
+ 
+
+00:00:02.240 --> 00:00:04.710 align:start position:0%
+In today's video, I'm going to show you
+step-by-step<00:00:03.360><c> how</c><00:00:03.600><c> I</c><00:00:03.680><c> made</c><00:00:04.040><c> this</c><00:00:04.320><c> anime</c>
+
+00:00:04.710 --> 00:00:04.720 align:start position:0%
+step-by-step how I made this anime
+ 
+
+00:00:04.720 --> 00:00:07.910 align:start position:0%
+step-by-step how I made this anime
+dragon<00:00:05.200><c> water</c><00:00:05.480><c> skill</c><00:00:06.120><c> inside</c><00:00:06.640><c> Roblox</c><00:00:07.120><c> Studio</c>
+
+00:00:07.910 --> 00:00:07.920 align:start position:0%
+dragon water skill inside Roblox Studio
+ 
+
+00:00:07.920 --> 00:00:10.870 align:start position:0%
+dragon water skill inside Roblox Studio
+using<00:00:08.240><c> cloud</c><00:00:08.520><c> MCP</c><00:00:09.360><c> and</c><00:00:09.600><c> AI</c><00:00:09.920><c> tools.</c><00:00:10.640><c> In</c><00:00:10.760><c> the</c>
+
+00:00:10.870 --> 00:00:10.880 align:start position:0%
+using cloud MCP and AI tools. In the
+ 
+
+00:00:10.880 --> 00:00:13.190 align:start position:0%
+using cloud MCP and AI tools. In the
+previous<00:00:11.320><c> video,</c><00:00:12.000><c> I</c><00:00:12.120><c> showed</c><00:00:12.440><c> the</c><00:00:12.560><c> full</c><00:00:12.880><c> skill</c>
+
+00:00:13.190 --> 00:00:13.200 align:start position:0%
+previous video, I showed the full skill
+ 
+
+00:00:13.200 --> 00:00:15.430 align:start position:0%
+previous video, I showed the full skill
+demo,<00:00:13.920><c> but</c><00:00:14.040><c> in</c><00:00:14.160><c> this</c><00:00:14.400><c> one,</c><00:00:14.920><c> I'll</c><00:00:15.040><c> break</c>
+
+00:00:15.430 --> 00:00:15.440 align:start position:0%
+demo, but in this one, I'll break
+ 
+
+00:00:15.440 --> 00:00:17.710 align:start position:0%
+demo, but in this one, I'll break
+everything<00:00:15.880><c> down</c><00:00:16.440><c> from</c><00:00:16.640><c> character</c><00:00:17.080><c> setup,</c>
+
+00:00:17.710 --> 00:00:17.720 align:start position:0%
+everything down from character setup,
+ 
+
+00:00:17.720 --> 00:00:20.670 align:start position:0%
+everything down from character setup,
+animation,<00:00:18.600><c> dragon</c><00:00:19.000><c> effects,</c><00:00:19.800><c> VFX,</c>
+
+00:00:20.670 --> 00:00:20.680 align:start position:0%
+animation, dragon effects, VFX,
+ 
+
+00:00:20.680 --> 00:00:25.470 align:start position:0%
+animation, dragon effects, VFX,
+scripting,<00:00:21.520><c> and</c><00:00:21.720><c> NPC</c><00:00:22.280><c> combat</c><00:00:22.720><c> system.</c>
+
+00:00:25.470 --> 00:00:25.480 align:start position:0%
+ 
+ 
+
+00:00:25.480 --> 00:00:27.150 align:start position:0%
+ 
+So,<00:00:25.680><c> first,</c><00:00:26.320><c> this</c><00:00:26.520><c> is</c><00:00:26.640><c> the</c><00:00:26.760><c> starter</c><00:00:26.855><c> [music]</c>
+
+00:00:27.150 --> 00:00:27.160 align:start position:0%
+So, first, this is the starter [music]
+ 
+
+00:00:27.160 --> 00:00:29.030 align:start position:0%
+So, first, this is the starter [music]
+character.<00:00:28.040><c> I'm</c><00:00:28.200><c> going</c><00:00:28.400><c> to</c><00:00:28.480><c> bring</c><00:00:28.720><c> it</c><00:00:28.800><c> into</c>
+
+00:00:29.030 --> 00:00:29.040 align:start position:0%
+character. I'm going to bring it into
+ 
+
+00:00:29.040 --> 00:00:30.870 align:start position:0%
+character. I'm going to bring it into
+workspace<00:00:29.840><c> so</c><00:00:30.000><c> I</c><00:00:30.040><c> can</c><00:00:30.200><c> explain</c><00:00:30.680><c> how</c>
+
+00:00:30.870 --> 00:00:30.880 align:start position:0%
+workspace so I can explain how
+ 
+
+00:00:30.880 --> 00:00:33.270 align:start position:0%
+workspace so I can explain how
+everything<00:00:31.320><c> is</c><00:00:31.480><c> built.</c><00:00:32.160><c> Basically,</c><00:00:32.960><c> this</c><00:00:33.160><c> is</c>
+
+00:00:33.270 --> 00:00:33.280 align:start position:0%
+everything is built. Basically, this is
+ 
+
+00:00:33.280 --> 00:00:35.150 align:start position:0%
+everything is built. Basically, this is
+a<00:00:33.360><c> Tanjiro</c><00:00:33.840><c> character</c><00:00:34.280><c> that</c><00:00:34.480><c> I</c><00:00:34.560><c> downloaded</c>
+
+00:00:35.150 --> 00:00:35.160 align:start position:0%
+a Tanjiro character that I downloaded
+ 
+
+00:00:35.160 --> 00:00:40.910 align:start position:0%
+a Tanjiro character that I downloaded
+from<00:00:35.280><c> the</c><00:00:35.400><c> Roblox</c><00:00:35.880><c> toolbox.</c>
+
+00:00:40.910 --> 00:00:40.920 align:start position:0%
+ 
+ 
+
+00:00:40.920 --> 00:00:42.990 align:start position:0%
+ 
+You<00:00:41.080><c> can</c><00:00:41.240><c> find</c><00:00:41.520><c> it</c><00:00:41.720><c> easily</c><00:00:42.120><c> by</c><00:00:42.280><c> searching</c><00:00:42.720><c> for</c>
+
+00:00:42.990 --> 00:00:43.000 align:start position:0%
+You can find it easily by searching for
+ 
+
+00:00:43.000 --> 00:00:45.590 align:start position:0%
+You can find it easily by searching for
+R15<00:00:43.720><c> Tanjiro</c><00:00:44.560><c> and</c><00:00:44.720><c> selecting</c><00:00:45.160><c> the</c><00:00:45.240><c> first</c>
+
+00:00:45.590 --> 00:00:45.600 align:start position:0%
+R15 Tanjiro and selecting the first
+ 
+
+00:00:45.600 --> 00:00:49.230 align:start position:0%
+R15 Tanjiro and selecting the first
+result.
+
+00:00:49.230 --> 00:00:49.240 align:start position:0%
+ 
+ 
+
+00:00:49.240 --> 00:00:51.430 align:start position:0%
+ 
+You<00:00:49.320><c> can</c><00:00:49.480><c> also</c><00:00:49.720><c> see</c><00:00:50.240><c> my</c><00:00:50.400><c> Tanjiro</c><00:00:50.880><c> model</c><00:00:51.200><c> has</c><00:00:51.360><c> a</c>
+
+00:00:51.430 --> 00:00:51.440 align:start position:0%
+You can also see my Tanjiro model has a
+ 
+
+00:00:51.440 --> 00:00:53.230 align:start position:0%
+You can also see my Tanjiro model has a
+different<00:00:51.800><c> face.</c><00:00:52.640><c> That's</c><00:00:52.880><c> because</c><00:00:53.200><c> I</c>
+
+00:00:53.230 --> 00:00:53.240 align:start position:0%
+different face. That's because I
+ 
+
+00:00:53.240 --> 00:00:55.430 align:start position:0%
+different face. That's because I
+replaced<00:00:53.720><c> the</c><00:00:53.840><c> original</c><00:00:54.240><c> face</c><00:00:54.760><c> with</c><00:00:54.920><c> my</c><00:00:55.160><c> own</c>
+
+00:00:55.430 --> 00:00:55.440 align:start position:0%
+replaced the original face with my own
+ 
+
+00:00:55.440 --> 00:00:58.030 align:start position:0%
+replaced the original face with my own
+custom<00:00:55.880><c> face</c><00:00:56.160><c> decal.</c><00:00:57.040><c> To</c><00:00:57.160><c> add</c><00:00:57.440><c> custom</c><00:00:57.800><c> face</c>
+
+00:00:58.030 --> 00:00:58.040 align:start position:0%
+custom face decal. To add custom face
+ 
+
+00:00:58.040 --> 00:01:05.950 align:start position:0%
+custom face decal. To add custom face
+decals,<00:00:58.800><c> open</c><00:00:59.160><c> asset</c><00:00:59.520><c> manager.</c>
+
+00:01:05.950 --> 00:01:05.960 align:start position:0%
+ 
+ 
+
+00:01:05.960 --> 00:01:07.830 align:start position:0%
+ 
+Here,<00:01:06.200><c> you</c><00:01:06.320><c> can</c><00:01:06.480><c> see</c><00:01:06.760><c> all</c><00:01:07.000><c> the</c><00:01:07.120><c> face</c><00:01:07.400><c> textures</c>
+
+00:01:07.830 --> 00:01:07.840 align:start position:0%
+Here, you can see all the face textures
+ 
+
+00:01:07.840 --> 00:01:14.990 align:start position:0%
+Here, you can see all the face textures
+I<00:01:07.960><c> uploaded</c><00:01:08.520><c> into</c><00:01:08.720><c> the</c><00:01:08.880><c> images</c><00:01:09.280><c> folder.</c>
+
+00:01:14.990 --> 00:01:15.000 align:start position:0%
+ 
+ 
+
+00:01:15.000 --> 00:01:17.070 align:start position:0%
+ 
+This<00:01:15.200><c> one</c><00:01:15.440><c> is</c><00:01:15.640><c> the</c><00:01:15.760><c> original</c><00:01:16.200><c> face</c><00:01:16.480><c> image</c>
+
+00:01:17.070 --> 00:01:17.080 align:start position:0%
+This one is the original face image
+ 
+
+00:01:17.080 --> 00:01:20.150 align:start position:0%
+This one is the original face image
+generated<00:01:17.600><c> from</c><00:01:17.760><c> ChatGPT,</c><00:01:19.120><c> and</c><00:01:19.280><c> this</c><00:01:19.520><c> one</c><00:01:20.000><c> is</c>
+
+00:01:20.150 --> 00:01:20.160 align:start position:0%
+generated from ChatGPT, and this one is
+ 
+
+00:01:20.160 --> 00:01:22.310 align:start position:0%
+generated from ChatGPT, and this one is
+the<00:01:20.280><c> final</c><00:01:20.680><c> transparent</c><00:01:21.280><c> version</c><00:01:21.960><c> after</c>
+
+00:01:22.310 --> 00:01:22.320 align:start position:0%
+the final transparent version after
+ 
+
+00:01:22.320 --> 00:01:26.630 align:start position:0%
+the final transparent version after
+editing<00:01:22.680><c> it</c><00:01:22.880><c> inside</c>
+
+00:01:26.630 --> 00:01:26.640 align:start position:0%
+ 
+ 
+
+00:01:26.640 --> 00:01:28.390 align:start position:0%
+ 
+What<00:01:26.840><c> I</c><00:01:26.920><c> did</c><00:01:27.115><c> [music]</c><00:01:27.440><c> was</c><00:01:27.640><c> remove</c><00:01:28.080><c> all</c><00:01:28.280><c> the</c>
+
+00:01:28.390 --> 00:01:28.400 align:start position:0%
+What I did [music] was remove all the
+ 
+
+00:01:28.400 --> 00:01:31.430 align:start position:0%
+What I did [music] was remove all the
+skin<00:01:28.680><c> parts</c><00:01:29.360><c> and</c><00:01:29.520><c> keep</c><00:01:29.800><c> only</c><00:01:30.080><c> the</c><00:01:30.320><c> eyes,</c><00:01:30.920><c> nose,</c>
+
+00:01:31.430 --> 00:01:31.440 align:start position:0%
+skin parts and keep only the eyes, nose,
+ 
+
+00:01:31.440 --> 00:01:33.550 align:start position:0%
+skin parts and keep only the eyes, nose,
+and<00:01:31.600><c> mouth.</c><00:01:32.440><c> Your</c><00:01:32.640><c> image</c><00:01:32.920><c> should</c><00:01:33.040><c> be</c><00:01:33.160><c> square</c>
+
+00:01:33.550 --> 00:01:33.560 align:start position:0%
+and mouth. Your image should be square
+ 
+
+00:01:33.560 --> 00:01:38.270 align:start position:0%
+and mouth. Your image should be square
+size.<00:01:34.360><c> I</c><00:01:34.520><c> usually</c><00:01:34.960><c> use</c><00:01:35.200><c> 512</c><00:01:36.240><c> by</c><00:01:36.400><c> 512</c><00:01:37.280><c> pixels.</c>
+
+00:01:38.270 --> 00:01:38.280 align:start position:0%
+size. I usually use 512 by 512 pixels.
+ 
+
+00:01:38.280 --> 00:01:40.310 align:start position:0%
+size. I usually use 512 by 512 pixels.
+Also,<00:01:39.000><c> make</c><00:01:39.200><c> sure</c><00:01:39.360><c> the</c><00:01:39.480><c> face</c><00:01:39.760><c> is</c><00:01:39.920><c> scaled</c>
+
+00:01:40.310 --> 00:01:40.320 align:start position:0%
+Also, make sure the face is scaled
+ 
+
+00:01:40.320 --> 00:01:42.350 align:start position:0%
+Also, make sure the face is scaled
+smaller<00:01:41.000><c> and</c><00:01:41.200><c> centered</c><00:01:41.560><c> in</c><00:01:41.640><c> the</c><00:01:41.720><c> middle.</c>
+
+00:01:42.350 --> 00:01:42.360 align:start position:0%
+smaller and centered in the middle.
+ 
+
+00:01:42.360 --> 00:01:44.310 align:start position:0%
+smaller and centered in the middle.
+Otherwise,<00:01:42.920><c> it</c><00:01:43.040><c> will</c><00:01:43.160><c> stretch</c><00:01:43.560><c> badly</c><00:01:44.160><c> when</c>
+
+00:01:44.310 --> 00:01:44.320 align:start position:0%
+Otherwise, it will stretch badly when
+ 
+
+00:01:44.320 --> 00:01:46.510 align:start position:0%
+Otherwise, it will stretch badly when
+applied<00:01:44.680><c> to</c><00:01:44.800><c> the</c><00:01:44.880><c> character</c><00:01:45.320><c> head.</c><00:01:46.120><c> Now,</c><00:01:46.360><c> let</c>
+
+00:01:46.510 --> 00:01:46.520 align:start position:0%
+applied to the character head. Now, let
+ 
+
+00:01:46.520 --> 00:01:47.830 align:start position:0%
+applied to the character head. Now, let
+me<00:01:46.640><c> show</c><00:01:46.766><c> [music]</c><00:01:46.880><c> you</c><00:01:47.000><c> how</c><00:01:47.120><c> to</c><00:01:47.280><c> edit</c><00:01:47.520><c> it</c><00:01:47.680><c> in</c>
+
+00:01:47.830 --> 00:01:47.840 align:start position:0%
+me show [music] you how to edit it in
+ 
+
+00:01:47.840 --> 00:01:49.830 align:start position:0%
+me show [music] you how to edit it in
+ There<00:01:48.680><c> are</c><00:01:48.800><c> many</c><00:01:49.040><c> ways</c><00:01:49.320><c> to</c><00:01:49.440><c> erase</c><00:01:49.760><c> the</c>
+
+00:01:49.830 --> 00:01:49.840 align:start position:0%
+ There are many ways to erase the
+ 
+
+00:01:49.840 --> 00:01:52.390 align:start position:0%
+ There are many ways to erase the
+background.<00:01:50.720><c> One</c><00:01:50.960><c> simple</c><00:01:51.320><c> way</c><00:01:51.800><c> is</c><00:01:52.000><c> using</c><00:01:52.280><c> the</c>
+
+00:01:52.390 --> 00:01:52.400 align:start position:0%
+background. One simple way is using the
+ 
+
+00:01:52.400 --> 00:01:55.470 align:start position:0%
+background. One simple way is using the
+eraser<00:01:52.840><c> tool.</c><00:01:53.640><c> But,</c><00:01:53.760><c> if</c><00:01:53.880><c> your</c><00:01:54.040><c> image</c><00:01:54.320><c> is</c><00:01:54.480><c> JPG,</c>
+
+00:01:55.470 --> 00:01:55.480 align:start position:0%
+eraser tool. But, if your image is JPG,
+ 
+
+00:01:55.480 --> 00:01:57.070 align:start position:0%
+eraser tool. But, if your image is JPG,
+when<00:01:55.640><c> you</c><00:01:55.720><c> erase</c><00:01:56.040><c> something,</c><00:01:56.640><c> you'll</c><00:01:56.800><c> see</c><00:01:57.000><c> a</c>
+
+00:01:57.070 --> 00:01:57.080 align:start position:0%
+when you erase something, you'll see a
+ 
+
+00:01:57.080 --> 00:01:59.870 align:start position:0%
+when you erase something, you'll see a
+gray<00:01:57.360><c> background</c><00:01:58.120><c> instead</c><00:01:58.520><c> of</c><00:01:58.600><c> transparency.</c>
+
+00:01:59.870 --> 00:01:59.880 align:start position:0%
+gray background instead of transparency.
+ 
+
+00:01:59.880 --> 00:02:02.150 align:start position:0%
+gray background instead of transparency.
+To<00:01:59.960><c> fix</c><00:02:00.240><c> that,</c><00:02:00.760><c> right-click</c><00:02:01.240><c> the</c><00:02:01.360><c> layer</c><00:02:01.920><c> and</c>
+
+00:02:02.150 --> 00:02:02.160 align:start position:0%
+To fix that, right-click the layer and
+ 
+
+00:02:02.160 --> 00:02:04.670 align:start position:0%
+To fix that, right-click the layer and
+add<00:02:02.480><c> alpha</c><00:02:02.800><c> channel.</c><00:02:03.520><c> Now,</c><00:02:03.760><c> when</c><00:02:03.920><c> we</c><00:02:04.040><c> erase,</c>
+
+00:02:04.670 --> 00:02:04.680 align:start position:0%
+add alpha channel. Now, when we erase,
+ 
+
+00:02:04.680 --> 00:02:06.990 align:start position:0%
+add alpha channel. Now, when we erase,
+the<00:02:04.800><c> background</c><00:02:05.240><c> becomes</c><00:02:05.640><c> transparent.</c><00:02:06.920><c> For</c>
+
+00:02:06.990 --> 00:02:07.000 align:start position:0%
+the background becomes transparent. For
+ 
+
+00:02:07.000 --> 00:02:09.029 align:start position:0%
+the background becomes transparent. For
+detailed<00:02:07.479><c> cleanup,</c><00:02:08.200><c> I</c><00:02:08.320><c> usually</c><00:02:08.720><c> use</c><00:02:08.920><c> the</c>
+
+00:02:09.029 --> 00:02:09.039 align:start position:0%
+detailed cleanup, I usually use the
+ 
+
+00:02:09.039 --> 00:02:11.270 align:start position:0%
+detailed cleanup, I usually use the
+lasso<00:02:09.399><c> selection</c><00:02:09.880><c> tool.</c><00:02:10.520><c> Just</c><00:02:10.759><c> click</c><00:02:11.000><c> around</c>
+
+00:02:11.270 --> 00:02:11.280 align:start position:0%
+lasso selection tool. Just click around
+ 
+
+00:02:11.280 --> 00:02:13.390 align:start position:0%
+lasso selection tool. Just click around
+the<00:02:11.400><c> area</c><00:02:11.720><c> you</c><00:02:11.840><c> want</c><00:02:12.040><c> to</c><00:02:12.120><c> remove,</c><00:02:12.920><c> then</c><00:02:13.120><c> press</c>
+
+00:02:13.390 --> 00:02:13.400 align:start position:0%
+the area you want to remove, then press
+ 
+
+00:02:13.400 --> 00:02:18.030 align:start position:0%
+the area you want to remove, then press
+backspace<00:02:14.240><c> to</c><00:02:14.360><c> delete</c><00:02:14.680><c> it.</c>
+
+00:02:18.030 --> 00:02:18.040 align:start position:0%
+ 
+ 
+
+00:02:18.040 --> 00:02:20.150 align:start position:0%
+ 
+For<00:02:18.160><c> large</c><00:02:18.520><c> areas</c><00:02:18.880><c> with</c><00:02:19.000><c> the</c><00:02:19.080><c> same</c><00:02:19.360><c> color,</c><00:02:20.040><c> the</c>
+
+00:02:20.150 --> 00:02:20.160 align:start position:0%
+For large areas with the same color, the
+ 
+
+00:02:20.160 --> 00:02:28.910 align:start position:0%
+For large areas with the same color, the
+magic<00:02:20.560><c> wand</c><00:02:20.800><c> tool</c><00:02:21.320><c> works</c><00:02:21.640><c> really</c><00:02:21.959><c> well.</c>
+
+00:02:28.910 --> 00:02:28.920 align:start position:0%
+ 
+ 
+
+00:02:28.920 --> 00:02:31.110 align:start position:0%
+ 
+Once<00:02:29.240><c> you</c><00:02:29.341><c> [music]</c><00:02:29.360><c> finish</c><00:02:29.800><c> editing,</c><00:02:30.560><c> export</c>
+
+00:02:31.110 --> 00:02:31.120 align:start position:0%
+Once you [music] finish editing, export
+ 
+
+00:02:31.120 --> 00:02:33.949 align:start position:0%
+Once you [music] finish editing, export
+the<00:02:31.240><c> image</c><00:02:31.600><c> as</c><00:02:31.800><c> PNG</c><00:02:32.360><c> format.</c><00:02:33.320><c> This</c><00:02:33.520><c> is</c><00:02:33.680><c> very</c>
+
+00:02:33.949 --> 00:02:33.959 align:start position:0%
+the image as PNG format. This is very
+ 
+
+00:02:33.959 --> 00:02:36.670 align:start position:0%
+the image as PNG format. This is very
+important,<00:02:34.760><c> because</c><00:02:35.040><c> if</c><00:02:35.200><c> you</c><00:02:35.360><c> use</c><00:02:35.640><c> JPG,</c>
+
+00:02:36.670 --> 00:02:36.680 align:start position:0%
+important, because if you use JPG,
+ 
+
+00:02:36.680 --> 00:02:38.550 align:start position:0%
+important, because if you use JPG,
+Roblox<00:02:37.200><c> Studio</c><00:02:37.680><c> will</c><00:02:37.840><c> show</c><00:02:38.080><c> a</c><00:02:38.160><c> black</c>
+
+00:02:38.550 --> 00:02:38.560 align:start position:0%
+Roblox Studio will show a black
+ 
+
+00:02:38.560 --> 00:02:41.390 align:start position:0%
+Roblox Studio will show a black
+background<00:02:39.400><c> instead</c><00:02:39.800><c> of</c><00:02:39.880><c> transparency.</c>
+
+00:02:41.390 --> 00:02:41.400 align:start position:0%
+background instead of transparency.
+ 
+
+00:02:41.400 --> 00:02:43.710 align:start position:0%
+background instead of transparency.
+In<00:02:42.160><c> you</c><00:02:42.280><c> can</c><00:02:42.440><c> simply</c><00:02:42.840><c> rename</c><00:02:43.200><c> the</c><00:02:43.320><c> file</c>
+
+00:02:43.710 --> 00:02:43.720 align:start position:0%
+In you can simply rename the file
+ 
+
+00:02:43.720 --> 00:02:46.670 align:start position:0%
+In you can simply rename the file
+with<00:02:43.959><c> .png</c><00:02:45.040><c> before</c><00:02:45.440><c> exporting.</c>
+
+00:02:46.670 --> 00:02:46.680 align:start position:0%
+with .png before exporting.
+ 
+
+00:02:46.680 --> 00:02:48.750 align:start position:0%
+with .png before exporting.
+Now,<00:02:46.920><c> let's</c><00:02:47.200><c> import</c><00:02:47.600><c> the</c><00:02:47.720><c> face</c><00:02:48.040><c> into</c><00:02:48.280><c> Roblox</c>
+
+00:02:48.750 --> 00:02:48.760 align:start position:0%
+Now, let's import the face into Roblox
+ 
+
+00:02:48.760 --> 00:02:49.830 align:start position:0%
+Now, let's import the face into Roblox
+Studio.
+
+00:02:49.830 --> 00:02:49.840 align:start position:0%
+Studio.
+ 
+
+00:02:49.840 --> 00:02:52.230 align:start position:0%
+Studio.
+Click<00:02:50.080><c> the</c><00:02:50.200><c> bulk</c><00:02:50.640><c> import</c><00:02:51.040><c> button</c><00:02:51.680><c> and</c><00:02:51.840><c> select</c>
+
+00:02:52.230 --> 00:02:52.240 align:start position:0%
+Click the bulk import button and select
+ 
+
+00:02:52.240 --> 00:02:55.230 align:start position:0%
+Click the bulk import button and select
+your<00:02:52.400><c> PNG</c><00:02:52.959><c> face</c><00:02:53.280><c> image.</c><00:02:54.160><c> After</c><00:02:54.480><c> importing,</c>
+
+00:02:55.230 --> 00:02:55.240 align:start position:0%
+your PNG face image. After importing,
+ 
+
+00:02:55.240 --> 00:02:57.070 align:start position:0%
+your PNG face image. After importing,
+you'll<00:02:55.440><c> see</c><00:02:55.640><c> it</c><00:02:55.720><c> appear</c><00:02:56.080><c> inside</c><00:02:56.520><c> the</c><00:02:56.680><c> asset</c>
+
+00:02:57.070 --> 00:02:57.080 align:start position:0%
+you'll see it appear inside the asset
+ 
+
+00:02:57.080 --> 00:02:58.910 align:start position:0%
+you'll see it appear inside the asset
+manager<00:02:57.480><c> images</c><00:02:57.880><c> folder.</c>
+
+00:02:58.910 --> 00:02:58.920 align:start position:0%
+manager images folder.
+ 
+
+00:02:58.920 --> 00:03:00.949 align:start position:0%
+manager images folder.
+To<00:02:59.000><c> apply</c><00:02:59.320><c> it,</c><00:02:59.720><c> simply</c><00:03:00.080><c> drag</c><00:03:00.480><c> the</c><00:03:00.640><c> image</c>
+
+00:03:00.949 --> 00:03:00.959 align:start position:0%
+To apply it, simply drag the image
+ 
+
+00:03:00.959 --> 00:03:03.509 align:start position:0%
+To apply it, simply drag the image
+directly<00:03:01.519><c> onto</c><00:03:01.800><c> the</c><00:03:01.880><c> character</c><00:03:02.320><c> face.</c>
+
+00:03:03.509 --> 00:03:03.519 align:start position:0%
+directly onto the character face.
+ 
+
+00:03:03.519 --> 00:03:05.550 align:start position:0%
+directly onto the character face.
+One<00:03:03.680><c> important</c><00:03:04.120><c> thing</c><00:03:04.320><c> to</c><00:03:04.440><c> note</c><00:03:04.959><c> is</c><00:03:05.080><c> that</c><00:03:05.280><c> this</c>
+
+00:03:05.550 --> 00:03:05.560 align:start position:0%
+One important thing to note is that this
+ 
+
+00:03:05.560 --> 00:03:07.750 align:start position:0%
+One important thing to note is that this
+only<00:03:05.840><c> works</c><00:03:06.120><c> with</c><00:03:06.320><c> classic</c><00:03:06.800><c> heads.</c>
+
+00:03:07.750 --> 00:03:07.760 align:start position:0%
+only works with classic heads.
+ 
+
+00:03:07.760 --> 00:03:09.830 align:start position:0%
+only works with classic heads.
+If<00:03:07.880><c> your</c><00:03:08.000><c> character</c><00:03:08.480><c> uses</c><00:03:08.800><c> dynamic</c><00:03:09.320><c> head,</c>
+
+00:03:09.830 --> 00:03:09.840 align:start position:0%
+If your character uses dynamic head,
+ 
+
+00:03:09.840 --> 00:03:11.990 align:start position:0%
+If your character uses dynamic head,
+this<00:03:10.040><c> method</c><00:03:10.400><c> won't</c><00:03:10.600><c> work.</c><00:03:11.400><c> I</c><00:03:11.480><c> already</c><00:03:11.800><c> made</c>
+
+00:03:11.990 --> 00:03:12.000 align:start position:0%
+this method won't work. I already made
+ 
+
+00:03:12.000 --> 00:03:13.910 align:start position:0%
+this method won't work. I already made
+another<00:03:12.360><c> tutorial</c><00:03:13.080><c> explaining</c><00:03:13.680><c> how</c><00:03:13.800><c> to</c>
+
+00:03:13.910 --> 00:03:13.920 align:start position:0%
+another tutorial explaining how to
+ 
+
+00:03:13.920 --> 00:03:15.270 align:start position:0%
+another tutorial explaining how to
+convert<00:03:14.280><c> dynamic</c><00:03:14.537><c> [music]</c><00:03:14.800><c> heads</c><00:03:15.080><c> into</c>
+
+00:03:15.270 --> 00:03:15.280 align:start position:0%
+convert dynamic [music] heads into
+ 
+
+00:03:15.280 --> 00:03:17.870 align:start position:0%
+convert dynamic [music] heads into
+classic<00:03:15.760><c> heads</c><00:03:16.280><c> with</c><00:03:16.440><c> custom</c><00:03:16.800><c> faces.</c><00:03:17.800><c> So,</c>
+
+00:03:17.870 --> 00:03:17.880 align:start position:0%
+classic heads with custom faces. So,
+ 
+
+00:03:17.880 --> 00:03:19.350 align:start position:0%
+classic heads with custom faces. So,
+check<00:03:18.120><c> the</c><00:03:18.239><c> link</c><00:03:18.480><c> in</c><00:03:18.560><c> the</c><00:03:18.640><c> description</c><00:03:19.160><c> if</c><00:03:19.280><c> you</c>
+
+00:03:19.350 --> 00:03:19.360 align:start position:0%
+check the link in the description if you
+ 
+
+00:03:19.360 --> 00:03:21.390 align:start position:0%
+check the link in the description if you
+need<00:03:19.560><c> that.</c><00:03:20.280><c> Now,</c><00:03:20.440><c> let's</c><00:03:20.680><c> remove</c><00:03:21.000><c> the</c><00:03:21.160><c> old</c>
+
+00:03:21.390 --> 00:03:21.400 align:start position:0%
+need that. Now, let's remove the old
+ 
+
+00:03:21.400 --> 00:03:29.590 align:start position:0%
+need that. Now, let's remove the old
+face<00:03:21.640><c> decal</c><00:03:22.120><c> and</c><00:03:22.239><c> assign</c><00:03:22.640><c> the</c><00:03:22.720><c> new</c><00:03:22.880><c> one.</c>
+
+00:03:29.590 --> 00:03:29.600 align:start position:0%
+ 
+ 
+
+00:03:29.600 --> 00:03:32.350 align:start position:0%
+ 
+Nice.<00:03:30.239><c> The</c><00:03:30.360><c> custom</c><00:03:30.720><c> face</c><00:03:31.000><c> is</c><00:03:31.120><c> now</c><00:03:31.320><c> applied.</c>
+
+00:03:32.350 --> 00:03:32.360 align:start position:0%
+Nice. The custom face is now applied.
+ 
+
+00:03:32.360 --> 00:03:34.430 align:start position:0%
+Nice. The custom face is now applied.
+But,<00:03:32.480><c> the</c><00:03:32.560><c> skin</c><00:03:32.880><c> tone</c><00:03:33.120><c> looks</c><00:03:33.360><c> too</c><00:03:33.600><c> white.</c><00:03:34.320><c> So,</c>
+
+00:03:34.430 --> 00:03:34.440 align:start position:0%
+But, the skin tone looks too white. So,
+ 
+
+00:03:34.440 --> 00:03:35.949 align:start position:0%
+But, the skin tone looks too white. So,
+let's<00:03:34.680><c> select</c><00:03:35.000><c> the</c><00:03:35.120><c> head</c><00:03:35.360><c> and</c><00:03:35.519><c> change</c><00:03:35.840><c> the</c>
+
+00:03:35.949 --> 00:03:35.959 align:start position:0%
+let's select the head and change the
+ 
+
+00:03:35.959 --> 00:03:38.590 align:start position:0%
+let's select the head and change the
+skin<00:03:36.200><c> color.</c><00:03:37.040><c> I'll</c><00:03:37.200><c> use</c><00:03:37.440><c> this</c><00:03:37.640><c> yellow</c><00:03:37.920><c> tone</c><00:03:38.519><c> to</c>
+
+00:03:38.590 --> 00:03:38.600 align:start position:0%
+skin color. I'll use this yellow tone to
+ 
+
+00:03:38.600 --> 00:03:40.390 align:start position:0%
+skin color. I'll use this yellow tone to
+make<00:03:38.760><c> it</c><00:03:38.880><c> match</c><00:03:39.120><c> better.</c><00:03:39.959><c> Now,</c><00:03:40.160><c> for</c><00:03:40.280><c> the</c>
+
+00:03:40.390 --> 00:03:40.400 align:start position:0%
+make it match better. Now, for the
+ 
+
+00:03:40.400 --> 00:03:42.310 align:start position:0%
+make it match better. Now, for the
+sword.<00:03:41.320><c> You</c><00:03:41.400><c> can</c><00:03:41.519><c> see</c><00:03:41.680><c> my</c><00:03:41.800><c> character</c><00:03:42.200><c> is</c>
+
+00:03:42.310 --> 00:03:42.320 align:start position:0%
+sword. You can see my character is
+ 
+
+00:03:42.320 --> 00:03:44.430 align:start position:0%
+sword. You can see my character is
+holding<00:03:42.640><c> Tanjiro's</c><00:03:43.200><c> sword.</c><00:03:43.920><c> I</c><00:03:44.040><c> got</c><00:03:44.239><c> this</c>
+
+00:03:44.430 --> 00:03:44.440 align:start position:0%
+holding Tanjiro's sword. I got this
+ 
+
+00:03:44.440 --> 00:03:46.550 align:start position:0%
+holding Tanjiro's sword. I got this
+model<00:03:44.720><c> from</c><00:03:44.920><c> the</c><00:03:45.000><c> Demon</c><00:03:45.360><c> Slayer</c><00:03:45.680><c> Kit</c><00:03:45.959><c> asset</c>
+
+00:03:46.550 --> 00:03:46.560 align:start position:0%
+model from the Demon Slayer Kit asset
+ 
+
+00:03:46.560 --> 00:03:49.150 align:start position:0%
+model from the Demon Slayer Kit asset
+inside<00:03:47.000><c> toolbox.</c><00:03:48.000><c> Search</c><00:03:48.320><c> for</c><00:03:48.440><c> Demon</c><00:03:48.800><c> Slayer</c>
+
+00:03:49.150 --> 00:03:49.160 align:start position:0%
+inside toolbox. Search for Demon Slayer
+ 
+
+00:03:49.160 --> 00:03:51.870 align:start position:0%
+inside toolbox. Search for Demon Slayer
+Kit<00:03:49.720><c> and</c><00:03:49.880><c> select</c><00:03:50.200><c> the</c><00:03:50.280><c> first</c><00:03:50.600><c> result.</c><00:03:51.519><c> Inside</c>
+
+00:03:51.870 --> 00:03:51.880 align:start position:0%
+Kit and select the first result. Inside
+ 
+
+00:03:51.880 --> 00:03:53.910 align:start position:0%
+Kit and select the first result. Inside
+the<00:03:51.959><c> package,</c><00:03:52.720><c> you'll</c><00:03:52.880><c> find</c><00:03:53.120><c> many</c><00:03:53.400><c> assets</c><00:03:53.840><c> I</c>
+
+00:03:53.910 --> 00:03:53.920 align:start position:0%
+the package, you'll find many assets I
+ 
+
+00:03:53.920 --> 00:03:56.110 align:start position:0%
+the package, you'll find many assets I
+used<00:03:54.480><c> for</c><00:03:54.560><c> this</c><00:03:54.720><c> entire</c><00:03:55.200><c> skill</c><00:03:55.520><c> demo,</c>
+
+00:03:56.110 --> 00:03:56.120 align:start position:0%
+used for this entire skill demo,
+ 
+
+00:03:56.120 --> 00:03:58.190 align:start position:0%
+used for this entire skill demo,
+including<00:03:56.600><c> the</c><00:03:56.680><c> sword.</c><00:03:57.600><c> To</c><00:03:57.720><c> attach</c><00:03:58.080><c> the</c>
+
+00:03:58.190 --> 00:03:58.200 align:start position:0%
+including the sword. To attach the
+ 
+
+00:03:58.200 --> 00:04:02.630 align:start position:0%
+including the sword. To attach the
+sword,<00:03:58.840><c> copy</c><00:03:59.160><c> the</c><00:03:59.280><c> sword</c><00:03:59.560><c> model.</c>
+
+00:04:02.630 --> 00:04:02.640 align:start position:0%
+ 
+ 
+
+00:04:02.640 --> 00:04:04.307 align:start position:0%
+ 
+Select<00:04:02.960><c> your</c><00:04:03.080><c> character,</c><00:04:03.880><c> add</c><00:04:04.080><c> a</c><00:04:04.120><c> tool</c>
+
+00:04:04.307 --> 00:04:04.317 align:start position:0%
+Select your character, add a tool
+ 
+
+00:04:04.317 --> 00:04:05.710 align:start position:0%
+Select your character, add a tool
+[music]<00:04:04.440><c> object,</c><00:04:04.880><c> then</c><00:04:05.040><c> paste</c><00:04:05.360><c> the</c><00:04:05.440><c> sword</c>
+
+00:04:05.710 --> 00:04:05.720 align:start position:0%
+[music] object, then paste the sword
+ 
+
+00:04:05.720 --> 00:04:10.430 align:start position:0%
+[music] object, then paste the sword
+into<00:04:06.000><c> it.</c>
+
+00:04:10.430 --> 00:04:10.440 align:start position:0%
+ 
+ 
+
+00:04:10.440 --> 00:04:12.110 align:start position:0%
+ 
+Inside<00:04:10.840><c> the</c><00:04:10.920><c> sword</c><00:04:11.200><c> model,</c><00:04:11.720><c> you'll</c><00:04:11.880><c> see</c><00:04:12.000><c> a</c>
+
+00:04:12.110 --> 00:04:12.120 align:start position:0%
+Inside the sword model, you'll see a
+ 
+
+00:04:12.120 --> 00:04:14.470 align:start position:0%
+Inside the sword model, you'll see a
+handle<00:04:12.400><c> part.</c><00:04:13.120><c> Move</c><00:04:13.360><c> that</c><00:04:13.560><c> handle</c><00:04:13.880><c> directly</c>
+
+00:04:14.470 --> 00:04:14.480 align:start position:0%
+handle part. Move that handle directly
+ 
+
+00:04:14.480 --> 00:04:16.590 align:start position:0%
+handle part. Move that handle directly
+under<00:04:14.680><c> the</c><00:04:14.800><c> tool</c><00:04:15.080><c> object,</c><00:04:15.920><c> then</c><00:04:16.120><c> remove</c><00:04:16.440><c> the</c>
+
+00:04:16.590 --> 00:04:16.600 align:start position:0%
+under the tool object, then remove the
+ 
+
+00:04:16.600 --> 00:04:18.870 align:start position:0%
+under the tool object, then remove the
+empty<00:04:16.880><c> model</c><00:04:17.160><c> folder.</c><00:04:18.079><c> Now</c><00:04:18.239><c> the</c><00:04:18.359><c> sword</c><00:04:18.680><c> tool</c>
+
+00:04:18.870 --> 00:04:18.880 align:start position:0%
+empty model folder. Now the sword tool
+ 
+
+00:04:18.880 --> 00:04:19.910 align:start position:0%
+empty model folder. Now the sword tool
+is<00:04:19.040><c> ready.</c>
+
+00:04:19.910 --> 00:04:19.920 align:start position:0%
+is ready.
+ 
+
+00:04:19.920 --> 00:04:21.870 align:start position:0%
+is ready.
+The<00:04:20.000><c> sword</c><00:04:20.280><c> attaches</c><00:04:20.799><c> automatically,</c><00:04:21.760><c> but</c>
+
+00:04:21.870 --> 00:04:21.880 align:start position:0%
+The sword attaches automatically, but
+ 
+
+00:04:21.880 --> 00:04:23.302 align:start position:0%
+The sword attaches automatically, but
+the<00:04:21.959><c> position</c><00:04:22.400><c> is</c><00:04:22.520><c> incorrect.</c>
+
+00:04:23.302 --> 00:04:23.312 align:start position:0%
+the position is incorrect.
+ 
+
+00:04:23.312 --> 00:04:23.590 align:start position:0%
+the position is incorrect.
+&gt;&gt; [music]
+
+00:04:23.590 --> 00:04:23.600 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:04:23.600 --> 00:04:25.150 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; So<00:04:23.720><c> we</c><00:04:23.840><c> need</c><00:04:24.040><c> to</c><00:04:24.160><c> align</c><00:04:24.480><c> it</c><00:04:24.600><c> using</c><00:04:24.880><c> grip</c>
+
+00:04:25.150 --> 00:04:25.160 align:start position:0%
+&gt;&gt; So we need to align it using grip
+ 
+
+00:04:25.160 --> 00:04:26.110 align:start position:0%
+&gt;&gt; So we need to align it using grip
+editor.
+
+00:04:26.110 --> 00:04:26.120 align:start position:0%
+editor.
+ 
+
+00:04:26.120 --> 00:04:28.270 align:start position:0%
+editor.
+Go<00:04:26.240><c> to</c><00:04:26.360><c> the</c><00:04:26.480><c> plugins</c><00:04:26.919><c> tab</c><00:04:27.440><c> and</c><00:04:27.560><c> enable</c><00:04:27.960><c> grip</c>
+
+00:04:28.270 --> 00:04:28.280 align:start position:0%
+Go to the plugins tab and enable grip
+ 
+
+00:04:28.280 --> 00:04:37.750 align:start position:0%
+Go to the plugins tab and enable grip
+editor<00:04:28.560><c> tool.</c>
+
+00:04:37.750 --> 00:04:37.760 align:start position:0%
+ 
+ 
+
+00:04:37.760 --> 00:04:39.390 align:start position:0%
+ 
+If<00:04:37.880><c> you</c><00:04:37.960><c> don't</c><00:04:38.160><c> have</c><00:04:38.320><c> it</c><00:04:38.400><c> installed,</c><00:04:39.160><c> don't</c>
+
+00:04:39.390 --> 00:04:39.400 align:start position:0%
+If you don't have it installed, don't
+ 
+
+00:04:39.400 --> 00:04:41.830 align:start position:0%
+If you don't have it installed, don't
+worry.<00:04:39.960><c> It's</c><00:04:40.200><c> free</c><00:04:40.440><c> in</c><00:04:40.520><c> the</c><00:04:40.600><c> toolbox.</c><00:04:41.600><c> Just</c>
+
+00:04:41.830 --> 00:04:41.840 align:start position:0%
+worry. It's free in the toolbox. Just
+ 
+
+00:04:41.840 --> 00:04:44.030 align:start position:0%
+worry. It's free in the toolbox. Just
+search<00:04:42.080><c> for</c><00:04:42.200><c> grip</c><00:04:42.560><c> editor</c><00:04:42.880><c> tool</c><00:04:43.520><c> and</c><00:04:43.640><c> install</c>
+
+00:04:44.030 --> 00:04:44.040 align:start position:0%
+search for grip editor tool and install
+ 
+
+00:04:44.040 --> 00:04:46.390 align:start position:0%
+search for grip editor tool and install
+it.<00:04:44.760><c> Now</c><00:04:44.919><c> enable</c><00:04:45.240><c> the</c><00:04:45.360><c> plugin</c><00:04:45.800><c> and</c><00:04:45.960><c> select</c><00:04:46.280><c> the</c>
+
+00:04:46.390 --> 00:04:46.400 align:start position:0%
+it. Now enable the plugin and select the
+ 
+
+00:04:46.400 --> 00:04:49.150 align:start position:0%
+it. Now enable the plugin and select the
+sword<00:04:46.680><c> tool.</c>
+
+00:04:49.150 --> 00:04:49.160 align:start position:0%
+ 
+ 
+
+00:04:49.160 --> 00:04:51.270 align:start position:0%
+ 
+You'll<00:04:49.320><c> see</c><00:04:49.480><c> a</c><00:04:49.560><c> virtual</c><00:04:50.040><c> character</c><00:04:50.440><c> preview.</c>
+
+00:04:51.270 --> 00:04:51.280 align:start position:0%
+You'll see a virtual character preview.
+ 
+
+00:04:51.280 --> 00:04:53.550 align:start position:0%
+You'll see a virtual character preview.
+From<00:04:51.440><c> here,</c><00:04:52.000><c> rotate</c><00:04:52.520><c> and</c><00:04:52.640><c> move</c><00:04:52.880><c> the</c><00:04:52.960><c> sword</c>
+
+00:04:53.550 --> 00:04:53.560 align:start position:0%
+From here, rotate and move the sword
+ 
+
+00:04:53.560 --> 00:05:02.550 align:start position:0%
+From here, rotate and move the sword
+until<00:04:53.840><c> it</c><00:04:53.960><c> aligns</c><00:04:54.360><c> correctly</c><00:04:54.800><c> with</c><00:04:54.919><c> the</c><00:04:55.040><c> hand.</c>
+
+00:05:02.550 --> 00:05:02.560 align:start position:0%
+ 
+ 
+
+00:05:02.560 --> 00:05:05.790 align:start position:0%
+ 
+Next,<00:05:03.240><c> we</c><00:05:03.400><c> need</c><00:05:03.600><c> the</c><00:05:03.680><c> sword</c><00:05:04.120><c> skill</c><00:05:04.520><c> animation.</c>
+
+00:05:05.790 --> 00:05:05.800 align:start position:0%
+Next, we need the sword skill animation.
+ 
+
+00:05:05.800 --> 00:05:07.150 align:start position:0%
+Next, we need the sword skill animation.
+This<00:05:06.040><c> animation</c><00:05:06.543><c> [music]</c><00:05:06.600><c> was</c><00:05:06.760><c> heavily</c>
+
+00:05:07.150 --> 00:05:07.160 align:start position:0%
+This animation [music] was heavily
+ 
+
+00:05:07.160 --> 00:05:09.990 align:start position:0%
+This animation [music] was heavily
+assisted<00:05:07.680><c> by</c><00:05:07.919><c> AI</c><00:05:08.280><c> tools.</c><00:05:09.280><c> You</c><00:05:09.400><c> don't</c><00:05:09.680><c> need</c><00:05:09.880><c> to</c>
+
+00:05:09.990 --> 00:05:10.000 align:start position:0%
+assisted by AI tools. You don't need to
+ 
+
+00:05:10.000 --> 00:05:12.510 align:start position:0%
+assisted by AI tools. You don't need to
+animate<00:05:10.520><c> everything</c><00:05:11.040><c> from</c><00:05:11.200><c> scratch</c><00:05:11.640><c> anymore.</c>
+
+00:05:12.510 --> 00:05:12.520 align:start position:0%
+animate everything from scratch anymore.
+ 
+
+00:05:12.520 --> 00:05:15.190 align:start position:0%
+animate everything from scratch anymore.
+You<00:05:12.640><c> can</c><00:05:12.800><c> ask</c><00:05:13.080><c> Claude,</c><00:05:13.720><c> Cursor,</c><00:05:14.480><c> Codex,</c>
+
+00:05:15.190 --> 00:05:15.200 align:start position:0%
+You can ask Claude, Cursor, Codex,
+ 
+
+00:05:15.200 --> 00:05:18.270 align:start position:0%
+You can ask Claude, Cursor, Codex,
+Antigravity,<00:05:16.280><c> or</c><00:05:16.480><c> other</c><00:05:16.800><c> AI</c><00:05:17.080><c> desktop</c><00:05:17.640><c> apps</c><00:05:18.160><c> to</c>
+
+00:05:18.270 --> 00:05:18.280 align:start position:0%
+Antigravity, or other AI desktop apps to
+ 
+
+00:05:18.280 --> 00:05:20.070 align:start position:0%
+Antigravity, or other AI desktop apps to
+generate<00:05:18.760><c> the</c><00:05:18.880><c> base</c><00:05:19.200><c> animation</c><00:05:19.720><c> for</c><00:05:19.919><c> you</c>
+
+00:05:20.070 --> 00:05:20.080 align:start position:0%
+generate the base animation for you
+ 
+
+00:05:20.080 --> 00:05:22.350 align:start position:0%
+generate the base animation for you
+first.<00:05:21.000><c> Then</c><00:05:21.200><c> you</c><00:05:21.320><c> improve</c><00:05:21.720><c> it</c><00:05:21.840><c> manually</c>
+
+00:05:22.350 --> 00:05:22.360 align:start position:0%
+first. Then you improve it manually
+ 
+
+00:05:22.360 --> 00:05:25.550 align:start position:0%
+first. Then you improve it manually
+later.<00:05:23.320><c> To</c><00:05:23.400><c> do</c><00:05:23.600><c> this,</c><00:05:24.200><c> first</c><00:05:24.520><c> enable</c><00:05:24.960><c> MCP</c>
+
+00:05:25.550 --> 00:05:25.560 align:start position:0%
+later. To do this, first enable MCP
+ 
+
+00:05:25.560 --> 00:05:28.470 align:start position:0%
+later. To do this, first enable MCP
+server<00:05:26.160><c> inside</c><00:05:26.680><c> Roblox</c><00:05:27.120><c> Studio.</c><00:05:28.120><c> Click</c><00:05:28.360><c> the</c>
+
+00:05:28.470 --> 00:05:28.480 align:start position:0%
+server inside Roblox Studio. Click the
+ 
+
+00:05:28.480 --> 00:05:31.230 align:start position:0%
+server inside Roblox Studio. Click the
+galaxy<00:05:28.813><c> [music]</c><00:05:29.040><c> icon</c><00:05:29.720><c> and</c><00:05:29.919><c> open</c><00:05:30.320><c> MCP</c><00:05:30.919><c> server</c>
+
+00:05:31.230 --> 00:05:31.240 align:start position:0%
+galaxy [music] icon and open MCP server
+ 
+
+00:05:31.240 --> 00:05:33.750 align:start position:0%
+galaxy [music] icon and open MCP server
+settings.<00:05:32.320><c> You</c><00:05:32.400><c> can</c><00:05:32.560><c> see</c><00:05:32.800><c> I</c><00:05:32.919><c> already</c><00:05:33.280><c> enabled</c>
+
+00:05:33.750 --> 00:05:33.760 align:start position:0%
+settings. You can see I already enabled
+ 
+
+00:05:33.760 --> 00:05:37.030 align:start position:0%
+settings. You can see I already enabled
+MCP<00:05:34.320><c> configurations</c><00:05:35.160><c> for</c><00:05:35.320><c> several</c><00:05:35.760><c> AI</c><00:05:36.080><c> apps.</c>
+
+00:05:37.030 --> 00:05:37.040 align:start position:0%
+MCP configurations for several AI apps.
+ 
+
+00:05:37.040 --> 00:05:39.590 align:start position:0%
+MCP configurations for several AI apps.
+I<00:05:37.120><c> also</c><00:05:37.400><c> made</c><00:05:37.680><c> detailed</c><00:05:38.160><c> tutorials</c><00:05:38.720><c> about</c><00:05:39.040><c> MCP</c>
+
+00:05:39.590 --> 00:05:39.600 align:start position:0%
+I also made detailed tutorials about MCP
+ 
+
+00:05:39.600 --> 00:05:41.350 align:start position:0%
+I also made detailed tutorials about MCP
+setup.<00:05:40.360><c> So</c><00:05:40.520><c> check</c><00:05:40.800><c> the</c><00:05:40.919><c> links</c><00:05:41.160><c> in</c><00:05:41.280><c> the</c>
+
+00:05:41.350 --> 00:05:41.360 align:start position:0%
+setup. So check the links in the
+ 
+
+00:05:41.360 --> 00:05:42.870 align:start position:0%
+setup. So check the links in the
+description<00:05:42.160><c> if</c><00:05:42.320><c> you</c><00:05:42.440><c> want</c><00:05:42.680><c> full</c>
+
+00:05:42.870 --> 00:05:42.880 align:start position:0%
+description if you want full
+ 
+
+00:05:42.880 --> 00:05:45.750 align:start position:0%
+description if you want full
+installation<00:05:43.520><c> guides.</c><00:05:44.480><c> Once</c><00:05:44.720><c> Claude</c><00:05:45.080><c> opens,</c>
+
+00:05:45.750 --> 00:05:45.760 align:start position:0%
+installation guides. Once Claude opens,
+ 
+
+00:05:45.760 --> 00:05:47.150 align:start position:0%
+installation guides. Once Claude opens,
+let's<00:05:46.040><c> test</c><00:05:46.360><c> the</c><00:05:46.440><c> connection</c><00:05:46.498><c> [music]</c><00:05:46.960><c> with</c>
+
+00:05:47.150 --> 00:05:47.160 align:start position:0%
+let's test the connection [music] with
+ 
+
+00:05:47.160 --> 00:05:49.350 align:start position:0%
+let's test the connection [music] with
+Roblox<00:05:47.600><c> Studio.</c><00:05:48.560><c> After</c><00:05:48.880><c> connected</c>
+
+00:05:49.350 --> 00:05:49.360 align:start position:0%
+Roblox Studio. After connected
+ 
+
+00:05:49.360 --> 00:05:51.310 align:start position:0%
+Roblox Studio. After connected
+successfully,<00:05:50.320><c> we</c><00:05:50.440><c> can</c><00:05:50.600><c> ask</c><00:05:50.840><c> Claude</c><00:05:51.200><c> to</c>
+
+00:05:51.310 --> 00:05:51.320 align:start position:0%
+successfully, we can ask Claude to
+ 
+
+00:05:51.320 --> 00:05:53.870 align:start position:0%
+successfully, we can ask Claude to
+generate<00:05:51.720><c> a</c><00:05:51.760><c> combat</c><00:05:52.280><c> animation</c><00:05:52.760><c> for</c><00:05:53.000><c> us.</c><00:05:53.720><c> Here</c>
+
+00:05:53.870 --> 00:05:53.880 align:start position:0%
+generate a combat animation for us. Here
+ 
+
+00:05:53.880 --> 00:05:56.350 align:start position:0%
+generate a combat animation for us. Here
+is<00:05:54.000><c> the</c><00:05:54.120><c> exact</c><00:05:54.640><c> example</c><00:05:55.080><c> prompt</c><00:05:55.440><c> I</c><00:05:55.520><c> used.</c>
+
+00:05:56.350 --> 00:05:56.360 align:start position:0%
+is the exact example prompt I used.
+ 
+
+00:05:56.360 --> 00:05:58.990 align:start position:0%
+is the exact example prompt I used.
+Create<00:05:56.680><c> a</c><00:05:56.720><c> Roblox</c><00:05:57.400><c> R15</c><00:05:58.200><c> sword</c><00:05:58.600><c> combo</c>
+
+00:05:58.990 --> 00:05:59.000 align:start position:0%
+Create a Roblox R15 sword combo
+ 
+
+00:05:59.000 --> 00:06:02.310 align:start position:0%
+Create a Roblox R15 sword combo
+animation<00:05:59.840><c> named</c><00:06:00.160><c> Tanjiro</c><00:06:00.680><c> flux</c><00:06:01.080><c> combo.</c>
+
+00:06:02.310 --> 00:06:02.320 align:start position:0%
+animation named Tanjiro flux combo.
+ 
+
+00:06:02.320 --> 00:06:04.630 align:start position:0%
+animation named Tanjiro flux combo.
+The<00:06:02.440><c> style</c><00:06:02.960><c> should</c><00:06:03.200><c> feel</c><00:06:03.440><c> inspired</c><00:06:04.080><c> by</c><00:06:04.240><c> Demon</c>
+
+00:06:04.630 --> 00:06:04.640 align:start position:0%
+The style should feel inspired by Demon
+ 
+
+00:06:04.640 --> 00:06:07.550 align:start position:0%
+The style should feel inspired by Demon
+Slayer<00:06:04.960><c> combat,</c><00:06:05.840><c> readable</c><00:06:06.400><c> and</c><00:06:06.560><c> smooth.</c><00:06:07.440><c> The</c>
+
+00:06:07.550 --> 00:06:07.560 align:start position:0%
+Slayer combat, readable and smooth. The
+ 
+
+00:06:07.560 --> 00:06:09.750 align:start position:0%
+Slayer combat, readable and smooth. The
+combo<00:06:07.960><c> includes</c><00:06:08.400><c> four</c><00:06:08.640><c> slash</c><00:06:09.080><c> chains,</c>
+
+00:06:09.750 --> 00:06:09.760 align:start position:0%
+combo includes four slash chains,
+ 
+
+00:06:09.760 --> 00:06:11.430 align:start position:0%
+combo includes four slash chains,
+alternating<00:06:10.320><c> directions</c><00:06:10.880><c> from</c><00:06:11.080><c> right</c><00:06:11.320><c> to</c>
+
+00:06:11.430 --> 00:06:11.440 align:start position:0%
+alternating directions from right to
+ 
+
+00:06:11.440 --> 00:06:14.070 align:start position:0%
+alternating directions from right to
+left<00:06:11.960><c> and</c><00:06:12.120><c> left</c><00:06:12.400><c> to</c><00:06:12.520><c> right.</c><00:06:13.320><c> After</c><00:06:13.600><c> the</c><00:06:13.720><c> fourth</c>
+
+00:06:14.070 --> 00:06:14.080 align:start position:0%
+left and left to right. After the fourth
+ 
+
+00:06:14.080 --> 00:06:16.110 align:start position:0%
+left and left to right. After the fourth
+slash,<00:06:14.800><c> the</c><00:06:14.920><c> character</c><00:06:15.360><c> jumps</c><00:06:15.800><c> into</c><00:06:16.040><c> a</c>
+
+00:06:16.110 --> 00:06:16.120 align:start position:0%
+slash, the character jumps into a
+ 
+
+00:06:16.120 --> 00:06:18.310 align:start position:0%
+slash, the character jumps into a
+spinning<00:06:16.560><c> airborne</c><00:06:16.920><c> attack</c><00:06:17.640><c> with</c><00:06:17.880><c> two</c><00:06:18.080><c> full</c>
+
+00:06:18.310 --> 00:06:18.320 align:start position:0%
+spinning airborne attack with two full
+ 
+
+00:06:18.320 --> 00:06:20.550 align:start position:0%
+spinning airborne attack with two full
+body<00:06:18.594><c> [music]</c><00:06:18.600><c> rotations,</c><00:06:19.840><c> then</c><00:06:20.160><c> finally</c>
+
+00:06:20.550 --> 00:06:20.560 align:start position:0%
+body [music] rotations, then finally
+ 
+
+00:06:20.560 --> 00:06:22.430 align:start position:0%
+body [music] rotations, then finally
+transitions<00:06:21.240><c> into</c><00:06:21.480><c> a</c><00:06:21.560><c> falling</c><00:06:22.040><c> vertical</c>
+
+00:06:22.430 --> 00:06:22.440 align:start position:0%
+transitions into a falling vertical
+ 
+
+00:06:22.440 --> 00:06:24.479 align:start position:0%
+transitions into a falling vertical
+sword<00:06:22.760><c> slam</c><00:06:23.400><c> with</c><00:06:23.520><c> a</c><00:06:23.600><c> finisher</c><00:06:24.040><c> hit</c><00:06:24.320><c> animation</c>
+
+00:06:24.479 --> 00:06:24.489 align:start position:0%
+sword slam with a finisher hit animation
+ 
+
+00:06:24.489 --> 00:06:26.470 align:start position:0%
+sword slam with a finisher hit animation
+[music]<00:06:24.800><c> marker</c><00:06:25.160><c> on</c><00:06:25.280><c> impact.</c>
+
+00:06:26.470 --> 00:06:26.480 align:start position:0%
+[music] marker on impact.
+ 
+
+00:06:26.480 --> 00:06:28.510 align:start position:0%
+[music] marker on impact.
+The<00:06:26.680><c> AI</c><00:06:27.000><c> will</c><00:06:27.200><c> generate</c><00:06:27.680><c> all</c><00:06:27.919><c> the</c><00:06:28.040><c> animation</c>
+
+00:06:28.510 --> 00:06:28.520 align:start position:0%
+The AI will generate all the animation
+ 
+
+00:06:28.520 --> 00:06:32.110 align:start position:0%
+The AI will generate all the animation
+data<00:06:28.880><c> automatically</c><00:06:29.800><c> for</c><00:06:30.000><c> Roblox</c><00:06:30.560><c> R15.</c><00:06:31.840><c> Once</c>
+
+00:06:32.110 --> 00:06:32.120 align:start position:0%
+data automatically for Roblox R15. Once
+ 
+
+00:06:32.120 --> 00:06:33.950 align:start position:0%
+data automatically for Roblox R15. Once
+finished,<00:06:32.760><c> the</c><00:06:32.880><c> animation</c><00:06:33.320><c> will</c><00:06:33.440><c> appear</c><00:06:33.760><c> like</c>
+
+00:06:33.950 --> 00:06:33.960 align:start position:0%
+finished, the animation will appear like
+ 
+
+00:06:33.960 --> 00:06:36.510 align:start position:0%
+finished, the animation will appear like
+this.<00:06:34.800><c> If</c><00:06:34.919><c> you</c><00:06:35.040><c> want</c><00:06:35.200><c> the</c><00:06:35.320><c> animation</c><00:06:35.760><c> faster,</c>
+
+00:06:36.510 --> 00:06:36.520 align:start position:0%
+this. If you want the animation faster,
+ 
+
+00:06:36.520 --> 00:06:38.830 align:start position:0%
+this. If you want the animation faster,
+simply<00:06:36.840><c> select</c><00:06:37.280><c> all</c><00:06:37.520><c> keyframes</c><00:06:38.360><c> and</c><00:06:38.520><c> drag</c>
+
+00:06:38.830 --> 00:06:38.840 align:start position:0%
+simply select all keyframes and drag
+ 
+
+00:06:38.840 --> 00:06:40.870 align:start position:0%
+simply select all keyframes and drag
+them<00:06:39.040><c> shorter</c><00:06:39.400><c> in</c><00:06:39.520><c> the</c><00:06:39.600><c> timeline.</c><00:06:40.680><c> Just</c>
+
+00:06:40.870 --> 00:06:40.880 align:start position:0%
+them shorter in the timeline. Just
+ 
+
+00:06:40.880 --> 00:06:42.670 align:start position:0%
+them shorter in the timeline. Just
+remember<00:06:41.200><c> to</c><00:06:41.400><c> also</c><00:06:41.760><c> move</c><00:06:42.040><c> the</c><00:06:42.160><c> animation</c>
+
+00:06:42.670 --> 00:06:42.680 align:start position:0%
+remember to also move the animation
+ 
+
+00:06:42.680 --> 00:06:44.990 align:start position:0%
+remember to also move the animation
+events<00:06:43.080><c> together</c><00:06:43.520><c> with</c><00:06:43.680><c> the</c><00:06:43.760><c> keyframes.</c>
+
+00:06:44.990 --> 00:06:45.000 align:start position:0%
+events together with the keyframes.
+ 
+
+00:06:45.000 --> 00:06:46.750 align:start position:0%
+events together with the keyframes.
+You<00:06:45.080><c> can</c><00:06:45.200><c> also</c><00:06:45.449><c> [music]</c><00:06:45.520><c> right</c><00:06:45.800><c> click</c><00:06:46.360><c> to</c><00:06:46.480><c> add</c>
+
+00:06:46.750 --> 00:06:46.760 align:start position:0%
+You can also [music] right click to add
+ 
+
+00:06:46.760 --> 00:06:49.510 align:start position:0%
+You can also [music] right click to add
+animation<00:06:47.240><c> events</c><00:06:47.560><c> manually.</c><00:06:48.640><c> For</c><00:06:48.720><c> example,</c>
+
+00:06:49.510 --> 00:06:49.520 align:start position:0%
+animation events manually. For example,
+ 
+
+00:06:49.520 --> 00:06:54.590 align:start position:0%
+animation events manually. For example,
+I<00:06:49.640><c> added</c><00:06:49.960><c> one</c><00:06:50.160><c> marker</c><00:06:50.520><c> when</c><00:06:50.680><c> the</c><00:06:50.800><c> slam</c><00:06:51.160><c> begins</c>
+
+00:06:54.590 --> 00:06:54.600 align:start position:0%
+ 
+ 
+
+00:06:54.600 --> 00:06:56.670 align:start position:0%
+ 
+and<00:06:54.680><c> another</c><00:06:55.000><c> one</c><00:06:55.240><c> called</c><00:06:55.560><c> finisher</c><00:06:55.960><c> hit</c><00:06:56.520><c> when</c>
+
+00:06:56.670 --> 00:06:56.680 align:start position:0%
+and another one called finisher hit when
+ 
+
+00:06:56.680 --> 00:07:01.830 align:start position:0%
+and another one called finisher hit when
+the<00:06:56.760><c> dragon</c><00:06:57.240><c> touches</c><00:06:57.600><c> the</c><00:06:57.720><c> ground.</c>
+
+00:07:01.830 --> 00:07:01.840 align:start position:0%
+ 
+ 
+
+00:07:01.840 --> 00:07:04.470 align:start position:0%
+ 
+Now,<00:07:02.400><c> let's</c><00:07:02.680><c> build</c><00:07:03.000><c> the</c><00:07:03.080><c> dragon</c><00:07:03.480><c> effect.</c>
+
+00:07:04.470 --> 00:07:04.480 align:start position:0%
+Now, let's build the dragon effect.
+ 
+
+00:07:04.480 --> 00:07:06.350 align:start position:0%
+Now, let's build the dragon effect.
+Inside<00:07:04.919><c> the</c><00:07:05.000><c> Demon</c><00:07:05.360><c> Slayer</c><00:07:05.640><c> kit,</c><00:07:06.080><c> find</c>
+
+00:07:06.350 --> 00:07:06.360 align:start position:0%
+Inside the Demon Slayer kit, find
+ 
+
+00:07:06.360 --> 00:07:08.630 align:start position:0%
+Inside the Demon Slayer kit, find
+constant<00:07:06.960><c> flux</c><00:07:07.280><c> dragon.</c><00:07:08.080><c> It's</c><00:07:08.240><c> the</c><00:07:08.360><c> blue</c>
+
+00:07:08.630 --> 00:07:08.640 align:start position:0%
+constant flux dragon. It's the blue
+ 
+
+00:07:08.640 --> 00:07:11.830 align:start position:0%
+constant flux dragon. It's the blue
+dragon<00:07:09.029><c> [music]</c><00:07:09.040><c> head</c><00:07:09.280><c> model.</c>
+
+00:07:11.830 --> 00:07:11.840 align:start position:0%
+ 
+ 
+
+00:07:11.840 --> 00:07:13.430 align:start position:0%
+ 
+Inside<00:07:12.200><c> the</c><00:07:12.280><c> model,</c><00:07:12.880><c> there</c><00:07:13.000><c> are</c><00:07:13.120><c> many</c>
+
+00:07:13.430 --> 00:07:13.440 align:start position:0%
+Inside the model, there are many
+ 
+
+00:07:13.440 --> 00:07:15.230 align:start position:0%
+Inside the model, there are many
+separate<00:07:13.840><c> meshes,</c><00:07:14.240><c> so</c><00:07:14.360><c> we</c><00:07:14.480><c> need</c><00:07:14.680><c> to</c><00:07:14.840><c> weld</c><00:07:15.120><c> them</c>
+
+00:07:15.230 --> 00:07:15.240 align:start position:0%
+separate meshes, so we need to weld them
+ 
+
+00:07:15.240 --> 00:07:17.750 align:start position:0%
+separate meshes, so we need to weld them
+together.<00:07:16.240><c> Copy</c><00:07:16.640><c> the</c><00:07:16.720><c> dragon</c><00:07:17.080><c> model</c><00:07:17.600><c> and</c>
+
+00:07:17.750 --> 00:07:17.760 align:start position:0%
+together. Copy the dragon model and
+ 
+
+00:07:17.760 --> 00:07:21.110 align:start position:0%
+together. Copy the dragon model and
+paste<00:07:18.120><c> it</c><00:07:18.280><c> into</c><00:07:18.480><c> the</c><00:07:18.560><c> character.</c>
+
+00:07:21.110 --> 00:07:21.120 align:start position:0%
+paste it into the character.
+ 
+
+00:07:21.120 --> 00:07:24.350 align:start position:0%
+paste it into the character.
+Move<00:07:21.400><c> it</c><00:07:21.520><c> near</c><00:07:21.680><c> the</c><00:07:21.800><c> player.</c>
+
+00:07:24.350 --> 00:07:24.360 align:start position:0%
+ 
+ 
+
+00:07:24.360 --> 00:07:26.670 align:start position:0%
+ 
+Now,<00:07:24.720><c> create</c><00:07:25.040><c> a</c><00:07:25.120><c> new</c><00:07:25.360><c> mesh</c><00:07:25.640><c> part</c><00:07:26.120><c> and</c><00:07:26.280><c> rename</c>
+
+00:07:26.670 --> 00:07:26.680 align:start position:0%
+Now, create a new mesh part and rename
+ 
+
+00:07:26.680 --> 00:07:28.990 align:start position:0%
+Now, create a new mesh part and rename
+it<00:07:26.800><c> to</c><00:07:26.919><c> main</c><00:07:27.200><c> head.</c>
+
+00:07:28.990 --> 00:07:29.000 align:start position:0%
+it to main head.
+ 
+
+00:07:29.000 --> 00:07:30.635 align:start position:0%
+it to main head.
+This<00:07:29.200><c> part</c><00:07:29.480><c> will</c><00:07:29.600><c> control</c><00:07:30.000><c> the</c><00:07:30.120><c> entire</c><00:07:30.600><c> dragon</c>
+
+00:07:30.635 --> 00:07:30.645 align:start position:0%
+This part will control the entire dragon
+ 
+
+00:07:30.645 --> 00:07:32.230 align:start position:0%
+This part will control the entire dragon
+[music]<00:07:31.040><c> head</c><00:07:31.280><c> rig.</c>
+
+00:07:32.230 --> 00:07:32.240 align:start position:0%
+[music] head rig.
+ 
+
+00:07:32.240 --> 00:07:34.710 align:start position:0%
+[music] head rig.
+Inside<00:07:32.760><c> main</c><00:07:33.000><c> head,</c><00:07:33.640><c> add</c><00:07:33.919><c> weld</c><00:07:34.200><c> constraints</c>
+
+00:07:34.710 --> 00:07:34.720 align:start position:0%
+Inside main head, add weld constraints
+ 
+
+00:07:34.720 --> 00:07:37.270 align:start position:0%
+Inside main head, add weld constraints
+connecting<00:07:35.280><c> all</c><00:07:35.560><c> other</c><00:07:35.760><c> dragon</c><00:07:36.120><c> meshes.</c><00:07:37.040><c> Set</c>
+
+00:07:37.270 --> 00:07:37.280 align:start position:0%
+connecting all other dragon meshes. Set
+ 
+
+00:07:37.280 --> 00:07:39.909 align:start position:0%
+connecting all other dragon meshes. Set
+part<00:07:37.560><c> zero</c><00:07:37.880><c> to</c><00:07:38.040><c> main</c><00:07:38.280><c> head</c><00:07:38.880><c> and</c><00:07:39.040><c> part</c><00:07:39.360><c> one</c><00:07:39.800><c> to</c>
+
+00:07:39.909 --> 00:07:39.919 align:start position:0%
+part zero to main head and part one to
+ 
+
+00:07:39.919 --> 00:08:09.750 align:start position:0%
+part zero to main head and part one to
+the<00:07:40.080><c> other</c><00:07:40.280><c> pieces.</c>
+
+00:08:09.750 --> 00:08:09.760 align:start position:0%
+ 
+ 
+
+00:08:09.760 --> 00:08:12.310 align:start position:0%
+ 
+Then<00:08:10.120><c> add</c><00:08:10.280><c> a</c><00:08:10.320><c> Motor6D</c><00:08:11.480><c> into</c><00:08:11.680><c> Humanoid</c><00:08:12.160><c> Root</c>
+
+00:08:12.310 --> 00:08:12.320 align:start position:0%
+Then add a Motor6D into Humanoid Root
+ 
+
+00:08:12.320 --> 00:08:15.175 align:start position:0%
+Then add a Motor6D into Humanoid Root
+Part.<00:08:13.080><c> Set</c><00:08:13.400><c> Part</c><00:08:13.640><c> 0</c><00:08:13.960><c> to</c><00:08:14.120><c> Humanoid</c><00:08:14.560><c> Root</c><00:08:14.720><c> Part</c>
+
+00:08:15.175 --> 00:08:15.185 align:start position:0%
+Part. Set Part 0 to Humanoid Root Part
+ 
+
+00:08:15.185 --> 00:08:15.190 align:start position:0%
+Part. Set Part 0 to Humanoid Root Part
+&gt;&gt; [music]
+
+00:08:15.190 --> 00:08:15.200 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:08:15.200 --> 00:08:17.630 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; and<00:08:15.360><c> Part</c><00:08:15.640><c> 1</c><00:08:15.919><c> to</c><00:08:16.040><c> Main</c><00:08:16.280><c> Head.</c><00:08:17.000><c> This</c><00:08:17.200><c> allows</c><00:08:17.560><c> the</c>
+
+00:08:17.630 --> 00:08:17.640 align:start position:0%
+&gt;&gt; and Part 1 to Main Head. This allows the
+ 
+
+00:08:17.640 --> 00:08:19.630 align:start position:0%
+&gt;&gt; and Part 1 to Main Head. This allows the
+dragon<00:08:18.080><c> head</c><00:08:18.320><c> to</c><00:08:18.480><c> animate</c><00:08:18.919><c> together</c><00:08:19.400><c> with</c><00:08:19.520><c> the</c>
+
+00:08:19.630 --> 00:08:19.640 align:start position:0%
+dragon head to animate together with the
+ 
+
+00:08:19.640 --> 00:08:22.390 align:start position:0%
+dragon head to animate together with the
+character<00:08:20.080><c> rig.</c>
+
+00:08:22.390 --> 00:08:22.400 align:start position:0%
+character rig.
+ 
+
+00:08:22.400 --> 00:08:24.790 align:start position:0%
+character rig.
+Now<00:08:22.720><c> open</c><00:08:23.080><c> animation</c><00:08:23.600><c> editor</c><00:08:24.200><c> and</c><00:08:24.400><c> animate</c>
+
+00:08:24.790 --> 00:08:24.800 align:start position:0%
+Now open animation editor and animate
+ 
+
+00:08:24.800 --> 00:08:26.470 align:start position:0%
+Now open animation editor and animate
+the<00:08:24.880><c> dragon</c><00:08:25.320><c> head</c><00:08:25.520><c> alongside</c><00:08:26.080><c> the</c><00:08:26.200><c> sword</c>
+
+00:08:26.470 --> 00:08:26.480 align:start position:0%
+the dragon head alongside the sword
+ 
+
+00:08:26.480 --> 00:08:45.430 align:start position:0%
+the dragon head alongside the sword
+animation.
+
+00:08:45.430 --> 00:08:45.440 align:start position:0%
+ 
+ 
+
+00:08:45.440 --> 00:08:48.390 align:start position:0%
+ 
+Also<00:08:45.880><c> set</c><00:08:46.160><c> Main</c><00:08:46.440><c> Head</c><00:08:46.640><c> transparency</c><00:08:47.400><c> to</c><00:08:47.600><c> 1</c><00:08:48.240><c> and</c>
+
+00:08:48.390 --> 00:08:48.400 align:start position:0%
+Also set Main Head transparency to 1 and
+ 
+
+00:08:48.400 --> 00:08:50.350 align:start position:0%
+Also set Main Head transparency to 1 and
+disable<00:08:48.880><c> collision</c><00:08:49.600><c> so</c><00:08:49.720><c> the</c><00:08:49.839><c> invisible</c>
+
+00:08:50.350 --> 00:08:50.360 align:start position:0%
+disable collision so the invisible
+ 
+
+00:08:50.360 --> 00:08:52.110 align:start position:0%
+disable collision so the invisible
+controller<00:08:50.839><c> part</c><00:08:51.160><c> doesn't</c><00:08:51.520><c> interfere</c><00:08:51.960><c> with</c>
+
+00:08:52.110 --> 00:08:52.120 align:start position:0%
+controller part doesn't interfere with
+ 
+
+00:08:52.120 --> 00:08:53.990 align:start position:0%
+controller part doesn't interfere with
+gameplay.
+
+00:08:53.990 --> 00:08:54.000 align:start position:0%
+gameplay.
+ 
+
+00:08:54.000 --> 00:08:56.870 align:start position:0%
+gameplay.
+Next,<00:08:54.720><c> let's</c><00:08:55.000><c> add</c><00:08:55.240><c> water</c><00:08:55.480><c> trails.</c><00:08:56.360><c> Inside</c>
+
+00:08:56.870 --> 00:08:56.880 align:start position:0%
+Next, let's add water trails. Inside
+ 
+
+00:08:56.880 --> 00:08:59.390 align:start position:0%
+Next, let's add water trails. Inside
+Main<00:08:57.120><c> Head,</c><00:08:57.640><c> add</c><00:08:57.839><c> an</c><00:08:57.920><c> attachment.</c><00:08:58.960><c> Inside</c>
+
+00:08:59.390 --> 00:08:59.400 align:start position:0%
+Main Head, add an attachment. Inside
+ 
+
+00:08:59.400 --> 00:09:03.270 align:start position:0%
+Main Head, add an attachment. Inside
+that<00:08:59.520><c> attachment,</c><00:09:00.280><c> add</c><00:09:00.480><c> a</c><00:09:00.520><c> trail</c><00:09:01.000><c> object.</c>
+
+00:09:03.270 --> 00:09:03.280 align:start position:0%
+that attachment, add a trail object.
+ 
+
+00:09:03.280 --> 00:09:05.510 align:start position:0%
+that attachment, add a trail object.
+For<00:09:03.360><c> the</c><00:09:03.480><c> trail</c><00:09:03.760><c> texture,</c><00:09:04.480><c> I</c><00:09:04.640><c> used</c><00:09:05.000><c> this</c><00:09:05.240><c> water</c>
+
+00:09:05.510 --> 00:09:05.520 align:start position:0%
+For the trail texture, I used this water
+ 
+
+00:09:05.520 --> 00:09:08.470 align:start position:0%
+For the trail texture, I used this water
+trail<00:09:05.839><c> asset.</c><00:09:06.760><c> Copy</c><00:09:07.120><c> the</c><00:09:07.240><c> texture</c><00:09:07.640><c> ID</c><00:09:08.280><c> and</c>
+
+00:09:08.470 --> 00:09:08.480 align:start position:0%
+trail asset. Copy the texture ID and
+ 
+
+00:09:08.480 --> 00:09:09.950 align:start position:0%
+trail asset. Copy the texture ID and
+paste<00:09:08.800><c> it</c><00:09:08.960><c> into</c><00:09:09.120><c> the</c><00:09:09.240><c> trail</c><00:09:09.560><c> texture</c>
+
+00:09:09.950 --> 00:09:09.960 align:start position:0%
+paste it into the trail texture
+ 
+
+00:09:09.960 --> 00:09:25.510 align:start position:0%
+paste it into the trail texture
+property.
+
+00:09:25.510 --> 00:09:25.520 align:start position:0%
+ 
+ 
+
+00:09:25.520 --> 00:09:26.910 align:start position:0%
+ 
+Then<00:09:25.760><c> create</c><00:09:26.080><c> another</c><00:09:26.400><c> attachment</c><00:09:26.581><c> [music]</c>
+
+00:09:26.910 --> 00:09:26.920 align:start position:0%
+Then create another attachment [music]
+ 
+
+00:09:26.920 --> 00:09:29.510 align:start position:0%
+Then create another attachment [music]
+called<00:09:27.200><c> Attachment</c><00:09:27.800><c> 2</c><00:09:28.360><c> and</c><00:09:28.520><c> move</c><00:09:28.720><c> it</c><00:09:28.839><c> slightly</c>
+
+00:09:29.510 --> 00:09:29.520 align:start position:0%
+called Attachment 2 and move it slightly
+ 
+
+00:09:29.520 --> 00:09:37.590 align:start position:0%
+called Attachment 2 and move it slightly
+to<00:09:29.600><c> define</c><00:09:30.040><c> the</c><00:09:30.120><c> trail</c><00:09:30.440><c> width.</c>
+
+00:09:37.590 --> 00:09:37.600 align:start position:0%
+ 
+ 
+
+00:09:37.600 --> 00:09:39.671 align:start position:0%
+ 
+Assign<00:09:37.960><c> Attachment</c><00:09:38.520><c> zero</c><00:09:39.120><c> and</c><00:09:39.240><c> attachment</c>
+
+00:09:39.671 --> 00:09:39.681 align:start position:0%
+Assign Attachment zero and attachment
+ 
+
+00:09:39.681 --> 00:09:42.150 align:start position:0%
+Assign Attachment zero and attachment
+[music]<00:09:39.800><c> one</c><00:09:40.400><c> inside</c><00:09:40.840><c> the</c><00:09:40.920><c> trail</c><00:09:41.200><c> settings.</c>
+
+00:09:42.150 --> 00:09:42.160 align:start position:0%
+[music] one inside the trail settings.
+ 
+
+00:09:42.160 --> 00:09:44.510 align:start position:0%
+[music] one inside the trail settings.
+For<00:09:42.280><c> my</c><00:09:42.480><c> trail</c><00:09:42.760><c> settings,</c><00:09:43.440><c> I</c><00:09:43.560><c> used</c><00:09:44.000><c> lifetime</c>
+
+00:09:44.510 --> 00:09:44.520 align:start position:0%
+For my trail settings, I used lifetime
+ 
+
+00:09:44.520 --> 00:09:48.630 align:start position:0%
+For my trail settings, I used lifetime
+0.5,<00:09:45.880><c> min</c><00:09:46.160><c> length</c><00:09:46.520><c> 0.1,</c><00:09:47.720><c> and</c><00:09:47.880><c> max</c><00:09:48.240><c> length</c>
+
+00:09:48.630 --> 00:09:48.640 align:start position:0%
+0.5, min length 0.1, and max length
+ 
+
+00:09:48.640 --> 00:09:51.030 align:start position:0%
+0.5, min length 0.1, and max length
+zero.<00:09:49.520><c> You</c><00:09:49.640><c> can</c><00:09:49.760><c> also</c><00:09:50.040><c> tweak</c><00:09:50.320><c> the</c><00:09:50.440><c> color</c><00:09:50.880><c> and</c>
+
+00:09:51.030 --> 00:09:51.040 align:start position:0%
+zero. You can also tweak the color and
+ 
+
+00:09:51.040 --> 00:09:52.710 align:start position:0%
+zero. You can also tweak the color and
+brightness<00:09:51.760><c> to</c><00:09:51.840><c> make</c><00:09:52.040><c> the</c><00:09:52.160><c> water</c><00:09:52.480><c> glow</c>
+
+00:09:52.710 --> 00:09:52.720 align:start position:0%
+brightness to make the water glow
+ 
+
+00:09:52.720 --> 00:10:01.190 align:start position:0%
+brightness to make the water glow
+stronger.
+
+00:10:01.190 --> 00:10:01.200 align:start position:0%
+ 
+ 
+
+00:10:01.200 --> 00:10:03.070 align:start position:0%
+ 
+If<00:10:01.320><c> you</c><00:10:01.400><c> increase</c><00:10:01.800><c> the</c><00:10:01.920><c> lifetime,</c><00:10:02.680><c> the</c><00:10:02.760><c> trail</c>
+
+00:10:03.070 --> 00:10:03.080 align:start position:0%
+If you increase the lifetime, the trail
+ 
+
+00:10:03.080 --> 00:10:06.150 align:start position:0%
+If you increase the lifetime, the trail
+becomes<00:10:03.520><c> longer.</c>
+
+00:10:06.150 --> 00:10:06.160 align:start position:0%
+ 
+ 
+
+00:10:06.160 --> 00:10:08.830 align:start position:0%
+ 
+Now,<00:10:06.680><c> let's</c><00:10:06.960><c> look</c><00:10:07.120><c> at</c><00:10:07.240><c> the</c><00:10:07.320><c> slam</c><00:10:07.760><c> VFX.</c><00:10:08.501><c> [music]</c>
+
+00:10:08.830 --> 00:10:08.840 align:start position:0%
+Now, let's look at the slam VFX. [music]
+ 
+
+00:10:08.840 --> 00:10:10.950 align:start position:0%
+Now, let's look at the slam VFX. [music]
+Inside<00:10:09.240><c> the</c><00:10:09.320><c> character,</c><00:10:09.920><c> I</c><00:10:10.000><c> created</c><00:10:10.440><c> a</c><00:10:10.520><c> slam</c>
+
+00:10:10.950 --> 00:10:10.960 align:start position:0%
+Inside the character, I created a slam
+ 
+
+00:10:10.960 --> 00:10:13.750 align:start position:0%
+Inside the character, I created a slam
+VFX<00:10:11.560><c> folder</c><00:10:12.160><c> containing</c><00:10:12.720><c> all</c><00:10:12.960><c> visual</c><00:10:13.320><c> effects</c>
+
+00:10:13.750 --> 00:10:13.760 align:start position:0%
+VFX folder containing all visual effects
+ 
+
+00:10:13.760 --> 00:10:15.870 align:start position:0%
+VFX folder containing all visual effects
+used<00:10:14.040><c> during</c><00:10:14.280><c> the</c><00:10:14.400><c> finisher</c><00:10:14.800><c> attack.</c>
+
+00:10:15.870 --> 00:10:15.880 align:start position:0%
+used during the finisher attack.
+ 
+
+00:10:15.880 --> 00:10:17.750 align:start position:0%
+used during the finisher attack.
+Most<00:10:16.160><c> of</c><00:10:16.240><c> these</c><00:10:16.440><c> effects</c><00:10:16.840><c> came</c><00:10:17.080><c> directly</c><00:10:17.600><c> from</c>
+
+00:10:17.750 --> 00:10:17.760 align:start position:0%
+Most of these effects came directly from
+ 
+
+00:10:17.760 --> 00:10:20.390 align:start position:0%
+Most of these effects came directly from
+the<00:10:17.880><c> Demon</c><00:10:18.200><c> Slayer</c><00:10:18.560><c> kit.</c><00:10:19.280><c> For</c><00:10:19.400><c> example,</c><00:10:20.160><c> this</c>
+
+00:10:20.390 --> 00:10:20.400 align:start position:0%
+the Demon Slayer kit. For example, this
+ 
+
+00:10:20.400 --> 00:10:23.030 align:start position:0%
+the Demon Slayer kit. For example, this
+smoke<00:10:20.720><c> effect</c><00:10:21.360><c> comes</c><00:10:21.600><c> from</c><00:10:21.760><c> mist</c><00:10:22.040><c> upwards.</c>
+
+00:10:23.030 --> 00:10:23.040 align:start position:0%
+smoke effect comes from mist upwards.
+ 
+
+00:10:23.040 --> 00:10:24.710 align:start position:0%
+smoke effect comes from mist upwards.
+This<00:10:23.280><c> water</c><00:10:23.640><c> aura</c><00:10:23.880><c> effect</c><00:10:24.320><c> comes</c><00:10:24.560><c> from</c>
+
+00:10:24.710 --> 00:10:24.720 align:start position:0%
+This water aura effect comes from
+ 
+
+00:10:24.720 --> 00:10:28.430 align:start position:0%
+This water aura effect comes from
+another<00:10:25.040><c> asset.</c>
+
+00:10:28.430 --> 00:10:28.440 align:start position:0%
+ 
+ 
+
+00:10:28.440 --> 00:10:30.030 align:start position:0%
+ 
+The<00:10:28.520><c> thunder</c><00:10:28.840><c> beam</c><00:10:29.000><c> effect</c><00:10:29.360><c> was</c><00:10:29.520><c> recolored</c>
+
+00:10:30.030 --> 00:10:30.040 align:start position:0%
+The thunder beam effect was recolored
+ 
+
+00:10:30.040 --> 00:10:32.310 align:start position:0%
+The thunder beam effect was recolored
+blue<00:10:30.320><c> to</c><00:10:30.480><c> fit</c><00:10:30.680><c> the</c><00:10:30.800><c> water</c><00:10:31.080><c> dragon</c><00:10:31.480><c> theme.</c>
+
+00:10:32.310 --> 00:10:32.320 align:start position:0%
+blue to fit the water dragon theme.
+ 
+
+00:10:32.320 --> 00:10:33.950 align:start position:0%
+blue to fit the water dragon theme.
+There<00:10:32.480><c> are</c><00:10:32.600><c> also</c><00:10:32.880><c> additional</c><00:10:33.360><c> thunder</c><00:10:33.760><c> and</c>
+
+00:10:33.950 --> 00:10:33.960 align:start position:0%
+There are also additional thunder and
+ 
+
+00:10:33.960 --> 00:10:35.470 align:start position:0%
+There are also additional thunder and
+mist<00:10:34.160><c> effects</c><00:10:34.560><c> taken</c><00:10:34.880><c> from</c><00:10:35.040><c> the</c><00:10:35.120><c> same</c>
+
+00:10:35.470 --> 00:10:35.480 align:start position:0%
+mist effects taken from the same
+ 
+
+00:10:35.480 --> 00:10:36.670 align:start position:0%
+mist effects taken from the same
+package.
+
+00:10:36.670 --> 00:10:36.680 align:start position:0%
+package.
+ 
+
+00:10:36.680 --> 00:10:38.750 align:start position:0%
+package.
+Next,<00:10:37.400><c> Claude</c><00:10:37.760><c> helped</c><00:10:37.960><c> generate</c><00:10:38.320><c> a</c><00:10:38.360><c> local</c>
+
+00:10:38.750 --> 00:10:38.760 align:start position:0%
+Next, Claude helped generate a local
+ 
+
+00:10:38.760 --> 00:10:40.950 align:start position:0%
+Next, Claude helped generate a local
+script<00:10:39.120><c> called</c><00:10:39.400><c> dragon</c><00:10:39.880><c> anim</c><00:10:40.120><c> controller</c>
+
+00:10:40.950 --> 00:10:40.960 align:start position:0%
+script called dragon anim controller
+ 
+
+00:10:40.960 --> 00:10:43.270 align:start position:0%
+script called dragon anim controller
+inside<00:10:41.440><c> starter</c><00:10:41.800><c> character</c><00:10:42.200><c> scripts.</c>
+
+00:10:43.270 --> 00:10:43.280 align:start position:0%
+inside starter character scripts.
+ 
+
+00:10:43.280 --> 00:10:45.590 align:start position:0%
+inside starter character scripts.
+This<00:10:43.480><c> script</c><00:10:43.800><c> handles</c><00:10:44.200><c> almost</c><00:10:44.640><c> everything.</c>
+
+00:10:45.590 --> 00:10:45.600 align:start position:0%
+This script handles almost everything.
+ 
+
+00:10:45.600 --> 00:10:47.510 align:start position:0%
+This script handles almost everything.
+It<00:10:45.760><c> plays</c><00:10:46.120><c> the</c><00:10:46.240><c> attack</c><00:10:46.600><c> animation</c><00:10:47.080><c> when</c><00:10:47.280><c> left</c>
+
+00:10:47.510 --> 00:10:47.520 align:start position:0%
+It plays the attack animation when left
+ 
+
+00:10:47.520 --> 00:10:49.670 align:start position:0%
+It plays the attack animation when left
+click<00:10:47.680><c> is</c><00:10:47.839><c> pressed.</c><00:10:48.640><c> It</c><00:10:48.839><c> shows</c><00:10:49.160><c> and</c><00:10:49.320><c> hides</c><00:10:49.600><c> the</c>
+
+00:10:49.670 --> 00:10:49.680 align:start position:0%
+click is pressed. It shows and hides the
+ 
+
+00:10:49.680 --> 00:10:51.630 align:start position:0%
+click is pressed. It shows and hides the
+dragon<00:10:50.120><c> mesh</c><00:10:50.400><c> and</c><00:10:50.600><c> water</c><00:10:50.839><c> trail</c><00:10:51.240><c> during</c><00:10:51.520><c> the</c>
+
+00:10:51.630 --> 00:10:51.640 align:start position:0%
+dragon mesh and water trail during the
+ 
+
+00:10:51.640 --> 00:10:52.790 align:start position:0%
+dragon mesh and water trail during the
+animation.
+
+00:10:52.790 --> 00:10:52.800 align:start position:0%
+animation.
+ 
+
+00:10:52.800 --> 00:10:55.510 align:start position:0%
+animation.
+It<00:10:52.920><c> also</c><00:10:53.240><c> activates</c><00:10:53.760><c> the</c><00:10:53.880><c> slam</c><00:10:54.320><c> VFX</c><00:10:54.839><c> particles</c>
+
+00:10:55.510 --> 00:10:55.520 align:start position:0%
+It also activates the slam VFX particles
+ 
+
+00:10:55.520 --> 00:10:57.710 align:start position:0%
+It also activates the slam VFX particles
+when<00:10:55.680><c> the</c><00:10:55.760><c> finisher</c><00:10:56.200><c> hit</c><00:10:56.360><c> marker</c><00:10:56.680><c> triggers.</c>
+
+00:10:57.710 --> 00:10:57.720 align:start position:0%
+when the finisher hit marker triggers.
+ 
+
+00:10:57.720 --> 00:11:00.270 align:start position:0%
+when the finisher hit marker triggers.
+This<00:10:57.920><c> section</c><00:10:58.320><c> welds</c><00:10:58.720><c> all</c><00:10:58.960><c> slam</c><00:10:59.360><c> VFX</c><00:10:59.839><c> parts</c><00:11:00.200><c> to</c>
+
+00:11:00.270 --> 00:11:00.280 align:start position:0%
+This section welds all slam VFX parts to
+ 
+
+00:11:00.280 --> 00:11:03.590 align:start position:0%
+This section welds all slam VFX parts to
+the<00:11:00.400><c> humanoid</c><00:11:00.920><c> root</c><00:11:01.080><c> part.</c>
+
+00:11:03.590 --> 00:11:03.600 align:start position:0%
+the humanoid root part.
+ 
+
+00:11:03.600 --> 00:11:05.750 align:start position:0%
+the humanoid root part.
+This<00:11:03.800><c> function</c><00:11:04.200><c> hides</c><00:11:04.520><c> the</c><00:11:04.600><c> dragon</c><00:11:04.960><c> mesh.</c>
+
+00:11:05.750 --> 00:11:05.760 align:start position:0%
+This function hides the dragon mesh.
+ 
+
+00:11:05.760 --> 00:11:08.190 align:start position:0%
+This function hides the dragon mesh.
+This<00:11:06.000><c> function</c><00:11:06.400><c> enables</c><00:11:06.839><c> the</c><00:11:06.960><c> slam</c><00:11:07.280><c> effects.</c>
+
+00:11:08.190 --> 00:11:08.200 align:start position:0%
+This function enables the slam effects.
+ 
+
+00:11:08.200 --> 00:11:10.590 align:start position:0%
+This function enables the slam effects.
+It<00:11:08.360><c> also</c><00:11:08.640><c> plays</c><00:11:08.960><c> dragon</c><00:11:09.360><c> roar</c><00:11:09.560><c> sounds.</c><00:11:10.480><c> And</c>
+
+00:11:10.590 --> 00:11:10.600 align:start position:0%
+It also plays dragon roar sounds. And
+ 
+
+00:11:10.600 --> 00:11:12.070 align:start position:0%
+It also plays dragon roar sounds. And
+this<00:11:10.800><c> part</c><00:11:11.040><c> listens</c><00:11:11.382><c> [music]</c><00:11:11.400><c> for</c><00:11:11.600><c> animation</c>
+
+00:11:12.070 --> 00:11:12.080 align:start position:0%
+this part listens [music] for animation
+ 
+
+00:11:12.080 --> 00:11:13.750 align:start position:0%
+this part listens [music] for animation
+marker<00:11:12.360><c> signals</c><00:11:12.960><c> from</c><00:11:13.120><c> the</c><00:11:13.240><c> animation</c>
+
+00:11:13.750 --> 00:11:13.760 align:start position:0%
+marker signals from the animation
+ 
+
+00:11:13.760 --> 00:11:15.950 align:start position:0%
+marker signals from the animation
+editor.<00:11:14.560><c> Whenever</c><00:11:14.880><c> the</c><00:11:15.000><c> finisher</c><00:11:15.440><c> hit</c><00:11:15.640><c> marker</c>
+
+00:11:15.950 --> 00:11:15.960 align:start position:0%
+editor. Whenever the finisher hit marker
+ 
+
+00:11:15.960 --> 00:11:18.310 align:start position:0%
+editor. Whenever the finisher hit marker
+triggers,<00:11:16.720><c> the</c><00:11:16.800><c> script</c><00:11:17.240><c> executes</c><00:11:17.800><c> the</c><00:11:17.920><c> slam</c>
+
+00:11:18.310 --> 00:11:18.320 align:start position:0%
+triggers, the script executes the slam
+ 
+
+00:11:18.320 --> 00:11:20.990 align:start position:0%
+triggers, the script executes the slam
+VFX<00:11:18.839><c> logic.</c><00:11:19.800><c> And</c><00:11:19.960><c> this</c><00:11:20.160><c> function</c><00:11:20.560><c> handles</c><00:11:20.880><c> the</c>
+
+00:11:20.990 --> 00:11:21.000 align:start position:0%
+VFX logic. And this function handles the
+ 
+
+00:11:21.000 --> 00:11:23.230 align:start position:0%
+VFX logic. And this function handles the
+full<00:11:21.280><c> dragon</c><00:11:21.640><c> attack</c><00:11:21.960><c> sequence,</c><00:11:22.720><c> including</c>
+
+00:11:23.230 --> 00:11:23.240 align:start position:0%
+full dragon attack sequence, including
+ 
+
+00:11:23.240 --> 00:11:25.030 align:start position:0%
+full dragon attack sequence, including
+cool<00:11:23.480><c> down</c><00:11:23.720><c> control.</c>
+
+00:11:25.030 --> 00:11:25.040 align:start position:0%
+cool down control.
+ 
+
+00:11:25.040 --> 00:11:27.750 align:start position:0%
+cool down control.
+Now<00:11:25.280><c> for</c><00:11:25.400><c> the</c><00:11:25.560><c> enemy</c><00:11:25.920><c> NPC.</c><00:11:27.040><c> I</c><00:11:27.160><c> used</c><00:11:27.400><c> a</c><00:11:27.480><c> free</c>
+
+00:11:27.750 --> 00:11:27.760 align:start position:0%
+Now for the enemy NPC. I used a free
+ 
+
+00:11:27.760 --> 00:11:29.710 align:start position:0%
+Now for the enemy NPC. I used a free
+Muzan<00:11:28.200><c> model</c><00:11:28.520><c> from</c><00:11:28.720><c> toolbox.</c><00:11:29.067><c> [music]</c>
+
+00:11:29.710 --> 00:11:29.720 align:start position:0%
+Muzan model from toolbox. [music]
+ 
+
+00:11:29.720 --> 00:11:32.270 align:start position:0%
+Muzan model from toolbox. [music]
+Just<00:11:29.960><c> search</c><00:11:30.200><c> for</c><00:11:30.320><c> Muzan</c><00:11:31.040><c> and</c><00:11:31.240><c> select</c><00:11:31.640><c> the</c><00:11:31.760><c> R6</c>
+
+00:11:32.270 --> 00:11:32.280 align:start position:0%
+Just search for Muzan and select the R6
+ 
+
+00:11:32.280 --> 00:11:34.990 align:start position:0%
+Just search for Muzan and select the R6
+version.
+
+00:11:34.990 --> 00:11:35.000 align:start position:0%
+ 
+ 
+
+00:11:35.000 --> 00:11:37.950 align:start position:0%
+ 
+Then<00:11:35.200><c> I</c><00:11:35.280><c> added</c><00:11:35.640><c> hit</c><00:11:35.840><c> VFX</c><00:11:36.720><c> and</c><00:11:36.920><c> finisher</c><00:11:37.320><c> VFX</c>
+
+00:11:37.950 --> 00:11:37.960 align:start position:0%
+Then I added hit VFX and finisher VFX
+ 
+
+00:11:37.960 --> 00:11:39.470 align:start position:0%
+Then I added hit VFX and finisher VFX
+onto<00:11:38.200><c> the</c><00:11:38.320><c> NPC.</c>
+
+00:11:39.470 --> 00:11:39.480 align:start position:0%
+onto the NPC.
+ 
+
+00:11:39.480 --> 00:11:40.990 align:start position:0%
+onto the NPC.
+These<00:11:39.600><c> effects</c><00:11:39.960><c> are</c><00:11:40.120><c> also</c><00:11:40.440><c> from</c><00:11:40.600><c> the</c><00:11:40.680><c> Demon</c>
+
+00:11:40.990 --> 00:11:41.000 align:start position:0%
+These effects are also from the Demon
+ 
+
+00:11:41.000 --> 00:11:43.150 align:start position:0%
+These effects are also from the Demon
+Slayer<00:11:41.320><c> kit.</c><00:11:42.160><c> This</c><00:11:42.360><c> splash</c><00:11:42.720><c> effect</c><00:11:43.040><c> is</c><00:11:43.120><c> a</c>
+
+00:11:43.150 --> 00:11:43.160 align:start position:0%
+Slayer kit. This splash effect is a
+ 
+
+00:11:43.160 --> 00:11:45.190 align:start position:0%
+Slayer kit. This splash effect is a
+little<00:11:43.400><c> small</c><00:11:43.760><c> right</c><00:11:43.960><c> now,</c><00:11:44.480><c> so</c><00:11:44.640><c> I'll</c><00:11:44.760><c> probably</c>
+
+00:11:45.190 --> 00:11:45.200 align:start position:0%
+little small right now, so I'll probably
+ 
+
+00:11:45.200 --> 00:11:47.430 align:start position:0%
+little small right now, so I'll probably
+scale<00:11:45.560><c> it</c><00:11:45.680><c> bigger</c><00:11:45.960><c> later.</c><00:11:46.880><c> For</c><00:11:46.920><c> the</c><00:11:47.040><c> finisher</c>
+
+00:11:47.430 --> 00:11:47.440 align:start position:0%
+scale it bigger later. For the finisher
+ 
+
+00:11:47.440 --> 00:11:50.270 align:start position:0%
+scale it bigger later. For the finisher
+effect,<00:11:48.080><c> I</c><00:11:48.200><c> used</c><00:11:48.480><c> this</c><00:11:48.680><c> mist</c><00:11:49.040><c> twirl</c><00:11:49.400><c> asset.</c><00:11:50.160><c> To</c>
+
+00:11:50.270 --> 00:11:50.280 align:start position:0%
+effect, I used this mist twirl asset. To
+ 
+
+00:11:50.280 --> 00:11:52.670 align:start position:0%
+effect, I used this mist twirl asset. To
+make<00:11:50.480><c> effects</c><00:11:50.880><c> follow</c><00:11:51.160><c> the</c><00:11:51.320><c> NPC</c><00:11:51.800><c> correctly,</c><00:11:52.520><c> I</c>
+
+00:11:52.670 --> 00:11:52.680 align:start position:0%
+make effects follow the NPC correctly, I
+ 
+
+00:11:52.680 --> 00:11:54.150 align:start position:0%
+make effects follow the NPC correctly, I
+welded<00:11:53.120><c> them</c><00:11:53.280><c> to</c><00:11:53.303><c> [music]</c><00:11:53.360><c> the</c><00:11:53.480><c> humanoid</c><00:11:53.960><c> root</c>
+
+00:11:54.150 --> 00:11:54.160 align:start position:0%
+welded them to [music] the humanoid root
+ 
+
+00:11:54.160 --> 00:11:56.990 align:start position:0%
+welded them to [music] the humanoid root
+part<00:11:54.600><c> using</c><00:11:54.960><c> weld</c><00:11:55.200><c> constraints.</c><00:11:56.400><c> Claude</c><00:11:56.720><c> also</c>
+
+00:11:56.990 --> 00:11:57.000 align:start position:0%
+part using weld constraints. Claude also
+ 
+
+00:11:57.000 --> 00:11:58.790 align:start position:0%
+part using weld constraints. Claude also
+helped<00:11:57.280><c> generate</c><00:11:57.640><c> the</c><00:11:57.800><c> NPC</c><00:11:58.400><c> combat</c>
+
+00:11:58.790 --> 00:11:58.800 align:start position:0%
+helped generate the NPC combat
+ 
+
+00:11:58.800 --> 00:12:00.710 align:start position:0%
+helped generate the NPC combat
+controller<00:11:59.198><c> [music]</c><00:11:59.240><c> script.</c><00:12:00.200><c> This</c><00:12:00.400><c> script</c>
+
+00:12:00.710 --> 00:12:00.720 align:start position:0%
+controller [music] script. This script
+ 
+
+00:12:00.720 --> 00:12:03.030 align:start position:0%
+controller [music] script. This script
+handles<00:12:01.040><c> attack</c><00:12:01.360><c> damage,</c><00:12:02.040><c> slam</c><00:12:02.400><c> damage,</c>
+
+00:12:03.030 --> 00:12:03.040 align:start position:0%
+handles attack damage, slam damage,
+ 
+
+00:12:03.040 --> 00:12:04.750 align:start position:0%
+handles attack damage, slam damage,
+knockback<00:12:03.520><c> force,</c><00:12:03.783><c> [music]</c><00:12:04.160><c> execution</c>
+
+00:12:04.750 --> 00:12:04.760 align:start position:0%
+knockback force, [music] execution
+ 
+
+00:12:04.760 --> 00:12:07.070 align:start position:0%
+knockback force, [music] execution
+timing,<00:12:05.400><c> and</c><00:12:05.560><c> respawn</c><00:12:06.000><c> logic.</c>
+
+00:12:07.070 --> 00:12:07.080 align:start position:0%
+timing, and respawn logic.
+ 
+
+00:12:07.080 --> 00:12:08.830 align:start position:0%
+timing, and respawn logic.
+These<00:12:07.280><c> are</c><00:12:07.360><c> the</c><00:12:07.480><c> knockback</c><00:12:08.040><c> and</c><00:12:08.200><c> execution</c>
+
+00:12:08.830 --> 00:12:08.840 align:start position:0%
+These are the knockback and execution
+ 
+
+00:12:08.840 --> 00:12:10.710 align:start position:0%
+These are the knockback and execution
+animation<00:12:09.320><c> IDs</c><00:12:09.720><c> that</c><00:12:09.880><c> Claude</c><00:12:10.160><c> generated</c>
+
+00:12:10.710 --> 00:12:10.720 align:start position:0%
+animation IDs that Claude generated
+ 
+
+00:12:10.720 --> 00:12:12.630 align:start position:0%
+animation IDs that Claude generated
+earlier.<00:12:11.640><c> If</c><00:12:11.760><c> you</c><00:12:11.840><c> don't</c><00:12:12.080><c> want</c><00:12:12.240><c> to</c><00:12:12.320><c> animate</c>
+
+00:12:12.630 --> 00:12:12.640 align:start position:0%
+earlier. If you don't want to animate
+ 
+
+00:12:12.640 --> 00:12:14.510 align:start position:0%
+earlier. If you don't want to animate
+those<00:12:12.840><c> yourself,</c><00:12:13.640><c> you</c><00:12:13.760><c> can</c><00:12:13.920><c> simply</c><00:12:14.280><c> ask</c>
+
+00:12:14.510 --> 00:12:14.520 align:start position:0%
+those yourself, you can simply ask
+ 
+
+00:12:14.520 --> 00:12:17.230 align:start position:0%
+those yourself, you can simply ask
+Claude<00:12:14.960><c> or</c><00:12:15.080><c> another</c><00:12:15.440><c> AI</c><00:12:15.720><c> MCP</c><00:12:16.280><c> app</c><00:12:16.720><c> to</c><00:12:16.840><c> generate</c>
+
+00:12:17.230 --> 00:12:17.240 align:start position:0%
+Claude or another AI MCP app to generate
+ 
+
+00:12:17.240 --> 00:12:19.630 align:start position:0%
+Claude or another AI MCP app to generate
+them<00:12:17.400><c> for</c><00:12:17.600><c> you,</c><00:12:17.720><c> too.</c>
+
+00:12:19.630 --> 00:12:19.640 align:start position:0%
+them for you, too.
+ 
+
+00:12:19.640 --> 00:12:21.310 align:start position:0%
+them for you, too.
+And<00:12:19.720><c> that's</c><00:12:19.960><c> basically</c><00:12:20.440><c> how</c><00:12:20.600><c> I</c><00:12:20.680><c> created</c><00:12:21.080><c> this</c>
+
+00:12:21.310 --> 00:12:21.320 align:start position:0%
+And that's basically how I created this
+ 
+
+00:12:21.320 --> 00:12:23.470 align:start position:0%
+And that's basically how I created this
+anime<00:12:21.680><c> dragon</c><00:12:22.120><c> water</c><00:12:22.140><c> [music]</c><00:12:22.360><c> skill</c><00:12:23.000><c> inside</c>
+
+00:12:23.470 --> 00:12:23.480 align:start position:0%
+anime dragon water [music] skill inside
+ 
+
+00:12:23.480 --> 00:12:26.550 align:start position:0%
+anime dragon water [music] skill inside
+Roblox<00:12:23.920><c> Studio</c><00:12:24.640><c> using</c><00:12:24.920><c> Claude</c><00:12:25.240><c> MCP</c><00:12:26.080><c> and</c><00:12:26.280><c> AI</c>
+
+00:12:26.550 --> 00:12:26.560 align:start position:0%
+Roblox Studio using Claude MCP and AI
+ 
+
+00:12:26.560 --> 00:12:28.910 align:start position:0%
+Roblox Studio using Claude MCP and AI
+assisted<00:12:27.000><c> workflows.</c><00:12:28.080><c> If</c><00:12:28.240><c> this</c><00:12:28.440><c> tutorial</c>
+
+00:12:28.910 --> 00:12:28.920 align:start position:0%
+assisted workflows. If this tutorial
+ 
+
+00:12:28.920 --> 00:12:30.590 align:start position:0%
+assisted workflows. If this tutorial
+helped<00:12:29.200><c> you,</c><00:12:29.640><c> make</c><00:12:29.880><c> sure</c><00:12:30.040><c> to</c><00:12:30.200><c> like</c><00:12:30.480><c> and</c>
+
+00:12:30.590 --> 00:12:30.600 align:start position:0%
+helped you, make sure to like and
+ 
+
+00:12:30.600 --> 00:12:32.670 align:start position:0%
+helped you, make sure to like and
+subscribe,<00:12:31.520><c> because</c><00:12:31.760><c> I'll</c><00:12:31.880><c> continue</c><00:12:32.360><c> making</c>
+
+00:12:32.670 --> 00:12:32.680 align:start position:0%
+subscribe, because I'll continue making
+ 
+
+00:12:32.680 --> 00:12:34.550 align:start position:0%
+subscribe, because I'll continue making
+more<00:12:32.920><c> advanced</c><00:12:33.360><c> Roblox</c><00:12:33.880><c> AI</c><00:12:34.160><c> workflow</c>
+
+00:12:34.550 --> 00:12:34.560 align:start position:0%
+more advanced Roblox AI workflow
+ 
+
+00:12:34.560 --> 00:12:36.630 align:start position:0%
+more advanced Roblox AI workflow
+tutorials<00:12:35.080><c> like</c><00:12:35.280><c> this.</c><00:12:36.040><c> And</c><00:12:36.160><c> let</c><00:12:36.320><c> me</c><00:12:36.400><c> know</c><00:12:36.560><c> in</c>
+
+00:12:36.630 --> 00:12:36.640 align:start position:0%
+tutorials like this. And let me know in
+ 
+
+00:12:36.640 --> 00:12:38.550 align:start position:0%
+tutorials like this. And let me know in
+the<00:12:36.720><c> comments</c><00:12:37.440><c> what</c><00:12:37.680><c> anime</c><00:12:37.960><c> skill</c><00:12:38.280><c> you</c><00:12:38.400><c> want</c>
+
+00:12:38.550 --> 00:12:38.560 align:start position:0%
+the comments what anime skill you want
+ 
+
+00:12:38.560 --> 00:12:41.560 align:start position:0%
+the comments what anime skill you want
+me<00:12:38.680><c> to</c><00:12:38.760><c> build</c><00:12:39.000><c> next.</c>
+

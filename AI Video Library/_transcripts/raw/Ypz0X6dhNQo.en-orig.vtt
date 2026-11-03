@@ -1,0 +1,624 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.160 --> 00:00:02.629 align:start position:0%
+ 
+Hello<00:00:00.800><c> and</c><00:00:01.120><c> welcome</c><00:00:01.439><c> to</c><00:00:01.680><c> this</c><00:00:01.920><c> Marionette</c>
+
+00:00:02.629 --> 00:00:02.639 align:start position:0%
+Hello and welcome to this Marionette
+ 
+
+00:00:02.639 --> 00:00:05.269 align:start position:0%
+Hello and welcome to this Marionette
+tutorial.<00:00:03.600><c> In</c><00:00:03.840><c> this</c><00:00:04.000><c> tutorial,</c><00:00:04.720><c> we'll</c><00:00:05.120><c> build</c>
+
+00:00:05.269 --> 00:00:05.279 align:start position:0%
+tutorial. In this tutorial, we'll build
+ 
+
+00:00:05.279 --> 00:00:07.829 align:start position:0%
+tutorial. In this tutorial, we'll build
+a<00:00:05.520><c> powerful</c><00:00:06.080><c> pipeline</c><00:00:06.720><c> to</c><00:00:06.960><c> bring</c><00:00:07.279><c> suitless</c>
+
+00:00:07.829 --> 00:00:07.839 align:start position:0%
+a powerful pipeline to bring suitless
+ 
+
+00:00:07.839 --> 00:00:10.470 align:start position:0%
+a powerful pipeline to bring suitless
+motion<00:00:08.320><c> capture</c><00:00:08.880><c> from</c><00:00:09.200><c> any</c><00:00:09.519><c> phone</c><00:00:09.920><c> video</c>
+
+00:00:10.470 --> 00:00:10.480 align:start position:0%
+motion capture from any phone video
+ 
+
+00:00:10.480 --> 00:00:13.669 align:start position:0%
+motion capture from any phone video
+directly<00:00:11.120><c> into</c><00:00:11.519><c> Roblox</c><00:00:12.080><c> Studio.</c><00:00:13.040><c> We'll</c><00:00:13.440><c> start</c>
+
+00:00:13.669 --> 00:00:13.679 align:start position:0%
+directly into Roblox Studio. We'll start
+ 
+
+00:00:13.679 --> 00:00:15.669 align:start position:0%
+directly into Roblox Studio. We'll start
+by<00:00:14.000><c> generating</c><00:00:14.559><c> the</c><00:00:14.799><c> animation</c><00:00:15.360><c> in</c>
+
+00:00:15.669 --> 00:00:15.679 align:start position:0%
+by generating the animation in
+ 
+
+00:00:15.679 --> 00:00:18.390 align:start position:0%
+by generating the animation in
+Marionette.<00:00:16.800><c> Then</c><00:00:17.039><c> use</c><00:00:17.279><c> the</c><00:00:17.520><c> live</c><00:00:17.840><c> link</c><00:00:18.160><c> to</c>
+
+00:00:18.390 --> 00:00:18.400 align:start position:0%
+Marionette. Then use the live link to
+ 
+
+00:00:18.400 --> 00:00:20.790 align:start position:0%
+Marionette. Then use the live link to
+connect<00:00:18.800><c> seamlessly</c><00:00:19.439><c> with</c><00:00:19.680><c> Blender</c><00:00:20.560><c> and</c>
+
+00:00:20.790 --> 00:00:20.800 align:start position:0%
+connect seamlessly with Blender and
+ 
+
+00:00:20.800 --> 00:00:23.429 align:start position:0%
+connect seamlessly with Blender and
+finally<00:00:21.439><c> import</c><00:00:21.920><c> the</c><00:00:22.160><c> finished</c><00:00:22.640><c> result</c><00:00:23.039><c> into</c>
+
+00:00:23.429 --> 00:00:23.439 align:start position:0%
+finally import the finished result into
+ 
+
+00:00:23.439 --> 00:00:27.029 align:start position:0%
+finally import the finished result into
+Roblox.<00:00:24.800><c> First,</c><00:00:25.199><c> we</c><00:00:25.600><c> import</c><00:00:26.000><c> our</c><00:00:26.320><c> video</c><00:00:26.640><c> into</c>
+
+00:00:27.029 --> 00:00:27.039 align:start position:0%
+Roblox. First, we import our video into
+ 
+
+00:00:27.039 --> 00:00:30.550 align:start position:0%
+Roblox. First, we import our video into
+Marionette.
+
+00:00:30.550 --> 00:00:30.560 align:start position:0%
+ 
+ 
+
+00:00:30.560 --> 00:00:33.590 align:start position:0%
+ 
+calibrate<00:00:31.119><c> it</c><00:00:31.920><c> and</c><00:00:32.160><c> then</c><00:00:32.559><c> drag</c><00:00:32.880><c> and</c><00:00:33.120><c> drop</c><00:00:33.360><c> your</c>
+
+00:00:33.590 --> 00:00:33.600 align:start position:0%
+calibrate it and then drag and drop your
+ 
+
+00:00:33.600 --> 00:00:37.340 align:start position:0%
+calibrate it and then drag and drop your
+clip<00:00:33.920><c> into</c><00:00:34.239><c> the</c><00:00:34.399><c> timeline</c>
+
+00:00:37.340 --> 00:00:37.350 align:start position:0%
+clip into the timeline
+ 
+
+00:00:37.350 --> 00:00:42.709 align:start position:0%
+clip into the timeline
+[Music]
+
+00:00:42.709 --> 00:00:42.719 align:start position:0%
+ 
+ 
+
+00:00:42.719 --> 00:00:45.190 align:start position:0%
+ 
+and<00:00:42.960><c> run</c><00:00:43.200><c> the</c><00:00:43.440><c> automatic</c><00:00:44.239><c> clean</c><00:00:44.719><c> motion</c>
+
+00:00:45.190 --> 00:00:45.200 align:start position:0%
+and run the automatic clean motion
+ 
+
+00:00:45.200 --> 00:00:47.670 align:start position:0%
+and run the automatic clean motion
+process.<00:00:46.480><c> This</c><00:00:46.719><c> is</c><00:00:46.800><c> the</c><00:00:47.039><c> point</c><00:00:47.280><c> where</c><00:00:47.520><c> you</c>
+
+00:00:47.670 --> 00:00:47.680 align:start position:0%
+process. This is the point where you
+ 
+
+00:00:47.680 --> 00:00:50.229 align:start position:0%
+process. This is the point where you
+could<00:00:47.920><c> also</c><00:00:48.480><c> manually</c><00:00:49.120><c> clean</c><00:00:49.360><c> up</c><00:00:49.520><c> the</c><00:00:49.680><c> motion</c>
+
+00:00:50.229 --> 00:00:50.239 align:start position:0%
+could also manually clean up the motion
+ 
+
+00:00:50.239 --> 00:00:52.790 align:start position:0%
+could also manually clean up the motion
+and<00:00:50.559><c> make</c><00:00:50.719><c> other</c><00:00:50.960><c> edits.</c><00:00:51.920><c> For</c><00:00:52.160><c> in-depth</c>
+
+00:00:52.790 --> 00:00:52.800 align:start position:0%
+and make other edits. For in-depth
+ 
+
+00:00:52.800 --> 00:00:55.430 align:start position:0%
+and make other edits. For in-depth
+tutorials<00:00:53.360><c> on</c><00:00:53.680><c> those</c><00:00:53.920><c> advanced</c><00:00:54.399><c> features,</c><00:00:55.280><c> be</c>
+
+00:00:55.430 --> 00:00:55.440 align:start position:0%
+tutorials on those advanced features, be
+ 
+
+00:00:55.440 --> 00:00:57.830 align:start position:0%
+tutorials on those advanced features, be
+sure<00:00:55.600><c> to</c><00:00:55.840><c> check</c><00:00:56.079><c> out</c><00:00:56.320><c> our</c><00:00:56.640><c> YouTube</c><00:00:57.039><c> channel.</c>
+
+00:00:57.830 --> 00:00:57.840 align:start position:0%
+sure to check out our YouTube channel.
+ 
+
+00:00:57.840 --> 00:01:00.869 align:start position:0%
+sure to check out our YouTube channel.
+Next,<00:00:58.239><c> we</c><00:00:58.559><c> move</c><00:00:58.719><c> to</c><00:00:58.960><c> Blender.</c><00:00:59.760><c> Using</c><00:01:00.160><c> the</c><00:01:00.480><c> free</c>
+
+00:01:00.869 --> 00:01:00.879 align:start position:0%
+Next, we move to Blender. Using the free
+ 
+
+00:01:00.879 --> 00:01:03.189 align:start position:0%
+Next, we move to Blender. Using the free
+Marionette<00:01:01.600><c> Blender</c><00:01:02.079><c> plugin,</c><00:01:02.719><c> we</c><00:01:02.960><c> will</c>
+
+00:01:03.189 --> 00:01:03.199 align:start position:0%
+Marionette Blender plugin, we will
+ 
+
+00:01:03.199 --> 00:01:06.070 align:start position:0%
+Marionette Blender plugin, we will
+retarget<00:01:03.840><c> the</c><00:01:04.080><c> animation</c><00:01:04.640><c> to</c><00:01:04.879><c> our</c><00:01:05.119><c> character.</c>
+
+00:01:06.070 --> 00:01:06.080 align:start position:0%
+retarget the animation to our character.
+ 
+
+00:01:06.080 --> 00:01:08.870 align:start position:0%
+retarget the animation to our character.
+This<00:01:06.400><c> process</c><00:01:06.799><c> works</c><00:01:07.200><c> for</c><00:01:07.439><c> any</c><00:01:07.840><c> rig.</c><00:01:08.640><c> The</c>
+
+00:01:08.870 --> 00:01:08.880 align:start position:0%
+This process works for any rig. The
+ 
+
+00:01:08.880 --> 00:01:11.429 align:start position:0%
+This process works for any rig. The
+workflow<00:01:09.280><c> is</c><00:01:09.520><c> simple.</c><00:01:10.320><c> Select</c><00:01:10.640><c> a</c><00:01:10.880><c> controller</c>
+
+00:01:11.429 --> 00:01:11.439 align:start position:0%
+workflow is simple. Select a controller
+ 
+
+00:01:11.439 --> 00:01:14.310 align:start position:0%
+workflow is simple. Select a controller
+on<00:01:11.760><c> your</c><00:01:12.000><c> character's</c><00:01:12.560><c> rig,</c><00:01:13.280><c> then</c><00:01:13.600><c> select</c><00:01:14.000><c> the</c>
+
+00:01:14.310 --> 00:01:14.320 align:start position:0%
+on your character's rig, then select the
+ 
+
+00:01:14.320 --> 00:01:17.030 align:start position:0%
+on your character's rig, then select the
+corresponding<00:01:15.119><c> bone</c><00:01:15.439><c> name</c><00:01:15.760><c> in</c><00:01:16.000><c> the</c><00:01:16.159><c> plug-in.</c>
+
+00:01:17.030 --> 00:01:17.040 align:start position:0%
+corresponding bone name in the plug-in.
+ 
+
+00:01:17.040 --> 00:01:18.789 align:start position:0%
+corresponding bone name in the plug-in.
+We'll<00:01:17.360><c> repeat</c><00:01:17.680><c> this</c><00:01:18.000><c> for</c><00:01:18.320><c> all</c><00:01:18.560><c> the</c>
+
+00:01:18.789 --> 00:01:18.799 align:start position:0%
+We'll repeat this for all the
+ 
+
+00:01:18.799 --> 00:01:21.510 align:start position:0%
+We'll repeat this for all the
+controllers<00:01:19.439><c> we</c><00:01:19.759><c> want</c><00:01:19.920><c> to</c><00:01:20.080><c> have</c><00:01:20.320><c> motion.</c><00:01:21.360><c> For</c>
+
+00:01:21.510 --> 00:01:21.520 align:start position:0%
+controllers we want to have motion. For
+ 
+
+00:01:21.520 --> 00:01:24.149 align:start position:0%
+controllers we want to have motion. For
+a<00:01:21.759><c> more</c><00:01:22.080><c> detailed</c><00:01:22.640><c> guide,</c><00:01:23.280><c> see</c><00:01:23.520><c> our</c><00:01:23.840><c> full</c>
+
+00:01:24.149 --> 00:01:24.159 align:start position:0%
+a more detailed guide, see our full
+ 
+
+00:01:24.159 --> 00:01:26.630 align:start position:0%
+a more detailed guide, see our full
+Blender<00:01:24.720><c> plug-in</c><00:01:25.200><c> tutorial</c><00:01:26.000><c> linked</c><00:01:26.320><c> in</c><00:01:26.479><c> the</c>
+
+00:01:26.630 --> 00:01:26.640 align:start position:0%
+Blender plug-in tutorial linked in the
+ 
+
+00:01:26.640 --> 00:01:29.270 align:start position:0%
+Blender plug-in tutorial linked in the
+description.<00:01:27.759><c> With</c><00:01:28.000><c> both</c><00:01:28.320><c> Marionette</c><00:01:29.040><c> and</c>
+
+00:01:29.270 --> 00:01:29.280 align:start position:0%
+description. With both Marionette and
+ 
+
+00:01:29.280 --> 00:01:32.550 align:start position:0%
+description. With both Marionette and
+Blender<00:01:29.840><c> open,</c><00:01:30.479><c> press</c><00:01:30.960><c> connect.</c><00:01:31.920><c> Now,</c><00:01:32.320><c> by</c>
+
+00:01:32.550 --> 00:01:32.560 align:start position:0%
+Blender open, press connect. Now, by
+ 
+
+00:01:32.560 --> 00:01:35.590 align:start position:0%
+Blender open, press connect. Now, by
+selecting<00:01:33.280><c> show</c><00:01:33.680><c> preview</c><00:01:34.240><c> in</c><00:01:34.560><c> DCC</c><00:01:35.360><c> in</c>
+
+00:01:35.590 --> 00:01:35.600 align:start position:0%
+selecting show preview in DCC in
+ 
+
+00:01:35.600 --> 00:01:38.310 align:start position:0%
+selecting show preview in DCC in
+Marionette,<00:01:36.560><c> you</c><00:01:36.799><c> get</c><00:01:37.040><c> a</c><00:01:37.280><c> live</c><00:01:37.680><c> preview</c><00:01:38.079><c> of</c>
+
+00:01:38.310 --> 00:01:38.320 align:start position:0%
+Marionette, you get a live preview of
+ 
+
+00:01:38.320 --> 00:01:40.550 align:start position:0%
+Marionette, you get a live preview of
+the<00:01:38.560><c> animation</c><00:01:39.119><c> on</c><00:01:39.439><c> your</c><00:01:39.680><c> character,</c>
+
+00:01:40.550 --> 00:01:40.560 align:start position:0%
+the animation on your character,
+ 
+
+00:01:40.560 --> 00:01:42.950 align:start position:0%
+the animation on your character,
+allowing<00:01:40.960><c> you</c><00:01:41.119><c> to</c><00:01:41.360><c> make</c><00:01:41.680><c> live</c><00:01:42.079><c> edits</c><00:01:42.560><c> between</c>
+
+00:01:42.950 --> 00:01:42.960 align:start position:0%
+allowing you to make live edits between
+ 
+
+00:01:42.960 --> 00:01:45.670 align:start position:0%
+allowing you to make live edits between
+the<00:01:43.200><c> two</c><00:01:43.439><c> softwares.</c><00:01:44.479><c> Once</c><00:01:44.799><c> you're</c><00:01:45.040><c> happy,</c>
+
+00:01:45.670 --> 00:01:45.680 align:start position:0%
+the two softwares. Once you're happy,
+ 
+
+00:01:45.680 --> 00:01:48.789 align:start position:0%
+the two softwares. Once you're happy,
+press<00:01:46.159><c> copy</c><00:01:46.560><c> to</c><00:01:46.880><c> DCC.</c><00:01:48.000><c> This</c><00:01:48.320><c> sends</c><00:01:48.560><c> the</c>
+
+00:01:48.789 --> 00:01:48.799 align:start position:0%
+press copy to DCC. This sends the
+ 
+
+00:01:48.799 --> 00:01:51.350 align:start position:0%
+press copy to DCC. This sends the
+animation<00:01:49.360><c> data</c><00:01:49.759><c> from</c><00:01:50.000><c> Marionette</c><00:01:50.799><c> onto</c><00:01:51.200><c> your</c>
+
+00:01:51.350 --> 00:01:51.360 align:start position:0%
+animation data from Marionette onto your
+ 
+
+00:01:51.360 --> 00:01:54.149 align:start position:0%
+animation data from Marionette onto your
+rig<00:01:51.680><c> in</c><00:01:51.920><c> Blender.</c><00:01:52.799><c> And</c><00:01:53.040><c> Marionette</c><00:01:53.759><c> adds</c>
+
+00:01:54.149 --> 00:01:54.159 align:start position:0%
+rig in Blender. And Marionette adds
+ 
+
+00:01:54.159 --> 00:01:57.030 align:start position:0%
+rig in Blender. And Marionette adds
+smooth<00:01:54.640><c> curves</c><00:01:55.119><c> and</c><00:01:55.360><c> keys,</c><00:01:56.240><c> giving</c><00:01:56.560><c> you</c><00:01:56.799><c> the</c>
+
+00:01:57.030 --> 00:01:57.040 align:start position:0%
+smooth curves and keys, giving you the
+ 
+
+00:01:57.040 --> 00:01:59.510 align:start position:0%
+smooth curves and keys, giving you the
+ability<00:01:57.439><c> to</c><00:01:57.680><c> refine</c><00:01:58.159><c> it</c><00:01:58.320><c> further</c><00:01:58.799><c> easily</c><00:01:59.280><c> in</c>
+
+00:01:59.510 --> 00:01:59.520 align:start position:0%
+ability to refine it further easily in
+ 
+
+00:01:59.520 --> 00:02:02.389 align:start position:0%
+ability to refine it further easily in
+Blender.
+
+00:02:02.389 --> 00:02:02.399 align:start position:0%
+Blender.
+ 
+
+00:02:02.399 --> 00:02:05.109 align:start position:0%
+Blender.
+From<00:02:02.719><c> Blender,</c><00:02:03.280><c> we</c><00:02:03.600><c> export</c><00:02:04.000><c> the</c><00:02:04.240><c> animation</c><00:02:04.799><c> as</c>
+
+00:02:05.109 --> 00:02:05.119 align:start position:0%
+From Blender, we export the animation as
+ 
+
+00:02:05.119 --> 00:02:08.309 align:start position:0%
+From Blender, we export the animation as
+an<00:02:05.360><c> FBX.</c><00:02:06.320><c> In</c><00:02:06.560><c> the</c><00:02:06.719><c> export</c><00:02:07.280><c> settings,</c><00:02:08.080><c> make</c>
+
+00:02:08.309 --> 00:02:08.319 align:start position:0%
+an FBX. In the export settings, make
+ 
+
+00:02:08.319 --> 00:02:10.869 align:start position:0%
+an FBX. In the export settings, make
+sure<00:02:08.560><c> both</c><00:02:08.959><c> armature</c><00:02:09.679><c> and</c><00:02:10.080><c> mesh</c><00:02:10.560><c> are</c>
+
+00:02:10.869 --> 00:02:10.879 align:start position:0%
+sure both armature and mesh are
+ 
+
+00:02:10.879 --> 00:02:14.229 align:start position:0%
+sure both armature and mesh are
+selected.<00:02:11.840><c> Ensure</c><00:02:12.319><c> animation</c><00:02:13.040><c> is</c><00:02:13.360><c> turned</c><00:02:13.680><c> on</c>
+
+00:02:14.229 --> 00:02:14.239 align:start position:0%
+selected. Ensure animation is turned on
+ 
+
+00:02:14.239 --> 00:02:16.630 align:start position:0%
+selected. Ensure animation is turned on
+and<00:02:14.560><c> then</c><00:02:14.800><c> scroll</c><00:02:15.280><c> down</c><00:02:15.599><c> to</c><00:02:15.840><c> the</c><00:02:16.080><c> armature</c>
+
+00:02:16.630 --> 00:02:16.640 align:start position:0%
+and then scroll down to the armature
+ 
+
+00:02:16.640 --> 00:02:20.229 align:start position:0%
+and then scroll down to the armature
+options<00:02:17.120><c> to</c><00:02:17.440><c> disable</c><00:02:18.239><c> add</c><00:02:18.640><c> leaf</c><00:02:19.040><c> bones</c><00:02:19.920><c> and</c>
+
+00:02:20.229 --> 00:02:20.239 align:start position:0%
+options to disable add leaf bones and
+ 
+
+00:02:20.239 --> 00:02:23.910 align:start position:0%
+options to disable add leaf bones and
+press<00:02:20.480><c> export.</c>
+
+00:02:23.910 --> 00:02:23.920 align:start position:0%
+ 
+ 
+
+00:02:23.920 --> 00:02:27.670 align:start position:0%
+ 
+Now<00:02:24.239><c> in</c><00:02:24.560><c> Roblox</c><00:02:25.120><c> Studio,</c><00:02:25.760><c> use</c><00:02:26.080><c> the</c><00:02:26.480><c> import</c><00:02:27.120><c> 3D</c>
+
+00:02:27.670 --> 00:02:27.680 align:start position:0%
+Now in Roblox Studio, use the import 3D
+ 
+
+00:02:27.680 --> 00:02:30.550 align:start position:0%
+Now in Roblox Studio, use the import 3D
+tool<00:02:28.160><c> and</c><00:02:28.480><c> open</c><00:02:28.720><c> the</c><00:02:29.040><c> FBX</c><00:02:29.680><c> file</c><00:02:30.080><c> you</c><00:02:30.319><c> just</c>
+
+00:02:30.550 --> 00:02:30.560 align:start position:0%
+tool and open the FBX file you just
+ 
+
+00:02:30.560 --> 00:02:33.190 align:start position:0%
+tool and open the FBX file you just
+exported<00:02:31.200><c> from</c><00:02:31.440><c> Blender.</c><00:02:32.400><c> You</c><00:02:32.640><c> can</c><00:02:32.720><c> use</c><00:02:32.959><c> the</c>
+
+00:02:33.190 --> 00:02:33.200 align:start position:0%
+exported from Blender. You can use the
+ 
+
+00:02:33.200 --> 00:02:35.990 align:start position:0%
+exported from Blender. You can use the
+default<00:02:33.680><c> import</c><00:02:34.160><c> settings,</c><00:02:34.959><c> so</c><00:02:35.200><c> just</c><00:02:35.519><c> press</c>
+
+00:02:35.990 --> 00:02:36.000 align:start position:0%
+default import settings, so just press
+ 
+
+00:02:36.000 --> 00:02:38.710 align:start position:0%
+default import settings, so just press
+import.<00:02:36.879><c> The</c><00:02:37.200><c> model</c><00:02:37.599><c> may</c><00:02:37.920><c> come</c><00:02:38.080><c> in</c><00:02:38.400><c> very</c>
+
+00:02:38.710 --> 00:02:38.720 align:start position:0%
+import. The model may come in very
+ 
+
+00:02:38.720 --> 00:02:41.190 align:start position:0%
+import. The model may come in very
+large,<00:02:39.280><c> so</c><00:02:39.599><c> we'll</c><00:02:39.920><c> just</c><00:02:40.160><c> scale</c><00:02:40.480><c> it</c><00:02:40.640><c> down</c><00:02:40.879><c> to</c>
+
+00:02:41.190 --> 00:02:41.200 align:start position:0%
+large, so we'll just scale it down to
+ 
+
+00:02:41.200 --> 00:02:44.150 align:start position:0%
+large, so we'll just scale it down to
+fit<00:02:41.360><c> the</c><00:02:41.599><c> scene.</c><00:02:42.400><c> To</c><00:02:42.640><c> apply</c><00:02:42.959><c> the</c><00:02:43.200><c> animation,</c>
+
+00:02:44.150 --> 00:02:44.160 align:start position:0%
+fit the scene. To apply the animation,
+ 
+
+00:02:44.160 --> 00:02:47.910 align:start position:0%
+fit the scene. To apply the animation,
+go<00:02:44.400><c> to</c><00:02:44.640><c> the</c><00:02:44.959><c> avatar</c><00:02:45.519><c> tab,</c><00:02:46.319><c> select</c><00:02:46.800><c> animation,</c>
+
+00:02:47.910 --> 00:02:47.920 align:start position:0%
+go to the avatar tab, select animation,
+ 
+
+00:02:47.920 --> 00:02:50.150 align:start position:0%
+go to the avatar tab, select animation,
+then<00:02:48.160><c> select</c><00:02:48.560><c> your</c><00:02:48.800><c> character's</c><00:02:49.360><c> rig</c><00:02:49.760><c> by</c>
+
+00:02:50.150 --> 00:02:50.160 align:start position:0%
+then select your character's rig by
+ 
+
+00:02:50.160 --> 00:02:52.869 align:start position:0%
+then select your character's rig by
+pressing<00:02:50.640><c> directly</c><00:02:51.200><c> onto</c><00:02:51.680><c> your</c><00:02:51.920><c> character,</c>
+
+00:02:52.869 --> 00:02:52.879 align:start position:0%
+pressing directly onto your character,
+ 
+
+00:02:52.879 --> 00:02:56.309 align:start position:0%
+pressing directly onto your character,
+and<00:02:53.200><c> import</c><00:02:53.680><c> that</c><00:02:54.080><c> same</c><00:02:54.480><c> FBX</c><00:02:55.120><c> file</c><00:02:55.519><c> again</c><00:02:56.000><c> by</c>
+
+00:02:56.309 --> 00:02:56.319 align:start position:0%
+and import that same FBX file again by
+ 
+
+00:02:56.319 --> 00:02:58.630 align:start position:0%
+and import that same FBX file again by
+pressing<00:02:56.640><c> the</c><00:02:56.959><c> three</c><00:02:57.280><c> dots</c><00:02:57.680><c> at</c><00:02:57.920><c> the</c><00:02:58.080><c> animation</c>
+
+00:02:58.630 --> 00:02:58.640 align:start position:0%
+pressing the three dots at the animation
+ 
+
+00:02:58.640 --> 00:03:02.390 align:start position:0%
+pressing the three dots at the animation
+editor<00:02:59.200><c> and</c><00:02:59.519><c> pressing</c><00:03:00.160><c> import</c><00:03:00.640><c> from</c><00:03:01.120><c> FBX.</c><00:03:02.239><c> And</c>
+
+00:03:02.390 --> 00:03:02.400 align:start position:0%
+editor and pressing import from FBX. And
+ 
+
+00:03:02.400 --> 00:03:04.869 align:start position:0%
+editor and pressing import from FBX. And
+that's<00:03:02.640><c> it.</c><00:03:03.280><c> You</c><00:03:03.519><c> have</c><00:03:03.680><c> now</c><00:03:04.000><c> successfully</c>
+
+00:03:04.869 --> 00:03:04.879 align:start position:0%
+that's it. You have now successfully
+ 
+
+00:03:04.879 --> 00:03:07.509 align:start position:0%
+that's it. You have now successfully
+transferred<00:03:05.360><c> a</c><00:03:05.599><c> phone</c><00:03:05.920><c> video</c><00:03:06.480><c> into</c><00:03:06.800><c> a</c><00:03:07.120><c> full</c>
+
+00:03:07.509 --> 00:03:07.519 align:start position:0%
+transferred a phone video into a full
+ 
+
+00:03:07.519 --> 00:03:09.990 align:start position:0%
+transferred a phone video into a full
+mocap<00:03:08.239><c> animation</c><00:03:08.879><c> on</c><00:03:09.200><c> your</c><00:03:09.360><c> Roblox</c>
+
+00:03:09.990 --> 00:03:10.000 align:start position:0%
+mocap animation on your Roblox
+ 
+
+00:03:10.000 --> 00:03:12.710 align:start position:0%
+mocap animation on your Roblox
+character.<00:03:10.959><c> This</c><00:03:11.200><c> can</c><00:03:11.360><c> be</c><00:03:11.519><c> done</c><00:03:11.680><c> with</c><00:03:12.000><c> any</c><00:03:12.319><c> rig</c>
+
+00:03:12.710 --> 00:03:12.720 align:start position:0%
+character. This can be done with any rig
+ 
+
+00:03:12.720 --> 00:03:15.750 align:start position:0%
+character. This can be done with any rig
+and<00:03:13.040><c> any</c><00:03:13.360><c> video,</c><00:03:14.159><c> giving</c><00:03:14.480><c> you</c><00:03:14.879><c> full</c><00:03:15.280><c> control</c>
+
+00:03:15.750 --> 00:03:15.760 align:start position:0%
+and any video, giving you full control
+ 
+
+00:03:15.760 --> 00:03:18.790 align:start position:0%
+and any video, giving you full control
+to<00:03:16.080><c> adjust</c><00:03:16.560><c> the</c><00:03:16.800><c> animation</c><00:03:17.360><c> on</c><00:03:17.599><c> the</c><00:03:17.760><c> way.</c><00:03:18.560><c> You</c>
+
+00:03:18.790 --> 00:03:18.800 align:start position:0%
+to adjust the animation on the way. You
+ 
+
+00:03:18.800 --> 00:03:21.350 align:start position:0%
+to adjust the animation on the way. You
+can<00:03:18.959><c> test</c><00:03:19.360><c> this</c><00:03:19.680><c> entire</c><00:03:20.239><c> workflow</c><00:03:20.800><c> with</c><00:03:21.120><c> our</c>
+
+00:03:21.350 --> 00:03:21.360 align:start position:0%
+can test this entire workflow with our
+ 
+
+00:03:21.360 --> 00:03:23.910 align:start position:0%
+can test this entire workflow with our
+free<00:03:21.599><c> version.</c><00:03:22.400><c> And</c><00:03:22.640><c> because</c><00:03:23.040><c> Marionette</c>
+
+00:03:23.910 --> 00:03:23.920 align:start position:0%
+free version. And because Marionette
+ 
+
+00:03:23.920 --> 00:03:26.790 align:start position:0%
+free version. And because Marionette
+provides<00:03:24.480><c> unlimited</c><00:03:25.280><c> free</c><00:03:25.599><c> renders,</c><00:03:26.400><c> you</c><00:03:26.640><c> can</c>
+
+00:03:26.790 --> 00:03:26.800 align:start position:0%
+provides unlimited free renders, you can
+ 
+
+00:03:26.800 --> 00:03:29.589 align:start position:0%
+provides unlimited free renders, you can
+experiment<00:03:27.440><c> as</c><00:03:27.760><c> much</c><00:03:27.920><c> as</c><00:03:28.080><c> you'd</c><00:03:28.319><c> like.</c><00:03:29.280><c> For</c>
+
+00:03:29.589 --> 00:03:29.599 align:start position:0%
+experiment as much as you'd like. For
+ 
+
+00:03:29.599 --> 00:03:31.910 align:start position:0%
+experiment as much as you'd like. For
+more<00:03:29.760><c> tutorials,</c><00:03:30.640><c> subscribe</c><00:03:31.120><c> to</c><00:03:31.280><c> our</c><00:03:31.519><c> YouTube</c>
+
+00:03:31.910 --> 00:03:31.920 align:start position:0%
+more tutorials, subscribe to our YouTube
+ 
+
+00:03:31.920 --> 00:03:34.390 align:start position:0%
+more tutorials, subscribe to our YouTube
+channel<00:03:32.480><c> and</c><00:03:32.799><c> join</c><00:03:33.040><c> us</c><00:03:33.200><c> on</c><00:03:33.440><c> Discord</c><00:03:33.920><c> for</c><00:03:34.159><c> the</c>
+
+00:03:34.390 --> 00:03:34.400 align:start position:0%
+channel and join us on Discord for the
+ 
+
+00:03:34.400 --> 00:03:36.949 align:start position:0%
+channel and join us on Discord for the
+latest<00:03:34.720><c> updates.</c><00:03:35.680><c> Thanks</c><00:03:35.920><c> for</c><00:03:36.159><c> watching</c><00:03:36.640><c> and</c>
+
+00:03:36.949 --> 00:03:36.959 align:start position:0%
+latest updates. Thanks for watching and
+ 
+
+00:03:36.959 --> 00:03:40.599 align:start position:0%
+latest updates. Thanks for watching and
+see<00:03:37.200><c> you</c><00:03:37.360><c> next</c><00:03:37.599><c> time.</c>
+

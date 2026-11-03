@@ -1,0 +1,920 @@
+[
+ {
+  "dir": "ReplicatedStorage/MTL",
+  "name": "Format",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Format.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL",
+  "name": "Net",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Net.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL",
+  "name": "Rig",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rig.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL",
+  "name": "Signal",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Signal.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Economy",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Economy.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Goals",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Goals.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Vehicles",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Vehicles.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Guns",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Guns.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Jobs",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Jobs.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Levels",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Levels.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Locations",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Locations.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Missions",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Missions.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Monetization",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Monetization.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Phone",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Phone.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Property",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Property.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Story",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Story.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "GangIntro",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/GangIntro.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "NextDay",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/NextDay.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "PowerOut",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/PowerOut.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "RobberyOutro",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/RobberyOutro.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "CutsceneRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/CutsceneRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "GoalRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/GoalRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "GunRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/GunRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "JobRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/JobRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "LevelRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/LevelRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "MissionRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/MissionRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "PhoneRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/PhoneRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "PropertyRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/PropertyRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "StoryRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/StoryRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "Motion",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Motion.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "PhoneLook",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/PhoneLook.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "Sfx",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Sfx.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "MusicLevel",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/MusicLevel.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "Theme",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Theme.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "UIKit",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/UIKit.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "Cutscene",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/Cutscene.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "Gun",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/Gun.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "HUD",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/HUD.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "Job",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/Job.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "Mission",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/Mission.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "Phone",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/Phone.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "Property",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/Property.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL",
+  "name": "Main",
+  "class": "Script",
+  "file": "src/ServerScriptService/MTL/Main.server.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "Analytics",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/Analytics.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "CutsceneService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/CutsceneService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "DataService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/DataService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "EconomyService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/EconomyService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "GoalService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/GoalService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "VehicleService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/VehicleService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "GunModels",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/GunModels.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "GunService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/GunService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "JobService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/JobService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "MissionService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/MissionService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "MonetizationService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/MonetizationService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "Notify",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/Notify.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "PhoneService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/PhoneService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "PhoneStory",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/PhoneStory.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "ProfileSchema",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/ProfileSchema.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "PropertyService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/PropertyService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "RateLimiter",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/RateLimiter.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "StoryCrew",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/StoryCrew.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "StoryService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/StoryService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "WaypointService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/WaypointService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Vendor",
+  "name": "ProfileStore",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Vendor/ProfileStore.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL",
+  "name": "Client",
+  "class": "LocalScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Client.client.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Calls",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Calls.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Camera",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Camera.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Goals",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Goals.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Garage",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Garage.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Jobs",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Jobs.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Map",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Map.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Messages",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Messages.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Plug",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Plug.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Settings",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Settings.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "Actors",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/Actors.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "ClientData",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/ClientData.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "CutsceneController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/CutsceneController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "GunController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/GunController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "GunFX",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/GunFX.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "GunPose",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/GunPose.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "ActionPose",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/ActionPose.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "SwingDoors",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/SwingDoors.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "HUDController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/HUDController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "JobController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/JobController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "JobFX",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/JobFX.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "JobMinigames",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/JobMinigames.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "MissionController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/MissionController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "PhoneController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/PhoneController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "PropertyController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/PropertyController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "UIState",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/UIState.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "WayfindingController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/WayfindingController.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "TimeService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/TimeService.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "DayNight",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/DayNight.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "DayNightRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/DayNightRules.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "LightingController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/LightingController.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "HUD",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/HUD.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "MenuController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/MenuController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "HotbarController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/HotbarController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "MapMarkers",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/MapMarkers.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Tutorial",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Tutorial.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "TutorialRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/TutorialRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "Tutorial",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/Tutorial.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "Welcome",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/Welcome.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "FirstDay",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/FirstDay.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "StoryWelcome",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/StoryWelcome.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "TutorialController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/TutorialController.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Movement",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Movement.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "MovementController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/MovementController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "PromptController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/PromptController.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "LowPoly",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/LowPoly.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI/Build",
+  "name": "Dropped",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Build/Dropped.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "Juice",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/Juice.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "InteractFX",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/InteractFX.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "DeathController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/DeathController.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "StrideRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/StrideRules.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "StrideController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/StrideController.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "StarterShop",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/StarterShop.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "StarterShop",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/StarterShop.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "SpawnProtection",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/SpawnProtection.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "Guide",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Guide.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Game",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Game.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "Avatars",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/Avatars.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Earn",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Earn.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "EarnService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/EarnService.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Money",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Money.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "SplitAim",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/SplitAim.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "Crouch",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/Crouch.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "StanceService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/StanceService.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "Stamina",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/Stamina.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Social",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Social.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Rules",
+  "name": "SocialRules",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Rules/SocialRules.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/UI",
+  "name": "CloutArt",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/UI/CloutArt.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "SocialService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/SocialService.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Clout",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Clout.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers/OS/Apps",
+  "name": "Clout",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/OS/Apps/Clout.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Chapters",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Chapters.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "StoryMissions",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/StoryMissions.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "BackOfHouse",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/BackOfHouse.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "RoyceSoda",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/RoyceSoda.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "KevKnows",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/KevKnows.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "Cash4Gold",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/Cash4Gold.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "Rooftop",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/Rooftop.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Cutscenes",
+  "name": "TheTab",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Cutscenes/TheTab.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "Chassis",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/Chassis.lua"
+ },
+ {
+  "dir": "ReplicatedStorage/MTL/Config",
+  "name": "Live",
+  "class": "ModuleScript",
+  "file": "src/ReplicatedStorage/MTL/Config/Live.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "AirdropService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/AirdropService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "DailyCacheService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/DailyCacheService.lua"
+ },
+ {
+  "dir": "ServerScriptService/MTL/Services",
+  "name": "PawnService",
+  "class": "ModuleScript",
+  "file": "src/ServerScriptService/MTL/Services/PawnService.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "LiveController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/LiveController.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Apps",
+  "name": "Story",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Apps/Story.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "AudioMixer",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/AudioMixer.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "KeyHints",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/KeyHints.lua"
+ },
+ {
+  "dir": "StarterPlayer/StarterPlayerScripts/MTL/Controllers",
+  "name": "CarController",
+  "class": "ModuleScript",
+  "file": "src/StarterPlayer/StarterPlayerScripts/MTL/Controllers/CarController.lua"
+ }
+]
