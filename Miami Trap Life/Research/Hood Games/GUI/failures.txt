@@ -1,0 +1,6 @@
+2026-11-03 off1700-chicago: Roblox store data not found (omni-search for OFF1700 / OFF1700 Chicago V2 / 1700 Chicago returned no match; web search only finds an OFF1700 FiveM Tebex store). Game likely private/renamed/removed.
+2026-11-03 youtube: no 429 / rate-limit errors; all 31 downloads succeeded on the first try.
+2026-11-03 hood-customs: most YouTube results are cheat/script showcases (skipped); only 3 real gameplay videos used (2023-2025), none from 2026.
+2026-11-03 da-hood: the beginner/tips videos are from 2023-2024; added aGAPCDKuso8 (Oct 2026 Halloween update) to show the current HUD (it has barely changed).
+2026-11-03 philly-streetz: store title is now "[LAWS] Fully Streetz 2" (same universe 6858584271, description still says Philly Streetz 2).
+2026-11-03 skipped as asked: BlockSpin, OPPS, Urban Reload (already in /benchmarks). Not covered: The Streets (shut down, only old clips), No Safety 2, Chicago Remastered, Hood Modded (mostly montages).

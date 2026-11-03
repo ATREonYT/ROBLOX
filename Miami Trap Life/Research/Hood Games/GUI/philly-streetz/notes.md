@@ -1,0 +1,33 @@
+# Philly Streetz 2 — GUI notes
+
+**Roblox store data (games.roblox.com, fetched 2026-11-03):** the store title is currently **"[🚓 LAWS] Fully Streetz 2"**; the description still says "WELCOME TO PHILLY STREETZ 2… straight from the 215 · MADE BY: JalenBoston & On1yDJ · CONSOLE SUPPORTED". Universe 6858584271 · place 130700367963690 · creator **Strictly Revenue** (group) · 1,005 playing at fetch time · 46,001,905 visits · 67,269 favourites · 37,395 up / 5,097 down (88% like) · created 2024-11-30 · updated 2026-11-01.
+
+**Videos used:** `PS4Tm2gEK4g` (Drilla, best ways to make money 2025, 2025-08-12; the "DATZDRILLA ON YT" logo top-right is the YouTuber's watermark), `uc0szj8jwz0` (MWAD, 2026-07-13, face-cam + stream chat on the right), `6jdCOzVjGAE` (Zay, joined a gang, 2026-01-03). Note: a "PHILLY" logo watermark (white bold, red script) sits at the bottom-right of every game frame. That one is the game's.
+
+## The overall look
+- **Stat stack, bottom-left (signature):** four rows, each a **round glossy 3D icon** (~2.4% wide, soft gradient, with a highlight) followed by a value or bar.
+  - **Green circle + green banknote stack icon** → cash "$187,274" in **lime-green bold** (~RGB 150,240,60).
+  - **Muted pink circle + pink banknotes** → dirty/bank money "$0" in pink.
+  - **Orange circle + food/burger icon** → "HUNGER", white caps written **inside an orange pill bar** (~RGB 230,130,50).
+  - **Blue circle + battery-with-bolt icon** → "ENERGY" inside a **blue pill bar** (~RGB 40,120,220).
+  The bars are rounded pills with the label inside. Fonts are bold rounded sans (Gotham Black / Montserrat ExtraBold).
+- **Status chips above the stats (left-middle):** the same round 3D icons with a caption pill: blue shield "IN SAFEZONE" (or "SAFE 2:58" countdown), a blue/yellow backpack "BACKPACK", red "COMBAT", grey handcuff "PROBATION". When a gun is equipped, a chip shows "G26 · 12 | 9MM".
+- **Hotbar, bottom-centre:** tiny squares (~2.2% wide) in dark translucent, with white 6 px captions ("Car Key", "G26", "9mm Box", "Mask", "Duffle Bag", "Stolen Phone", "Stolen Laptop"). The selected slot has a **blue 2 px outline**.
+- **Right edge:** a small round "DROP" button (dark circle, white outline) and a camera icon.
+- **Name tags:** the RP name in white with a green or grey title under it. Speech uses Roblox bubble chat.
+
+## Frames
+- `hud-stats-combat_PS4Tm2gEK4g_f06.jpg` — The full stat stack plus a red "COMBAT" chip and the gun chip "G26 12 | 9MM". The hotbar is filled with "Stolen Phone/Laptop" (robbery loot). An "ACCESSORIES" phone store with a world prompt ring.
+- `shop-guns-catalog_PS4Tm2gEK4g_f04.jpg` — **Gun store "FREEDOM TACTICAL":** a wide translucent dark panel with three areas. "CATALOG" (left list of white italic items: ".357 Box", "9mm Box" highlighted yellow, ".40 Box", "10mm Box"…). The centre has the item title "9mm Box", a tagline in quotes ("WHERE FIREPOWER MEETS FREEDOM"), and a dark preview square. The right is "CHECKOUT" with a **green italic "PURCHASE ($100)"** and a **red italic "Exit Store"**. A category label "Firearms" sits at the bottom-left. The style is thin caps headers with lots of transparency, like a GTA store menu.
+- `shop-plug-stock_PS4Tm2gEK4g_f09.jpg` — **Plug/supplier "GUAPO":** the same 3-column layout, with "STOCK" (Basic Filament, Empty Shoe Box, Retro Filament, Lime Nade, Designer Filament, Blue Raspberry Nade, Grape Nade (selected, yellow)…) and "CHECKOUT" with "Grape Nade 'PHILLY'S FINEST GELATIN'", a cup icon and "PURCHASE ($800)".
+- `inventory-backpack-storage_PS4Tm2gEK4g_f11.jpg` — **Backpack transfer:** a dark translucent panel "BACKPACK" with two columns. "INVENTORY" (9MM BOX, DUFFLE BAG, G26) and "BACKPACK STORAGE 6/12" (CARD READER, BLANK CARD ×2, MONEY COUNTER, REPZ MACHINE ×2). Items are listed as **white bold italic caps text, no icons**. A red italic "Zip Backpack" button at the bottom.
+- `prompt-buy-repz_PS4Tm2gEK4g_f08.jpg` — **Interact prompt:** a dark rounded box with an "E" key-cap and two lines, "Repz Machine" (small grey) over "buy ($1000)" (white). It sits next to an NPC with a "GUAPO" poster.
+- `hud-car-speedo_PS4Tm2gEK4g_f13.jpg` — **Car HUD, bottom-centre:** compact. A big white "67" with "MPH" under it, "A" (auto) left and gear "3" right, a thin white fuel line with "E … F", and tiny seatbelt/engine icons. No gauge ring.
+- `shop-clothes-import_uc0szj8jwz0_f02.jpg` — **Clothing store "215 APPAREL"** (the screen is greyscale because the player is downed): the same Catalog/Checkout layout with designer items ("Chrome Hearts…", "Gallery Dept…", "Green Chanel X Maison Margiela Hoodie 'WE'VE GOT THE BEST DRIP IN THE CITY'"), a shirt preview, "PURCHASE ($750)", plus an **"IMPORT SHIRT" section** with "Enter Asset Id Here" / "Enter Name Here" inputs (players import their own Roblox shirts).
+- `garage-color-picker_uc0szj8jwz0_f05.jpg` — **Car customisation:** a top-centre dark panel with tabs "Body · COLOR+" and a **row of ~18 square colour swatches** (white, black, blues, reds, greens, purples, pinks, orange), with "PURCHASE ($500)" in green under it. The car HUD shows chips "LIGHTS AUTO" and "RADIO OPEN".
+- `gps-chevrons_uc0szj8jwz0_f04.jpg` — **GPS route:** bright **green neon chevrons (>>>)** on the ground lead the way. "SAFE 2:58" safe-zone timer chip. The money is huge ("$7,870,509", pink "$50,000,000").
+- `death-deceased_6jdCOzVjGAE_f11.jpg` — **Death:** the screen is tinted dark red. A slim dark notification bar at the top-centre has a skull icon, "YOU ARE DECEASED, KILLED BY 8642459" in white caps, a timer "26s" on the right, and a flavour line "GUESS YOU AIN'T BUILT FOR THESE STREETS YOUNG BOL" (Philly slang) in small grey italic. Others get a prompt "snatch [player]'s chain…".
+- `notice-house-arrest_6jdCOzVjGAE_f07.jpg` — **Status banner:** the same slim dark bar at the top-centre with a handcuffs icon, "YOU ARE ON HOUSE ARREST" and "You're on probation for First Degree Murder", timer "0:44". A grey "PROBATION" chip on the left.
+- `menu-pose_6jdCOzVjGAE_f05.jpg` — **Pose/emote list, right side:** "POSE" header (white italic) and plain white italic rows ("Pockets, Point, Point 2, Point 3, Point Block 1–5, Shoulder Stacks, Surrender"). No background box, text on the scene, with a purple neon sign glowing behind.
+
+**Takeaways:** the closest to a "modern mobile game" HUD among the RP games. It uses **glossy round 3D icons + pill bars + lime-green money**, GTA-style 3-column shop menus (Catalog / item / Checkout, with a tagline per item), text-only inventories, slim top banners for death/arrest with local slang, and green GPS chevrons. A good reference for a polished yet readable HUD.
