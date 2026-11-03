@@ -1,0 +1,2680 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:06.550 --> 00:00:11.780 align:start position:0%
+ 
+[singing]
+
+00:00:11.780 --> 00:00:11.790 align:start position:0%
+ 
+ 
+
+00:00:11.790 --> 00:00:15.910 align:start position:0%
+ 
+[music]
+
+00:00:15.910 --> 00:00:15.920 align:start position:0%
+ 
+ 
+
+00:00:15.920 --> 00:00:17.670 align:start position:0%
+ 
+&gt;&gt; Welcome<00:00:16.320><c> back</c><00:00:16.600><c> everyone.</c>
+
+00:00:17.670 --> 00:00:17.680 align:start position:0%
+&gt;&gt; Welcome back everyone.
+ 
+
+00:00:17.680 --> 00:00:19.310 align:start position:0%
+&gt;&gt; Welcome back everyone.
+Today<00:00:17.960><c> we're</c><00:00:18.080><c> going</c><00:00:18.320><c> to</c><00:00:18.440><c> build</c><00:00:18.680><c> a</c><00:00:18.760><c> complete</c>
+
+00:00:19.310 --> 00:00:19.320 align:start position:0%
+Today we're going to build a complete
+ 
+
+00:00:19.320 --> 00:00:20.630 align:start position:0%
+Today we're going to build a complete
+vehicle<00:00:19.720><c> construction</c><00:00:20.305><c> [music]</c><00:00:20.320><c> builder</c>
+
+00:00:20.630 --> 00:00:20.640 align:start position:0%
+vehicle construction [music] builder
+ 
+
+00:00:20.640 --> 00:00:23.350 align:start position:0%
+vehicle construction [music] builder
+combat<00:00:21.120><c> game</c><00:00:21.640><c> in</c><00:00:21.800><c> Roblox</c><00:00:22.200><c> Studio</c><00:00:23.000><c> using</c>
+
+00:00:23.350 --> 00:00:23.360 align:start position:0%
+combat game in Roblox Studio using
+ 
+
+00:00:23.360 --> 00:00:26.190 align:start position:0%
+combat game in Roblox Studio using
+Roblox<00:00:23.800><c> Studio</c><00:00:24.240><c> MCP</c><00:00:25.160><c> and</c><00:00:25.280><c> the</c><00:00:25.360><c> latest</c><00:00:25.760><c> Claude</c>
+
+00:00:26.190 --> 00:00:26.200 align:start position:0%
+Roblox Studio MCP and the latest Claude
+ 
+
+00:00:26.200 --> 00:00:28.030 align:start position:0%
+Roblox Studio MCP and the latest Claude
+Opus<00:00:26.600><c> 4.8.</c>
+
+00:00:28.030 --> 00:00:28.040 align:start position:0%
+Opus 4.8.
+ 
+
+00:00:28.040 --> 00:00:30.270 align:start position:0%
+Opus 4.8.
+The<00:00:28.160><c> core</c><00:00:28.440><c> concept</c><00:00:29.000><c> of</c><00:00:29.080><c> this</c><00:00:29.280><c> project</c><00:00:30.080><c> is</c>
+
+00:00:30.270 --> 00:00:30.280 align:start position:0%
+The core concept of this project is
+ 
+
+00:00:30.280 --> 00:00:31.990 align:start position:0%
+The core concept of this project is
+modular<00:00:30.800><c> vehicles.</c>
+
+00:00:31.990 --> 00:00:32.000 align:start position:0%
+modular vehicles.
+ 
+
+00:00:32.000 --> 00:00:33.990 align:start position:0%
+modular vehicles.
+Every<00:00:32.279><c> vehicle</c><00:00:32.680><c> is</c><00:00:32.840><c> split</c><00:00:33.200><c> into</c><00:00:33.440><c> three</c><00:00:33.720><c> main</c>
+
+00:00:33.990 --> 00:00:34.000 align:start position:0%
+Every vehicle is split into three main
+ 
+
+00:00:34.000 --> 00:00:36.670 align:start position:0%
+Every vehicle is split into three main
+parts,<00:00:34.760><c> a</c><00:00:34.880><c> chassis,</c><00:00:35.760><c> a</c><00:00:35.840><c> turret</c><00:00:36.240><c> mounted</c><00:00:36.560><c> on</c>
+
+00:00:36.670 --> 00:00:36.680 align:start position:0%
+parts, a chassis, a turret mounted on
+ 
+
+00:00:36.680 --> 00:00:38.750 align:start position:0%
+parts, a chassis, a turret mounted on
+top,<00:00:37.440><c> and</c><00:00:37.600><c> wheels.</c>
+
+00:00:38.750 --> 00:00:38.760 align:start position:0%
+top, and wheels.
+ 
+
+00:00:38.760 --> 00:00:40.190 align:start position:0%
+top, and wheels.
+This<00:00:38.920><c> allows</c><00:00:39.280><c> us</c><00:00:39.400><c> to</c><00:00:39.520><c> mix</c><00:00:39.840><c> and</c><00:00:39.960><c> match</c>
+
+00:00:40.190 --> 00:00:40.200 align:start position:0%
+This allows us to mix and match
+ 
+
+00:00:40.200 --> 00:00:42.070 align:start position:0%
+This allows us to mix and match
+components<00:00:40.800><c> dynamically</c><00:00:41.265><c> [music]</c><00:00:41.600><c> inside</c>
+
+00:00:42.070 --> 00:00:42.080 align:start position:0%
+components dynamically [music] inside
+ 
+
+00:00:42.080 --> 00:00:43.430 align:start position:0%
+components dynamically [music] inside
+the<00:00:42.160><c> game.</c>
+
+00:00:43.430 --> 00:00:43.440 align:start position:0%
+the game.
+ 
+
+00:00:43.440 --> 00:00:46.230 align:start position:0%
+the game.
+To<00:00:43.480><c> design</c><00:00:43.840><c> the</c><00:00:43.920><c> chassis,</c><00:00:44.680><c> I</c><00:00:44.800><c> opened</c><00:00:45.120><c> ChatGPT</c>
+
+00:00:46.230 --> 00:00:46.240 align:start position:0%
+To design the chassis, I opened ChatGPT
+ 
+
+00:00:46.240 --> 00:00:48.350 align:start position:0%
+To design the chassis, I opened ChatGPT
+and<00:00:46.400><c> used</c><00:00:46.600><c> the</c><00:00:46.720><c> prompt</c><00:00:47.360><c> draw</c><00:00:47.680><c> for</c><00:00:47.840><c> me</c><00:00:47.960><c> a</c><00:00:48.040><c> car</c>
+
+00:00:48.350 --> 00:00:48.360 align:start position:0%
+and used the prompt draw for me a car
+ 
+
+00:00:48.360 --> 00:00:50.990 align:start position:0%
+and used the prompt draw for me a car
+shooter<00:00:48.680><c> chassis</c><00:00:49.440><c> in</c><00:00:49.640><c> multiple</c><00:00:50.080><c> views,</c><00:00:50.760><c> no</c>
+
+00:00:50.990 --> 00:00:51.000 align:start position:0%
+shooter chassis in multiple views, no
+ 
+
+00:00:51.000 --> 00:00:53.630 align:start position:0%
+shooter chassis in multiple views, no
+wheels,<00:00:51.640><c> just</c><00:00:51.960><c> chassis.</c><00:00:52.800><c> Make</c><00:00:53.000><c> it</c><00:00:53.120><c> clear</c><00:00:53.440><c> low</c>
+
+00:00:53.630 --> 00:00:53.640 align:start position:0%
+wheels, just chassis. Make it clear low
+ 
+
+00:00:53.640 --> 00:00:55.010 align:start position:0%
+wheels, just chassis. Make it clear low
+poly<00:00:54.000><c> without</c><00:00:54.360><c> details,</c>
+
+00:00:55.010 --> 00:00:55.020 align:start position:0%
+poly without details,
+ 
+
+00:00:55.020 --> 00:00:55.190 align:start position:0%
+poly without details,
+&gt;&gt; [music]
+
+00:00:55.190 --> 00:00:55.200 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:00:55.200 --> 00:00:57.390 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; just<00:00:55.560><c> multiple</c><00:00:55.960><c> views.</c>
+
+00:00:57.390 --> 00:00:57.400 align:start position:0%
+&gt;&gt; just multiple views.
+ 
+
+00:00:57.400 --> 00:01:00.150 align:start position:0%
+&gt;&gt; just multiple views.
+The<00:00:57.560><c> AI</c><00:00:57.880><c> generated</c><00:00:58.400><c> a</c><00:00:58.440><c> nice</c><00:00:58.760><c> chassis</c><00:00:59.160><c> sketch.</c>
+
+00:01:00.150 --> 00:01:00.160 align:start position:0%
+The AI generated a nice chassis sketch.
+ 
+
+00:01:00.160 --> 00:01:02.830 align:start position:0%
+The AI generated a nice chassis sketch.
+Next,<00:01:00.800><c> I</c><00:01:00.880><c> wanted</c><00:01:01.240><c> more</c><00:01:01.520><c> chassis</c><00:01:01.920><c> variants.</c><00:01:02.680><c> I</c>
+
+00:01:02.830 --> 00:01:02.840 align:start position:0%
+Next, I wanted more chassis variants. I
+ 
+
+00:01:02.840 --> 00:01:05.030 align:start position:0%
+Next, I wanted more chassis variants. I
+asked,<00:01:03.480><c> "Nice,</c><00:01:04.160><c> draw</c><00:01:04.440><c> for</c><00:01:04.559><c> me</c><00:01:04.680><c> another</c>
+
+00:01:05.030 --> 00:01:05.040 align:start position:0%
+asked, "Nice, draw for me another
+ 
+
+00:01:05.040 --> 00:01:07.390 align:start position:0%
+asked, "Nice, draw for me another
+variant<00:01:05.400><c> with</c><00:01:05.519><c> different</c><00:01:05.840><c> style</c><00:01:06.520><c> like</c><00:01:06.800><c> F1</c><00:01:07.280><c> for</c>
+
+00:01:07.390 --> 00:01:07.400 align:start position:0%
+variant with different style like F1 for
+ 
+
+00:01:07.400 --> 00:01:08.750 align:start position:0%
+variant with different style like F1 for
+example."
+
+00:01:08.750 --> 00:01:08.760 align:start position:0%
+example."
+ 
+
+00:01:08.760 --> 00:01:11.150 align:start position:0%
+example."
+The<00:01:08.920><c> AI</c><00:01:09.280><c> generated</c><00:01:09.800><c> a</c><00:01:09.880><c> really</c><00:01:10.200><c> nice</c><00:01:10.560><c> Formula</c><00:01:10.960><c> 1</c>
+
+00:01:11.150 --> 00:01:11.160 align:start position:0%
+The AI generated a really nice Formula 1
+ 
+
+00:01:11.160 --> 00:01:14.190 align:start position:0%
+The AI generated a really nice Formula 1
+style<00:01:11.560><c> chassis</c><00:01:12.240><c> with</c><00:01:12.480><c> white</c><00:01:12.720><c> and</c><00:01:12.840><c> red</c><00:01:13.080><c> colors.</c>
+
+00:01:14.190 --> 00:01:14.200 align:start position:0%
+style chassis with white and red colors.
+ 
+
+00:01:14.200 --> 00:01:16.150 align:start position:0%
+style chassis with white and red colors.
+After<00:01:14.440><c> that,</c><00:01:14.640><c> I</c><00:01:14.720><c> generated</c><00:01:15.240><c> a</c><00:01:15.280><c> military</c><00:01:15.800><c> style</c>
+
+00:01:16.150 --> 00:01:16.160 align:start position:0%
+After that, I generated a military style
+ 
+
+00:01:16.160 --> 00:01:17.910 align:start position:0%
+After that, I generated a military style
+chassis<00:01:16.520><c> as</c><00:01:16.680><c> well.</c>
+
+00:01:17.910 --> 00:01:17.920 align:start position:0%
+chassis as well.
+ 
+
+00:01:17.920 --> 00:01:19.710 align:start position:0%
+chassis as well.
+With<00:01:18.040><c> the</c><00:01:18.160><c> chassis</c><00:01:18.520><c> designs</c><00:01:18.920><c> finished,</c><00:01:19.600><c> it</c>
+
+00:01:19.710 --> 00:01:19.720 align:start position:0%
+With the chassis designs finished, it
+ 
+
+00:01:19.720 --> 00:01:21.630 align:start position:0%
+With the chassis designs finished, it
+was<00:01:19.840><c> time</c><00:01:20.080><c> to</c><00:01:20.200><c> create</c><00:01:20.520><c> wheels.</c><00:01:21.200><c> I</c><00:01:21.280><c> used</c><00:01:21.560><c> the</c>
+
+00:01:21.630 --> 00:01:21.640 align:start position:0%
+was time to create wheels. I used the
+ 
+
+00:01:21.640 --> 00:01:24.390 align:start position:0%
+was time to create wheels. I used the
+prompt<00:01:22.280><c> "Nice,</c><00:01:22.960><c> now</c><00:01:23.200><c> I</c><00:01:23.280><c> want</c><00:01:23.520><c> to</c><00:01:23.600><c> make</c><00:01:23.800><c> wheel.</c>
+
+00:01:24.390 --> 00:01:24.400 align:start position:0%
+prompt "Nice, now I want to make wheel.
+ 
+
+00:01:24.400 --> 00:01:26.790 align:start position:0%
+prompt "Nice, now I want to make wheel.
+Let's<00:01:24.600><c> design</c><00:01:24.920><c> a</c><00:01:25.000><c> wheel."</c><00:01:25.840><c> The</c><00:01:25.960><c> AI</c><00:01:26.320><c> generated</c>
+
+00:01:26.790 --> 00:01:26.800 align:start position:0%
+Let's design a wheel." The AI generated
+ 
+
+00:01:26.800 --> 00:01:27.760 align:start position:0%
+Let's design a wheel." The AI generated
+a<00:01:26.880><c> wheel</c><00:01:27.120><c> design</c>
+
+00:01:27.760 --> 00:01:27.770 align:start position:0%
+a wheel design
+ 
+
+00:01:27.770 --> 00:01:27.790 align:start position:0%
+a wheel design
+&gt;&gt; [music]
+
+00:01:27.790 --> 00:01:27.800 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:01:27.800 --> 00:01:29.230 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; and<00:01:27.920><c> then</c><00:01:28.080><c> I</c><00:01:28.120><c> created</c><00:01:28.560><c> additional</c><00:01:29.040><c> wheel</c>
+
+00:01:29.230 --> 00:01:29.240 align:start position:0%
+&gt;&gt; and then I created additional wheel
+ 
+
+00:01:29.240 --> 00:01:31.590 align:start position:0%
+&gt;&gt; and then I created additional wheel
+styles<00:01:29.960><c> including</c><00:01:30.400><c> Formula</c><00:01:30.800><c> 1</c><00:01:31.040><c> wheels,</c>
+
+00:01:31.590 --> 00:01:31.600 align:start position:0%
+styles including Formula 1 wheels,
+ 
+
+00:01:31.600 --> 00:01:33.070 align:start position:0%
+styles including Formula 1 wheels,
+off-road<00:01:32.080><c> wheels,</c><00:01:32.355><c> [music]</c><00:01:32.640><c> and</c><00:01:32.800><c> chain</c>
+
+00:01:33.070 --> 00:01:33.080 align:start position:0%
+off-road wheels, [music] and chain
+ 
+
+00:01:33.080 --> 00:01:34.150 align:start position:0%
+off-road wheels, [music] and chain
+wheels.
+
+00:01:34.150 --> 00:01:34.160 align:start position:0%
+wheels.
+ 
+
+00:01:34.160 --> 00:01:36.110 align:start position:0%
+wheels.
+Now<00:01:34.280><c> let's</c><00:01:34.520><c> talk</c><00:01:34.680><c> about</c><00:01:34.920><c> turrets.</c><00:01:35.720><c> I</c><00:01:35.800><c> needed</c>
+
+00:01:36.110 --> 00:01:36.120 align:start position:0%
+Now let's talk about turrets. I needed
+ 
+
+00:01:36.120 --> 00:01:37.990 align:start position:0%
+Now let's talk about turrets. I needed
+ideas<00:01:36.520><c> for</c><00:01:36.640><c> weapon</c><00:01:36.941><c> [music]</c><00:01:36.960><c> systems,</c><00:01:37.760><c> so</c><00:01:37.920><c> I</c>
+
+00:01:37.990 --> 00:01:38.000 align:start position:0%
+ideas for weapon [music] systems, so I
+ 
+
+00:01:38.000 --> 00:01:40.390 align:start position:0%
+ideas for weapon [music] systems, so I
+asked,<00:01:38.600><c> "Okay,</c><00:01:39.240><c> now</c><00:01:39.440><c> I</c><00:01:39.520><c> need</c><00:01:39.720><c> suggestions</c><00:01:40.280><c> for</c>
+
+00:01:40.390 --> 00:01:40.400 align:start position:0%
+asked, "Okay, now I need suggestions for
+ 
+
+00:01:40.400 --> 00:01:42.870 align:start position:0%
+asked, "Okay, now I need suggestions for
+turret<00:01:40.760><c> styles</c><00:01:41.440><c> so</c><00:01:41.560><c> I</c><00:01:41.640><c> can</c><00:01:41.760><c> put</c><00:01:41.960><c> them</c><00:01:42.120><c> on</c><00:01:42.240><c> top</c>
+
+00:01:42.870 --> 00:01:42.880 align:start position:0%
+turret styles so I can put them on top
+ 
+
+00:01:42.880 --> 00:01:44.590 align:start position:0%
+turret styles so I can put them on top
+and<00:01:43.000><c> a</c><00:01:43.040><c> machine</c><00:01:43.400><c> gun</c><00:01:43.680><c> or</c><00:01:43.880><c> a</c><00:01:43.920><c> rocket</c><00:01:44.280><c> launcher</c>
+
+00:01:44.590 --> 00:01:44.600 align:start position:0%
+and a machine gun or a rocket launcher
+ 
+
+00:01:44.600 --> 00:01:46.110 align:start position:0%
+and a machine gun or a rocket launcher
+would<00:01:44.720><c> be</c><00:01:44.801><c> [music]</c><00:01:44.880><c> okay,</c><00:01:45.160><c> too."</c>
+
+00:01:46.110 --> 00:01:46.120 align:start position:0%
+would be [music] okay, too."
+ 
+
+00:01:46.120 --> 00:01:48.150 align:start position:0%
+would be [music] okay, too."
+The<00:01:46.240><c> AI</c><00:01:46.560><c> gave</c><00:01:46.800><c> me</c><00:01:46.920><c> multiple</c><00:01:47.400><c> turret</c><00:01:47.680><c> concepts</c>
+
+00:01:48.150 --> 00:01:48.160 align:start position:0%
+The AI gave me multiple turret concepts
+ 
+
+00:01:48.160 --> 00:01:50.470 align:start position:0%
+The AI gave me multiple turret concepts
+with<00:01:48.320><c> visual</c><00:01:48.640><c> references.</c><00:01:49.760><c> I</c><00:01:49.800><c> captured</c><00:01:50.280><c> one</c>
+
+00:01:50.470 --> 00:01:50.480 align:start position:0%
+with visual references. I captured one
+ 
+
+00:01:50.480 --> 00:01:52.350 align:start position:0%
+with visual references. I captured one
+machine<00:01:50.800><c> gun</c><00:01:50.960><c> turret</c><00:01:51.200><c> concept</c><00:01:51.960><c> and</c><00:01:52.080><c> asked</c>
+
+00:01:52.350 --> 00:01:52.360 align:start position:0%
+machine gun turret concept and asked
+ 
+
+00:01:52.360 --> 00:01:54.870 align:start position:0%
+machine gun turret concept and asked
+ChatGPT<00:01:52.960><c> to</c><00:01:53.080><c> create</c><00:01:53.320><c> a</c><00:01:53.360><c> detailed</c><00:01:53.840><c> design.</c><00:01:54.840><c> The</c>
+
+00:01:54.870 --> 00:01:54.880 align:start position:0%
+ChatGPT to create a detailed design. The
+ 
+
+00:01:54.880 --> 00:01:57.270 align:start position:0%
+ChatGPT to create a detailed design. The
+result<00:01:55.320><c> included</c><00:01:55.760><c> multiple</c><00:01:56.160><c> views,</c><00:01:56.760><c> material</c>
+
+00:01:57.270 --> 00:01:57.280 align:start position:0%
+result included multiple views, material
+ 
+
+00:01:57.280 --> 00:01:59.590 align:start position:0%
+result included multiple views, material
+suggestions,<00:01:58.200><c> wireframe</c><00:01:58.680><c> examples,</c><00:01:59.440><c> and</c>
+
+00:01:59.590 --> 00:01:59.600 align:start position:0%
+suggestions, wireframe examples, and
+ 
+
+00:01:59.600 --> 00:02:01.950 align:start position:0%
+suggestions, wireframe examples, and
+color<00:01:59.840><c> variations.</c><00:02:01.000><c> For</c><00:02:01.240><c> easier</c><00:02:01.560><c> modeling</c>
+
+00:02:01.950 --> 00:02:01.960 align:start position:0%
+color variations. For easier modeling
+ 
+
+00:02:01.960 --> 00:02:03.750 align:start position:0%
+color variations. For easier modeling
+later,<00:02:02.520><c> I</c><00:02:02.640><c> asked</c><00:02:02.960><c> for</c><00:02:03.080><c> another</c><00:02:03.400><c> version</c>
+
+00:02:03.750 --> 00:02:03.760 align:start position:0%
+later, I asked for another version
+ 
+
+00:02:03.760 --> 00:02:05.550 align:start position:0%
+later, I asked for another version
+showing<00:02:04.200><c> only</c><00:02:04.600><c> clean</c><00:02:04.960><c> multiple</c><00:02:05.360><c> view</c>
+
+00:02:05.550 --> 00:02:05.560 align:start position:0%
+showing only clean multiple view
+ 
+
+00:02:05.560 --> 00:02:06.870 align:start position:0%
+showing only clean multiple view
+drawings.
+
+00:02:06.870 --> 00:02:06.880 align:start position:0%
+drawings.
+ 
+
+00:02:06.880 --> 00:02:08.749 align:start position:0%
+drawings.
+Next,<00:02:07.071><c> [music]</c><00:02:07.479><c> I</c><00:02:07.600><c> created</c><00:02:07.960><c> a</c><00:02:08.039><c> dual</c><00:02:08.399><c> rocket</c>
+
+00:02:08.749 --> 00:02:08.759 align:start position:0%
+Next, [music] I created a dual rocket
+ 
+
+00:02:08.759 --> 00:02:11.030 align:start position:0%
+Next, [music] I created a dual rocket
+turret.<00:02:09.520><c> The</c><00:02:09.600><c> first</c><00:02:09.920><c> version</c><00:02:10.240><c> looked</c><00:02:10.440><c> good,</c>
+
+00:02:11.030 --> 00:02:11.040 align:start position:0%
+turret. The first version looked good,
+ 
+
+00:02:11.040 --> 00:02:12.910 align:start position:0%
+turret. The first version looked good,
+but<00:02:11.160><c> the</c><00:02:11.280><c> color</c><00:02:11.560><c> was</c><00:02:11.760><c> boring.</c><00:02:12.640><c> After</c>
+
+00:02:12.910 --> 00:02:12.920 align:start position:0%
+but the color was boring. After
+ 
+
+00:02:12.920 --> 00:02:14.670 align:start position:0%
+but the color was boring. After
+requesting<00:02:13.400><c> a</c><00:02:13.440><c> color</c><00:02:13.760><c> update,</c><00:02:14.160><c> the</c><00:02:14.360><c> AI</c>
+
+00:02:14.670 --> 00:02:14.680 align:start position:0%
+requesting a color update, the AI
+ 
+
+00:02:14.680 --> 00:02:16.190 align:start position:0%
+requesting a color update, the AI
+generated<00:02:15.200><c> a</c><00:02:15.280><c> nice</c><00:02:15.586><c> [music]</c><00:02:15.600><c> blue</c><00:02:15.840><c> turret</c>
+
+00:02:16.190 --> 00:02:16.200 align:start position:0%
+generated a nice [music] blue turret
+ 
+
+00:02:16.200 --> 00:02:18.630 align:start position:0%
+generated a nice [music] blue turret
+with<00:02:16.400><c> two</c><00:02:16.560><c> parallel</c><00:02:17.000><c> launchers.</c><00:02:17.959><c> My</c><00:02:18.160><c> plan</c><00:02:18.480><c> was</c>
+
+00:02:18.630 --> 00:02:18.640 align:start position:0%
+with two parallel launchers. My plan was
+ 
+
+00:02:18.640 --> 00:02:20.190 align:start position:0%
+with two parallel launchers. My plan was
+to<00:02:18.720><c> have</c><00:02:18.959><c> each</c><00:02:19.200><c> barrel</c><00:02:19.520><c> launch</c><00:02:19.800><c> a</c><00:02:19.840><c> rocket</c>
+
+00:02:20.190 --> 00:02:20.200 align:start position:0%
+to have each barrel launch a rocket
+ 
+
+00:02:20.200 --> 00:02:22.550 align:start position:0%
+to have each barrel launch a rocket
+independently<00:02:21.120><c> later</c><00:02:21.440><c> in</c><00:02:21.520><c> the</c><00:02:21.600><c> game.</c>
+
+00:02:22.550 --> 00:02:22.560 align:start position:0%
+independently later in the game.
+ 
+
+00:02:22.560 --> 00:02:24.670 align:start position:0%
+independently later in the game.
+I<00:02:22.640><c> also</c><00:02:22.959><c> wanted</c><00:02:23.240><c> a</c><00:02:23.320><c> railgun</c><00:02:23.800><c> turret</c><00:02:24.160><c> inspired</c>
+
+00:02:24.670 --> 00:02:24.680 align:start position:0%
+I also wanted a railgun turret inspired
+ 
+
+00:02:24.680 --> 00:02:26.150 align:start position:0%
+I also wanted a railgun turret inspired
+by<00:02:24.800><c> military</c><00:02:25.360><c> games.</c><00:02:25.411><c> [music]</c>
+
+00:02:26.150 --> 00:02:26.160 align:start position:0%
+by military games. [music]
+ 
+
+00:02:26.160 --> 00:02:28.150 align:start position:0%
+by military games. [music]
+I<00:02:26.280><c> provided</c><00:02:26.760><c> a</c><00:02:26.840><c> reference</c><00:02:27.240><c> image</c><00:02:27.800><c> and</c><00:02:27.920><c> asked</c>
+
+00:02:28.150 --> 00:02:28.160 align:start position:0%
+I provided a reference image and asked
+ 
+
+00:02:28.160 --> 00:02:30.790 align:start position:0%
+I provided a reference image and asked
+ChatGPT<00:02:28.840><c> to</c><00:02:28.959><c> generate</c><00:02:29.360><c> a</c><00:02:29.400><c> similar</c><00:02:29.760><c> design.</c>
+
+00:02:30.790 --> 00:02:30.800 align:start position:0%
+ChatGPT to generate a similar design.
+ 
+
+00:02:30.800 --> 00:02:32.606 align:start position:0%
+ChatGPT to generate a similar design.
+The<00:02:30.959><c> AI</c><00:02:31.280><c> produced</c><00:02:31.680><c> a</c><00:02:31.720><c> nice</c><00:02:32.080><c> blue</c><00:02:32.360><c> and</c><00:02:32.480><c> yellow</c>
+
+00:02:32.606 --> 00:02:32.616 align:start position:0%
+The AI produced a nice blue and yellow
+ 
+
+00:02:32.616 --> 00:02:34.510 align:start position:0%
+The AI produced a nice blue and yellow
+[music]<00:02:32.720><c> color</c><00:02:33.000><c> scheme,</c><00:02:33.760><c> but</c><00:02:33.880><c> since</c><00:02:34.120><c> the</c><00:02:34.240><c> dual</c>
+
+00:02:34.510 --> 00:02:34.520 align:start position:0%
+[music] color scheme, but since the dual
+ 
+
+00:02:34.520 --> 00:02:36.510 align:start position:0%
+[music] color scheme, but since the dual
+rocket<00:02:34.880><c> turret</c><00:02:35.200><c> was</c><00:02:35.400><c> already</c><00:02:35.760><c> blue,</c><00:02:36.440><c> I</c>
+
+00:02:36.510 --> 00:02:36.520 align:start position:0%
+rocket turret was already blue, I
+ 
+
+00:02:36.520 --> 00:02:38.550 align:start position:0%
+rocket turret was already blue, I
+changed<00:02:36.920><c> the</c><00:02:37.040><c> railgun</c><00:02:37.520><c> turret</c><00:02:38.080><c> to</c><00:02:38.200><c> a</c><00:02:38.320><c> red</c>
+
+00:02:38.550 --> 00:02:38.560 align:start position:0%
+changed the railgun turret to a red
+ 
+
+00:02:38.560 --> 00:02:40.190 align:start position:0%
+changed the railgun turret to a red
+theme<00:02:38.800><c> instead.</c>
+
+00:02:40.190 --> 00:02:40.200 align:start position:0%
+theme instead.
+ 
+
+00:02:40.200 --> 00:02:42.230 align:start position:0%
+theme instead.
+Now<00:02:40.400><c> that</c><00:02:40.640><c> all</c><00:02:40.840><c> designs</c><00:02:41.280><c> were</c><00:02:41.400><c> complete,</c><00:02:42.120><c> it</c>
+
+00:02:42.230 --> 00:02:42.240 align:start position:0%
+Now that all designs were complete, it
+ 
+
+00:02:42.240 --> 00:02:43.470 align:start position:0%
+Now that all designs were complete, it
+was<00:02:42.400><c> time</c><00:02:42.640><c> to</c><00:02:42.760><c> turn</c><00:02:43.000><c> them</c><00:02:43.096><c> [music]</c><00:02:43.200><c> into</c>
+
+00:02:43.470 --> 00:02:43.480 align:start position:0%
+was time to turn them [music] into
+ 
+
+00:02:43.480 --> 00:02:47.110 align:start position:0%
+was time to turn them [music] into
+actual<00:02:43.920><c> 3D</c><00:02:44.320><c> models.</c><00:02:45.040><c> I</c><00:02:45.240><c> opened</c><00:02:45.680><c> Mesh</c><00:02:46.000><c> AI</c><00:02:46.959><c> and</c>
+
+00:02:47.110 --> 00:02:47.120 align:start position:0%
+actual 3D models. I opened Mesh AI and
+ 
+
+00:02:47.120 --> 00:02:49.310 align:start position:0%
+actual 3D models. I opened Mesh AI and
+clicked<00:02:47.440><c> workspace</c><00:02:48.080><c> to</c><00:02:48.160><c> begin.</c>
+
+00:02:49.310 --> 00:02:49.320 align:start position:0%
+clicked workspace to begin.
+ 
+
+00:02:49.320 --> 00:02:50.790 align:start position:0%
+clicked workspace to begin.
+For<00:02:49.400><c> the</c><00:02:49.520><c> chassis,</c><00:02:50.000><c> I</c><00:02:50.080><c> prepared</c><00:02:50.560><c> four</c>
+
+00:02:50.790 --> 00:02:50.800 align:start position:0%
+For the chassis, I prepared four
+ 
+
+00:02:50.800 --> 00:02:52.830 align:start position:0%
+For the chassis, I prepared four
+reference<00:02:51.240><c> images</c><00:02:51.959><c> and</c><00:02:52.120><c> placed</c><00:02:52.440><c> the</c><00:02:52.560><c> main</c>
+
+00:02:52.830 --> 00:02:52.840 align:start position:0%
+reference images and placed the main
+ 
+
+00:02:52.840 --> 00:02:54.270 align:start position:0%
+reference images and placed the main
+image<00:02:53.160><c> first.</c>
+
+00:02:54.270 --> 00:02:54.280 align:start position:0%
+image first.
+ 
+
+00:02:54.280 --> 00:02:56.790 align:start position:0%
+image first.
+I<00:02:54.360><c> selected</c><00:02:54.920><c> standard</c><00:02:55.400><c> model</c><00:02:55.720><c> type</c><00:02:56.360><c> and</c><00:02:56.520><c> chose</c>
+
+00:02:56.790 --> 00:02:56.800 align:start position:0%
+I selected standard model type and chose
+ 
+
+00:02:56.800 --> 00:02:59.310 align:start position:0%
+I selected standard model type and chose
+Meshy<00:02:57.200><c> 6,</c><00:02:58.000><c> which</c><00:02:58.160><c> is</c><00:02:58.280><c> currently</c><00:02:58.760><c> the</c><00:02:58.880><c> latest</c>
+
+00:02:59.310 --> 00:02:59.320 align:start position:0%
+Meshy 6, which is currently the latest
+ 
+
+00:02:59.320 --> 00:03:00.790 align:start position:0%
+Meshy 6, which is currently the latest
+AI<00:02:59.640><c> model.</c>
+
+00:03:00.790 --> 00:03:00.800 align:start position:0%
+AI model.
+ 
+
+00:03:00.800 --> 00:03:02.670 align:start position:0%
+AI model.
+I<00:03:00.920><c> enabled</c><00:03:01.360><c> multiple</c><00:03:01.437><c> [music]</c><00:03:01.800><c> views</c><00:03:02.480><c> and</c>
+
+00:03:02.670 --> 00:03:02.680 align:start position:0%
+I enabled multiple [music] views and
+ 
+
+00:03:02.680 --> 00:03:07.910 align:start position:0%
+I enabled multiple [music] views and
+uploaded<00:03:03.160><c> the</c><00:03:03.239><c> remaining</c><00:03:03.680><c> chassis</c><00:03:04.120><c> images.</c>
+
+00:03:07.910 --> 00:03:07.920 align:start position:0%
+ 
+ 
+
+00:03:07.920 --> 00:03:09.710 align:start position:0%
+ 
+After<00:03:08.160><c> clicking</c><00:03:08.519><c> generate</c><00:03:09.280><c> and</c><00:03:09.400><c> waiting</c><00:03:09.680><c> a</c>
+
+00:03:09.710 --> 00:03:09.720 align:start position:0%
+After clicking generate and waiting a
+ 
+
+00:03:09.720 --> 00:03:12.030 align:start position:0%
+After clicking generate and waiting a
+few<00:03:09.920><c> seconds,</c><00:03:10.720><c> the</c><00:03:10.800><c> result</c><00:03:11.160><c> was</c><00:03:11.280><c> not</c><00:03:11.480><c> exactly</c>
+
+00:03:12.030 --> 00:03:12.040 align:start position:0%
+few seconds, the result was not exactly
+ 
+
+00:03:12.040 --> 00:03:14.630 align:start position:0%
+few seconds, the result was not exactly
+what<00:03:12.200><c> I</c><00:03:12.280><c> expected.</c><00:03:13.280><c> Meshy</c><00:03:13.680><c> added</c><00:03:14.000><c> four</c><00:03:14.320><c> wheel</c>
+
+00:03:14.630 --> 00:03:14.640 align:start position:0%
+what I expected. Meshy added four wheel
+ 
+
+00:03:14.640 --> 00:03:16.630 align:start position:0%
+what I expected. Meshy added four wheel
+rings,<00:03:15.320><c> even</c><00:03:15.560><c> though</c><00:03:15.720><c> the</c><00:03:15.800><c> design</c><00:03:16.239><c> images</c>
+
+00:03:16.630 --> 00:03:16.640 align:start position:0%
+rings, even though the design images
+ 
+
+00:03:16.640 --> 00:03:18.949 align:start position:0%
+rings, even though the design images
+contained<00:03:17.160><c> no</c><00:03:17.440><c> wheels.</c>
+
+00:03:18.949 --> 00:03:18.959 align:start position:0%
+contained no wheels.
+ 
+
+00:03:18.959 --> 00:03:20.422 align:start position:0%
+contained no wheels.
+I<00:03:19.040><c> decided</c><00:03:19.440><c> to</c><00:03:19.519><c> keep</c><00:03:19.720><c> the</c><00:03:19.840><c> result</c><00:03:20.200><c> anyway</c>
+
+00:03:20.422 --> 00:03:20.432 align:start position:0%
+I decided to keep the result anyway
+ 
+
+00:03:20.432 --> 00:03:22.830 align:start position:0%
+I decided to keep the result anyway
+[music]<00:03:20.560><c> and</c><00:03:20.720><c> fix</c><00:03:20.959><c> it</c><00:03:21.080><c> later</c><00:03:21.400><c> inside</c><00:03:21.840><c> Blender.</c>
+
+00:03:22.830 --> 00:03:22.840 align:start position:0%
+[music] and fix it later inside Blender.
+ 
+
+00:03:22.840 --> 00:03:24.949 align:start position:0%
+[music] and fix it later inside Blender.
+Next,<00:03:23.160><c> I</c><00:03:23.239><c> clicked</c><00:03:23.560><c> texture</c><00:03:24.320><c> to</c><00:03:24.440><c> generate</c>
+
+00:03:24.949 --> 00:03:24.959 align:start position:0%
+Next, I clicked texture to generate
+ 
+
+00:03:24.959 --> 00:03:26.110 align:start position:0%
+Next, I clicked texture to generate
+textures.
+
+00:03:26.110 --> 00:03:26.120 align:start position:0%
+textures.
+ 
+
+00:03:26.120 --> 00:03:27.990 align:start position:0%
+textures.
+One<00:03:26.320><c> important</c><00:03:26.760><c> thing</c><00:03:26.920><c> to</c><00:03:27.040><c> note</c><00:03:27.680><c> is</c><00:03:27.800><c> that</c>
+
+00:03:27.990 --> 00:03:28.000 align:start position:0%
+One important thing to note is that
+ 
+
+00:03:28.000 --> 00:03:30.350 align:start position:0%
+One important thing to note is that
+Meshy's<00:03:28.360><c> initial</c><00:03:28.760><c> results</c><00:03:29.480><c> are</c><00:03:29.640><c> usually</c><00:03:30.000><c> very</c>
+
+00:03:30.350 --> 00:03:30.360 align:start position:0%
+Meshy's initial results are usually very
+ 
+
+00:03:30.360 --> 00:03:31.630 align:start position:0%
+Meshy's initial results are usually very
+high<00:03:30.560><c> poly.</c>
+
+00:03:31.630 --> 00:03:31.640 align:start position:0%
+high poly.
+ 
+
+00:03:31.640 --> 00:03:33.830 align:start position:0%
+high poly.
+This<00:03:31.840><c> chassis</c><00:03:32.239><c> came</c><00:03:32.480><c> out</c><00:03:32.600><c> at</c><00:03:32.720><c> around</c><00:03:33.000><c> 400,000</c>
+
+00:03:33.830 --> 00:03:33.840 align:start position:0%
+This chassis came out at around 400,000
+ 
+
+00:03:33.840 --> 00:03:35.790 align:start position:0%
+This chassis came out at around 400,000
+triangles,<00:03:34.680><c> which</c><00:03:34.840><c> is</c><00:03:34.959><c> far</c><00:03:35.239><c> too</c><00:03:35.400><c> much</c><00:03:35.640><c> for</c>
+
+00:03:35.790 --> 00:03:35.800 align:start position:0%
+triangles, which is far too much for
+ 
+
+00:03:35.800 --> 00:03:36.990 align:start position:0%
+triangles, which is far too much for
+Roblox.
+
+00:03:36.990 --> 00:03:37.000 align:start position:0%
+Roblox.
+ 
+
+00:03:37.000 --> 00:03:38.550 align:start position:0%
+Roblox.
+To<00:03:37.120><c> optimize</c><00:03:37.640><c> it,</c><00:03:38.080><c> I</c><00:03:38.117><c> [music]</c><00:03:38.200><c> clicked</c>
+
+00:03:38.550 --> 00:03:38.560 align:start position:0%
+To optimize it, I [music] clicked
+ 
+
+00:03:38.560 --> 00:03:41.110 align:start position:0%
+To optimize it, I [music] clicked
+remesh.<00:03:39.600><c> Meshy</c><00:03:39.880><c> provides</c><00:03:40.320><c> both</c><00:03:40.600><c> fixed</c><00:03:41.000><c> and</c>
+
+00:03:41.110 --> 00:03:41.120 align:start position:0%
+remesh. Meshy provides both fixed and
+ 
+
+00:03:41.120 --> 00:03:43.430 align:start position:0%
+remesh. Meshy provides both fixed and
+adaptive<00:03:41.600><c> options,</c><00:03:42.400><c> but</c><00:03:42.560><c> I</c><00:03:42.640><c> usually</c><00:03:43.040><c> prefer</c>
+
+00:03:43.430 --> 00:03:43.440 align:start position:0%
+adaptive options, but I usually prefer
+ 
+
+00:03:43.440 --> 00:03:45.150 align:start position:0%
+adaptive options, but I usually prefer
+adaptive<00:03:44.320><c> because</c><00:03:44.560><c> it</c><00:03:44.680><c> gives</c><00:03:44.920><c> better</c>
+
+00:03:45.150 --> 00:03:45.160 align:start position:0%
+adaptive because it gives better
+ 
+
+00:03:45.160 --> 00:03:46.310 align:start position:0%
+adaptive because it gives better
+results.
+
+00:03:46.310 --> 00:03:46.320 align:start position:0%
+results.
+ 
+
+00:03:46.320 --> 00:03:47.277 align:start position:0%
+results.
+After<00:03:46.600><c> remeshing,</c>
+
+00:03:47.277 --> 00:03:47.287 align:start position:0%
+After remeshing,
+ 
+
+00:03:47.287 --> 00:03:47.470 align:start position:0%
+After remeshing,
+&gt;&gt; [music]
+
+00:03:47.470 --> 00:03:47.480 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:03:47.480 --> 00:03:49.430 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; the<00:03:47.600><c> triangle</c><00:03:48.040><c> count</c><00:03:48.320><c> dropped</c><00:03:48.959><c> to</c><00:03:49.080><c> around</c>
+
+00:03:49.430 --> 00:03:49.440 align:start position:0%
+&gt;&gt; the triangle count dropped to around
+ 
+
+00:03:49.440 --> 00:03:51.790 align:start position:0%
+&gt;&gt; the triangle count dropped to around
+6,000<00:03:50.080><c> triangles,</c><00:03:51.000><c> which</c><00:03:51.160><c> is</c><00:03:51.280><c> perfectly</c>
+
+00:03:51.790 --> 00:03:51.800 align:start position:0%
+6,000 triangles, which is perfectly
+ 
+
+00:03:51.800 --> 00:03:53.870 align:start position:0%
+6,000 triangles, which is perfectly
+acceptable<00:03:52.400><c> for</c><00:03:52.560><c> Roblox.</c>
+
+00:03:53.870 --> 00:03:53.880 align:start position:0%
+acceptable for Roblox.
+ 
+
+00:03:53.880 --> 00:03:55.792 align:start position:0%
+acceptable for Roblox.
+I<00:03:53.960><c> then</c><00:03:54.200><c> downloaded</c><00:03:54.760><c> the</c><00:03:54.840><c> model</c><00:03:55.200><c> as</c><00:03:55.360><c> an</c><00:03:55.520><c> FBX</c>
+
+00:03:55.792 --> 00:03:55.802 align:start position:0%
+I then downloaded the model as an FBX
+ 
+
+00:03:55.802 --> 00:04:01.670 align:start position:0%
+I then downloaded the model as an FBX
+[music]<00:03:56.080><c> file.</c>
+
+00:04:01.670 --> 00:04:01.680 align:start position:0%
+ 
+ 
+
+00:04:01.680 --> 00:04:04.470 align:start position:0%
+ 
+Next,<00:04:02.320><c> I</c><00:04:02.480><c> opened</c><00:04:02.880><c> Blender.</c><00:04:03.680><c> Since</c><00:04:03.920><c> Meshy</c><00:04:04.280><c> had</c>
+
+00:04:04.470 --> 00:04:04.480 align:start position:0%
+Next, I opened Blender. Since Meshy had
+ 
+
+00:04:04.480 --> 00:04:06.272 align:start position:0%
+Next, I opened Blender. Since Meshy had
+added<00:04:04.760><c> those</c><00:04:05.000><c> unwanted</c><00:04:05.560><c> wheel</c><00:04:05.840><c> rings,</c>
+
+00:04:06.272 --> 00:04:06.282 align:start position:0%
+added those unwanted wheel rings,
+ 
+
+00:04:06.282 --> 00:04:07.550 align:start position:0%
+added those unwanted wheel rings,
+[music]<00:04:06.560><c> I</c><00:04:06.640><c> needed</c><00:04:06.959><c> to</c><00:04:07.040><c> remove</c><00:04:07.400><c> them</c>
+
+00:04:07.550 --> 00:04:07.560 align:start position:0%
+[music] I needed to remove them
+ 
+
+00:04:07.560 --> 00:04:08.830 align:start position:0%
+[music] I needed to remove them
+manually.
+
+00:04:08.830 --> 00:04:08.840 align:start position:0%
+manually.
+ 
+
+00:04:08.840 --> 00:04:12.190 align:start position:0%
+manually.
+I<00:04:08.959><c> imported</c><00:04:09.440><c> the</c><00:04:09.520><c> chassis,</c>
+
+00:04:12.190 --> 00:04:12.200 align:start position:0%
+ 
+ 
+
+00:04:12.200 --> 00:04:14.630 align:start position:0%
+ 
+switched<00:04:12.560><c> to</c><00:04:12.680><c> edit</c><00:04:12.959><c> mode</c><00:04:13.200><c> by</c><00:04:13.360><c> pressing</c><00:04:13.760><c> tab,</c>
+
+00:04:14.630 --> 00:04:14.640 align:start position:0%
+switched to edit mode by pressing tab,
+ 
+
+00:04:14.640 --> 00:04:16.750 align:start position:0%
+switched to edit mode by pressing tab,
+selected<00:04:15.200><c> any</c><00:04:15.400><c> vertex</c><00:04:15.452><c> [music]</c><00:04:15.880><c> on</c><00:04:16.000><c> a</c><00:04:16.040><c> wheel,</c>
+
+00:04:16.750 --> 00:04:16.760 align:start position:0%
+selected any vertex [music] on a wheel,
+ 
+
+00:04:16.760 --> 00:04:19.110 align:start position:0%
+selected any vertex [music] on a wheel,
+then<00:04:16.920><c> pressed</c><00:04:17.320><c> L</c><00:04:17.799><c> while</c><00:04:18.000><c> pointing</c><00:04:18.359><c> at</c><00:04:18.519><c> it.</c>
+
+00:04:19.110 --> 00:04:19.120 align:start position:0%
+then pressed L while pointing at it.
+ 
+
+00:04:19.120 --> 00:04:20.750 align:start position:0%
+then pressed L while pointing at it.
+Blender<00:04:19.560><c> automatically</c><00:04:20.200><c> selected</c><00:04:20.640><c> the</c>
+
+00:04:20.750 --> 00:04:20.760 align:start position:0%
+Blender automatically selected the
+ 
+
+00:04:20.760 --> 00:04:23.510 align:start position:0%
+Blender automatically selected the
+entire<00:04:21.200><c> wheel</c><00:04:21.480><c> mesh.</c><00:04:22.280><c> I</c><00:04:22.360><c> pressed</c><00:04:22.760><c> X</c><00:04:23.360><c> and</c>
+
+00:04:23.510 --> 00:04:23.520 align:start position:0%
+entire wheel mesh. I pressed X and
+ 
+
+00:04:23.520 --> 00:04:25.750 align:start position:0%
+entire wheel mesh. I pressed X and
+deleted<00:04:23.960><c> it.</c><00:04:24.680><c> After</c><00:04:24.919><c> repeating</c><00:04:25.360><c> the</c><00:04:25.440><c> same</c>
+
+00:04:25.750 --> 00:04:25.760 align:start position:0%
+deleted it. After repeating the same
+ 
+
+00:04:25.760 --> 00:04:27.830 align:start position:0%
+deleted it. After repeating the same
+process<00:04:26.240><c> for</c><00:04:26.360><c> the</c><00:04:26.440><c> remaining</c><00:04:26.880><c> wheel</c><00:04:27.120><c> rings,</c>
+
+00:04:27.830 --> 00:04:27.840 align:start position:0%
+process for the remaining wheel rings,
+ 
+
+00:04:27.840 --> 00:04:32.030 align:start position:0%
+process for the remaining wheel rings,
+the<00:04:27.960><c> chassis</c><00:04:28.320><c> was</c><00:04:28.480><c> clean.</c>
+
+00:04:32.030 --> 00:04:32.040 align:start position:0%
+ 
+ 
+
+00:04:32.040 --> 00:04:34.110 align:start position:0%
+ 
+I<00:04:32.120><c> switched</c><00:04:32.480><c> back</c><00:04:32.680><c> to</c><00:04:32.840><c> object</c><00:04:33.280><c> mode</c><00:04:33.880><c> and</c>
+
+00:04:34.110 --> 00:04:34.120 align:start position:0%
+I switched back to object mode and
+ 
+
+00:04:34.120 --> 00:04:36.670 align:start position:0%
+I switched back to object mode and
+exported<00:04:34.448><c> [music]</c><00:04:34.640><c> the</c><00:04:34.720><c> chassis</c><00:04:35.120><c> as</c><00:04:35.320><c> FBX.</c><00:04:36.600><c> I</c>
+
+00:04:36.670 --> 00:04:36.680 align:start position:0%
+exported [music] the chassis as FBX. I
+ 
+
+00:04:36.680 --> 00:04:39.110 align:start position:0%
+exported [music] the chassis as FBX. I
+set<00:04:36.919><c> path</c><00:04:37.240><c> mode</c><00:04:37.440><c> to</c><00:04:37.560><c> copy,</c><00:04:38.320><c> enabled</c><00:04:38.720><c> embedded</c>
+
+00:04:39.110 --> 00:04:39.120 align:start position:0%
+set path mode to copy, enabled embedded
+ 
+
+00:04:39.120 --> 00:04:40.870 align:start position:0%
+set path mode to copy, enabled embedded
+textures,<00:04:40.000><c> enabled</c><00:04:40.343><c> [music]</c><00:04:40.440><c> selected</c>
+
+00:04:40.870 --> 00:04:40.880 align:start position:0%
+textures, enabled [music] selected
+ 
+
+00:04:40.880 --> 00:04:44.390 align:start position:0%
+textures, enabled [music] selected
+objects,<00:04:41.640><c> and</c><00:04:41.800><c> set</c><00:04:42.040><c> scale</c><00:04:42.440><c> to</c><00:04:42.600><c> 0.01.</c>
+
+00:04:44.390 --> 00:04:44.400 align:start position:0%
+objects, and set scale to 0.01.
+ 
+
+00:04:44.400 --> 00:04:46.470 align:start position:0%
+objects, and set scale to 0.01.
+After<00:04:44.680><c> that,</c><00:04:45.280><c> I</c><00:04:45.360><c> returned</c><00:04:45.800><c> to</c><00:04:45.880><c> Meshy</c><00:04:46.280><c> and</c>
+
+00:04:46.470 --> 00:04:46.480 align:start position:0%
+After that, I returned to Meshy and
+ 
+
+00:04:46.480 --> 00:04:48.110 align:start position:0%
+After that, I returned to Meshy and
+generated<00:04:47.040><c> all</c><00:04:47.240><c> the</c><00:04:47.360><c> remaining</c><00:04:47.760><c> vehicle</c>
+
+00:04:48.110 --> 00:04:48.120 align:start position:0%
+generated all the remaining vehicle
+ 
+
+00:04:48.120 --> 00:04:49.150 align:start position:0%
+generated all the remaining vehicle
+parts.
+
+00:04:49.150 --> 00:04:49.160 align:start position:0%
+parts.
+ 
+
+00:04:49.160 --> 00:04:50.870 align:start position:0%
+parts.
+The<00:04:49.240><c> F1</c><00:04:49.513><c> [music]</c><00:04:49.600><c> chassis</c><00:04:50.040><c> had</c><00:04:50.160><c> a</c><00:04:50.240><c> small</c><00:04:50.600><c> issue</c>
+
+00:04:50.870 --> 00:04:50.880 align:start position:0%
+The F1 [music] chassis had a small issue
+ 
+
+00:04:50.880 --> 00:04:52.670 align:start position:0%
+The F1 [music] chassis had a small issue
+because<00:04:51.200><c> Meshy</c><00:04:51.560><c> generated</c><00:04:52.120><c> four</c><00:04:52.360><c> side</c>
+
+00:04:52.670 --> 00:04:52.680 align:start position:0%
+because Meshy generated four side
+ 
+
+00:04:52.680 --> 00:04:54.909 align:start position:0%
+because Meshy generated four side
+mirrors.<00:04:53.640><c> I</c><00:04:53.720><c> removed</c><00:04:54.080><c> those</c><00:04:54.280><c> in</c><00:04:54.400><c> Blender</c><00:04:54.760><c> as</c>
+
+00:04:54.909 --> 00:04:54.919 align:start position:0%
+mirrors. I removed those in Blender as
+ 
+
+00:04:54.919 --> 00:04:57.390 align:start position:0%
+mirrors. I removed those in Blender as
+well.
+
+00:04:57.390 --> 00:04:57.400 align:start position:0%
+ 
+ 
+
+00:04:57.400 --> 00:04:59.670 align:start position:0%
+ 
+The<00:04:57.480><c> military</c><00:04:58.000><c> chassis</c><00:04:58.360><c> looked</c><00:04:58.640><c> great.</c><00:04:59.400><c> All</c>
+
+00:04:59.670 --> 00:04:59.680 align:start position:0%
+The military chassis looked great. All
+ 
+
+00:04:59.680 --> 00:05:03.070 align:start position:0%
+The military chassis looked great. All
+wheel<00:04:59.919><c> models</c><00:05:00.280><c> were</c><00:05:00.400><c> fine.</c>
+
+00:05:03.070 --> 00:05:03.080 align:start position:0%
+ 
+ 
+
+00:05:03.080 --> 00:05:05.390 align:start position:0%
+ 
+All<00:05:03.280><c> turret</c><00:05:03.600><c> models</c><00:05:03.919><c> were</c><00:05:04.040><c> also</c><00:05:04.320><c> good.</c><00:05:05.240><c> Since</c>
+
+00:05:05.390 --> 00:05:05.400 align:start position:0%
+All turret models were also good. Since
+ 
+
+00:05:05.400 --> 00:05:06.590 align:start position:0%
+All turret models were also good. Since
+we<00:05:05.480><c> don't</c><00:05:05.680><c> need</c><00:05:05.919><c> turret</c><00:05:06.160><c> bones</c><00:05:06.480><c> for</c><00:05:06.543><c> [music]</c>
+
+00:05:06.590 --> 00:05:06.600 align:start position:0%
+we don't need turret bones for [music]
+ 
+
+00:05:06.600 --> 00:05:08.350 align:start position:0%
+we don't need turret bones for [music]
+this<00:05:06.760><c> project,</c><00:05:07.480><c> there</c><00:05:07.600><c> was</c><00:05:07.720><c> no</c><00:05:07.880><c> need</c><00:05:08.080><c> to</c><00:05:08.200><c> rig</c>
+
+00:05:08.350 --> 00:05:08.360 align:start position:0%
+this project, there was no need to rig
+ 
+
+00:05:08.360 --> 00:05:10.470 align:start position:0%
+this project, there was no need to rig
+them.<00:05:08.960><c> We</c><00:05:09.080><c> can</c><00:05:09.240><c> simply</c><00:05:09.640><c> rotate</c><00:05:10.080><c> turrets</c>
+
+00:05:10.470 --> 00:05:10.480 align:start position:0%
+them. We can simply rotate turrets
+ 
+
+00:05:10.480 --> 00:05:12.950 align:start position:0%
+them. We can simply rotate turrets
+directly<00:05:10.960><c> in</c><00:05:11.080><c> Roblox</c><00:05:11.520><c> Studio</c><00:05:11.919><c> later.</c><00:05:12.560><c> All</c>
+
+00:05:12.950 --> 00:05:12.960 align:start position:0%
+directly in Roblox Studio later. All
+ 
+
+00:05:12.960 --> 00:05:15.430 align:start position:0%
+directly in Roblox Studio later. All
+models<00:05:13.480><c> completed.</c><00:05:14.400><c> It</c><00:05:14.520><c> was</c><00:05:14.720><c> time</c><00:05:15.000><c> to</c><00:05:15.120><c> move</c>
+
+00:05:15.430 --> 00:05:15.440 align:start position:0%
+models completed. It was time to move
+ 
+
+00:05:15.440 --> 00:05:17.590 align:start position:0%
+models completed. It was time to move
+into<00:05:15.720><c> Roblox</c><00:05:16.320><c> Studio.</c>
+
+00:05:17.590 --> 00:05:17.600 align:start position:0%
+into Roblox Studio.
+ 
+
+00:05:17.600 --> 00:05:20.070 align:start position:0%
+into Roblox Studio.
+I<00:05:17.680><c> created</c><00:05:18.120><c> a</c><00:05:18.160><c> new</c><00:05:18.440><c> project</c><00:05:19.080><c> and</c><00:05:19.200><c> imported</c><00:05:19.640><c> the</c>
+
+00:05:20.070 --> 00:05:20.080 align:start position:0%
+I created a new project and imported the
+ 
+
+00:05:20.080 --> 00:05:27.790 align:start position:0%
+I created a new project and imported the
+one<00:05:20.280><c> chassis</c><00:05:20.720><c> first.</c>
+
+00:05:27.790 --> 00:05:27.800 align:start position:0%
+ 
+ 
+
+00:05:27.800 --> 00:05:30.150 align:start position:0%
+ 
+After<00:05:28.120><c> scaling</c><00:05:28.600><c> it</c><00:05:28.720><c> up,</c><00:05:29.240><c> I</c><00:05:29.360><c> imported</c><00:05:29.800><c> a</c><00:05:29.880><c> wheel</c>
+
+00:05:30.150 --> 00:05:30.160 align:start position:0%
+After scaling it up, I imported a wheel
+ 
+
+00:05:30.160 --> 00:05:32.078 align:start position:0%
+After scaling it up, I imported a wheel
+model<00:05:30.720><c> and</c><00:05:30.880><c> positioned</c><00:05:31.400><c> it</c><00:05:31.560><c> at</c><00:05:31.680><c> the</c><00:05:31.800><c> wheel</c>
+
+00:05:32.078 --> 00:05:32.088 align:start position:0%
+model and positioned it at the wheel
+ 
+
+00:05:32.088 --> 00:05:41.950 align:start position:0%
+model and positioned it at the wheel
+[music]<00:05:32.120><c> location.</c>
+
+00:05:41.950 --> 00:05:41.960 align:start position:0%
+ 
+ 
+
+00:05:41.960 --> 00:05:44.070 align:start position:0%
+ 
+Then<00:05:42.120><c> I</c><00:05:42.200><c> duplicated</c><00:05:42.880><c> it</c><00:05:43.080><c> three</c><00:05:43.360><c> more</c><00:05:43.600><c> times</c>
+
+00:05:44.070 --> 00:05:44.080 align:start position:0%
+Then I duplicated it three more times
+ 
+
+00:05:44.080 --> 00:05:47.630 align:start position:0%
+Then I duplicated it three more times
+for<00:05:44.200><c> the</c><00:05:44.320><c> remaining</c><00:05:44.533><c> [music]</c><00:05:44.760><c> wheels.</c>
+
+00:05:47.630 --> 00:05:47.640 align:start position:0%
+ 
+ 
+
+00:05:47.640 --> 00:05:49.030 align:start position:0%
+ 
+Calling<00:05:48.280><c> me</c>
+
+00:05:49.030 --> 00:05:49.040 align:start position:0%
+Calling me
+ 
+
+00:05:49.040 --> 00:05:52.270 align:start position:0%
+Calling me
+to<00:05:49.520><c> believe.</c>
+
+00:05:52.270 --> 00:05:52.280 align:start position:0%
+ 
+ 
+
+00:05:52.280 --> 00:05:54.390 align:start position:0%
+ 
+&gt;&gt; Next,<00:05:52.640><c> I</c><00:05:52.720><c> imported</c><00:05:53.200><c> the</c><00:05:53.280><c> rocket</c><00:05:53.680><c> turret</c><00:05:54.240><c> and</c>
+
+00:05:54.390 --> 00:05:54.400 align:start position:0%
+&gt;&gt; Next, I imported the rocket turret and
+ 
+
+00:05:54.400 --> 00:05:57.230 align:start position:0%
+&gt;&gt; Next, I imported the rocket turret and
+placed<00:05:54.720><c> it</c><00:05:54.840><c> on</c><00:05:54.960><c> top</c><00:05:55.240><c> of</c><00:05:55.320><c> the</c><00:05:55.520><c> F-1</c><00:05:55.920><c> chassis.</c>
+
+00:05:57.230 --> 00:05:57.240 align:start position:0%
+placed it on top of the F-1 chassis.
+ 
+
+00:05:57.240 --> 00:05:58.710 align:start position:0%
+placed it on top of the F-1 chassis.
+Now,<00:05:57.440><c> we</c><00:05:57.560><c> had</c><00:05:57.634><c> [music]</c><00:05:57.720><c> a</c><00:05:57.760><c> complete</c><00:05:58.320><c> vehicle</c>
+
+00:05:58.710 --> 00:05:58.720 align:start position:0%
+Now, we had [music] a complete vehicle
+ 
+
+00:05:58.720 --> 00:06:01.390 align:start position:0%
+Now, we had [music] a complete vehicle
+assembled<00:05:59.200><c> from</c><00:05:59.400><c> individual</c><00:06:00.000><c> modular</c><00:06:00.440><c> parts.</c>
+
+00:06:01.390 --> 00:06:01.400 align:start position:0%
+assembled from individual modular parts.
+ 
+
+00:06:01.400 --> 00:06:03.470 align:start position:0%
+assembled from individual modular parts.
+The<00:06:01.520><c> next</c><00:06:01.760><c> step</c><00:06:02.000><c> was</c><00:06:02.120><c> very</c><00:06:02.400><c> important.</c><00:06:03.360><c> We</c>
+
+00:06:03.470 --> 00:06:03.480 align:start position:0%
+The next step was very important. We
+ 
+
+00:06:03.480 --> 00:06:05.470 align:start position:0%
+The next step was very important. We
+needed<00:06:03.800><c> attachment</c><00:06:04.360><c> points</c><00:06:04.760><c> so</c><00:06:05.000><c> AI</c><00:06:05.320><c> could</c>
+
+00:06:05.470 --> 00:06:05.480 align:start position:0%
+needed attachment points so AI could
+ 
+
+00:06:05.480 --> 00:06:08.270 align:start position:0%
+needed attachment points so AI could
+dynamically<00:06:06.120><c> assemble</c><00:06:06.520><c> vehicles</c><00:06:07.000><c> later.</c>
+
+00:06:08.270 --> 00:06:08.280 align:start position:0%
+dynamically assemble vehicles later.
+ 
+
+00:06:08.280 --> 00:06:10.590 align:start position:0%
+dynamically assemble vehicles later.
+Inside<00:06:08.680><c> the</c><00:06:08.800><c> F-1</c><00:06:09.160><c> chassis</c><00:06:09.520><c> model,</c><00:06:10.120><c> I</c><00:06:10.200><c> created</c>
+
+00:06:10.590 --> 00:06:10.600 align:start position:0%
+Inside the F-1 chassis model, I created
+ 
+
+00:06:10.600 --> 00:06:12.710 align:start position:0%
+Inside the F-1 chassis model, I created
+a<00:06:10.680><c> folder</c><00:06:11.040><c> called</c><00:06:11.400><c> wheel</c><00:06:11.640><c> points.</c>
+
+00:06:12.710 --> 00:06:12.720 align:start position:0%
+a folder called wheel points.
+ 
+
+00:06:12.720 --> 00:06:14.150 align:start position:0%
+a folder called wheel points.
+Inside<00:06:13.120><c> that</c><00:06:13.320><c> folder,</c><00:06:13.680><c> I</c><00:06:13.800><c> added</c><00:06:14.080><c> an</c>
+
+00:06:14.150 --> 00:06:14.160 align:start position:0%
+Inside that folder, I added an
+ 
+
+00:06:14.160 --> 00:06:16.030 align:start position:0%
+Inside that folder, I added an
+attachment<00:06:14.720><c> named</c><00:06:15.000><c> front</c><00:06:15.320><c> left</c><00:06:15.880><c> and</c>
+
+00:06:16.030 --> 00:06:16.040 align:start position:0%
+attachment named front left and
+ 
+
+00:06:16.040 --> 00:06:17.830 align:start position:0%
+attachment named front left and
+positioned<00:06:16.520><c> it</c><00:06:16.640><c> exactly</c><00:06:17.360><c> at</c><00:06:17.480><c> the</c><00:06:17.600><c> wheel</c>
+
+00:06:17.830 --> 00:06:17.840 align:start position:0%
+positioned it exactly at the wheel
+ 
+
+00:06:17.840 --> 00:06:19.510 align:start position:0%
+positioned it exactly at the wheel
+location.
+
+00:06:19.510 --> 00:06:19.520 align:start position:0%
+location.
+ 
+
+00:06:19.520 --> 00:06:20.909 align:start position:0%
+location.
+I<00:06:19.600><c> repeated</c><00:06:20.040><c> this</c><00:06:20.160><c> process</c><00:06:20.680><c> for</c><00:06:20.800><c> the</c>
+
+00:06:20.909 --> 00:06:20.919 align:start position:0%
+I repeated this process for the
+ 
+
+00:06:20.919 --> 00:06:54.030 align:start position:0%
+I repeated this process for the
+remaining<00:06:21.360><c> three</c><00:06:21.640><c> wheels.</c>
+
+00:06:54.030 --> 00:06:54.040 align:start position:0%
+ 
+ 
+
+00:06:54.040 --> 00:06:55.430 align:start position:0%
+ 
+Then,<00:06:54.240><c> I</c><00:06:54.320><c> created</c><00:06:54.720><c> another</c><00:06:55.080><c> folder</c><00:06:55.274><c> [music]</c>
+
+00:06:55.430 --> 00:06:55.440 align:start position:0%
+Then, I created another folder [music]
+ 
+
+00:06:55.440 --> 00:06:57.190 align:start position:0%
+Then, I created another folder [music]
+for<00:06:55.560><c> turret</c><00:06:55.880><c> attachments.</c>
+
+00:06:57.190 --> 00:06:57.200 align:start position:0%
+for turret attachments.
+ 
+
+00:06:57.200 --> 00:06:59.150 align:start position:0%
+for turret attachments.
+Inside<00:06:57.680><c> it,</c><00:06:57.840><c> I</c><00:06:57.919><c> added</c><00:06:58.200><c> an</c><00:06:58.320><c> attachment</c><00:06:58.840><c> named</c>
+
+00:06:59.150 --> 00:06:59.160 align:start position:0%
+Inside it, I added an attachment named
+ 
+
+00:06:59.160 --> 00:07:01.030 align:start position:0%
+Inside it, I added an attachment named
+main<00:06:59.440><c> turret</c><00:07:00.040><c> and</c><00:07:00.200><c> positioned</c><00:07:00.680><c> it</c><00:07:00.800><c> where</c><00:07:00.880><c> the</c>
+
+00:07:01.030 --> 00:07:01.040 align:start position:0%
+main turret and positioned it where the
+ 
+
+00:07:01.040 --> 00:07:15.630 align:start position:0%
+main turret and positioned it where the
+turret<00:07:01.360><c> should</c><00:07:01.560><c> be</c><00:07:01.680><c> mounted.</c>
+
+00:07:15.630 --> 00:07:15.640 align:start position:0%
+ 
+ 
+
+00:07:15.640 --> 00:07:17.470 align:start position:0%
+ 
+I<00:07:15.760><c> repeated</c><00:07:16.160><c> the</c><00:07:16.240><c> same</c><00:07:16.560><c> setup</c><00:07:16.880><c> process</c><00:07:17.360><c> for</c>
+
+00:07:17.470 --> 00:07:17.480 align:start position:0%
+I repeated the same setup process for
+ 
+
+00:07:17.480 --> 00:07:20.550 align:start position:0%
+I repeated the same setup process for
+the<00:07:17.600><c> racing</c><00:07:17.960><c> chassis</c><00:07:18.640><c> and</c><00:07:18.800><c> military</c><00:07:19.280><c> chassis.</c>
+
+00:07:20.550 --> 00:07:20.560 align:start position:0%
+the racing chassis and military chassis.
+ 
+
+00:07:20.560 --> 00:07:22.430 align:start position:0%
+the racing chassis and military chassis.
+After<00:07:20.840><c> importing</c><00:07:21.320><c> all</c><00:07:21.600><c> remaining</c><00:07:22.000><c> wheels</c><00:07:22.320><c> and</c>
+
+00:07:22.430 --> 00:07:22.440 align:start position:0%
+After importing all remaining wheels and
+ 
+
+00:07:22.440 --> 00:07:24.750 align:start position:0%
+After importing all remaining wheels and
+turrets,<00:07:23.200><c> my</c><00:07:23.360><c> final</c><00:07:23.760><c> asset</c><00:07:24.080><c> structure</c><00:07:24.520><c> looked</c>
+
+00:07:24.750 --> 00:07:24.760 align:start position:0%
+turrets, my final asset structure looked
+ 
+
+00:07:24.760 --> 00:07:26.190 align:start position:0%
+turrets, my final asset structure looked
+like<00:07:24.960><c> this.</c>
+
+00:07:26.190 --> 00:07:26.200 align:start position:0%
+like this.
+ 
+
+00:07:26.200 --> 00:07:27.909 align:start position:0%
+like this.
+A<00:07:26.280><c> chassis</c><00:07:26.680><c> folder</c><00:07:27.040><c> containing</c><00:07:27.600><c> every</c>
+
+00:07:27.909 --> 00:07:27.919 align:start position:0%
+A chassis folder containing every
+ 
+
+00:07:27.919 --> 00:07:29.390 align:start position:0%
+A chassis folder containing every
+chassis<00:07:28.320><c> type.</c>
+
+00:07:29.390 --> 00:07:29.400 align:start position:0%
+chassis type.
+ 
+
+00:07:29.400 --> 00:07:31.350 align:start position:0%
+chassis type.
+Each<00:07:29.640><c> chassis</c><00:07:30.040><c> contained</c><00:07:30.480><c> wheel</c><00:07:30.720><c> points</c><00:07:31.160><c> and</c>
+
+00:07:31.350 --> 00:07:31.360 align:start position:0%
+Each chassis contained wheel points and
+ 
+
+00:07:31.360 --> 00:07:33.190 align:start position:0%
+Each chassis contained wheel points and
+turret<00:07:31.640><c> point</c><00:07:31.880><c> folders.</c>
+
+00:07:33.190 --> 00:07:33.200 align:start position:0%
+turret point folders.
+ 
+
+00:07:33.200 --> 00:07:34.990 align:start position:0%
+turret point folders.
+A<00:07:33.280><c> wheels</c><00:07:33.640><c> folder</c><00:07:34.000><c> containing</c><00:07:34.520><c> all</c><00:07:34.760><c> wheel</c>
+
+00:07:34.990 --> 00:07:35.000 align:start position:0%
+A wheels folder containing all wheel
+ 
+
+00:07:35.000 --> 00:07:36.550 align:start position:0%
+A wheels folder containing all wheel
+variants.
+
+00:07:36.550 --> 00:07:36.560 align:start position:0%
+variants.
+ 
+
+00:07:36.560 --> 00:07:38.390 align:start position:0%
+variants.
+And<00:07:36.720><c> a</c><00:07:36.800><c> turrets</c><00:07:37.160><c> folder</c><00:07:37.520><c> containing</c><00:07:38.080><c> every</c>
+
+00:07:38.390 --> 00:07:38.400 align:start position:0%
+And a turrets folder containing every
+ 
+
+00:07:38.400 --> 00:07:40.190 align:start position:0%
+And a turrets folder containing every
+turret<00:07:38.505><c> [music]</c><00:07:38.760><c> type.</c><00:07:39.440><c> Since</c><00:07:39.640><c> attachments</c>
+
+00:07:40.190 --> 00:07:40.200 align:start position:0%
+turret [music] type. Since attachments
+ 
+
+00:07:40.200 --> 00:07:41.870 align:start position:0%
+turret [music] type. Since attachments
+are<00:07:40.280><c> children</c><00:07:40.680><c> of</c><00:07:40.760><c> the</c><00:07:40.880><c> chassis,</c><00:07:41.600><c> they</c>
+
+00:07:41.870 --> 00:07:41.880 align:start position:0%
+are children of the chassis, they
+ 
+
+00:07:41.880 --> 00:07:43.910 align:start position:0%
+are children of the chassis, they
+automatically<00:07:42.480><c> move</c><00:07:42.720><c> with</c><00:07:42.840><c> the</c><00:07:42.960><c> model.</c><00:07:43.680><c> This</c>
+
+00:07:43.910 --> 00:07:43.920 align:start position:0%
+automatically move with the model. This
+ 
+
+00:07:43.920 --> 00:07:45.750 align:start position:0%
+automatically move with the model. This
+setup<00:07:44.200><c> works</c><00:07:44.480><c> perfectly</c><00:07:45.080><c> for</c><00:07:45.240><c> dynamic</c>
+
+00:07:45.750 --> 00:07:45.760 align:start position:0%
+setup works perfectly for dynamic
+ 
+
+00:07:45.760 --> 00:07:47.665 align:start position:0%
+setup works perfectly for dynamic
+assembly.<00:07:46.680><c> With</c><00:07:46.840><c> all</c><00:07:47.040><c> assets</c><00:07:47.400><c> ready,</c><00:07:47.640><c> it</c>
+
+00:07:47.665 --> 00:07:47.675 align:start position:0%
+assembly. With all assets ready, it
+ 
+
+00:07:47.675 --> 00:07:49.110 align:start position:0%
+assembly. With all assets ready, it
+[music]<00:07:47.800><c> was</c><00:07:47.920><c> time</c><00:07:48.160><c> to</c><00:07:48.280><c> connect</c><00:07:48.600><c> Roblox</c>
+
+00:07:49.110 --> 00:07:49.120 align:start position:0%
+[music] was time to connect Roblox
+ 
+
+00:07:49.120 --> 00:07:53.630 align:start position:0%
+[music] was time to connect Roblox
+Studio<00:07:49.520><c> with</c><00:07:49.720><c> Cloud</c><00:07:50.120><c> Opus</c><00:07:50.480><c> 4.8</c><00:07:51.520><c> using</c><00:07:51.880><c> MCP.</c>
+
+00:07:53.630 --> 00:07:53.640 align:start position:0%
+Studio with Cloud Opus 4.8 using MCP.
+ 
+
+00:07:53.640 --> 00:07:55.350 align:start position:0%
+Studio with Cloud Opus 4.8 using MCP.
+Before<00:07:53.960><c> connecting,</c><00:07:54.440><c> make</c><00:07:54.640><c> sure</c><00:07:54.840><c> Roblox</c>
+
+00:07:55.350 --> 00:07:55.360 align:start position:0%
+Before connecting, make sure Roblox
+ 
+
+00:07:55.360 --> 00:07:58.110 align:start position:0%
+Before connecting, make sure Roblox
+Studio<00:07:55.760><c> MCP</c><00:07:56.320><c> is</c><00:07:56.440><c> installed.</c><00:07:57.360><c> Inside</c><00:07:57.840><c> Cloud</c>
+
+00:07:58.110 --> 00:07:58.120 align:start position:0%
+Studio MCP is installed. Inside Cloud
+ 
+
+00:07:58.120 --> 00:08:00.190 align:start position:0%
+Studio MCP is installed. Inside Cloud
+Desktop,<00:07:58.720><c> open</c><00:07:59.000><c> settings</c><00:07:59.680><c> and</c><00:07:59.840><c> go</c><00:08:00.000><c> to</c><00:08:00.120><c> the</c>
+
+00:08:00.190 --> 00:08:00.200 align:start position:0%
+Desktop, open settings and go to the
+ 
+
+00:08:00.200 --> 00:08:01.750 align:start position:0%
+Desktop, open settings and go to the
+developer<00:08:00.680><c> tab.</c>
+
+00:08:01.750 --> 00:08:01.760 align:start position:0%
+developer tab.
+ 
+
+00:08:01.760 --> 00:08:03.550 align:start position:0%
+developer tab.
+There<00:08:02.040><c> you</c><00:08:02.160><c> should</c><00:08:02.320><c> see</c><00:08:02.480><c> the</c><00:08:02.600><c> Roblox</c><00:08:03.160><c> Studio</c>
+
+00:08:03.550 --> 00:08:03.560 align:start position:0%
+There you should see the Roblox Studio
+ 
+
+00:08:03.560 --> 00:08:06.590 align:start position:0%
+There you should see the Roblox Studio
+MCP<00:08:04.120><c> server</c><00:08:04.440><c> installed</c><00:08:05.040><c> and</c><00:08:05.200><c> enabled.</c>
+
+00:08:06.590 --> 00:08:06.600 align:start position:0%
+MCP server installed and enabled.
+ 
+
+00:08:06.600 --> 00:08:09.230 align:start position:0%
+MCP server installed and enabled.
+If<00:08:06.760><c> not,</c><00:08:07.280><c> copy</c><00:08:07.600><c> the</c><00:08:07.760><c> MCP</c><00:08:08.240><c> configuration</c><00:08:09.000><c> from</c>
+
+00:08:09.230 --> 00:08:09.240 align:start position:0%
+If not, copy the MCP configuration from
+ 
+
+00:08:09.240 --> 00:08:11.830 align:start position:0%
+If not, copy the MCP configuration from
+Roblox<00:08:09.720><c> Studio</c><00:08:10.160><c> AI</c><00:08:10.400><c> Assistant</c><00:08:11.200><c> and</c><00:08:11.400><c> paste</c><00:08:11.720><c> it</c>
+
+00:08:11.830 --> 00:08:11.840 align:start position:0%
+Roblox Studio AI Assistant and paste it
+ 
+
+00:08:11.840 --> 00:08:14.520 align:start position:0%
+Roblox Studio AI Assistant and paste it
+into<00:08:12.080><c> Cloud's</c><00:08:12.520><c> MCP</c><00:08:13.000><c> configuration.</c>
+
+00:08:14.520 --> 00:08:14.530 align:start position:0%
+into Cloud's MCP configuration.
+ 
+
+00:08:14.530 --> 00:08:28.930 align:start position:0%
+into Cloud's MCP configuration.
+&gt;&gt; [singing]
+
+00:08:28.930 --> 00:08:28.940 align:start position:0%
+ 
+ 
+
+00:08:28.940 --> 00:08:32.230 align:start position:0%
+ 
+[snorts]
+
+00:08:32.230 --> 00:08:32.240 align:start position:0%
+ 
+ 
+
+00:08:32.240 --> 00:08:33.790 align:start position:0%
+ 
+&gt;&gt; After<00:08:32.479><c> that,</c><00:08:32.719><c> I</c><00:08:32.760><c> created</c><00:08:33.159><c> a</c><00:08:33.200><c> new</c><00:08:33.479><c> Cloud</c>
+
+00:08:33.790 --> 00:08:33.800 align:start position:0%
+&gt;&gt; After that, I created a new Cloud
+ 
+
+00:08:33.800 --> 00:08:36.230 align:start position:0%
+&gt;&gt; After that, I created a new Cloud
+project<00:08:34.280><c> called</c><00:08:34.599><c> Vehicle</c><00:08:35.000><c> Combat</c><00:08:35.440><c> Builder</c>
+
+00:08:36.230 --> 00:08:36.240 align:start position:0%
+project called Vehicle Combat Builder
+ 
+
+00:08:36.240 --> 00:08:38.230 align:start position:0%
+project called Vehicle Combat Builder
+and<00:08:36.400><c> added</c><00:08:36.640><c> a</c><00:08:36.719><c> game</c><00:08:37.000><c> design</c><00:08:37.360><c> document</c>
+
+00:08:38.230 --> 00:08:38.240 align:start position:0%
+and added a game design document
+ 
+
+00:08:38.240 --> 00:08:40.029 align:start position:0%
+and added a game design document
+describing<00:08:38.760><c> the</c><00:08:38.840><c> project</c><00:08:39.280><c> structure,</c>
+
+00:08:40.029 --> 00:08:40.039 align:start position:0%
+describing the project structure,
+ 
+
+00:08:40.039 --> 00:08:41.790 align:start position:0%
+describing the project structure,
+objectives,<00:08:40.880><c> and</c><00:08:41.000><c> the</c><00:08:41.080><c> three</c><00:08:41.320><c> development</c>
+
+00:08:41.790 --> 00:08:41.800 align:start position:0%
+objectives, and the three development
+ 
+
+00:08:41.800 --> 00:08:53.870 align:start position:0%
+objectives, and the three development
+phases.
+
+00:08:53.870 --> 00:08:53.880 align:start position:0%
+ 
+ 
+
+00:08:53.880 --> 00:08:56.510 align:start position:0%
+ 
+Once<00:08:54.240><c> everything</c><00:08:54.760><c> was</c><00:08:54.920><c> prepared,</c><00:08:55.680><c> I</c><00:08:55.839><c> verified</c>
+
+00:08:56.510 --> 00:08:56.520 align:start position:0%
+Once everything was prepared, I verified
+ 
+
+00:08:56.520 --> 00:08:58.910 align:start position:0%
+Once everything was prepared, I verified
+the<00:08:56.640><c> Roblox</c><00:08:57.120><c> Studio</c><00:08:57.520><c> connection.</c><00:08:58.600><c> After</c>
+
+00:08:58.910 --> 00:08:58.920 align:start position:0%
+the Roblox Studio connection. After
+ 
+
+00:08:58.920 --> 00:09:01.350 align:start position:0%
+the Roblox Studio connection. After
+Cloud<00:08:59.320><c> successfully</c><00:08:59.960><c> connected,</c><00:09:00.720><c> we</c><00:09:00.880><c> started</c>
+
+00:09:01.350 --> 00:09:01.360 align:start position:0%
+Cloud successfully connected, we started
+ 
+
+00:09:01.360 --> 00:09:02.590 align:start position:0%
+Cloud successfully connected, we started
+phase<00:09:01.680><c> one.</c>
+
+00:09:02.590 --> 00:09:02.600 align:start position:0%
+phase one.
+ 
+
+00:09:02.600 --> 00:09:04.710 align:start position:0%
+phase one.
+For<00:09:02.680><c> the</c><00:09:02.800><c> vehicle</c><00:09:03.160><c> selection</c><00:09:03.600><c> interface,</c><00:09:04.480><c> I</c>
+
+00:09:04.710 --> 00:09:04.720 align:start position:0%
+For the vehicle selection interface, I
+ 
+
+00:09:04.720 --> 00:09:07.430 align:start position:0%
+For the vehicle selection interface, I
+opened<00:09:05.200><c> Asset</c><00:09:05.560><c> Manager</c><00:09:06.360><c> and</c><00:09:06.560><c> bulk</c><00:09:06.880><c> imported</c>
+
+00:09:07.430 --> 00:09:07.440 align:start position:0%
+opened Asset Manager and bulk imported
+ 
+
+00:09:07.440 --> 00:09:09.270 align:start position:0%
+opened Asset Manager and bulk imported
+all<00:09:07.720><c> preview</c><00:09:08.120><c> images</c><00:09:08.560><c> I</c><00:09:08.640><c> had</c><00:09:08.800><c> captured</c>
+
+00:09:09.270 --> 00:09:09.280 align:start position:0%
+all preview images I had captured
+ 
+
+00:09:09.280 --> 00:09:10.510 align:start position:0%
+all preview images I had captured
+earlier.
+
+00:09:10.510 --> 00:09:10.520 align:start position:0%
+earlier.
+ 
+
+00:09:10.520 --> 00:09:12.550 align:start position:0%
+earlier.
+After<00:09:10.839><c> importing,</c><00:09:11.640><c> I</c><00:09:11.760><c> copied</c><00:09:12.171><c> [music]</c><00:09:12.320><c> all</c>
+
+00:09:12.550 --> 00:09:12.560 align:start position:0%
+After importing, I copied [music] all
+ 
+
+00:09:12.560 --> 00:09:17.390 align:start position:0%
+After importing, I copied [music] all
+content<00:09:13.080><c> IDs</c><00:09:13.800><c> and</c><00:09:13.960><c> pasted</c><00:09:14.360><c> them</c><00:09:14.560><c> into</c><00:09:14.800><c> Cloud.</c>
+
+00:09:17.390 --> 00:09:17.400 align:start position:0%
+ 
+ 
+
+00:09:17.400 --> 00:09:19.350 align:start position:0%
+ 
+Cloud<00:09:17.720><c> generated</c><00:09:18.240><c> a</c><00:09:18.320><c> really</c><00:09:18.640><c> nice</c><00:09:19.000><c> vehicle</c>
+
+00:09:19.350 --> 00:09:19.360 align:start position:0%
+Cloud generated a really nice vehicle
+ 
+
+00:09:19.360 --> 00:09:21.990 align:start position:0%
+Cloud generated a really nice vehicle
+selection<00:09:19.800><c> GUI</c><00:09:20.400><c> with</c><00:09:20.600><c> chassis,</c><00:09:21.360><c> wheel,</c><00:09:21.800><c> and</c>
+
+00:09:21.990 --> 00:09:22.000 align:start position:0%
+selection GUI with chassis, wheel, and
+ 
+
+00:09:22.000 --> 00:09:24.030 align:start position:0%
+selection GUI with chassis, wheel, and
+turret<00:09:22.280><c> selectors</c><00:09:23.080><c> along</c><00:09:23.400><c> with</c><00:09:23.520><c> a</c><00:09:23.600><c> spawn</c>
+
+00:09:24.030 --> 00:09:24.040 align:start position:0%
+turret selectors along with a spawn
+ 
+
+00:09:24.040 --> 00:09:25.510 align:start position:0%
+turret selectors along with a spawn
+vehicle<00:09:24.400><c> button.</c>
+
+00:09:25.510 --> 00:09:25.520 align:start position:0%
+vehicle button.
+ 
+
+00:09:25.520 --> 00:09:27.350 align:start position:0%
+vehicle button.
+The<00:09:25.640><c> only</c><00:09:25.920><c> issue</c><00:09:26.480><c> was</c><00:09:26.600><c> that</c><00:09:26.760><c> I</c><00:09:26.839><c> forgot</c><00:09:27.240><c> to</c>
+
+00:09:27.350 --> 00:09:27.360 align:start position:0%
+The only issue was that I forgot to
+ 
+
+00:09:27.360 --> 00:09:29.590 align:start position:0%
+The only issue was that I forgot to
+import<00:09:27.760><c> the</c><00:09:27.839><c> machine</c><00:09:28.200><c> gun</c><00:09:28.400><c> turret</c><00:09:28.760><c> icon.</c><00:09:29.480><c> So,</c>
+
+00:09:29.590 --> 00:09:29.600 align:start position:0%
+import the machine gun turret icon. So,
+ 
+
+00:09:29.600 --> 00:09:32.590 align:start position:0%
+import the machine gun turret icon. So,
+that<00:09:29.839><c> slot</c><00:09:30.280><c> appeared</c><00:09:30.640><c> blank.</c><00:09:31.560><c> Besides</c><00:09:32.000><c> that,</c>
+
+00:09:32.590 --> 00:09:32.600 align:start position:0%
+that slot appeared blank. Besides that,
+ 
+
+00:09:32.600 --> 00:09:34.990 align:start position:0%
+that slot appeared blank. Besides that,
+everything<00:09:33.040><c> looked</c><00:09:33.280><c> great.</c><00:09:34.240><c> After</c><00:09:34.520><c> selecting</c>
+
+00:09:34.990 --> 00:09:35.000 align:start position:0%
+everything looked great. After selecting
+ 
+
+00:09:35.000 --> 00:09:37.110 align:start position:0%
+everything looked great. After selecting
+different<00:09:35.320><c> parts</c><00:09:35.720><c> and</c><00:09:35.839><c> clicking</c><00:09:36.200><c> spawn,</c><00:09:36.920><c> the</c>
+
+00:09:37.110 --> 00:09:37.120 align:start position:0%
+different parts and clicking spawn, the
+ 
+
+00:09:37.120 --> 00:09:39.310 align:start position:0%
+different parts and clicking spawn, the
+vehicle<00:09:37.560><c> assembled</c><00:09:38.000><c> successfully</c><00:09:38.920><c> using</c><00:09:39.200><c> the</c>
+
+00:09:39.310 --> 00:09:39.320 align:start position:0%
+vehicle assembled successfully using the
+ 
+
+00:09:39.320 --> 00:09:40.670 align:start position:0%
+vehicle assembled successfully using the
+attachment<00:09:39.681><c> [music]</c><00:09:39.880><c> points</c><00:09:40.120><c> we</c><00:09:40.240><c> created</c>
+
+00:09:40.670 --> 00:09:40.680 align:start position:0%
+attachment [music] points we created
+ 
+
+00:09:40.680 --> 00:09:41.710 align:start position:0%
+attachment [music] points we created
+earlier.
+
+00:09:41.710 --> 00:09:41.720 align:start position:0%
+earlier.
+ 
+
+00:09:41.720 --> 00:09:43.790 align:start position:0%
+earlier.
+This<00:09:41.960><c> was</c><00:09:42.120><c> exactly</c><00:09:42.680><c> the</c><00:09:42.840><c> modular</c><00:09:43.320><c> system</c><00:09:43.720><c> I</c>
+
+00:09:43.790 --> 00:09:43.800 align:start position:0%
+This was exactly the modular system I
+ 
+
+00:09:43.800 --> 00:09:45.990 align:start position:0%
+This was exactly the modular system I
+wanted.<00:09:44.760><c> Players</c><00:09:45.080><c> could</c><00:09:45.280><c> freely</c><00:09:45.576><c> [music]</c><00:09:45.640><c> mix</c>
+
+00:09:45.990 --> 00:09:46.000 align:start position:0%
+wanted. Players could freely [music] mix
+ 
+
+00:09:46.000 --> 00:09:48.110 align:start position:0%
+wanted. Players could freely [music] mix
+different<00:09:46.360><c> chassis,</c><00:09:46.920><c> wheels,</c><00:09:47.320><c> and</c><00:09:47.480><c> turrets</c>
+
+00:09:48.110 --> 00:09:48.120 align:start position:0%
+different chassis, wheels, and turrets
+ 
+
+00:09:48.120 --> 00:09:49.830 align:start position:0%
+different chassis, wheels, and turrets
+to<00:09:48.240><c> create</c><00:09:48.560><c> completely</c><00:09:49.120><c> different</c><00:09:49.480><c> vehicle</c>
+
+00:09:49.830 --> 00:09:49.840 align:start position:0%
+to create completely different vehicle
+ 
+
+00:09:49.840 --> 00:09:52.670 align:start position:0%
+to create completely different vehicle
+combinations.<00:09:51.200><c> Phase</c><00:09:51.480><c> one</c><00:09:51.720><c> was</c><00:09:51.880><c> complete</c><00:09:52.560><c> and</c>
+
+00:09:52.670 --> 00:09:52.680 align:start position:0%
+combinations. Phase one was complete and
+ 
+
+00:09:52.680 --> 00:09:54.030 align:start position:0%
+combinations. Phase one was complete and
+we<00:09:52.800><c> were</c><00:09:52.960><c> ready</c><00:09:53.200><c> to</c><00:09:53.320><c> make</c><00:09:53.520><c> the</c><00:09:53.600><c> vehicles</c>
+
+00:09:54.030 --> 00:09:54.040 align:start position:0%
+we were ready to make the vehicles
+ 
+
+00:09:54.040 --> 00:09:55.190 align:start position:0%
+we were ready to make the vehicles
+drivable.
+
+00:09:55.190 --> 00:09:55.200 align:start position:0%
+drivable.
+ 
+
+00:09:55.200 --> 00:09:57.310 align:start position:0%
+drivable.
+For<00:09:55.320><c> phase</c><00:09:55.640><c> two,</c><00:09:56.200><c> Claude</c><00:09:56.600><c> added</c><00:09:56.880><c> a</c><00:09:56.920><c> vehicle</c>
+
+00:09:57.310 --> 00:09:57.320 align:start position:0%
+For phase two, Claude added a vehicle
+ 
+
+00:09:57.320 --> 00:09:59.630 align:start position:0%
+For phase two, Claude added a vehicle
+seat<00:09:57.840><c> and</c><00:09:58.000><c> basic</c><00:09:58.360><c> driving</c><00:09:58.760><c> controls.</c><00:09:59.560><c> The</c>
+
+00:09:59.630 --> 00:09:59.640 align:start position:0%
+seat and basic driving controls. The
+ 
+
+00:09:59.640 --> 00:10:01.430 align:start position:0%
+seat and basic driving controls. The
+vehicle<00:10:00.040><c> could</c><00:10:00.240><c> move</c><00:10:00.480><c> immediately,</c><00:10:01.320><c> but</c>
+
+00:10:01.430 --> 00:10:01.440 align:start position:0%
+vehicle could move immediately, but
+ 
+
+00:10:01.440 --> 00:10:03.510 align:start position:0%
+vehicle could move immediately, but
+there<00:10:01.560><c> were</c><00:10:01.680><c> several</c><00:10:02.120><c> issues.</c><00:10:03.120><c> Whenever</c><00:10:03.400><c> the</c>
+
+00:10:03.510 --> 00:10:03.520 align:start position:0%
+there were several issues. Whenever the
+ 
+
+00:10:03.520 --> 00:10:05.270 align:start position:0%
+there were several issues. Whenever the
+vehicle<00:10:03.880><c> collided</c><00:10:04.360><c> with</c><00:10:04.480><c> something,</c><00:10:05.160><c> it</c>
+
+00:10:05.270 --> 00:10:05.280 align:start position:0%
+vehicle collided with something, it
+ 
+
+00:10:05.280 --> 00:10:07.310 align:start position:0%
+vehicle collided with something, it
+would<00:10:05.400><c> sometimes</c><00:10:05.840><c> launch</c><00:10:06.160><c> into</c><00:10:06.360><c> the</c><00:10:06.520><c> air.</c><00:10:07.240><c> The</c>
+
+00:10:07.310 --> 00:10:07.320 align:start position:0%
+would sometimes launch into the air. The
+ 
+
+00:10:07.320 --> 00:10:09.390 align:start position:0%
+would sometimes launch into the air. The
+wheels<00:10:07.680><c> did</c><00:10:07.840><c> not</c><00:10:08.080><c> rotate</c><00:10:08.440><c> properly</c><00:10:09.200><c> and</c><00:10:09.320><c> the</c>
+
+00:10:09.390 --> 00:10:09.400 align:start position:0%
+wheels did not rotate properly and the
+ 
+
+00:10:09.400 --> 00:10:11.270 align:start position:0%
+wheels did not rotate properly and the
+player's<00:10:09.800><c> sitting</c><00:10:10.080><c> position</c><00:10:10.560><c> was</c><00:10:10.760><c> much</c><00:10:11.080><c> too</c>
+
+00:10:11.270 --> 00:10:11.280 align:start position:0%
+player's sitting position was much too
+ 
+
+00:10:11.280 --> 00:10:12.270 align:start position:0%
+player's sitting position was much too
+high.
+
+00:10:12.270 --> 00:10:12.280 align:start position:0%
+high.
+ 
+
+00:10:12.280 --> 00:10:13.510 align:start position:0%
+high.
+I<00:10:12.360><c> reported</c><00:10:12.800><c> these</c><00:10:12.960><c> problems</c><00:10:13.087><c> [music]</c><00:10:13.400><c> to</c>
+
+00:10:13.510 --> 00:10:13.520 align:start position:0%
+I reported these problems [music] to
+ 
+
+00:10:13.520 --> 00:10:15.390 align:start position:0%
+I reported these problems [music] to
+Claude<00:10:14.200><c> and</c><00:10:14.400><c> asked</c><00:10:14.640><c> it</c><00:10:14.760><c> to</c><00:10:14.880><c> improve</c><00:10:15.280><c> the</c>
+
+00:10:15.390 --> 00:10:15.400 align:start position:0%
+Claude and asked it to improve the
+ 
+
+00:10:15.400 --> 00:10:17.990 align:start position:0%
+Claude and asked it to improve the
+system.<00:10:16.400><c> Claude</c><00:10:16.760><c> updated</c><00:10:17.200><c> the</c><00:10:17.280><c> vehicle</c><00:10:17.640><c> setup</c>
+
+00:10:17.990 --> 00:10:18.000 align:start position:0%
+system. Claude updated the vehicle setup
+ 
+
+00:10:18.000 --> 00:10:20.390 align:start position:0%
+system. Claude updated the vehicle setup
+by<00:10:18.160><c> adding</c><00:10:18.520><c> motor</c><00:10:18.800><c> 60</c><00:10:19.240><c> wheel</c><00:10:19.520><c> rotation,</c>
+
+00:10:20.390 --> 00:10:20.400 align:start position:0%
+by adding motor 60 wheel rotation,
+ 
+
+00:10:20.400 --> 00:10:21.990 align:start position:0%
+by adding motor 60 wheel rotation,
+improving<00:10:20.840><c> suspension</c><00:10:21.480><c> and</c><00:10:21.640><c> physics</c>
+
+00:10:21.990 --> 00:10:22.000 align:start position:0%
+improving suspension and physics
+ 
+
+00:10:22.000 --> 00:10:23.750 align:start position:0%
+improving suspension and physics
+behavior,<00:10:22.760><c> and</c><00:10:22.960><c> fixing</c><00:10:23.320><c> the</c><00:10:23.440><c> seating</c>
+
+00:10:23.750 --> 00:10:23.760 align:start position:0%
+behavior, and fixing the seating
+ 
+
+00:10:23.760 --> 00:10:24.870 align:start position:0%
+behavior, and fixing the seating
+position.
+
+00:10:24.870 --> 00:10:24.880 align:start position:0%
+position.
+ 
+
+00:10:24.880 --> 00:10:26.790 align:start position:0%
+position.
+After<00:10:25.120><c> testing</c><00:10:25.520><c> again,</c><00:10:26.160><c> the</c><00:10:26.280><c> difference</c><00:10:26.680><c> was</c>
+
+00:10:26.790 --> 00:10:26.800 align:start position:0%
+After testing again, the difference was
+ 
+
+00:10:26.800 --> 00:10:29.470 align:start position:0%
+After testing again, the difference was
+huge.<00:10:27.640><c> The</c><00:10:27.760><c> wheels</c><00:10:28.080><c> rotated</c><00:10:28.560><c> correctly,</c><00:10:29.360><c> the</c>
+
+00:10:29.470 --> 00:10:29.480 align:start position:0%
+huge. The wheels rotated correctly, the
+ 
+
+00:10:29.480 --> 00:10:31.910 align:start position:0%
+huge. The wheels rotated correctly, the
+player<00:10:29.800><c> sat</c><00:10:30.080><c> properly</c><00:10:30.600><c> inside</c><00:10:31.000><c> the</c><00:10:31.080><c> vehicle.</c>
+
+00:10:31.910 --> 00:10:31.920 align:start position:0%
+player sat properly inside the vehicle.
+ 
+
+00:10:31.920 --> 00:10:34.430 align:start position:0%
+player sat properly inside the vehicle.
+The<00:10:32.040><c> vehicle</c><00:10:32.400><c> handled</c><00:10:32.800><c> much</c><00:10:33.080><c> better</c><00:10:33.400><c> overall.</c>
+
+00:10:34.430 --> 00:10:34.440 align:start position:0%
+The vehicle handled much better overall.
+ 
+
+00:10:34.440 --> 00:10:37.110 align:start position:0%
+The vehicle handled much better overall.
+Driving<00:10:34.880><c> finally</c><00:10:35.320><c> felt</c><00:10:35.600><c> smooth</c><00:10:36.040><c> and</c><00:10:36.200><c> natural.</c>
+
+00:10:37.110 --> 00:10:37.120 align:start position:0%
+Driving finally felt smooth and natural.
+ 
+
+00:10:37.120 --> 00:10:38.830 align:start position:0%
+Driving finally felt smooth and natural.
+With<00:10:37.360><c> vehicle</c><00:10:37.720><c> construction</c><00:10:38.320><c> and</c><00:10:38.440><c> driving</c>
+
+00:10:38.830 --> 00:10:38.840 align:start position:0%
+With vehicle construction and driving
+ 
+
+00:10:38.840 --> 00:10:43.430 align:start position:0%
+With vehicle construction and driving
+complete,<00:10:39.560><c> it</c><00:10:39.680><c> was</c><00:10:39.839><c> time</c><00:10:40.160><c> to</c><00:10:40.280><c> add</c><00:10:40.520><c> combat.</c>
+
+00:10:43.430 --> 00:10:43.440 align:start position:0%
+ 
+ 
+
+00:10:43.440 --> 00:10:45.670 align:start position:0%
+ 
+For<00:10:43.520><c> phase</c><00:10:43.920><c> three,</c><00:10:44.520><c> Claude</c><00:10:44.920><c> created</c><00:10:45.400><c> dummy</c>
+
+00:10:45.670 --> 00:10:45.680 align:start position:0%
+For phase three, Claude created dummy
+ 
+
+00:10:45.680 --> 00:10:48.390 align:start position:0%
+For phase three, Claude created dummy
+targets<00:10:46.200><c> with</c><00:10:46.440><c> HP</c><00:10:46.880><c> bars</c><00:10:47.560><c> and</c><00:10:47.720><c> implemented</c><00:10:48.280><c> the</c>
+
+00:10:48.390 --> 00:10:48.400 align:start position:0%
+targets with HP bars and implemented the
+ 
+
+00:10:48.400 --> 00:10:50.430 align:start position:0%
+targets with HP bars and implemented the
+entire<00:10:48.880><c> combat</c><00:10:49.360><c> system.</c>
+
+00:10:50.430 --> 00:10:50.440 align:start position:0%
+entire combat system.
+ 
+
+00:10:50.440 --> 00:10:52.670 align:start position:0%
+entire combat system.
+Turrets<00:10:50.800><c> could</c><00:10:51.040><c> rotate</c><00:10:51.520><c> using</c><00:10:51.760><c> mouse</c><00:10:52.080><c> aiming,</c>
+
+00:10:52.670 --> 00:10:52.680 align:start position:0%
+Turrets could rotate using mouse aiming,
+ 
+
+00:10:52.680 --> 00:10:55.070 align:start position:0%
+Turrets could rotate using mouse aiming,
+projectiles<00:10:53.440><c> fired</c><00:10:53.800><c> correctly,</c><00:10:54.680><c> impact</c>
+
+00:10:55.070 --> 00:10:55.080 align:start position:0%
+projectiles fired correctly, impact
+ 
+
+00:10:55.080 --> 00:10:57.030 align:start position:0%
+projectiles fired correctly, impact
+effects<00:10:55.440><c> worked</c><00:10:55.760><c> properly,</c><00:10:56.680><c> different</c>
+
+00:10:57.030 --> 00:10:57.040 align:start position:0%
+effects worked properly, different
+ 
+
+00:10:57.040 --> 00:10:58.750 align:start position:0%
+effects worked properly, different
+turrets<00:10:57.400><c> had</c><00:10:57.560><c> different</c><00:10:57.880><c> fire</c><00:10:58.200><c> rates,</c>
+
+00:10:58.750 --> 00:10:58.760 align:start position:0%
+turrets had different fire rates,
+ 
+
+00:10:58.760 --> 00:11:01.470 align:start position:0%
+turrets had different fire rates,
+projectile<00:10:59.320><c> types,</c><00:10:59.960><c> and</c><00:11:00.120><c> damage</c><00:11:00.480><c> values.</c>
+
+00:11:01.470 --> 00:11:01.480 align:start position:0%
+projectile types, and damage values.
+ 
+
+00:11:01.480 --> 00:11:03.190 align:start position:0%
+projectile types, and damage values.
+Everything<00:11:01.960><c> was</c><00:11:02.120><c> working</c><00:11:02.480><c> surprisingly</c>
+
+00:11:03.190 --> 00:11:03.200 align:start position:0%
+Everything was working surprisingly
+ 
+
+00:11:03.200 --> 00:11:06.030 align:start position:0%
+Everything was working surprisingly
+well.<00:11:03.880><c> The</c><00:11:04.080><c> only</c><00:11:04.440><c> issue</c><00:11:05.120><c> was</c><00:11:05.280><c> that</c><00:11:05.480><c> high-speed</c>
+
+00:11:06.030 --> 00:11:06.040 align:start position:0%
+well. The only issue was that high-speed
+ 
+
+00:11:06.040 --> 00:11:06.787 align:start position:0%
+well. The only issue was that high-speed
+collisions
+
+00:11:06.787 --> 00:11:06.797 align:start position:0%
+collisions
+ 
+
+00:11:06.797 --> 00:11:06.829 align:start position:0%
+collisions
+&gt;&gt; [music]
+
+00:11:06.829 --> 00:11:06.839 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:11:06.839 --> 00:11:08.670 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; could<00:11:07.000><c> occasionally</c><00:11:07.600><c> flip</c><00:11:07.880><c> the</c><00:11:08.000><c> vehicle</c>
+
+00:11:08.670 --> 00:11:08.680 align:start position:0%
+&gt;&gt; could occasionally flip the vehicle
+ 
+
+00:11:08.680 --> 00:11:11.310 align:start position:0%
+&gt;&gt; could occasionally flip the vehicle
+vertically<00:11:09.520><c> and</c><00:11:09.680><c> leave</c><00:11:09.839><c> it</c><00:11:10.000><c> stuck.</c><00:11:11.040><c> After</c>
+
+00:11:11.310 --> 00:11:11.320 align:start position:0%
+vertically and leave it stuck. After
+ 
+
+00:11:11.320 --> 00:11:13.310 align:start position:0%
+vertically and leave it stuck. After
+reporting<00:11:11.760><c> the</c><00:11:11.880><c> issue,</c><00:11:12.560><c> Claude</c><00:11:12.960><c> fixed</c><00:11:13.240><c> the</c>
+
+00:11:13.310 --> 00:11:13.320 align:start position:0%
+reporting the issue, Claude fixed the
+ 
+
+00:11:13.320 --> 00:11:15.630 align:start position:0%
+reporting the issue, Claude fixed the
+problem.<00:11:14.320><c> At</c><00:11:14.480><c> this</c><00:11:14.680><c> point,</c><00:11:15.000><c> the</c><00:11:15.080><c> prototype</c>
+
+00:11:15.630 --> 00:11:15.640 align:start position:0%
+problem. At this point, the prototype
+ 
+
+00:11:15.640 --> 00:11:17.829 align:start position:0%
+problem. At this point, the prototype
+was<00:11:15.839><c> already</c><00:11:16.240><c> fun,</c><00:11:16.920><c> but</c><00:11:17.080><c> I</c><00:11:17.160><c> wanted</c><00:11:17.560><c> better</c>
+
+00:11:17.829 --> 00:11:17.839 align:start position:0%
+was already fun, but I wanted better
+ 
+
+00:11:17.839 --> 00:11:19.310 align:start position:0%
+was already fun, but I wanted better
+visual<00:11:18.200><c> effects.</c>
+
+00:11:19.310 --> 00:11:19.320 align:start position:0%
+visual effects.
+ 
+
+00:11:19.320 --> 00:11:21.350 align:start position:0%
+visual effects.
+For<00:11:19.400><c> shooting</c><00:11:19.760><c> effects,</c><00:11:20.440><c> I</c><00:11:20.520><c> imported</c><00:11:21.000><c> a</c><00:11:21.040><c> free</c>
+
+00:11:21.350 --> 00:11:21.360 align:start position:0%
+For shooting effects, I imported a free
+ 
+
+00:11:21.360 --> 00:11:24.270 align:start position:0%
+For shooting effects, I imported a free
+VFX<00:11:21.880><c> pack</c><00:11:22.160><c> from</c><00:11:22.320><c> the</c><00:11:22.440><c> toolbox.</c><00:11:23.520><c> Inside</c><00:11:24.040><c> each</c>
+
+00:11:24.270 --> 00:11:24.280 align:start position:0%
+VFX pack from the toolbox. Inside each
+ 
+
+00:11:24.280 --> 00:11:27.110 align:start position:0%
+VFX pack from the toolbox. Inside each
+turret<00:11:24.600><c> model,</c><00:11:25.240><c> I</c><00:11:25.320><c> created</c><00:11:25.800><c> fire</c><00:11:26.080><c> VFX,</c><00:11:26.920><c> hit</c>
+
+00:11:27.110 --> 00:11:27.120 align:start position:0%
+turret model, I created fire VFX, hit
+ 
+
+00:11:27.120 --> 00:11:30.310 align:start position:0%
+turret model, I created fire VFX, hit
+VFX,<00:11:27.920><c> and</c><00:11:28.080><c> bullet</c><00:11:28.400><c> VFX</c><00:11:28.880><c> folders.</c><00:11:29.920><c> I</c><00:11:30.040><c> added</c>
+
+00:11:30.310 --> 00:11:30.320 align:start position:0%
+VFX, and bullet VFX folders. I added
+ 
+
+00:11:30.320 --> 00:11:32.630 align:start position:0%
+VFX, and bullet VFX folders. I added
+muzzle<00:11:30.640><c> flashes,</c><00:11:31.400><c> rocket</c><00:11:31.760><c> projectiles,</c>
+
+00:11:32.630 --> 00:11:32.640 align:start position:0%
+muzzle flashes, rocket projectiles,
+ 
+
+00:11:32.640 --> 00:11:34.750 align:start position:0%
+muzzle flashes, rocket projectiles,
+impact<00:11:33.040><c> explosions,</c><00:11:33.960><c> and</c><00:11:34.160><c> other</c><00:11:34.400><c> effects</c>
+
+00:11:34.750 --> 00:11:34.760 align:start position:0%
+impact explosions, and other effects
+ 
+
+00:11:34.760 --> 00:11:36.670 align:start position:0%
+impact explosions, and other effects
+into<00:11:34.960><c> those</c><00:11:35.200><c> folders</c><00:11:36.000><c> and</c><00:11:36.160><c> positioned</c>
+
+00:11:36.670 --> 00:11:36.680 align:start position:0%
+into those folders and positioned
+ 
+
+00:11:36.680 --> 00:11:41.950 align:start position:0%
+into those folders and positioned
+everything<00:11:37.480><c> using</c><00:11:37.760><c> attachment</c><00:11:38.280><c> points.</c>
+
+00:11:41.950 --> 00:11:41.960 align:start position:0%
+ 
+ 
+
+00:11:41.960 --> 00:11:43.830 align:start position:0%
+ 
+For<00:11:42.040><c> the</c><00:11:42.120><c> machine</c><00:11:42.480><c> gun</c><00:11:42.680><c> turret,</c><00:11:43.360><c> I</c><00:11:43.480><c> used</c><00:11:43.760><c> a</c>
+
+00:11:43.830 --> 00:11:43.840 align:start position:0%
+For the machine gun turret, I used a
+ 
+
+00:11:43.840 --> 00:11:57.878 align:start position:0%
+For the machine gun turret, I used a
+realistic<00:11:44.440><c> muzzle</c><00:11:44.720><c> flash</c><00:11:44.960><c> effect.</c>
+
+00:11:57.878 --> 00:11:57.888 align:start position:0%
+ 
+ 
+
+00:11:57.888 --> 00:12:03.630 align:start position:0%
+ 
+&gt;&gt; [music]
+
+00:12:03.630 --> 00:12:03.640 align:start position:0%
+ 
+ 
+
+00:12:03.640 --> 00:12:05.550 align:start position:0%
+ 
+&gt;&gt; For<00:12:03.720><c> the</c><00:12:03.840><c> rocket</c><00:12:04.160><c> launcher,</c><00:12:04.760><c> I</c><00:12:04.880><c> added</c><00:12:05.160><c> custom</c>
+
+00:12:05.550 --> 00:12:05.560 align:start position:0%
+&gt;&gt; For the rocket launcher, I added custom
+ 
+
+00:12:05.560 --> 00:12:06.990 align:start position:0%
+&gt;&gt; For the rocket launcher, I added custom
+rocket<00:12:05.880><c> models.</c>
+
+00:12:06.990 --> 00:12:07.000 align:start position:0%
+rocket models.
+ 
+
+00:12:07.000 --> 00:12:08.590 align:start position:0%
+rocket models.
+For<00:12:07.120><c> impact</c><00:12:07.560><c> effects,</c><00:12:08.200><c> I</c><00:12:08.320><c> used</c><00:12:08.368><c> [music]</c>
+
+00:12:08.590 --> 00:12:08.600 align:start position:0%
+For impact effects, I used [music]
+ 
+
+00:12:08.600 --> 00:12:13.190 align:start position:0%
+For impact effects, I used [music]
+explosion<00:12:09.240><c> VFX</c><00:12:09.720><c> packs</c><00:12:10.040><c> from</c><00:12:10.160><c> the</c><00:12:10.240><c> toolbox.</c>
+
+00:12:13.190 --> 00:12:13.200 align:start position:0%
+ 
+ 
+
+00:12:13.200 --> 00:12:14.830 align:start position:0%
+ 
+Claude<00:12:13.480><c> then</c><00:12:13.720><c> integrated</c><00:12:14.360><c> all</c><00:12:14.600><c> of</c><00:12:14.680><c> these</c>
+
+00:12:14.830 --> 00:12:14.840 align:start position:0%
+Claude then integrated all of these
+ 
+
+00:12:14.840 --> 00:12:16.873 align:start position:0%
+Claude then integrated all of these
+effects<00:12:15.520><c> into</c><00:12:15.720><c> the</c><00:12:15.840><c> combat</c><00:12:16.240><c> system.</c>
+
+00:12:16.873 --> 00:12:16.883 align:start position:0%
+effects into the combat system.
+ 
+
+00:12:16.883 --> 00:12:17.110 align:start position:0%
+effects into the combat system.
+&gt;&gt; [music]
+
+00:12:17.110 --> 00:12:17.120 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:12:17.120 --> 00:12:19.310 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; Muzzle<00:12:17.400><c> flashes</c><00:12:17.880><c> looked</c><00:12:18.120><c> great.</c><00:12:18.880><c> Impact</c>
+
+00:12:19.310 --> 00:12:19.320 align:start position:0%
+&gt;&gt; Muzzle flashes looked great. Impact
+ 
+
+00:12:19.320 --> 00:12:21.470 align:start position:0%
+&gt;&gt; Muzzle flashes looked great. Impact
+effects<00:12:19.920><c> felt</c><00:12:20.160><c> satisfying.</c><00:12:21.120><c> Rocket</c>
+
+00:12:21.470 --> 00:12:21.480 align:start position:0%
+effects felt satisfying. Rocket
+ 
+
+00:12:21.480 --> 00:12:23.670 align:start position:0%
+effects felt satisfying. Rocket
+projectiles<00:12:22.160><c> looked</c><00:12:22.400><c> much</c><00:12:22.760><c> better.</c>
+
+00:12:23.670 --> 00:12:23.680 align:start position:0%
+projectiles looked much better.
+ 
+
+00:12:23.680 --> 00:12:24.910 align:start position:0%
+projectiles looked much better.
+I<00:12:23.760><c> later</c><00:12:24.040><c> improved</c><00:12:24.088><c> [music]</c><00:12:24.480><c> the</c><00:12:24.600><c> rocket</c>
+
+00:12:24.910 --> 00:12:24.920 align:start position:0%
+I later improved [music] the rocket
+ 
+
+00:12:24.920 --> 00:12:26.870 align:start position:0%
+I later improved [music] the rocket
+flight<00:12:25.200><c> path</c><00:12:25.760><c> because</c><00:12:26.040><c> the</c><00:12:26.120><c> homing</c><00:12:26.440><c> behavior</c>
+
+00:12:26.870 --> 00:12:26.880 align:start position:0%
+flight path because the homing behavior
+ 
+
+00:12:26.880 --> 00:12:28.990 align:start position:0%
+flight path because the homing behavior
+was<00:12:27.080><c> too</c><00:12:27.240><c> aggressive.</c><00:12:28.240><c> I</c><00:12:28.360><c> also</c><00:12:28.680><c> added</c><00:12:28.960><c> a</c>
+
+00:12:28.990 --> 00:12:29.000 align:start position:0%
+was too aggressive. I also added a
+ 
+
+00:12:29.000 --> 00:12:30.950 align:start position:0%
+was too aggressive. I also added a
+vehicle<00:12:29.328><c> [music]</c><00:12:29.400><c> spawn</c><00:12:29.840><c> or</c><00:12:30.120><c> effect</c><00:12:30.800><c> so</c>
+
+00:12:30.950 --> 00:12:30.960 align:start position:0%
+vehicle [music] spawn or effect so
+ 
+
+00:12:30.960 --> 00:12:32.870 align:start position:0%
+vehicle [music] spawn or effect so
+vehicles<00:12:31.440><c> would</c><00:12:31.560><c> appear</c><00:12:32.160><c> with</c><00:12:32.320><c> a</c><00:12:32.400><c> much</c><00:12:32.720><c> more</c>
+
+00:12:32.870 --> 00:12:32.880 align:start position:0%
+vehicles would appear with a much more
+ 
+
+00:12:32.880 --> 00:12:35.630 align:start position:0%
+vehicles would appear with a much more
+impressive<00:12:33.400><c> visual</c><00:12:33.760><c> presentation.</c>
+
+00:12:35.630 --> 00:12:35.640 align:start position:0%
+impressive visual presentation.
+ 
+
+00:12:35.640 --> 00:12:36.950 align:start position:0%
+impressive visual presentation.
+The<00:12:35.680><c> game</c><00:12:35.960><c> was</c><00:12:36.120><c> becoming</c><00:12:36.560><c> much</c><00:12:36.800><c> more</c>
+
+00:12:36.950 --> 00:12:36.960 align:start position:0%
+The game was becoming much more
+ 
+
+00:12:36.960 --> 00:12:39.230 align:start position:0%
+The game was becoming much more
+polished,<00:12:37.800><c> but</c><00:12:37.960><c> playing</c><00:12:38.280><c> alone</c><00:12:38.640><c> gets</c><00:12:38.880><c> boring</c>
+
+00:12:39.230 --> 00:12:39.240 align:start position:0%
+polished, but playing alone gets boring
+ 
+
+00:12:39.240 --> 00:12:41.990 align:start position:0%
+polished, but playing alone gets boring
+quickly.<00:12:40.200><c> To</c><00:12:40.280><c> solve</c><00:12:40.600><c> that</c><00:12:40.800><c> problem,</c><00:12:41.520><c> I</c><00:12:41.640><c> added</c>
+
+00:12:41.990 --> 00:12:42.000 align:start position:0%
+quickly. To solve that problem, I added
+ 
+
+00:12:42.000 --> 00:12:43.829 align:start position:0%
+quickly. To solve that problem, I added
+enemy<00:12:42.360><c> AI</c><00:12:42.640><c> vehicles.</c>
+
+00:12:43.829 --> 00:12:43.839 align:start position:0%
+enemy AI vehicles.
+ 
+
+00:12:43.839 --> 00:12:45.950 align:start position:0%
+enemy AI vehicles.
+The<00:12:43.960><c> AI</c><00:12:44.240><c> vehicles</c><00:12:44.800><c> follow</c><00:12:45.080><c> waypoints</c><00:12:45.680><c> around</c>
+
+00:12:45.950 --> 00:12:45.960 align:start position:0%
+The AI vehicles follow waypoints around
+ 
+
+00:12:45.960 --> 00:12:47.910 align:start position:0%
+The AI vehicles follow waypoints around
+the<00:12:46.040><c> racetrack</c><00:12:46.920><c> and</c><00:12:47.040><c> engage</c><00:12:47.480><c> the</c><00:12:47.600><c> player</c>
+
+00:12:47.910 --> 00:12:47.920 align:start position:0%
+the racetrack and engage the player
+ 
+
+00:12:47.920 --> 00:12:50.190 align:start position:0%
+the racetrack and engage the player
+during<00:12:48.160><c> combat.</c><00:12:49.000><c> I</c><00:12:49.120><c> also</c><00:12:49.440><c> added</c><00:12:49.720><c> buildings</c>
+
+00:12:50.190 --> 00:12:50.200 align:start position:0%
+during combat. I also added buildings
+ 
+
+00:12:50.200 --> 00:12:52.190 align:start position:0%
+during combat. I also added buildings
+and<00:12:50.320><c> trees</c><00:12:50.720><c> around</c><00:12:51.040><c> the</c><00:12:51.120><c> environment</c><00:12:51.920><c> to</c><00:12:52.000><c> make</c>
+
+00:12:52.190 --> 00:12:52.200 align:start position:0%
+and trees around the environment to make
+ 
+
+00:12:52.200 --> 00:12:54.230 align:start position:0%
+and trees around the environment to make
+the<00:12:52.280><c> map</c><00:12:52.600><c> feel</c><00:12:52.839><c> more</c><00:12:53.080><c> alive.</c>
+
+00:12:54.230 --> 00:12:54.240 align:start position:0%
+the map feel more alive.
+ 
+
+00:12:54.240 --> 00:12:56.470 align:start position:0%
+the map feel more alive.
+After<00:12:54.480><c> that,</c><00:12:54.800><c> I</c><00:12:54.920><c> updated</c><00:12:55.440><c> building</c><00:12:55.760><c> colors,</c>
+
+00:12:56.470 --> 00:12:56.480 align:start position:0%
+After that, I updated building colors,
+ 
+
+00:12:56.480 --> 00:12:58.550 align:start position:0%
+After that, I updated building colors,
+added<00:12:56.760><c> floating</c><00:12:57.120><c> damage</c><00:12:57.520><c> numbers,</c><00:12:58.120><c> created</c><00:12:58.480><c> a</c>
+
+00:12:58.550 --> 00:12:58.560 align:start position:0%
+added floating damage numbers, created a
+ 
+
+00:12:58.560 --> 00:13:00.990 align:start position:0%
+added floating damage numbers, created a
+kill<00:12:58.839><c> counter</c><00:12:59.200><c> UI,</c><00:13:00.000><c> improved</c><00:13:00.400><c> the</c><00:13:00.480><c> crosshair</c>
+
+00:13:00.990 --> 00:13:01.000 align:start position:0%
+kill counter UI, improved the crosshair
+ 
+
+00:13:01.000 --> 00:13:03.470 align:start position:0%
+kill counter UI, improved the crosshair
+colors,<00:13:01.680><c> and</c><00:13:01.839><c> added</c><00:13:02.120><c> sound</c><00:13:02.360><c> effects.</c>
+
+00:13:03.470 --> 00:13:03.480 align:start position:0%
+colors, and added sound effects.
+ 
+
+00:13:03.480 --> 00:13:05.750 align:start position:0%
+colors, and added sound effects.
+The<00:13:03.560><c> result</c><00:13:04.040><c> is</c><00:13:04.160><c> a</c><00:13:04.240><c> fully</c><00:13:04.600><c> playable</c><00:13:05.400><c> vehicle</c>
+
+00:13:05.750 --> 00:13:05.760 align:start position:0%
+The result is a fully playable vehicle
+ 
+
+00:13:05.760 --> 00:13:08.190 align:start position:0%
+The result is a fully playable vehicle
+combat<00:13:06.200><c> builder</c><00:13:06.520><c> prototype</c><00:13:07.440><c> created</c><00:13:07.880><c> using</c>
+
+00:13:08.190 --> 00:13:08.200 align:start position:0%
+combat builder prototype created using
+ 
+
+00:13:08.200 --> 00:13:12.630 align:start position:0%
+combat builder prototype created using
+Roblox<00:13:08.680><c> Studio</c><00:13:09.120><c> MCP</c><00:13:10.120><c> and</c><00:13:10.240><c> Claude</c><00:13:10.680><c> Opus</c><00:13:11.240><c> 4.8.</c>
+
+00:13:12.630 --> 00:13:12.640 align:start position:0%
+Roblox Studio MCP and Claude Opus 4.8.
+ 
+
+00:13:12.640 --> 00:13:14.550 align:start position:0%
+Roblox Studio MCP and Claude Opus 4.8.
+What's<00:13:12.839><c> really</c><00:13:13.120><c> impressive</c><00:13:13.880><c> is</c><00:13:14.000><c> how</c><00:13:14.160><c> quickly</c>
+
+00:13:14.550 --> 00:13:14.560 align:start position:0%
+What's really impressive is how quickly
+ 
+
+00:13:14.560 --> 00:13:17.350 align:start position:0%
+What's really impressive is how quickly
+we<00:13:14.680><c> went</c><00:13:15.200><c> from</c><00:13:15.440><c> AI-generated</c><00:13:16.280><c> concept</c><00:13:16.800><c> art</c><00:13:17.240><c> to</c>
+
+00:13:17.350 --> 00:13:17.360 align:start position:0%
+we went from AI-generated concept art to
+ 
+
+00:13:17.360 --> 00:13:20.150 align:start position:0%
+we went from AI-generated concept art to
+3D<00:13:17.839><c> assets,</c><00:13:18.600><c> modular</c><00:13:19.040><c> vehicles,</c><00:13:19.760><c> driving</c>
+
+00:13:20.150 --> 00:13:20.160 align:start position:0%
+3D assets, modular vehicles, driving
+ 
+
+00:13:20.160 --> 00:13:22.910 align:start position:0%
+3D assets, modular vehicles, driving
+systems,<00:13:20.880><c> turret</c><00:13:21.200><c> combat,</c><00:13:21.920><c> visual</c><00:13:22.240><c> effects,</c>
+
+00:13:22.910 --> 00:13:22.920 align:start position:0%
+systems, turret combat, visual effects,
+ 
+
+00:13:22.920 --> 00:13:24.990 align:start position:0%
+systems, turret combat, visual effects,
+enemy<00:13:23.240><c> AI,</c><00:13:23.920><c> and</c><00:13:24.040><c> a</c><00:13:24.080><c> complete</c><00:13:24.600><c> gameplay</c>
+
+00:13:24.990 --> 00:13:25.000 align:start position:0%
+enemy AI, and a complete gameplay
+ 
+
+00:13:25.000 --> 00:13:26.190 align:start position:0%
+enemy AI, and a complete gameplay
+prototype.
+
+00:13:26.190 --> 00:13:26.200 align:start position:0%
+prototype.
+ 
+
+00:13:26.200 --> 00:13:28.110 align:start position:0%
+prototype.
+If<00:13:26.320><c> you</c><00:13:26.440><c> enjoyed</c><00:13:26.800><c> this</c><00:13:26.960><c> video,</c><00:13:27.600><c> don't</c><00:13:27.880><c> forget</c>
+
+00:13:28.110 --> 00:13:28.120 align:start position:0%
+If you enjoyed this video, don't forget
+ 
+
+00:13:28.120 --> 00:13:30.270 align:start position:0%
+If you enjoyed this video, don't forget
+to<00:13:28.200><c> like,</c><00:13:28.720><c> subscribe,</c><00:13:29.520><c> and</c><00:13:29.640><c> let</c><00:13:29.760><c> me</c><00:13:29.840><c> know</c><00:13:30.040><c> what</c>
+
+00:13:30.270 --> 00:13:30.280 align:start position:0%
+to like, subscribe, and let me know what
+ 
+
+00:13:30.280 --> 00:13:34.000 align:start position:0%
+to like, subscribe, and let me know what
+features<00:13:30.680><c> you'd</c><00:13:30.800><c> like</c><00:13:30.960><c> to</c><00:13:31.080><c> see</c><00:13:31.240><c> added</c><00:13:31.520><c> next.</c>
+

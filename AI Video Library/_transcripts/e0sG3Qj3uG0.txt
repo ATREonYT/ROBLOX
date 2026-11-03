@@ -1,0 +1,7 @@
+[00:00] Hello guys. In this video, I'm going to show you how to model a cute low poly dog. We'll be using some simple shapes and modifiers to keep it looking clean and stylized. Let's jump into Blender. We'll start with a simple cube. I'm going to add a bevel modifier right away to give it those smooth rounded edges that define the low poly look. By adjusting the segments and the offset, we can get a nice squirrel shape for the main body. For the paws, duplicate the body mesh and scale it down. S. Select the bottom of the paw and scale it up to create the foot shape. Add a loop cut in the middle for more detail. For tail, add another cube. Tulie to pull out faces. Rotate them to create a wagging curve effect. 
+
+[01:07] made up your mind. Apply bevel modifier to maintain the low poly style. For ears, follow my steps. You can easily rotate the parts by pressing art. Once the modeling is finished, apply all modifiers. 
+
+[02:14] Go to UV editing to generate the map. Add an outline to the texture and smooth out the edges of the mesh for a cleaner look. Coloring. Apply the texture to all remaining parts. Paws, tail, ears, and scale the UVs to different color sections of the texture map so the parts aren't identical in color. I don't want to see 
+
+[04:39] Apply the texture to all remaining parts, paws, tail, ears, and scale the UVs to different color sections of the texture map so the parts aren't identical in color.

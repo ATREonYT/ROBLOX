@@ -1,0 +1,17 @@
+[
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/HUDController.lua",
+  "local bannerQueue: { { title: string, sub: string?, color: Color3? } } = {}\nlocal bannerBusy = false\n",
+  "local bannerQueue: { { title: string, sub: string?, color: Color3?, key: string? } } = {}\nlocal bannerBusy = false\nlocal lastLevelSound = 0 -- one level-up ding per burst, not one per level\n"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/HUDController.lua",
+  "function HUD.banner(title: string, sub: string?, color: Color3?)\n\ttable.insert(bannerQueue, { title = title, sub = sub, color = color })",
+  "-- key: a newer banner with the same key replaces any still waiting (a big XP jump shows only the latest level;\n-- the skipped levels' unlock lines become toasts so nothing is lost)\nfunction HUD.banner(title: string, sub: string?, color: Color3?, key: string?)\n\tif key then\n\t\tfor i = #bannerQueue, 1, -1 do\n\t\t\tlocal q = bannerQueue[i]\n\t\t\tif q.key == key then\n\t\t\t\ttable.remove(bannerQueue, i)\n\t\t\t\tif q.sub and q.sub ~= \"\" then\n\t\t\t\t\tHUD.toast(q.sub, q.color)\n\t\t\t\tend\n\t\t\tend\n\t\tend\n\tend\n\ttable.insert(bannerQueue, { title = title, sub = sub, color = color, key = key })"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/HUDController.lua",
+  "HUD.banner(\"LEVEL \" .. tostring(info.level), unlocks[1], Theme.HUD.Gold)\n\t\tSfx.play(\"LevelUp\") -- short \"ding-up\" (Theme.Sfx.LevelUp), not a music sting",
+  "HUD.banner(\"LEVEL \" .. tostring(info.level), unlocks[1], Theme.HUD.Gold, \"level\")\n\t\tif os.clock() - lastLevelSound > 1.5 then\n\t\t\tlastLevelSound = os.clock()\n\t\t\tSfx.play(\"LevelUp\") -- short \"ding-up\" (Theme.Sfx.LevelUp), not a music sting\n\t\tend"
+ ]
+]

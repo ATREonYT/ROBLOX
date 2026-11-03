@@ -1,0 +1,3144 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:11.960 --> 00:00:14.110 align:start position:0%
+ 
+Welcome<00:00:12.360><c> back</c><00:00:12.720><c> everyone.</c><00:00:13.520><c> In</c><00:00:13.640><c> the</c><00:00:13.720><c> last</c>
+
+00:00:14.110 --> 00:00:14.120 align:start position:0%
+Welcome back everyone. In the last
+ 
+
+00:00:14.120 --> 00:00:16.750 align:start position:0%
+Welcome back everyone. In the last
+video,<00:00:14.760><c> I</c><00:00:14.880><c> introduced</c><00:00:15.360><c> the</c><00:00:15.480><c> pet</c><00:00:15.840><c> summon</c><00:00:16.200><c> RPG</c>
+
+00:00:16.750 --> 00:00:16.760 align:start position:0%
+video, I introduced the pet summon RPG
+ 
+
+00:00:16.760 --> 00:00:18.830 align:start position:0%
+video, I introduced the pet summon RPG
+game<00:00:17.040><c> that</c><00:00:17.200><c> I</c><00:00:17.280><c> built</c><00:00:17.680><c> almost</c><00:00:18.000><c> entirely</c><00:00:18.640><c> with</c>
+
+00:00:18.830 --> 00:00:18.840 align:start position:0%
+game that I built almost entirely with
+ 
+
+00:00:18.840 --> 00:00:20.270 align:start position:0%
+game that I built almost entirely with
+Claude<00:00:19.160><c> AI.</c>
+
+00:00:20.270 --> 00:00:20.280 align:start position:0%
+Claude AI.
+ 
+
+00:00:20.280 --> 00:00:22.470 align:start position:0%
+Claude AI.
+Today<00:00:20.560><c> we're</c><00:00:20.680><c> going</c><00:00:21.040><c> much</c><00:00:21.360><c> deeper.</c><00:00:22.160><c> I'm</c><00:00:22.280><c> going</c>
+
+00:00:22.470 --> 00:00:22.480 align:start position:0%
+Today we're going much deeper. I'm going
+ 
+
+00:00:22.480 --> 00:00:24.910 align:start position:0%
+Today we're going much deeper. I'm going
+to<00:00:22.560><c> show</c><00:00:22.840><c> every</c><00:00:23.280><c> important</c><00:00:23.800><c> prompt</c><00:00:24.160><c> I</c><00:00:24.240><c> used,</c>
+
+00:00:24.910 --> 00:00:24.920 align:start position:0%
+to show every important prompt I used,
+ 
+
+00:00:24.920 --> 00:00:27.230 align:start position:0%
+to show every important prompt I used,
+how<00:00:25.120><c> I</c><00:00:25.200><c> designed</c><00:00:25.600><c> the</c><00:00:25.720><c> pets,</c><00:00:26.320><c> how</c><00:00:26.480><c> I</c><00:00:26.560><c> generated</c>
+
+00:00:27.230 --> 00:00:27.240 align:start position:0%
+how I designed the pets, how I generated
+ 
+
+00:00:27.240 --> 00:00:29.430 align:start position:0%
+how I designed the pets, how I generated
+and<00:00:27.400><c> rigged</c><00:00:27.640><c> the</c><00:00:27.720><c> models,</c><00:00:28.480><c> and</c><00:00:28.680><c> finally</c><00:00:29.160><c> how</c><00:00:29.360><c> I</c>
+
+00:00:29.430 --> 00:00:29.440 align:start position:0%
+and rigged the models, and finally how I
+ 
+
+00:00:29.440 --> 00:00:32.190 align:start position:0%
+and rigged the models, and finally how I
+used<00:00:29.800><c> Roblox</c><00:00:30.320><c> Studio</c><00:00:30.720><c> MCP</c><00:00:31.640><c> together</c><00:00:32.000><c> with</c>
+
+00:00:32.190 --> 00:00:32.200 align:start position:0%
+used Roblox Studio MCP together with
+ 
+
+00:00:32.200 --> 00:00:34.590 align:start position:0%
+used Roblox Studio MCP together with
+Claude<00:00:32.560><c> Opus</c><00:00:33.160><c> to</c><00:00:33.280><c> build</c><00:00:33.560><c> the</c><00:00:33.680><c> entire</c><00:00:34.160><c> gameplay</c>
+
+00:00:34.590 --> 00:00:34.600 align:start position:0%
+Claude Opus to build the entire gameplay
+ 
+
+00:00:34.600 --> 00:00:37.910 align:start position:0%
+Claude Opus to build the entire gameplay
+system.
+
+00:00:37.910 --> 00:00:37.920 align:start position:0%
+ 
+ 
+
+00:00:37.920 --> 00:00:40.390 align:start position:0%
+ 
+Let's<00:00:38.160><c> start</c><00:00:38.400><c> with</c><00:00:38.520><c> creating</c><00:00:38.920><c> our</c><00:00:39.040><c> first</c><00:00:39.360><c> pet.</c>
+
+00:00:40.390 --> 00:00:40.400 align:start position:0%
+Let's start with creating our first pet.
+ 
+
+00:00:40.400 --> 00:00:42.950 align:start position:0%
+Let's start with creating our first pet.
+I<00:00:40.520><c> opened</c><00:00:40.800><c> ChatGPT</c><00:00:41.960><c> and</c><00:00:42.120><c> uploaded</c><00:00:42.600><c> several</c>
+
+00:00:42.950 --> 00:00:42.960 align:start position:0%
+I opened ChatGPT and uploaded several
+ 
+
+00:00:42.960 --> 00:00:44.590 align:start position:0%
+I opened ChatGPT and uploaded several
+photos<00:00:43.320><c> of</c><00:00:43.400><c> my</c><00:00:43.560><c> dog.</c>
+
+00:00:44.590 --> 00:00:44.600 align:start position:0%
+photos of my dog.
+ 
+
+00:00:44.600 --> 00:00:46.150 align:start position:0%
+photos of my dog.
+These<00:00:44.760><c> were</c><00:00:44.840><c> just</c><00:00:45.080><c> normal</c><00:00:45.440><c> photos</c><00:00:45.840><c> I</c><00:00:45.920><c> took</c>
+
+00:00:46.150 --> 00:00:46.160 align:start position:0%
+These were just normal photos I took
+ 
+
+00:00:46.160 --> 00:00:49.110 align:start position:0%
+These were just normal photos I took
+myself.<00:00:47.200><c> After</c><00:00:47.480><c> uploading</c><00:00:47.880><c> them,</c><00:00:48.360><c> I</c><00:00:48.480><c> typed,</c>
+
+00:00:49.110 --> 00:00:49.120 align:start position:0%
+myself. After uploading them, I typed,
+ 
+
+00:00:49.120 --> 00:00:51.150 align:start position:0%
+myself. After uploading them, I typed,
+"Create<00:00:49.560><c> image</c><00:00:49.840><c> reference</c><00:00:50.280><c> for</c><00:00:50.400><c> my</c><00:00:50.520><c> low</c><00:00:50.800><c> poly</c>
+
+00:00:51.150 --> 00:00:51.160 align:start position:0%
+"Create image reference for my low poly
+ 
+
+00:00:51.160 --> 00:00:53.870 align:start position:0%
+"Create image reference for my low poly
+cartoon<00:00:51.680><c> style</c><00:00:52.000><c> dog</c><00:00:52.640><c> so</c><00:00:52.800><c> I</c><00:00:52.840><c> can</c><00:00:53.040><c> generate</c><00:00:53.520><c> 3D</c>
+
+00:00:53.870 --> 00:00:53.880 align:start position:0%
+cartoon style dog so I can generate 3D
+ 
+
+00:00:53.880 --> 00:00:55.470 align:start position:0%
+cartoon style dog so I can generate 3D
+model<00:00:54.200><c> for</c><00:00:54.400><c> it."</c>
+
+00:00:55.470 --> 00:00:55.480 align:start position:0%
+model for it."
+ 
+
+00:00:55.480 --> 00:00:57.470 align:start position:0%
+model for it."
+ChatGPT<00:00:56.280><c> generated</c><00:00:56.800><c> a</c><00:00:56.880><c> really</c><00:00:57.200><c> nice</c>
+
+00:00:57.470 --> 00:00:57.480 align:start position:0%
+ChatGPT generated a really nice
+ 
+
+00:00:57.480 --> 00:00:59.430 align:start position:0%
+ChatGPT generated a really nice
+character<00:00:57.880><c> design.</c><00:00:58.640><c> The</c><00:00:58.760><c> only</c><00:00:59.000><c> issue</c><00:00:59.280><c> was</c>
+
+00:00:59.430 --> 00:00:59.440 align:start position:0%
+character design. The only issue was
+ 
+
+00:00:59.440 --> 00:01:01.430 align:start position:0%
+character design. The only issue was
+that<00:00:59.560><c> the</c><00:00:59.640><c> dog</c><00:00:59.920><c> was</c><00:01:00.080><c> sitting.</c><00:01:00.880><c> Since</c><00:01:01.120><c> I</c><00:01:01.160><c> wanted</c>
+
+00:01:01.430 --> 00:01:01.440 align:start position:0%
+that the dog was sitting. Since I wanted
+ 
+
+00:01:01.440 --> 00:01:03.190 align:start position:0%
+that the dog was sitting. Since I wanted
+to<00:01:01.600><c> rig</c><00:01:01.880><c> and</c><00:01:02.000><c> animate</c><00:01:02.360><c> the</c><00:01:02.440><c> character</c><00:01:02.840><c> later,</c>
+
+00:01:03.190 --> 00:01:03.200 align:start position:0%
+to rig and animate the character later,
+ 
+
+00:01:03.200 --> 00:01:05.110 align:start position:0%
+to rig and animate the character later,
+I<00:01:03.280><c> needed</c><00:01:03.600><c> the</c><00:01:03.680><c> dog</c><00:01:04.000><c> standing</c><00:01:04.559><c> on</c><00:01:04.680><c> all</c><00:01:04.879><c> four</c>
+
+00:01:05.110 --> 00:01:05.120 align:start position:0%
+I needed the dog standing on all four
+ 
+
+00:01:05.120 --> 00:01:07.670 align:start position:0%
+I needed the dog standing on all four
+legs.<00:01:05.840><c> So</c><00:01:06.000><c> I</c><00:01:06.080><c> typed,</c><00:01:06.840><c> "I</c><00:01:06.920><c> want</c><00:01:07.120><c> to</c><00:01:07.200><c> rig</c><00:01:07.440><c> this</c>
+
+00:01:07.670 --> 00:01:07.680 align:start position:0%
+legs. So I typed, "I want to rig this
+ 
+
+00:01:07.680 --> 00:01:09.630 align:start position:0%
+legs. So I typed, "I want to rig this
+model,<00:01:08.280><c> so</c><00:01:08.440><c> please</c><00:01:08.720><c> make</c><00:01:08.920><c> him</c><00:01:09.080><c> stand</c><00:01:09.440><c> with</c>
+
+00:01:09.630 --> 00:01:09.640 align:start position:0%
+model, so please make him stand with
+ 
+
+00:01:09.640 --> 00:01:11.385 align:start position:0%
+model, so please make him stand with
+four<00:01:09.880><c> legs,</c><00:01:10.360><c> not</c><00:01:10.680><c> sit."</c>
+
+00:01:11.385 --> 00:01:11.395 align:start position:0%
+four legs, not sit."
+ 
+
+00:01:11.395 --> 00:01:11.670 align:start position:0%
+four legs, not sit."
+&gt;&gt; [music]
+
+00:01:11.670 --> 00:01:11.680 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:01:11.680 --> 00:01:13.950 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; ChatGPT<00:01:12.400><c> then</c><00:01:12.600><c> generated</c><00:01:13.080><c> a</c><00:01:13.120><c> new</c><00:01:13.360><c> design</c><00:01:13.760><c> with</c>
+
+00:01:13.950 --> 00:01:13.960 align:start position:0%
+&gt;&gt; ChatGPT then generated a new design with
+ 
+
+00:01:13.960 --> 00:01:15.790 align:start position:0%
+&gt;&gt; ChatGPT then generated a new design with
+multiple<00:01:14.400><c> views</c><00:01:14.760><c> and</c><00:01:14.880><c> a</c><00:01:14.920><c> proper</c><00:01:15.320><c> standing</c>
+
+00:01:15.790 --> 00:01:15.800 align:start position:0%
+multiple views and a proper standing
+ 
+
+00:01:15.800 --> 00:01:18.070 align:start position:0%
+multiple views and a proper standing
+pose.<00:01:16.640><c> This</c><00:01:16.800><c> is</c><00:01:16.920><c> exactly</c><00:01:17.440><c> what</c><00:01:17.600><c> we</c><00:01:17.680><c> need</c><00:01:17.960><c> for</c>
+
+00:01:18.070 --> 00:01:18.080 align:start position:0%
+pose. This is exactly what we need for
+ 
+
+00:01:18.080 --> 00:01:20.110 align:start position:0%
+pose. This is exactly what we need for
+3D<00:01:18.480><c> model</c><00:01:18.760><c> generation.</c>
+
+00:01:20.110 --> 00:01:20.120 align:start position:0%
+3D model generation.
+ 
+
+00:01:20.120 --> 00:01:21.630 align:start position:0%
+3D model generation.
+After<00:01:20.360><c> that,</c><00:01:20.565><c> [music]</c><00:01:20.920><c> I</c><00:01:21.000><c> used</c><00:01:21.240><c> a</c><00:01:21.280><c> screen</c>
+
+00:01:21.630 --> 00:01:21.640 align:start position:0%
+After that, [music] I used a screen
+ 
+
+00:01:21.640 --> 00:01:23.670 align:start position:0%
+After that, [music] I used a screen
+capture<00:01:22.040><c> tool</c><00:01:22.600><c> and</c><00:01:22.760><c> cut</c><00:01:22.960><c> the</c><00:01:23.040><c> design</c><00:01:23.440><c> into</c>
+
+00:01:23.670 --> 00:01:23.680 align:start position:0%
+capture tool and cut the design into
+ 
+
+00:01:23.680 --> 00:01:26.710 align:start position:0%
+capture tool and cut the design into
+separate<00:01:24.080><c> front,</c><00:01:24.720><c> side,</c><00:01:25.320><c> and</c><00:01:25.480><c> angle</c><00:01:25.760><c> views.</c><00:01:26.640><c> I</c>
+
+00:01:26.710 --> 00:01:26.720 align:start position:0%
+separate front, side, and angle views. I
+ 
+
+00:01:26.720 --> 00:01:28.430 align:start position:0%
+separate front, side, and angle views. I
+recommend<00:01:27.120><c> preparing</c><00:01:27.560><c> four</c><00:01:27.840><c> images</c><00:01:28.280><c> from</c>
+
+00:01:28.430 --> 00:01:28.440 align:start position:0%
+recommend preparing four images from
+ 
+
+00:01:28.440 --> 00:01:29.950 align:start position:0%
+recommend preparing four images from
+different<00:01:28.760><c> directions.</c>
+
+00:01:29.950 --> 00:01:29.960 align:start position:0%
+different directions.
+ 
+
+00:01:29.960 --> 00:01:32.390 align:start position:0%
+different directions.
+Next<00:01:30.240><c> I</c><00:01:30.320><c> opened</c><00:01:30.640><c> Meshy</c><00:01:31.000><c> AI</c><00:01:31.320><c> in</c><00:01:31.440><c> the</c><00:01:31.520><c> browser.</c>
+
+00:01:32.390 --> 00:01:32.400 align:start position:0%
+Next I opened Meshy AI in the browser.
+ 
+
+00:01:32.400 --> 00:01:34.350 align:start position:0%
+Next I opened Meshy AI in the browser.
+Inside<00:01:32.800><c> the</c><00:01:32.880><c> workspace,</c><00:01:33.760><c> I</c><00:01:33.880><c> uploaded</c><00:01:34.280><c> the</c>
+
+00:01:34.350 --> 00:01:34.360 align:start position:0%
+Inside the workspace, I uploaded the
+ 
+
+00:01:34.360 --> 00:01:36.790 align:start position:0%
+Inside the workspace, I uploaded the
+main<00:01:34.640><c> dog</c><00:01:34.960><c> image.</c><00:01:35.720><c> For</c><00:01:35.840><c> model</c><00:01:36.160><c> type,</c><00:01:36.680><c> I</c>
+
+00:01:36.790 --> 00:01:36.800 align:start position:0%
+main dog image. For model type, I
+ 
+
+00:01:36.800 --> 00:01:38.950 align:start position:0%
+main dog image. For model type, I
+selected<00:01:37.280><c> standard.</c><00:01:38.240><c> Even</c><00:01:38.480><c> though</c><00:01:38.600><c> we</c><00:01:38.720><c> want</c><00:01:38.880><c> a</c>
+
+00:01:38.950 --> 00:01:38.960 align:start position:0%
+selected standard. Even though we want a
+ 
+
+00:01:38.960 --> 00:01:41.310 align:start position:0%
+selected standard. Even though we want a
+low<00:01:39.200><c> poly</c><00:01:39.520><c> model</c><00:01:39.840><c> eventually,</c><00:01:40.720><c> I</c><00:01:40.800><c> strongly</c>
+
+00:01:41.310 --> 00:01:41.320 align:start position:0%
+low poly model eventually, I strongly
+ 
+
+00:01:41.320 --> 00:01:43.230 align:start position:0%
+low poly model eventually, I strongly
+recommend<00:01:41.800><c> not</c><00:01:42.040><c> choosing</c><00:01:42.440><c> low</c><00:01:42.640><c> poly</c><00:01:43.000><c> during</c>
+
+00:01:43.230 --> 00:01:43.240 align:start position:0%
+recommend not choosing low poly during
+ 
+
+00:01:43.240 --> 00:01:45.150 align:start position:0%
+recommend not choosing low poly during
+the<00:01:43.320><c> first</c><00:01:43.600><c> generation.</c><00:01:44.560><c> I</c><00:01:44.640><c> tested</c><00:01:45.040><c> that</c>
+
+00:01:45.150 --> 00:01:45.160 align:start position:0%
+the first generation. I tested that
+ 
+
+00:01:45.160 --> 00:01:46.750 align:start position:0%
+the first generation. I tested that
+before<00:01:45.600><c> and</c><00:01:45.720><c> the</c><00:01:45.800><c> results</c><00:01:46.200><c> were</c><00:01:46.320><c> usually</c>
+
+00:01:46.750 --> 00:01:46.760 align:start position:0%
+before and the results were usually
+ 
+
+00:01:46.760 --> 00:01:47.750 align:start position:0%
+before and the results were usually
+worse.
+
+00:01:47.750 --> 00:01:47.760 align:start position:0%
+worse.
+ 
+
+00:01:47.760 --> 00:01:49.830 align:start position:0%
+worse.
+Then<00:01:47.880><c> I</c><00:01:47.960><c> enabled</c><00:01:48.360><c> multi-view</c><00:01:49.320><c> and</c><00:01:49.440><c> uploaded</c>
+
+00:01:49.830 --> 00:01:49.840 align:start position:0%
+Then I enabled multi-view and uploaded
+ 
+
+00:01:49.840 --> 00:01:59.470 align:start position:0%
+Then I enabled multi-view and uploaded
+the<00:01:49.920><c> remaining</c><00:01:50.360><c> reference</c><00:01:50.720><c> images.</c>
+
+00:01:59.470 --> 00:01:59.480 align:start position:0%
+ 
+ 
+
+00:01:59.480 --> 00:02:00.990 align:start position:0%
+ 
+Once<00:01:59.720><c> everything</c><00:02:00.040><c> was</c><00:02:00.200><c> ready,</c><00:02:00.600><c> I</c><00:02:00.680><c> clicked</c>
+
+00:02:00.990 --> 00:02:01.000 align:start position:0%
+Once everything was ready, I clicked
+ 
+
+00:02:01.000 --> 00:02:03.390 align:start position:0%
+Once everything was ready, I clicked
+generate.<00:02:01.920><c> After</c><00:02:02.200><c> a</c><00:02:02.240><c> short</c><00:02:02.560><c> wait,</c><00:02:03.160><c> Mesh</c>
+
+00:02:03.390 --> 00:02:03.400 align:start position:0%
+generate. After a short wait, Mesh
+ 
+
+00:02:03.400 --> 00:02:05.590 align:start position:0%
+generate. After a short wait, Mesh
+generated<00:02:04.000><c> a</c><00:02:04.040><c> very</c><00:02:04.360><c> nice</c><00:02:04.640><c> dog</c><00:02:04.920><c> model.</c>
+
+00:02:05.590 --> 00:02:05.600 align:start position:0%
+generated a very nice dog model.
+ 
+
+00:02:05.600 --> 00:02:07.670 align:start position:0%
+generated a very nice dog model.
+However,<00:02:06.320><c> the</c><00:02:06.440><c> first</c><00:02:06.760><c> generated</c><00:02:07.240><c> model</c><00:02:07.520><c> was</c>
+
+00:02:07.670 --> 00:02:07.680 align:start position:0%
+However, the first generated model was
+ 
+
+00:02:07.680 --> 00:02:09.669 align:start position:0%
+However, the first generated model was
+extremely<00:02:08.320><c> high</c><00:02:08.520><c> poly.</c><00:02:09.036><c> [music]</c><00:02:09.280><c> This</c><00:02:09.520><c> one</c>
+
+00:02:09.669 --> 00:02:09.679 align:start position:0%
+extremely high poly. [music] This one
+ 
+
+00:02:09.679 --> 00:02:12.750 align:start position:0%
+extremely high poly. [music] This one
+had<00:02:09.800><c> around</c><00:02:10.160><c> 250,000</c><00:02:11.320><c> triangles.</c><00:02:12.400><c> That</c><00:02:12.600><c> is</c><00:02:12.720><c> a</c>
+
+00:02:12.750 --> 00:02:12.760 align:start position:0%
+had around 250,000 triangles. That is a
+ 
+
+00:02:12.760 --> 00:02:15.030 align:start position:0%
+had around 250,000 triangles. That is a
+problem<00:02:13.520><c> because</c><00:02:13.840><c> Roblox</c><00:02:14.280><c> Studio</c><00:02:14.760><c> only</c>
+
+00:02:15.030 --> 00:02:15.040 align:start position:0%
+problem because Roblox Studio only
+ 
+
+00:02:15.040 --> 00:02:17.030 align:start position:0%
+problem because Roblox Studio only
+supports<00:02:15.480><c> up</c><00:02:15.600><c> to</c><00:02:15.720><c> around</c><00:02:16.000><c> 10,000</c><00:02:16.560><c> triangles</c>
+
+00:02:17.030 --> 00:02:17.040 align:start position:0%
+supports up to around 10,000 triangles
+ 
+
+00:02:17.040 --> 00:02:19.470 align:start position:0%
+supports up to around 10,000 triangles
+per<00:02:17.200><c> mesh.</c><00:02:18.120><c> To</c><00:02:18.240><c> fix</c><00:02:18.480><c> that,</c><00:02:19.040><c> I</c><00:02:19.120><c> clicked</c><00:02:19.360><c> the</c>
+
+00:02:19.470 --> 00:02:19.480 align:start position:0%
+per mesh. To fix that, I clicked the
+ 
+
+00:02:19.480 --> 00:02:21.310 align:start position:0%
+per mesh. To fix that, I clicked the
+remesh<00:02:19.880><c> button.</c><00:02:20.560><c> You</c><00:02:20.680><c> can</c><00:02:20.800><c> choose</c><00:02:21.080><c> either</c>
+
+00:02:21.310 --> 00:02:21.320 align:start position:0%
+remesh button. You can choose either
+ 
+
+00:02:21.320 --> 00:02:23.830 align:start position:0%
+remesh button. You can choose either
+fixed<00:02:21.959><c> or</c><00:02:22.080><c> adaptive.</c><00:02:22.959><c> I</c><00:02:23.080><c> highly</c><00:02:23.400><c> recommend</c>
+
+00:02:23.830 --> 00:02:23.840 align:start position:0%
+fixed or adaptive. I highly recommend
+ 
+
+00:02:23.840 --> 00:02:25.590 align:start position:0%
+fixed or adaptive. I highly recommend
+adaptive<00:02:24.360><c> and</c><00:02:24.520><c> selecting</c><00:02:25.000><c> low</c><00:02:25.200><c> quality</c>
+
+00:02:25.590 --> 00:02:25.600 align:start position:0%
+adaptive and selecting low quality
+ 
+
+00:02:25.600 --> 00:02:28.350 align:start position:0%
+adaptive and selecting low quality
+reduction.<00:02:26.720><c> With</c><00:02:26.880><c> fixed</c><00:02:27.200><c> mode,</c><00:02:27.720><c> Mesh</c><00:02:27.959><c> tries</c>
+
+00:02:28.350 --> 00:02:28.360 align:start position:0%
+reduction. With fixed mode, Mesh tries
+ 
+
+00:02:28.360 --> 00:02:30.030 align:start position:0%
+reduction. With fixed mode, Mesh tries
+to<00:02:28.480><c> force</c><00:02:28.800><c> the</c><00:02:28.880><c> model</c><00:02:29.240><c> into</c><00:02:29.440><c> a</c><00:02:29.480><c> specific</c>
+
+00:02:30.030 --> 00:02:30.040 align:start position:0%
+to force the model into a specific
+ 
+
+00:02:30.040 --> 00:02:31.870 align:start position:0%
+to force the model into a specific
+polygon<00:02:30.480><c> count,</c><00:02:31.120><c> which</c><00:02:31.280><c> can</c><00:02:31.440><c> sometimes</c>
+
+00:02:31.870 --> 00:02:31.880 align:start position:0%
+polygon count, which can sometimes
+ 
+
+00:02:31.880 --> 00:02:33.916 align:start position:0%
+polygon count, which can sometimes
+create<00:02:32.240><c> holes</c><00:02:32.720><c> or</c><00:02:32.840><c> bad</c><00:02:33.120><c> geometry.</c>
+
+00:02:33.916 --> 00:02:33.926 align:start position:0%
+create holes or bad geometry.
+ 
+
+00:02:33.926 --> 00:02:34.270 align:start position:0%
+create holes or bad geometry.
+&gt;&gt; [music]
+
+00:02:34.270 --> 00:02:34.280 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:02:34.280 --> 00:02:36.590 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; For<00:02:34.400><c> topology,</c><00:02:35.320><c> you</c><00:02:35.440><c> can</c><00:02:35.560><c> choose</c><00:02:35.800><c> quads</c><00:02:36.480><c> or</c>
+
+00:02:36.590 --> 00:02:36.600 align:start position:0%
+&gt;&gt; For topology, you can choose quads or
+ 
+
+00:02:36.600 --> 00:02:38.830 align:start position:0%
+&gt;&gt; For topology, you can choose quads or
+triangles.<00:02:37.520><c> Quads</c><00:02:37.920><c> are</c><00:02:38.120><c> easier</c><00:02:38.440><c> to</c><00:02:38.600><c> edit</c>
+
+00:02:38.830 --> 00:02:38.840 align:start position:0%
+triangles. Quads are easier to edit
+ 
+
+00:02:38.840 --> 00:02:41.030 align:start position:0%
+triangles. Quads are easier to edit
+later<00:02:39.080><c> in</c><00:02:39.200><c> Blender.</c><00:02:40.120><c> After</c><00:02:40.360><c> confirming</c><00:02:40.920><c> the</c>
+
+00:02:41.030 --> 00:02:41.040 align:start position:0%
+later in Blender. After confirming the
+ 
+
+00:02:41.040 --> 00:02:43.070 align:start position:0%
+later in Blender. After confirming the
+model<00:02:41.360><c> was</c><00:02:41.520><c> reduced</c><00:02:41.959><c> to</c><00:02:42.080><c> roughly</c><00:02:42.400><c> 3,000</c>
+
+00:02:43.070 --> 00:02:43.080 align:start position:0%
+model was reduced to roughly 3,000
+ 
+
+00:02:43.080 --> 00:02:45.070 align:start position:0%
+model was reduced to roughly 3,000
+triangles,<00:02:43.920><c> while</c><00:02:44.080><c> still</c><00:02:44.400><c> keeping</c><00:02:44.720><c> a</c><00:02:44.800><c> great</c>
+
+00:02:45.070 --> 00:02:45.080 align:start position:0%
+triangles, while still keeping a great
+ 
+
+00:02:45.080 --> 00:02:47.470 align:start position:0%
+triangles, while still keeping a great
+shape.<00:02:45.959><c> Next,</c><00:02:46.320><c> I</c><00:02:46.400><c> clicked</c><00:02:46.720><c> texture</c><00:02:47.026><c> [music]</c>
+
+00:02:47.470 --> 00:02:47.480 align:start position:0%
+shape. Next, I clicked texture [music]
+ 
+
+00:02:47.480 --> 00:02:49.470 align:start position:0%
+shape. Next, I clicked texture [music]
+and<00:02:47.640><c> generated</c><00:02:48.160><c> textures</c><00:02:48.600><c> for</c><00:02:48.680><c> the</c><00:02:48.800><c> model.</c>
+
+00:02:49.470 --> 00:02:49.480 align:start position:0%
+and generated textures for the model.
+ 
+
+00:02:49.480 --> 00:02:51.750 align:start position:0%
+and generated textures for the model.
+The<00:02:49.600><c> final</c><00:02:49.959><c> result</c><00:02:50.360><c> looked</c><00:02:50.560><c> amazing.</c><00:02:51.480><c> Then</c><00:02:51.680><c> I</c>
+
+00:02:51.750 --> 00:02:51.760 align:start position:0%
+The final result looked amazing. Then I
+ 
+
+00:02:51.760 --> 00:02:54.270 align:start position:0%
+The final result looked amazing. Then I
+downloaded<00:02:52.240><c> the</c><00:02:52.320><c> model</c><00:02:52.680><c> as</c><00:02:52.840><c> FBX</c><00:02:53.400><c> format.</c><00:02:54.200><c> You</c>
+
+00:02:54.270 --> 00:02:54.280 align:start position:0%
+downloaded the model as FBX format. You
+ 
+
+00:02:54.280 --> 00:02:56.390 align:start position:0%
+downloaded the model as FBX format. You
+can<00:02:54.400><c> also</c><00:02:54.640><c> use</c><00:02:54.920><c> OBJ</c><00:02:55.480><c> or</c><00:02:55.680><c> other</c><00:02:55.880><c> formats</c>
+
+00:02:56.390 --> 00:02:56.400 align:start position:0%
+can also use OBJ or other formats
+ 
+
+00:02:56.400 --> 00:02:58.910 align:start position:0%
+can also use OBJ or other formats
+Blender<00:02:56.680><c> supports,</c><00:02:57.560><c> but</c><00:02:57.760><c> FBX</c><00:02:58.320><c> works</c><00:02:58.560><c> great</c>
+
+00:02:58.910 --> 00:02:58.920 align:start position:0%
+Blender supports, but FBX works great
+ 
+
+00:02:58.920 --> 00:03:03.070 align:start position:0%
+Blender supports, but FBX works great
+for<00:02:59.080><c> animation</c><00:02:59.472><c> [music]</c><00:02:59.519><c> workflows.</c>
+
+00:03:03.070 --> 00:03:03.080 align:start position:0%
+ 
+ 
+
+00:03:03.080 --> 00:03:05.430 align:start position:0%
+ 
+Now,<00:03:03.280><c> let's</c><00:03:03.519><c> move</c><00:03:03.720><c> into</c><00:03:03.920><c> Blender.</c>
+
+00:03:05.430 --> 00:03:05.440 align:start position:0%
+Now, let's move into Blender.
+ 
+
+00:03:05.440 --> 00:03:07.977 align:start position:0%
+Now, let's move into Blender.
+I<00:03:05.560><c> imported</c><00:03:06.160><c> the</c><00:03:06.280><c> dog</c><00:03:06.800><c> FBX</c><00:03:07.400><c> model</c>
+
+00:03:07.977 --> 00:03:07.987 align:start position:0%
+I imported the dog FBX model
+ 
+
+00:03:07.987 --> 00:03:08.030 align:start position:0%
+I imported the dog FBX model
+&gt;&gt; [music]
+
+00:03:08.030 --> 00:03:08.040 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:03:08.040 --> 00:03:10.750 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; and<00:03:08.200><c> made</c><00:03:08.440><c> sure</c><00:03:08.640><c> Blender</c><00:03:09.120><c> MCP</c><00:03:09.720><c> was</c><00:03:09.880><c> installed</c>
+
+00:03:10.750 --> 00:03:10.760 align:start position:0%
+&gt;&gt; and made sure Blender MCP was installed
+ 
+
+00:03:10.760 --> 00:03:13.350 align:start position:0%
+&gt;&gt; and made sure Blender MCP was installed
+and<00:03:10.880><c> connected</c><00:03:11.360><c> to</c><00:03:11.440><c> Claude</c><00:03:11.880><c> through</c><00:03:12.040><c> MCP.</c><00:03:13.239><c> I</c>
+
+00:03:13.350 --> 00:03:13.360 align:start position:0%
+and connected to Claude through MCP. I
+ 
+
+00:03:13.360 --> 00:03:15.509 align:start position:0%
+and connected to Claude through MCP. I
+have<00:03:13.519><c> a</c><00:03:13.560><c> separate</c><00:03:14.040><c> setup</c><00:03:14.400><c> video</c><00:03:15.080><c> linked</c><00:03:15.400><c> in</c>
+
+00:03:15.509 --> 00:03:15.519 align:start position:0%
+have a separate setup video linked in
+ 
+
+00:03:15.519 --> 00:03:17.190 align:start position:0%
+have a separate setup video linked in
+the<00:03:15.560><c> description</c><00:03:16.480><c> if</c><00:03:16.640><c> you</c><00:03:16.720><c> need</c><00:03:16.920><c> help</c>
+
+00:03:17.190 --> 00:03:17.200 align:start position:0%
+the description if you need help
+ 
+
+00:03:17.200 --> 00:03:19.630 align:start position:0%
+the description if you need help
+configuring<00:03:17.920><c> Blender</c><00:03:18.360><c> MCP.</c>
+
+00:03:19.630 --> 00:03:19.640 align:start position:0%
+configuring Blender MCP.
+ 
+
+00:03:19.640 --> 00:03:21.110 align:start position:0%
+configuring Blender MCP.
+After<00:03:19.920><c> confirming</c><00:03:20.480><c> the</c><00:03:20.560><c> connection</c><00:03:21.000><c> was</c>
+
+00:03:21.110 --> 00:03:21.120 align:start position:0%
+After confirming the connection was
+ 
+
+00:03:21.120 --> 00:03:23.630 align:start position:0%
+After confirming the connection was
+working,<00:03:21.840><c> I</c><00:03:22.000><c> opened</c><00:03:22.360><c> Claude</c><00:03:22.720><c> and</c><00:03:22.840><c> typed,</c>
+
+00:03:23.630 --> 00:03:23.640 align:start position:0%
+working, I opened Claude and typed,
+ 
+
+00:03:23.640 --> 00:03:26.110 align:start position:0%
+working, I opened Claude and typed,
+"Nice,<00:03:24.360><c> I</c><00:03:24.440><c> want</c><00:03:24.640><c> to</c><00:03:24.760><c> rig</c><00:03:25.000><c> this</c><00:03:25.160><c> dog</c><00:03:25.480><c> model.</c>
+
+00:03:26.110 --> 00:03:26.120 align:start position:0%
+"Nice, I want to rig this dog model.
+ 
+
+00:03:26.120 --> 00:03:28.550 align:start position:0%
+"Nice, I want to rig this dog model.
+Please<00:03:26.519><c> add</c><00:03:26.760><c> skeletons</c><00:03:27.320><c> to</c><00:03:27.480><c> it</c><00:03:27.600><c> first."</c>
+
+00:03:28.550 --> 00:03:28.560 align:start position:0%
+Please add skeletons to it first."
+ 
+
+00:03:28.560 --> 00:03:30.630 align:start position:0%
+Please add skeletons to it first."
+Claude<00:03:28.920><c> immediately</c><00:03:29.519><c> generated</c><00:03:30.080><c> a</c><00:03:30.120><c> complete</c>
+
+00:03:30.630 --> 00:03:30.640 align:start position:0%
+Claude immediately generated a complete
+ 
+
+00:03:30.640 --> 00:03:34.310 align:start position:0%
+Claude immediately generated a complete
+armature<00:03:31.120><c> called</c><00:03:31.519><c> dog</c><00:03:31.840><c> rig.</c>
+
+00:03:34.310 --> 00:03:34.320 align:start position:0%
+ 
+ 
+
+00:03:34.320 --> 00:03:36.430 align:start position:0%
+ 
+Then<00:03:34.519><c> I</c><00:03:34.600><c> typed,</c><00:03:34.842><c> [music]</c><00:03:35.280><c> "Nice,</c><00:03:36.120><c> please</c>
+
+00:03:36.430 --> 00:03:36.440 align:start position:0%
+Then I typed, [music] "Nice, please
+ 
+
+00:03:36.440 --> 00:03:38.590 align:start position:0%
+Then I typed, [music] "Nice, please
+continue<00:03:36.920><c> parent</c><00:03:37.280><c> the</c><00:03:37.400><c> mesh</c><00:03:37.640><c> to</c><00:03:37.760><c> the</c><00:03:37.880><c> armature</c>
+
+00:03:38.590 --> 00:03:38.600 align:start position:0%
+continue parent the mesh to the armature
+ 
+
+00:03:38.600 --> 00:03:40.630 align:start position:0%
+continue parent the mesh to the armature
+and<00:03:38.800><c> automatic</c><00:03:39.320><c> weights."</c><00:03:40.239><c> Claude</c>
+
+00:03:40.630 --> 00:03:40.640 align:start position:0%
+and automatic weights." Claude
+ 
+
+00:03:40.640 --> 00:03:42.190 align:start position:0%
+and automatic weights." Claude
+automatically<00:03:41.320><c> weighted</c><00:03:41.640><c> the</c><00:03:41.720><c> mesh</c><00:03:42.000><c> to</c><00:03:42.120><c> the</c>
+
+00:03:42.190 --> 00:03:42.200 align:start position:0%
+automatically weighted the mesh to the
+ 
+
+00:03:42.200 --> 00:03:44.390 align:start position:0%
+automatically weighted the mesh to the
+skeleton<00:03:43.040><c> and</c><00:03:43.239><c> even</c><00:03:43.480><c> performed</c><00:03:43.959><c> some</c><00:03:44.120><c> quick</c>
+
+00:03:44.390 --> 00:03:44.400 align:start position:0%
+skeleton and even performed some quick
+ 
+
+00:03:44.400 --> 00:03:45.550 align:start position:0%
+skeleton and even performed some quick
+tests.
+
+00:03:45.550 --> 00:03:45.560 align:start position:0%
+tests.
+ 
+
+00:03:45.560 --> 00:03:47.110 align:start position:0%
+tests.
+After<00:03:45.840><c> that,</c><00:03:45.977><c> [music]</c><00:03:46.160><c> I</c><00:03:46.239><c> asked</c><00:03:46.519><c> Claude</c><00:03:46.920><c> what</c>
+
+00:03:47.110 --> 00:03:47.120 align:start position:0%
+After that, [music] I asked Claude what
+ 
+
+00:03:47.120 --> 00:03:49.430 align:start position:0%
+After that, [music] I asked Claude what
+animation<00:03:47.600><c> should</c><00:03:47.800><c> come</c><00:03:48.000><c> next.</c><00:03:48.760><c> It</c><00:03:48.920><c> suggested</c>
+
+00:03:49.430 --> 00:03:49.440 align:start position:0%
+animation should come next. It suggested
+ 
+
+00:03:49.440 --> 00:03:51.150 align:start position:0%
+animation should come next. It suggested
+an<00:03:49.640><c> idle</c><00:03:49.920><c> animation</c><00:03:50.440><c> with</c><00:03:50.600><c> breathing</c><00:03:51.040><c> and</c>
+
+00:03:51.150 --> 00:03:51.160 align:start position:0%
+an idle animation with breathing and
+ 
+
+00:03:51.160 --> 00:03:53.670 align:start position:0%
+an idle animation with breathing and
+tail<00:03:51.440><c> wagging.</c><00:03:52.400><c> Claude</c><00:03:52.720><c> generated</c><00:03:53.240><c> the</c><00:03:53.440><c> idle</c>
+
+00:03:53.670 --> 00:03:53.680 align:start position:0%
+tail wagging. Claude generated the idle
+ 
+
+00:03:53.680 --> 00:03:55.990 align:start position:0%
+tail wagging. Claude generated the idle
+animation.<00:03:54.680><c> Then</c><00:03:54.880><c> it</c><00:03:54.960><c> suggested</c><00:03:55.520><c> creating</c><00:03:55.920><c> a</c>
+
+00:03:55.990 --> 00:03:56.000 align:start position:0%
+animation. Then it suggested creating a
+ 
+
+00:03:56.000 --> 00:04:00.670 align:start position:0%
+animation. Then it suggested creating a
+walk<00:03:56.320><c> cycle.</c>
+
+00:04:00.670 --> 00:04:00.680 align:start position:0%
+ 
+ 
+
+00:04:00.680 --> 00:04:02.870 align:start position:0%
+ 
+The<00:04:00.760><c> first</c><00:04:01.080><c> walk</c><00:04:01.320><c> cycle</c><00:04:01.680><c> had</c><00:04:01.840><c> a</c><00:04:01.880><c> looping</c><00:04:02.240><c> issue</c>
+
+00:04:02.870 --> 00:04:02.880 align:start position:0%
+The first walk cycle had a looping issue
+ 
+
+00:04:02.880 --> 00:04:04.510 align:start position:0%
+The first walk cycle had a looping issue
+because<00:04:03.160><c> the</c><00:04:03.280><c> last</c><00:04:03.640><c> frame</c><00:04:04.200><c> didn't</c><00:04:04.317><c> [music]</c>
+
+00:04:04.510 --> 00:04:04.520 align:start position:0%
+because the last frame didn't [music]
+ 
+
+00:04:04.520 --> 00:04:06.870 align:start position:0%
+because the last frame didn't [music]
+match<00:04:04.800><c> the</c><00:04:04.920><c> first</c><00:04:05.200><c> frame.</c><00:04:06.120><c> I</c><00:04:06.200><c> simply</c><00:04:06.600><c> asked</c>
+
+00:04:06.870 --> 00:04:06.880 align:start position:0%
+match the first frame. I simply asked
+ 
+
+00:04:06.880 --> 00:04:12.390 align:start position:0%
+match the first frame. I simply asked
+Claude<00:04:07.200><c> to</c><00:04:07.320><c> fix</c><00:04:07.600><c> the</c><00:04:07.720><c> loop.</c>
+
+00:04:12.390 --> 00:04:12.400 align:start position:0%
+ 
+ 
+
+00:04:12.400 --> 00:04:14.070 align:start position:0%
+ 
+After<00:04:12.680><c> that,</c><00:04:12.880><c> the</c><00:04:13.000><c> walk</c><00:04:13.320><c> animation</c><00:04:13.760><c> became</c>
+
+00:04:14.070 --> 00:04:14.080 align:start position:0%
+After that, the walk animation became
+ 
+
+00:04:14.080 --> 00:04:15.710 align:start position:0%
+After that, the walk animation became
+smooth<00:04:14.480><c> and</c><00:04:14.600><c> seamless.</c>
+
+00:04:15.710 --> 00:04:15.720 align:start position:0%
+smooth and seamless.
+ 
+
+00:04:15.720 --> 00:04:18.069 align:start position:0%
+smooth and seamless.
+I<00:04:15.840><c> wanted</c><00:04:16.160><c> a</c><00:04:16.200><c> more</c><00:04:16.400><c> advanced</c><00:04:16.959><c> idle</c><00:04:17.200><c> animation,</c>
+
+00:04:18.069 --> 00:04:18.079 align:start position:0%
+I wanted a more advanced idle animation,
+ 
+
+00:04:18.079 --> 00:04:20.190 align:start position:0%
+I wanted a more advanced idle animation,
+so<00:04:18.280><c> I</c><00:04:18.359><c> typed,</c><00:04:19.040><c> "Make</c><00:04:19.320><c> another</c><00:04:19.680><c> animation</c>
+
+00:04:20.190 --> 00:04:20.200 align:start position:0%
+so I typed, "Make another animation
+ 
+
+00:04:20.200 --> 00:04:22.110 align:start position:0%
+so I typed, "Make another animation
+called<00:04:20.560><c> idle,</c><00:04:21.079><c> so</c><00:04:21.239><c> it</c><00:04:21.359><c> stand</c><00:04:21.680><c> in</c><00:04:21.880><c> idle</c><00:04:22.002><c> [music]</c>
+
+00:04:22.110 --> 00:04:22.120 align:start position:0%
+called idle, so it stand in idle [music]
+ 
+
+00:04:22.120 --> 00:04:24.430 align:start position:0%
+called idle, so it stand in idle [music]
+state<00:04:22.440><c> sometime</c><00:04:23.200><c> and</c><00:04:23.360><c> sometime</c><00:04:23.880><c> sit</c><00:04:24.080><c> down</c><00:04:24.320><c> and</c>
+
+00:04:24.430 --> 00:04:24.440 align:start position:0%
+state sometime and sometime sit down and
+ 
+
+00:04:24.440 --> 00:04:26.750 align:start position:0%
+state sometime and sometime sit down and
+looks<00:04:24.640><c> around."</c><00:04:25.560><c> Claude</c><00:04:25.880><c> generated</c><00:04:26.360><c> a</c><00:04:26.400><c> new</c>
+
+00:04:26.750 --> 00:04:26.760 align:start position:0%
+looks around." Claude generated a new
+ 
+
+00:04:26.760 --> 00:04:28.790 align:start position:0%
+looks around." Claude generated a new
+idle<00:04:27.040><c> animation,</c><00:04:27.840><c> but</c><00:04:28.000><c> the</c><00:04:28.080><c> feet</c><00:04:28.320><c> alignment</c>
+
+00:04:28.790 --> 00:04:28.800 align:start position:0%
+idle animation, but the feet alignment
+ 
+
+00:04:28.800 --> 00:04:31.110 align:start position:0%
+idle animation, but the feet alignment
+wasn't<00:04:29.120><c> correct.</c><00:04:30.080><c> To</c><00:04:30.200><c> solve</c><00:04:30.518><c> [music]</c><00:04:30.520><c> that,</c><00:04:31.000><c> I</c>
+
+00:04:31.110 --> 00:04:31.120 align:start position:0%
+wasn't correct. To solve [music] that, I
+ 
+
+00:04:31.120 --> 00:04:33.510 align:start position:0%
+wasn't correct. To solve [music] that, I
+asked<00:04:31.360><c> Claude</c><00:04:31.640><c> to</c><00:04:31.760><c> add</c><00:04:32.000><c> IK</c><00:04:32.400><c> bones.</c><00:04:33.200><c> Claude</c>
+
+00:04:33.510 --> 00:04:33.520 align:start position:0%
+asked Claude to add IK bones. Claude
+ 
+
+00:04:33.520 --> 00:04:36.190 align:start position:0%
+asked Claude to add IK bones. Claude
+added<00:04:33.840><c> IK</c><00:04:34.160><c> controls</c><00:04:34.640><c> to</c><00:04:34.800><c> all</c><00:04:35.040><c> four</c><00:04:35.320><c> legs.</c>
+
+00:04:36.190 --> 00:04:36.200 align:start position:0%
+added IK controls to all four legs.
+ 
+
+00:04:36.200 --> 00:04:38.270 align:start position:0%
+added IK controls to all four legs.
+After<00:04:36.480><c> testing</c><00:04:36.919><c> by</c><00:04:37.040><c> moving</c><00:04:37.360><c> the</c><00:04:37.560><c> IK</c><00:04:37.880><c> controls</c>
+
+00:04:38.270 --> 00:04:38.280 align:start position:0%
+After testing by moving the IK controls
+ 
+
+00:04:38.280 --> 00:04:47.590 align:start position:0%
+After testing by moving the IK controls
+around,<00:04:39.000><c> everything</c><00:04:39.480><c> worked</c><00:04:39.760><c> perfectly.</c>
+
+00:04:47.590 --> 00:04:47.600 align:start position:0%
+ 
+ 
+
+00:04:47.600 --> 00:04:49.110 align:start position:0%
+ 
+If<00:04:47.720><c> you're</c><00:04:47.840><c> new</c><00:04:47.960><c> to</c><00:04:48.080><c> Blender,</c><00:04:48.720><c> switching</c>
+
+00:04:49.110 --> 00:04:49.120 align:start position:0%
+If you're new to Blender, switching
+ 
+
+00:04:49.120 --> 00:04:51.350 align:start position:0%
+If you're new to Blender, switching
+between<00:04:49.440><c> animations</c><00:04:50.000><c> can</c><00:04:50.160><c> feel</c><00:04:50.400><c> confusing.</c>
+
+00:04:51.350 --> 00:04:51.360 align:start position:0%
+between animations can feel confusing.
+ 
+
+00:04:51.360 --> 00:04:53.270 align:start position:0%
+between animations can feel confusing.
+You<00:04:51.440><c> need</c><00:04:51.600><c> to</c><00:04:51.720><c> open</c><00:04:52.000><c> another</c><00:04:52.320><c> panel,</c><00:04:52.919><c> switch</c>
+
+00:04:53.270 --> 00:04:53.280 align:start position:0%
+You need to open another panel, switch
+ 
+
+00:04:53.280 --> 00:04:55.510 align:start position:0%
+You need to open another panel, switch
+to<00:04:53.400><c> dope</c><00:04:53.640><c> sheet,</c><00:04:54.240><c> then</c><00:04:54.520><c> action</c><00:04:54.840><c> editor,</c><00:04:55.360><c> and</c>
+
+00:04:55.510 --> 00:04:55.520 align:start position:0%
+to dope sheet, then action editor, and
+ 
+
+00:04:55.520 --> 00:04:57.070 align:start position:0%
+to dope sheet, then action editor, and
+finally<00:04:55.919><c> select</c><00:04:56.240><c> the</c><00:04:56.360><c> animation</c><00:04:56.840><c> from</c><00:04:56.960><c> the</c>
+
+00:04:57.070 --> 00:04:57.080 align:start position:0%
+finally select the animation from the
+ 
+
+00:04:57.080 --> 00:04:59.510 align:start position:0%
+finally select the animation from the
+list.<00:04:57.919><c> Honestly,</c><00:04:58.640><c> I</c><00:04:58.720><c> hadn't</c><00:04:59.000><c> used</c><00:04:59.200><c> Blender</c>
+
+00:04:59.510 --> 00:04:59.520 align:start position:0%
+list. Honestly, I hadn't used Blender
+ 
+
+00:04:59.520 --> 00:05:01.550 align:start position:0%
+list. Honestly, I hadn't used Blender
+for<00:04:59.640><c> a</c><00:04:59.720><c> while,</c><00:05:00.280><c> so</c><00:05:00.440><c> I</c><00:05:00.520><c> simply</c><00:05:00.880><c> asked</c><00:05:01.120><c> Claude</c><00:05:01.440><c> to</c>
+
+00:05:01.550 --> 00:05:01.560 align:start position:0%
+for a while, so I simply asked Claude to
+ 
+
+00:05:01.560 --> 00:05:02.603 align:start position:0%
+for a while, so I simply asked Claude to
+teach<00:05:01.840><c> me</c><00:05:01.960><c> how</c><00:05:02.040><c> to</c><00:05:02.160><c> switch</c><00:05:02.480><c> animations.</c>
+
+00:05:02.603 --> 00:05:02.613 align:start position:0%
+teach me how to switch animations.
+ 
+
+00:05:02.613 --> 00:05:05.630 align:start position:0%
+teach me how to switch animations.
+[music]
+
+00:05:05.630 --> 00:05:05.640 align:start position:0%
+ 
+ 
+
+00:05:05.640 --> 00:05:07.630 align:start position:0%
+ 
+Now,<00:05:05.840><c> let's</c><00:05:06.040><c> create</c><00:05:06.360><c> the</c><00:05:06.440><c> second</c><00:05:06.800><c> pet.</c><00:05:07.520><c> For</c>
+
+00:05:07.630 --> 00:05:07.640 align:start position:0%
+Now, let's create the second pet. For
+ 
+
+00:05:07.640 --> 00:05:09.950 align:start position:0%
+Now, let's create the second pet. For
+the<00:05:07.760><c> parrot,</c><00:05:08.400><c> I</c><00:05:08.520><c> used</c><00:05:08.760><c> ChatGPT</c><00:05:09.480><c> again</c><00:05:09.800><c> and</c>
+
+00:05:09.950 --> 00:05:09.960 align:start position:0%
+the parrot, I used ChatGPT again and
+ 
+
+00:05:09.960 --> 00:05:12.190 align:start position:0%
+the parrot, I used ChatGPT again and
+typed,<00:05:10.560><c> "Design</c><00:05:11.000><c> for</c><00:05:11.120><c> me</c><00:05:11.280><c> a</c><00:05:11.360><c> 3D</c><00:05:11.800><c> parrot</c><00:05:12.080><c> in</c>
+
+00:05:12.190 --> 00:05:12.200 align:start position:0%
+typed, "Design for me a 3D parrot in
+ 
+
+00:05:12.200 --> 00:05:14.870 align:start position:0%
+typed, "Design for me a 3D parrot in
+cartoon<00:05:12.680><c> style</c><00:05:13.360><c> with</c><00:05:13.560><c> multiple</c><00:05:14.000><c> views</c><00:05:14.680><c> and</c>
+
+00:05:14.870 --> 00:05:14.880 align:start position:0%
+cartoon style with multiple views and
+ 
+
+00:05:14.880 --> 00:05:16.350 align:start position:0%
+cartoon style with multiple views and
+easy<00:05:15.160><c> for</c><00:05:15.320><c> generate</c><00:05:15.760><c> rig</c><00:05:15.919><c> model</c><00:05:16.240><c> in</c>
+
+00:05:16.350 --> 00:05:16.360 align:start position:0%
+easy for generate rig model in
+ 
+
+00:05:16.360 --> 00:05:17.670 align:start position:0%
+easy for generate rig model in
+MesharyAI."
+
+00:05:17.670 --> 00:05:17.680 align:start position:0%
+MesharyAI."
+ 
+
+00:05:17.680 --> 00:05:19.830 align:start position:0%
+MesharyAI."
+The<00:05:17.720><c> design</c><00:05:18.120><c> looked</c><00:05:18.360><c> fantastic,</c><00:05:19.440><c> but</c><00:05:19.560><c> I</c><00:05:19.640><c> made</c>
+
+00:05:19.830 --> 00:05:19.840 align:start position:0%
+The design looked fantastic, but I made
+ 
+
+00:05:19.840 --> 00:05:22.150 align:start position:0%
+The design looked fantastic, but I made
+a<00:05:19.880><c> huge</c><00:05:20.280><c> mistake.</c><00:05:21.080><c> The</c><00:05:21.200><c> wings</c><00:05:21.520><c> were</c><00:05:21.640><c> drawn</c><00:05:21.960><c> too</c>
+
+00:05:22.150 --> 00:05:22.160 align:start position:0%
+a huge mistake. The wings were drawn too
+ 
+
+00:05:22.160 --> 00:05:23.870 align:start position:0%
+a huge mistake. The wings were drawn too
+close<00:05:22.440><c> to</c><00:05:22.560><c> the</c><00:05:22.640><c> body.</c><00:05:22.918><c> [music]</c><00:05:23.360><c> This</c><00:05:23.520><c> caused</c><00:05:23.800><c> a</c>
+
+00:05:23.870 --> 00:05:23.880 align:start position:0%
+close to the body. [music] This caused a
+ 
+
+00:05:23.880 --> 00:05:25.790 align:start position:0%
+close to the body. [music] This caused a
+lot<00:05:24.160><c> of</c><00:05:24.240><c> problems</c><00:05:24.720><c> later</c><00:05:25.040><c> when</c><00:05:25.280><c> rigging</c><00:05:25.640><c> and</c>
+
+00:05:25.790 --> 00:05:25.800 align:start position:0%
+lot of problems later when rigging and
+ 
+
+00:05:25.800 --> 00:05:28.270 align:start position:0%
+lot of problems later when rigging and
+animating.<00:05:26.919><c> I</c><00:05:27.040><c> uploaded</c><00:05:27.520><c> the</c><00:05:27.600><c> parrot</c><00:05:27.919><c> images</c>
+
+00:05:28.270 --> 00:05:28.280 align:start position:0%
+animating. I uploaded the parrot images
+ 
+
+00:05:28.280 --> 00:05:30.190 align:start position:0%
+animating. I uploaded the parrot images
+into<00:05:28.520><c> Meshary</c><00:05:29.120><c> and</c><00:05:29.280><c> generated</c><00:05:29.760><c> the</c><00:05:29.840><c> model</c>
+
+00:05:30.190 --> 00:05:30.200 align:start position:0%
+into Meshary and generated the model
+ 
+
+00:05:30.200 --> 00:05:32.630 align:start position:0%
+into Meshary and generated the model
+using<00:05:30.480><c> standard</c><00:05:31.000><c> mode.</c><00:05:31.880><c> Then</c><00:05:32.040><c> I</c><00:05:32.120><c> generated</c>
+
+00:05:32.630 --> 00:05:32.640 align:start position:0%
+using standard mode. Then I generated
+ 
+
+00:05:32.640 --> 00:05:37.830 align:start position:0%
+using standard mode. Then I generated
+textures<00:05:33.400><c> and</c><00:05:33.560><c> remeshed</c><00:05:33.960><c> the</c><00:05:34.040><c> model.</c>
+
+00:05:37.830 --> 00:05:37.840 align:start position:0%
+ 
+ 
+
+00:05:37.840 --> 00:05:40.030 align:start position:0%
+ 
+This<00:05:38.040><c> time</c><00:05:38.280><c> I</c><00:05:38.360><c> selected</c><00:05:38.880><c> fixed</c><00:05:39.240><c> polygon</c><00:05:39.720><c> count</c>
+
+00:05:40.030 --> 00:05:40.040 align:start position:0%
+This time I selected fixed polygon count
+ 
+
+00:05:40.040 --> 00:05:42.790 align:start position:0%
+This time I selected fixed polygon count
+instead<00:05:40.440><c> of</c><00:05:40.520><c> adaptive.</c><00:05:41.600><c> That</c><00:05:41.760><c> was</c><00:05:41.880><c> a</c><00:05:41.919><c> mistake.</c>
+
+00:05:42.790 --> 00:05:42.800 align:start position:0%
+instead of adaptive. That was a mistake.
+ 
+
+00:05:42.800 --> 00:05:44.529 align:start position:0%
+instead of adaptive. That was a mistake.
+The<00:05:42.880><c> texture</c><00:05:43.280><c> became</c><00:05:43.640><c> damaged</c><00:05:44.360><c> and</c><00:05:44.520><c> black</c>
+
+00:05:44.529 --> 00:05:44.539 align:start position:0%
+The texture became damaged and black
+ 
+
+00:05:44.539 --> 00:05:45.950 align:start position:0%
+The texture became damaged and black
+[music]<00:05:44.880><c> patches</c><00:05:45.240><c> appeared</c><00:05:45.560><c> across</c><00:05:45.880><c> the</c>
+
+00:05:45.950 --> 00:05:45.960 align:start position:0%
+[music] patches appeared across the
+ 
+
+00:05:45.960 --> 00:05:46.950 align:start position:0%
+[music] patches appeared across the
+body.
+
+00:05:46.950 --> 00:05:46.960 align:start position:0%
+body.
+ 
+
+00:05:46.960 --> 00:05:49.110 align:start position:0%
+body.
+Fortunately,<00:05:47.960><c> Meshy</c><00:05:48.280><c> includes</c><00:05:48.720><c> texture</c>
+
+00:05:49.110 --> 00:05:49.120 align:start position:0%
+Fortunately, Meshy includes texture
+ 
+
+00:05:49.120 --> 00:05:51.710 align:start position:0%
+Fortunately, Meshy includes texture
+editing<00:05:49.440><c> tools.</c><00:05:50.240><c> I</c><00:05:50.360><c> clicked</c><00:05:50.720><c> edit</c><00:05:50.960><c> texture,</c>
+
+00:05:51.710 --> 00:05:51.720 align:start position:0%
+editing tools. I clicked edit texture,
+ 
+
+00:05:51.720 --> 00:05:53.830 align:start position:0%
+editing tools. I clicked edit texture,
+selected<00:05:52.160><c> the</c><00:05:52.240><c> healing</c><00:05:52.600><c> brush,</c><00:05:53.200><c> and</c><00:05:53.360><c> manually</c>
+
+00:05:53.830 --> 00:05:53.840 align:start position:0%
+selected the healing brush, and manually
+ 
+
+00:05:53.840 --> 00:05:58.870 align:start position:0%
+selected the healing brush, and manually
+painted<00:05:54.200><c> over</c><00:05:54.480><c> all</c><00:05:54.680><c> the</c><00:05:54.760><c> damaged</c><00:05:55.200><c> areas.</c>
+
+00:05:58.870 --> 00:05:58.880 align:start position:0%
+ 
+ 
+
+00:05:58.880 --> 00:06:00.870 align:start position:0%
+ 
+After<00:05:59.160><c> applying</c><00:05:59.560><c> the</c><00:05:59.640><c> changes</c><00:06:00.040><c> and</c><00:06:00.160><c> saving,</c>
+
+00:06:00.870 --> 00:06:00.880 align:start position:0%
+After applying the changes and saving,
+ 
+
+00:06:00.880 --> 00:06:02.830 align:start position:0%
+After applying the changes and saving,
+the<00:06:01.000><c> texture</c><00:06:01.360><c> looked</c><00:06:01.600><c> much</c><00:06:01.920><c> better.</c><00:06:02.720><c> I</c>
+
+00:06:02.830 --> 00:06:02.840 align:start position:0%
+the texture looked much better. I
+ 
+
+00:06:02.840 --> 00:06:07.870 align:start position:0%
+the texture looked much better. I
+downloaded<00:06:03.400><c> the</c><00:06:03.480><c> corrected</c><00:06:04.000><c> FBX</c><00:06:04.184><c> [music]</c>
+
+00:06:07.870 --> 00:06:07.880 align:start position:0%
+ 
+ 
+
+00:06:07.880 --> 00:06:14.350 align:start position:0%
+ 
+and<00:06:08.000><c> imported</c><00:06:08.440><c> it</c><00:06:08.560><c> into</c><00:06:08.760><c> Blender.</c>
+
+00:06:14.350 --> 00:06:14.360 align:start position:0%
+ 
+ 
+
+00:06:14.360 --> 00:06:16.630 align:start position:0%
+ 
+Then,<00:06:14.800><c> I</c><00:06:14.920><c> switched</c><00:06:15.400><c> Claude</c><00:06:16.040><c> to</c><00:06:16.160><c> the</c><00:06:16.280><c> parrot</c>
+
+00:06:16.630 --> 00:06:16.640 align:start position:0%
+Then, I switched Claude to the parrot
+ 
+
+00:06:16.640 --> 00:06:18.830 align:start position:0%
+Then, I switched Claude to the parrot
+project<00:06:17.520><c> and</c><00:06:17.680><c> asked</c><00:06:18.000><c> it</c><00:06:18.160><c> to</c><00:06:18.280><c> generate</c><00:06:18.760><c> a</c>
+
+00:06:18.830 --> 00:06:18.840 align:start position:0%
+project and asked it to generate a
+ 
+
+00:06:18.840 --> 00:06:22.750 align:start position:0%
+project and asked it to generate a
+skeleton.
+
+00:06:22.750 --> 00:06:22.760 align:start position:0%
+ 
+ 
+
+00:06:22.760 --> 00:06:24.710 align:start position:0%
+ 
+Claude<00:06:23.120><c> created</c><00:06:23.560><c> the</c><00:06:23.640><c> skeleton,</c><00:06:24.480><c> but</c><00:06:24.600><c> the</c>
+
+00:06:24.710 --> 00:06:24.720 align:start position:0%
+Claude created the skeleton, but the
+ 
+
+00:06:24.720 --> 00:06:25.830 align:start position:0%
+Claude created the skeleton, but the
+wing<00:06:24.960><c> bones</c><00:06:25.280><c> were</c><00:06:25.400><c> placed</c><00:06:25.799><c> [music]</c>
+
+00:06:25.830 --> 00:06:25.840 align:start position:0%
+wing bones were placed [music]
+ 
+
+00:06:25.840 --> 00:06:27.350 align:start position:0%
+wing bones were placed [music]
+incorrectly.
+
+00:06:27.350 --> 00:06:27.360 align:start position:0%
+incorrectly.
+ 
+
+00:06:27.360 --> 00:06:29.710 align:start position:0%
+incorrectly.
+I<00:06:27.480><c> asked</c><00:06:27.840><c> it</c><00:06:27.960><c> to</c><00:06:28.080><c> reposition</c><00:06:28.640><c> the</c><00:06:28.760><c> wing</c><00:06:28.960><c> bones,</c>
+
+00:06:29.710 --> 00:06:29.720 align:start position:0%
+I asked it to reposition the wing bones,
+ 
+
+00:06:29.720 --> 00:06:32.270 align:start position:0%
+I asked it to reposition the wing bones,
+generate<00:06:30.200><c> automatic</c><00:06:30.720><c> weights,</c><00:06:31.440><c> and</c><00:06:31.640><c> add</c><00:06:31.919><c> IK</c>
+
+00:06:32.270 --> 00:06:32.280 align:start position:0%
+generate automatic weights, and add IK
+ 
+
+00:06:32.280 --> 00:06:37.230 align:start position:0%
+generate automatic weights, and add IK
+controls<00:06:33.080><c> for</c><00:06:33.240><c> both</c><00:06:33.520><c> the</c><00:06:33.640><c> legs</c><00:06:34.280><c> and</c><00:06:34.560><c> wings.</c>
+
+00:06:37.230 --> 00:06:37.240 align:start position:0%
+ 
+ 
+
+00:06:37.240 --> 00:06:39.750 align:start position:0%
+ 
+Unfortunately,<00:06:38.240><c> the</c><00:06:38.360><c> original</c><00:06:38.840><c> wing</c><00:06:39.080><c> design</c>
+
+00:06:39.750 --> 00:06:39.760 align:start position:0%
+Unfortunately, the original wing design
+ 
+
+00:06:39.760 --> 00:06:42.270 align:start position:0%
+Unfortunately, the original wing design
+still<00:06:40.120><c> caused</c><00:06:40.560><c> deformation</c><00:06:41.200><c> issues.</c>
+
+00:06:42.270 --> 00:06:42.280 align:start position:0%
+still caused deformation issues.
+ 
+
+00:06:42.280 --> 00:06:43.990 align:start position:0%
+still caused deformation issues.
+The<00:06:42.400><c> wings</c><00:06:42.760><c> were</c><00:06:42.880><c> simply</c><00:06:43.280><c> too</c><00:06:43.480><c> close</c><00:06:43.800><c> to</c><00:06:43.880><c> the</c>
+
+00:06:43.990 --> 00:06:44.000 align:start position:0%
+The wings were simply too close to the
+ 
+
+00:06:44.000 --> 00:06:46.350 align:start position:0%
+The wings were simply too close to the
+body.<00:06:44.800><c> I</c><00:06:45.000><c> spent</c><00:06:45.280><c> quite</c><00:06:45.520><c> a</c><00:06:45.560><c> bit</c><00:06:45.720><c> of</c><00:06:45.800><c> time</c><00:06:46.080><c> trying</c>
+
+00:06:46.350 --> 00:06:46.360 align:start position:0%
+body. I spent quite a bit of time trying
+ 
+
+00:06:46.360 --> 00:06:52.630 align:start position:0%
+body. I spent quite a bit of time trying
+to<00:06:46.480><c> improve</c><00:06:46.840><c> it.</c>
+
+00:06:52.630 --> 00:06:52.640 align:start position:0%
+ 
+ 
+
+00:06:52.640 --> 00:06:54.430 align:start position:0%
+ 
+But<00:06:52.760><c> eventually,</c><00:06:53.640><c> I</c><00:06:53.760><c> asked</c><00:06:53.964><c> [music]</c><00:06:54.120><c> Claude</c>
+
+00:06:54.430 --> 00:06:54.440 align:start position:0%
+But eventually, I asked [music] Claude
+ 
+
+00:06:54.440 --> 00:06:56.430 align:start position:0%
+But eventually, I asked [music] Claude
+to<00:06:54.560><c> separate</c><00:06:55.040><c> the</c><00:06:55.120><c> wings</c><00:06:55.760><c> into</c><00:06:55.960><c> their</c><00:06:56.200><c> own</c>
+
+00:06:56.430 --> 00:06:56.440 align:start position:0%
+to separate the wings into their own
+ 
+
+00:06:56.440 --> 00:06:58.990 align:start position:0%
+to separate the wings into their own
+mesh.<00:06:57.320><c> The</c><00:06:57.440><c> result</c><00:06:57.800><c> wasn't</c><00:06:58.120><c> perfect,</c><00:06:58.800><c> but</c><00:06:58.919><c> it</c>
+
+00:06:58.990 --> 00:06:59.000 align:start position:0%
+mesh. The result wasn't perfect, but it
+ 
+
+00:06:59.000 --> 00:07:00.430 align:start position:0%
+mesh. The result wasn't perfect, but it
+was<00:06:59.120><c> good</c><00:06:59.320><c> enough.</c>
+
+00:07:00.430 --> 00:07:00.440 align:start position:0%
+was good enough.
+ 
+
+00:07:00.440 --> 00:07:02.750 align:start position:0%
+was good enough.
+Finally,<00:07:01.160><c> I</c><00:07:01.280><c> asked</c><00:07:01.600><c> Claude</c><00:07:01.919><c> to</c><00:07:02.040><c> generate</c><00:07:02.440><c> both</c>
+
+00:07:02.750 --> 00:07:02.760 align:start position:0%
+Finally, I asked Claude to generate both
+ 
+
+00:07:02.760 --> 00:07:05.270 align:start position:0%
+Finally, I asked Claude to generate both
+idle<00:07:03.120><c> and</c><00:07:03.400><c> flying</c><00:07:03.760><c> animations.</c><00:07:04.840><c> Once</c><00:07:05.080><c> I</c><00:07:05.120><c> was</c>
+
+00:07:05.270 --> 00:07:05.280 align:start position:0%
+idle and flying animations. Once I was
+ 
+
+00:07:05.280 --> 00:07:07.030 align:start position:0%
+idle and flying animations. Once I was
+satisfied,<00:07:05.754><c> [music]</c><00:07:06.160><c> I</c><00:07:06.240><c> selected</c><00:07:06.720><c> both</c><00:07:06.960><c> the</c>
+
+00:07:07.030 --> 00:07:07.040 align:start position:0%
+satisfied, [music] I selected both the
+ 
+
+00:07:07.040 --> 00:07:09.190 align:start position:0%
+satisfied, [music] I selected both the
+mesh<00:07:07.480><c> and</c><00:07:07.720><c> armature</c><00:07:08.480><c> and</c><00:07:08.640><c> exported</c>
+
+00:07:09.190 --> 00:07:09.200 align:start position:0%
+mesh and armature and exported
+ 
+
+00:07:09.200 --> 00:07:14.550 align:start position:0%
+mesh and armature and exported
+everything<00:07:09.600><c> as</c><00:07:09.800><c> FBX.</c>
+
+00:07:14.550 --> 00:07:14.560 align:start position:0%
+ 
+ 
+
+00:07:14.560 --> 00:07:16.230 align:start position:0%
+ 
+For<00:07:14.680><c> export</c><00:07:14.924><c> [music]</c><00:07:15.080><c> settings,</c><00:07:15.720><c> I</c><00:07:15.840><c> enabled</c>
+
+00:07:16.230 --> 00:07:16.240 align:start position:0%
+For export [music] settings, I enabled
+ 
+
+00:07:16.240 --> 00:07:18.710 align:start position:0%
+For export [music] settings, I enabled
+selected<00:07:16.720><c> objects,</c><00:07:17.480><c> checked</c><00:07:17.840><c> animation,</c>
+
+00:07:18.710 --> 00:07:18.720 align:start position:0%
+selected objects, checked animation,
+ 
+
+00:07:18.720 --> 00:07:21.270 align:start position:0%
+selected objects, checked animation,
+changed<00:07:19.160><c> path</c><00:07:19.440><c> mode</c><00:07:19.680><c> to</c><00:07:19.800><c> copy,</c><00:07:20.520><c> enabled</c><00:07:20.919><c> embed</c>
+
+00:07:21.270 --> 00:07:21.280 align:start position:0%
+changed path mode to copy, enabled embed
+ 
+
+00:07:21.280 --> 00:07:27.990 align:start position:0%
+changed path mode to copy, enabled embed
+media,<00:07:21.960><c> and</c><00:07:22.120><c> set</c><00:07:22.360><c> scale</c><00:07:23.040><c> to</c><00:07:23.160><c> 0.01.</c>
+
+00:07:27.990 --> 00:07:28.000 align:start position:0%
+ 
+ 
+
+00:07:28.000 --> 00:07:29.550 align:start position:0%
+ 
+Now<00:07:28.160><c> it's</c><00:07:28.320><c> time</c><00:07:28.560><c> to</c><00:07:28.640><c> move</c><00:07:28.880><c> into</c><00:07:29.080><c> Roblox</c>
+
+00:07:29.550 --> 00:07:29.560 align:start position:0%
+Now it's time to move into Roblox
+ 
+
+00:07:29.560 --> 00:07:32.630 align:start position:0%
+Now it's time to move into Roblox
+Studio.<00:07:30.560><c> I</c><00:07:30.640><c> imported</c><00:07:31.120><c> the</c><00:07:31.200><c> parrot</c><00:07:31.520><c> FBX</c><00:07:32.360><c> using</c>
+
+00:07:32.630 --> 00:07:32.640 align:start position:0%
+Studio. I imported the parrot FBX using
+ 
+
+00:07:32.640 --> 00:07:33.910 align:start position:0%
+Studio. I imported the parrot FBX using
+the<00:07:32.720><c> 3D</c><00:07:33.080><c> importer.</c>
+
+00:07:33.910 --> 00:07:33.920 align:start position:0%
+the 3D importer.
+ 
+
+00:07:33.920 --> 00:07:33.990 align:start position:0%
+the 3D importer.
+&gt;&gt; [music]
+
+00:07:33.990 --> 00:07:34.000 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:07:34.000 --> 00:07:36.070 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; For<00:07:34.160><c> rig</c><00:07:34.360><c> type,</c><00:07:34.640><c> I</c><00:07:34.680><c> selected</c><00:07:35.200><c> custom</c><00:07:35.919><c> and</c>
+
+00:07:36.070 --> 00:07:36.080 align:start position:0%
+&gt;&gt; For rig type, I selected custom and
+ 
+
+00:07:36.080 --> 00:07:49.830 align:start position:0%
+&gt;&gt; For rig type, I selected custom and
+loaded<00:07:36.440><c> animations</c><00:07:37.040><c> directly</c><00:07:37.480><c> from</c><00:07:37.640><c> the</c><00:07:37.760><c> FBX.</c>
+
+00:07:49.830 --> 00:07:49.840 align:start position:0%
+ 
+ 
+
+00:07:49.840 --> 00:07:51.430 align:start position:0%
+ 
+&gt;&gt; One<00:07:50.040><c> thing</c><00:07:50.200><c> you'll</c><00:07:50.320><c> notice</c><00:07:50.680><c> is</c><00:07:50.800><c> that</c><00:07:50.960><c> Roblox</c>
+
+00:07:51.430 --> 00:07:51.440 align:start position:0%
+&gt;&gt; One thing you'll notice is that Roblox
+ 
+
+00:07:51.440 --> 00:07:53.270 align:start position:0%
+&gt;&gt; One thing you'll notice is that Roblox
+doesn't<00:07:51.720><c> import</c><00:07:52.120><c> root</c><00:07:52.280><c> motion</c><00:07:52.640><c> exactly</c><00:07:53.120><c> like</c>
+
+00:07:53.270 --> 00:07:53.280 align:start position:0%
+doesn't import root motion exactly like
+ 
+
+00:07:53.280 --> 00:07:55.510 align:start position:0%
+doesn't import root motion exactly like
+Blender.<00:07:54.160><c> The</c><00:07:54.280><c> parrot</c><00:07:54.640><c> wasn't</c><00:07:54.960><c> flying</c><00:07:55.320><c> as</c>
+
+00:07:55.510 --> 00:07:55.520 align:start position:0%
+Blender. The parrot wasn't flying as
+ 
+
+00:07:55.520 --> 00:07:57.950 align:start position:0%
+Blender. The parrot wasn't flying as
+high<00:07:55.539><c> [music]</c><00:07:55.800><c> as</c><00:07:55.960><c> it</c><00:07:56.080><c> did</c><00:07:56.640><c> inside</c><00:07:57.120><c> Blender.</c>
+
+00:07:57.950 --> 00:07:57.960 align:start position:0%
+high [music] as it did inside Blender.
+ 
+
+00:07:57.960 --> 00:08:00.070 align:start position:0%
+high [music] as it did inside Blender.
+That's<00:07:58.200><c> okay</c><00:07:58.880><c> because</c><00:07:59.120><c> we</c><00:07:59.200><c> can</c><00:07:59.360><c> reposition</c><00:07:59.920><c> it</c>
+
+00:08:00.070 --> 00:08:00.080 align:start position:0%
+That's okay because we can reposition it
+ 
+
+00:08:00.080 --> 00:08:02.310 align:start position:0%
+That's okay because we can reposition it
+later<00:08:00.400><c> through</c><00:08:00.600><c> scripting.</c><00:08:01.680><c> I</c><00:08:01.800><c> repeated</c><00:08:02.240><c> the</c>
+
+00:08:02.310 --> 00:08:02.320 align:start position:0%
+later through scripting. I repeated the
+ 
+
+00:08:02.320 --> 00:08:34.630 align:start position:0%
+later through scripting. I repeated the
+same<00:08:02.600><c> process</c><00:08:03.080><c> for</c><00:08:03.200><c> the</c><00:08:03.280><c> dog.</c>
+
+00:08:34.630 --> 00:08:34.640 align:start position:0%
+ 
+ 
+
+00:08:34.640 --> 00:08:36.630 align:start position:0%
+ 
+After<00:08:34.919><c> importing</c><00:08:35.360><c> everything,</c><00:08:36.000><c> I</c><00:08:36.120><c> published</c>
+
+00:08:36.630 --> 00:08:36.640 align:start position:0%
+After importing everything, I published
+ 
+
+00:08:36.640 --> 00:08:39.029 align:start position:0%
+After importing everything, I published
+all<00:08:36.919><c> animations</c><00:08:37.520><c> to</c><00:08:37.640><c> Roblox</c><00:08:38.440><c> and</c><00:08:38.560><c> copied</c><00:08:38.960><c> the</c>
+
+00:08:39.029 --> 00:08:39.039 align:start position:0%
+all animations to Roblox and copied the
+ 
+
+00:08:39.039 --> 00:08:41.870 align:start position:0%
+all animations to Roblox and copied the
+animation<00:08:39.479><c> IDs</c><00:08:39.960><c> into</c><00:08:40.120><c> my</c><00:08:40.240><c> notes.</c>
+
+00:08:41.870 --> 00:08:41.880 align:start position:0%
+animation IDs into my notes.
+ 
+
+00:08:41.880 --> 00:08:57.070 align:start position:0%
+animation IDs into my notes.
+Next,<00:08:42.200><c> I</c><00:08:42.280><c> imported</c><00:08:42.680><c> my</c><00:08:42.880><c> Island</c><00:08:43.200><c> Arena</c><00:08:43.479><c> level.</c>
+
+00:08:57.070 --> 00:08:57.080 align:start position:0%
+ 
+ 
+
+00:08:57.080 --> 00:08:59.070 align:start position:0%
+ 
+The<00:08:57.160><c> pets</c><00:08:57.520><c> already</c><00:08:57.880><c> contained</c><00:08:58.320><c> glow</c><00:08:58.520><c> effects,</c>
+
+00:08:59.070 --> 00:08:59.080 align:start position:0%
+The pets already contained glow effects,
+ 
+
+00:08:59.080 --> 00:09:00.470 align:start position:0%
+The pets already contained glow effects,
+which<00:08:59.240><c> I</c><00:08:59.280><c> could</c><00:08:59.440><c> later</c><00:08:59.720><c> use</c><00:09:00.040><c> for</c><00:09:00.160><c> spawn</c>
+
+00:09:00.470 --> 00:09:00.480 align:start position:0%
+which I could later use for spawn
+ 
+
+00:09:00.480 --> 00:09:04.870 align:start position:0%
+which I could later use for spawn
+effects.
+
+00:09:04.870 --> 00:09:04.880 align:start position:0%
+ 
+ 
+
+00:09:04.880 --> 00:09:06.590 align:start position:0%
+ 
+After<00:09:05.160><c> importing</c><00:09:05.600><c> the</c><00:09:05.680><c> environment,</c><00:09:06.480><c> I</c>
+
+00:09:06.590 --> 00:09:06.600 align:start position:0%
+After importing the environment, I
+ 
+
+00:09:06.600 --> 00:09:08.430 align:start position:0%
+After importing the environment, I
+adjusted<00:09:07.080><c> the</c><00:09:07.160><c> scale</c><00:09:07.800><c> and</c><00:09:07.920><c> positioned</c><00:09:08.360><c> the</c>
+
+00:09:08.430 --> 00:09:08.440 align:start position:0%
+adjusted the scale and positioned the
+ 
+
+00:09:08.440 --> 00:09:10.270 align:start position:0%
+adjusted the scale and positioned the
+pets<00:09:08.800><c> inside</c><00:09:09.240><c> the</c><00:09:09.320><c> map.</c>
+
+00:09:10.270 --> 00:09:10.280 align:start position:0%
+pets inside the map.
+ 
+
+00:09:10.280 --> 00:09:12.161 align:start position:0%
+pets inside the map.
+For<00:09:10.360><c> the</c><00:09:10.480><c> shop</c><00:09:10.760><c> system,</c><00:09:11.360><c> I</c><00:09:11.480><c> searched</c><00:09:11.800><c> toolbox</c>
+
+00:09:12.161 --> 00:09:12.171 align:start position:0%
+For the shop system, I searched toolbox
+ 
+
+00:09:12.171 --> 00:09:14.150 align:start position:0%
+For the shop system, I searched toolbox
+[music]<00:09:12.360><c> for</c><00:09:12.480><c> simulator</c><00:09:13.000><c> shop</c><00:09:13.280><c> test</c><00:09:13.839><c> and</c><00:09:14.000><c> used</c>
+
+00:09:14.150 --> 00:09:14.160 align:start position:0%
+[music] for simulator shop test and used
+ 
+
+00:09:14.160 --> 00:09:20.430 align:start position:0%
+[music] for simulator shop test and used
+a<00:09:14.240><c> free</c><00:09:14.480><c> model.</c>
+
+00:09:20.430 --> 00:09:20.440 align:start position:0%
+ 
+ 
+
+00:09:20.440 --> 00:09:21.990 align:start position:0%
+ 
+During<00:09:20.680><c> testing,</c><00:09:21.120><c> I</c><00:09:21.200><c> noticed</c><00:09:21.560><c> the</c><00:09:21.720><c> ocean</c>
+
+00:09:21.990 --> 00:09:22.000 align:start position:0%
+During testing, I noticed the ocean
+ 
+
+00:09:22.000 --> 00:09:24.150 align:start position:0%
+During testing, I noticed the ocean
+looked<00:09:22.280><c> way</c><00:09:22.480><c> too</c><00:09:22.680><c> realistic.</c><00:09:23.600><c> It</c><00:09:23.720><c> didn't</c><00:09:24.000><c> fit</c>
+
+00:09:24.150 --> 00:09:24.160 align:start position:0%
+looked way too realistic. It didn't fit
+ 
+
+00:09:24.160 --> 00:09:26.390 align:start position:0%
+looked way too realistic. It didn't fit
+the<00:09:24.240><c> cartoon</c><00:09:24.720><c> style</c><00:09:25.040><c> of</c><00:09:25.120><c> the</c><00:09:25.240><c> game.</c><00:09:26.120><c> So,</c><00:09:26.280><c> I</c>
+
+00:09:26.390 --> 00:09:26.400 align:start position:0%
+the cartoon style of the game. So, I
+ 
+
+00:09:26.400 --> 00:09:28.350 align:start position:0%
+the cartoon style of the game. So, I
+opened<00:09:26.720><c> Claude</c><00:09:27.040><c> and</c><00:09:27.160><c> typed,</c><00:09:27.880><c> "The</c><00:09:28.000><c> water</c>
+
+00:09:28.350 --> 00:09:28.360 align:start position:0%
+opened Claude and typed, "The water
+ 
+
+00:09:28.360 --> 00:09:30.350 align:start position:0%
+opened Claude and typed, "The water
+still<00:09:28.720><c> does</c><00:09:28.880><c> not</c><00:09:29.080><c> display</c><00:09:29.520><c> same</c><00:09:29.800><c> texture</c><00:09:30.200><c> as</c>
+
+00:09:30.350 --> 00:09:30.360 align:start position:0%
+still does not display same texture as
+ 
+
+00:09:30.360 --> 00:09:32.950 align:start position:0%
+still does not display same texture as
+editor<00:09:30.680><c> view.</c><00:09:31.440><c> Can</c><00:09:31.560><c> you</c><00:09:31.680><c> do</c><00:09:31.839><c> simple</c><00:09:32.200><c> solution</c>
+
+00:09:32.950 --> 00:09:32.960 align:start position:0%
+editor view. Can you do simple solution
+ 
+
+00:09:32.960 --> 00:09:34.590 align:start position:0%
+editor view. Can you do simple solution
+for<00:09:33.080><c> just</c><00:09:33.400><c> animate</c><00:09:33.800><c> the</c><00:09:33.920><c> default</c><00:09:34.360><c> water</c>
+
+00:09:34.590 --> 00:09:34.600 align:start position:0%
+for just animate the default water
+ 
+
+00:09:34.600 --> 00:09:35.870 align:start position:0%
+for just animate the default water
+texture?"
+
+00:09:35.870 --> 00:09:35.880 align:start position:0%
+texture?"
+ 
+
+00:09:35.880 --> 00:09:38.030 align:start position:0%
+texture?"
+Claude<00:09:36.240><c> modified</c><00:09:36.720><c> the</c><00:09:36.800><c> system</c><00:09:37.480><c> and</c><00:09:37.640><c> the</c><00:09:37.720><c> water</c>
+
+00:09:38.030 --> 00:09:38.040 align:start position:0%
+Claude modified the system and the water
+ 
+
+00:09:38.040 --> 00:09:39.630 align:start position:0%
+Claude modified the system and the water
+animation<00:09:38.560><c> now</c><00:09:38.800><c> matched</c><00:09:39.160><c> the</c><00:09:39.320><c> editor</c>
+
+00:09:39.630 --> 00:09:39.640 align:start position:0%
+animation now matched the editor
+ 
+
+00:09:39.640 --> 00:09:40.790 align:start position:0%
+animation now matched the editor
+appearance.
+
+00:09:40.790 --> 00:09:40.800 align:start position:0%
+appearance.
+ 
+
+00:09:40.800 --> 00:09:42.590 align:start position:0%
+appearance.
+The<00:09:40.880><c> next</c><00:09:41.320><c> issue</c><00:09:41.646><c> [music]</c><00:09:41.880><c> was</c><00:09:42.120><c> the</c><00:09:42.240><c> shop</c>
+
+00:09:42.590 --> 00:09:42.600 align:start position:0%
+The next issue [music] was the shop
+ 
+
+00:09:42.600 --> 00:09:44.950 align:start position:0%
+The next issue [music] was the shop
+itself.<00:09:43.400><c> When</c><00:09:43.600><c> I</c><00:09:43.680><c> started</c><00:09:44.080><c> the</c><00:09:44.160><c> game,</c><00:09:44.840><c> the</c>
+
+00:09:44.950 --> 00:09:44.960 align:start position:0%
+itself. When I started the game, the
+ 
+
+00:09:44.960 --> 00:09:46.830 align:start position:0%
+itself. When I started the game, the
+shop<00:09:45.320><c> fell</c><00:09:45.520><c> apart</c><00:09:45.960><c> because</c><00:09:46.240><c> it</c><00:09:46.360><c> contained</c>
+
+00:09:46.830 --> 00:09:46.840 align:start position:0%
+shop fell apart because it contained
+ 
+
+00:09:46.840 --> 00:09:49.230 align:start position:0%
+shop fell apart because it contained
+many<00:09:47.240><c> separate</c><00:09:47.640><c> parts.</c><00:09:48.480><c> Now,</c><00:09:48.680><c> let's</c><00:09:48.960><c> look</c><00:09:49.160><c> at</c>
+
+00:09:49.230 --> 00:09:49.240 align:start position:0%
+many separate parts. Now, let's look at
+ 
+
+00:09:49.240 --> 00:09:51.230 align:start position:0%
+many separate parts. Now, let's look at
+the<00:09:49.360><c> pet</c><00:09:49.640><c> VFX</c><00:09:50.200><c> setup.</c>
+
+00:09:51.230 --> 00:09:51.240 align:start position:0%
+the pet VFX setup.
+ 
+
+00:09:51.240 --> 00:09:53.950 align:start position:0%
+the pet VFX setup.
+Each<00:09:51.480><c> pet</c><00:09:51.720><c> contains</c><00:09:52.160><c> a</c><00:09:52.240><c> glow</c><00:09:52.640><c> VFX</c><00:09:53.200><c> folder</c><00:09:53.840><c> and</c>
+
+00:09:53.950 --> 00:09:53.960 align:start position:0%
+Each pet contains a glow VFX folder and
+ 
+
+00:09:53.960 --> 00:09:56.150 align:start position:0%
+Each pet contains a glow VFX folder and
+a<00:09:54.000><c> combat</c><00:09:54.560><c> VFX</c><00:09:55.080><c> folder.</c>
+
+00:09:56.150 --> 00:09:56.160 align:start position:0%
+a combat VFX folder.
+ 
+
+00:09:56.160 --> 00:09:58.430 align:start position:0%
+a combat VFX folder.
+Inside<00:09:56.600><c> glow</c><00:09:56.840><c> VFX,</c><00:09:57.366><c> [music]</c><00:09:57.640><c> I</c><00:09:57.760><c> duplicated</c>
+
+00:09:58.430 --> 00:09:58.440 align:start position:0%
+Inside glow VFX, [music] I duplicated
+ 
+
+00:09:58.440 --> 00:10:00.270 align:start position:0%
+Inside glow VFX, [music] I duplicated
+the<00:09:58.560><c> original</c><00:09:59.000><c> mesh</c><00:09:59.560><c> and</c><00:09:59.720><c> changed</c><00:10:00.120><c> its</c>
+
+00:10:00.270 --> 00:10:00.280 align:start position:0%
+the original mesh and changed its
+ 
+
+00:10:00.280 --> 00:10:10.190 align:start position:0%
+the original mesh and changed its
+material<00:10:00.800><c> to</c><00:10:00.920><c> neon.</c>
+
+00:10:10.190 --> 00:10:10.200 align:start position:0%
+ 
+ 
+
+00:10:10.200 --> 00:10:12.110 align:start position:0%
+ 
+Then<00:10:10.400><c> I</c><00:10:10.480><c> adjusted</c><00:10:10.960><c> the</c><00:10:11.040><c> color.</c>
+
+00:10:12.110 --> 00:10:12.120 align:start position:0%
+Then I adjusted the color.
+ 
+
+00:10:12.120 --> 00:10:14.030 align:start position:0%
+Then I adjusted the color.
+For<00:10:12.280><c> extra</c><00:10:12.640><c> glow</c><00:10:12.880><c> effects,</c><00:10:13.560><c> I</c><00:10:13.640><c> copied</c><00:10:13.742><c> [music]</c>
+
+00:10:14.030 --> 00:10:14.040 align:start position:0%
+For extra glow effects, I copied [music]
+ 
+
+00:10:14.040 --> 00:10:15.990 align:start position:0%
+For extra glow effects, I copied [music]
+a<00:10:14.080><c> free</c><00:10:14.400><c> lightning</c><00:10:14.800><c> particle</c><00:10:15.200><c> effect</c><00:10:15.760><c> from</c><00:10:15.920><c> a</c>
+
+00:10:15.990 --> 00:10:16.000 align:start position:0%
+a free lightning particle effect from a
+ 
+
+00:10:16.000 --> 00:10:28.030 align:start position:0%
+a free lightning particle effect from a
+toolbox<00:10:16.600><c> asset</c><00:10:16.960><c> called</c><00:10:17.320><c> aura</c><00:10:17.760><c> NPC.</c>
+
+00:10:28.030 --> 00:10:28.040 align:start position:0%
+ 
+ 
+
+00:10:28.040 --> 00:10:29.510 align:start position:0%
+ 
+For<00:10:28.120><c> the</c><00:10:28.240><c> parrot,</c><00:10:28.600><c> I</c><00:10:28.680><c> use</c><00:10:28.920><c> separate</c><00:10:29.280><c> glow</c>
+
+00:10:29.510 --> 00:10:29.520 align:start position:0%
+For the parrot, I use separate glow
+ 
+
+00:10:29.520 --> 00:10:36.350 align:start position:0%
+For the parrot, I use separate glow
+meshes<00:10:30.080><c> for</c><00:10:30.200><c> both</c><00:10:30.440><c> the</c><00:10:30.520><c> body</c><00:10:30.960><c> and</c><00:10:31.280><c> wings.</c>
+
+00:10:36.350 --> 00:10:36.360 align:start position:0%
+ 
+ 
+
+00:10:36.360 --> 00:10:38.830 align:start position:0%
+ 
+Combat<00:10:36.760><c> VFX</c><00:10:37.240><c> contains</c><00:10:37.640><c> attack</c><00:10:38.000><c> effects,</c><00:10:38.680><c> hit</c>
+
+00:10:38.830 --> 00:10:38.840 align:start position:0%
+Combat VFX contains attack effects, hit
+ 
+
+00:10:38.840 --> 00:10:40.790 align:start position:0%
+Combat VFX contains attack effects, hit
+effects,<00:10:39.280><c> and</c><00:10:39.440><c> projectiles.</c>
+
+00:10:40.790 --> 00:10:40.800 align:start position:0%
+effects, and projectiles.
+ 
+
+00:10:40.800 --> 00:10:42.470 align:start position:0%
+effects, and projectiles.
+Most<00:10:41.080><c> of</c><00:10:41.160><c> these</c><00:10:41.320><c> effects</c><00:10:41.720><c> came</c><00:10:41.960><c> from</c><00:10:42.160><c> free</c>
+
+00:10:42.470 --> 00:10:42.480 align:start position:0%
+Most of these effects came from free
+ 
+
+00:10:42.480 --> 00:10:44.430 align:start position:0%
+Most of these effects came from free
+flipbook<00:10:42.920><c> particles</c><00:10:43.360><c> assets</c><00:10:43.839><c> available</c><00:10:44.320><c> in</c>
+
+00:10:44.430 --> 00:10:44.440 align:start position:0%
+flipbook particles assets available in
+ 
+
+00:10:44.440 --> 00:10:45.790 align:start position:0%
+flipbook particles assets available in
+toolbox.
+
+00:10:45.790 --> 00:10:45.800 align:start position:0%
+toolbox.
+ 
+
+00:10:45.800 --> 00:10:47.270 align:start position:0%
+toolbox.
+I<00:10:45.839><c> simply</c><00:10:46.200><c> copied</c><00:10:46.600><c> them</c><00:10:46.760><c> into</c><00:10:46.920><c> the</c><00:10:47.040><c> pet</c>
+
+00:10:47.270 --> 00:10:47.280 align:start position:0%
+I simply copied them into the pet
+ 
+
+00:10:47.280 --> 00:10:49.190 align:start position:0%
+I simply copied them into the pet
+folders<00:10:47.920><c> and</c><00:10:48.120><c> customized</c><00:10:48.720><c> colors</c><00:10:49.080><c> were</c>
+
+00:10:49.190 --> 00:10:49.200 align:start position:0%
+folders and customized colors were
+ 
+
+00:10:49.200 --> 00:11:22.790 align:start position:0%
+folders and customized colors were
+necessary.
+
+00:11:22.790 --> 00:11:22.800 align:start position:0%
+ 
+ 
+
+00:11:22.800 --> 00:11:24.510 align:start position:0%
+ 
+For<00:11:22.960><c> enemies,</c><00:11:23.172><c> [music]</c><00:11:23.640><c> I</c><00:11:23.720><c> created</c><00:11:24.080><c> a</c><00:11:24.120><c> folder</c>
+
+00:11:24.510 --> 00:11:24.520 align:start position:0%
+For enemies, [music] I created a folder
+ 
+
+00:11:24.520 --> 00:11:27.270 align:start position:0%
+For enemies, [music] I created a folder
+called<00:11:24.839><c> enemy</c><00:11:25.160><c> spawn</c><00:11:25.480><c> locations.</c><00:11:26.480><c> Inside</c><00:11:26.960><c> it,</c>
+
+00:11:27.270 --> 00:11:27.280 align:start position:0%
+called enemy spawn locations. Inside it,
+ 
+
+00:11:27.280 --> 00:11:29.057 align:start position:0%
+called enemy spawn locations. Inside it,
+I<00:11:27.360><c> placed</c><00:11:27.680><c> invisible</c><00:11:28.160><c> parts</c><00:11:28.480><c> around</c><00:11:28.800><c> the</c><00:11:28.839><c> map</c>
+
+00:11:29.057 --> 00:11:29.067 align:start position:0%
+I placed invisible parts around the map
+ 
+
+00:11:29.067 --> 00:11:31.390 align:start position:0%
+I placed invisible parts around the map
+[music]<00:11:29.360><c> to</c><00:11:29.480><c> represent</c><00:11:30.040><c> enemy</c><00:11:30.320><c> level</c><00:11:30.600><c> zones.</c>
+
+00:11:31.390 --> 00:11:31.400 align:start position:0%
+[music] to represent enemy level zones.
+ 
+
+00:11:31.400 --> 00:11:33.790 align:start position:0%
+[music] to represent enemy level zones.
+With<00:11:31.640><c> all</c><00:11:31.920><c> assets</c><00:11:32.280><c> prepared,</c><00:11:33.080><c> it</c><00:11:33.200><c> was</c><00:11:33.360><c> finally</c>
+
+00:11:33.790 --> 00:11:33.800 align:start position:0%
+With all assets prepared, it was finally
+ 
+
+00:11:33.800 --> 00:11:36.030 align:start position:0%
+With all assets prepared, it was finally
+time<00:11:34.040><c> to</c><00:11:34.160><c> build</c><00:11:34.440><c> the</c><00:11:34.560><c> game</c><00:11:34.800><c> systems.</c><00:11:35.880><c> I</c>
+
+00:11:36.030 --> 00:11:36.040 align:start position:0%
+time to build the game systems. I
+ 
+
+00:11:36.040 --> 00:11:38.470 align:start position:0%
+time to build the game systems. I
+created<00:11:36.400><c> a</c><00:11:36.480><c> brand</c><00:11:36.840><c> new</c><00:11:37.040><c> Claude</c><00:11:37.400><c> project.</c>
+
+00:11:38.470 --> 00:11:38.480 align:start position:0%
+created a brand new Claude project.
+ 
+
+00:11:38.480 --> 00:11:40.910 align:start position:0%
+created a brand new Claude project.
+Inside<00:11:38.960><c> the</c><00:11:39.040><c> project</c><00:11:39.440><c> details,</c><00:11:40.160><c> I</c><00:11:40.280><c> documented</c>
+
+00:11:40.910 --> 00:11:40.920 align:start position:0%
+Inside the project details, I documented
+ 
+
+00:11:40.920 --> 00:11:43.350 align:start position:0%
+Inside the project details, I documented
+the<00:11:41.000><c> entire</c><00:11:41.440><c> game</c><00:11:41.680><c> design,</c><00:11:42.360><c> pet</c><00:11:42.560><c> information,</c>
+
+00:11:43.350 --> 00:11:43.360 align:start position:0%
+the entire game design, pet information,
+ 
+
+00:11:43.360 --> 00:11:50.230 align:start position:0%
+the entire game design, pet information,
+and<00:11:43.560><c> animation</c><00:11:44.080><c> IDs.</c>
+
+00:11:50.230 --> 00:11:50.240 align:start position:0%
+ 
+ 
+
+00:11:50.240 --> 00:11:52.950 align:start position:0%
+ 
+For<00:11:50.400><c> the</c><00:11:50.520><c> shop</c><00:11:50.840><c> icons,</c><00:11:51.600><c> I</c><00:11:51.720><c> used</c><00:11:52.000><c> ChatGPT</c><00:11:52.680><c> again</c>
+
+00:11:52.950 --> 00:11:52.960 align:start position:0%
+For the shop icons, I used ChatGPT again
+ 
+
+00:11:52.960 --> 00:11:55.270 align:start position:0%
+For the shop icons, I used ChatGPT again
+and<00:11:53.080><c> generated</c><00:11:53.600><c> images</c><00:11:54.040><c> for</c><00:11:54.160><c> dog,</c><00:11:54.880><c> parrot,</c>
+
+00:11:55.270 --> 00:11:55.280 align:start position:0%
+and generated images for dog, parrot,
+ 
+
+00:11:55.280 --> 00:11:59.950 align:start position:0%
+and generated images for dog, parrot,
+and<00:11:55.400><c> a</c><00:11:55.440><c> lock</c><00:11:55.720><c> dragon</c><00:11:56.080><c> pet.</c>
+
+00:11:59.950 --> 00:11:59.960 align:start position:0%
+ 
+ 
+
+00:11:59.960 --> 00:12:01.910 align:start position:0%
+ 
+After<00:12:00.320><c> importing</c><00:12:00.760><c> the</c><00:12:00.880><c> images</c><00:12:01.240><c> into</c><00:12:01.480><c> Roblox</c>
+
+00:12:01.910 --> 00:12:01.920 align:start position:0%
+After importing the images into Roblox
+ 
+
+00:12:01.920 --> 00:12:04.428 align:start position:0%
+After importing the images into Roblox
+Studio,<00:12:02.640><c> I</c><00:12:02.720><c> created</c><00:12:03.120><c> a</c><00:12:03.200><c> game</c><00:12:03.480><c> design</c><00:12:03.840><c> document</c>
+
+00:12:04.428 --> 00:12:04.438 align:start position:0%
+Studio, I created a game design document
+ 
+
+00:12:04.438 --> 00:12:06.430 align:start position:0%
+Studio, I created a game design document
+[music]<00:12:04.560><c> and</c><00:12:04.680><c> provided</c><00:12:05.120><c> it</c><00:12:05.240><c> to</c><00:12:05.320><c> Claude.</c>
+
+00:12:06.430 --> 00:12:06.440 align:start position:0%
+[music] and provided it to Claude.
+ 
+
+00:12:06.440 --> 00:12:08.190 align:start position:0%
+[music] and provided it to Claude.
+Then<00:12:06.680><c> I</c><00:12:06.760><c> typed,</c><00:12:07.480><c> "First,</c><00:12:07.800><c> let's</c><00:12:07.920><c> make</c><00:12:08.080><c> the</c>
+
+00:12:08.190 --> 00:12:08.200 align:start position:0%
+Then I typed, "First, let's make the
+ 
+
+00:12:08.200 --> 00:12:10.230 align:start position:0%
+Then I typed, "First, let's make the
+shop.<00:12:08.760><c> When</c><00:12:08.880><c> I</c><00:12:08.960><c> interact</c><00:12:09.360><c> with</c><00:12:09.480><c> it,</c><00:12:09.840><c> open</c><00:12:10.120><c> the</c>
+
+00:12:10.230 --> 00:12:10.240 align:start position:0%
+shop. When I interact with it, open the
+ 
+
+00:12:10.240 --> 00:12:12.630 align:start position:0%
+shop. When I interact with it, open the
+shop<00:12:10.600><c> GUI.</c><00:12:11.480><c> Items</c><00:12:11.800><c> image</c><00:12:12.080><c> I've</c><00:12:12.240><c> added</c><00:12:12.520><c> to</c>
+
+00:12:12.630 --> 00:12:12.640 align:start position:0%
+shop GUI. Items image I've added to
+ 
+
+00:12:12.640 --> 00:12:14.630 align:start position:0%
+shop GUI. Items image I've added to
+asset<00:12:12.960><c> manager.</c><00:12:13.920><c> The</c><00:12:14.040><c> shop</c><00:12:14.320><c> should</c><00:12:14.480><c> have</c>
+
+00:12:14.630 --> 00:12:14.640 align:start position:0%
+asset manager. The shop should have
+ 
+
+00:12:14.640 --> 00:12:16.710 align:start position:0%
+asset manager. The shop should have
+button<00:12:14.918><c> [music]</c><00:12:14.920><c> to</c><00:12:15.040><c> buy</c><00:12:15.400><c> and</c><00:12:15.560><c> confirm."</c>
+
+00:12:16.710 --> 00:12:16.720 align:start position:0%
+button [music] to buy and confirm."
+ 
+
+00:12:16.720 --> 00:12:18.670 align:start position:0%
+button [music] to buy and confirm."
+Claude<00:12:17.040><c> requested</c><00:12:17.480><c> the</c><00:12:17.600><c> asset</c><00:12:17.960><c> manager</c><00:12:18.360><c> image</c>
+
+00:12:18.670 --> 00:12:18.680 align:start position:0%
+Claude requested the asset manager image
+ 
+
+00:12:18.680 --> 00:12:19.790 align:start position:0%
+Claude requested the asset manager image
+IDs.
+
+00:12:19.790 --> 00:12:19.800 align:start position:0%
+IDs.
+ 
+
+00:12:19.800 --> 00:12:21.630 align:start position:0%
+IDs.
+I<00:12:19.960><c> copied</c><00:12:20.360><c> them</c><00:12:20.480><c> from</c><00:12:20.680><c> Roblox</c><00:12:21.160><c> and</c><00:12:21.280><c> pasted</c>
+
+00:12:21.630 --> 00:12:21.640 align:start position:0%
+I copied them from Roblox and pasted
+ 
+
+00:12:21.640 --> 00:12:23.870 align:start position:0%
+I copied them from Roblox and pasted
+them<00:12:21.760><c> into</c><00:12:21.920><c> Claude.</c><00:12:22.720><c> I</c><00:12:22.920><c> could</c><00:12:23.160><c> walk</c><00:12:23.480><c> up</c><00:12:23.640><c> to</c><00:12:23.760><c> the</c>
+
+00:12:23.870 --> 00:12:23.880 align:start position:0%
+them into Claude. I could walk up to the
+ 
+
+00:12:23.880 --> 00:12:25.630 align:start position:0%
+them into Claude. I could walk up to the
+shop,<00:12:24.520><c> press</c><00:12:24.960><c> E,</c><00:12:25.480><c> and</c><00:12:25.600><c> a</c>
+
+00:12:25.630 --> 00:12:25.640 align:start position:0%
+shop, press E, and a
+ 
+
+00:12:25.640 --> 00:12:27.950 align:start position:0%
+shop, press E, and a
+professional-looking<00:12:26.640><c> interface</c><00:12:27.120><c> appeared.</c>
+
+00:12:27.950 --> 00:12:27.960 align:start position:0%
+professional-looking interface appeared.
+ 
+
+00:12:27.960 --> 00:12:30.110 align:start position:0%
+professional-looking interface appeared.
+One<00:12:28.280><c> issue</c><00:12:28.640><c> was</c><00:12:28.800><c> that</c><00:12:28.960><c> the</c><00:12:29.080><c> gold</c><00:12:29.480><c> display</c>
+
+00:12:30.110 --> 00:12:30.120 align:start position:0%
+One issue was that the gold display
+ 
+
+00:12:30.120 --> 00:12:32.030 align:start position:0%
+One issue was that the gold display
+overlapped<00:12:30.800><c> Roblox's</c><00:12:31.293><c> [music]</c><00:12:31.520><c> default</c>
+
+00:12:32.030 --> 00:12:32.040 align:start position:0%
+overlapped Roblox's [music] default
+ 
+
+00:12:32.040 --> 00:12:34.390 align:start position:0%
+overlapped Roblox's [music] default
+buttons.<00:12:32.960><c> I</c><00:12:33.120><c> asked</c><00:12:33.440><c> Claude</c><00:12:33.800><c> to</c><00:12:33.920><c> move</c><00:12:34.160><c> it</c><00:12:34.280><c> to</c>
+
+00:12:34.390 --> 00:12:34.400 align:start position:0%
+buttons. I asked Claude to move it to
+ 
+
+00:12:34.400 --> 00:12:36.910 align:start position:0%
+buttons. I asked Claude to move it to
+the<00:12:34.520><c> right</c><00:12:34.760><c> side.</c><00:12:35.520><c> Problem</c><00:12:35.960><c> solved.</c>
+
+00:12:36.910 --> 00:12:36.920 align:start position:0%
+the right side. Problem solved.
+ 
+
+00:12:36.920 --> 00:12:38.488 align:start position:0%
+the right side. Problem solved.
+Purchasing<00:12:37.480><c> now</c><00:12:37.760><c> opened</c><00:12:38.080><c> a</c><00:12:38.120><c> confirmation</c>
+
+00:12:38.488 --> 00:12:38.498 align:start position:0%
+Purchasing now opened a confirmation
+ 
+
+00:12:38.498 --> 00:12:40.630 align:start position:0%
+Purchasing now opened a confirmation
+[music]<00:12:38.839><c> window</c><00:12:39.520><c> and</c><00:12:39.640><c> displayed</c><00:12:40.120><c> a</c><00:12:40.160><c> success</c>
+
+00:12:40.630 --> 00:12:40.640 align:start position:0%
+[music] window and displayed a success
+ 
+
+00:12:40.640 --> 00:12:42.870 align:start position:0%
+[music] window and displayed a success
+message.<00:12:41.480><c> At</c><00:12:41.640><c> this</c><00:12:41.880><c> point,</c><00:12:42.240><c> I</c><00:12:42.320><c> was</c><00:12:42.560><c> really</c>
+
+00:12:42.870 --> 00:12:42.880 align:start position:0%
+message. At this point, I was really
+ 
+
+00:12:42.880 --> 00:12:45.110 align:start position:0%
+message. At this point, I was really
+happy<00:12:43.160><c> with</c><00:12:43.320><c> the</c><00:12:43.400><c> progress.</c><00:12:44.440><c> Now</c><00:12:44.800><c> came</c><00:12:45.040><c> the</c>
+
+00:12:45.110 --> 00:12:45.120 align:start position:0%
+happy with the progress. Now came the
+ 
+
+00:12:45.120 --> 00:12:47.510 align:start position:0%
+happy with the progress. Now came the
+hardest<00:12:45.560><c> feature</c><00:12:45.960><c> in</c><00:12:46.040><c> the</c><00:12:46.160><c> entire</c><00:12:46.560><c> game,</c><00:12:47.280><c> pet</c>
+
+00:12:47.510 --> 00:12:47.520 align:start position:0%
+hardest feature in the entire game, pet
+ 
+
+00:12:47.520 --> 00:12:50.070 align:start position:0%
+hardest feature in the entire game, pet
+summoning<00:12:48.000><c> and</c><00:12:48.160><c> combat</c><00:12:48.600><c> AI.</c><00:12:49.360><c> I</c><00:12:49.480><c> described</c><00:12:50.000><c> the</c>
+
+00:12:50.070 --> 00:12:50.080 align:start position:0%
+summoning and combat AI. I described the
+ 
+
+00:12:50.080 --> 00:12:52.910 align:start position:0%
+summoning and combat AI. I described the
+dog<00:12:50.440><c> model,</c><00:12:51.120><c> its</c><00:12:51.320><c> VFX</c><00:12:51.880><c> folders,</c><00:12:52.680><c> its</c>
+
+00:12:52.910 --> 00:12:52.920 align:start position:0%
+dog model, its VFX folders, its
+ 
+
+00:12:52.920 --> 00:12:54.990 align:start position:0%
+dog model, its VFX folders, its
+animations,<00:12:53.640><c> and</c><00:12:53.760><c> exactly</c><00:12:54.360><c> how</c><00:12:54.520><c> I</c><00:12:54.600><c> wanted</c><00:12:54.880><c> it</c>
+
+00:12:54.990 --> 00:12:55.000 align:start position:0%
+animations, and exactly how I wanted it
+ 
+
+00:12:55.000 --> 00:12:57.070 align:start position:0%
+animations, and exactly how I wanted it
+to<00:12:55.080><c> behave.</c><00:12:55.880><c> Following</c><00:12:56.320><c> the</c><00:12:56.400><c> player,</c>
+
+00:12:57.070 --> 00:12:57.080 align:start position:0%
+to behave. Following the player,
+ 
+
+00:12:57.080 --> 00:12:58.910 align:start position:0%
+to behave. Following the player,
+attacking<00:12:57.560><c> enemies,</c><00:12:58.320><c> playing</c><00:12:58.640><c> spawn</c>
+
+00:12:58.910 --> 00:12:58.920 align:start position:0%
+attacking enemies, playing spawn
+ 
+
+00:12:58.920 --> 00:13:01.550 align:start position:0%
+attacking enemies, playing spawn
+effects,<00:12:59.720><c> triggering</c><00:13:00.160><c> combat</c><00:13:00.560><c> effects.</c><00:13:01.440><c> A</c>
+
+00:13:01.550 --> 00:13:01.560 align:start position:0%
+effects, triggering combat effects. A
+ 
+
+00:13:01.560 --> 00:13:03.870 align:start position:0%
+effects, triggering combat effects. A
+few<00:13:01.800><c> minutes</c><00:13:02.080><c> later,</c><00:13:02.720><c> Claude</c><00:13:03.080><c> had</c><00:13:03.240><c> completed</c>
+
+00:13:03.870 --> 00:13:03.880 align:start position:0%
+few minutes later, Claude had completed
+ 
+
+00:13:03.880 --> 00:13:06.310 align:start position:0%
+few minutes later, Claude had completed
+an<00:13:04.000><c> entire</c><00:13:04.560><c> pet</c><00:13:04.800><c> system.</c><00:13:05.680><c> I</c><00:13:05.760><c> tested</c><00:13:06.200><c> it</c>
+
+00:13:06.310 --> 00:13:06.320 align:start position:0%
+an entire pet system. I tested it
+ 
+
+00:13:06.320 --> 00:13:07.590 align:start position:0%
+an entire pet system. I tested it
+immediately.
+
+00:13:07.590 --> 00:13:07.600 align:start position:0%
+immediately.
+ 
+
+00:13:07.600 --> 00:13:09.790 align:start position:0%
+immediately.
+The<00:13:07.720><c> purchase</c><00:13:08.200><c> worked,</c><00:13:08.880><c> but</c><00:13:09.040><c> the</c><00:13:09.120><c> shop</c><00:13:09.480><c> window</c>
+
+00:13:09.790 --> 00:13:09.800 align:start position:0%
+The purchase worked, but the shop window
+ 
+
+00:13:09.800 --> 00:13:12.110 align:start position:0%
+The purchase worked, but the shop window
+stayed<00:13:10.160><c> open</c><00:13:10.440><c> after</c><00:13:10.680><c> buying</c><00:13:11.040><c> the</c><00:13:11.160><c> pet,</c><00:13:11.800><c> making</c>
+
+00:13:12.110 --> 00:13:12.120 align:start position:0%
+stayed open after buying the pet, making
+ 
+
+00:13:12.120 --> 00:13:14.430 align:start position:0%
+stayed open after buying the pet, making
+it<00:13:12.280><c> difficult</c><00:13:12.800><c> to</c><00:13:12.920><c> see</c><00:13:13.120><c> the</c><00:13:13.240><c> spawn</c><00:13:13.600><c> effect.</c><00:13:14.320><c> I</c>
+
+00:13:14.430 --> 00:13:14.440 align:start position:0%
+it difficult to see the spawn effect. I
+ 
+
+00:13:14.440 --> 00:13:16.070 align:start position:0%
+it difficult to see the spawn effect. I
+asked<00:13:14.720><c> Claude</c><00:13:15.040><c> for</c><00:13:15.179><c> [music]</c><00:13:15.200><c> options</c><00:13:15.920><c> and</c>
+
+00:13:16.070 --> 00:13:16.080 align:start position:0%
+asked Claude for [music] options and
+ 
+
+00:13:16.080 --> 00:13:17.750 align:start position:0%
+asked Claude for [music] options and
+chose<00:13:16.400><c> automatic</c><00:13:16.880><c> shop</c><00:13:17.160><c> closing</c><00:13:17.520><c> after</c>
+
+00:13:17.750 --> 00:13:17.760 align:start position:0%
+chose automatic shop closing after
+ 
+
+00:13:17.760 --> 00:13:23.710 align:start position:0%
+chose automatic shop closing after
+purchase.<00:13:18.680><c> Then</c><00:13:18.880><c> I</c><00:13:18.960><c> tested</c><00:13:19.320><c> again.</c>
+
+00:13:23.710 --> 00:13:23.720 align:start position:0%
+ 
+ 
+
+00:13:23.720 --> 00:13:25.750 align:start position:0%
+ 
+The<00:13:23.880><c> spawn</c><00:13:24.200><c> effect</c><00:13:24.600><c> looked</c><00:13:24.880><c> great,</c><00:13:25.520><c> but</c><00:13:25.680><c> the</c>
+
+00:13:25.750 --> 00:13:25.760 align:start position:0%
+The spawn effect looked great, but the
+ 
+
+00:13:25.760 --> 00:13:28.269 align:start position:0%
+The spawn effect looked great, but the
+glow<00:13:26.120><c> faded</c><00:13:26.560><c> too</c><00:13:26.720><c> quickly.</c><00:13:27.680><c> I</c><00:13:27.800><c> reported</c><00:13:28.200><c> the</c>
+
+00:13:28.269 --> 00:13:28.279 align:start position:0%
+glow faded too quickly. I reported the
+ 
+
+00:13:28.279 --> 00:13:29.870 align:start position:0%
+glow faded too quickly. I reported the
+[music]<00:13:28.320><c> issue</c><00:13:28.680><c> and</c><00:13:28.840><c> Claudia</c><00:13:29.320><c> slowed</c><00:13:29.680><c> down</c>
+
+00:13:29.870 --> 00:13:29.880 align:start position:0%
+[music] issue and Claudia slowed down
+ 
+
+00:13:29.880 --> 00:13:36.190 align:start position:0%
+[music] issue and Claudia slowed down
+the<00:13:30.000><c> fade</c><00:13:30.280><c> timing.</c>
+
+00:13:36.190 --> 00:13:36.200 align:start position:0%
+ 
+ 
+
+00:13:36.200 --> 00:13:38.670 align:start position:0%
+ 
+Perfect.<00:13:37.040><c> The</c><00:13:37.160><c> dog</c><00:13:37.560><c> now</c><00:13:37.800><c> followed</c><00:13:38.200><c> the</c><00:13:38.280><c> player</c>
+
+00:13:38.670 --> 00:13:38.680 align:start position:0%
+Perfect. The dog now followed the player
+ 
+
+00:13:38.680 --> 00:13:40.550 align:start position:0%
+Perfect. The dog now followed the player
+and<00:13:38.880><c> animated</c><00:13:39.400><c> correctly.</c>
+
+00:13:40.550 --> 00:13:40.560 align:start position:0%
+and animated correctly.
+ 
+
+00:13:40.560 --> 00:13:42.630 align:start position:0%
+and animated correctly.
+Before<00:13:40.920><c> testing</c><00:13:41.320><c> combat</c><00:13:41.379><c> [music]</c><00:13:41.760><c> further,</c><00:13:42.520><c> I</c>
+
+00:13:42.630 --> 00:13:42.640 align:start position:0%
+Before testing combat [music] further, I
+ 
+
+00:13:42.640 --> 00:13:44.830 align:start position:0%
+Before testing combat [music] further, I
+wanted<00:13:42.960><c> to</c><00:13:43.080><c> add</c><00:13:43.280><c> the</c><00:13:43.360><c> parrot.</c><00:13:44.200><c> I</c><00:13:44.280><c> described</c>
+
+00:13:44.830 --> 00:13:44.840 align:start position:0%
+wanted to add the parrot. I described
+ 
+
+00:13:44.840 --> 00:13:47.190 align:start position:0%
+wanted to add the parrot. I described
+the<00:13:44.920><c> parrot</c><00:13:45.360><c> attributes</c><00:13:46.200><c> and</c><00:13:46.440><c> also</c><00:13:46.760><c> increased</c>
+
+00:13:47.190 --> 00:13:47.200 align:start position:0%
+the parrot attributes and also increased
+ 
+
+00:13:47.200 --> 00:13:48.910 align:start position:0%
+the parrot attributes and also increased
+the<00:13:47.280><c> starting</c><00:13:47.680><c> gold</c><00:13:48.040><c> to</c><00:13:48.160><c> 2,000</c><00:13:48.584><c> [music]</c><00:13:48.800><c> for</c>
+
+00:13:48.910 --> 00:13:48.920 align:start position:0%
+the starting gold to 2,000 [music] for
+ 
+
+00:13:48.920 --> 00:14:03.790 align:start position:0%
+the starting gold to 2,000 [music] for
+testing.
+
+00:14:03.790 --> 00:14:03.800 align:start position:0%
+ 
+ 
+
+00:14:03.800 --> 00:14:05.910 align:start position:0%
+ 
+The<00:14:03.880><c> parrot</c><00:14:04.200><c> spawned</c><00:14:04.560><c> successfully,</c><00:14:05.840><c> but</c>
+
+00:14:05.910 --> 00:14:05.920 align:start position:0%
+The parrot spawned successfully, but
+ 
+
+00:14:05.920 --> 00:14:07.910 align:start position:0%
+The parrot spawned successfully, but
+there<00:14:06.040><c> was</c><00:14:06.200><c> another</c><00:14:06.480><c> issue.</c><00:14:07.160><c> It</c><00:14:07.280><c> was</c><00:14:07.440><c> flying</c>
+
+00:14:07.910 --> 00:14:07.920 align:start position:0%
+there was another issue. It was flying
+ 
+
+00:14:07.920 --> 00:14:09.990 align:start position:0%
+there was another issue. It was flying
+way<00:14:08.080><c> too</c><00:14:08.234><c> [music]</c><00:14:08.320><c> high.</c><00:14:09.080><c> I</c><00:14:09.200><c> asked</c><00:14:09.520><c> Claude</c><00:14:09.840><c> to</c>
+
+00:14:09.990 --> 00:14:10.000 align:start position:0%
+way too [music] high. I asked Claude to
+ 
+
+00:14:10.000 --> 00:14:12.150 align:start position:0%
+way too [music] high. I asked Claude to
+lower<00:14:10.280><c> its</c><00:14:10.480><c> flying</c><00:14:10.840><c> height</c><00:14:11.080><c> from</c><00:14:11.320><c> eight</c><00:14:11.520><c> studs</c>
+
+00:14:12.150 --> 00:14:12.160 align:start position:0%
+lower its flying height from eight studs
+ 
+
+00:14:12.160 --> 00:14:16.790 align:start position:0%
+lower its flying height from eight studs
+to<00:14:12.280><c> four</c><00:14:12.520><c> studs.</c>
+
+00:14:16.790 --> 00:14:16.800 align:start position:0%
+ 
+ 
+
+00:14:16.800 --> 00:14:18.704 align:start position:0%
+ 
+That<00:14:17.000><c> fixed</c><00:14:17.320><c> it.</c><00:14:17.800><c> Now</c><00:14:18.040><c> it</c><00:14:18.120><c> was</c><00:14:18.280><c> time</c><00:14:18.560><c> to</c><00:14:18.680><c> add</c>
+
+00:14:18.704 --> 00:14:18.714 align:start position:0%
+That fixed it. Now it was time to add
+ 
+
+00:14:18.714 --> 00:14:20.750 align:start position:0%
+That fixed it. Now it was time to add
+[music]<00:14:18.880><c> enemies.</c><00:14:19.680><c> I</c><00:14:19.800><c> explained</c><00:14:20.280><c> the</c><00:14:20.440><c> enemy</c>
+
+00:14:20.750 --> 00:14:20.760 align:start position:0%
+[music] enemies. I explained the enemy
+ 
+
+00:14:20.760 --> 00:14:23.070 align:start position:0%
+[music] enemies. I explained the enemy
+spawn<00:14:21.080><c> location</c><00:14:21.600><c> structure</c><00:14:22.400><c> and</c><00:14:22.520><c> described</c>
+
+00:14:23.070 --> 00:14:23.080 align:start position:0%
+spawn location structure and described
+ 
+
+00:14:23.080 --> 00:14:25.230 align:start position:0%
+spawn location structure and described
+how<00:14:23.280><c> enemy</c><00:14:23.600><c> progression</c><00:14:24.160><c> should</c><00:14:24.400><c> work.</c>
+
+00:14:25.230 --> 00:14:25.240 align:start position:0%
+how enemy progression should work.
+ 
+
+00:14:25.240 --> 00:14:27.150 align:start position:0%
+how enemy progression should work.
+Claude<00:14:25.560><c> asked</c><00:14:25.800><c> for</c><00:14:25.960><c> enemy</c><00:14:26.200><c> models.</c><00:14:27.040><c> I</c>
+
+00:14:27.150 --> 00:14:27.160 align:start position:0%
+Claude asked for enemy models. I
+ 
+
+00:14:27.160 --> 00:14:29.390 align:start position:0%
+Claude asked for enemy models. I
+instructed<00:14:27.720><c> it</c><00:14:27.840><c> to</c><00:14:27.960><c> generate</c><00:14:28.400><c> simple</c><00:14:28.840><c> Roblox</c>
+
+00:14:29.390 --> 00:14:29.400 align:start position:0%
+instructed it to generate simple Roblox
+ 
+
+00:14:29.400 --> 00:14:32.270 align:start position:0%
+instructed it to generate simple Roblox
+R6<00:14:29.920><c> style</c><00:14:30.240><c> zombies.</c><00:14:31.000><c> It</c><00:14:31.240><c> also</c><00:14:31.680><c> asked</c><00:14:31.960><c> about</c>
+
+00:14:32.270 --> 00:14:32.280 align:start position:0%
+R6 style zombies. It also asked about
+ 
+
+00:14:32.280 --> 00:14:34.390 align:start position:0%
+R6 style zombies. It also asked about
+gold<00:14:32.600><c> rewards</c><00:14:33.120><c> and</c><00:14:33.320><c> enemy</c><00:14:33.600><c> counts.</c><00:14:34.280><c> I</c>
+
+00:14:34.390 --> 00:14:34.400 align:start position:0%
+gold rewards and enemy counts. I
+ 
+
+00:14:34.400 --> 00:14:36.590 align:start position:0%
+gold rewards and enemy counts. I
+selected<00:14:34.920><c> level</c><00:14:35.200><c> scaled</c><00:14:35.600><c> gold</c><00:14:35.920><c> rewards</c><00:14:36.440><c> and</c>
+
+00:14:36.590 --> 00:14:36.600 align:start position:0%
+selected level scaled gold rewards and
+ 
+
+00:14:36.600 --> 00:14:38.470 align:start position:0%
+selected level scaled gold rewards and
+three<00:14:36.920><c> enemies</c><00:14:37.320><c> per</c><00:14:37.480><c> spawn</c><00:14:37.839><c> location</c><00:14:38.320><c> for</c>
+
+00:14:38.470 --> 00:14:38.480 align:start position:0%
+three enemies per spawn location for
+ 
+
+00:14:38.480 --> 00:14:44.350 align:start position:0%
+three enemies per spawn location for
+better<00:14:38.720><c> performance.</c>
+
+00:14:44.350 --> 00:14:44.360 align:start position:0%
+ 
+ 
+
+00:14:44.360 --> 00:14:46.710 align:start position:0%
+ 
+The<00:14:44.440><c> system</c><00:14:44.839><c> worked</c><00:14:45.120><c> great.</c><00:14:45.960><c> However,</c><00:14:46.400><c> during</c>
+
+00:14:46.710 --> 00:14:46.720 align:start position:0%
+The system worked great. However, during
+ 
+
+00:14:46.720 --> 00:14:49.030 align:start position:0%
+The system worked great. However, during
+testing,<00:14:47.280><c> I</c><00:14:47.400><c> was</c><00:14:47.640><c> almost</c><00:14:48.160><c> instantly</c><00:14:48.640><c> attacked</c>
+
+00:14:49.030 --> 00:14:49.040 align:start position:0%
+testing, I was almost instantly attacked
+ 
+
+00:14:49.040 --> 00:14:50.590 align:start position:0%
+testing, I was almost instantly attacked
+by<00:14:49.200><c> enemies.</c><00:14:49.500><c> [music]</c><00:14:49.960><c> Their</c><00:14:50.080><c> detection</c>
+
+00:14:50.590 --> 00:14:50.600 align:start position:0%
+by enemies. [music] Their detection
+ 
+
+00:14:50.600 --> 00:14:52.990 align:start position:0%
+by enemies. [music] Their detection
+range<00:14:50.880><c> was</c><00:14:51.080><c> too</c><00:14:51.280><c> large.</c><00:14:52.080><c> I</c><00:14:52.200><c> asked</c><00:14:52.520><c> Claude</c><00:14:52.920><c> to</c>
+
+00:14:52.990 --> 00:14:53.000 align:start position:0%
+range was too large. I asked Claude to
+ 
+
+00:14:53.000 --> 00:14:56.150 align:start position:0%
+range was too large. I asked Claude to
+reduce<00:14:53.400><c> enemy</c><00:14:53.720><c> aggro</c><00:14:54.040><c> distance.</c>
+
+00:14:56.150 --> 00:14:56.160 align:start position:0%
+reduce enemy aggro distance.
+ 
+
+00:14:56.160 --> 00:14:57.710 align:start position:0%
+reduce enemy aggro distance.
+After<00:14:56.440><c> that,</c><00:14:56.640><c> the</c><00:14:56.720><c> gameplay</c><00:14:57.160><c> felt</c><00:14:57.480><c> much</c>
+
+00:14:57.710 --> 00:14:57.720 align:start position:0%
+After that, the gameplay felt much
+ 
+
+00:14:57.720 --> 00:15:03.950 align:start position:0%
+After that, the gameplay felt much
+better.
+
+00:15:03.950 --> 00:15:03.960 align:start position:0%
+ 
+ 
+
+00:15:03.960 --> 00:15:05.470 align:start position:0%
+ 
+The<00:15:04.080><c> dog</c><00:15:04.400><c> attacked</c><00:15:04.565><c> [music]</c><00:15:04.839><c> correctly,</c><00:15:05.320><c> but</c>
+
+00:15:05.470 --> 00:15:05.480 align:start position:0%
+The dog attacked [music] correctly, but
+ 
+
+00:15:05.480 --> 00:15:08.270 align:start position:0%
+The dog attacked [music] correctly, but
+I<00:15:05.520><c> noticed</c><00:15:05.920><c> attack</c><00:15:06.360><c> VFX</c><00:15:06.920><c> weren't</c><00:15:07.200><c> appearing.</c>
+
+00:15:08.270 --> 00:15:08.280 align:start position:0%
+I noticed attack VFX weren't appearing.
+ 
+
+00:15:08.280 --> 00:15:09.870 align:start position:0%
+I noticed attack VFX weren't appearing.
+I<00:15:08.320><c> reported</c><00:15:08.760><c> the</c><00:15:08.880><c> issue</c><00:15:09.240><c> and</c><00:15:09.360><c> continued</c>
+
+00:15:09.870 --> 00:15:09.880 align:start position:0%
+I reported the issue and continued
+ 
+
+00:15:09.880 --> 00:15:12.350 align:start position:0%
+I reported the issue and continued
+working.<00:15:10.680><c> A</c><00:15:10.760><c> few</c><00:15:11.000><c> hours</c><00:15:11.240><c> later,</c><00:15:11.560><c> I</c><00:15:11.640><c> returned</c>
+
+00:15:12.350 --> 00:15:12.360 align:start position:0%
+working. A few hours later, I returned
+ 
+
+00:15:12.360 --> 00:15:14.310 align:start position:0%
+working. A few hours later, I returned
+and<00:15:12.600><c> updated</c><00:15:13.040><c> the</c><00:15:13.120><c> project</c><00:15:13.560><c> documentation</c>
+
+00:15:14.310 --> 00:15:14.320 align:start position:0%
+and updated the project documentation
+ 
+
+00:15:14.320 --> 00:15:17.000 align:start position:0%
+and updated the project documentation
+with<00:15:14.480><c> new</c><00:15:14.680><c> features,</c><00:15:15.600><c> created</c><00:15:16.080><c> pets</c><00:15:16.720><c> and</c><00:15:16.880><c> shop</c>
+
+00:15:17.000 --> 00:15:17.010 align:start position:0%
+with new features, created pets and shop
+ 
+
+00:15:17.010 --> 00:15:20.070 align:start position:0%
+with new features, created pets and shop
+[music]<00:15:17.160><c> system,</c><00:15:18.040><c> added</c><00:15:18.440><c> enemy</c><00:15:18.720><c> NPCs,</c><00:15:19.800><c> player</c>
+
+00:15:20.070 --> 00:15:20.080 align:start position:0%
+[music] system, added enemy NPCs, player
+ 
+
+00:15:20.080 --> 00:15:21.870 align:start position:0%
+[music] system, added enemy NPCs, player
+purchases<00:15:20.600><c> now</c><00:15:20.760><c> spawn</c><00:15:21.120><c> additional</c><00:15:21.600><c> pets</c>
+
+00:15:21.870 --> 00:15:21.880 align:start position:0%
+purchases now spawn additional pets
+ 
+
+00:15:21.880 --> 00:15:24.070 align:start position:0%
+purchases now spawn additional pets
+instead<00:15:22.320><c> of</c><00:15:22.400><c> replacing</c><00:15:22.840><c> existing</c><00:15:23.360><c> ones.</c>
+
+00:15:24.070 --> 00:15:24.080 align:start position:0%
+instead of replacing existing ones.
+ 
+
+00:15:24.080 --> 00:15:26.470 align:start position:0%
+instead of replacing existing ones.
+Added<00:15:24.400><c> pet</c><00:15:24.640><c> hit</c><00:15:24.840><c> reactions.</c><00:15:25.800><c> Added</c><00:15:26.120><c> random</c>
+
+00:15:26.470 --> 00:15:26.480 align:start position:0%
+Added pet hit reactions. Added random
+ 
+
+00:15:26.480 --> 00:15:28.310 align:start position:0%
+Added pet hit reactions. Added random
+treasure<00:15:26.800><c> chest</c><00:15:27.040><c> spawning.</c><00:15:27.800><c> Improved</c>
+
+00:15:28.310 --> 00:15:28.320 align:start position:0%
+treasure chest spawning. Improved
+ 
+
+00:15:28.320 --> 00:15:30.710 align:start position:0%
+treasure chest spawning. Improved
+natural<00:15:28.760><c> pet</c><00:15:29.000><c> movement.</c><00:15:29.800><c> Added</c><00:15:30.080><c> pet</c><00:15:30.360><c> HP</c>
+
+00:15:30.710 --> 00:15:30.720 align:start position:0%
+natural pet movement. Added pet HP
+ 
+
+00:15:30.720 --> 00:15:32.720 align:start position:0%
+natural pet movement. Added pet HP
+regeneration.<00:15:31.760><c> Added</c><00:15:32.080><c> pet</c><00:15:32.320><c> health</c><00:15:32.560><c> bars.</c>
+
+00:15:32.720 --> 00:15:32.730 align:start position:0%
+regeneration. Added pet health bars.
+ 
+
+00:15:32.730 --> 00:15:34.390 align:start position:0%
+regeneration. Added pet health bars.
+[music]<00:15:33.240><c> After</c><00:15:33.560><c> that,</c><00:15:33.800><c> I</c><00:15:33.880><c> continued</c>
+
+00:15:34.390 --> 00:15:34.400 align:start position:0%
+[music] After that, I continued
+ 
+
+00:15:34.400 --> 00:15:36.550 align:start position:0%
+[music] After that, I continued
+improving<00:15:34.840><c> sounds,</c><00:15:35.560><c> treasure</c><00:15:35.920><c> systems,</c><00:15:36.400><c> and</c>
+
+00:15:36.550 --> 00:15:36.560 align:start position:0%
+improving sounds, treasure systems, and
+ 
+
+00:15:36.560 --> 00:15:39.110 align:start position:0%
+improving sounds, treasure systems, and
+fixing<00:15:36.960><c> bugs.</c><00:15:37.880><c> One</c><00:15:38.160><c> funny</c><00:15:38.440><c> bug</c><00:15:38.760><c> caused</c>
+
+00:15:39.110 --> 00:15:39.120 align:start position:0%
+fixing bugs. One funny bug caused
+ 
+
+00:15:39.120 --> 00:15:40.750 align:start position:0%
+fixing bugs. One funny bug caused
+enemies<00:15:39.480><c> to</c><00:15:39.600><c> collide</c><00:15:40.000><c> with</c><00:15:40.160><c> each</c><00:15:40.320><c> other</c><00:15:40.560><c> and</c>
+
+00:15:40.750 --> 00:15:40.760 align:start position:0%
+enemies to collide with each other and
+ 
+
+00:15:40.760 --> 00:15:42.950 align:start position:0%
+enemies to collide with each other and
+launch<00:15:41.040><c> into</c><00:15:41.200><c> the</c><00:15:41.320><c> sky.</c><00:15:42.040><c> Claude</c><00:15:42.440><c> helped</c><00:15:42.680><c> solve</c>
+
+00:15:42.950 --> 00:15:42.960 align:start position:0%
+launch into the sky. Claude helped solve
+ 
+
+00:15:42.960 --> 00:15:45.150 align:start position:0%
+launch into the sky. Claude helped solve
+that,<00:15:43.200><c> too.</c><00:15:43.880><c> Eventually,</c><00:15:44.400><c> I</c><00:15:44.480><c> reached</c><00:15:44.800><c> a</c><00:15:44.840><c> point</c>
+
+00:15:45.150 --> 00:15:45.160 align:start position:0%
+that, too. Eventually, I reached a point
+ 
+
+00:15:45.160 --> 00:15:46.630 align:start position:0%
+that, too. Eventually, I reached a point
+where<00:15:45.280><c> I</c><00:15:45.320><c> was</c><00:15:45.480><c> extremely</c><00:15:46.120><c> happy</c><00:15:46.440><c> with</c><00:15:46.560><c> the</c>
+
+00:15:46.630 --> 00:15:46.640 align:start position:0%
+where I was extremely happy with the
+ 
+
+00:15:46.640 --> 00:15:49.190 align:start position:0%
+where I was extremely happy with the
+game.<00:15:47.520><c> Pet</c><00:15:47.640><c> attacks,</c><00:15:48.280><c> health</c><00:15:48.450><c> [music]</c><00:15:48.600><c> bars,</c>
+
+00:15:49.190 --> 00:15:49.200 align:start position:0%
+game. Pet attacks, health [music] bars,
+ 
+
+00:15:49.200 --> 00:15:51.470 align:start position:0%
+game. Pet attacks, health [music] bars,
+sound<00:15:49.520><c> effects,</c><00:15:50.160><c> treasure</c><00:15:50.520><c> chests,</c><00:15:51.160><c> money</c>
+
+00:15:51.470 --> 00:15:51.480 align:start position:0%
+sound effects, treasure chests, money
+ 
+
+00:15:51.480 --> 00:15:53.870 align:start position:0%
+sound effects, treasure chests, money
+systems,<00:15:52.200><c> enemy</c><00:15:52.520><c> progression.</c><00:15:53.400><c> Everything</c>
+
+00:15:53.870 --> 00:15:53.880 align:start position:0%
+systems, enemy progression. Everything
+ 
+
+00:15:53.880 --> 00:15:56.070 align:start position:0%
+systems, enemy progression. Everything
+worked<00:15:54.080><c> together</c><00:15:54.440><c> surprisingly</c><00:15:55.160><c> well.</c><00:15:55.920><c> For</c>
+
+00:15:56.070 --> 00:15:56.080 align:start position:0%
+worked together surprisingly well. For
+ 
+
+00:15:56.080 --> 00:15:58.110 align:start position:0%
+worked together surprisingly well. For
+future<00:15:56.440><c> updates,</c><00:15:57.160><c> I</c><00:15:57.280><c> plan</c><00:15:57.560><c> to</c><00:15:57.680><c> add</c><00:15:57.920><c> pet</c>
+
+00:15:58.110 --> 00:15:58.120 align:start position:0%
+future updates, I plan to add pet
+ 
+
+00:15:58.120 --> 00:16:00.390 align:start position:0%
+future updates, I plan to add pet
+leveling,<00:15:58.800><c> player</c><00:15:59.080><c> skills,</c><00:15:59.840><c> inventory</c>
+
+00:16:00.390 --> 00:16:00.400 align:start position:0%
+leveling, player skills, inventory
+ 
+
+00:16:00.400 --> 00:16:02.790 align:start position:0%
+leveling, player skills, inventory
+systems,<00:16:01.120><c> dragons,</c><00:16:01.680><c> and</c><00:16:01.880><c> many</c><00:16:02.120><c> more</c><00:16:02.360><c> powerful</c>
+
+00:16:02.790 --> 00:16:02.800 align:start position:0%
+systems, dragons, and many more powerful
+ 
+
+00:16:02.800 --> 00:16:05.070 align:start position:0%
+systems, dragons, and many more powerful
+creatures.<00:16:03.760><c> Before</c><00:16:04.080><c> we</c><00:16:04.240><c> finish,</c><00:16:04.800><c> let</c><00:16:04.960><c> me</c>
+
+00:16:05.070 --> 00:16:05.080 align:start position:0%
+creatures. Before we finish, let me
+ 
+
+00:16:05.080 --> 00:16:06.390 align:start position:0%
+creatures. Before we finish, let me
+quickly<00:16:05.480><c> walk</c><00:16:05.720><c> through</c><00:16:05.880><c> the</c><00:16:05.960><c> project</c>
+
+00:16:06.390 --> 00:16:06.400 align:start position:0%
+quickly walk through the project
+ 
+
+00:16:06.400 --> 00:16:08.746 align:start position:0%
+quickly walk through the project
+structure.<00:16:07.120><c> Inside</c><00:16:07.720><c> workspace,</c><00:16:08.520><c> we</c><00:16:08.680><c> have</c>
+
+00:16:08.746 --> 00:16:08.756 align:start position:0%
+structure. Inside workspace, we have
+ 
+
+00:16:08.756 --> 00:16:10.630 align:start position:0%
+structure. Inside workspace, we have
+[music]<00:16:08.840><c> the</c><00:16:09.040><c> island</c><00:16:09.440><c> level,</c><00:16:09.920><c> ocean,</c>
+
+00:16:10.630 --> 00:16:10.640 align:start position:0%
+[music] the island level, ocean,
+ 
+
+00:16:10.640 --> 00:16:13.310 align:start position:0%
+[music] the island level, ocean,
+collider<00:16:11.160><c> ground,</c><00:16:11.840><c> enemy</c><00:16:12.160><c> spawn</c><00:16:12.480><c> locations,</c>
+
+00:16:13.310 --> 00:16:13.320 align:start position:0%
+collider ground, enemy spawn locations,
+ 
+
+00:16:13.320 --> 00:16:23.030 align:start position:0%
+collider ground, enemy spawn locations,
+and<00:16:13.480><c> sound</c><00:16:13.880><c> folder.</c>
+
+00:16:23.030 --> 00:16:23.040 align:start position:0%
+ 
+ 
+
+00:16:23.040 --> 00:16:24.990 align:start position:0%
+ 
+Inside<00:16:23.480><c> replicated</c><00:16:24.040><c> storage,</c><00:16:24.720><c> we</c><00:16:24.839><c> have</c>
+
+00:16:24.990 --> 00:16:25.000 align:start position:0%
+Inside replicated storage, we have
+ 
+
+00:16:25.000 --> 00:16:27.590 align:start position:0%
+Inside replicated storage, we have
+remote<00:16:25.320><c> events,</c><00:16:25.920><c> shop</c><00:16:26.240><c> configuration,</c><00:16:27.240><c> sound</c>
+
+00:16:27.590 --> 00:16:27.600 align:start position:0%
+remote events, shop configuration, sound
+ 
+
+00:16:27.600 --> 00:16:29.630 align:start position:0%
+remote events, shop configuration, sound
+configuration,<00:16:28.600><c> and</c><00:16:28.800><c> sound</c><00:16:29.160><c> management</c>
+
+00:16:29.630 --> 00:16:29.640 align:start position:0%
+configuration, and sound management
+ 
+
+00:16:29.640 --> 00:16:32.790 align:start position:0%
+configuration, and sound management
+modules.<00:16:30.720><c> Shop</c><00:16:31.000><c> config</c><00:16:31.400><c> stores</c><00:16:31.800><c> pet</c><00:16:32.120><c> IDs,</c>
+
+00:16:32.790 --> 00:16:32.800 align:start position:0%
+modules. Shop config stores pet IDs,
+ 
+
+00:16:32.800 --> 00:16:35.590 align:start position:0%
+modules. Shop config stores pet IDs,
+names,<00:16:33.440><c> prices,</c><00:16:34.120><c> images,</c><00:16:34.720><c> descriptions,</c>
+
+00:16:35.590 --> 00:16:35.600 align:start position:0%
+names, prices, images, descriptions,
+ 
+
+00:16:35.600 --> 00:16:38.190 align:start position:0%
+names, prices, images, descriptions,
+lock<00:16:35.880><c> status,</c><00:16:36.600><c> starting</c><00:16:37.000><c> gold</c><00:16:37.280><c> values,</c><00:16:37.920><c> pet</c>
+
+00:16:38.190 --> 00:16:38.200 align:start position:0%
+lock status, starting gold values, pet
+ 
+
+00:16:38.200 --> 00:16:41.150 align:start position:0%
+lock status, starting gold values, pet
+stats,<00:16:38.839><c> and</c><00:16:39.040><c> animation</c><00:16:39.520><c> IDs.</c><00:16:40.520><c> Inside</c><00:16:40.920><c> server</c>
+
+00:16:41.150 --> 00:16:41.160 align:start position:0%
+stats, and animation IDs. Inside server
+ 
+
+00:16:41.160 --> 00:16:43.390 align:start position:0%
+stats, and animation IDs. Inside server
+script<00:16:41.480><c> service,</c><00:16:42.080><c> we</c><00:16:42.240><c> have</c><00:16:42.440><c> enemy</c><00:16:42.720><c> server,</c>
+
+00:16:43.390 --> 00:16:43.400 align:start position:0%
+script service, we have enemy server,
+ 
+
+00:16:43.400 --> 00:16:45.590 align:start position:0%
+script service, we have enemy server,
+gold<00:16:43.720><c> chest</c><00:16:43.960><c> server,</c><00:16:44.520><c> pet</c><00:16:44.760><c> server,</c><00:16:45.280><c> shop</c>
+
+00:16:45.590 --> 00:16:45.600 align:start position:0%
+gold chest server, pet server, shop
+ 
+
+00:16:45.600 --> 00:16:47.430 align:start position:0%
+gold chest server, pet server, shop
+server,<00:16:45.960><c> enemy</c><00:16:46.091><c> [music]</c><00:16:46.280><c> config,</c><00:16:46.960><c> and</c><00:16:47.160><c> enemy</c>
+
+00:16:47.430 --> 00:16:47.440 align:start position:0%
+server, enemy [music] config, and enemy
+ 
+
+00:16:47.440 --> 00:16:50.350 align:start position:0%
+server, enemy [music] config, and enemy
+registry.<00:16:48.560><c> Inside</c><00:16:49.000><c> server</c><00:16:49.280><c> storage,</c><00:16:50.000><c> we</c><00:16:50.120><c> keep</c>
+
+00:16:50.350 --> 00:16:50.360 align:start position:0%
+registry. Inside server storage, we keep
+ 
+
+00:16:50.360 --> 00:16:52.790 align:start position:0%
+registry. Inside server storage, we keep
+pet<00:16:50.600><c> models</c><00:16:51.000><c> and</c><00:16:51.160><c> chest</c><00:16:51.440><c> templates.</c><00:16:52.360><c> Inside</c>
+
+00:16:52.790 --> 00:16:52.800 align:start position:0%
+pet models and chest templates. Inside
+ 
+
+00:16:52.800 --> 00:16:54.590 align:start position:0%
+pet models and chest templates. Inside
+starter<00:16:53.120><c> GUI,</c><00:16:53.400><c> we</c><00:16:53.520><c> have</c><00:16:53.680><c> the</c><00:16:53.760><c> complete</c><00:16:54.280><c> shop</c>
+
+00:16:54.590 --> 00:16:54.600 align:start position:0%
+starter GUI, we have the complete shop
+ 
+
+00:16:54.600 --> 00:16:56.110 align:start position:0%
+starter GUI, we have the complete shop
+interface.
+
+00:16:56.110 --> 00:16:56.120 align:start position:0%
+interface.
+ 
+
+00:16:56.120 --> 00:16:58.110 align:start position:0%
+interface.
+Inside<00:16:56.560><c> starter</c><00:16:56.920><c> player</c><00:16:57.200><c> scripts,</c><00:16:57.839><c> we</c><00:16:57.960><c> have</c>
+
+00:16:58.110 --> 00:16:58.120 align:start position:0%
+Inside starter player scripts, we have
+ 
+
+00:16:58.120 --> 00:17:01.230 align:start position:0%
+Inside starter player scripts, we have
+shop<00:16:58.440><c> client</c><00:16:59.040><c> and</c><00:16:59.200><c> VFX</c><00:16:59.720><c> client.</c><00:17:00.440><c> And</c><00:17:00.600><c> finally,</c>
+
+00:17:01.230 --> 00:17:01.240 align:start position:0%
+shop client and VFX client. And finally,
+ 
+
+00:17:01.240 --> 00:17:03.350 align:start position:0%
+shop client and VFX client. And finally,
+for<00:17:01.400><c> a</c><00:17:01.440><c> fun</c><00:17:01.720><c> test,</c><00:17:02.360><c> I</c><00:17:02.480><c> increased</c><00:17:02.880><c> the</c><00:17:03.000><c> starting</c>
+
+00:17:03.350 --> 00:17:03.360 align:start position:0%
+for a fun test, I increased the starting
+ 
+
+00:17:03.360 --> 00:17:07.470 align:start position:0%
+for a fun test, I increased the starting
+gold<00:17:03.640><c> value</c><00:17:04.280><c> to</c><00:17:04.400><c> 999,999.</c>
+
+00:17:07.470 --> 00:17:07.480 align:start position:0%
+ 
+ 
+
+00:17:07.480 --> 00:17:09.670 align:start position:0%
+ 
+Then,<00:17:07.640><c> I</c><00:17:07.720><c> bought</c><00:17:07.920><c> a</c><00:17:07.959><c> massive</c><00:17:08.439><c> army</c><00:17:08.720><c> of</c><00:17:08.839><c> pets.</c>
+
+00:17:09.670 --> 00:17:09.680 align:start position:0%
+Then, I bought a massive army of pets.
+ 
+
+00:17:09.680 --> 00:17:12.350 align:start position:0%
+Then, I bought a massive army of pets.
+The<00:17:09.800><c> result</c><00:17:10.400><c> was</c><00:17:10.640><c> absolutely</c><00:17:11.240><c> ridiculous.</c>
+
+00:17:12.350 --> 00:17:12.360 align:start position:0%
+The result was absolutely ridiculous.
+ 
+
+00:17:12.360 --> 00:17:14.189 align:start position:0%
+The result was absolutely ridiculous.
+The<00:17:12.439><c> pet</c><00:17:12.680><c> army</c><00:17:12.920><c> destroyed</c><00:17:13.400><c> almost</c><00:17:13.800><c> everything</c>
+
+00:17:14.189 --> 00:17:14.199 align:start position:0%
+The pet army destroyed almost everything
+ 
+
+00:17:14.199 --> 00:17:16.230 align:start position:0%
+The pet army destroyed almost everything
+in<00:17:14.319><c> sight,</c><00:17:14.880><c> but</c><00:17:15.000><c> But</c><00:17:15.199><c> then,</c><00:17:15.720><c> those</c><00:17:15.959><c> level</c>
+
+00:17:16.230 --> 00:17:16.240 align:start position:0%
+in sight, but But then, those level
+ 
+
+00:17:16.240 --> 00:17:17.750 align:start position:0%
+in sight, but But then, those level
+2,000<00:17:16.839><c> enemies</c><00:17:16.876><c> [music]</c><00:17:17.280><c> still</c><00:17:17.560><c> need</c>
+
+00:17:17.750 --> 00:17:17.760 align:start position:0%
+2,000 enemies [music] still need
+ 
+
+00:17:17.760 --> 00:17:19.670 align:start position:0%
+2,000 enemies [music] still need
+something<00:17:18.079><c> stronger.</c><00:17:19.000><c> Maybe</c><00:17:19.280><c> that's</c><00:17:19.560><c> where</c>
+
+00:17:19.670 --> 00:17:19.680 align:start position:0%
+something stronger. Maybe that's where
+ 
+
+00:17:19.680 --> 00:17:21.150 align:start position:0%
+something stronger. Maybe that's where
+the<00:17:19.800><c> dragon</c><00:17:20.240><c> will</c><00:17:20.360><c> come</c><00:17:20.680><c> in</c><00:17:20.800><c> the</c><00:17:20.880><c> next</c>
+
+00:17:21.150 --> 00:17:21.160 align:start position:0%
+the dragon will come in the next
+ 
+
+00:17:21.160 --> 00:17:23.670 align:start position:0%
+the dragon will come in the next
+episode.<00:17:22.040><c> If</c><00:17:22.199><c> you</c><00:17:22.319><c> enjoyed</c><00:17:22.720><c> this</c><00:17:22.880><c> tutorial</c>
+
+00:17:23.670 --> 00:17:23.680 align:start position:0%
+episode. If you enjoyed this tutorial
+ 
+
+00:17:23.680 --> 00:17:26.350 align:start position:0%
+episode. If you enjoyed this tutorial
+and<00:17:23.839><c> want</c><00:17:24.040><c> more</c><00:17:24.280><c> Roblox</c><00:17:24.760><c> Studio</c><00:17:25.160><c> MCP,</c><00:17:26.040><c> Claude</c>
+
+00:17:26.350 --> 00:17:26.360 align:start position:0%
+and want more Roblox Studio MCP, Claude
+ 
+
+00:17:26.360 --> 00:17:29.270 align:start position:0%
+and want more Roblox Studio MCP, Claude
+AI,<00:17:26.880><c> Blender</c><00:17:27.240><c> MCP,</c><00:17:28.040><c> and</c><00:17:28.280><c> AI</c><00:17:28.560><c> game</c><00:17:28.800><c> development</c>
+
+00:17:29.270 --> 00:17:29.280 align:start position:0%
+AI, Blender MCP, and AI game development
+ 
+
+00:17:29.280 --> 00:17:31.070 align:start position:0%
+AI, Blender MCP, and AI game development
+content,<00:17:30.000><c> don't</c><00:17:30.200><c> forget</c><00:17:30.480><c> to</c><00:17:30.600><c> like,</c>
+
+00:17:31.070 --> 00:17:31.080 align:start position:0%
+content, don't forget to like,
+ 
+
+00:17:31.080 --> 00:17:32.710 align:start position:0%
+content, don't forget to like,
+subscribe,<00:17:31.960><c> and</c><00:17:32.080><c> let</c><00:17:32.240><c> me</c><00:17:32.320><c> know</c><00:17:32.480><c> what</c><00:17:32.597><c> [music]</c>
+
+00:17:32.710 --> 00:17:32.720 align:start position:0%
+subscribe, and let me know what [music]
+ 
+
+00:17:32.720 --> 00:17:36.000 align:start position:0%
+subscribe, and let me know what [music]
+pet<00:17:32.920><c> we</c><00:17:33.040><c> should</c><00:17:33.200><c> build</c><00:17:33.480><c> next.</c>
+

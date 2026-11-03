@@ -1,0 +1,1736 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.080 --> 00:00:01.030 align:start position:0%
+ 
+I'm<00:00:00.160><c> going</c><00:00:00.280><c> to</c><00:00:00.359><c> show</c><00:00:00.480><c> you</c><00:00:00.560><c> how</c><00:00:00.640><c> to</c><00:00:00.719><c> animate</c>
+
+00:00:01.030 --> 00:00:01.040 align:start position:0%
+I'm going to show you how to animate
+ 
+
+00:00:01.040 --> 00:00:03.070 align:start position:0%
+I'm going to show you how to animate
+smooth<00:00:01.520><c> UI</c><00:00:01.880><c> buttons</c><00:00:02.159><c> in</c><00:00:02.320><c> Roblox</c><00:00:02.679><c> Studios</c><00:00:03.000><c> so</c>
+
+00:00:03.070 --> 00:00:03.080 align:start position:0%
+smooth UI buttons in Roblox Studios so
+ 
+
+00:00:03.080 --> 00:00:04.150 align:start position:0%
+smooth UI buttons in Roblox Studios so
+if<00:00:03.159><c> you</c><00:00:03.240><c> want</c><00:00:03.360><c> your</c><00:00:03.480><c> game</c><00:00:03.600><c> to</c><00:00:03.719><c> feel</c><00:00:03.879><c> more</c>
+
+00:00:04.150 --> 00:00:04.160 align:start position:0%
+if you want your game to feel more
+ 
+
+00:00:04.160 --> 00:00:06.349 align:start position:0%
+if you want your game to feel more
+polished<00:00:04.799><c> and</c><00:00:05.000><c> high</c><00:00:05.240><c> quality</c><00:00:05.839><c> this</c><00:00:06.000><c> video</c><00:00:06.240><c> is</c>
+
+00:00:06.349 --> 00:00:06.359 align:start position:0%
+polished and high quality this video is
+ 
+
+00:00:06.359 --> 00:00:08.350 align:start position:0%
+polished and high quality this video is
+going<00:00:06.440><c> to</c><00:00:06.600><c> help</c><00:00:06.759><c> out</c><00:00:07.000><c> a</c><00:00:07.160><c> lot</c><00:00:07.640><c> all</c><00:00:07.759><c> right</c><00:00:08.000><c> so</c><00:00:08.160><c> for</c>
+
+00:00:08.350 --> 00:00:08.360 align:start position:0%
+going to help out a lot all right so for
+ 
+
+00:00:08.360 --> 00:00:10.629 align:start position:0%
+going to help out a lot all right so for
+the<00:00:08.519><c> setup</c><00:00:08.880><c> for</c><00:00:09.080><c> this</c><00:00:09.360><c> what</c><00:00:09.480><c> I</c><00:00:09.760><c> have</c><00:00:10.160><c> is</c><00:00:10.320><c> I</c><00:00:10.440><c> have</c>
+
+00:00:10.629 --> 00:00:10.639 align:start position:0%
+the setup for this what I have is I have
+ 
+
+00:00:10.639 --> 00:00:12.830 align:start position:0%
+the setup for this what I have is I have
+a<00:00:10.920><c> screen</c><00:00:11.280><c> UI</c><00:00:11.679><c> with</c><00:00:11.799><c> a</c><00:00:11.960><c> frame</c><00:00:12.280><c> inside</c><00:00:12.519><c> of</c><00:00:12.639><c> it</c>
+
+00:00:12.830 --> 00:00:12.840 align:start position:0%
+a screen UI with a frame inside of it
+ 
+
+00:00:12.840 --> 00:00:15.829 align:start position:0%
+a screen UI with a frame inside of it
+this<00:00:13.040><c> Frame</c><00:00:13.920><c> is</c><00:00:14.080><c> so</c><00:00:14.280><c> that</c><00:00:14.480><c> I</c><00:00:14.559><c> can</c><00:00:15.120><c> keep</c><00:00:15.519><c> all</c><00:00:15.679><c> of</c>
+
+00:00:15.829 --> 00:00:15.839 align:start position:0%
+this Frame is so that I can keep all of
+ 
+
+00:00:15.839 --> 00:00:18.070 align:start position:0%
+this Frame is so that I can keep all of
+my<00:00:16.359><c> UI</c><00:00:16.760><c> buttons</c><00:00:17.080><c> in</c><00:00:17.240><c> the</c><00:00:17.400><c> same</c><00:00:17.640><c> spot</c><00:00:17.880><c> on</c><00:00:17.960><c> the</c>
+
+00:00:18.070 --> 00:00:18.080 align:start position:0%
+my UI buttons in the same spot on the
+ 
+
+00:00:18.080 --> 00:00:19.790 align:start position:0%
+my UI buttons in the same spot on the
+screen<00:00:18.720><c> so</c><00:00:18.880><c> as</c><00:00:18.960><c> you</c><00:00:19.039><c> can</c><00:00:19.160><c> see</c><00:00:19.320><c> I</c><00:00:19.400><c> want</c><00:00:19.600><c> all</c><00:00:19.720><c> of</c>
+
+00:00:19.790 --> 00:00:19.800 align:start position:0%
+screen so as you can see I want all of
+ 
+
+00:00:19.800 --> 00:00:21.269 align:start position:0%
+screen so as you can see I want all of
+them<00:00:19.960><c> on</c><00:00:20.080><c> the</c><00:00:20.279><c> left</c><00:00:20.480><c> side</c><00:00:20.680><c> so</c><00:00:20.840><c> I</c><00:00:20.920><c> went</c><00:00:21.080><c> ahead</c>
+
+00:00:21.269 --> 00:00:21.279 align:start position:0%
+them on the left side so I went ahead
+ 
+
+00:00:21.279 --> 00:00:23.990 align:start position:0%
+them on the left side so I went ahead
+and<00:00:21.400><c> made</c><00:00:21.600><c> the</c><00:00:21.720><c> frame</c><00:00:22.119><c> the</c><00:00:22.359><c> size</c><00:00:23.000><c> and</c><00:00:23.359><c> the</c><00:00:23.599><c> spot</c>
+
+00:00:23.990 --> 00:00:24.000 align:start position:0%
+and made the frame the size and the spot
+ 
+
+00:00:24.000 --> 00:00:25.870 align:start position:0%
+and made the frame the size and the spot
+that<00:00:24.119><c> I</c><00:00:24.199><c> want</c><00:00:24.320><c> it</c><00:00:24.760><c> and</c><00:00:24.880><c> then</c><00:00:25.199><c> inside</c><00:00:25.519><c> the</c><00:00:25.640><c> frame</c>
+
+00:00:25.870 --> 00:00:25.880 align:start position:0%
+that I want it and then inside the frame
+ 
+
+00:00:25.880 --> 00:00:27.470 align:start position:0%
+that I want it and then inside the frame
+I<00:00:25.960><c> have</c><00:00:26.039><c> a</c><00:00:26.160><c> UI</c><00:00:26.480><c> list</c><00:00:26.679><c> layout</c><00:00:27.039><c> this</c><00:00:27.119><c> is</c><00:00:27.240><c> so</c><00:00:27.359><c> that</c>
+
+00:00:27.470 --> 00:00:27.480 align:start position:0%
+I have a UI list layout this is so that
+ 
+
+00:00:27.480 --> 00:00:29.429 align:start position:0%
+I have a UI list layout this is so that
+we<00:00:27.599><c> can</c><00:00:27.760><c> adjust</c><00:00:28.160><c> the</c><00:00:28.400><c> size</c><00:00:28.720><c> of</c><00:00:28.920><c> the</c><00:00:29.119><c> button</c>
+
+00:00:29.429 --> 00:00:29.439 align:start position:0%
+we can adjust the size of the button
+ 
+
+00:00:29.439 --> 00:00:30.470 align:start position:0%
+we can adjust the size of the button
+with<00:00:29.560><c> the</c><00:00:29.679><c> animation</c>
+
+00:00:30.470 --> 00:00:30.480 align:start position:0%
+with the animation
+ 
+
+00:00:30.480 --> 00:00:32.549 align:start position:0%
+with the animation
+and<00:00:30.599><c> then</c><00:00:30.759><c> I</c><00:00:30.840><c> have</c><00:00:31.000><c> a</c><00:00:31.160><c> list</c><00:00:31.359><c> of</c><00:00:31.519><c> buttons</c><00:00:32.439><c> uh</c>
+
+00:00:32.549 --> 00:00:32.559 align:start position:0%
+and then I have a list of buttons uh
+ 
+
+00:00:32.559 --> 00:00:33.910 align:start position:0%
+and then I have a list of buttons uh
+also<00:00:32.800><c> the</c><00:00:32.920><c> thing</c><00:00:33.079><c> with</c><00:00:33.200><c> this</c><00:00:33.399><c> is</c><00:00:33.559><c> that</c><00:00:33.800><c> they</c>
+
+00:00:33.910 --> 00:00:33.920 align:start position:0%
+also the thing with this is that they
+ 
+
+00:00:33.920 --> 00:00:35.310 align:start position:0%
+also the thing with this is that they
+don't<00:00:34.200><c> all</c><00:00:34.360><c> have</c><00:00:34.440><c> to</c><00:00:34.559><c> be</c><00:00:34.680><c> the</c><00:00:34.760><c> same</c><00:00:34.960><c> size</c><00:00:35.160><c> so</c><00:00:35.239><c> if</c>
+
+00:00:35.310 --> 00:00:35.320 align:start position:0%
+don't all have to be the same size so if
+ 
+
+00:00:35.320 --> 00:00:36.950 align:start position:0%
+don't all have to be the same size so if
+you<00:00:35.399><c> want</c><00:00:35.559><c> one</c><00:00:35.719><c> button</c><00:00:35.920><c> to</c><00:00:36.040><c> be</c><00:00:36.160><c> bigger</c><00:00:36.800><c> or</c>
+
+00:00:36.950 --> 00:00:36.960 align:start position:0%
+you want one button to be bigger or
+ 
+
+00:00:36.960 --> 00:00:38.389 align:start position:0%
+you want one button to be bigger or
+something<00:00:37.399><c> then</c><00:00:37.520><c> you</c><00:00:37.640><c> could</c><00:00:37.760><c> still</c><00:00:38.040><c> do</c><00:00:38.160><c> it</c><00:00:38.280><c> and</c>
+
+00:00:38.389 --> 00:00:38.399 align:start position:0%
+something then you could still do it and
+ 
+
+00:00:38.399 --> 00:00:40.270 align:start position:0%
+something then you could still do it and
+it<00:00:38.480><c> will</c><00:00:38.680><c> work</c><00:00:38.960><c> completely</c><00:00:39.440><c> fine</c><00:00:39.960><c> all</c><00:00:40.120><c> right</c>
+
+00:00:40.270 --> 00:00:40.280 align:start position:0%
+it will work completely fine all right
+ 
+
+00:00:40.280 --> 00:00:42.470 align:start position:0%
+it will work completely fine all right
+so<00:00:40.520><c> now</c><00:00:40.760><c> to</c><00:00:41.039><c> animate</c><00:00:41.440><c> these</c><00:00:41.680><c> buttons</c><00:00:42.200><c> so</c><00:00:42.360><c> what</c>
+
+00:00:42.470 --> 00:00:42.480 align:start position:0%
+so now to animate these buttons so what
+ 
+
+00:00:42.480 --> 00:00:43.990 align:start position:0%
+so now to animate these buttons so what
+I'm<00:00:42.559><c> going</c><00:00:42.680><c> to</c><00:00:42.760><c> do</c><00:00:42.920><c> is</c><00:00:43.000><c> I'm</c><00:00:43.120><c> going</c><00:00:43.200><c> to</c><00:00:43.320><c> put</c><00:00:43.520><c> a</c>
+
+00:00:43.990 --> 00:00:44.000 align:start position:0%
+I'm going to do is I'm going to put a
+ 
+
+00:00:44.000 --> 00:00:46.630 align:start position:0%
+I'm going to do is I'm going to put a
+local<00:00:44.320><c> script</c><00:00:44.640><c> into</c><00:00:44.920><c> here</c><00:00:45.480><c> into</c><00:00:45.719><c> the</c><00:00:45.840><c> UI</c><00:00:46.520><c> and</c>
+
+00:00:46.630 --> 00:00:46.640 align:start position:0%
+local script into here into the UI and
+ 
+
+00:00:46.640 --> 00:00:47.910 align:start position:0%
+local script into here into the UI and
+then<00:00:46.760><c> we</c><00:00:46.879><c> can</c><00:00:47.000><c> go</c><00:00:47.160><c> and</c><00:00:47.280><c> start</c><00:00:47.559><c> so</c><00:00:47.640><c> the</c><00:00:47.760><c> first</c>
+
+00:00:47.910 --> 00:00:47.920 align:start position:0%
+then we can go and start so the first
+ 
+
+00:00:47.920 --> 00:00:49.270 align:start position:0%
+then we can go and start so the first
+thing<00:00:48.039><c> we're</c><00:00:48.160><c> going</c><00:00:48.239><c> to</c><00:00:48.360><c> need</c><00:00:48.559><c> is</c><00:00:48.680><c> the</c><00:00:48.879><c> tween</c>
+
+00:00:49.270 --> 00:00:49.280 align:start position:0%
+thing we're going to need is the tween
+ 
+
+00:00:49.280 --> 00:00:51.310 align:start position:0%
+thing we're going to need is the tween
+service<00:00:50.199><c> this</c><00:00:50.320><c> is</c><00:00:50.440><c> so</c><00:00:50.559><c> that</c><00:00:50.680><c> we</c><00:00:50.760><c> can</c><00:00:50.920><c> animate</c>
+
+00:00:51.310 --> 00:00:51.320 align:start position:0%
+service this is so that we can animate
+ 
+
+00:00:51.320 --> 00:00:53.790 align:start position:0%
+service this is so that we can animate
+the<00:00:51.879><c> buttons</c><00:00:52.879><c> and</c><00:00:53.000><c> then</c><00:00:53.120><c> we</c><00:00:53.199><c> need</c><00:00:53.359><c> to</c><00:00:53.480><c> get</c><00:00:53.600><c> the</c>
+
+00:00:53.790 --> 00:00:53.800 align:start position:0%
+the buttons and then we need to get the
+ 
+
+00:00:53.800 --> 00:00:56.549 align:start position:0%
+the buttons and then we need to get the
+player<00:00:54.160><c> gy</c><00:00:54.760><c> so</c><00:00:54.960><c> with</c><00:00:55.199><c> this</c><00:00:55.559><c> I'm</c><00:00:55.800><c> also</c><00:00:56.079><c> going</c><00:00:56.280><c> to</c>
+
+00:00:56.549 --> 00:00:56.559 align:start position:0%
+player gy so with this I'm also going to
+ 
+
+00:00:56.559 --> 00:00:58.470 align:start position:0%
+player gy so with this I'm also going to
+add<00:00:57.239><c> sound</c><00:00:57.559><c> effects</c><00:00:57.840><c> for</c><00:00:58.039><c> every</c><00:00:58.199><c> single</c>
+
+00:00:58.470 --> 00:00:58.480 align:start position:0%
+add sound effects for every single
+ 
+
+00:00:58.480 --> 00:01:00.029 align:start position:0%
+add sound effects for every single
+button<00:00:58.719><c> in</c><00:00:58.840><c> the</c><00:00:58.960><c> game</c><00:00:59.440><c> so</c><00:00:59.600><c> that's</c><00:00:59.719><c> where</c><00:00:59.960><c> we're</c>
+
+00:01:00.029 --> 00:01:00.039 align:start position:0%
+button in the game so that's where we're
+ 
+
+00:01:00.039 --> 00:01:02.069 align:start position:0%
+button in the game so that's where we're
+going<00:01:00.120><c> to</c><00:01:00.160><c> use</c><00:01:00.359><c> the</c><00:01:00.519><c> player</c><00:01:00.879><c> GUI</c><00:01:01.239><c> for</c><00:01:01.480><c> so</c><00:01:01.600><c> we're</c>
+
+00:01:02.069 --> 00:01:02.079 align:start position:0%
+going to use the player GUI for so we're
+ 
+
+00:01:02.079 --> 00:01:03.470 align:start position:0%
+going to use the player GUI for so we're
+the<00:01:02.239><c> local</c><00:01:02.559><c> player</c><00:01:02.879><c> and</c><00:01:02.960><c> then</c><00:01:03.120><c> get</c><00:01:03.280><c> their</c>
+
+00:01:03.470 --> 00:01:03.480 align:start position:0%
+the local player and then get their
+ 
+
+00:01:03.480 --> 00:01:06.030 align:start position:0%
+the local player and then get their
+player<00:01:03.800><c> GUI</c><00:01:04.199><c> from</c><00:01:04.479><c> that</c><00:01:05.479><c> and</c><00:01:05.640><c> then</c><00:01:05.920><c> we're</c>
+
+00:01:06.030 --> 00:01:06.040 align:start position:0%
+player GUI from that and then we're
+ 
+
+00:01:06.040 --> 00:01:07.670 align:start position:0%
+player GUI from that and then we're
+going<00:01:06.159><c> to</c><00:01:06.240><c> get</c><00:01:06.400><c> the</c><00:01:06.680><c> click</c>
+
+00:01:07.670 --> 00:01:07.680 align:start position:0%
+going to get the click
+ 
+
+00:01:07.680 --> 00:01:11.190 align:start position:0%
+going to get the click
+sound<00:01:08.680><c> and</c><00:01:08.799><c> then</c><00:01:09.119><c> hover</c><00:01:09.720><c> sound</c><00:01:10.720><c> which</c><00:01:10.880><c> if</c><00:01:11.000><c> you</c>
+
+00:01:11.190 --> 00:01:11.200 align:start position:0%
+sound and then hover sound which if you
+ 
+
+00:01:11.200 --> 00:01:13.030 align:start position:0%
+sound and then hover sound which if you
+need<00:01:11.520><c> some</c><00:01:12.080><c> if</c><00:01:12.159><c> you</c><00:01:12.240><c> need</c><00:01:12.439><c> some</c><00:01:12.560><c> sounds</c><00:01:12.920><c> like</c>
+
+00:01:13.030 --> 00:01:13.040 align:start position:0%
+need some if you need some sounds like
+ 
+
+00:01:13.040 --> 00:01:14.350 align:start position:0%
+need some if you need some sounds like
+this<00:01:13.159><c> you</c><00:01:13.240><c> can</c><00:01:13.360><c> just</c><00:01:13.479><c> go</c><00:01:13.560><c> to</c><00:01:13.759><c> audio</c><00:01:14.159><c> in</c><00:01:14.280><c> the</c>
+
+00:01:14.350 --> 00:01:14.360 align:start position:0%
+this you can just go to audio in the
+ 
+
+00:01:14.360 --> 00:01:18.350 align:start position:0%
+this you can just go to audio in the
+toolbox<00:01:15.320><c> and</c><00:01:15.439><c> then</c><00:01:15.560><c> look</c><00:01:15.759><c> up</c><00:01:16.040><c> like</c><00:01:16.479><c> click</c><00:01:17.000><c> or</c>
+
+00:01:18.350 --> 00:01:18.360 align:start position:0%
+toolbox and then look up like click or
+ 
+
+00:01:18.360 --> 00:01:20.950 align:start position:0%
+toolbox and then look up like click or
+something<00:01:19.360><c> and</c><00:01:19.560><c> there's</c><00:01:19.799><c> some</c><00:01:20.360><c> decent</c><00:01:20.680><c> sound</c>
+
+00:01:20.950 --> 00:01:20.960 align:start position:0%
+something and there's some decent sound
+ 
+
+00:01:20.960 --> 00:01:23.670 align:start position:0%
+something and there's some decent sound
+effects<00:01:21.880><c> that</c><00:01:22.000><c> you</c><00:01:22.119><c> can</c><00:01:22.360><c> find</c><00:01:23.079><c> but</c><00:01:23.240><c> I</c><00:01:23.360><c> have</c><00:01:23.560><c> my</c>
+
+00:01:23.670 --> 00:01:23.680 align:start position:0%
+effects that you can find but I have my
+ 
+
+00:01:23.680 --> 00:01:25.390 align:start position:0%
+effects that you can find but I have my
+own<00:01:24.200><c> sounds</c><00:01:24.560><c> that</c><00:01:24.680><c> I'm</c><00:01:24.759><c> going</c><00:01:24.880><c> to</c><00:01:25.000><c> use</c><00:01:25.200><c> for</c>
+
+00:01:25.390 --> 00:01:25.400 align:start position:0%
+own sounds that I'm going to use for
+ 
+
+00:01:25.400 --> 00:01:27.230 align:start position:0%
+own sounds that I'm going to use for
+this<00:01:25.759><c> just</c><00:01:25.880><c> to</c><00:01:26.000><c> show</c><00:01:26.159><c> you</c><00:01:26.360><c> guys</c><00:01:26.920><c> so</c><00:01:27.040><c> you</c><00:01:27.119><c> want</c>
+
+00:01:27.230 --> 00:01:27.240 align:start position:0%
+this just to show you guys so you want
+ 
+
+00:01:27.240 --> 00:01:29.030 align:start position:0%
+this just to show you guys so you want
+to<00:01:27.360><c> go</c><00:01:27.439><c> ahead</c><00:01:27.600><c> and</c><00:01:27.920><c> put</c><00:01:28.119><c> these</c><00:01:28.320><c> sounds</c><00:01:28.720><c> under</c>
+
+00:01:29.030 --> 00:01:29.040 align:start position:0%
+to go ahead and put these sounds under
+ 
+
+00:01:29.040 --> 00:01:31.230 align:start position:0%
+to go ahead and put these sounds under
+the<00:01:29.240><c> script</c><00:01:30.159><c> and</c><00:01:30.280><c> then</c><00:01:30.479><c> reference</c><00:01:30.920><c> them</c>
+
+00:01:31.230 --> 00:01:31.240 align:start position:0%
+the script and then reference them
+ 
+
+00:01:31.240 --> 00:01:32.710 align:start position:0%
+the script and then reference them
+through<00:01:31.520><c> here</c><00:01:31.880><c> any</c><00:01:32.119><c> we</c><00:01:32.240><c> going</c><00:01:32.320><c> to</c><00:01:32.439><c> get</c><00:01:32.560><c> those</c>
+
+00:01:32.710 --> 00:01:32.720 align:start position:0%
+through here any we going to get those
+ 
+
+00:01:32.720 --> 00:01:35.109 align:start position:0%
+through here any we going to get those
+sounds<00:01:33.479><c> and</c><00:01:33.720><c> then</c><00:01:34.439><c> I'm</c><00:01:34.520><c> going</c><00:01:34.600><c> to</c><00:01:34.759><c> call</c><00:01:35.000><c> the</c>
+
+00:01:35.109 --> 00:01:35.119 align:start position:0%
+sounds and then I'm going to call the
+ 
+
+00:01:35.119 --> 00:01:36.310 align:start position:0%
+sounds and then I'm going to call the
+I'm<00:01:35.159><c> going</c><00:01:35.240><c> to</c><00:01:35.320><c> get</c><00:01:35.399><c> a</c><00:01:35.479><c> variable</c><00:01:35.799><c> called</c><00:01:36.040><c> Left</c>
+
+00:01:36.310 --> 00:01:36.320 align:start position:0%
+I'm going to get a variable called Left
+ 
+
+00:01:36.320 --> 00:01:39.069 align:start position:0%
+I'm going to get a variable called Left
+UI<00:01:37.200><c> all</c><00:01:37.320><c> right</c><00:01:37.479><c> now</c><00:01:37.600><c> we</c><00:01:37.720><c> need</c><00:01:37.880><c> to</c><00:01:38.040><c> get</c><00:01:38.200><c> some</c>
+
+00:01:39.069 --> 00:01:39.079 align:start position:0%
+UI all right now we need to get some
+ 
+
+00:01:39.079 --> 00:01:41.710 align:start position:0%
+UI all right now we need to get some
+tween<00:01:39.520><c> info</c><00:01:39.840><c> so</c><00:01:39.960><c> we'll</c><00:01:40.079><c> say</c><00:01:40.280><c> hover</c><00:01:40.799><c> tween</c><00:01:41.200><c> info</c>
+
+00:01:41.710 --> 00:01:41.720 align:start position:0%
+tween info so we'll say hover tween info
+ 
+
+00:01:41.720 --> 00:01:45.230 align:start position:0%
+tween info so we'll say hover tween info
+equals<00:01:42.079><c> tween</c><00:01:42.920><c> info</c><00:01:43.920><c> do</c><00:01:44.159><c> new</c><00:01:44.960><c> and</c><00:01:45.040><c> then</c><00:01:45.159><c> we</c>
+
+00:01:45.230 --> 00:01:45.240 align:start position:0%
+equals tween info do new and then we
+ 
+
+00:01:45.240 --> 00:01:46.510 align:start position:0%
+equals tween info do new and then we
+want<00:01:45.360><c> to</c><00:01:45.479><c> put</c><00:01:45.600><c> the</c><00:01:45.719><c> amount</c><00:01:45.920><c> of</c><00:01:46.119><c> time</c><00:01:46.320><c> that</c><00:01:46.399><c> it</c>
+
+00:01:46.510 --> 00:01:46.520 align:start position:0%
+want to put the amount of time that it
+ 
+
+00:01:46.520 --> 00:01:47.910 align:start position:0%
+want to put the amount of time that it
+takes<00:01:46.719><c> for</c><00:01:46.840><c> this</c><00:01:46.960><c> tween</c><00:01:47.240><c> to</c><00:01:47.360><c> complete</c><00:01:47.799><c> I'm</c>
+
+00:01:47.910 --> 00:01:47.920 align:start position:0%
+takes for this tween to complete I'm
+ 
+
+00:01:47.920 --> 00:01:51.429 align:start position:0%
+takes for this tween to complete I'm
+going<00:01:48.079><c> do</c><00:01:48.680><c> 3</c><00:01:49.159><c> seconds</c><00:01:50.159><c> we'll</c><00:01:50.320><c> do</c><00:01:50.479><c> en.</c><00:01:51.079><c> easing</c>
+
+00:01:51.429 --> 00:01:51.439 align:start position:0%
+going do 3 seconds we'll do en. easing
+ 
+
+00:01:51.439 --> 00:01:53.590 align:start position:0%
+going do 3 seconds we'll do en. easing
+style.<00:01:52.240><c> back</c><00:01:52.719><c> and</c><00:01:52.799><c> then</c><00:01:52.960><c> what</c><00:01:53.119><c> this</c><00:01:53.200><c> will</c><00:01:53.399><c> do</c>
+
+00:01:53.590 --> 00:01:53.600 align:start position:0%
+style. back and then what this will do
+ 
+
+00:01:53.600 --> 00:01:55.630 align:start position:0%
+style. back and then what this will do
+is<00:01:54.200><c> is</c><00:01:54.399><c> it'll</c><00:01:54.640><c> make</c><00:01:54.799><c> the</c><00:01:54.960><c> button</c><00:01:55.280><c> grow</c>
+
+00:01:55.630 --> 00:01:55.640 align:start position:0%
+is is it'll make the button grow
+ 
+
+00:01:55.640 --> 00:01:58.510 align:start position:0%
+is is it'll make the button grow
+slightly<00:01:56.520><c> larger</c><00:01:57.520><c> than</c><00:01:57.799><c> what</c><00:01:57.920><c> you</c><00:01:58.079><c> want</c><00:01:58.240><c> it</c><00:01:58.360><c> to</c>
+
+00:01:58.510 --> 00:01:58.520 align:start position:0%
+slightly larger than what you want it to
+ 
+
+00:01:58.520 --> 00:02:00.510 align:start position:0%
+slightly larger than what you want it to
+be<00:01:59.000><c> and</c><00:01:59.119><c> then</c><00:01:59.240><c> it'll</c><00:01:59.479><c> go</c><00:01:59.640><c> back</c><00:01:59.920><c> back</c><00:02:00.159><c> down</c><00:02:00.320><c> to</c>
+
+00:02:00.510 --> 00:02:00.520 align:start position:0%
+be and then it'll go back back down to
+ 
+
+00:02:00.520 --> 00:02:02.270 align:start position:0%
+be and then it'll go back back down to
+the<00:02:00.680><c> size</c><00:02:01.000><c> that</c><00:02:01.119><c> it</c><00:02:01.280><c> should</c><00:02:01.560><c> be</c><00:02:02.039><c> and</c><00:02:02.119><c> then</c><00:02:02.200><c> we</c>
+
+00:02:02.270 --> 00:02:02.280 align:start position:0%
+the size that it should be and then we
+ 
+
+00:02:02.280 --> 00:02:04.830 align:start position:0%
+the size that it should be and then we
+going<00:02:02.360><c> to</c><00:02:02.439><c> say</c><00:02:02.600><c> enum</c><00:02:02.960><c> do</c><00:02:03.119><c> eing</c><00:02:03.719><c> styleout</c><00:02:04.719><c> uh</c>
+
+00:02:04.830 --> 00:02:04.840 align:start position:0%
+going to say enum do eing styleout uh
+ 
+
+00:02:04.840 --> 00:02:07.789 align:start position:0%
+going to say enum do eing styleout uh
+eing<00:02:05.280><c> Direction</c><00:02:05.960><c> sorry</c><00:02:06.640><c> out</c><00:02:07.479><c> okay</c><00:02:07.640><c> then</c><00:02:07.719><c> we</c>
+
+00:02:07.789 --> 00:02:07.799 align:start position:0%
+eing Direction sorry out okay then we
+ 
+
+00:02:07.799 --> 00:02:11.110 align:start position:0%
+eing Direction sorry out okay then we
+want<00:02:07.920><c> to</c><00:02:08.039><c> get</c><00:02:08.280><c> a</c><00:02:08.959><c> un</c><00:02:09.239><c> hover</c><00:02:09.560><c> tween</c><00:02:10.280><c> un</c><00:02:10.640><c> hover</c>
+
+00:02:11.110 --> 00:02:11.120 align:start position:0%
+want to get a un hover tween un hover
+ 
+
+00:02:11.120 --> 00:02:15.589 align:start position:0%
+want to get a un hover tween un hover
+tween<00:02:11.560><c> info</c><00:02:12.440><c> tween</c><00:02:12.879><c> info.</c><00:02:13.920><c> new</c><00:02:14.920><c> the</c><00:02:15.160><c> time</c><00:02:15.480><c> is</c>
+
+00:02:15.589 --> 00:02:15.599 align:start position:0%
+tween info tween info. new the time is
+ 
+
+00:02:15.599 --> 00:02:17.390 align:start position:0%
+tween info tween info. new the time is
+going<00:02:15.720><c> to</c><00:02:15.800><c> be5</c><00:02:16.560><c> because</c><00:02:16.760><c> we're</c><00:02:16.879><c> going</c><00:02:17.000><c> to</c><00:02:17.160><c> use</c>
+
+00:02:17.390 --> 00:02:17.400 align:start position:0%
+going to be5 because we're going to use
+ 
+
+00:02:17.400 --> 00:02:20.949 align:start position:0%
+going to be5 because we're going to use
+enum<00:02:18.360><c> eing</c><00:02:18.599><c> s.</c><00:02:19.200><c> sign</c><00:02:19.640><c> for</c><00:02:19.879><c> this</c><00:02:20.560><c> might</c><00:02:20.720><c> use</c><00:02:20.840><c> a</c>
+
+00:02:20.949 --> 00:02:20.959 align:start position:0%
+enum eing s. sign for this might use a
+ 
+
+00:02:20.959 --> 00:02:23.030 align:start position:0%
+enum eing s. sign for this might use a
+little<00:02:21.080><c> bit</c><00:02:21.160><c> of</c><00:02:21.360><c> faster</c><00:02:21.680><c> time</c><00:02:21.840><c> on</c><00:02:22.040><c> that</c><00:02:22.920><c> and</c>
+
+00:02:23.030 --> 00:02:23.040 align:start position:0%
+little bit of faster time on that and
+ 
+
+00:02:23.040 --> 00:02:27.509 align:start position:0%
+little bit of faster time on that and
+we'll<00:02:23.200><c> say</c><00:02:23.400><c> enum</c><00:02:24.400><c> eing</c><00:02:25.120><c> direction</c><00:02:26.120><c> do</c><00:02:26.640><c> out</c><00:02:27.239><c> for</c>
+
+00:02:27.509 --> 00:02:27.519 align:start position:0%
+we'll say enum eing direction do out for
+ 
+
+00:02:27.519 --> 00:02:29.350 align:start position:0%
+we'll say enum eing direction do out for
+sign<00:02:28.200><c> easing</c><00:02:28.560><c> Direction</c><00:02:28.920><c> doesn't</c><00:02:29.200><c> really</c>
+
+00:02:29.350 --> 00:02:29.360 align:start position:0%
+sign easing Direction doesn't really
+ 
+
+00:02:29.360 --> 00:02:30.550 align:start position:0%
+sign easing Direction doesn't really
+matter<00:02:29.599><c> at</c><00:02:29.680><c> all</c>
+
+00:02:30.550 --> 00:02:30.560 align:start position:0%
+matter at all
+ 
+
+00:02:30.560 --> 00:02:32.390 align:start position:0%
+matter at all
+but<00:02:30.800><c> back</c><00:02:31.080><c> it</c><00:02:31.239><c> does</c><00:02:31.480><c> matter</c><00:02:32.080><c> all</c><00:02:32.160><c> right</c><00:02:32.319><c> then</c>
+
+00:02:32.390 --> 00:02:32.400 align:start position:0%
+but back it does matter all right then
+ 
+
+00:02:32.400 --> 00:02:34.190 align:start position:0%
+but back it does matter all right then
+I'm<00:02:32.480><c> going</c><00:02:32.599><c> to</c><00:02:32.680><c> get</c><00:02:32.800><c> a</c><00:02:32.959><c> table</c><00:02:33.319><c> called</c><00:02:33.720><c> local</c>
+
+00:02:34.190 --> 00:02:34.200 align:start position:0%
+I'm going to get a table called local
+ 
+
+00:02:34.200 --> 00:02:35.830 align:start position:0%
+I'm going to get a table called local
+you<00:02:34.280><c> can</c><00:02:34.440><c> name</c><00:02:34.640><c> this</c><00:02:34.800><c> whatever</c><00:02:35.040><c> you</c><00:02:35.160><c> want</c><00:02:35.760><c> this</c>
+
+00:02:35.830 --> 00:02:35.840 align:start position:0%
+you can name this whatever you want this
+ 
+
+00:02:35.840 --> 00:02:38.309 align:start position:0%
+you can name this whatever you want this
+is<00:02:36.040><c> just</c><00:02:36.160><c> so</c><00:02:36.319><c> that</c><00:02:36.400><c> we</c><00:02:36.519><c> can</c><00:02:36.720><c> store</c><00:02:37.080><c> some</c><00:02:37.560><c> data</c>
+
+00:02:38.309 --> 00:02:38.319 align:start position:0%
+is just so that we can store some data
+ 
+
+00:02:38.319 --> 00:02:39.670 align:start position:0%
+is just so that we can store some data
+in<00:02:38.480><c> the</c><00:02:38.680><c> script</c><00:02:39.080><c> I'm</c><00:02:39.200><c> going</c><00:02:39.280><c> to</c><00:02:39.400><c> make</c><00:02:39.519><c> a</c>
+
+00:02:39.670 --> 00:02:39.680 align:start position:0%
+in the script I'm going to make a
+ 
+
+00:02:39.680 --> 00:02:42.190 align:start position:0%
+in the script I'm going to make a
+function<00:02:40.000><c> called</c><00:02:40.239><c> set</c><00:02:40.480><c> up</c><00:02:41.000><c> sounds</c><00:02:41.920><c> so</c><00:02:42.120><c> going</c>
+
+00:02:42.190 --> 00:02:42.200 align:start position:0%
+function called set up sounds so going
+ 
+
+00:02:42.200 --> 00:02:46.190 align:start position:0%
+function called set up sounds so going
+to<00:02:42.280><c> go</c><00:02:42.480><c> 4ore</c><00:02:43.280><c> UI</c><00:02:43.680><c> and</c><00:02:43.920><c> I</c><00:02:44.159><c> pairs</c><00:02:45.000><c> player</c><00:02:45.400><c> UI</c><00:02:46.040><c> get</c>
+
+00:02:46.190 --> 00:02:46.200 align:start position:0%
+to go 4ore UI and I pairs player UI get
+ 
+
+00:02:46.200 --> 00:02:48.430 align:start position:0%
+to go 4ore UI and I pairs player UI get
+Des<00:02:46.800><c> sentence</c><00:02:47.800><c> and</c><00:02:47.879><c> then</c><00:02:48.000><c> we're</c><00:02:48.120><c> going</c><00:02:48.200><c> to</c><00:02:48.319><c> go</c>
+
+00:02:48.430 --> 00:02:48.440 align:start position:0%
+Des sentence and then we're going to go
+ 
+
+00:02:48.440 --> 00:02:50.990 align:start position:0%
+Des sentence and then we're going to go
+ahead<00:02:48.560><c> and</c><00:02:48.720><c> say</c><00:02:49.000><c> link</c><00:02:49.599><c> button</c><00:02:50.200><c> sound</c><00:02:50.879><c> which</c>
+
+00:02:50.990 --> 00:02:51.000 align:start position:0%
+ahead and say link button sound which
+ 
+
+00:02:51.000 --> 00:02:52.790 align:start position:0%
+ahead and say link button sound which
+we're<00:02:51.120><c> going</c><00:02:51.200><c> to</c><00:02:51.319><c> make</c><00:02:51.480><c> this</c><00:02:51.640><c> function</c><00:02:52.400><c> in</c><00:02:52.560><c> a</c>
+
+00:02:52.790 --> 00:02:52.800 align:start position:0%
+we're going to make this function in a
+ 
+
+00:02:52.800 --> 00:02:54.270 align:start position:0%
+we're going to make this function in a
+second<00:02:53.159><c> and</c><00:02:53.239><c> then</c><00:02:53.360><c> we'll</c><00:02:53.560><c> pass</c><00:02:53.720><c> in</c><00:02:53.840><c> the</c><00:02:53.959><c> UI</c>
+
+00:02:54.270 --> 00:02:54.280 align:start position:0%
+second and then we'll pass in the UI
+ 
+
+00:02:54.280 --> 00:02:57.470 align:start position:0%
+second and then we'll pass in the UI
+right<00:02:54.440><c> there</c><00:02:55.159><c> now</c><00:02:55.519><c> this</c><00:02:56.120><c> would</c><00:02:56.440><c> work</c><00:02:57.159><c> but</c><00:02:57.319><c> for</c>
+
+00:02:57.470 --> 00:02:57.480 align:start position:0%
+right there now this would work but for
+ 
+
+00:02:57.480 --> 00:03:00.509 align:start position:0%
+right there now this would work but for
+example<00:02:57.840><c> if</c><00:02:57.920><c> you</c><00:02:58.120><c> had</c><00:02:58.360><c> a</c><00:02:58.599><c> inventory</c><00:02:59.159><c> UI</c><00:03:00.120><c> that</c>
+
+00:03:00.509 --> 00:03:00.519 align:start position:0%
+example if you had a inventory UI that
+ 
+
+00:03:00.519 --> 00:03:02.910 align:start position:0%
+example if you had a inventory UI that
+created<00:03:00.959><c> new</c><00:03:01.200><c> buttons</c><00:03:02.040><c> for</c><00:03:02.280><c> every</c><00:03:02.480><c> new</c><00:03:02.680><c> item</c>
+
+00:03:02.910 --> 00:03:02.920 align:start position:0%
+created new buttons for every new item
+ 
+
+00:03:02.920 --> 00:03:05.190 align:start position:0%
+created new buttons for every new item
+that<00:03:03.000><c> the</c><00:03:03.159><c> player</c><00:03:03.480><c> gets</c><00:03:04.200><c> those</c><00:03:04.440><c> buttons</c><00:03:04.799><c> won't</c>
+
+00:03:05.190 --> 00:03:05.200 align:start position:0%
+that the player gets those buttons won't
+ 
+
+00:03:05.200 --> 00:03:06.949 align:start position:0%
+that the player gets those buttons won't
+have<00:03:05.440><c> sounds</c><00:03:06.000><c> that</c><00:03:06.239><c> that'll</c><00:03:06.519><c> actually</c><00:03:06.760><c> play</c>
+
+00:03:06.949 --> 00:03:06.959 align:start position:0%
+have sounds that that'll actually play
+ 
+
+00:03:06.959 --> 00:03:08.589 align:start position:0%
+have sounds that that'll actually play
+Whenever<00:03:07.239><c> you</c><00:03:07.319><c> hover</c><00:03:07.599><c> over</c><00:03:07.920><c> them</c><00:03:08.080><c> or</c><00:03:08.239><c> if</c><00:03:08.360><c> you</c>
+
+00:03:08.589 --> 00:03:08.599 align:start position:0%
+Whenever you hover over them or if you
+ 
+
+00:03:08.599 --> 00:03:11.430 align:start position:0%
+Whenever you hover over them or if you
+click<00:03:08.920><c> them</c><00:03:09.519><c> so</c><00:03:09.760><c> to</c><00:03:09.920><c> get</c><00:03:10.080><c> around</c><00:03:10.480><c> this</c><00:03:11.239><c> what</c><00:03:11.360><c> we</c>
+
+00:03:11.430 --> 00:03:11.440 align:start position:0%
+click them so to get around this what we
+ 
+
+00:03:11.440 --> 00:03:14.030 align:start position:0%
+click them so to get around this what we
+need<00:03:11.560><c> to</c><00:03:11.720><c> do</c><00:03:11.920><c> is</c><00:03:12.159><c> player</c><00:03:12.599><c> gy.</c><00:03:13.599><c> descendant</c>
+
+00:03:14.030 --> 00:03:14.040 align:start position:0%
+need to do is player gy. descendant
+ 
+
+00:03:14.040 --> 00:03:16.190 align:start position:0%
+need to do is player gy. descendant
+added<00:03:14.440><c> connect</c><00:03:14.879><c> function</c><00:03:15.799><c> and</c><00:03:15.920><c> this</c><00:03:16.000><c> will</c>
+
+00:03:16.190 --> 00:03:16.200 align:start position:0%
+added connect function and this will
+ 
+
+00:03:16.200 --> 00:03:18.229 align:start position:0%
+added connect function and this will
+actually<00:03:16.440><c> take</c><00:03:16.640><c> in</c><00:03:17.040><c> the</c><00:03:17.200><c> descended</c><00:03:17.959><c> so</c><00:03:18.080><c> we</c>
+
+00:03:18.229 --> 00:03:18.239 align:start position:0%
+actually take in the descended so we
+ 
+
+00:03:18.239 --> 00:03:19.789 align:start position:0%
+actually take in the descended so we
+just<00:03:18.400><c> say</c><00:03:18.560><c> UI</c><00:03:18.920><c> like</c><00:03:19.080><c> that</c><00:03:19.239><c> and</c><00:03:19.360><c> then</c><00:03:19.440><c> we'll</c><00:03:19.599><c> say</c>
+
+00:03:19.789 --> 00:03:19.799 align:start position:0%
+just say UI like that and then we'll say
+ 
+
+00:03:19.799 --> 00:03:22.910 align:start position:0%
+just say UI like that and then we'll say
+link<00:03:20.480><c> button</c><00:03:21.360><c> sound</c><00:03:21.920><c> just</c><00:03:22.080><c> make</c><00:03:22.200><c> sure</c><00:03:22.319><c> we</c><00:03:22.680><c> type</c>
+
+00:03:22.910 --> 00:03:22.920 align:start position:0%
+link button sound just make sure we type
+ 
+
+00:03:22.920 --> 00:03:24.910 align:start position:0%
+link button sound just make sure we type
+that<00:03:23.120><c> right</c><00:03:23.480><c> and</c><00:03:23.560><c> then</c><00:03:23.799><c> pass</c><00:03:23.959><c> in</c><00:03:24.080><c> the</c><00:03:24.159><c> UI</c><00:03:24.720><c> so</c>
+
+00:03:24.910 --> 00:03:24.920 align:start position:0%
+that right and then pass in the UI so
+ 
+
+00:03:24.920 --> 00:03:26.309 align:start position:0%
+that right and then pass in the UI so
+that's<00:03:25.080><c> so</c><00:03:25.239><c> that</c><00:03:25.400><c> if</c><00:03:25.519><c> we</c><00:03:25.879><c> actually</c><00:03:26.080><c> are</c>
+
+00:03:26.309 --> 00:03:26.319 align:start position:0%
+that's so that if we actually are
+ 
+
+00:03:26.319 --> 00:03:27.990 align:start position:0%
+that's so that if we actually are
+creating<00:03:26.720><c> new</c><00:03:26.879><c> buttons</c><00:03:27.159><c> at</c><00:03:27.319><c> runtime</c><00:03:27.760><c> it'll</c>
+
+00:03:27.990 --> 00:03:28.000 align:start position:0%
+creating new buttons at runtime it'll
+ 
+
+00:03:28.000 --> 00:03:30.350 align:start position:0%
+creating new buttons at runtime it'll
+still<00:03:28.239><c> connect</c><00:03:28.560><c> the</c><00:03:28.680><c> sounds</c><00:03:29.040><c> and</c><00:03:29.319><c> be</c><00:03:29.519><c> good</c><00:03:30.239><c> now</c>
+
+00:03:30.350 --> 00:03:30.360 align:start position:0%
+still connect the sounds and be good now
+ 
+
+00:03:30.360 --> 00:03:31.910 align:start position:0%
+still connect the sounds and be good now
+let's<00:03:30.560><c> create</c><00:03:30.799><c> that</c><00:03:30.959><c> link</c><00:03:31.239><c> button</c><00:03:31.560><c> sound</c>
+
+00:03:31.910 --> 00:03:31.920 align:start position:0%
+let's create that link button sound
+ 
+
+00:03:31.920 --> 00:03:34.309 align:start position:0%
+let's create that link button sound
+function<00:03:32.640><c> which</c><00:03:32.799><c> takes</c><00:03:33.040><c> in</c><00:03:33.280><c> the</c><00:03:33.480><c> button</c><00:03:34.159><c> now</c>
+
+00:03:34.309 --> 00:03:34.319 align:start position:0%
+function which takes in the button now
+ 
+
+00:03:34.319 --> 00:03:38.149 align:start position:0%
+function which takes in the button now
+we<00:03:34.400><c> need</c><00:03:34.519><c> to</c><00:03:34.720><c> check</c><00:03:35.000><c> if</c><00:03:35.280><c> button</c><00:03:36.239><c> is</c><00:03:36.760><c> a</c><00:03:37.519><c> text</c>
+
+00:03:38.149 --> 00:03:38.159 align:start position:0%
+we need to check if button is a text
+ 
+
+00:03:38.159 --> 00:03:43.470 align:start position:0%
+we need to check if button is a text
+button<00:03:39.159><c> or</c><00:03:39.720><c> button</c><00:03:40.519><c> is</c><00:03:40.720><c> a</c><00:03:41.560><c> image</c><00:03:42.159><c> button</c><00:03:43.159><c> say</c>
+
+00:03:43.470 --> 00:03:43.480 align:start position:0%
+button or button is a image button say
+ 
+
+00:03:43.480 --> 00:03:49.550 align:start position:0%
+button or button is a image button say
+if<00:03:43.920><c> not</c><00:03:44.640><c> button</c><00:03:45.519><c> is</c><00:03:45.760><c> a</c><00:03:46.080><c> text</c><00:03:46.760><c> box</c><00:03:47.920><c> then</c>
+
+00:03:49.550 --> 00:03:49.560 align:start position:0%
+if not button is a text box then
+ 
+
+00:03:49.560 --> 00:03:54.110 align:start position:0%
+if not button is a text box then
+button<00:03:50.560><c> Mouse</c><00:03:51.560><c> button</c><00:03:51.959><c> one</c><00:03:52.480><c> click</c><00:03:53.120><c> connect</c>
+
+00:03:54.110 --> 00:03:54.120 align:start position:0%
+button Mouse button one click connect
+ 
+
+00:03:54.120 --> 00:03:58.190 align:start position:0%
+button Mouse button one click connect
+function<00:03:55.040><c> I</c><00:03:55.120><c> will</c><00:03:55.239><c> say</c><00:03:55.480><c> click</c><00:03:55.760><c> sound</c><00:03:56.959><c> play</c><00:03:57.959><c> now</c>
+
+00:03:58.190 --> 00:03:58.200 align:start position:0%
+function I will say click sound play now
+ 
+
+00:03:58.200 --> 00:04:00.470 align:start position:0%
+function I will say click sound play now
+the<00:03:58.360><c> reason</c><00:03:58.840><c> I'm</c><00:03:59.040><c> doing</c><00:03:59.840><c> I'm</c><00:03:59.959><c> checking</c><00:04:00.400><c> if</c>
+
+00:04:00.470 --> 00:04:00.480 align:start position:0%
+the reason I'm doing I'm checking if
+ 
+
+00:04:00.480 --> 00:04:02.869 align:start position:0%
+the reason I'm doing I'm checking if
+it's<00:04:00.640><c> not</c><00:04:00.959><c> a</c><00:04:01.120><c> text</c><00:04:01.360><c> box</c><00:04:01.599><c> is</c><00:04:01.799><c> because</c><00:04:02.640><c> you</c><00:04:02.720><c> can</c>
+
+00:04:02.869 --> 00:04:02.879 align:start position:0%
+it's not a text box is because you can
+ 
+
+00:04:02.879 --> 00:04:04.789 align:start position:0%
+it's not a text box is because you can
+click<00:04:03.079><c> on</c><00:04:03.239><c> text</c><00:04:03.519><c> boxes</c><00:04:04.040><c> but</c><00:04:04.319><c> I</c><00:04:04.360><c> mean</c><00:04:04.640><c> me</c>
+
+00:04:04.789 --> 00:04:04.799 align:start position:0%
+click on text boxes but I mean me
+ 
+
+00:04:04.799 --> 00:04:06.110 align:start position:0%
+click on text boxes but I mean me
+personally<00:04:05.159><c> I</c><00:04:05.239><c> don't</c><00:04:05.319><c> want</c><00:04:05.439><c> a</c><00:04:05.599><c> sound</c><00:04:05.840><c> playing</c>
+
+00:04:06.110 --> 00:04:06.120 align:start position:0%
+personally I don't want a sound playing
+ 
+
+00:04:06.120 --> 00:04:07.869 align:start position:0%
+personally I don't want a sound playing
+whenever<00:04:06.319><c> I</c><00:04:06.439><c> click</c><00:04:06.640><c> on</c><00:04:06.760><c> them</c><00:04:07.319><c> if</c><00:04:07.400><c> you</c><00:04:07.560><c> want</c><00:04:07.760><c> a</c>
+
+00:04:07.869 --> 00:04:07.879 align:start position:0%
+whenever I click on them if you want a
+ 
+
+00:04:07.879 --> 00:04:10.030 align:start position:0%
+whenever I click on them if you want a
+sound<00:04:08.079><c> to</c><00:04:08.239><c> play</c><00:04:08.439><c> whenever</c><00:04:09.319><c> the</c><00:04:09.519><c> player</c><00:04:09.799><c> clicks</c>
+
+00:04:10.030 --> 00:04:10.040 align:start position:0%
+sound to play whenever the player clicks
+ 
+
+00:04:10.040 --> 00:04:12.470 align:start position:0%
+sound to play whenever the player clicks
+a<00:04:10.239><c> text</c><00:04:10.519><c> box</c><00:04:10.799><c> you</c><00:04:10.879><c> can</c><00:04:11.040><c> go</c><00:04:11.159><c> ahead</c><00:04:11.319><c> and</c><00:04:11.519><c> just</c><00:04:11.879><c> uh</c>
+
+00:04:12.470 --> 00:04:12.480 align:start position:0%
+a text box you can go ahead and just uh
+ 
+
+00:04:12.480 --> 00:04:14.470 align:start position:0%
+a text box you can go ahead and just uh
+delete<00:04:12.879><c> those</c><00:04:13.079><c> lines</c><00:04:13.439><c> like</c><00:04:13.640><c> that</c><00:04:13.840><c> and</c><00:04:14.000><c> it</c>
+
+00:04:14.470 --> 00:04:14.480 align:start position:0%
+delete those lines like that and it
+ 
+
+00:04:14.480 --> 00:04:16.110 align:start position:0%
+delete those lines like that and it
+should<00:04:14.760><c> still</c><00:04:15.040><c> work</c><00:04:15.519><c> and</c><00:04:15.640><c> then</c><00:04:15.840><c> after</c><00:04:16.040><c> that</c>
+
+00:04:16.110 --> 00:04:16.120 align:start position:0%
+should still work and then after that
+ 
+
+00:04:16.120 --> 00:04:19.710 align:start position:0%
+should still work and then after that
+you<00:04:16.199><c> want</c><00:04:16.320><c> to</c><00:04:16.440><c> say</c><00:04:16.799><c> button.</c><00:04:17.799><c> mouse</c><00:04:18.600><c> enter</c>
+
+00:04:19.710 --> 00:04:19.720 align:start position:0%
+you want to say button. mouse enter
+ 
+
+00:04:19.720 --> 00:04:22.990 align:start position:0%
+you want to say button. mouse enter
+connect<00:04:21.120><c> function</c><00:04:22.120><c> and</c><00:04:22.199><c> then</c><00:04:22.320><c> you</c><00:04:22.520><c> say</c><00:04:22.680><c> hover</c>
+
+00:04:22.990 --> 00:04:23.000 align:start position:0%
+connect function and then you say hover
+ 
+
+00:04:23.000 --> 00:04:25.590 align:start position:0%
+connect function and then you say hover
+sound<00:04:23.960><c> play</c><00:04:24.600><c> now</c><00:04:24.720><c> we</c><00:04:24.840><c> need</c><00:04:24.960><c> to</c><00:04:25.120><c> create</c><00:04:25.400><c> the</c>
+
+00:04:25.590 --> 00:04:25.600 align:start position:0%
+sound play now we need to create the
+ 
+
+00:04:25.600 --> 00:04:27.510 align:start position:0%
+sound play now we need to create the
+function<00:04:26.040><c> that</c><00:04:26.240><c> actually</c><00:04:26.560><c> set</c><00:04:26.800><c> up</c><00:04:27.120><c> sets</c><00:04:27.360><c> up</c>
+
+00:04:27.510 --> 00:04:27.520 align:start position:0%
+function that actually set up sets up
+ 
+
+00:04:27.520 --> 00:04:29.870 align:start position:0%
+function that actually set up sets up
+the<00:04:27.720><c> animations</c><00:04:28.280><c> for</c><00:04:28.440><c> the</c><00:04:28.600><c> button</c><00:04:29.440><c> so</c><00:04:29.720><c> we'll</c>
+
+00:04:29.870 --> 00:04:29.880 align:start position:0%
+the animations for the button so we'll
+ 
+
+00:04:29.880 --> 00:04:33.990 align:start position:0%
+the animations for the button so we'll
+say<00:04:30.199><c> function</c><00:04:31.199><c> set</c><00:04:31.639><c> up</c><00:04:32.520><c> button</c><00:04:32.919><c> NM</c><00:04:33.800><c> and</c><00:04:33.880><c> then</c>
+
+00:04:33.990 --> 00:04:34.000 align:start position:0%
+say function set up button NM and then
+ 
+
+00:04:34.000 --> 00:04:37.189 align:start position:0%
+say function set up button NM and then
+in<00:04:34.120><c> here</c><00:04:34.240><c> we're</c><00:04:34.320><c> going</c><00:04:34.440><c> to</c><00:04:34.520><c> say</c><00:04:35.120><c> 4core</c><00:04:36.199><c> button</c>
+
+00:04:37.189 --> 00:04:37.199 align:start position:0%
+in here we're going to say 4core button
+ 
+
+00:04:37.199 --> 00:04:42.990 align:start position:0%
+in here we're going to say 4core button
+and<00:04:37.479><c> I</c><00:04:38.000><c> pairs</c><00:04:39.000><c> left</c><00:04:39.440><c> ui.</c><00:04:40.680><c> frame</c><00:04:41.680><c> get</c><00:04:42.000><c> children</c>
+
+00:04:42.990 --> 00:04:43.000 align:start position:0%
+and I pairs left ui. frame get children
+ 
+
+00:04:43.000 --> 00:04:44.430 align:start position:0%
+and I pairs left ui. frame get children
+which<00:04:43.240><c> actually</c><00:04:43.800><c> uh</c><00:04:43.919><c> I'm</c><00:04:44.000><c> going</c><00:04:44.080><c> to</c><00:04:44.199><c> get</c><00:04:44.320><c> rid</c>
+
+00:04:44.430 --> 00:04:44.440 align:start position:0%
+which actually uh I'm going to get rid
+ 
+
+00:04:44.440 --> 00:04:46.870 align:start position:0%
+which actually uh I'm going to get rid
+of<00:04:44.600><c> this</c><00:04:44.840><c> Frame</c><00:04:45.240><c> and</c><00:04:45.360><c> then</c><00:04:45.520><c> put</c><00:04:45.759><c> this</c><00:04:46.000><c> up</c><00:04:46.280><c> here</c>
+
+00:04:46.870 --> 00:04:46.880 align:start position:0%
+of this Frame and then put this up here
+ 
+
+00:04:46.880 --> 00:04:49.590 align:start position:0%
+of this Frame and then put this up here
+so<00:04:47.160><c> since</c><00:04:47.360><c> we</c><00:04:47.479><c> have</c><00:04:47.680><c> a</c><00:04:48.160><c> list</c><00:04:48.680><c> a</c><00:04:48.800><c> UI</c><00:04:49.120><c> list</c><00:04:49.320><c> layout</c>
+
+00:04:49.590 --> 00:04:49.600 align:start position:0%
+so since we have a list a UI list layout
+ 
+
+00:04:49.600 --> 00:04:52.189 align:start position:0%
+so since we have a list a UI list layout
+in<00:04:49.720><c> here</c><00:04:50.400><c> what</c><00:04:50.520><c> we</c><00:04:50.600><c> want</c><00:04:50.720><c> to</c><00:04:50.880><c> do</c><00:04:51.120><c> is</c><00:04:51.240><c> we</c><00:04:51.479><c> say</c><00:04:51.680><c> if</c>
+
+00:04:52.189 --> 00:04:52.199 align:start position:0%
+in here what we want to do is we say if
+ 
+
+00:04:52.199 --> 00:04:56.350 align:start position:0%
+in here what we want to do is we say if
+button<00:04:53.199><c> is</c><00:04:53.560><c> a</c><00:04:54.440><c> text</c><00:04:54.800><c> button</c><00:04:55.759><c> and</c><00:04:55.919><c> if</c><00:04:56.000><c> you</c><00:04:56.160><c> also</c>
+
+00:04:56.350 --> 00:04:56.360 align:start position:0%
+button is a text button and if you also
+ 
+
+00:04:56.360 --> 00:04:58.870 align:start position:0%
+button is a text button and if you also
+have<00:04:56.560><c> image</c><00:04:56.840><c> buttons</c><00:04:57.160><c> then</c><00:04:57.320><c> you</c><00:04:57.479><c> could</c><00:04:57.880><c> add</c>
+
+00:04:58.870 --> 00:04:58.880 align:start position:0%
+have image buttons then you could add
+ 
+
+00:04:58.880 --> 00:05:02.110 align:start position:0%
+have image buttons then you could add
+this<00:04:59.720><c> or</c><00:05:00.320><c> right</c><00:05:00.560><c> here</c><00:05:01.440><c> and</c><00:05:01.639><c> that</c><00:05:01.759><c> would</c><00:05:01.919><c> work</c>
+
+00:05:02.110 --> 00:05:02.120 align:start position:0%
+this or right here and that would work
+ 
+
+00:05:02.120 --> 00:05:04.710 align:start position:0%
+this or right here and that would work
+you<00:05:02.199><c> want</c><00:05:02.320><c> to</c><00:05:02.400><c> say</c><00:05:02.560><c> local</c><00:05:02.919><c> in</c><00:05:03.479><c> props</c>
+
+00:05:04.710 --> 00:05:04.720 align:start position:0%
+you want to say local in props
+ 
+
+00:05:04.720 --> 00:05:08.550 align:start position:0%
+you want to say local in props
+equals<00:05:05.720><c> a</c><00:05:06.080><c> table</c><00:05:06.560><c> of</c><00:05:06.880><c> size</c><00:05:07.320><c> is</c><00:05:07.440><c> going</c><00:05:07.560><c> to</c><00:05:07.759><c> equal</c>
+
+00:05:08.550 --> 00:05:08.560 align:start position:0%
+equals a table of size is going to equal
+ 
+
+00:05:08.560 --> 00:05:12.070 align:start position:0%
+equals a table of size is going to equal
+U<00:05:09.560><c> oh</c><00:05:09.800><c> no</c><00:05:09.880><c> it's</c><00:05:09.960><c> going</c><00:05:10.039><c> toal</c><00:05:10.400><c> button.</c><00:05:11.199><c> size</c>
+
+00:05:12.070 --> 00:05:12.080 align:start position:0%
+U oh no it's going toal button. size
+ 
+
+00:05:12.080 --> 00:05:16.390 align:start position:0%
+U oh no it's going toal button. size
+plus<00:05:12.720><c> udm</c><00:05:13.199><c> 2.</c><00:05:13.919><c> new</c>
+
+00:05:16.390 --> 00:05:16.400 align:start position:0%
+plus udm 2. new
+ 
+
+00:05:16.400 --> 00:05:19.390 align:start position:0%
+plus udm 2. new
+0.16
+
+00:05:19.390 --> 00:05:19.400 align:start position:0%
+0.16
+ 
+
+00:05:19.400 --> 00:05:21.230 align:start position:0%
+0.16
+160<00:05:20.400><c> uh</c>
+
+00:05:21.230 --> 00:05:21.240 align:start position:0%
+160 uh
+ 
+
+00:05:21.240 --> 00:05:23.749 align:start position:0%
+160 uh
+0.8<00:05:22.240><c> oh</c>
+
+00:05:23.749 --> 00:05:23.759 align:start position:0%
+0.8 oh
+ 
+
+00:05:23.759 --> 00:05:26.710 align:start position:0%
+0.8 oh
+08<00:05:24.759><c> then</c><00:05:25.000><c> zero</c><00:05:25.639><c> so</c><00:05:25.840><c> the</c><00:05:26.039><c> reason</c><00:05:26.280><c> we</c><00:05:26.440><c> make</c><00:05:26.600><c> this</c>
+
+00:05:26.710 --> 00:05:26.720 align:start position:0%
+08 then zero so the reason we make this
+ 
+
+00:05:26.720 --> 00:05:29.029 align:start position:0%
+08 then zero so the reason we make this
+a<00:05:26.919><c> table</c><00:05:27.319><c> is</c><00:05:27.560><c> because</c><00:05:28.199><c> uh</c><00:05:28.319><c> tween</c><00:05:28.639><c> service</c>
+
+00:05:29.029 --> 00:05:29.039 align:start position:0%
+a table is because uh tween service
+ 
+
+00:05:29.039 --> 00:05:32.070 align:start position:0%
+a table is because uh tween service
+needs<00:05:29.280><c> a</c><00:05:29.400><c> table</c><00:05:29.960><c> of</c><00:05:30.199><c> properties</c><00:05:31.080><c> to</c><00:05:31.360><c> actually</c>
+
+00:05:32.070 --> 00:05:32.080 align:start position:0%
+needs a table of properties to actually
+ 
+
+00:05:32.080 --> 00:05:34.550 align:start position:0%
+needs a table of properties to actually
+uh<00:05:32.319><c> work</c><00:05:32.720><c> so</c><00:05:32.880><c> the</c><00:05:33.120><c> size</c><00:05:33.520><c> is</c><00:05:33.680><c> a</c><00:05:33.919><c> actual</c><00:05:34.240><c> property</c>
+
+00:05:34.550 --> 00:05:34.560 align:start position:0%
+uh work so the size is a actual property
+ 
+
+00:05:34.560 --> 00:05:35.830 align:start position:0%
+uh work so the size is a actual property
+on<00:05:34.680><c> the</c><00:05:34.840><c> button</c><00:05:35.120><c> as</c><00:05:35.199><c> you</c><00:05:35.280><c> can</c><00:05:35.400><c> see</c><00:05:35.520><c> we</c><00:05:35.639><c> use</c>
+
+00:05:35.830 --> 00:05:35.840 align:start position:0%
+on the button as you can see we use
+ 
+
+00:05:35.840 --> 00:05:37.909 align:start position:0%
+on the button as you can see we use
+button.<00:05:36.360><c> size</c><00:05:36.880><c> now</c><00:05:37.000><c> if</c><00:05:37.080><c> you</c><00:05:37.199><c> want</c><00:05:37.319><c> to</c><00:05:37.479><c> change</c>
+
+00:05:37.909 --> 00:05:37.919 align:start position:0%
+button. size now if you want to change
+ 
+
+00:05:37.919 --> 00:05:39.710 align:start position:0%
+button. size now if you want to change
+this<00:05:38.199><c> if</c><00:05:38.280><c> you</c><00:05:38.360><c> want</c><00:05:38.520><c> the</c><00:05:38.680><c> button</c><00:05:38.919><c> to</c><00:05:39.039><c> be</c><00:05:39.280><c> wider</c>
+
+00:05:39.710 --> 00:05:39.720 align:start position:0%
+this if you want the button to be wider
+ 
+
+00:05:39.720 --> 00:05:42.189 align:start position:0%
+this if you want the button to be wider
+whenever<00:05:40.039><c> someone</c><00:05:40.319><c> hovers</c><00:05:40.759><c> hovers</c><00:05:41.120><c> over</c><00:05:41.319><c> it</c>
+
+00:05:42.189 --> 00:05:42.199 align:start position:0%
+whenever someone hovers hovers over it
+ 
+
+00:05:42.199 --> 00:05:44.029 align:start position:0%
+whenever someone hovers hovers over it
+you<00:05:42.319><c> can</c><00:05:42.520><c> make</c><00:05:42.840><c> this</c><00:05:43.280><c> number</c><00:05:43.600><c> bigger</c><00:05:43.880><c> or</c>
+
+00:05:44.029 --> 00:05:44.039 align:start position:0%
+you can make this number bigger or
+ 
+
+00:05:44.039 --> 00:05:45.710 align:start position:0%
+you can make this number bigger or
+smaller<00:05:44.919><c> and</c><00:05:45.000><c> then</c><00:05:45.120><c> if</c><00:05:45.199><c> you</c><00:05:45.280><c> want</c><00:05:45.400><c> it</c><00:05:45.479><c> to</c><00:05:45.560><c> be</c>
+
+00:05:45.710 --> 00:05:45.720 align:start position:0%
+smaller and then if you want it to be
+ 
+
+00:05:45.720 --> 00:05:46.870 align:start position:0%
+smaller and then if you want it to be
+taller<00:05:46.080><c> then</c><00:05:46.160><c> you</c><00:05:46.240><c> want</c><00:05:46.360><c> to</c><00:05:46.440><c> change</c><00:05:46.680><c> this</c>
+
+00:05:46.870 --> 00:05:46.880 align:start position:0%
+taller then you want to change this
+ 
+
+00:05:46.880 --> 00:05:48.469 align:start position:0%
+taller then you want to change this
+number<00:05:47.479><c> all</c><00:05:47.560><c> right</c><00:05:47.759><c> now</c><00:05:47.880><c> in</c><00:05:48.039><c> here</c><00:05:48.199><c> we</c><00:05:48.280><c> want</c><00:05:48.400><c> to</c>
+
+00:05:48.469 --> 00:05:48.479 align:start position:0%
+number all right now in here we want to
+ 
+
+00:05:48.479 --> 00:05:50.790 align:start position:0%
+number all right now in here we want to
+say<00:05:48.680><c> local</c><00:05:49.039><c> out</c><00:05:49.440><c> props</c><00:05:50.360><c> which</c><00:05:50.479><c> is</c><00:05:50.560><c> going</c><00:05:50.680><c> to</c>
+
+00:05:50.790 --> 00:05:50.800 align:start position:0%
+say local out props which is going to
+ 
+
+00:05:50.800 --> 00:05:54.150 align:start position:0%
+say local out props which is going to
+equal<00:05:51.240><c> size</c><00:05:51.759><c> equals</c><00:05:52.199><c> button</c><00:05:52.880><c> do</c><00:05:53.160><c> size</c><00:05:53.919><c> this</c><00:05:54.039><c> is</c>
+
+00:05:54.150 --> 00:05:54.160 align:start position:0%
+equal size equals button do size this is
+ 
+
+00:05:54.160 --> 00:05:55.710 align:start position:0%
+equal size equals button do size this is
+just<00:05:54.280><c> so</c><00:05:54.400><c> that</c><00:05:54.520><c> we</c><00:05:54.639><c> can</c><00:05:54.840><c> reset</c><00:05:55.240><c> the</c><00:05:55.400><c> size</c><00:05:55.600><c> of</c>
+
+00:05:55.710 --> 00:05:55.720 align:start position:0%
+just so that we can reset the size of
+ 
+
+00:05:55.720 --> 00:05:58.270 align:start position:0%
+just so that we can reset the size of
+the<00:05:55.840><c> button</c><00:05:56.120><c> after</c><00:05:56.360><c> the</c><00:05:57.360><c> uh</c><00:05:57.479><c> player</c><00:05:57.960><c> is</c><00:05:58.120><c> not</c>
+
+00:05:58.270 --> 00:05:58.280 align:start position:0%
+the button after the uh player is not
+ 
+
+00:05:58.280 --> 00:05:59.990 align:start position:0%
+the button after the uh player is not
+hovering<00:05:58.680><c> over</c><00:05:58.919><c> it</c><00:05:59.120><c> anymore</c><00:05:59.680><c> all</c><00:05:59.759><c> right</c><00:05:59.880><c> now</c>
+
+00:05:59.990 --> 00:06:00.000 align:start position:0%
+hovering over it anymore all right now
+ 
+
+00:06:00.000 --> 00:06:01.510 align:start position:0%
+hovering over it anymore all right now
+we're<00:06:00.080><c> going</c><00:06:00.160><c> to</c><00:06:00.240><c> say</c><00:06:00.479><c> local</c><00:06:01.160><c> we're</c><00:06:01.280><c> going</c><00:06:01.360><c> to</c>
+
+00:06:01.510 --> 00:06:01.520 align:start position:0%
+we're going to say local we're going to
+ 
+
+00:06:01.520 --> 00:06:04.590 align:start position:0%
+we're going to say local we're going to
+get<00:06:01.639><c> our</c><00:06:01.919><c> table</c><00:06:02.840><c> for</c><00:06:03.280><c> local</c><00:06:04.280><c> we</c><00:06:04.360><c> going</c><00:06:04.479><c> to</c>
+
+00:06:04.590 --> 00:06:04.600 align:start position:0%
+get our table for local we going to
+ 
+
+00:06:04.600 --> 00:06:06.950 align:start position:0%
+get our table for local we going to
+Index<00:06:04.960><c> this</c><00:06:05.160><c> at</c><00:06:05.479><c> button.</c>
+
+00:06:06.950 --> 00:06:06.960 align:start position:0%
+Index this at button.
+ 
+
+00:06:06.960 --> 00:06:10.230 align:start position:0%
+Index this at button.
+name<00:06:07.960><c> hover</c><00:06:08.520><c> so</c><00:06:08.720><c> what</c><00:06:08.840><c> we're</c><00:06:09.199><c> doing</c><00:06:09.880><c> is</c><00:06:10.000><c> we're</c>
+
+00:06:10.230 --> 00:06:10.240 align:start position:0%
+name hover so what we're doing is we're
+ 
+
+00:06:10.240 --> 00:06:12.189 align:start position:0%
+name hover so what we're doing is we're
+creating<00:06:10.599><c> a</c><00:06:10.759><c> new</c><00:06:11.000><c> variable</c><00:06:11.520><c> inside</c><00:06:11.840><c> of</c><00:06:12.000><c> the</c>
+
+00:06:12.189 --> 00:06:12.199 align:start position:0%
+creating a new variable inside of the
+ 
+
+00:06:12.199 --> 00:06:16.430 align:start position:0%
+creating a new variable inside of the
+local<00:06:12.840><c> table</c><00:06:13.840><c> called</c><00:06:14.520><c> the</c><00:06:14.680><c> button's</c><00:06:15.440><c> name</c>
+
+00:06:16.430 --> 00:06:16.440 align:start position:0%
+local table called the button's name
+ 
+
+00:06:16.440 --> 00:06:18.830 align:start position:0%
+local table called the button's name
+with<00:06:16.639><c> the</c><00:06:16.919><c> uh</c><00:06:17.080><c> the</c><00:06:17.199><c> hover</c><00:06:17.520><c> added</c><00:06:17.800><c> onto</c><00:06:18.080><c> it</c><00:06:18.680><c> so</c>
+
+00:06:18.830 --> 00:06:18.840 align:start position:0%
+with the uh the hover added onto it so
+ 
+
+00:06:18.840 --> 00:06:21.110 align:start position:0%
+with the uh the hover added onto it so
+if<00:06:18.960><c> it</c><00:06:19.080><c> was</c><00:06:19.280><c> info</c><00:06:19.639><c> it'</c><00:06:19.800><c> be</c><00:06:19.919><c> info</c><00:06:20.319><c> hover</c><00:06:21.000><c> and</c>
+
+00:06:21.110 --> 00:06:21.120 align:start position:0%
+if it was info it' be info hover and
+ 
+
+00:06:21.120 --> 00:06:22.150 align:start position:0%
+if it was info it' be info hover and
+what<00:06:21.199><c> we're</c><00:06:21.319><c> going</c><00:06:21.400><c> to</c><00:06:21.479><c> set</c><00:06:21.680><c> this</c><00:06:21.759><c> to</c><00:06:21.960><c> is</c><00:06:22.039><c> we're</c>
+
+00:06:22.150 --> 00:06:22.160 align:start position:0%
+what we're going to set this to is we're
+ 
+
+00:06:22.160 --> 00:06:24.589 align:start position:0%
+what we're going to set this to is we're
+going<00:06:22.240><c> to</c><00:06:22.360><c> say</c><00:06:22.639><c> tweet</c><00:06:23.080><c> service</c><00:06:23.680><c> create</c><00:06:24.479><c> we're</c>
+
+00:06:24.589 --> 00:06:24.599 align:start position:0%
+going to say tweet service create we're
+ 
+
+00:06:24.599 --> 00:06:26.950 align:start position:0%
+going to say tweet service create we're
+going<00:06:24.720><c> to</c><00:06:24.880><c> put</c><00:06:25.000><c> in</c><00:06:25.199><c> the</c><00:06:25.639><c> button</c><00:06:26.560><c> the</c><00:06:26.720><c> hover</c>
+
+00:06:26.950 --> 00:06:26.960 align:start position:0%
+going to put in the button the hover
+ 
+
+00:06:26.960 --> 00:06:29.029 align:start position:0%
+going to put in the button the hover
+tween<00:06:27.280><c> info</c><00:06:27.520><c> that</c><00:06:27.639><c> we</c><00:06:27.720><c> made</c><00:06:27.880><c> earlier</c><00:06:28.800><c> and</c><00:06:28.919><c> then</c>
+
+00:06:29.029 --> 00:06:29.039 align:start position:0%
+tween info that we made earlier and then
+ 
+
+00:06:29.039 --> 00:06:30.070 align:start position:0%
+tween info that we made earlier and then
+the<00:06:29.160><c> in</c>
+
+00:06:30.070 --> 00:06:30.080 align:start position:0%
+the in
+ 
+
+00:06:30.080 --> 00:06:31.710 align:start position:0%
+the in
+we<00:06:30.240><c> do</c><00:06:30.360><c> it</c><00:06:30.520><c> like</c><00:06:30.639><c> this</c><00:06:30.759><c> so</c><00:06:30.880><c> that</c><00:06:31.000><c> we</c><00:06:31.080><c> can</c><00:06:31.360><c> access</c>
+
+00:06:31.710 --> 00:06:31.720 align:start position:0%
+we do it like this so that we can access
+ 
+
+00:06:31.720 --> 00:06:33.390 align:start position:0%
+we do it like this so that we can access
+this<00:06:32.120><c> anywhere</c><00:06:32.479><c> we</c><00:06:32.599><c> want</c><00:06:32.800><c> and</c><00:06:32.919><c> it's</c><00:06:33.080><c> also</c>
+
+00:06:33.390 --> 00:06:33.400 align:start position:0%
+this anywhere we want and it's also
+ 
+
+00:06:33.400 --> 00:06:35.390 align:start position:0%
+this anywhere we want and it's also
+really<00:06:33.639><c> easy</c><00:06:33.919><c> to</c><00:06:34.120><c> access</c><00:06:34.520><c> as</c><00:06:34.720><c> well</c><00:06:35.160><c> and</c><00:06:35.240><c> then</c>
+
+00:06:35.390 --> 00:06:35.400 align:start position:0%
+really easy to access as well and then
+ 
+
+00:06:35.400 --> 00:06:37.749 align:start position:0%
+really easy to access as well and then
+in<00:06:35.520><c> here</c><00:06:35.680><c> I'm</c><00:06:35.759><c> going</c><00:06:35.800><c> to</c><00:06:35.880><c> say</c><00:06:36.360><c> local</c><00:06:37.360><c> uh</c>
+
+00:06:37.749 --> 00:06:37.759 align:start position:0%
+in here I'm going to say local uh
+ 
+
+00:06:37.759 --> 00:06:40.270 align:start position:0%
+in here I'm going to say local uh
+button.<00:06:38.759><c> name</c><00:06:39.039><c> we're</c><00:06:39.160><c> going</c><00:06:39.280><c> to</c><00:06:39.400><c> make</c><00:06:39.560><c> a</c>
+
+00:06:40.270 --> 00:06:40.280 align:start position:0%
+button. name we're going to make a
+ 
+
+00:06:40.280 --> 00:06:43.749 align:start position:0%
+button. name we're going to make a
+new<00:06:41.280><c> uh</c><00:06:41.840><c> variable</c><00:06:42.199><c> inside</c><00:06:42.440><c> of</c><00:06:42.560><c> this</c><00:06:42.759><c> table</c>
+
+00:06:43.749 --> 00:06:43.759 align:start position:0%
+new uh variable inside of this table
+ 
+
+00:06:43.759 --> 00:06:45.950 align:start position:0%
+new uh variable inside of this table
+called<00:06:44.039><c> un</c><00:06:44.440><c> hover</c><00:06:45.080><c> so</c><00:06:45.280><c> this</c><00:06:45.360><c> is</c><00:06:45.560><c> whenever</c><00:06:45.800><c> the</c>
+
+00:06:45.950 --> 00:06:45.960 align:start position:0%
+called un hover so this is whenever the
+ 
+
+00:06:45.960 --> 00:06:47.230 align:start position:0%
+called un hover so this is whenever the
+player<00:06:46.199><c> stops</c><00:06:46.440><c> hovering</c><00:06:46.759><c> over</c><00:06:46.960><c> we</c><00:06:47.039><c> going</c><00:06:47.120><c> to</c>
+
+00:06:47.230 --> 00:06:47.240 align:start position:0%
+player stops hovering over we going to
+ 
+
+00:06:47.240 --> 00:06:50.309 align:start position:0%
+player stops hovering over we going to
+create<00:06:47.479><c> a</c><00:06:47.560><c> new</c><00:06:48.120><c> tween</c><00:06:49.120><c> of</c><00:06:49.280><c> the</c><00:06:49.479><c> button</c><00:06:50.000><c> un</c>
+
+00:06:50.309 --> 00:06:50.319 align:start position:0%
+create a new tween of the button un
+ 
+
+00:06:50.319 --> 00:06:52.870 align:start position:0%
+create a new tween of the button un
+hover<00:06:50.680><c> tween</c><00:06:51.000><c> info</c><00:06:51.280><c> and</c><00:06:51.400><c> then</c><00:06:51.520><c> out</c><00:06:51.840><c> props</c><00:06:52.720><c> now</c>
+
+00:06:52.870 --> 00:06:52.880 align:start position:0%
+hover tween info and then out props now
+ 
+
+00:06:52.880 --> 00:06:55.110 align:start position:0%
+hover tween info and then out props now
+we<00:06:52.960><c> can</c><00:06:53.120><c> actually</c><00:06:53.280><c> link</c><00:06:53.759><c> these</c><00:06:54.280><c> of</c><00:06:54.639><c> Link</c><00:06:54.919><c> the</c>
+
+00:06:55.110 --> 00:06:55.120 align:start position:0%
+we can actually link these of Link the
+ 
+
+00:06:55.120 --> 00:06:58.189 align:start position:0%
+we can actually link these of Link the
+buttons<00:06:55.400><c> to</c><00:06:55.840><c> actually</c><00:06:56.840><c> uh</c><00:06:57.000><c> do</c><00:06:57.720><c> actually</c><00:06:57.960><c> play</c>
+
+00:06:58.189 --> 00:06:58.199 align:start position:0%
+buttons to actually uh do actually play
+ 
+
+00:06:58.199 --> 00:07:00.029 align:start position:0%
+buttons to actually uh do actually play
+the<00:06:58.319><c> twins</c><00:06:59.120><c> which</c><00:06:59.240><c> you</c><00:06:59.280><c> can</c><00:06:59.400><c> see</c>
+
+00:07:00.029 --> 00:07:00.039 align:start position:0%
+the twins which you can see
+ 
+
+00:07:00.039 --> 00:07:01.510 align:start position:0%
+the twins which you can see
+we're<00:07:00.199><c> just</c><00:07:00.280><c> going</c><00:07:00.400><c> to</c><00:07:00.479><c> say</c><00:07:00.680><c> button</c><00:07:01.160><c> Mouse</c>
+
+00:07:01.510 --> 00:07:01.520 align:start position:0%
+we're just going to say button Mouse
+ 
+
+00:07:01.520 --> 00:07:03.749 align:start position:0%
+we're just going to say button Mouse
+enter<00:07:02.520><c> connect</c><00:07:02.919><c> function</c><00:07:03.280><c> and</c><00:07:03.360><c> then</c><00:07:03.479><c> in</c><00:07:03.639><c> here</c>
+
+00:07:03.749 --> 00:07:03.759 align:start position:0%
+enter connect function and then in here
+ 
+
+00:07:03.759 --> 00:07:06.230 align:start position:0%
+enter connect function and then in here
+we're<00:07:03.879><c> going</c><00:07:04.000><c> to</c><00:07:04.120><c> say</c><00:07:04.800><c> local</c><00:07:05.560><c> index</c><00:07:06.000><c> that</c>
+
+00:07:06.230 --> 00:07:06.240 align:start position:0%
+we're going to say local index that
+ 
+
+00:07:06.240 --> 00:07:09.390 align:start position:0%
+we're going to say local index that
+button.<00:07:07.039><c> name</c><00:07:07.759><c> I'm</c><00:07:07.879><c> going</c><00:07:08.000><c> to</c><00:07:08.120><c> add</c><00:07:08.400><c> hover</c><00:07:08.759><c> onto</c>
+
+00:07:09.390 --> 00:07:09.400 align:start position:0%
+button. name I'm going to add hover onto
+ 
+
+00:07:09.400 --> 00:07:13.430 align:start position:0%
+button. name I'm going to add hover onto
+this<00:07:10.400><c> if</c><00:07:10.560><c> I</c><00:07:10.800><c> can</c><00:07:11.520><c> add</c><00:07:11.720><c> a</c><00:07:11.840><c> colon</c><00:07:12.319><c> play</c><00:07:13.080><c> and</c><00:07:13.199><c> also</c>
+
+00:07:13.430 --> 00:07:13.440 align:start position:0%
+this if I can add a colon play and also
+ 
+
+00:07:13.440 --> 00:07:15.469 align:start position:0%
+this if I can add a colon play and also
+if<00:07:13.520><c> you</c><00:07:13.639><c> want</c><00:07:13.840><c> to</c><00:07:14.080><c> play</c><00:07:14.400><c> these</c><00:07:14.680><c> at</c><00:07:14.879><c> any</c><00:07:15.080><c> other</c>
+
+00:07:15.469 --> 00:07:15.479 align:start position:0%
+if you want to play these at any other
+ 
+
+00:07:15.479 --> 00:07:17.589 align:start position:0%
+if you want to play these at any other
+time<00:07:16.479><c> let's</c><00:07:16.599><c> say</c><00:07:16.720><c> you</c><00:07:16.800><c> wanted</c><00:07:17.000><c> to</c><00:07:17.199><c> play</c><00:07:17.400><c> the</c>
+
+00:07:17.589 --> 00:07:17.599 align:start position:0%
+time let's say you wanted to play the
+ 
+
+00:07:17.599 --> 00:07:20.950 align:start position:0%
+time let's say you wanted to play the
+info<00:07:18.240><c> hover</c><00:07:19.240><c> you</c><00:07:19.360><c> could</c><00:07:19.520><c> just</c><00:07:19.680><c> say</c>
+
+00:07:20.950 --> 00:07:20.960 align:start position:0%
+info hover you could just say
+ 
+
+00:07:20.960 --> 00:07:24.790 align:start position:0%
+info hover you could just say
+local.<00:07:21.960><c> info</c><00:07:22.919><c> hover</c><00:07:23.919><c> and</c><00:07:24.120><c> play</c><00:07:24.400><c> if</c><00:07:24.479><c> you</c><00:07:24.639><c> really</c>
+
+00:07:24.790 --> 00:07:24.800 align:start position:0%
+local. info hover and play if you really
+ 
+
+00:07:24.800 --> 00:07:27.710 align:start position:0%
+local. info hover and play if you really
+wanted<00:07:25.080><c> to</c><00:07:25.319><c> play</c><00:07:25.560><c> the</c><00:07:25.960><c> twins</c><00:07:26.960><c> you</c><00:07:27.120><c> know</c><00:07:27.400><c> at</c>
+
+00:07:27.710 --> 00:07:27.720 align:start position:0%
+wanted to play the twins you know at
+ 
+
+00:07:27.720 --> 00:07:28.990 align:start position:0%
+wanted to play the twins you know at
+some<00:07:27.919><c> other</c><00:07:28.080><c> point</c><00:07:28.280><c> of</c><00:07:28.360><c> the</c><00:07:28.440><c> script</c><00:07:28.720><c> you</c><00:07:28.840><c> could</c>
+
+00:07:28.990 --> 00:07:29.000 align:start position:0%
+some other point of the script you could
+ 
+
+00:07:29.000 --> 00:07:30.469 align:start position:0%
+some other point of the script you could
+do<00:07:29.240><c> that</c><00:07:29.840><c> but</c><00:07:29.960><c> we're</c><00:07:30.039><c> going</c><00:07:30.120><c> to</c><00:07:30.199><c> use</c><00:07:30.360><c> the</c>
+
+00:07:30.469 --> 00:07:30.479 align:start position:0%
+do that but we're going to use the
+ 
+
+00:07:30.479 --> 00:07:32.029 align:start position:0%
+do that but we're going to use the
+button.<00:07:30.919><c> name</c><00:07:31.199><c> because</c><00:07:31.400><c> it's</c><00:07:31.560><c> still</c>
+
+00:07:32.029 --> 00:07:32.039 align:start position:0%
+button. name because it's still
+ 
+
+00:07:32.039 --> 00:07:34.430 align:start position:0%
+button. name because it's still
+accessible<00:07:33.039><c> whenever</c><00:07:33.400><c> we</c><00:07:33.800><c> make</c><00:07:33.960><c> an</c><00:07:34.120><c> event</c>
+
+00:07:34.430 --> 00:07:34.440 align:start position:0%
+accessible whenever we make an event
+ 
+
+00:07:34.440 --> 00:07:37.990 align:start position:0%
+accessible whenever we make an event
+like<00:07:34.599><c> this</c><00:07:35.400><c> say</c><00:07:35.560><c> button.</c><00:07:36.039><c> mouse</c><00:07:37.000><c> leave</c>
+
+00:07:37.990 --> 00:07:38.000 align:start position:0%
+like this say button. mouse leave
+ 
+
+00:07:38.000 --> 00:07:41.150 align:start position:0%
+like this say button. mouse leave
+connect<00:07:38.720><c> function</c><00:07:39.720><c> I'll</c><00:07:39.879><c> say</c><00:07:40.160><c> local</c>
+
+00:07:41.150 --> 00:07:41.160 align:start position:0%
+connect function I'll say local
+ 
+
+00:07:41.160 --> 00:07:43.230 align:start position:0%
+connect function I'll say local
+basically<00:07:41.560><c> the</c><00:07:41.720><c> same</c><00:07:42.199><c> thing</c><00:07:42.919><c> but</c><00:07:43.080><c> this</c><00:07:43.160><c> is</c>
+
+00:07:43.230 --> 00:07:43.240 align:start position:0%
+basically the same thing but this is
+ 
+
+00:07:43.240 --> 00:07:46.830 align:start position:0%
+basically the same thing but this is
+going<00:07:43.360><c> to</c><00:07:43.440><c> be</c><00:07:43.639><c> unhu</c><00:07:44.360><c> this</c><00:07:44.560><c> time</c><00:07:45.560><c> and</c><00:07:45.759><c> play</c><00:07:46.000><c> that</c>
+
+00:07:46.830 --> 00:07:46.840 align:start position:0%
+going to be unhu this time and play that
+ 
+
+00:07:46.840 --> 00:07:47.909 align:start position:0%
+going to be unhu this time and play that
+and<00:07:46.919><c> then</c><00:07:47.039><c> we're</c><00:07:47.120><c> going</c><00:07:47.240><c> to</c><00:07:47.319><c> go</c><00:07:47.440><c> down</c><00:07:47.639><c> here</c><00:07:47.840><c> we</c>
+
+00:07:47.909 --> 00:07:47.919 align:start position:0%
+and then we're going to go down here we
+ 
+
+00:07:47.919 --> 00:07:49.869 align:start position:0%
+and then we're going to go down here we
+want<00:07:48.039><c> to</c><00:07:48.120><c> do</c><00:07:48.360><c> one</c><00:07:48.520><c> more</c><00:07:49.240><c> and</c><00:07:49.360><c> that's</c><00:07:49.520><c> whenever</c>
+
+00:07:49.869 --> 00:07:49.879 align:start position:0%
+want to do one more and that's whenever
+ 
+
+00:07:49.879 --> 00:07:52.350 align:start position:0%
+want to do one more and that's whenever
+the<00:07:50.000><c> button</c><00:07:50.240><c> is</c><00:07:50.639><c> clicked</c><00:07:51.639><c> we</c><00:07:51.759><c> want</c><00:07:51.879><c> to</c><00:07:52.080><c> make</c>
+
+00:07:52.350 --> 00:07:52.360 align:start position:0%
+the button is clicked we want to make
+ 
+
+00:07:52.360 --> 00:07:54.990 align:start position:0%
+the button is clicked we want to make
+the<00:07:53.199><c> UN</c><00:07:53.520><c> hover</c><00:07:53.879><c> play</c><00:07:54.120><c> whenever</c><00:07:54.479><c> they</c><00:07:54.639><c> click</c><00:07:54.879><c> on</c>
+
+00:07:54.990 --> 00:07:55.000 align:start position:0%
+the UN hover play whenever they click on
+ 
+
+00:07:55.000 --> 00:07:58.469 align:start position:0%
+the UN hover play whenever they click on
+it<00:07:55.680><c> link</c><00:07:56.039><c> the</c><00:07:56.240><c> button</c><00:07:56.560><c> sounds</c><00:07:57.159><c> and</c><00:07:57.280><c> then</c><00:07:57.599><c> also</c>
+
+00:07:58.469 --> 00:07:58.479 align:start position:0%
+it link the button sounds and then also
+ 
+
+00:07:58.479 --> 00:07:59.670 align:start position:0%
+it link the button sounds and then also
+oh<00:07:58.639><c> no</c><00:07:58.840><c> we</c><00:07:58.919><c> don't</c><00:07:59.000><c> want</c><00:07:59.080><c> to</c><00:07:59.159><c> do</c><00:07:59.280><c> that</c><00:07:59.520><c> we</c><00:07:59.599><c> want</c>
+
+00:07:59.670 --> 00:07:59.680 align:start position:0%
+oh no we don't want to do that we want
+ 
+
+00:07:59.680 --> 00:08:02.270 align:start position:0%
+oh no we don't want to do that we want
+to<00:07:59.759><c> say</c><00:07:59.960><c> set</c><00:08:00.159><c> up</c><00:08:00.639><c> sounds</c><00:08:01.639><c> we</c><00:08:01.759><c> want</c><00:08:01.879><c> to</c><00:08:02.000><c> set</c><00:08:02.159><c> up</c>
+
+00:08:02.270 --> 00:08:02.280 align:start position:0%
+to say set up sounds we want to set up
+ 
+
+00:08:02.280 --> 00:08:03.710 align:start position:0%
+to say set up sounds we want to set up
+the<00:08:02.440><c> sounds</c><00:08:02.840><c> and</c><00:08:02.919><c> then</c><00:08:03.080><c> come</c><00:08:03.240><c> down</c><00:08:03.440><c> here</c><00:08:03.599><c> and</c>
+
+00:08:03.710 --> 00:08:03.720 align:start position:0%
+the sounds and then come down here and
+ 
+
+00:08:03.720 --> 00:08:07.230 align:start position:0%
+the sounds and then come down here and
+then<00:08:03.919><c> say</c><00:08:04.199><c> set</c><00:08:04.919><c> up</c><00:08:05.520><c> button</c><00:08:05.800><c> enems</c><00:08:06.400><c> and</c><00:08:06.520><c> then</c><00:08:06.720><c> it</c>
+
+00:08:07.230 --> 00:08:07.240 align:start position:0%
+then say set up button enems and then it
+ 
+
+00:08:07.240 --> 00:08:10.589 align:start position:0%
+then say set up button enems and then it
+should<00:08:08.240><c> work</c><00:08:08.960><c> fine</c><00:08:09.199><c> after</c><00:08:09.479><c> that</c><00:08:10.240><c> so</c><00:08:10.400><c> now</c><00:08:10.520><c> as</c>
+
+00:08:10.589 --> 00:08:10.599 align:start position:0%
+should work fine after that so now as
+ 
+
+00:08:10.599 --> 00:08:11.670 align:start position:0%
+should work fine after that so now as
+you<00:08:10.680><c> can</c><00:08:10.759><c> see</c><00:08:10.879><c> it</c><00:08:10.960><c> plays</c><00:08:11.159><c> the</c><00:08:11.280><c> sound</c><00:08:11.479><c> whenever</c>
+
+00:08:11.670 --> 00:08:11.680 align:start position:0%
+you can see it plays the sound whenever
+ 
+
+00:08:11.680 --> 00:08:12.589 align:start position:0%
+you can see it plays the sound whenever
+you<00:08:11.759><c> hover</c><00:08:11.960><c> over</c><00:08:12.159><c> and</c><00:08:12.240><c> then</c><00:08:12.319><c> it</c><00:08:12.440><c> also</c>
+
+00:08:12.589 --> 00:08:12.599 align:start position:0%
+you hover over and then it also
+ 
+
+00:08:12.599 --> 00:08:14.790 align:start position:0%
+you hover over and then it also
+increases<00:08:13.000><c> in</c><00:08:13.240><c> size</c><00:08:13.639><c> and</c><00:08:14.120><c> shrinks</c><00:08:14.520><c> back</c><00:08:14.639><c> down</c>
+
+00:08:14.790 --> 00:08:14.800 align:start position:0%
+increases in size and shrinks back down
+ 
+
+00:08:14.800 --> 00:08:16.950 align:start position:0%
+increases in size and shrinks back down
+whenever<00:08:15.039><c> you</c><00:08:15.479><c> un</c><00:08:15.680><c> hover</c><00:08:16.120><c> on</c><00:08:16.280><c> it</c><00:08:16.720><c> all</c><00:08:16.840><c> right</c>
+
+00:08:16.950 --> 00:08:16.960 align:start position:0%
+whenever you un hover on it all right
+ 
+
+00:08:16.960 --> 00:08:18.309 align:start position:0%
+whenever you un hover on it all right
+that's<00:08:17.080><c> it</c><00:08:17.199><c> for</c><00:08:17.319><c> this</c><00:08:17.479><c> video</c><00:08:17.800><c> If</c><00:08:17.919><c> you</c><00:08:18.080><c> guys</c>
+
+00:08:18.309 --> 00:08:18.319 align:start position:0%
+that's it for this video If you guys
+ 
+
+00:08:18.319 --> 00:08:19.510 align:start position:0%
+that's it for this video If you guys
+found<00:08:18.520><c> this</c><00:08:18.639><c> helpful</c><00:08:18.879><c> at</c><00:08:18.960><c> all</c><00:08:19.120><c> make</c><00:08:19.199><c> sure</c><00:08:19.319><c> you</c>
+
+00:08:19.510 --> 00:08:19.520 align:start position:0%
+found this helpful at all make sure you
+ 
+
+00:08:19.520 --> 00:08:21.270 align:start position:0%
+found this helpful at all make sure you
+like<00:08:19.680><c> And</c><00:08:19.840><c> subscribe</c><00:08:20.560><c> uh</c><00:08:20.639><c> if</c><00:08:20.759><c> anything</c><00:08:21.000><c> broke</c>
+
+00:08:21.270 --> 00:08:21.280 align:start position:0%
+like And subscribe uh if anything broke
+ 
+
+00:08:21.280 --> 00:08:22.830 align:start position:0%
+like And subscribe uh if anything broke
+just<00:08:21.400><c> make</c><00:08:21.520><c> sure</c><00:08:21.599><c> you</c><00:08:21.759><c> rewatch</c><00:08:22.080><c> the</c><00:08:22.240><c> video</c><00:08:22.720><c> and</c>
+
+00:08:22.830 --> 00:08:22.840 align:start position:0%
+just make sure you rewatch the video and
+ 
+
+00:08:22.840 --> 00:08:24.189 align:start position:0%
+just make sure you rewatch the video and
+make<00:08:22.960><c> sure</c><00:08:23.120><c> everything</c><00:08:23.360><c> is</c><00:08:23.520><c> set</c><00:08:23.639><c> up</c><00:08:23.800><c> correctly</c>
+
+00:08:24.189 --> 00:08:24.199 align:start position:0%
+make sure everything is set up correctly
+ 
+
+00:08:24.199 --> 00:08:30.420 align:start position:0%
+make sure everything is set up correctly
+and<00:08:24.319><c> it</c><00:08:24.479><c> should</c><00:08:24.879><c> work</c><00:08:25.120><c> for</c><00:08:25.360><c> you</c><00:08:25.960><c> see</c><00:08:26.199><c> you</c>
+
+00:08:30.420 --> 00:08:30.430 align:start position:0%
+ 
+ 
+
+00:08:30.430 --> 00:08:33.559 align:start position:0%
+ 
+[Music]
+

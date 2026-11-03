@@ -1,0 +1,162 @@
+[
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/JobFX.lua",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\n",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\nlocal Sfx = require(ReplicatedStorage.MTL.UI.Sfx)\n"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/JobFX.lua",
+  "\tlocal s = Instance.new(\"Sound\")\n\ts.SoundId = id\n\ts.Volume = volume or 0.5\n\ts.PlaybackSpeed = math.min(pitch or 1, 1.05) -- never pitch up into squeaky territory (Alex: no high-pitched sounds)\n\tSoundService:PlayLocalSound(s)\n\ttask.delay(3, function()\n\t\ts:Destroy()\n\tend)\nend",
+  "\t-- through UI/Sfx: respects Settings > Sound effects, caps length (~1 s), pitch capped at 1.05 (no squeaky sounds)\n\tSfx.playId(id, { volume = volume or 0.5, pitch = pitch })\nend"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/MissionController.lua",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\n",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\nlocal Sfx = require(ReplicatedStorage.MTL.UI.Sfx)\n"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/MissionController.lua",
+  "\tlocal s = Instance.new(\"Sound\")\n\ts.SoundId = id\n\ts.Volume = volume or 0.5\n\tSoundService:PlayLocalSound(s)\n\ttask.delay(3, function()\n\t\ts:Destroy()\n\tend)\nend\n\nlocal function action",
+  "\tSfx.playId(id, { volume = volume or 0.5 })\nend\n\nlocal function action"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/PropertyController.lua",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\n",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\nlocal Sfx = require(ReplicatedStorage.MTL.UI.Sfx)\n"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/PropertyController.lua",
+  "\tlocal s = Instance.new(\"Sound\")\n\ts.SoundId = id\n\ts.Volume = volume or 0.5\n\tSoundService:PlayLocalSound(s)\n\ttask.delay(3, function()\n\t\ts:Destroy()\n\tend)\nend",
+  "\tSfx.playId(id, { volume = volume or 0.5 })\nend"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/WayfindingController.lua",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\n",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\nlocal Sfx = require(ReplicatedStorage.MTL.UI.Sfx)\n"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/WayfindingController.lua",
+  "\t\t\t\tlocal s = Instance.new(\"Sound\")\n\t\t\t\ts.SoundId = Theme.Sounds.Arrive\n\t\t\t\ts.Volume = 0.4\n\t\t\t\tSoundService:PlayLocalSound(s)\n\t\t\t\ttask.delay(2, function()\n\t\t\t\t\ts:Destroy()\n\t\t\t\tend)",
+  "\t\t\t\tSfx.playId(Theme.Sounds.Arrive, { volume = 0.4 })"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/HUDController.lua",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\n",
+  "local Theme = require(ReplicatedStorage.MTL.UI.Theme)\nlocal Sfx = require(ReplicatedStorage.MTL.UI.Sfx)\n"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/HUDController.lua",
+  "\tlocal s = Instance.new(\"Sound\")\n\ts.SoundId = id\n\ts.Volume = volume or 0.5\n\tSoundService:PlayLocalSound(s)\n\ttask.delay(3, function()\n\t\ts:Destroy()\n\tend)\nend",
+  "\tSfx.playId(id, { volume = volume or 0.5 })\nend"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/HUDController.lua",
+  "\t\tsound(Theme.Sounds and Theme.Sounds.LevelUp)",
+  "\t\tSfx.play(\"LevelUp\") -- short \"ding-up\" (Theme.Sfx.LevelUp), not a music sting"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/HUDController.lua",
+  "\trow.Parent = list\n\tlocal pop = row:FindFirstChild(\"Pop\")",
+  "\trow.Parent = list\n\tSfx.play(\"Toast\")\n\tlocal pop = row:FindFirstChild(\"Pop\")"
+ ],
+ [
+  "StarterPlayer/StarterPlayerScripts/MTL/Controllers/AmbientSound.lua",
+  "\ts.Volume = e.def.volume\n\tlocal maxD = e.def.maxDistance or 60",
+  "\ts.Volume = e.def.volume\n\tif e.kind == \"Window\" or e.kind == \"CarMusic\" then\n\t\trequire(ReplicatedStorage.MTL.UI.MusicLevel).attach(s) -- songs matched in loudness, a bit quieter (SFX thread)\n\tend\n\tlocal maxD = e.def.maxDistance or 60"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "LevelUp = \"rbxassetid://1842141543\", -- Victory Lap (sting) (APM)",
+  "LevelUp = \"rbxassetid://105625891237078\", -- short UI level-up (CoreKit); HUD plays Theme.Sfx.LevelUp"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Prompt = \"rbxassetid://9120917861\", -- Wood Impacts Soft Impacts On Temple Blocks 7 (PSE)",
+  "Prompt = \"rbxassetid://10128760939\", -- RBLX UI Select 01 (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Hit = \"rbxassetid://9113578184\", -- Box Slide Cardboard Rub 2 (PSE)",
+  "Hit = \"rbxassetid://10066968815\", -- RBLX UI Select 02 (Roblox), pitched up per streak"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Miss = \"rbxassetid://9120915095\", -- Wood Impacts 2 (PSE)",
+  "Miss = \"rbxassetid://80099403859001\", -- UI - Error (SodaBreadle)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Done = \"rbxassetid://9113728756\", -- Cash Register 5 (PSE)",
+  "Done = \"rbxassetid://10066947742\", -- RBLX UI Purchase (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Step = \"rbxassetid://9120917438\", -- Wood Impacts Soft Impacts On Temple Blocks 1 (PSE)",
+  "Step = \"rbxassetid://10066968815\", -- RBLX UI Select 02 (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Done = \"rbxassetid://9113728042\", -- Cash Register 1 (PSE)",
+  "Done = \"rbxassetid://10066947742\", -- RBLX UI Purchase (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Buy = \"rbxassetid://9113728049\", -- Cash Register 2 (PSE)",
+  "Buy = \"rbxassetid://10066947742\", -- RBLX UI Purchase (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Tap = { id = \"rbxassetid://9120232133\", volume = 0.4, jitter = 0.04 }, -- mouse click (PSE)",
+  "Tap = { id = \"rbxassetid://10128760939\", volume = 0.4, jitter = 0.04 }, -- RBLX UI Select 01 (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Close = { id = \"rbxassetid://10128766965\", volume = 0.35, pitch = 0.85, jitter = 0 }, -- same swipe, lower",
+  "Close = { id = \"rbxassetid://10066914500\", volume = 0.35, jitter = 0 }, -- RBLX UI Back (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Confirm = { id = \"rbxassetid://9120917794\", volume = 0.45 }, -- soft temple block (PSE)",
+  "Confirm = { id = \"rbxassetid://10066968815\", volume = 0.45 }, -- RBLX UI Select 02 (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "Error = { id = \"rbxassetid://9120915492\", volume = 0.4 }, -- dull wood knock (PSE)",
+  "Error = { id = \"rbxassetid://80099403859001\", volume = 0.4 }, -- UI - Error (SodaBreadle)\n\t\t-- rewards: short and punchy like other games (each capped at max seconds by UI/Sfx)\n\t\tLevelUp = { id = \"rbxassetid://105625891237078\", volume = 0.6, jitter = 0, max = 1.5 }, -- UI levelup (CoreKit)\n\t\tToast = { id = \"rbxassetid://10066931761\", volume = 0.25, jitter = 0.03, max = 0.5 }, -- RBLX UI Hover 01 (Roblox)\n\t\tBuy = { id = \"rbxassetid://10066947742\", volume = 0.5, jitter = 0 }, -- RBLX UI Purchase (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/UI/Theme.lua",
+  "PhoneBack = { id = \"rbxassetid://9113745498\", volume = 0.4, pitch = 0.9, jitter = 0.03 },",
+  "PhoneBack = { id = \"rbxassetid://10066914500\", volume = 0.35, jitter = 0.03 }, -- RBLX UI Back (Roblox)"
+ ],
+ [
+  "ReplicatedStorage/MTL/Config/Ambient.lua",
+  "StreetDay = { id = 9112834179, volume = 0.24 },",
+  "StreetDay = { id = 9112834179, volume = 0.16 }, -- quieter road (Alex)"
+ ],
+ [
+  "ReplicatedStorage/MTL/Config/Ambient.lua",
+  "StreetNight = { id = 9112759731, volume = 0.22 },",
+  "StreetNight = { id = 9112759731, volume = 0.15 }, -- quieter road (Alex)"
+ ],
+ [
+  "ReplicatedStorage/MTL/Config/Ambient.lua",
+  "Underpass = { id = 9112771906, volume = 0.3 },",
+  "Underpass = { id = 9112771906, volume = 0.2 }, -- quieter road (Alex)"
+ ],
+ [
+  "ReplicatedStorage/MTL/Config/Ambient.lua",
+  "Engine = { id = 144126309, volume = 0.3, maxDistance = 55 },",
+  "Engine = { id = 144126309, volume = 0.18, maxDistance = 45 }, -- quieter road (Alex)"
+ ],
+ [
+  "ReplicatedStorage/MTL/Config/Ambient.lua",
+  "Horn = { id = 9114402205, volume = 0.6, maxDistance = 140 },",
+  "Horn = { id = 9114402205, volume = 0.35, maxDistance = 110 }, -- quieter road (Alex)"
+ ],
+ [
+  "ReplicatedStorage/MTL/Config/Ambient.lua",
+  "{ id = 9114402336, volume = 0.08, every = { 25, 70 }, dayOnly = true },",
+  "{ id = 9114402336, volume = 0.05, every = { 35, 90 }, dayOnly = true }, -- quieter road (Alex)"
+ ]
+]

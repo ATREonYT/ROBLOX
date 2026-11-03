@@ -1,0 +1,864 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.000 --> 00:00:02.430 align:start position:0%
+ 
+What<00:00:00.240><c> if</c><00:00:00.360><c> you</c><00:00:00.440><c> could</c><00:00:00.680><c> build</c><00:00:01.120><c> a</c><00:00:01.240><c> full</c><00:00:01.800><c> RPG</c>
+
+00:00:02.430 --> 00:00:02.440 align:start position:0%
+What if you could build a full RPG
+ 
+
+00:00:02.440 --> 00:00:04.870 align:start position:0%
+What if you could build a full RPG
+attribute<00:00:02.960><c> system</c><00:00:03.520><c> and</c><00:00:03.960><c> enemy</c><00:00:04.280><c> NPCs</c><00:00:04.584><c> [music]</c>
+
+00:00:04.870 --> 00:00:04.880 align:start position:0%
+attribute system and enemy NPCs [music]
+ 
+
+00:00:04.880 --> 00:00:07.670 align:start position:0%
+attribute system and enemy NPCs [music]
+in<00:00:05.000><c> Roblox</c><00:00:05.480><c> Studio</c><00:00:06.400><c> using</c><00:00:06.920><c> AI</c><00:00:07.360><c> as</c><00:00:07.520><c> your</c>
+
+00:00:07.670 --> 00:00:07.680 align:start position:0%
+in Roblox Studio using AI as your
+ 
+
+00:00:07.680 --> 00:00:09.070 align:start position:0%
+in Roblox Studio using AI as your
+co-developer?
+
+00:00:09.070 --> 00:00:09.080 align:start position:0%
+co-developer?
+ 
+
+00:00:09.080 --> 00:00:10.830 align:start position:0%
+co-developer?
+In<00:00:09.200><c> this</c><00:00:09.400><c> video,</c><00:00:10.040><c> I'm</c><00:00:10.200><c> going</c><00:00:10.400><c> to</c><00:00:10.480><c> show</c><00:00:10.680><c> you</c>
+
+00:00:10.830 --> 00:00:10.840 align:start position:0%
+In this video, I'm going to show you
+ 
+
+00:00:10.840 --> 00:00:12.470 align:start position:0%
+In this video, I'm going to show you
+exactly<00:00:11.480><c> how</c><00:00:11.640><c> I</c><00:00:11.720><c> did</c><00:00:11.960><c> that</c><00:00:12.200><c> using</c><00:00:12.445><c> [music]</c>
+
+00:00:12.470 --> 00:00:12.480 align:start position:0%
+exactly how I did that using [music]
+ 
+
+00:00:12.480 --> 00:00:15.550 align:start position:0%
+exactly how I did that using [music]
+Claude.<00:00:13.560><c> We'll</c><00:00:13.760><c> build</c><00:00:14.120><c> HP</c><00:00:14.520><c> and</c><00:00:14.640><c> mana</c><00:00:14.840><c> bars,</c><00:00:15.520><c> a</c>
+
+00:00:15.550 --> 00:00:15.560 align:start position:0%
+Claude. We'll build HP and mana bars, a
+ 
+
+00:00:15.560 --> 00:00:17.550 align:start position:0%
+Claude. We'll build HP and mana bars, a
+character<00:00:16.040><c> stats</c><00:00:16.400><c> system</c><00:00:16.720><c> with</c><00:00:16.920><c> XP</c><00:00:17.400><c> and</c>
+
+00:00:17.550 --> 00:00:17.560 align:start position:0%
+character stats system with XP and
+ 
+
+00:00:17.560 --> 00:00:20.070 align:start position:0%
+character stats system with XP and
+leveling,<00:00:18.320><c> and</c><00:00:18.480><c> spawn</c><00:00:18.920><c> enemy</c><00:00:19.280><c> NPCs</c><00:00:19.880><c> that</c>
+
+00:00:20.070 --> 00:00:20.080 align:start position:0%
+leveling, and spawn enemy NPCs that
+ 
+
+00:00:20.080 --> 00:00:22.230 align:start position:0%
+leveling, and spawn enemy NPCs that
+actually<00:00:20.480><c> fight</c><00:00:20.800><c> back</c><00:00:21.320><c> and</c><00:00:21.440><c> drop</c><00:00:21.720><c> experience</c>
+
+00:00:22.230 --> 00:00:22.240 align:start position:0%
+actually fight back and drop experience
+ 
+
+00:00:22.240 --> 00:00:23.510 align:start position:0%
+actually fight back and drop experience
+when<00:00:22.400><c> you</c><00:00:22.480><c> kill</c><00:00:22.680><c> them.</c>
+
+00:00:23.510 --> 00:00:23.520 align:start position:0%
+when you kill them.
+ 
+
+00:00:23.520 --> 00:00:25.270 align:start position:0%
+when you kill them.
+Let's<00:00:23.760><c> get</c><00:00:23.880><c> into</c><00:00:24.120><c> it.</c>
+
+00:00:25.270 --> 00:00:25.280 align:start position:0%
+Let's get into it.
+ 
+
+00:00:25.280 --> 00:00:27.230 align:start position:0%
+Let's get into it.
+The<00:00:25.400><c> first</c><00:00:25.720><c> thing</c><00:00:25.880><c> we</c><00:00:26.000><c> built</c><00:00:26.520><c> was</c><00:00:26.640><c> the</c><00:00:26.760><c> status</c>
+
+00:00:27.230 --> 00:00:27.240 align:start position:0%
+The first thing we built was the status
+ 
+
+00:00:27.240 --> 00:00:30.590 align:start position:0%
+The first thing we built was the status
+bar<00:00:27.480><c> UI.</c><00:00:28.360><c> HP</c><00:00:28.800><c> bar</c><00:00:29.000><c> on</c><00:00:29.120><c> the</c><00:00:29.200><c> top</c><00:00:29.480><c> left,</c><00:00:30.080><c> mana</c><00:00:30.360><c> bar</c>
+
+00:00:30.590 --> 00:00:30.600 align:start position:0%
+bar UI. HP bar on the top left, mana bar
+ 
+
+00:00:30.600 --> 00:00:32.390 align:start position:0%
+bar UI. HP bar on the top left, mana bar
+right<00:00:30.800><c> below</c><00:00:31.080><c> it,</c><00:00:31.440><c> and</c><00:00:31.560><c> a</c><00:00:31.640><c> mini</c><00:00:31.880><c> map</c><00:00:32.160><c> on</c><00:00:32.279><c> the</c>
+
+00:00:32.390 --> 00:00:32.400 align:start position:0%
+right below it, and a mini map on the
+ 
+
+00:00:32.400 --> 00:00:35.070 align:start position:0%
+right below it, and a mini map on the
+bottom<00:00:32.759><c> left.</c><00:00:33.720><c> I</c><00:00:33.840><c> asked</c><00:00:34.160><c> Claude</c><00:00:34.520><c> to</c><00:00:34.640><c> generate</c>
+
+00:00:35.070 --> 00:00:35.080 align:start position:0%
+bottom left. I asked Claude to generate
+ 
+
+00:00:35.080 --> 00:00:37.590 align:start position:0%
+bottom left. I asked Claude to generate
+the<00:00:35.200><c> GUI</c><00:00:35.680><c> frames,</c><00:00:36.360><c> the</c><00:00:36.440><c> fill</c><00:00:36.680><c> bars,</c><00:00:37.320><c> and</c><00:00:37.520><c> the</c>
+
+00:00:37.590 --> 00:00:37.600 align:start position:0%
+the GUI frames, the fill bars, and the
+ 
+
+00:00:37.600 --> 00:00:38.990 align:start position:0%
+the GUI frames, the fill bars, and the
+gradient<00:00:38.000><c> colors.</c>
+
+00:00:38.990 --> 00:00:39.000 align:start position:0%
+gradient colors.
+ 
+
+00:00:39.000 --> 00:00:40.830 align:start position:0%
+gradient colors.
+What's<00:00:39.280><c> great</c><00:00:39.600><c> here</c><00:00:39.840><c> is</c><00:00:39.960><c> that</c><00:00:40.120><c> Claude</c><00:00:40.560><c> wrote</c>
+
+00:00:40.830 --> 00:00:40.840 align:start position:0%
+What's great here is that Claude wrote
+ 
+
+00:00:40.840 --> 00:00:43.030 align:start position:0%
+What's great here is that Claude wrote
+all<00:00:41.080><c> the</c><00:00:41.200><c> Lua</c><00:00:41.440><c> code</c><00:00:41.800><c> directly</c><00:00:42.320><c> into</c><00:00:42.600><c> Roblox</c>
+
+00:00:43.030 --> 00:00:43.040 align:start position:0%
+all the Lua code directly into Roblox
+ 
+
+00:00:43.040 --> 00:00:45.790 align:start position:0%
+all the Lua code directly into Roblox
+Studio<00:00:43.800><c> through</c><00:00:44.080><c> the</c><00:00:44.240><c> MCP</c><00:00:44.760><c> plugin.</c><00:00:45.600><c> No</c>
+
+00:00:45.790 --> 00:00:45.800 align:start position:0%
+Studio through the MCP plugin. No
+ 
+
+00:00:45.800 --> 00:00:48.230 align:start position:0%
+Studio through the MCP plugin. No
+copy-pasting.<00:00:47.000><c> It</c><00:00:47.120><c> created</c><00:00:47.520><c> the</c><00:00:47.600><c> health</c><00:00:47.880><c> BG</c>
+
+00:00:48.230 --> 00:00:48.240 align:start position:0%
+copy-pasting. It created the health BG
+ 
+
+00:00:48.240 --> 00:00:50.110 align:start position:0%
+copy-pasting. It created the health BG
+frame,<00:00:48.880><c> the</c><00:00:49.000><c> health</c><00:00:49.280><c> fill</c><00:00:49.440><c> inside</c><00:00:49.840><c> it</c><00:00:49.920><c> with</c><00:00:50.040><c> a</c>
+
+00:00:50.110 --> 00:00:50.120 align:start position:0%
+frame, the health fill inside it with a
+ 
+
+00:00:50.120 --> 00:00:52.630 align:start position:0%
+frame, the health fill inside it with a
+UI<00:00:50.400><c> gradient,</c><00:00:51.160><c> and</c><00:00:51.400><c> even</c><00:00:51.680><c> the</c><00:00:51.760><c> text</c><00:00:52.080><c> labels</c>
+
+00:00:52.630 --> 00:00:52.640 align:start position:0%
+UI gradient, and even the text labels
+ 
+
+00:00:52.640 --> 00:00:54.355 align:start position:0%
+UI gradient, and even the text labels
+showing<00:00:53.040><c> the</c><00:00:53.120><c> live</c><00:00:53.400><c> values.</c>
+
+00:00:54.355 --> 00:00:54.365 align:start position:0%
+showing the live values.
+ 
+
+00:00:54.365 --> 00:00:54.590 align:start position:0%
+showing the live values.
+&gt;&gt; [music]
+
+00:00:54.590 --> 00:00:54.600 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:00:54.600 --> 00:00:57.150 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; Next<00:00:54.960><c> up</c><00:00:55.320><c> is</c><00:00:55.440><c> the</c><00:00:55.600><c> attribute</c><00:00:56.080><c> system.</c><00:00:56.840><c> This</c><00:00:57.040><c> is</c>
+
+00:00:57.150 --> 00:00:57.160 align:start position:0%
+&gt;&gt; Next up is the attribute system. This is
+ 
+
+00:00:57.160 --> 00:01:00.190 align:start position:0%
+&gt;&gt; Next up is the attribute system. This is
+the<00:00:57.280><c> backbone</c><00:00:57.960><c> of</c><00:00:58.200><c> any</c><00:00:58.440><c> RPG.</c><00:00:59.440><c> We</c><00:00:59.600><c> built</c><00:00:59.880><c> three</c>
+
+00:01:00.190 --> 00:01:00.200 align:start position:0%
+the backbone of any RPG. We built three
+ 
+
+00:01:00.200 --> 00:01:02.510 align:start position:0%
+the backbone of any RPG. We built three
+scripts<00:01:00.600><c> for</c><00:01:00.680><c> this.</c><00:01:01.360><c> First,</c><00:01:02.040><c> attribute</c>
+
+00:01:02.510 --> 00:01:02.520 align:start position:0%
+scripts for this. First, attribute
+ 
+
+00:01:02.520 --> 00:01:04.710 align:start position:0%
+scripts for this. First, attribute
+config,<00:01:03.240><c> a</c><00:01:03.320><c> module</c><00:01:03.720><c> script</c><00:01:04.040><c> in</c><00:01:04.160><c> replicated</c>
+
+00:01:04.710 --> 00:01:04.720 align:start position:0%
+config, a module script in replicated
+ 
+
+00:01:04.720 --> 00:01:06.800 align:start position:0%
+config, a module script in replicated
+storage<00:01:05.360><c> that</c><00:01:05.480><c> defines</c><00:01:06.000><c> all</c><00:01:06.240><c> base</c><00:01:06.520><c> stats,</c>
+
+00:01:06.800 --> 00:01:06.810 align:start position:0%
+storage that defines all base stats,
+ 
+
+00:01:06.810 --> 00:01:10.670 align:start position:0%
+storage that defines all base stats,
+[music]<00:01:07.280><c> max</c><00:01:07.600><c> HP,</c><00:01:08.320><c> max</c><00:01:08.640><c> MP,</c><00:01:09.280><c> defense,</c><00:01:10.000><c> speed,</c>
+
+00:01:10.670 --> 00:01:10.680 align:start position:0%
+[music] max HP, max MP, defense, speed,
+ 
+
+00:01:10.680 --> 00:01:12.870 align:start position:0%
+[music] max HP, max MP, defense, speed,
+and<00:01:10.800><c> attack</c><00:01:11.160><c> damage.</c><00:01:11.960><c> It</c><00:01:12.080><c> also</c><00:01:12.320><c> defines</c><00:01:12.760><c> how</c>
+
+00:01:12.870 --> 00:01:12.880 align:start position:0%
+and attack damage. It also defines how
+ 
+
+00:01:12.880 --> 00:01:15.315 align:start position:0%
+and attack damage. It also defines how
+much<00:01:13.200><c> each</c><00:01:13.440><c> stat</c><00:01:13.720><c> grows</c><00:01:14.160><c> per</c><00:01:14.320><c> level.</c><00:01:15.160><c> Second,</c>
+
+00:01:15.315 --> 00:01:15.325 align:start position:0%
+much each stat grows per level. Second,
+ 
+
+00:01:15.325 --> 00:01:15.870 align:start position:0%
+much each stat grows per level. Second,
+[music]
+
+00:01:15.870 --> 00:01:15.880 align:start position:0%
+[music]
+ 
+
+00:01:15.880 --> 00:01:18.270 align:start position:0%
+[music]
+character<00:01:16.320><c> attributes,</c><00:01:17.200><c> a</c><00:01:17.280><c> server</c><00:01:17.680><c> script</c>
+
+00:01:18.270 --> 00:01:18.280 align:start position:0%
+character attributes, a server script
+ 
+
+00:01:18.280 --> 00:01:20.470 align:start position:0%
+character attributes, a server script
+that<00:01:18.520><c> reads</c><00:01:18.800><c> these</c><00:01:19.040><c> values,</c><00:01:19.760><c> applies</c><00:01:20.240><c> them</c><00:01:20.400><c> to</c>
+
+00:01:20.470 --> 00:01:20.480 align:start position:0%
+that reads these values, applies them to
+ 
+
+00:01:20.480 --> 00:01:22.630 align:start position:0%
+that reads these values, applies them to
+the<00:01:20.560><c> character</c><00:01:21.280><c> as</c><00:01:21.480><c> Roblox</c><00:01:22.000><c> attributes</c><00:01:22.520><c> when</c>
+
+00:01:22.630 --> 00:01:22.640 align:start position:0%
+the character as Roblox attributes when
+ 
+
+00:01:22.640 --> 00:01:25.070 align:start position:0%
+the character as Roblox attributes when
+they<00:01:22.760><c> spawn,</c><00:01:23.520><c> and</c><00:01:23.720><c> syncs</c><00:01:24.080><c> HP</c><00:01:24.480><c> to</c><00:01:24.600><c> the</c><00:01:24.680><c> built-in</c>
+
+00:01:25.070 --> 00:01:25.080 align:start position:0%
+they spawn, and syncs HP to the built-in
+ 
+
+00:01:25.080 --> 00:01:27.070 align:start position:0%
+they spawn, and syncs HP to the built-in
+humanoid<00:01:25.800><c> so</c><00:01:25.920><c> the</c><00:01:26.040><c> damage</c><00:01:26.400><c> system</c><00:01:26.760><c> still</c>
+
+00:01:27.070 --> 00:01:27.080 align:start position:0%
+humanoid so the damage system still
+ 
+
+00:01:27.080 --> 00:01:27.760 align:start position:0%
+humanoid so the damage system still
+works.
+
+00:01:27.760 --> 00:01:27.770 align:start position:0%
+works.
+ 
+
+00:01:27.770 --> 00:01:27.870 align:start position:0%
+works.
+&gt;&gt; [music]
+
+00:01:27.870 --> 00:01:27.880 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:01:27.880 --> 00:01:30.230 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; And<00:01:28.080><c> third,</c><00:01:28.680><c> HUD</c><00:01:28.920><c> controller,</c><00:01:29.800><c> a</c><00:01:29.880><c> local</c>
+
+00:01:30.230 --> 00:01:30.240 align:start position:0%
+&gt;&gt; And third, HUD controller, a local
+ 
+
+00:01:30.240 --> 00:01:32.350 align:start position:0%
+&gt;&gt; And third, HUD controller, a local
+script<00:01:30.560><c> that</c><00:01:30.760><c> listens</c><00:01:31.120><c> for</c><00:01:31.240><c> stat</c><00:01:31.520><c> changes</c><00:01:32.160><c> and</c>
+
+00:01:32.350 --> 00:01:32.360 align:start position:0%
+script that listens for stat changes and
+ 
+
+00:01:32.360 --> 00:01:34.150 align:start position:0%
+script that listens for stat changes and
+updates<00:01:32.800><c> the</c><00:01:32.880><c> bars</c><00:01:33.240><c> in</c><00:01:33.440><c> real</c><00:01:33.680><c> time</c><00:01:34.000><c> with</c>
+
+00:01:34.150 --> 00:01:34.160 align:start position:0%
+updates the bars in real time with
+ 
+
+00:01:34.160 --> 00:01:36.070 align:start position:0%
+updates the bars in real time with
+smooth<00:01:34.560><c> tween</c><00:01:34.840><c> animations.</c>
+
+00:01:36.070 --> 00:01:36.080 align:start position:0%
+smooth tween animations.
+ 
+
+00:01:36.080 --> 00:01:37.950 align:start position:0%
+smooth tween animations.
+Once<00:01:36.360><c> the</c><00:01:36.480><c> attributes</c><00:01:36.960><c> were</c><00:01:37.080><c> working,</c><00:01:37.760><c> we</c>
+
+00:01:37.950 --> 00:01:37.960 align:start position:0%
+Once the attributes were working, we
+ 
+
+00:01:37.960 --> 00:01:40.630 align:start position:0%
+Once the attributes were working, we
+added<00:01:38.200><c> the</c><00:01:38.360><c> XP</c><00:01:38.880><c> and</c><00:01:39.000><c> leveling</c><00:01:39.360><c> system.</c><00:01:40.320><c> Claude</c>
+
+00:01:40.630 --> 00:01:40.640 align:start position:0%
+added the XP and leveling system. Claude
+ 
+
+00:01:40.640 --> 00:01:42.950 align:start position:0%
+added the XP and leveling system. Claude
+designed<00:01:40.960><c> an</c><00:01:41.120><c> XP</c><00:01:41.520><c> curve</c><00:01:41.800><c> using</c><00:01:42.040><c> a</c><00:01:42.120><c> formula,</c>
+
+00:01:42.950 --> 00:01:42.960 align:start position:0%
+designed an XP curve using a formula,
+ 
+
+00:01:42.960 --> 00:01:45.350 align:start position:0%
+designed an XP curve using a formula,
+base<00:01:43.280><c> XP</c><00:01:43.640><c> multiplied</c><00:01:44.160><c> by</c><00:01:44.280><c> level</c><00:01:44.800><c> to</c><00:01:44.920><c> the</c><00:01:45.000><c> power</c>
+
+00:01:45.350 --> 00:01:45.360 align:start position:0%
+base XP multiplied by level to the power
+ 
+
+00:01:45.360 --> 00:01:48.470 align:start position:0%
+base XP multiplied by level to the power
+of<00:01:45.480><c> 1.5.</c><00:01:46.760><c> So,</c><00:01:47.000><c> early</c><00:01:47.320><c> levels</c><00:01:47.600><c> are</c><00:01:47.800><c> easy,</c><00:01:48.360><c> but</c>
+
+00:01:48.470 --> 00:01:48.480 align:start position:0%
+of 1.5. So, early levels are easy, but
+ 
+
+00:01:48.480 --> 00:01:50.031 align:start position:0%
+of 1.5. So, early levels are easy, but
+it<00:01:48.640><c> scales</c><00:01:49.080><c> up</c><00:01:49.240><c> naturally.</c>
+
+00:01:50.031 --> 00:01:50.041 align:start position:0%
+it scales up naturally.
+ 
+
+00:01:50.041 --> 00:01:50.270 align:start position:0%
+it scales up naturally.
+&gt;&gt; [music]
+
+00:01:50.270 --> 00:01:50.280 align:start position:0%
+&gt;&gt; [music]
+ 
+
+00:01:50.280 --> 00:01:52.230 align:start position:0%
+&gt;&gt; [music]
+&gt;&gt; When<00:01:50.440><c> you</c><00:01:50.560><c> earn</c><00:01:50.760><c> enough</c><00:01:51.000><c> XP,</c><00:01:51.680><c> the</c><00:01:51.800><c> server</c>
+
+00:01:52.230 --> 00:01:52.240 align:start position:0%
+&gt;&gt; When you earn enough XP, the server
+ 
+
+00:01:52.240 --> 00:01:53.830 align:start position:0%
+&gt;&gt; When you earn enough XP, the server
+automatically<00:01:52.840><c> levels</c><00:01:53.200><c> you</c><00:01:53.320><c> up,</c>
+
+00:01:53.830 --> 00:01:53.840 align:start position:0%
+automatically levels you up,
+ 
+
+00:01:53.840 --> 00:01:55.830 align:start position:0%
+automatically levels you up,
+recalculates<00:01:54.560><c> all</c><00:01:54.680><c> your</c><00:01:54.800><c> stats,</c><00:01:55.480><c> gives</c><00:01:55.680><c> you</c><00:01:55.800><c> a</c>
+
+00:01:55.830 --> 00:01:55.840 align:start position:0%
+recalculates all your stats, gives you a
+ 
+
+00:01:55.840 --> 00:01:58.270 align:start position:0%
+recalculates all your stats, gives you a
+partial<00:01:56.280><c> HP</c><00:01:56.640><c> and</c><00:01:56.760><c> MP</c><00:01:57.000><c> restore,</c><00:01:57.720><c> and</c><00:01:57.880><c> fires</c><00:01:58.240><c> a</c>
+
+00:01:58.270 --> 00:01:58.280 align:start position:0%
+partial HP and MP restore, and fires a
+ 
+
+00:01:58.280 --> 00:02:00.670 align:start position:0%
+partial HP and MP restore, and fires a
+level<00:01:58.640><c> up</c><00:01:58.760><c> remote</c><00:01:59.040><c> event</c><00:01:59.360><c> to</c><00:01:59.440><c> the</c><00:01:59.520><c> client.</c>
+
+00:02:00.670 --> 00:02:00.680 align:start position:0%
+level up remote event to the client.
+ 
+
+00:02:00.680 --> 00:02:03.470 align:start position:0%
+level up remote event to the client.
+We<00:02:00.840><c> also</c><00:02:01.120><c> added</c><00:02:01.400><c> an</c><00:02:01.560><c> XP</c><00:02:01.960><c> bar</c><00:02:02.200><c> below</c><00:02:02.520><c> the</c><00:02:02.680><c> MP</c><00:02:03.000><c> bar</c>
+
+00:02:03.470 --> 00:02:03.480 align:start position:0%
+We also added an XP bar below the MP bar
+ 
+
+00:02:03.480 --> 00:02:05.030 align:start position:0%
+We also added an XP bar below the MP bar
+that<00:02:03.680><c> tweens</c><00:02:04.080><c> smoothly</c><00:02:04.560><c> as</c><00:02:04.720><c> you</c><00:02:04.800><c> gain</c>
+
+00:02:05.030 --> 00:02:05.040 align:start position:0%
+that tweens smoothly as you gain
+ 
+
+00:02:05.040 --> 00:02:06.950 align:start position:0%
+that tweens smoothly as you gain
+experience.
+
+00:02:06.950 --> 00:02:06.960 align:start position:0%
+experience.
+ 
+
+00:02:06.960 --> 00:02:09.910 align:start position:0%
+experience.
+One<00:02:07.360><c> issue</c><00:02:08.080><c> is</c><00:02:08.240><c> the</c><00:02:08.399><c> HP</c><00:02:08.880><c> bar</c><00:02:09.160><c> color</c><00:02:09.520><c> is</c><00:02:09.679><c> so</c>
+
+00:02:09.910 --> 00:02:09.920 align:start position:0%
+One issue is the HP bar color is so
+ 
+
+00:02:09.920 --> 00:02:19.510 align:start position:0%
+One issue is the HP bar color is so
+dark,<00:02:10.880><c> so</c><00:02:11.120><c> I</c><00:02:11.240><c> asked</c><00:02:11.560><c> Claude</c><00:02:12.000><c> to</c><00:02:12.120><c> fix</c><00:02:12.440><c> it.</c>
+
+00:02:19.510 --> 00:02:19.520 align:start position:0%
+ 
+ 
+
+00:02:19.520 --> 00:02:21.950 align:start position:0%
+ 
+After<00:02:19.800><c> the</c><00:02:19.920><c> bars,</c><00:02:20.480><c> we</c><00:02:20.640><c> added</c><00:02:20.880><c> a</c><00:02:20.960><c> stats</c><00:02:21.360><c> panel,</c>
+
+00:02:21.950 --> 00:02:21.960 align:start position:0%
+After the bars, we added a stats panel,
+ 
+
+00:02:21.960 --> 00:02:24.350 align:start position:0%
+After the bars, we added a stats panel,
+a<00:02:22.040><c> togglable</c><00:02:22.680><c> UI</c><00:02:23.280><c> that</c><00:02:23.440><c> shows</c><00:02:23.800><c> all</c><00:02:24.040><c> five</c>
+
+00:02:24.350 --> 00:02:24.360 align:start position:0%
+a togglable UI that shows all five
+ 
+
+00:02:24.360 --> 00:02:27.270 align:start position:0%
+a togglable UI that shows all five
+character<00:02:24.720><c> stats,</c><00:02:25.360><c> attack,</c><00:02:26.000><c> defense,</c><00:02:26.600><c> speed,</c>
+
+00:02:27.270 --> 00:02:27.280 align:start position:0%
+character stats, attack, defense, speed,
+ 
+
+00:02:27.280 --> 00:02:30.270 align:start position:0%
+character stats, attack, defense, speed,
+max<00:02:27.600><c> HP,</c><00:02:28.240><c> and</c><00:02:28.360><c> max</c><00:02:28.600><c> MP.</c><00:02:29.360><c> Each</c><00:02:29.600><c> stat</c><00:02:29.960><c> has</c><00:02:30.120><c> its</c>
+
+00:02:30.270 --> 00:02:30.280 align:start position:0%
+max HP, and max MP. Each stat has its
+ 
+
+00:02:30.280 --> 00:02:32.550 align:start position:0%
+max HP, and max MP. Each stat has its
+own<00:02:30.440><c> colored</c><00:02:30.800><c> icon,</c><00:02:31.440><c> value</c><00:02:31.840><c> label,</c><00:02:32.400><c> and</c><00:02:32.520><c> a</c>
+
+00:02:32.550 --> 00:02:32.560 align:start position:0%
+own colored icon, value label, and a
+ 
+
+00:02:32.560 --> 00:02:33.910 align:start position:0%
+own colored icon, value label, and a
+mini<00:02:32.840><c> progress</c><00:02:33.280><c> bar</c><00:02:33.440><c> that</c><00:02:33.640><c> fills</c>
+
+00:02:33.910 --> 00:02:33.920 align:start position:0%
+mini progress bar that fills
+ 
+
+00:02:33.920 --> 00:02:35.950 align:start position:0%
+mini progress bar that fills
+proportionally.<00:02:35.120><c> You</c><00:02:35.240><c> click</c><00:02:35.480><c> the</c><00:02:35.600><c> stats</c>
+
+00:02:35.950 --> 00:02:35.960 align:start position:0%
+proportionally. You click the stats
+ 
+
+00:02:35.960 --> 00:02:38.070 align:start position:0%
+proportionally. You click the stats
+button<00:02:36.240><c> below</c><00:02:36.480><c> the</c><00:02:36.640><c> HP</c><00:02:36.960><c> bar</c><00:02:37.440><c> to</c><00:02:37.600><c> open</c><00:02:37.880><c> it</c><00:02:37.960><c> with</c>
+
+00:02:38.070 --> 00:02:38.080 align:start position:0%
+button below the HP bar to open it with
+ 
+
+00:02:38.080 --> 00:02:40.190 align:start position:0%
+button below the HP bar to open it with
+a<00:02:38.120><c> slide</c><00:02:38.440><c> animation,</c><00:02:39.280><c> and</c><00:02:39.400><c> it</c><00:02:39.520><c> refreshes</c><00:02:40.040><c> in</c>
+
+00:02:40.190 --> 00:02:40.200 align:start position:0%
+a slide animation, and it refreshes in
+ 
+
+00:02:40.200 --> 00:02:42.550 align:start position:0%
+a slide animation, and it refreshes in
+real<00:02:40.440><c> time</c><00:02:41.040><c> whenever</c><00:02:41.360><c> a</c><00:02:41.400><c> stat</c><00:02:41.760><c> changes,</c>
+
+00:02:42.550 --> 00:02:42.560 align:start position:0%
+real time whenever a stat changes,
+ 
+
+00:02:42.560 --> 00:02:44.430 align:start position:0%
+real time whenever a stat changes,
+including<00:02:43.040><c> after</c><00:02:43.280><c> level</c><00:02:43.560><c> ups.</c>
+
+00:02:44.430 --> 00:02:44.440 align:start position:0%
+including after level ups.
+ 
+
+00:02:44.440 --> 00:02:46.510 align:start position:0%
+including after level ups.
+The<00:02:44.560><c> whole</c><00:02:44.800><c> panel</c><00:02:45.160><c> matches</c><00:02:45.600><c> the</c><00:02:45.720><c> dark</c><00:02:46.120><c> purple</c>
+
+00:02:46.510 --> 00:02:46.520 align:start position:0%
+The whole panel matches the dark purple
+ 
+
+00:02:46.520 --> 00:02:49.190 align:start position:0%
+The whole panel matches the dark purple
+RPG<00:02:47.000><c> aesthetic</c><00:02:47.680><c> of</c><00:02:47.760><c> the</c><00:02:47.880><c> rest</c><00:02:48.120><c> of</c><00:02:48.200><c> the</c><00:02:48.280><c> HUD.</c>
+
+00:02:49.190 --> 00:02:49.200 align:start position:0%
+RPG aesthetic of the rest of the HUD.
+ 
+
+00:02:49.200 --> 00:02:51.230 align:start position:0%
+RPG aesthetic of the rest of the HUD.
+Now<00:02:49.400><c> for</c><00:02:49.520><c> the</c><00:02:49.600><c> fun</c><00:02:49.840><c> part,</c><00:02:50.520><c> enemies.</c><00:02:50.956><c> [music]</c>
+
+00:02:51.230 --> 00:02:51.240 align:start position:0%
+Now for the fun part, enemies. [music]
+ 
+
+00:02:51.240 --> 00:02:53.070 align:start position:0%
+Now for the fun part, enemies. [music]
+We<00:02:51.400><c> built</c><00:02:51.640><c> a</c><00:02:51.720><c> full</c><00:02:52.080><c> enemy</c><00:02:52.360><c> system</c><00:02:52.720><c> with</c><00:02:52.880><c> four</c>
+
+00:02:53.070 --> 00:02:53.080 align:start position:0%
+We built a full enemy system with four
+ 
+
+00:02:53.080 --> 00:02:56.150 align:start position:0%
+We built a full enemy system with four
+types,<00:02:53.760><c> slime,</c><00:02:54.520><c> goblin,</c><00:02:55.120><c> skeleton,</c><00:02:55.760><c> and</c><00:02:55.920><c> dark</c>
+
+00:02:56.150 --> 00:02:56.160 align:start position:0%
+types, slime, goblin, skeleton, and dark
+ 
+
+00:02:56.160 --> 00:02:57.710 align:start position:0%
+types, slime, goblin, skeleton, and dark
+knight.<00:02:56.800><c> Each</c><00:02:57.040><c> enemy</c><00:02:57.320><c> is</c><00:02:57.440><c> built</c>
+
+00:02:57.710 --> 00:02:57.720 align:start position:0%
+knight. Each enemy is built
+ 
+
+00:02:57.720 --> 00:03:00.430 align:start position:0%
+knight. Each enemy is built
+procedurally,<00:02:58.720><c> no</c><00:02:58.960><c> models</c><00:02:59.360><c> needed.</c><00:03:00.000><c> Claude</c>
+
+00:03:00.430 --> 00:03:00.440 align:start position:0%
+procedurally, no models needed. Claude
+ 
+
+00:03:00.440 --> 00:03:03.390 align:start position:0%
+procedurally, no models needed. Claude
+generated<00:03:00.960><c> the</c><00:03:01.080><c> body</c><00:03:01.400><c> parts,</c><00:03:02.080><c> eyes,</c><00:03:02.680><c> welds,</c>
+
+00:03:03.390 --> 00:03:03.400 align:start position:0%
+generated the body parts, eyes, welds,
+ 
+
+00:03:03.400 --> 00:03:05.190 align:start position:0%
+generated the body parts, eyes, welds,
+humanoid,<00:03:04.040><c> and</c><00:03:04.160><c> a</c><00:03:04.200><c> billboard</c><00:03:04.760><c> health</c><00:03:05.000><c> bar</c>
+
+00:03:05.190 --> 00:03:05.200 align:start position:0%
+humanoid, and a billboard health bar
+ 
+
+00:03:05.200 --> 00:03:07.430 align:start position:0%
+humanoid, and a billboard health bar
+that<00:03:05.400><c> floats</c><00:03:05.720><c> above</c><00:03:06.080><c> each</c><00:03:06.280><c> enemy.</c><00:03:07.160><c> Then</c><00:03:07.320><c> it</c>
+
+00:03:07.430 --> 00:03:07.440 align:start position:0%
+that floats above each enemy. Then it
+ 
+
+00:03:07.440 --> 00:03:09.630 align:start position:0%
+that floats above each enemy. Then it
+wrote<00:03:07.600><c> an</c><00:03:07.800><c> AI</c><00:03:08.080><c> script</c><00:03:08.480><c> with</c><00:03:08.640><c> three</c><00:03:08.880><c> states,</c>
+
+00:03:09.630 --> 00:03:09.640 align:start position:0%
+wrote an AI script with three states,
+ 
+
+00:03:09.640 --> 00:03:12.430 align:start position:0%
+wrote an AI script with three states,
+patrol,<00:03:10.400><c> chase,</c><00:03:11.000><c> and</c><00:03:11.120><c> attack.</c><00:03:12.040><c> When</c><00:03:12.160><c> you</c><00:03:12.280><c> get</c>
+
+00:03:12.430 --> 00:03:12.440 align:start position:0%
+patrol, chase, and attack. When you get
+ 
+
+00:03:12.440 --> 00:03:14.630 align:start position:0%
+patrol, chase, and attack. When you get
+within<00:03:12.760><c> aggro</c><00:03:13.160><c> range,</c><00:03:13.720><c> the</c><00:03:13.880><c> enemy</c><00:03:14.200><c> starts</c>
+
+00:03:14.630 --> 00:03:14.640 align:start position:0%
+within aggro range, the enemy starts
+ 
+
+00:03:14.640 --> 00:03:16.670 align:start position:0%
+within aggro range, the enemy starts
+chasing<00:03:15.040><c> you.</c><00:03:15.640><c> When</c><00:03:15.760><c> you're</c><00:03:15.880><c> close</c><00:03:16.160><c> enough,</c>
+
+00:03:16.670 --> 00:03:16.680 align:start position:0%
+chasing you. When you're close enough,
+ 
+
+00:03:16.680 --> 00:03:18.710 align:start position:0%
+chasing you. When you're close enough,
+it<00:03:16.800><c> attacks,</c><00:03:17.680><c> and</c><00:03:17.800><c> your</c><00:03:17.920><c> defense</c><00:03:18.360><c> stat</c>
+
+00:03:18.710 --> 00:03:18.720 align:start position:0%
+it attacks, and your defense stat
+ 
+
+00:03:18.720 --> 00:03:20.870 align:start position:0%
+it attacks, and your defense stat
+actually<00:03:19.120><c> reduces</c><00:03:19.600><c> the</c><00:03:19.680><c> damage.</c><00:03:20.600><c> When</c><00:03:20.760><c> you</c>
+
+00:03:20.870 --> 00:03:20.880 align:start position:0%
+actually reduces the damage. When you
+ 
+
+00:03:20.880 --> 00:03:22.550 align:start position:0%
+actually reduces the damage. When you
+kill<00:03:21.080><c> it,</c><00:03:21.440><c> it</c><00:03:21.560><c> plays</c><00:03:21.800><c> a</c><00:03:21.880><c> shrink</c><00:03:22.280><c> death</c>
+
+00:03:22.550 --> 00:03:22.560 align:start position:0%
+kill it, it plays a shrink death
+ 
+
+00:03:22.560 --> 00:03:24.950 align:start position:0%
+kill it, it plays a shrink death
+animation,<00:03:23.360><c> awards</c><00:03:23.760><c> you</c><00:03:23.880><c> XP</c><00:03:24.600><c> using</c><00:03:24.880><c> the</c>
+
+00:03:24.950 --> 00:03:24.960 align:start position:0%
+animation, awards you XP using the
+ 
+
+00:03:24.960 --> 00:03:27.110 align:start position:0%
+animation, awards you XP using the
+system<00:03:25.320><c> we</c><00:03:25.440><c> built</c><00:03:25.720><c> earlier,</c><00:03:26.360><c> and</c><00:03:26.520><c> respawns</c>
+
+00:03:27.110 --> 00:03:27.120 align:start position:0%
+system we built earlier, and respawns
+ 
+
+00:03:27.120 --> 00:03:29.710 align:start position:0%
+system we built earlier, and respawns
+after<00:03:27.440><c> 8</c><00:03:27.600><c> seconds.</c><00:03:28.560><c> We</c><00:03:28.720><c> also</c><00:03:29.000><c> added</c><00:03:29.320><c> floating</c>
+
+00:03:29.710 --> 00:03:29.720 align:start position:0%
+after 8 seconds. We also added floating
+ 
+
+00:03:29.720 --> 00:03:31.830 align:start position:0%
+after 8 seconds. We also added floating
+damage<00:03:30.120><c> numbers</c><00:03:30.680><c> that</c><00:03:30.800><c> appear</c><00:03:31.120><c> above</c><00:03:31.480><c> enemies</c>
+
+00:03:31.830 --> 00:03:31.840 align:start position:0%
+damage numbers that appear above enemies
+ 
+
+00:03:31.840 --> 00:03:33.550 align:start position:0%
+damage numbers that appear above enemies
+when<00:03:31.960><c> they</c><00:03:32.040><c> take</c><00:03:32.320><c> hits,</c><00:03:32.920><c> and</c><00:03:33.120><c> golden</c><00:03:33.532><c> [music]</c>
+
+00:03:33.550 --> 00:03:33.560 align:start position:0%
+when they take hits, and golden [music]
+ 
+
+00:03:33.560 --> 00:03:35.750 align:start position:0%
+when they take hits, and golden [music]
+plus<00:03:33.880><c> XP</c><00:03:34.240><c> text</c><00:03:34.840><c> that</c><00:03:35.040><c> floats</c><00:03:35.360><c> above</c><00:03:35.640><c> your</c>
+
+00:03:35.750 --> 00:03:35.760 align:start position:0%
+plus XP text that floats above your
+ 
+
+00:03:35.760 --> 00:03:38.190 align:start position:0%
+plus XP text that floats above your
+character<00:03:36.440><c> when</c><00:03:36.600><c> you</c><00:03:36.720><c> earn</c><00:03:36.920><c> experience.</c>
+
+00:03:38.190 --> 00:03:38.200 align:start position:0%
+character when you earn experience.
+ 
+
+00:03:38.200 --> 00:03:40.110 align:start position:0%
+character when you earn experience.
+And<00:03:38.320><c> that's</c><00:03:38.560><c> the</c><00:03:38.680><c> full</c><00:03:38.920><c> system,</c><00:03:39.720><c> character</c>
+
+00:03:40.110 --> 00:03:40.120 align:start position:0%
+And that's the full system, character
+ 
+
+00:03:40.120 --> 00:03:42.510 align:start position:0%
+And that's the full system, character
+attributes,<00:03:40.960><c> XP</c><00:03:41.360><c> and</c><00:03:41.480><c> leveling,</c><00:03:42.080><c> a</c><00:03:42.160><c> stats</c>
+
+00:03:42.510 --> 00:03:42.520 align:start position:0%
+attributes, XP and leveling, a stats
+ 
+
+00:03:42.520 --> 00:03:45.550 align:start position:0%
+attributes, XP and leveling, a stats
+panel,<00:03:43.120><c> and</c><00:03:43.320><c> enemy</c><00:03:43.600><c> NPCs</c><00:03:44.120><c> with</c><00:03:44.320><c> real</c><00:03:44.640><c> AI,</c><00:03:45.360><c> all</c>
+
+00:03:45.550 --> 00:03:45.560 align:start position:0%
+panel, and enemy NPCs with real AI, all
+ 
+
+00:03:45.560 --> 00:03:47.430 align:start position:0%
+panel, and enemy NPCs with real AI, all
+built<00:03:45.800><c> with</c><00:03:45.960><c> Claude</c><00:03:46.280><c> as</c><00:03:46.440><c> the</c><00:03:46.520><c> co-developer</c>
+
+00:03:47.430 --> 00:03:47.440 align:start position:0%
+built with Claude as the co-developer
+ 
+
+00:03:47.440 --> 00:03:49.870 align:start position:0%
+built with Claude as the co-developer
+directly<00:03:48.000><c> inside</c><00:03:48.440><c> Roblox</c><00:03:48.840><c> Studio.</c>
+
+00:03:49.870 --> 00:03:49.880 align:start position:0%
+directly inside Roblox Studio.
+ 
+
+00:03:49.880 --> 00:03:51.190 align:start position:0%
+directly inside Roblox Studio.
+If<00:03:50.000><c> you</c><00:03:50.120><c> want</c><00:03:50.240><c> to</c><00:03:50.320><c> see</c><00:03:50.440><c> the</c><00:03:50.560><c> next</c><00:03:50.840><c> part</c><00:03:51.080><c> where</c>
+
+00:03:51.190 --> 00:03:51.200 align:start position:0%
+If you want to see the next part where
+ 
+
+00:03:51.200 --> 00:03:52.910 align:start position:0%
+If you want to see the next part where
+we<00:03:51.220><c> [music]</c><00:03:51.320><c> add</c><00:03:51.520><c> combat</c><00:03:51.960><c> animations</c><00:03:52.760><c> and</c><00:03:52.880><c> a</c>
+
+00:03:52.910 --> 00:03:52.920 align:start position:0%
+we [music] add combat animations and a
+ 
+
+00:03:52.920 --> 00:03:55.070 align:start position:0%
+we [music] add combat animations and a
+damage<00:03:53.280><c> system,</c><00:03:53.960><c> subscribe</c><00:03:54.640><c> and</c><00:03:54.760><c> drop</c><00:03:55.000><c> a</c>
+
+00:03:55.070 --> 00:03:55.080 align:start position:0%
+damage system, subscribe and drop a
+ 
+
+00:03:55.080 --> 00:03:57.430 align:start position:0%
+damage system, subscribe and drop a
+comment<00:03:55.400><c> below.</c><00:03:56.280><c> Links</c><00:03:56.560><c> to</c><00:03:56.720><c> everything</c><00:03:57.240><c> are</c>
+
+00:03:57.430 --> 00:03:57.440 align:start position:0%
+comment below. Links to everything are
+ 
+
+00:03:57.440 --> 00:04:00.360 align:start position:0%
+comment below. Links to everything are
+in<00:03:57.600><c> the</c><00:03:57.680><c> description.</c>
+

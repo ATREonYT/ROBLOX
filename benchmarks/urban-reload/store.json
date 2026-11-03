@@ -1,0 +1,72 @@
+{
+  "folder": "urban-reload",
+  "universeId": 10769552054,
+  "rootPlaceId": 84448037861644,
+  "name": "[🎃] Urban Reload",
+  "creator": "Squad Labs (Group 726956795)",
+  "playing": 11710,
+  "visits": 8297218,
+  "favorites": 21591,
+  "maxPlayers": 20,
+  "created": "2026-10-05T22:54:16Z",
+  "updated": "2026-11-02T20:29:03Z",
+  "genre": "Action / Open World Action",
+  "avatarType": "MorphToR15",
+  "upVotes": 11250,
+  "downVotes": 1917,
+  "url": "https://www.roblox.com/games/84448037861644/Urban-Reload",
+  "note": "The place id in the brief (10769552054) is actually Urban Reload's UNIVERSE id; as a place id it points to an unrelated empty starter place. Real root place: 84448037861644.",
+  "description": "Welcome to Urban Reload 💀\n\n🏙️ Tactical PvP in a city where every street is a fight.\n\n⚔️ Take on other players in intense gunfights\n💀 You lose your weapons, so play smart\n🎒 Take down enemies and loot their guns\n🧟 Farm to grind cash fast\n💥 Realistic guns, attachments and rare camos\n🚗 Unlock and customize your own cars\n👥 Create a crew and dominate together\n🏆 Climb the global leaderboards\n\n🔔 New updates coming regularly!",
+  "gamePasses": [
+    {
+      "id": 2041604814,
+      "name": "Starter Pack",
+      "price": 99,
+      "isForSale": true,
+      "description": ""
+    },
+    {
+      "id": 2040634923,
+      "name": "Skip case animation (Permanent)",
+      "price": 499,
+      "isForSale": true,
+      "description": ""
+    },
+    {
+      "id": 2037803497,
+      "name": "Crew Create",
+      "price": 299,
+      "isForSale": true,
+      "description": ""
+    },
+    {
+      "id": 2053769106,
+      "name": "Crew + Clan",
+      "price": 799,
+      "isForSale": true,
+      "description": ""
+    },
+    {
+      "id": 2054267054,
+      "name": "Clan",
+      "price": 499,
+      "isForSale": true,
+      "description": ""
+    },
+    {
+      "id": 2060765103,
+      "name": "+10 Safe",
+      "price": null,
+      "isForSale": false,
+      "description": "+10 cases in your inventory"
+    },
+    {
+      "id": 2036990661,
+      "name": "Beta Pack",
+      "price": null,
+      "isForSale": false,
+      "description": ""
+    }
+  ],
+  "likeRatio": 85.4
+}

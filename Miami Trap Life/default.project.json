@@ -1,0 +1,21 @@
+{
+  "name": "MiamiTrapLife",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$ignoreUnknownInstances": true,
+      "MTL": { "$path": "src/ReplicatedStorage/MTL" }
+    },
+    "ServerScriptService": {
+      "$ignoreUnknownInstances": true,
+      "MTL": { "$path": "src/ServerScriptService/MTL" }
+    },
+    "StarterPlayer": {
+      "$ignoreUnknownInstances": true,
+      "StarterPlayerScripts": {
+        "$ignoreUnknownInstances": true,
+        "MTL": { "$path": "src/StarterPlayer/StarterPlayerScripts/MTL" }
+      }
+    }
+  }
+}

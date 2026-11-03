@@ -1,0 +1,362 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.174 --> 00:00:04.514
+In this video tutorial, I'm going
+to be showing you how to connect
+
+00:00:04.564 --> 00:00:09.384
+Claude to Blender to have Claude
+help you build things within Blender.
+
+00:00:09.514 --> 00:00:11.693
+First things first, make
+sure you are running the most
+
+00:00:11.713 --> 00:00:13.443
+up-to-date version of Blender.
+
+00:00:13.443 --> 00:00:16.743
+You can open the Blender app,
+go into the settings here, go to
+
+00:00:16.783 --> 00:00:20.884
+About Blender, and it will tell
+you what version you are running.
+
+00:00:21.184 --> 00:00:24.403
+This will work on any version
+of Blender, whatever operating
+
+00:00:24.404 --> 00:00:26.093
+system that you are using.
+
+00:00:26.293 --> 00:00:31.073
+You wanna start over in Claude, and
+once you're here, I want you to go up
+
+00:00:31.073 --> 00:00:36.163
+to Claude in the settings and go to
+the option here that says Connectors.
+
+00:00:36.203 --> 00:00:40.033
+Under Customize, it says Connectors,
+and this is where we will add the
+
+00:00:40.063 --> 00:00:43.284
+connection from Claude over to Blender.
+
+00:00:43.303 --> 00:00:47.314
+So go ahead and go to Connectors
+here under Settings, go to Add,
+
+00:00:47.323 --> 00:00:49.044
+and then go to Browse Connectors.
+
+00:00:49.284 --> 00:00:52.833
+Then type in the search box
+and type in the word Blender.
+
+00:00:53.034 --> 00:00:57.583
+You should see the Blender logo here,
+and then click the addition symbol
+
+00:00:57.583 --> 00:01:00.103
+to add that, and then go to Install.
+
+00:01:00.383 --> 00:01:03.613
+Once you've installed it, you may
+have to click Install one more time
+
+00:01:03.613 --> 00:01:08.363
+for confirmation, and you'll see the
+process here with a little progress bar.
+
+00:01:08.534 --> 00:01:12.303
+Once it is installed, I want you
+to click the link button right here
+
+00:01:12.333 --> 00:01:14.014
+next to the Install button there.
+
+00:01:14.014 --> 00:01:18.043
+Make sure that shows as a check mark,
+and then go ahead and make sure it
+
+00:01:18.043 --> 00:01:19.843
+is enabled and over to the right.
+
+00:01:20.053 --> 00:01:24.933
+Then you can click on Configure to see all
+of the different things and abilities that
+
+00:01:24.943 --> 00:01:27.973
+Blender has and how you want it to work.
+
+00:01:28.133 --> 00:01:32.164
+If you click the hand icon next
+to a permission, that means that
+
+00:01:32.164 --> 00:01:36.234
+it has to ask you first before
+it goes and does the action.
+
+00:01:36.424 --> 00:01:40.244
+If you have this set to a check mark
+like this one here, Get Blend File
+
+00:01:40.253 --> 00:01:44.753
+Data Block Summary, this means that
+it will always allow it automatically.
+
+00:01:44.813 --> 00:01:49.673
+Just to be safe, you may wanna just
+select the hand icon here to bring up
+
+00:01:49.683 --> 00:01:53.303
+that prompt to say, "Hey, I want to
+allow it to do this," so it doesn't
+
+00:01:53.303 --> 00:01:57.433
+mess up a project that you've already
+been working on for hours at a time.
+
+00:01:57.813 --> 00:02:00.983
+The next thing you wanna do is
+open up a new browser tab or Google
+
+00:02:00.983 --> 00:02:03.613
+and go and search for Blender MCP.
+
+00:02:03.753 --> 00:02:07.783
+Once you've done that, you'll see the
+top option that says MCP Server, and
+
+00:02:07.784 --> 00:02:09.903
+it'll have the Blender icon or logo.
+
+00:02:10.144 --> 00:02:11.054
+Click onto that.
+
+00:02:11.133 --> 00:02:15.263
+Then I want you to scroll down to where
+you see the section that says Add-on.
+
+00:02:15.926 --> 00:02:19.716
+I want you to go and download
+this add-on, so click Download.
+
+00:02:19.746 --> 00:02:21.676
+You'll see it here in Chrome.
+
+00:02:21.706 --> 00:02:23.176
+It shows as a download.
+
+00:02:23.226 --> 00:02:24.236
+Do not open it.
+
+00:02:24.256 --> 00:02:26.465
+What I want you to do
+is find that download.
+
+00:02:26.516 --> 00:02:27.616
+Don't extract it.
+
+00:02:27.626 --> 00:02:28.406
+Don't open it.
+
+00:02:28.445 --> 00:02:31.585
+I want you to click and hold
+and drag that into Blender.
+
+00:02:31.876 --> 00:02:37.896
+When you do so, you will see this box
+here, Install from Disk, User Default.
+
+00:02:38.136 --> 00:02:39.766
+Go ahead and click OK.
+
+00:02:40.236 --> 00:02:43.986
+To confirm in Blender that you've
+done everything correctly, go to
+
+00:02:43.986 --> 00:02:48.345
+the Edit option in the menu bar
+like so, and go to Preferences.
+
+00:02:48.755 --> 00:02:52.896
+Once here, under Preferences, I want
+you to go to Add-ons, and then under the
+
+00:02:52.906 --> 00:02:58.156
+Search Add-on box here, type in MCP, and
+you should see where it says MCP, and
+
+00:02:58.156 --> 00:02:59.925
+there should be a check mark next to it.
+
+00:03:00.095 --> 00:03:04.115
+At this point, if you don't see it or
+it's not working, make sure the box is
+
+00:03:04.125 --> 00:03:06.485
+checked, and then just drag it once more.
+
+00:03:06.485 --> 00:03:09.185
+Sometimes you have to drag
+it twice or even three times
+
+00:03:09.255 --> 00:03:10.775
+to get it to work properly.
+
+00:03:10.925 --> 00:03:13.755
+Just follow the previous steps
+and you should be good to go.
+
+00:03:14.075 --> 00:03:17.275
+All right, now let's test and
+make sure everything is working.
+
+00:03:17.275 --> 00:03:19.705
+As you can see on the left
+here, we have Blender.
+
+00:03:19.726 --> 00:03:21.036
+On the right, we have Claude.
+
+00:03:21.235 --> 00:03:23.845
+The first thing I'm gonna do is ask
+it, are you connected to Blender?
+
+00:03:24.295 --> 00:03:27.956
+Something else you may have to do once
+you've asked it, is it connected to
+
+00:03:27.956 --> 00:03:30.025
+Blender, is actually start the server.
+
+00:03:30.025 --> 00:03:32.935
+It may give you this when you ask
+it, are you connected to Blender.
+
+00:03:33.115 --> 00:03:38.325
+You go back to Preferences, Add-ons,
+search for MCP, and then expand the option
+
+00:03:38.335 --> 00:03:41.435
+here and go to Start MCP Bridge Server.
+
+00:03:41.685 --> 00:03:45.615
+And then as you can see, it says online
+access must be enabled in the System
+
+00:03:45.615 --> 00:03:51.204
+Preferences And then what you want to do
+is go to Edit, and then go to Preferences,
+
+00:03:51.244 --> 00:03:55.924
+and then under System here where it
+says Network, go to Allow Online Access.
+
+00:03:56.184 --> 00:04:01.323
+Then you go back to add-ons, search
+for MCP, and go to Start MCP Bridge
+
+00:04:01.323 --> 00:04:03.313
+Server, and you should be good to go.
+
+00:04:03.613 --> 00:04:06.924
+Now I've asked Claude again, "Are
+you connected to Blender?" after
+
+00:04:06.924 --> 00:04:10.464
+doing those things, and it should
+say, "Yes, I'm connected." As you
+
+00:04:10.464 --> 00:04:12.393
+can see, yes, I'm connected now.
+
+00:04:12.683 --> 00:04:16.243
+Then I'm just going to ask it to
+create me a simple house structure
+
+00:04:16.253 --> 00:04:20.603
+in my current open project in
+Blender just to show how this works.
+
+00:04:20.973 --> 00:04:24.233
+As with everything as we've set up with
+the Blender connection, I'll have to
+
+00:04:24.254 --> 00:04:28.574
+allow it to have access to certain areas
+of Blender, so I'm gonna do that now.
+
+00:04:28.824 --> 00:04:31.684
+Then it starts asking me questions
+like, "How detailed should the house
+
+00:04:31.684 --> 00:04:34.714
+be?" Um, let's do basic block and roof.
+
+00:04:34.754 --> 00:04:36.823
+And then, "What should I
+do with the default cube?"
+
+00:04:36.874 --> 00:04:37.873
+Go ahead and delete it.
+
+00:04:37.903 --> 00:04:40.593
+So it's asking me questions
+about the project already.
+
+00:04:40.973 --> 00:04:44.443
+And now you can see here over in Blender
+it has created that house structure.
+
+00:04:44.504 --> 00:04:48.434
+As we've discussed within Claude,
+it can be as detailed or simple
+
+00:04:48.434 --> 00:04:52.023
+as you want, but the power in this
+is the back and forth with Claude.
+
+00:04:52.313 --> 00:04:57.103
+So I can go back and forth with Claude
+after it gives me the initial object and
+
+00:04:57.103 --> 00:05:01.143
+say, "No, I want the roof bigger," or,
+"No, I want it to be this shape," or,
+
+00:05:01.144 --> 00:05:02.694
+"I want the color to be this," right?
+
+00:05:02.824 --> 00:05:05.243
+It then gives me a recap
+of what it's done, right?
+
+00:05:05.324 --> 00:05:07.123
+It says, "Okay, I built the new house.
+
+00:05:07.173 --> 00:05:10.683
+Here's exactly the details of it." And it
+says, "One note, do you want me to add a
+
+00:05:10.684 --> 00:05:14.133
+door, windows, and materials next?" And
+you just go back and forth with Claude
+
+00:05:14.403 --> 00:05:16.243
+until you get the result that you want.
+
+00:05:16.533 --> 00:05:19.744
+If you have any questions, I'll put some
+frequently asked questions down below.
+
+00:05:19.903 --> 00:05:22.083
+And with that said, I'll
+see you in the next video.
+

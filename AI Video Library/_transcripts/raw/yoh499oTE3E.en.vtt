@@ -1,0 +1,287 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.080 --> 00:00:05.440
+I used Claude to build this fully working&nbsp;
+gun directly inside of Roblox Studio. It has&nbsp;&nbsp;
+
+00:00:05.440 --> 00:00:10.800
+raycast shooting, a reload system, and&nbsp;
+headshots deal 20 damage to this dummy&nbsp;&nbsp;
+
+00:00:10.800 --> 00:00:17.440
+right here. A few minutes earlier, I connected&nbsp;
+Claude to Roblox Studio, gave it this prompt,&nbsp;&nbsp;
+
+00:00:17.440 --> 00:00:23.760
+and it started creating all the scripts behind the&nbsp;
+system you just saw. By the end of this tutorial,&nbsp;&nbsp;
+
+00:00:23.760 --> 00:00:29.920
+you'll be able to build this gun in your own game&nbsp;
+and customize the damage, fire rate, reload speed,&nbsp;&nbsp;
+
+00:00:29.920 --> 00:00:36.880
+and more. Let's jump right into step one! Go to&nbsp;
+the start menu and open up Roblox Studio. You&nbsp;&nbsp;
+
+00:00:36.880 --> 00:00:42.160
+can either select one of your existing projects&nbsp;
+or you can create a new game. For the sake of&nbsp;&nbsp;
+
+00:00:42.160 --> 00:00:48.240
+this tutorial, I'll just create a new experience.&nbsp;
+Once it loads, click the AI assistant button right&nbsp;&nbsp;
+
+00:00:48.240 --> 00:00:55.200
+here. Chat with Studio Assistant to get help and&nbsp;
+accelerate creation. Click that button. Now open&nbsp;&nbsp;
+
+00:00:55.200 --> 00:01:01.600
+up the toolbox up right here. Now, we're going to&nbsp;
+go and find our gun model. For the sake of this&nbsp;&nbsp;
+
+00:01:01.600 --> 00:01:07.600
+tutorial, I'm just going to be using a pistol.&nbsp;
+So, I'm just going to type in pistol. And I'm&nbsp;&nbsp;
+
+00:01:07.600 --> 00:01:14.400
+just going to select the first one. We're going&nbsp;
+to click okay. And yes, we do want to put it in&nbsp;&nbsp;
+
+00:01:14.400 --> 00:01:21.680
+starter pack. Now go into the gun and check to&nbsp;
+see if there's any scripts, sounds, or anything&nbsp;&nbsp;
+
+00:01:21.680 --> 00:01:30.880
+else that's not necessary. We can actually drag&nbsp;
+this into the workspace. Then we can click F,
+
+00:01:30.880 --> 00:01:34.960
+and we can get rid of the dispenser, the shell,&nbsp;&nbsp;
+
+00:01:34.960 --> 00:01:38.880
+and the shop because they're all&nbsp;
+invisible parts. The slide is visible,&nbsp;&nbsp;
+
+00:01:38.880 --> 00:01:44.320
+so I won't get rid of that. And I'll just&nbsp;
+get rid of the remaining stuff we don't need.
+
+00:01:46.480 --> 00:01:53.760
+Let's bring our gun back to the starter&nbsp;
+pack. Next here, gun tool. Click the plus&nbsp;&nbsp;
+
+00:01:53.760 --> 00:02:00.640
+icon right here. Then type in configuration. Then&nbsp;
+press this. And for the name, let's just rename&nbsp;&nbsp;
+
+00:02:00.640 --> 00:02:07.040
+it simply to just config. Now, if we go back&nbsp;
+to the toolbox right here and then click back,&nbsp;&nbsp;
+
+00:02:07.040 --> 00:02:12.720
+then scroll up and let's just get rid of&nbsp;
+our search term. And then if we click audio,&nbsp;&nbsp;
+
+00:02:12.720 --> 00:02:17.520
+we can now get a gun sound, so, for the sake&nbsp;
+of this tutorial, I'll just be typing in,&nbsp;&nbsp;
+
+00:02:17.520 --> 00:02:23.280
+"gun sound". Or if you want a specific gun sound,&nbsp;
+you can type in whatever you want. I'm just going&nbsp;&nbsp;
+
+00:02:23.280 --> 00:02:30.640
+to take this first one right here. Let's hear it.&nbsp;
+And I'm just going to click insert. Make sure the&nbsp;&nbsp;
+
+00:02:30.640 --> 00:02:38.160
+sound is inside of the handle. And rename it to&nbsp;
+just buyer. Let's close that and collapse our gun.&nbsp;&nbsp;
+
+00:02:38.160 --> 00:02:43.840
+If we go into the search bar of our computer&nbsp;
+[music] and type in simply clot and we open up&nbsp;&nbsp;
+
+00:02:43.840 --> 00:02:51.440
+the app. As for the model, I'm going to be using&nbsp;
+Opus 4.8, but you can also use any of the other&nbsp;&nbsp;
+
+00:02:51.440 --> 00:02:58.160
+Opus models. I wouldn't recommend using Opus&nbsp;
+3 or any of the Sonnet or Haiku models solely&nbsp;&nbsp;
+
+00:02:58.160 --> 00:03:03.920
+because they are pretty bad at making complex&nbsp;
+systems for Roblox. If you go into the chat&nbsp;&nbsp;
+
+00:03:03.920 --> 00:03:12.800
+bar right here and type in, "Can you connect&nbsp;
+to my Roblox game?" Then find the gun tool&nbsp;&nbsp;
+
+00:03:12.800 --> 00:03:24.320
+in starter pack. Build a complete gun system&nbsp;
+for it with raycast shooting, a reload system,&nbsp;&nbsp;
+
+00:03:24.320 --> 00:03:36.640
+and server side damage. Body shots should deal&nbsp;
+five damage and head shots should deal 20 damage.&nbsp;&nbsp;
+
+00:03:36.640 --> 00:03:48.640
+Make the ray cast ignore accessory parts like&nbsp;
+hats and hair so they don't block head shot.&nbsp;&nbsp;
+
+00:03:49.360 --> 00:04:02.640
+If a bullet hits any part attached to a character,&nbsp;
+count it as hitting that character. Even if that&nbsp;&nbsp;
+
+00:04:02.640 --> 00:04:16.400
+part is inside another model, use the tools&nbsp;
+activated event for firing so it works on PC,&nbsp;&nbsp;
+
+00:04:16.400 --> 00:04:29.760
+mobile, and console. Keep the fire rate check on&nbsp;
+the server, but give it a small tolerance for lag.&nbsp;&nbsp;
+
+00:04:29.760 --> 00:04:41.520
+So legitimate shots are never silently rejected&nbsp;
+and only play the gunshot effects when the&nbsp;&nbsp;
+
+00:04:41.520 --> 00:04:54.960
+server confirms the shot. Add a bullet tracer for&nbsp;
+every shot that every player in the game can see.&nbsp;&nbsp;
+
+00:04:55.600 --> 00:05:09.280
+Every shot must also push the camera up slightly&nbsp;
+like real gun recoil. Do not skip this. Play the&nbsp;&nbsp;
+
+00:05:09.280 --> 00:05:22.720
+sound named fire inside the tools handle every&nbsp;
+time the gun shoots. Create a screen GUI that&nbsp;&nbsp;
+
+00:05:22.720 --> 00:05:34.000
+shows the current ammo out of the magazine size&nbsp;
+and update it when the player fires and reloads.&nbsp;&nbsp;
+
+00:05:34.000 --> 00:05:45.440
+The gun should reload when the player presses R&nbsp;
+on their keyboard and also when the player taps&nbsp;&nbsp;
+
+00:05:45.440 --> 00:05:55.200
+or clicks the ammo counter. So it works on&nbsp;
+mobile too. Inside the config in the tool,&nbsp;&nbsp;
+
+00:05:55.200 --> 00:06:06.000
+create number values named damage,&nbsp;
+headshot damage, fire rate, reload time,&nbsp;&nbsp;
+
+00:06:06.000 --> 00:06:15.840
+and magazine size. Where fire rate means the&nbsp;
+number of seconds between shots, and make every&nbsp;&nbsp;
+
+00:06:15.840 --> 00:06:26.880
+script read from those values. So, the gun can&nbsp;
+be customized without touching any code. I'm&nbsp;&nbsp;
+
+00:06:26.880 --> 00:06:46.000
+going to speed this part up. Just make sure you&nbsp;
+click allow whenever Claude asks for permission.
+
+00:07:58.320 --> 00:08:05.280
+Let's go back to Roblox Studio. If you go into the&nbsp;
+tab next to home and click avatar and if we click&nbsp;&nbsp;
+
+00:08:05.280 --> 00:08:12.960
+character then let's press my avatar. Basically&nbsp;
+load a copy of your avatar inside of the game so&nbsp;&nbsp;
+
+00:08:12.960 --> 00:08:18.560
+we can test to see if the gun really works. Now&nbsp;
+for the moment of truth. Let's make sure we're on&nbsp;&nbsp;
+
+00:08:18.560 --> 00:08:24.960
+test mode. And if we click the play button, let's&nbsp;
+press one on our keyboard and then let's zoom in.&nbsp;&nbsp;
+
+00:08:24.960 --> 00:08:33.120
+So, I'm just going to aim the gun directly at the&nbsp;
+body. Just like that. It dealt five damage. Now,&nbsp;&nbsp;
+
+00:08:33.120 --> 00:08:40.640
+let's aim for a head shot. And you can see&nbsp;
+that the ammo GUI is being updated. So,&nbsp;&nbsp;
+
+00:08:40.640 --> 00:08:50.000
+it was down from 12. 10 out of 12. Let's&nbsp;
+aim for the body again. A few more times.
+
+00:08:50.000 --> 00:09:00.480
+Let's score a few head shots. And just like that,&nbsp;
+the rig is dead. So if I shoot two more times,&nbsp;&nbsp;
+
+00:09:00.480 --> 00:09:06.880
+and now I either have to press R on my&nbsp;
+keyboard or tap to reload. So what I'm&nbsp;&nbsp;
+
+00:09:06.880 --> 00:09:11.920
+going to do is tap to reload. Let's see if that&nbsp;
+works. And just like that, it said reloading.&nbsp;&nbsp;
+
+00:09:11.920 --> 00:09:20.560
+And now it's back to 12 out of 12. So let me&nbsp;
+zoom back in and shoot all those 12 again.
+
+00:09:20.560 --> 00:09:24.080
+Okay, so now I'm going to press R&nbsp;
+on my keyboard this time and reload&nbsp;&nbsp;
+
+00:09:24.080 --> 00:09:34.080
+it again and it says 12 out of 12. If&nbsp;
+we zoom out and get out of test mode,
+
+00:09:34.080 --> 00:09:38.480
+we can adjust the settings. So if we go&nbsp;
+back to our starter pack and our gun,&nbsp;&nbsp;
+
+00:09:38.480 --> 00:09:43.760
+we can see that there's a config. We can adjust&nbsp;
+how much a normal shot deals. So instead of five,&nbsp;&nbsp;
+
+00:09:43.760 --> 00:09:49.840
+we can make it 10. And for our fire rate, we&nbsp;
+can make it faster. Let's say 0.01. I want&nbsp;&nbsp;
+
+00:09:49.840 --> 00:09:56.720
+to see what happens. And for our headsh shot,&nbsp;
+we can make this 30. Our magazine size can be,&nbsp;&nbsp;
+
+00:09:56.720 --> 00:10:05.120
+I don't know, 30. And our reload time can be&nbsp;
+3 seconds. So, let's go back on play mode.&nbsp;&nbsp;
+
+00:10:05.120 --> 00:10:14.000
+And let's see if that worked. And as you can&nbsp;
+see, it loaded the 30 out of 30. And let's see.
+
+00:10:14.000 --> 00:10:22.800
+It allows for much faster shooting. Holy cow,&nbsp;
+that looks so bad. But yeah, that's the entire&nbsp;&nbsp;
+
+00:10:22.800 --> 00:10:28.800
+point of the config setup we did in step two. You&nbsp;
+can tune this gun without ever opening a script.&nbsp;&nbsp;
+
+00:10:28.800 --> 00:10:34.160
+If you want to keep going, you don't need me for&nbsp;
+the next part. Just ask Mr. Claude himself. Tell&nbsp;&nbsp;
+
+00:10:34.160 --> 00:10:39.280
+him to add a muzzle flash or a bullet drop,&nbsp;
+for example. He will build it right into the&nbsp;&nbsp;
+
+00:10:39.280 --> 00:10:46.240
+same system. And if you want to further boost your&nbsp;
+Claude productivity, watch this playlist. Goodbye!
+
