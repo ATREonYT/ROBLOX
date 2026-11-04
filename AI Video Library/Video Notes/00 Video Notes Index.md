@@ -61,7 +61,7 @@ Step-by-step notes written from the transcripts of 38 of 46 top Roblox dev video
 - [[Roblox Game Design Explained Like You're 5 Yrs Old]] (Tizzy RBLX)
 - [[Why 90% of Roblox Games Never Get Players]] (MoseyTube77)
 - [[My Roblox Game Made $43,292 (Here's Exactly How to Monetize Yours)]] (MoseyTube77)
-- [[I Made 4 Roblox Games with AI… Did I Get Rich?]] (c dev)
+- [[I Made 4 Roblox Games with AI… Did I Get Rich|I Made 4 Roblox Games with AI… Did I Get Rich?]] (c dev)
 
 ## Failed videos (no note yet)
 All failures were YouTube refusing the caption download with HTTP 429 "Too Many Requests" (rate limit), across 4 slow retry passes, the last after an overnight break. The videos themselves have captions; re-run the yt-dlp command later to fill these in.
