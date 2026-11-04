@@ -77,6 +77,7 @@ Playbooks in this folder:
 | A big project (plan, phases, threads, live ops) | [[31 Big Project Playbook]] |
 | What to build next | [[01 Current Hits October 2026]], [[Viral Game Anatomy - Hooks, Loops and Timing]], `LihFolk/skills/roblox-trend-game/SKILL.md` |
 | A game in a known family | The matching Blueprint above, then [[12 Game Loop Logic Playbook]] for pacing and numbers |
+| **Realistic city / hood / county RP** (cash + bank, jobs, cars and fuel, guns with server hit checks, police and wanted, phone, day/night, world icons) | [[00 Start Here - Realistic City RP]] (folder `Build Playbooks/Realistic City RP/`, 14 notes), then [[13 Beat the Top RP Games]] |
 | Roleplay town (jobs, houses, cars, outfits) | [[26 Fun and Roleplay Playbook]], [[Blueprint - Roleplay Town]], `LihFolk/LihFolk Vault V2/32 Case Studies of Top Roblox Games/Case Study - Brookhaven RP.md`, `LihFolk/LihFolk Vault V2/24 Worked Builds/Weekend Build - Roleplay Town with Jobs and Paychecks.md` |
 | A fun party, minigame, obby or action game | [[32 Round-Based Games Playbook]], [[26 Fun and Roleplay Playbook]], [[Game Concepts - RP and Fun]], `LihFolk/LihFolk Vault V2/43 Genre Systems End to End/` |
 | A genre not listed | `LihFolk/LihFolk Vault V2/10 Game Design and Genres/` (Genre Playbook notes) |
@@ -101,6 +102,14 @@ Playbooks in this folder:
 | Anti-cheat for speed games | [[Detecting Movement Exploits - Speed Fly Noclip Teleport]], [[Server Authority and Validation]] | `LihFolk/skills/roblox-secure-remotes/` |
 | "Press E" interactions (doors, seats, counters, job boards) | [[26 Fun and Roleplay Playbook]] | `new-game-kit/src/Shared/Interact.luau` (server check: distance, cooldown, permission, one user at a time) |
 | Jobs, paychecks, houses, props (roleplay) | [[Blueprint - Roleplay Town]], LihFolk `Weekend Build - Roleplay Town with Jobs and Paychecks`, `Instanced Interiors - Pooled House and Room Copies for Many Players` | `new-game-kit/src/Server/Roleplay.luau` |
+| City money (cash + bank, ATMs, transfers) | [[02 Economy, Jobs, Stores and Inventory]] | `new-game-kit/src/Server/Wallet.luau` |
+| Guns and fists with server hit validation | [[04 Combat - Fists, Weapons and Server Hit Validation]] | `new-game-kit/src/Shared/HitCheck.luau` |
+| Sprint, stamina, knockouts | [[05 Health, Stamina, Sprint and Knockouts]] | `new-game-kit/src/Shared/Stamina.luau` |
+| Dealership, garage, fuel, repairs | [[03 Vehicles - Driving, Dealership, Garage and Fuel]] | `new-game-kit/src/Server/Garage.luau` |
+| Police, crime, wanted stars, jail | [[08 Crime, Police and Wanted Levels]] | `new-game-kit/src/Server/Wanted.luau` |
+| World icons over buildings, off-screen arrows | [[01 HUD, World Icons and Interaction]] | `new-game-kit/src/Shared/Markers.luau` |
+| Day/night, street lights, store hours | [[09 Day-Night, Weather and a Living City]] | `new-game-kit/src/Shared/WorldClock.luau` |
+| Phone menu, bank app, 911 calls | [[07 Phone, Apps and Banking]] | |
 | Vehicles (spawn, drive, ownership, phone controls) | `LihFolk/LihFolk Vault V2/25 Physics and Vehicles/` (start with `Vehicle Spawner and Garage`, `Vehicle Ownership and Anti-Exploit`, `Vehicle Controls on Phone and Gamepad`) | `Roleplay.CanSpawnVehicle` |
 | Avatar, outfits, uniforms | `LihFolk/LihFolk Vault V2/37 Avatars and UGC/HumanoidDescription and Outfit Systems.md`, `AvatarEditorService and In-Game Avatar Editors.md` | |
 | Rounds (lobby, countdown, round, results) | [[32 Round-Based Games Playbook]] | `new-game-kit/src/Shared/Rounds.luau` |
