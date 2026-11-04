@@ -65,5 +65,5 @@ None stated in the video (no AI prompts). Rebirth wipes money and progress but g
 
 - Hubs: [[00 Video Notes Index]] · [[00 Build Router]] · [[10 Business, Monetization & Case Studies]] · [[15 Kid Appeal & Game Design]]
 - Playbooks: [[01 Current Hits October 2026]] · [[02 Launch and Discovery Cheat Sheet]]
-- More in Game design and business: [[I Made 4 Roblox Games with AI… Did I Get Rich?]] · [[My Roblox Game Made $43,292 (Here's Exactly How to Monetize Yours)]] · [[Roblox Game Design Explained Like You're 5 Yrs Old]]
+- More in Game design and business: [[I Made 4 Roblox Games with AI… Did I Get Rich|I Made 4 Roblox Games with AI… Did I Get Rich?]] · [[My Roblox Game Made $43,292 (Here's Exactly How to Monetize Yours)]] · [[Roblox Game Design Explained Like You're 5 Yrs Old]]
 <!-- related:end -->
