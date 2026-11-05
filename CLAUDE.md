@@ -25,7 +25,7 @@ Then read the matching brief in `Build Playbooks/Sector Briefs/` (verified Oct 3
 
 Before building, load the skill for the job (in `.claude/skills/`):
 - maps, props, lighting: `roblox-cartoony-building`
-- any UI: `roblox-cartoony-ui`
+- any UI: `roblox-cartoony-ui`; white studded "steal a" style menus: `folk-stud-ui` (icons in `References/FOLK Icon Pack/`, pass `--pack` to its `icons.py`)
 - character animations: `roblox-ai-animation`
 - effects: `roblox-vfx`; Blender models: `blender-roblox-models`
 
