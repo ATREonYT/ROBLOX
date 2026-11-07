@@ -145,6 +145,9 @@ for key, child in project.tree do
 		mountTree(child, svcFolder)
 	end
 end
+-- scripts-only bundle (keeps the live Studio map Alex is editing): places/InstallScripts.rbxm
+fs.writeFile("places/InstallScripts.rbxm", roblox.serializeModel({ bundle:Clone() }))
+print("[build] places/InstallScripts.rbxm (no map)")
 local ws = Instance.new("Folder")
 ws.Name = "Workspace"
 ws.Parent = bundle

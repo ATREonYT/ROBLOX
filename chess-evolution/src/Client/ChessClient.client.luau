@@ -327,6 +327,9 @@ local function refreshContext()
 		end
 		if kind == "none" then
 			for _, m in Stages:GetChildren() do
+				if not Config.Stages[m.Name] then
+					continue -- decorative future gates have no rival yet
+				end
 				local zone = m:FindFirstChild("Zone") :: BasePart?
 				if zone and inside(r.Position, zone, 0) then
 					kind, id = "stage", m.Name
@@ -839,6 +842,9 @@ end
 ---------------------------------------------------------------------------
 local function refreshStages()
 	for _, m in Stages:GetChildren() do
+		if not Config.Stages[m.Name] then
+			continue -- decorative future gates have no rival yet
+		end
 		local id = m.Name
 		local gate = m:FindFirstChild("Gate")
 		local barrier = gate and gate:FindFirstChild("Barrier") :: BasePart?
@@ -1468,6 +1474,9 @@ end
 -- every rival idles at its table
 task.defer(function()
 	for _, m in Stages:GetChildren() do
+		if not Config.Stages[m.Name] then
+			continue -- decorative future gates have no rival yet
+		end
 		local npc = m:WaitForChild("RivalNPC", 10)
 		if npc then
 			playAnim(npc :: Model, "Idle")
@@ -1635,13 +1644,27 @@ local function startBattleScene(b: any)
 	b.npc = stageModel:FindFirstChild("RivalNPC")
 	b.piece = Models.Piece("Knight", set.color, b.tile * 0.24, pieceSpot.CFrame * CFrame.new(0, -0.04, 0), { trim = set.accent, material = setMaterial(S.Equipped) })
 	b.piece.Name = "YourPiece"
+	if stageModel:GetAttribute("NoBoard") then
+		-- reference layout (Nov 7): no board on the mat. The piece is only the badge anchor,
+		-- hidden above the player's head on the standing plate.
+		local plate = stageModel:FindFirstChild("PlayerSpot") :: BasePart
+		b.piece:PivotTo(plate.CFrame * CFrame.new(0, 4.5, 0))
+		for _, part in b.piece:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.Transparency = 1
+			end
+		end
+	end
 	b.piece.Parent = fxFolder
 	worldBadge = makeWorldBadge(b.piece.PrimaryPart)
 	-- camera: side-on at the clock end of the table, both players in profile (you on the left)
 	local tbl = stageModel:FindFirstChild("DuelTable")
 	local top = tbl and tbl:FindFirstChild("TableTop") :: BasePart?
 	local spot = stageModel:FindFirstChild("PlayerSpot") :: BasePart
-	local centre = if top then top.Position else spot.Position + Vector3.new(0, 3, -4.4)
+	local rivalPlate = stageModel:FindFirstChild("RivalPlate") :: BasePart?
+	local centre = if top then top.Position
+		elseif rivalPlate then (spot.Position + rivalPlate.Position) / 2 + Vector3.new(0, 2.5, 0)
+		else spot.Position + Vector3.new(0, 3, -4.4)
 	camSaved = true
 	camera.CameraType = Enum.CameraType.Scriptable
 	local goal = CFrame.lookAt(centre + Vector3.new(15, 4.2, 1.2), centre + Vector3.new(0, 1.2, 0))
@@ -2015,6 +2038,9 @@ RunService.RenderStepped:Connect(function(dt)
 		local r = root()
 		if r and not battle and now - lastReturn > 3 then
 			for _, m in Stages:GetChildren() do
+				if not Config.Stages[m.Name] then
+					continue -- decorative future gates have no rival yet
+				end
 				local ret = m:FindFirstChild("Return") :: BasePart?
 				if ret and inside(r.Position, ret, 0.5) then
 					lastReturn = now

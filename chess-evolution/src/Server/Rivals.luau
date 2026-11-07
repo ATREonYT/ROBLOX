@@ -178,7 +178,14 @@ function Rivals.Spawn(config: any, map: Instance)
 		local stage = config.Stages[stageId]
 		local model = stages:FindFirstChild(stageId)
 		local tbl = model and model:FindFirstChild("DuelTable")
-		local seat = tbl and tbl:FindFirstChild("SeatB") :: BasePart?
+		-- the duel table's far seat, or (reference layout, Nov 7) the rival's dark standing plate
+		local seat = (tbl and tbl:FindFirstChild("SeatB") or (model and model:FindFirstChild("RivalPlate"))) :: BasePart?
+		if seat and not tbl and model then
+			-- stand on the plate's top, facing the player's plate
+			local mine = model:FindFirstChild("PlayerSpot") :: BasePart?
+			local top = seat.Position + Vector3.new(0, seat.Size.Y / 2, 0)
+			seat = { CFrame = if mine then CFrame.lookAt(top, Vector3.new(mine.Position.X, top.Y, mine.Position.Z)) else CFrame.new(top) } :: any
+		end
 		if model and seat and not model:FindFirstChild("RivalNPC") then
 			-- the Blender-made rig (assets/Rivals.rbxm, pivot at the feet) when it is installed
 			-- 1st choice: the real Roblox avatars Alex generated in Studio (ServerStorage.ChessRivals);
