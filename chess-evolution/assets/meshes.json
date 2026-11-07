@@ -5,59 +5,41 @@
   "PawnMill": {
    "file": "meshes/PawnMill.obj",
    "parts": {
-    "PawnMill_Chassis": {
+    "PawnMill_Body": {
      "color": [
-      80,
-      200,
-      90
+      30,
+      34,
+      45
      ],
      "material": "SmoothPlastic",
-     "tris": 432
+     "tris": 1188
     },
-    "PawnMill_Rail": {
+    "PawnMill_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 552
+    },
+    "PawnMill_Chess": {
      "color": [
       246,
       238,
       220
      ],
      "material": "SmoothPlastic",
-     "tris": 432
+     "tris": 2720
     },
-    "PawnMill_Console": {
+    "PawnMill_Neon": {
      "color": [
-      150,
-      100,
-      60
-     ],
-     "material": "SmoothPlastic",
-     "tris": 216
-    },
-    "PawnMill_Trim": {
-     "color": [
-      246,
-      238,
-      220
-     ],
-     "material": "SmoothPlastic",
-     "tris": 2936
-    },
-    "PawnMill_Screen": {
-     "color": [
-      120,
-      255,
-      140
+      70,
+      230,
+      110
      ],
      "material": "Neon",
-     "tris": 540
-    },
-    "PawnMill_Steel": {
-     "color": [
-      150,
-      156,
-      168
-     ],
-     "material": "Metal",
-     "tris": 376
+     "tris": 180
     },
     "PawnMill_Belt": {
      "color": [
@@ -67,70 +49,61 @@
      ],
      "material": "Fabric",
      "tris": 108
-    }
-   },
-   "size": [
-    8.5,
-    7.06,
-    13.42
-   ]
-  },
-  "KnightSprint": {
-   "file": "meshes/KnightSprint.obj",
-   "parts": {
-    "KnightSprint_Chassis": {
-     "color": [
-      40,
-      90,
-      230
-     ],
-     "material": "SmoothPlastic",
-     "tris": 1080
     },
-    "KnightSprint_Rail": {
-     "color": [
-      230,
-      236,
-      250
-     ],
-     "material": "SmoothPlastic",
-     "tris": 648
-    },
-    "KnightSprint_Console": {
-     "color": [
-      28,
-      50,
-      140
-     ],
-     "material": "SmoothPlastic",
-     "tris": 216
-    },
-    "KnightSprint_Trim": {
-     "color": [
-      230,
-      236,
-      250
-     ],
-     "material": "SmoothPlastic",
-     "tris": 1768
-    },
-    "KnightSprint_Screen": {
-     "color": [
-      80,
-      230,
-      255
-     ],
-     "material": "Neon",
-     "tris": 540
-    },
-    "KnightSprint_Steel": {
+    "PawnMill_Steel": {
      "color": [
       150,
       156,
       168
      ],
      "material": "Metal",
-     "tris": 376
+     "tris": 592
+    }
+   },
+   "size": [
+    8.66,
+    8.26,
+    13.06
+   ]
+  },
+  "KnightSprint": {
+   "file": "meshes/KnightSprint.obj",
+   "parts": {
+    "KnightSprint_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "KnightSprint_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1200
+    },
+    "KnightSprint_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1552
+    },
+    "KnightSprint_Neon": {
+     "color": [
+      60,
+      130,
+      255
+     ],
+     "material": "Neon",
+     "tris": 180
     },
     "KnightSprint_Belt": {
      "color": [
@@ -140,63 +113,8 @@
      ],
      "material": "Fabric",
      "tris": 108
-    }
-   },
-   "size": [
-    8.8,
-    6.59,
-    14.37
-   ]
-  },
-  "BishopRun": {
-   "file": "meshes/BishopRun.obj",
-   "parts": {
-    "BishopRun_Chassis": {
-     "color": [
-      130,
-      60,
-      160
-     ],
-     "material": "SmoothPlastic",
-     "tris": 432
     },
-    "BishopRun_Rail": {
-     "color": [
-      246,
-      238,
-      220
-     ],
-     "material": "SmoothPlastic",
-     "tris": 648
-    },
-    "BishopRun_Console": {
-     "color": [
-      90,
-      40,
-      120
-     ],
-     "material": "SmoothPlastic",
-     "tris": 216
-    },
-    "BishopRun_Trim": {
-     "color": [
-      246,
-      238,
-      220
-     ],
-     "material": "SmoothPlastic",
-     "tris": 5000
-    },
-    "BishopRun_Screen": {
-     "color": [
-      200,
-      120,
-      255
-     ],
-     "material": "Neon",
-     "tris": 540
-    },
-    "BishopRun_Steel": {
+    "KnightSprint_Steel": {
      "color": [
       150,
       156,
@@ -204,6 +122,52 @@
      ],
      "material": "Metal",
      "tris": 376
+    }
+   },
+   "size": [
+    9.3,
+    8.26,
+    13.9
+   ]
+  },
+  "BishopRun": {
+   "file": "meshes/BishopRun.obj",
+   "parts": {
+    "BishopRun_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "BishopRun_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 552
+    },
+    "BishopRun_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1972
+    },
+    "BishopRun_Neon": {
+     "color": [
+      235,
+      90,
+      220
+     ],
+     "material": "Neon",
+     "tris": 180
     },
     "BishopRun_Belt": {
      "color": [
@@ -213,70 +177,61 @@
      ],
      "material": "Fabric",
      "tris": 108
-    }
-   },
-   "size": [
-    8.2,
-    6.91,
-    13.42
-   ]
-  },
-  "RookRig": {
-   "file": "meshes/RookRig.obj",
-   "parts": {
-    "RookRig_Chassis": {
-     "color": [
-      220,
-      50,
-      50
-     ],
-     "material": "SmoothPlastic",
-     "tris": 432
     },
-    "RookRig_Rail": {
-     "color": [
-      46,
-      48,
-      56
-     ],
-     "material": "SmoothPlastic",
-     "tris": 540
-    },
-    "RookRig_Console": {
-     "color": [
-      46,
-      48,
-      56
-     ],
-     "material": "SmoothPlastic",
-     "tris": 216
-    },
-    "RookRig_Trim": {
-     "color": [
-      46,
-      48,
-      56
-     ],
-     "material": "SmoothPlastic",
-     "tris": 3480
-    },
-    "RookRig_Screen": {
-     "color": [
-      255,
-      90,
-      70
-     ],
-     "material": "Neon",
-     "tris": 540
-    },
-    "RookRig_Steel": {
+    "BishopRun_Steel": {
      "color": [
       150,
       156,
       168
      ],
      "material": "Metal",
-     "tris": 376
+     "tris": 592
+    }
+   },
+   "size": [
+    8.66,
+    9.79,
+    13.06
+   ]
+  },
+  "RookRig": {
+   "file": "meshes/RookRig.obj",
+   "parts": {
+    "RookRig_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "RookRig_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 660
+    },
+    "RookRig_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1632
+    },
+    "RookRig_Neon": {
+     "color": [
+      255,
+      60,
+      50
+     ],
+     "material": "Neon",
+     "tris": 180
     },
     "RookRig_Belt": {
      "color": [
@@ -286,61 +241,70 @@
      ],
      "material": "Fabric",
      "tris": 108
+    },
+    "RookRig_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 376
     }
    },
    "size": [
-    10.18,
-    7.69,
-    13.9
+    9.72,
+    8.97,
+    14.27
    ]
   },
   "QueenDash": {
    "file": "meshes/QueenDash.obj",
    "parts": {
-    "QueenDash_Chassis": {
+    "QueenDash_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "QueenDash_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 552
+    },
+    "QueenDash_Chess": {
      "color": [
       246,
       238,
       220
      ],
      "material": "SmoothPlastic",
-     "tris": 432
+     "tris": 804
     },
-    "QueenDash_Rail": {
+    "QueenDash_Neon": {
      "color": [
       255,
-      200,
-      50
-     ],
-     "material": "SmoothPlastic",
-     "tris": 648
-    },
-    "QueenDash_Console": {
-     "color": [
-      240,
-      220,
-      170
-     ],
-     "material": "SmoothPlastic",
-     "tris": 216
-    },
-    "QueenDash_Trim": {
-     "color": [
-      255,
-      200,
-      50
-     ],
-     "material": "SmoothPlastic",
-     "tris": 5356
-    },
-    "QueenDash_Screen": {
-     "color": [
-      255,
-      220,
-      90
+      205,
+      70
      ],
      "material": "Neon",
-     "tris": 1236
+     "tris": 288
+    },
+    "QueenDash_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
     },
     "QueenDash_Steel": {
      "color": [
@@ -351,7 +315,80 @@
      "material": "Metal",
      "tris": 376
     },
-    "QueenDash_Belt": {
+    "QueenDash_Spill": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 864
+    },
+    "QueenDash_Prop": {
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "material": "SmoothPlastic",
+     "tris": 824,
+     "spin": {
+      "centre_roblox": [
+       -0.0,
+       10.73,
+       -5.5
+      ],
+      "turnSeconds": 8,
+      "axis": "Y"
+     }
+    }
+   },
+   "size": [
+    12.0,
+    11.14,
+    13.26
+   ]
+  },
+  "KingsEndgame": {
+   "file": "meshes/KingsEndgame.obj",
+   "parts": {
+    "KingsEndgame_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "KingsEndgame_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 984
+    },
+    "KingsEndgame_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 480
+    },
+    "KingsEndgame_Neon": {
+     "color": [
+      255,
+      130,
+      30
+     ],
+     "material": "Neon",
+     "tris": 228
+    },
+    "KingsEndgame_Belt": {
      "color": [
       34,
       36,
@@ -359,61 +396,6 @@
      ],
      "material": "Fabric",
      "tris": 108
-    }
-   },
-   "size": [
-    8.63,
-    8.59,
-    13.42
-   ]
-  },
-  "KingsEndgame": {
-   "file": "meshes/KingsEndgame.obj",
-   "parts": {
-    "KingsEndgame_Chassis": {
-     "color": [
-      46,
-      48,
-      56
-     ],
-     "material": "SmoothPlastic",
-     "tris": 432
-    },
-    "KingsEndgame_Rail": {
-     "color": [
-      255,
-      200,
-      50
-     ],
-     "material": "SmoothPlastic",
-     "tris": 432
-    },
-    "KingsEndgame_Console": {
-     "color": [
-      30,
-      30,
-      36
-     ],
-     "material": "SmoothPlastic",
-     "tris": 216
-    },
-    "KingsEndgame_Trim": {
-     "color": [
-      255,
-      200,
-      50
-     ],
-     "material": "SmoothPlastic",
-     "tris": 2604
-    },
-    "KingsEndgame_Screen": {
-     "color": [
-      255,
-      200,
-      60
-     ],
-     "material": "Neon",
-     "tris": 540
     },
     "KingsEndgame_Steel": {
      "color": [
@@ -424,7 +406,80 @@
      "material": "Metal",
      "tris": 376
     },
-    "KingsEndgame_Belt": {
+    "KingsEndgame_Spill": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 864
+    },
+    "KingsEndgame_Prop": {
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "material": "SmoothPlastic",
+     "tris": 216,
+     "spin": {
+      "centre_roblox": [
+       -0.0,
+       9.8,
+       -5.4
+      ],
+      "turnSeconds": 8,
+      "axis": "Y"
+     }
+    }
+   },
+   "size": [
+    12.0,
+    10.67,
+    13.06
+   ]
+  },
+  "CastleClimb": {
+   "file": "meshes/CastleClimb.obj",
+   "parts": {
+    "CastleClimb_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "CastleClimb_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 876
+    },
+    "CastleClimb_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 912
+    },
+    "CastleClimb_Neon": {
+     "color": [
+      50,
+      235,
+      190
+     ],
+     "material": "Neon",
+     "tris": 228
+    },
+    "CastleClimb_Belt": {
      "color": [
       34,
       36,
@@ -432,61 +487,6 @@
      ],
      "material": "Fabric",
      "tris": 108
-    }
-   },
-   "size": [
-    8.3,
-    8.64,
-    13.42
-   ]
-  },
-  "CastleClimb": {
-   "file": "meshes/CastleClimb.obj",
-   "parts": {
-    "CastleClimb_Chassis": {
-     "color": [
-      40,
-      180,
-      200
-     ],
-     "material": "SmoothPlastic",
-     "tris": 756
-    },
-    "CastleClimb_Rail": {
-     "color": [
-      246,
-      238,
-      220
-     ],
-     "material": "SmoothPlastic",
-     "tris": 648
-    },
-    "CastleClimb_Console": {
-     "color": [
-      30,
-      110,
-      130
-     ],
-     "material": "SmoothPlastic",
-     "tris": 216
-    },
-    "CastleClimb_Trim": {
-     "color": [
-      246,
-      238,
-      220
-     ],
-     "material": "SmoothPlastic",
-     "tris": 1080
-    },
-    "CastleClimb_Screen": {
-     "color": [
-      120,
-      255,
-      240
-     ],
-     "material": "Neon",
-     "tris": 540
     },
     "CastleClimb_Steel": {
      "color": [
@@ -497,7 +497,80 @@
      "material": "Metal",
      "tris": 376
     },
-    "CastleClimb_Belt": {
+    "CastleClimb_Spill": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 864
+    },
+    "CastleClimb_Prop": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 816,
+     "spin": {
+      "centre_roblox": [
+       -0.0,
+       10.49,
+       -5.4
+      ],
+      "turnSeconds": 8,
+      "axis": "Y"
+     }
+    }
+   },
+   "size": [
+    12.0,
+    11.12,
+    13.06
+   ]
+  },
+  "GrandmasterGlide": {
+   "file": "meshes/GrandmasterGlide.obj",
+   "parts": {
+    "GrandmasterGlide_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "GrandmasterGlide_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 552
+    },
+    "GrandmasterGlide_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 3110
+    },
+    "GrandmasterGlide_Neon": {
+     "color": [
+      150,
+      80,
+      255
+     ],
+     "material": "Neon",
+     "tris": 228
+    },
+    "GrandmasterGlide_Belt": {
      "color": [
       34,
       36,
@@ -505,61 +578,6 @@
      ],
      "material": "Fabric",
      "tris": 108
-    }
-   },
-   "size": [
-    8.2,
-    8.24,
-    13.42
-   ]
-  },
-  "GrandmasterGlide": {
-   "file": "meshes/GrandmasterGlide.obj",
-   "parts": {
-    "GrandmasterGlide_Chassis": {
-     "color": [
-      30,
-      26,
-      50
-     ],
-     "material": "SmoothPlastic",
-     "tris": 432
-    },
-    "GrandmasterGlide_Rail": {
-     "color": [
-      170,
-      90,
-      255
-     ],
-     "material": "SmoothPlastic",
-     "tris": 648
-    },
-    "GrandmasterGlide_Console": {
-     "color": [
-      20,
-      18,
-      34
-     ],
-     "material": "SmoothPlastic",
-     "tris": 216
-    },
-    "GrandmasterGlide_Trim": {
-     "color": [
-      255,
-      200,
-      50
-     ],
-     "material": "SmoothPlastic",
-     "tris": 4040
-    },
-    "GrandmasterGlide_Screen": {
-     "color": [
-      190,
-      120,
-      255
-     ],
-     "material": "Neon",
-     "tris": 756
     },
     "GrandmasterGlide_Steel": {
      "color": [
@@ -570,20 +588,38 @@
      "material": "Metal",
      "tris": 376
     },
-    "GrandmasterGlide_Belt": {
+    "GrandmasterGlide_Spill": {
      "color": [
+      30,
       34,
-      36,
-      44
+      45
      ],
-     "material": "Fabric",
-     "tris": 108
+     "material": "SmoothPlastic",
+     "tris": 864
+    },
+    "GrandmasterGlide_Prop": {
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "material": "SmoothPlastic",
+     "tris": 762,
+     "spin": {
+      "centre_roblox": [
+       -0.0,
+       9.52,
+       -5.4
+      ],
+      "turnSeconds": 8,
+      "axis": "Y"
+     }
     }
    },
    "size": [
-    9.61,
-    8.94,
-    14.54
+    12.0,
+    10.48,
+    14.51
    ]
   }
  },

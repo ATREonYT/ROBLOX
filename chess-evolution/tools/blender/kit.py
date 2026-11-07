@@ -210,116 +210,162 @@ def smooth(o, angle=40):
         print("sharp", e)
 
 # ---------------- treadmills ----------------
+# Vault rules used here (Build Playbooks 23 + Lesson - Tiered Training Lanes + 09 Owner Taste Rules):
+#  * one shape cloned for every tier; the whole lane is the tier colour, the rim a darker shade, a dark belt;
+#  * one main colour plus white: rails and the chess silhouette are white/ivory;
+#  * higher tiers look fancier by shape and life, not brightness: tiers 1-2 plain, 3-4 add neon edge strips
+#    and glowing corner blocks, 5+ add a ground "spill" and one moving prop, the last tier is black with neon lines;
+#  * no floating orbs, no skulls, nothing tall in the lane, low part counts.
+TIER = {"PawnMill": 1, "KnightSprint": 2, "BishopRun": 3, "RookRig": 4, "QueenDash": 5, "KingsEndgame": 6, "CastleClimb": 7, "GrandmasterGlide": 8}
+
+def shade(c, k):
+    return tuple(max(0, min(255, int(v * k))) for v in c)
+def tint(c, k):
+    return tuple(int(v + (255 - v) * k) for v in c)
+
+DARK, PANEL = (30, 34, 45), (52, 58, 74)
+# one colour per lane (plus white); eight clearly different hues so tiers read from across the map
+NEON = {"PawnMill": (70, 230, 110), "KnightSprint": (60, 130, 255), "BishopRun": (235, 90, 220), "RookRig": (255, 60, 50),
+        "QueenDash": (255, 205, 70), "KingsEndgame": (255, 130, 30), "CastleClimb": (50, 235, 190), "GrandmasterGlide": (150, 80, 255)}
+
 def treadmill(tid):
     th = THEMES[tid]
-    roles = {"Chassis": [], "Rail": [], "Console": [], "Trim": [], "Screen": [], "Steel": [], "Belt": []}
+    tier = TIER[tid]
+    neon = NEON[tid]
+    cols = {"Body": DARK, "Panel": PANEL, "Chess": IVORY, "Neon": neon, "Belt": BELT, "Steel": STEEL,
+            "Spill": DARK, "Prop": GOLD if tid in ("QueenDash", "KingsEndgame", "GrandmasterGlide") else IVORY}
+    roles = {k: [] for k in cols}
     R = roles
-    # common frame: deck 8 x 12, low entry at -Y, console at +Y
-    R["Chassis"].append(box((8, 12, 0.9), (0, 0, 0.45), bev=0.25))
+    # ---- the shared shape (treadmill_reference_sheet_1): low dark voxel deck, neon side strips, glowing corner
+    #      blocks, slim uprights to a tall console with a glowing screen and short handlebars ----
+    R["Body"].append(box((8, 12, 0.8), (0, 0, 0.4), bev=0.12))                        # deck
     for s in (-1, 1):
-        R["Chassis"].append(box((1.3, 11.4, 1.5), (3.35 * s, 0.1, 1.35), bev=0.2))
-        R["Trim"].append(box((1.36, 11.0, 0.24), (3.35 * s, 0.1, 2.1), bev=0.08))
-    R["Belt"].append(box((5.4, 10.6, 0.5), (0, 0, 1.15), bev=0.05))
-    for y in (-5.4, 5.4):
-        R["Steel"].append(cyl(0.62, 5.6, (0, y, 1.0), axis="X", segs=16, bev=0.05))
-    R["Chassis"].append(box((5.6, 1.6, 0.5), (0, -6.2, 0.25), (12, 0, 0), bev=0.12))  # low entry step
-    for sx in (-1, 1):  # corner glow blocks
-        for sy in (-1, 1):
-            R["Screen"].append(box((0.7, 0.7, 0.5), (3.55 * sx, 5.55 * sy, 0.95), bev=0.08))
-    # console (front, +Y), tilted toward the runner
-    con_post = box((1.4, 1.0, 4.2), (0, 5.6, 3.1), bev=0.15)
-    con = box((6.6, 1.6, 1.8), (0, 5.4, 5.4), (25, 0, 0), bev=0.25)
-    scr = box((4.6, 0.2, 1.1), (0, 4.62, 5.5), (25, 0, 0), bev=0.04)
-    R["Console"] += [con_post, con]
-    R["Screen"].append(scr)
-    # rails: chunky handrails from posts at y=-1.9 forward into the console
-    def rails(post=True):
-        for s in (-1, 1):
-            R["Rail"].append(box((0.9, 7.6, 0.9), (3.35 * s, 1.6, 4.9), bev=0.28))
-            if post:
-                R["Rail"].append(box((0.8, 0.8, 2.8), (3.35 * s, -1.9, 3.4), bev=0.2))
-            R["Rail"].append(box((0.8, 0.8, 2.8), (3.35 * s, 5.0, 3.4), bev=0.2))
+        R["Body"].append(box((1.2, 11.0, 1.2), (3.4 * s, 0, 1.0), bev=0.12))          # side rails along the belt
+        R["Neon"].append(box((0.2, 9.6, 0.25), (4.02 * s, 0, 1.05), bev=0.0))         # long neon strip on the outside face
+        R["Neon"].append(box((0.22, 9.6, 0.2), (3.85 * s, 0, 1.62), bev=0.0))          # thin neon line on the outer top edge
+        for i in range(6):                                                              # studs on the rail tops
+            R["Body"].append(cyl(0.2, 0.18, (3.3 * s, -4.2 + i * 1.7, 1.68), segs=10, bev=0.0))
+        for y in (-5.5, 5.5):                                                           # glowing corner blocks
+            R["Panel"].append(box((1.5, 1.5, 1.7), (3.55 * s, y, 0.95), bev=0.12))
+            R["Neon"].append(box((1.56, 0.9, 1.0), (3.55 * s, y, 0.95), bev=0.0))
+    R["Belt"].append(box((5.4, 11.0, 0.5), (0, 0, 1.0), bev=0.04))
+    for y in (-5.3, 5.3):
+        R["Steel"].append(cyl(0.55, 5.4, (0, y, 0.95), axis="X", segs=16, bev=0.04))   # recessed rollers
+    R["Body"].append(box((5.4, 1.0, 0.4), (0, -6.3, 0.2), (10, 0, 0), bev=0.1))      # low entry lip
+    # console head: tall, at the front (+Y), tilted toward the runner, glowing screen with a chess icon
+    head = box((6.2, 1.2, 2.4), (0, 5.4, 6.6), (-14, 0, 0), bev=0.15)
+    R["Body"].append(head)
+    R["Panel"].append(box((4.6, 0.16, 1.6), (0, 4.75, 6.65), (-14, 0, 0), bev=0.0))  # dark glass screen (the game's SurfaceGui icon sits on it)
+    for dx in (-0.55, 0.0, 0.55):
+        R["Neon"].append(box((0.32, 0.12, 0.32), (dx, 4.66, 6.65), (-14, 0, 45), bev=0.0))  # three small glowing screen marks
+    R["Panel"].append(box((6.4, 1.4, 0.3), (0, 5.4, 7.9), (-14, 0, 0), bev=0.08))    # console lid
+    for s in (-1, 1):
+        R["Neon"].append(box((0.25, 0.3, 0.3), (2.9 * s, 4.6, 5.6), bev=0.0))        # console side lights
 
-    def put(kind, loc, scale, role, rot=(0, 0, 0)):
+    def uprights(color_role="Steel"):
+        for s in (-1, 1):
+            R[color_role].append(box((0.7, 0.7, 5.6), (2.9 * s, 5.4, 3.9), (-8, 0, 0), bev=0.1))
+    def handlebars():
+        for s in (-1, 1):
+            R["Body"].append(box((0.6, 3.2, 0.6), (2.9 * s, 3.6, 4.9), bev=0.12))
+            R["Neon"].append(box((0.64, 0.5, 0.64), (2.9 * s, 2.1, 4.9), bev=0.0))   # neon grip ends
+
+    def put(kind, loc, scale, role="Chess", rot=(0, 0, 0)):
         o = build_piece(kind, f"{tid}_{kind}", scale)
         o.location = loc
         o.rotation_euler = [math.radians(a) for a in rot]
         R[role].append(o)
         return o
 
-    if tid == "PawnMill":
-        rails(post=False)
-        for s in (-1, 1):  # ivory pawns are the rail posts, built into the rails
-            put("Pawn", (3.35 * s, -1.9, 2.0), 0.72, "Trim")
-            put("Pawn", (3.35 * s, 5.0, 5.3), 0.45, "Trim")
-    elif tid == "KnightSprint":
-        rails()
+    # ---- each tier's chess signature, in white, built into the frame (readable with particles off) ----
+    if tid == "PawnMill":          # pawns are the upright caps and the handlebar ends
+        uprights(); handlebars()
         for s in (-1, 1):
-            put("Knight", (2.6 * s, 6.0, 0.9), 1.05, "Trim", (0, 0, 0))  # two knight heads hold up the console
-            for i in range(3):  # stepped side plates
-                R["Chassis"].append(box((0.5, 3.2 - i * 0.9, 0.7), (4.15 * s, -2.6 + i * 0.45, 0.7 + i * 0.7), bev=0.1))
-        con_post.scale = (0.01, 0.01, 0.01)
-    elif tid == "BishopRun":
-        rails()
+            put("Pawn", (2.9 * s, 2.1, 5.2), 0.3)
+            put("Pawn", (3.55 * s, -5.5, 1.8), 0.3)
+    elif tid == "KnightSprint":    # two knights hold up the console, stepped side plates
+        handlebars()
         for s in (-1, 1):
-            put("Bishop", (3.35 * s, -1.9, 4.6), 0.36, "Trim")
-            put("Bishop", (3.35 * s, 5.0, 5.3), 0.36, "Trim")
-            for i in range(5):  # diagonal rail inlay on the skirts
-                R["Trim"].append(box((0.2, 0.35, 1.9), (4.0 * s, -4.0 + i * 2.0, 1.35), (40, 0, 0), bev=0.04))
-    elif tid == "RookRig":
-        rails(post=False)
+            put("Knight", (2.9 * s, 5.6, 0.8), 1.15, rot=(0, 0, 180 if s > 0 else 0))
+            for i in range(3):
+                R["Panel"].append(box((0.4, 3.0 - i * 0.8, 0.5), (4.2 * s, -1.5 + i * 0.4, 0.5 + i * 0.5), bev=0.08))
+    elif tid == "BishopRun":       # mitre finials on the console, diagonal inlay on the rails
+        uprights(); handlebars()
         for s in (-1, 1):
-            put("Rook", (3.4 * s, 5.2, 0.9), 1.25, "Trim")  # crenellated side towers
-            put("Rook", (3.35 * s, -1.9, 2.1), 0.62, "Trim")
-        R["Rail"].append(box((8.2, 1.0, 1.1), (0, 5.2, 7.0), bev=0.25))  # heavy crossbar
-    elif tid == "QueenDash":
-        rails()
-        for i in range(5):  # crown-shaped console: points with jewels
-            x = -2.6 + i * 1.3
-            h = 1.2 if i % 2 == 0 else 0.8
-            R["Trim"].append(box((0.55, 0.55, h), (x, 5.75, 6.5 + h / 2), (25, 0, 45), bev=0.06))
-            R["Screen"].append(lathe(arc(0, 0, 0.3, -90, 90, 5), 12))
-            R["Screen"][-1].location = (x, 5.95, 6.95 + h)
+            put("Bishop", (2.9 * s, 5.4, 8.0), 0.42)
+            for i in range(5):
+                R["Chess"].append(box((0.16, 0.3, 1.0), (4.05 * s, -4.0 + i * 2.0, 1.0), (40, 0, 0), bev=0.0))
+    elif tid == "RookRig":         # crenellated towers are the uprights, heavy crossbar on top
+        handlebars()
         for s in (-1, 1):
-            put("Queen", (3.35 * s, -1.9, 4.6), 0.36, "Trim")
-            R["Screen"].append(box((0.4, 0.4, 0.4), (4.05 * s, 0, 1.4), (0, 45, 0), bev=0.04))
-    elif tid == "KingsEndgame":
-        rails(post=False)
+            put("Rook", (2.9 * s, 5.5, 0.8), 1.45)
+        R["Panel"].append(box((7.4, 1.2, 1.0), (0, 5.4, 8.4), bev=0.15))
+    elif tid == "QueenDash":       # crown-shaped console with jewel tips
+        uprights("Chess"); handlebars()
+        for i in range(5):
+            x = -2.4 + i * 1.2
+            h = 1.1 if i % 2 == 0 else 0.7
+            R["Chess"].append(box((0.5, 0.5, h), (x, 5.55, 8.0 + h / 2), (-14, 0, 45), bev=0.05))
+            R["Neon"].append(box((0.36, 0.36, 0.36), (x, 5.6, 8.25 + h), (45, 0, 45), bev=0.0))
+    elif tid == "KingsEndgame":    # stepped supports and a cross over the console
+        handlebars()
         for s in (-1, 1):
-            for i in range(3):  # stepped supports
-                R["Trim"].append(box((1.6 - i * 0.4, 1.6 - i * 0.4, 0.9), (3.35 * s, -1.9, 2.2 + i * 0.9), bev=0.1))
-            put("King", (3.35 * s, 5.0, 5.3), 0.32, "Trim")
-        R["Trim"].append(box((0.55, 0.55, 2.0), (0, 5.9, 7.5), bev=0.1))  # cross finial
-        R["Trim"].append(box((1.7, 0.55, 0.55), (0, 5.9, 7.9), bev=0.1))
-    elif tid == "CastleClimb":
-        rails()
-        for s in (-1, 1):  # castle gate over the front of the belt
-            R["Chassis"].append(box((1.4, 1.4, 6.4), (3.4 * s, 5.4, 4.1), bev=0.15))
+            for i in range(4):
+                R["Chess" if i % 2 else "Panel"].append(box((1.5 - i * 0.25, 1.5 - i * 0.25, 1.5), (2.9 * s, 5.4, 1.5 + i * 1.5), bev=0.1))
+    elif tid == "CastleClimb":     # a castle gate frames the console
+        handlebars()
+        for s in (-1, 1):
+            R["Panel"].append(box((1.4, 1.4, 7.6), (3.4 * s, 5.4, 4.6), bev=0.12))
             for k in (-1, 1):
-                R["Trim"].append(box((0.55, 0.55, 0.6), (3.4 * s + 0.4 * k, 5.4, 7.6), bev=0.06))
-        R["Chassis"].append(box((8.2, 1.4, 1.0), (0, 5.4, 7.0), bev=0.2))
+                R["Chess"].append(box((0.55, 0.55, 0.6), (3.4 * s + 0.4 * k, 5.4, 8.7), bev=0.05))
+        R["Panel"].append(box((8.2, 1.4, 0.8), (0, 5.4, 8.3), bev=0.12))
         for i in range(4):
-            R["Trim"].append(box((0.6, 0.6, 0.6), (-1.8 + i * 1.2, 5.4, 7.8), bev=0.06))
-    elif tid == "GrandmasterGlide":
-        rails()
-        for s in (-1, 1):
-            put("Queen" if s < 0 else "King", (3.5 * s, 6.2, 0.9), 0.95, "Trim")
-            R["Screen"].append(box((0.25, 9.0, 0.25), (4.05 * s, 0.4, 2.15), bev=0.04))
-        R["Trim"].append(build_piece("King", f"{tid}_Crown", 0.5))
-        R["Trim"][-1].location = (0, 6.0, 6.4)
+            R["Chess"].append(box((0.6, 0.6, 0.6), (-1.8 + i * 1.2, 5.4, 9.0), bev=0.05))
+    elif tid == "GrandmasterGlide":  # the king and queen are the uprights
+        handlebars()
+        put("Queen", (-2.9, 5.6, 0.8), 1.5)
+        put("King", (2.9, 5.6, 0.8), 1.5)
+
+    # ---- tiers 5+: a ground spill of checker cubes around the base (1-3 studs tall) ----
+    if tier >= 5:
+        spots = [(-4.9, 5.2, 1.4), (-5.2, 3.6, 0.9), (-4.6, -5.6, 1.0), (4.9, 5.4, 1.6), (5.3, 3.8, 1.0), (4.7, -5.4, 1.2), (-5.6, -3.8, 0.7), (5.6, -3.6, 0.8)]
+        for i, (x, y, h) in enumerate(spots):
+            R["Spill"].append(box((h, h, h), (x, y, h / 2), (0, 0, 12 * (i % 3)), bev=0.1))
+            R["Neon" if i % 2 == 0 else "Chess"].append(box((0.22, 0.22, 0.22), (x + h * 0.3, y - h * 0.51, h * 0.7), bev=0.0))
+    # ---- tiers 5+: one moving prop, a separate object the game turns slowly (1 turn per 6-10 s) ----
+    if tier >= 5:
+        if tid == "QueenDash":
+            crown = lathe([(0.0, 0), (0.95, 0), (0.95, 0.2), (0.75, 0.35), (0.85, 0.75), (0.001, 0.8)], 20)
+            parts = [crown]
+            for i in range(6):
+                a = math.radians(60 * i)
+                parts.append(box((0.24, 0.24, 0.45), (0.8 * math.cos(a), 0.8 * math.sin(a), 0.95), (0, 0, 60 * i), 0.05))
+            prop = join(parts, f"{tid}_Prop")
+            prop.location = (0, 5.5, 9.9)
+        elif tid == "KingsEndgame":
+            prop = join([box((0.55, 0.55, 2.0), (0, 0, 0), bev=0.1), box((1.7, 0.55, 0.55), (0, 0, 0.4), bev=0.1)], f"{tid}_Prop")
+            prop.location = (0, 5.4, 9.6)
+        elif tid == "CastleClimb":
+            prop = build_piece("Rook", f"{tid}_Prop", 0.4)
+            prop.location = (0, 5.4, 9.4)
+        else:
+            prop = build_piece("King", f"{tid}_Prop", 0.42)
+            prop.location = (0, 5.4, 8.4)
+        R["Prop"].append(prop)
 
     out = {}
     for role, objs in roles.items():
         if not objs:
             continue
-        kind = ROLE_KIND.get(role, "SmoothPlastic")
-        color = {"Chassis": th["chassis"], "Rail": th["rail"], "Console": th["console"], "Trim": th["trim"],
-                 "Screen": th["screen"], "Steel": STEEL, "Belt": BELT}[role]
+        kind = {"Neon": "Neon", "Steel": "Metal", "Belt": "Fabric"}.get(role, "SmoothPlastic")
         o = join(objs, f"{tid}_{role}")
         smooth(o)
         o.data.materials.clear()
-        o.data.materials.append(mat(color, kind))
-        out[role] = dict(obj=o, color=color, material={"Neon": "Neon", "Metal": "Metal", "Fabric": "Fabric"}.get(kind, "SmoothPlastic"))
+        o.data.materials.append(mat(cols[role], kind))
+        out[role] = dict(obj=o, color=cols[role], material=kind)
+        if role == "Prop":
+            c = sum((o.matrix_world @ v.co for v in o.data.vertices), Vector()) / len(o.data.vertices)
+            out[role]["spin"] = dict(centre_roblox=[round(c.x, 2), round(c.z, 2), round(-c.y, 2)], turnSeconds=8, axis="Y")
     return out
 
 def tri_count(o):
@@ -356,7 +402,7 @@ if __name__ == "__main__":
         lo, hi = bounds(objs)
         manifest["treadmills"][tid] = dict(
             file=f"meshes/{tid}.obj",
-            parts={f"{tid}_{r}": dict(color=p["color"], material=p["material"], tris=tri_count(p["obj"])) for r, p in parts.items()},
+            parts={f"{tid}_{r}": dict(color=p["color"], material=p["material"], tris=tri_count(p["obj"]), **({"spin": p["spin"]} if "spin" in p else {})) for r, p in parts.items()},
             size=[round(hi.x - lo.x, 2), round(hi.z - lo.z, 2), round(hi.y - lo.y, 2)])
         if "--export" in args:
             export_obj(objs, os.path.join(MESH, f"{tid}.obj"))
@@ -376,13 +422,28 @@ if __name__ == "__main__":
     print(json.dumps({k: {kk: vv["tris"] for kk, vv in v["parts"].items()} for k, v in manifest["treadmills"].items()}))
     if "--render" in args:
         n = len(ids)
+        two_rows = n == 8
         for i, tid in enumerate(ids):
-            x = (i - (n - 1) / 2) * 11
+            if two_rows:  # the terrace: starter row in front, aspirational row raised behind
+                x, y, z = (i % 4 - 1.5) * 11, (0 if i < 4 else 17), (0 if i < 4 else 3)
+            else:
+                x, y, z = (i - (n - 1) / 2) * 11, 0, 0
             for p in built[tid].values():
-                p["obj"].location = (x, 0, 0)
+                p["obj"].location = (x, y, z)
+        if two_rows:
+            deck = box((46, 14, 3), (0, 17, 1.5), bev=0.3)
+            deck.data.materials.append(mat((150, 156, 168)))
+        if os.environ.get("GROUND") == "dark":
+            g = bpy.data.objects.get("Ground")
+            g.data.materials.clear(); g.data.materials.append(mat((44, 52, 70)))
+            bpy.context.scene.world.node_tree.nodes["Background"].inputs[0].default_value = (0.05, 0.08, 0.16, 1)
         shot = os.environ.get("SHOT", "row")
-        if shot == "row":
+        if shot == "row" and two_rows:
+            camera((-14, -38, 22), (0, 8, 2), lens=34)
+        elif shot == "row":
             camera((-0.0 + (n - 1) * 1.5, -26 - n * 3.2, 15 + n), (0, 0, 2.5), lens=38)
+        elif shot == "single":
+            camera((-13.5, -15, 9.5), (0.5, 1.0, 3.0), lens=35)
         elif shot == "pieces":
             camera((0, -38, 9), (0, -14, 2.2), lens=45)
         render(os.path.join(PREV, os.environ.get("NAME", "treadmills.png")))

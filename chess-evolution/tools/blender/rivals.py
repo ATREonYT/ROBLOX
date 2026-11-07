@@ -41,7 +41,7 @@ def mat(color, kind="SmoothPlastic"):
         b.inputs["Metallic"].default_value = 0.8
     if kind == "Neon":
         b.inputs["Emission Color"].default_value = (*lin, 1)
-        b.inputs["Emission Strength"].default_value = 2.5
+        b.inputs["Emission Strength"].default_value = 1.1
     if kind == "Glass":
         b.inputs["Alpha"].default_value = 0.55
     MATS[key] = m
@@ -119,20 +119,30 @@ def merge(*ds):
         out.update(d)
     return out
 
-UP = dict(sh=135, el=45, out=14, wr=25)
-HIT = dict(sh=38, el=58, out=6, wr=-10)
-OVER = dict(sh=34, el=62, out=6, wr=-20)
+# Vault timing (Build Playbooks 16, 17 sec.103-106, 19): five poses per strike (idle, anticipation, contact,
+# follow-through, recovery); the contact lands in 1-2 frames; the head lags the arms ("twinning");
+# holds drift instead of freezing; stance loops (Idle, Tap) move only the arms, torso and head so legs stay free.
+UPPER = ["UpperTorso", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand"]
+ANT = dict(sh=122, el=48, out=14, wr=30)      # anticipation: hand high, wrist cocked
+CON = dict(sh=34, el=58, out=6, wr=-12)       # contact on the clock
+FOL = dict(sh=27, el=63, out=6, wr=-26)       # follow-through: a touch past contact
+REC = dict(sh=48, el=54, out=8, wr=0)         # recovery
+RISE = dict(sh=78, el=46, out=12, wr=12)      # on its way up
+def tap(r, l, torso, head):
+    return P(merge(arm("Right", **r), arm("Left", **l), {"UpperTorso": torso, "Head": head}))
 ANIMS = {
-    "Idle": dict(loop=True, priority="Idle", keys=[
+    "Idle": dict(loop=True, priority="Idle", limbs=UPPER, keys=[
         (0.0, P(), "Sine"),
-        (1.0, P(merge({"UpperTorso": (-7, 4, 0), "Head": (-12, 6, 0)}), root=(0, 0.05, 0)), "Sine"),
+        (1.0, P(merge({"UpperTorso": (-7, 4, 0), "Head": (-12, 6, 0)}, arm("Right", 44, 48, out=8), arm("Left", 38, 52, out=8))), "Sine"),
         (2.0, P(), "Sine")]),
-    "Tap": dict(loop=True, priority="Action", keys=[
-        (0.00, P(merge(arm("Right", **UP), arm("Left", **HIT), {"UpperTorso": (-14, -8, 0), "Head": (-20, -6, 0)})), "Cubic"),
-        (0.06, P(merge(arm("Right", sh=125, el=40, out=14, wr=20), arm("Left", **OVER), {"UpperTorso": (-16, -9, 0), "Head": (-22, -6, 0)}), root=(0, -0.08, 0)), "Cubic"),
-        (0.18, P(merge(arm("Right", **HIT), arm("Left", **UP), {"UpperTorso": (-14, 8, 0), "Head": (-20, 6, 0)})), "Cubic"),
-        (0.24, P(merge(arm("Right", **OVER), arm("Left", sh=125, el=40, out=14, wr=20), {"UpperTorso": (-16, 9, 0), "Head": (-22, 6, 0)}), root=(0, -0.08, 0)), "Cubic"),
-        (0.36, P(merge(arm("Right", **UP), arm("Left", **HIT), {"UpperTorso": (-14, -8, 0), "Head": (-20, -6, 0)})), "Cubic")]),
+    "Tap": dict(loop=True, priority="Action", limbs=UPPER, keys=[
+        (0.000, tap(ANT, REC, (-12, -6, 0), (-19, 3, 0)), "Cubic-In"),     # right hand cocked
+        (0.100, tap(CON, RISE, (-16, -9, 0), (-20, 0, 0)), "Linear"),      # right contact (head still catching up)
+        (0.133, tap(FOL, RISE, (-17, -9, 0), (-22, -5, 0)), "Cubic-Out"),  # follow-through, 1 frame later
+        (0.200, tap(REC, ANT, (-12, 6, 0), (-19, -3, 0)), "Cubic-In"),     # left hand cocked
+        (0.300, tap(RISE, CON, (-16, 9, 0), (-20, 0, 0)), "Linear"),       # left contact
+        (0.333, tap(RISE, FOL, (-17, 9, 0), (-22, 5, 0)), "Cubic-Out"),    # follow-through
+        (0.400, tap(ANT, REC, (-12, -6, 0), (-19, 3, 0)), "Cubic-In")]),   # = first key, seamless loop
     "Victory": dict(loop=False, priority="Action", keys=[
         (0.0, P(), "Cubic"),
         (0.15, P(merge({"UpperTorso": (-15, 0, 0), "LeftUpperLeg": (40, 0, 0), "LeftLowerLeg": (-60, 0, 0), "RightUpperLeg": (40, 0, 0), "RightLowerLeg": (-60, 0, 0),
@@ -178,7 +188,7 @@ def export_anim(objs, name):
     for t, _p, ease in a["keys"]:
         sc.frame_set(1 + round(t * FPS))
         poses = {}
-        for limb in rig.ORDER[1:]:
+        for limb in a.get("limbs", rig.ORDER[1:]):
             o = objs[limb]
             q = q_to_r(o.matrix_basis.to_quaternion())
             pos = (0, 0, 0)

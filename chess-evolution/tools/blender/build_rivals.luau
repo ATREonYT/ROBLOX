@@ -117,6 +117,7 @@ fs.writeFile(ROOT .. "Rivals.rbxm", roblox.serializeModel({ rivals }))
 local anims = Instance.new("Folder")
 anims.Name = "RivalAnims"
 local EASE = { Cubic = Enum.PoseEasingStyle.Cubic, Sine = Enum.PoseEasingStyle.Cubic, Linear = Enum.PoseEasingStyle.Linear }
+local DIR = { In = Enum.PoseEasingDirection.In, Out = Enum.PoseEasingDirection.Out, InOut = Enum.PoseEasingDirection.InOut }
 local PRI = { Idle = Enum.AnimationPriority.Idle, Action = Enum.AnimationPriority.Action }
 for _, a in data.anims do
 	local ks = Instance.new("KeyframeSequence")
@@ -132,16 +133,21 @@ for _, a in data.anims do
 		rootPose.Weight = 0
 		rootPose.Parent = kf
 		poses.HumanoidRootPart = rootPose
+		local style, dir = string.match(f.ease, "^(%a+)%-?(%a*)$")
 		for _, name in data.order do
 			local L = data.limbs[name]
 			if L.parent then
 				local P = f.poses[name]
-				local q, p = P.q, P.p
 				local pose = Instance.new("Pose")
 				pose.Name = name
-				pose.CFrame = CFrame.new(p[1], p[2], p[3], q[2], q[3], q[4], q[1])
-				pose.EasingStyle = EASE[f.ease] or Enum.PoseEasingStyle.Cubic
-				pose.EasingDirection = Enum.PoseEasingDirection.InOut
+				if P then
+					local q, p = P.q, P.p
+					pose.CFrame = CFrame.new(p[1], p[2], p[3], q[2], q[3], q[4], q[1])
+					pose.EasingStyle = EASE[style] or Enum.PoseEasingStyle.Cubic
+					pose.EasingDirection = DIR[dir] or Enum.PoseEasingDirection.InOut
+				else
+					pose.Weight = 0 -- not animated here (legs stay free); kept only to hold the hierarchy
+				end
 				pose.Parent = poses[L.parent]
 				poses[name] = pose
 			end
