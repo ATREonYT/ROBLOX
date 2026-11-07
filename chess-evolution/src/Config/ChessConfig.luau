@@ -29,11 +29,11 @@ Config.Input = {
 Config.Stations = {
 	PawnMill = { order = 1, name = "Pawn Mill", basePower = 1, built = true, row = "front" },
 	KnightSprint = { order = 2, name = "Knight Sprint", basePower = 2, built = true, row = "front", unlock = { stage = "Stage2" } },
-	BishopRun = { order = 3, name = "Bishop Run", basePower = 5, built = false, row = "front" },
-	RookRig = { order = 4, name = "Rook Rig", basePower = 12, built = false, row = "front" },
-	QueenDash = { order = 5, name = "Queen Dash", basePower = 30, built = false, row = "rear" },
-	KingsEndgame = { order = 6, name = "King's Endgame", basePower = 80, built = false, row = "rear" },
-	CastleClimb = { order = 7, name = "Castle Climb", basePower = 200, built = false, row = "rear" },
+	BishopRun = { order = 3, name = "Bishop Run", basePower = 5, built = true, row = "front", unlock = { stage = "Stage3" } },
+	RookRig = { order = 4, name = "Rook Rig", basePower = 12, built = true, row = "front", unlock = { stage = "Stage4" } },
+	QueenDash = { order = 5, name = "Queen Dash", basePower = 30, built = true, row = "rear", unlock = { stage = "Stage5" } },
+	KingsEndgame = { order = 6, name = "King's Endgame", basePower = 80, built = true, row = "rear", unlock = { stage = "Stage6" } },
+	CastleClimb = { order = 7, name = "Castle Climb", basePower = 200, built = true, row = "rear", unlock = { stage = "Stage7" } },
 	GrandmasterGlide = { order = 8, name = "Grandmaster Glide", basePower = 500, built = false, row = "rear" },
 }
 
@@ -42,9 +42,9 @@ Config.Stations = {
 Config.Sets = {
 	Wooden = { order = 1, name = "Wooden Set", multiplier = 1, price = 0, available = true, color = Color3.fromRGB(196, 140, 84), accent = Color3.fromRGB(255, 196, 120), fx = "none" },
 	Marble = { order = 2, name = "Marble Set", multiplier = 2, price = 8, available = true, color = Color3.fromRGB(236, 240, 246), accent = Color3.fromRGB(70, 230, 255), fx = "halo" },
-	Jade = { order = 3, name = "Jade Set", multiplier = 4, price = 60, available = false, color = Color3.fromRGB(70, 200, 120), accent = Color3.fromRGB(120, 255, 160), fx = "leaf" },
-	Ruby = { order = 4, name = "Ruby Set", multiplier = 8, price = 250, available = false, color = Color3.fromRGB(220, 40, 70), accent = Color3.fromRGB(255, 90, 110), fx = "flare" },
-	Sapphire = { order = 5, name = "Sapphire Set", multiplier = 16, price = 900, available = false, color = Color3.fromRGB(40, 90, 230), accent = Color3.fromRGB(110, 160, 255), fx = "spark" },
+	Jade = { order = 3, name = "Jade Set", multiplier = 4, price = 60, available = true, color = Color3.fromRGB(70, 200, 120), accent = Color3.fromRGB(120, 255, 160), fx = "leaf" },
+	Ruby = { order = 4, name = "Ruby Set", multiplier = 8, price = 250, available = true, color = Color3.fromRGB(220, 40, 70), accent = Color3.fromRGB(255, 90, 110), fx = "flare" },
+	Sapphire = { order = 5, name = "Sapphire Set", multiplier = 16, price = 600, available = true, color = Color3.fromRGB(40, 90, 230), accent = Color3.fromRGB(110, 160, 255), fx = "spark" },
 	Gold = { order = 6, name = "Gold Set", multiplier = 32, price = 3000, available = false, color = Color3.fromRGB(255, 196, 40), accent = Color3.fromRGB(255, 220, 90), fx = "orbit" },
 	Obsidian = { order = 7, name = "Obsidian Set", multiplier = 64, price = 10000, available = false, color = Color3.fromRGB(40, 30, 60), accent = Color3.fromRGB(170, 90, 255), fx = "aura" },
 	Crystal = { order = 9, name = "Crystal Set", multiplier = 256, price = 120000, available = false, color = Color3.fromRGB(200, 240, 255), accent = Color3.fromRGB(120, 230, 255), fx = "spark" },
@@ -60,19 +60,45 @@ Config.DefaultSet = "Wooden"
 -- An earlier stage must be cleared before a later one opens (gate).
 Config.Stages = {
 	Stage1 = {
-		order = 1, name = "Pawn Rival", rival = "Pawn", power = 25, reward = 10, color = Color3.fromRGB(255, 70, 70),
+		order = 1, name = "Pawn Pete", rival = "Pawn", rivalId = "PawnPete", power = 25, reward = 10, color = Color3.fromRGB(255, 70, 70),
+		opponent = { name = "Pawn Pete", title = "Club Rookie" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 2.5 }, { untilT = 16, perSecond = 5 } } },
 	},
 	Stage2 = {
-		order = 2, name = "Knight Rival", rival = "Knight", power = 90, reward = 20, color = Color3.fromRGB(60, 140, 255), unlocks = "KnightSprint",
+		order = 2, name = "Knight Nadia", rival = "Knight", rivalId = "KnightNadia", power = 90, reward = 20, color = Color3.fromRGB(60, 140, 255), unlocks = "KnightSprint",
+		opponent = { name = "Knight Nadia", title = "Speed Hopper" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 3 }, { untilT = 16, perSecond = 6 } } },
 	},
 	Stage3 = {
-		order = 3, name = "Rook Rival", rival = "Rook", power = 220, reward = 40, color = Color3.fromRGB(255, 190, 40),
+		order = 3, name = "Rook Rocco", rival = "Rook", rivalId = "RookRocco", power = 220, reward = 40, color = Color3.fromRGB(255, 190, 40), unlocks = "BishopRun",
+		opponent = { name = "Rook Rocco", title = "Castle Crusher" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 3.2 }, { untilT = 16, perSecond = 6.5 } } },
 	},
+	Stage4 = {
+		order = 4, name = "Bishop Bea", rival = "Bishop", rivalId = "BishopBea", power = 5000, reward = 70, color = Color3.fromRGB(170, 80, 240), unlocks = "RookRig",
+		opponent = { name = "Bishop Bea", title = "Diagonal Demon" },
+		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 9 }, { untilT = 16, perSecond = 12 } } },
+	},
+	Stage5 = {
+		order = 5, name = "Queen Quinn", rival = "Queen", rivalId = "QueenQuinn", power = 15000, reward = 120, color = Color3.fromRGB(255, 120, 200), unlocks = "QueenDash",
+		opponent = { name = "Queen Quinn", title = "Board Boss" },
+		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 10 }, { untilT = 16, perSecond = 13 } } },
+	},
+	Stage6 = {
+		order = 6, name = "King Kai", rival = "King", rivalId = "KingKai", power = 50000, reward = 200, color = Color3.fromRGB(60, 220, 200), unlocks = "KingsEndgame",
+		opponent = { name = "King Kai", title = "Endgame King" },
+		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 11 }, { untilT = 16, perSecond = 13.5 } } },
+	},
+	Stage7 = {
+		order = 7, name = "Grandmaster Orion", rival = "King", rivalId = "GrandmasterOrion", power = 250000, reward = 500, color = Color3.fromRGB(255, 200, 40), unlocks = "CastleClimb", boss = true,
+		opponent = { name = "Grandmaster Orion", title = "World Champion" },
+		fight = { perTap = 4, grace = 1, timeout = 20, phases = { { untilT = 10, perSecond = 12.5 }, { untilT = 20, perSecond = 15 } } },
+	},
 }
-Config.FutureStages = 5 -- extra gates drawn past the "Coming soon" line, for depth
+Config.FutureStages = 3
+-- Rival animation ids (assets/RivalAnims.rbxm). 0 until Alex publishes them (right-click > Save to Roblox).
+-- Studio plays the KeyframeSequences directly; the live game needs these ids.
+Config.AnimIds = { Idle = 0, Tap = 0, Victory = 0, Defeat = 0 } -- extra gates drawn past the "Coming soon" line, for depth
 
 -- Battle badges (chess-review style ratings). One place for every threshold.
 -- Meter: 100 = player wins, 0 = player loses.
