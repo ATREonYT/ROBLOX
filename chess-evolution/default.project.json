@@ -1,0 +1,23 @@
+{
+  "name": "ChessEvolution",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Kit": { "$path": "src/Shared" },
+      "ChessConfig": { "$path": "src/Config/ChessConfig.luau" }
+    },
+    "ServerScriptService": {
+      "Chess": { "$path": "src/Server" },
+      "Main": { "$path": "src/Main.server.luau" }
+    },
+    "StarterGui": {
+      "ChessHUD": { "$path": "src/StarterGui/ChessHUD.rbxm" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "ChessClient": { "$path": "src/Client/ChessClient.client.luau" }
+      }
+    }
+  }
+}
