@@ -360,6 +360,30 @@ function MapBuilder.Build(config: any): Model
 		local featured = Models.Piece(if rear then "Queen" else "Knight", set.color, 1.05, pieceAnchor.CFrame, { trim = set.accent, material = material })
 		featured.Name = "Featured"
 		featured.Parent = m
+		-- every case glows in its set's colour, with a soft sparkle (reference: glowing items in cases)
+		local glow = Instance.new("PointLight")
+		glow.Name = "CaseGlow"
+		glow.Color = set.accent
+		glow.Range = 9
+		glow.Brightness = if set.available then 2.2 else 1.2
+		glow.Parent = pieceAnchor
+		local att = Instance.new("Attachment")
+		att.Name = "Sparkle"
+		att.Parent = pieceAnchor
+		local pe = Instance.new("ParticleEmitter")
+		pe.Name = "CaseSparkle"
+		pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		pe.Color = ColorSequence.new(set.accent, Color3.new(1, 1, 1))
+		pe.LightEmission = 0.8
+		pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.45), NumberSequenceKeypoint.new(1, 0) })
+		pe.Transparency = NumberSequence.new(0.2)
+		pe.Lifetime = NumberRange.new(0.8, 1.4)
+		pe.Rate = if set.available then 6 else 3
+		pe.Speed = NumberRange.new(0.6, 1.4)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.Shape = Enum.ParticleEmitterShape.Box
+		pe.Parent = att
+		part(m, "GlowRing", Vector3.new(0.2, 6.2, 6.2), CFrame.new(x, y + 0.65, z) * CFrame.Angles(0, 0, math.pi / 2), set.accent, { Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Transparency = 0.55, CanCollide = false, CastShadow = false })
 		-- floating label like the reference: name, red multiplier badge, state
 		local plate = part(m, "Nameplate", Vector3.new(1, 1, 1), CFrame.new(x, y + 9.4, z), Color3.new(), { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
 		local bb = billboard(plate, "Sign", UDim2.fromScale(7, 2.6), {
@@ -432,22 +456,49 @@ function MapBuilder.Build(config: any): Model
 		local padZ = z0 - 22
 		local padX = 5
 		local pad = studded(m, "Pad", Vector3.new(20, 0.5, 15), CFrame.new(padX, 1.25, padZ), PAD_RED)
+		-- duel table on the pad: board, chess clock, a stand point for each side.
+		-- Anchor names match the Blender DuelTable.rbxm so it can drop in later.
+		local tbl = Instance.new("Model")
+		tbl.Name = "DuelTable"
+		local TOP = 3.8 -- table top height (pad top is 1.5): waist height for the rigs
+		local wood = Color3.fromRGB(150, 96, 56)
+		for _, dx in { -2.9, 2.9 } do
+			for _, dz in { -2.2, 2.2 } do
+				part(tbl, "Leg", Vector3.new(0.6, TOP - 1.7, 0.6), CFrame.new(padX + dx, 1.5 + (TOP - 1.7) / 2, padZ + dz), wood)
+			end
+		end
+		local top = part(tbl, "TableTop", Vector3.new(7, 0.5, 5.6), CFrame.new(padX, TOP - 0.25, padZ), wood, { Material = Enum.Material.Wood })
+		local board = part(tbl, "BoardTop", Vector3.new(5, 0.2, 5), CFrame.new(padX - 0.6, TOP + 0.1, padZ), Color3.fromRGB(60, 40, 30))
 		local tiles = folder(m, "Tiles")
+		local T = 1.1
 		for r = 0, 3 do
 			for c = 0, 3 do
 				local dark = (r + c) % 2 == 1
-				part(tiles, `Tile{r}{c}`, Vector3.new(2.6, 0.12, 2.6), CFrame.new(padX - 3.9 + c * 2.6, 1.56, padZ - 3.9 + r * 2.6), if dark then Color3.fromRGB(70, 74, 86) else Color3.fromRGB(246, 238, 220), { Material = Enum.Material.SmoothPlastic, CanCollide = false })
+				-- row 0 is the rival's side (-Z), row 3 the player's (+Z)
+				part(tiles, `Tile{r}{c}`, Vector3.new(T - 0.04, 0.08, T - 0.04), CFrame.new(padX - 0.6 - 1.5 * T + c * T, TOP + 0.24, padZ - 1.5 * T + r * T), if dark then Color3.fromRGB(70, 74, 86) else Color3.fromRGB(246, 238, 220), { Material = Enum.Material.SmoothPlastic, CanCollide = false })
 			end
 		end
+		-- chess clock at the +X end: button A on the player's side, B on the rival's
+		local clockX = padX + 2.75
+		part(tbl, "Clock", Vector3.new(1.1, 0.9, 2.2), CFrame.new(clockX, TOP + 0.45, padZ), Color3.fromRGB(30, 30, 38))
+		part(tbl, "ClockFaceA", Vector3.new(0.05, 0.6, 0.8), CFrame.new(clockX - 0.58, TOP + 0.5, padZ + 0.5), Color3.fromRGB(240, 240, 230), { Material = Enum.Material.Neon, CanCollide = false })
+		part(tbl, "ClockFaceB", Vector3.new(0.05, 0.6, 0.8), CFrame.new(clockX - 0.58, TOP + 0.5, padZ - 0.5), Color3.fromRGB(240, 240, 230), { Material = Enum.Material.Neon, CanCollide = false })
+		part(tbl, "ClockButtonA", Vector3.new(0.6, 0.3, 0.6), CFrame.new(clockX, TOP + 1.05, padZ + 0.55), Color3.fromRGB(70, 210, 80))
+		part(tbl, "ClockButtonB", Vector3.new(0.6, 0.3, 0.6), CFrame.new(clockX, TOP + 1.05, padZ - 0.55), st.color)
+		part(tbl, "SeatA", Vector3.new(2, 1, 2), CFrame.lookAt(Vector3.new(padX, 1.5, padZ + 4.4), Vector3.new(padX, 1.5, padZ)), Color3.new(), hidden)
+		part(tbl, "SeatB", Vector3.new(2, 1, 2), CFrame.lookAt(Vector3.new(padX, 1.5, padZ - 4.4), Vector3.new(padX, 1.5, padZ)), Color3.new(), hidden)
+		local _t = { top, board }
+		tbl.Parent = m
 		part(m, "PadGlow", Vector3.new(21, 0.3, 16), CFrame.new(padX, 1.05, padZ), st.color, { Material = Enum.Material.Neon, Transparency = 0.6, CanCollide = false, CastShadow = false })
-		part(m, "PlayerSpot", Vector3.new(2, 1, 2), CFrame.lookAt(Vector3.new(padX, 1.5, padZ + 10), Vector3.new(padX, 1.5, padZ)), Color3.new(), hidden)
-		part(m, "PlayerPieceSpot", Vector3.new(1, 1, 1), CFrame.lookAt(Vector3.new(padX - 1.3, 1.62, padZ + 3.9), Vector3.new(padX - 1.3, 1.62, padZ)), Color3.new(), hidden)
-		local rivalSpot = part(m, "RivalSpot", Vector3.new(1, 1, 1), CFrame.lookAt(Vector3.new(padX + 1.3, 1.62, padZ - 3.9), Vector3.new(padX + 1.3, 1.62, padZ + 4)), Color3.new(), hidden)
-		local rival = Models.Piece(st.rival, Models.CHARCOAL, 0.6, rivalSpot.CFrame, { trim = st.color, collide = false })
+		part(m, "PlayerSpot", Vector3.new(2, 1, 2), CFrame.lookAt(Vector3.new(padX, 1.5, padZ + 4.4), Vector3.new(padX, 1.5, padZ)), Color3.new(), hidden)
+		part(m, "PlayerPieceSpot", Vector3.new(1, 1, 1), CFrame.lookAt(Vector3.new(padX - 0.6 - 0.5 * T, TOP + 0.28, padZ + 1.5 * T), Vector3.new(padX - 0.6 - 0.5 * T, TOP + 0.28, padZ)), Color3.new(), hidden)
+		local rivalSpot = part(m, "RivalSpot", Vector3.new(1, 1, 1), CFrame.lookAt(Vector3.new(padX - 0.6 + 0.5 * T, TOP + 0.28, padZ - 1.5 * T), Vector3.new(padX - 0.6 + 0.5 * T, TOP + 0.28, padZ)), Color3.new(), hidden)
+		local rival = Models.Piece(st.rival, Models.CHARCOAL, 0.24, rivalSpot.CFrame, { trim = st.color, collide = false })
 		rival.Name = "Rival"
 		rival.Parent = m
+		m:SetAttribute("TileSize", T)
 		part(m, "Zone", Vector3.new(LANE_HALF * 2 - 2, 10, 24), CFrame.new(0, 5, padZ + 4), Color3.new(), hidden)
-		local sign = part(m, "Sign", Vector3.new(1, 1, 1), CFrame.new(padX, 9, padZ - 9), Color3.new(), hidden)
+		local sign = part(m, "Sign", Vector3.new(1, 1, 1), CFrame.new(padX, 11.5, padZ - 7), Color3.new(), hidden)
 		billboard(sign, "Info", UDim2.fromScale(12, 3.6), {
 			{ text = st.name, scale = 1.1 },
 			{ text = `{st.power} Power  ·  +{st.reward} Wins`, color = Color3.fromRGB(255, 220, 90) },
@@ -497,9 +548,21 @@ function MapBuilder.Build(config: any): Model
 		zt -= 22
 	end
 	-- top of the left cliff behind the yard, and the right cliff
-	for i = 0, 5 do
-		plant(-74 - (i % 2) * 18, CLIFF_H + 2, FAR_Z + 10 + i * 14, 1.05 + (i % 3) * 0.12)
-		plant(98 + (i % 2) * 18, CLIFF_H + 2, FAR_Z + 8 + i * 14, 1 + (i % 2) * 0.15)
+	-- dense forest on the cliffs around the hub (the reference is packed with trees)
+	for row = 0, 2 do
+		for i = 0, 6 do
+			plant(-72 - row * 20 - (i % 2) * 6, CLIFF_H + 2, FAR_Z + 6 + i * 12 + row * 4, 0.95 + ((i + row) % 3) * 0.12)
+			plant(96 + row * 20 + (i % 2) * 6, CLIFF_H + 2, FAR_Z + 4 + i * 12 + row * 5, 0.95 + ((i + row) % 2) * 0.15)
+		end
+	end
+	for i = 0, 3 do
+		-- behind the far cliff edge, clear of the lane canyon (|x| > LANE_HALF + 8)
+		plant(-62 + i * 10, CLIFF_H + 2, FAR_Z - 12 - (i % 2) * 10, 1 + (i % 3) * 0.1)
+		plant(30 + i * 12, CLIFF_H + 2, FAR_Z - 12 - (i % 2) * 10, 1 + (i % 3) * 0.1)
+	end
+	for i = 0, 3 do
+		plant(-150 + i * 16, 12, 56, 0.8)
+		plant(112 + i * 16, 12, 60, 0.8)
 	end
 	-- the hub's near side and around the path
 	for _, t in { { -40, 60, 0.85 }, { -24, 78, 0.7 }, { 30, 62, 0.8 }, { 58, 76, 1 }, { -58, 96, 1 }, { 22, 100, 0.9 }, { 70, 52, 0.75 }, { -12, 46, 0.55 }, { 16, 34, 0.5 } } do

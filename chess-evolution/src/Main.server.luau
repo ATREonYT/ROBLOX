@@ -19,5 +19,6 @@ if not workspace:FindFirstChild("Map") then
 	print("[Chess] map built from code (no saved Map in Workspace)")
 end
 
+require(Server:WaitForChild("Rivals")).Spawn(Config, workspace:WaitForChild("Map"))
 PlayerData.Start()
 print("[Chess] server ready")

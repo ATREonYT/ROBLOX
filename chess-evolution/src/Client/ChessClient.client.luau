@@ -606,6 +606,8 @@ local function doAction()
 			Net.Send("Tap", "battle", battle.id)
 			tapSound()
 			battle.kick = (battle.kick or 0) + 1
+			slap(player.Character, "Right")
+			pressButton(battle, "ClockButtonA")
 		end
 	elseif ctx.kind == "station" then
 		local id = ctx.id
@@ -1303,10 +1305,16 @@ local function rivalMove(b: any)
 	else
 		offset = Vector3.new(if k % 2 == 1 then -8 else 0, 0, 0)
 	end
+	local unit = (b.tile or 4) / 4 -- offsets below are in 4-stud tiles
+	offset *= unit
+	if kind == "Bishop" or kind == "Queen" or kind == "King" then
+		local diag = { Vector3.new(-4, 0, 4), Vector3.new(0, 0, 0), Vector3.new(4, 0, 4), Vector3.new(0, 0, 0) }
+		offset = diag[((k - 1) % #diag) + 1] * unit
+	end
 	local target = CFrame.new(spot.Position + offset) * (spot - spot.Position)
 	local start = os.clock()
 	local dur = if kind == "Rook" then 0.45 else 0.35
-	local height = if kind == "Knight" then 3 elseif kind == "Pawn" then 1.2 else 0
+	local height = (if kind == "Knight" then 3 elseif kind == "Pawn" or kind == "Bishop" then 1.2 else 0.6) * (b.tile or 4) / 4
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
 		local a = math.clamp((os.clock() - start) / dur, 0, 1)
@@ -1321,6 +1329,174 @@ local function rivalMove(b: any)
 	end)
 end
 
+-- Rival animations (assets/RivalAnims.rbxm). Live game: Config.AnimIds after Alex publishes them.
+-- In Studio the KeyframeSequences are registered on the fly (temporary ids, Studio only).
+local animCache: { [string]: string } = {}
+local function animId(name: string): string?
+	if animCache[name] then
+		return animCache[name]
+	end
+	local ids = Config.AnimIds or {}
+	if ids[name] and ids[name] ~= 0 then
+		animCache[name] = `rbxassetid://{ids[name]}`
+		return animCache[name]
+	end
+	if RunService:IsStudio() then
+		local assets = ReplicatedStorage:FindFirstChild("ChessAssets")
+		local ks = assets and assets:FindFirstChild("RivalAnims") and assets.RivalAnims:FindFirstChild(name)
+		if ks then
+			local ok, id = pcall(function()
+				return game:GetService("KeyframeSequenceProvider"):RegisterKeyframeSequence(ks)
+			end)
+			if ok then
+				animCache[name] = id
+				return id
+			end
+			warn(`[ChessUI] could not register animation {name}: {id}`)
+		end
+	end
+	return nil
+end
+local rigTracks: { [Model]: { [string]: AnimationTrack } } = {}
+local function playAnim(rig: Model?, name: string, speed: number?): AnimationTrack?
+	if not rig then
+		return nil
+	end
+	local hum = rig:FindFirstChildOfClass("Humanoid")
+	local animator = hum and (hum:FindFirstChildOfClass("Animator") or Instance.new("Animator", hum))
+	local id = animId(name)
+	if not animator or not id then
+		return nil
+	end
+	rigTracks[rig] = rigTracks[rig] or {}
+	local tracks = rigTracks[rig]
+	if not tracks[name] then
+		local a = Instance.new("Animation")
+		a.AnimationId = id
+		local ok, track = pcall(function()
+			return (animator :: Animator):LoadAnimation(a)
+		end)
+		if not ok then
+			return nil
+		end
+		tracks[name] = track
+	end
+	for other, t in tracks do
+		if other ~= name and t.IsPlaying and other ~= "Idle" then
+			t:Stop(0.15)
+		end
+	end
+	local track = tracks[name]
+	if not track.IsPlaying then
+		track:Play(0.15)
+	end
+	track:AdjustSpeed(speed or 1)
+	return track
+end
+local function stopAnim(rig: Model?, name: string)
+	local t = rig and rigTracks[rig] and rigTracks[rig][name]
+	if t and t.IsPlaying then
+		t:Stop(0.2)
+	end
+end
+-- every rival idles at its table
+task.defer(function()
+	for _, m in Stages:GetChildren() do
+		local npc = m:WaitForChild("RivalNPC", 10)
+		if npc then
+			playAnim(npc :: Model, "Idle")
+		end
+	end
+end)
+
+-- 3D duel at the table: both people slap their side of the chess clock.
+-- Arms move through the shoulder joint's C0, so the avatar's own animations keep playing.
+type Arm = { motor: Motor6D, base: CFrame, kick: number, hold: number }
+local arms: { [Model]: { [string]: Arm } } = {}
+local function armOf(rig: Model?, side: string): Arm?
+	if not rig then
+		return nil
+	end
+	arms[rig] = arms[rig] or {}
+	local cache = arms[rig]
+	if cache[side] and cache[side].motor.Parent then
+		return cache[side]
+	end
+	local upper = rig:FindFirstChild(side .. "UpperArm")
+	local motor = upper and upper:FindFirstChild(side .. "Shoulder")
+	if not (motor and motor:IsA("Motor6D")) then
+		local torso = rig:FindFirstChild("Torso") -- R6 avatars
+		motor = torso and torso:FindFirstChild(side .. " Shoulder")
+	end
+	if not (motor and motor:IsA("Motor6D")) then
+		return nil
+	end
+	local a = { motor = motor, base = motor.C0, kick = 0, hold = 0 }
+	cache[side] = a
+	return a
+end
+local function pressButton(b: any, name: string)
+	local tbl = b.model and b.model:FindFirstChild("DuelTable")
+	local btn = tbl and tbl:FindFirstChild(name) :: BasePart?
+	if btn then
+		btn:SetAttribute("Press", os.clock())
+	end
+end
+local function slap(rig: Model?, side: string)
+	local a = armOf(rig, side)
+	if a then
+		a.kick = 1
+	end
+end
+local function setHold(rig: Model?, side: string, hold: number)
+	local a = armOf(rig, side)
+	if a then
+		a.hold = hold
+	end
+end
+local function releaseArms(rig: Model?)
+	if rig and arms[rig] then
+		for _, a in arms[rig] do
+			if a.motor.Parent then
+				a.motor.C0 = a.base
+			end
+		end
+		arms[rig] = nil
+	end
+end
+local function stepArms(dt: number)
+	for rig, sides in arms do
+		if not rig.Parent then
+			arms[rig] = nil
+			continue
+		end
+		for side, a in sides do
+			a.kick = math.max(0, a.kick - dt * 9)
+			-- up-and-slam: the arm lifts high early in the kick, then slams to the hold angle
+			local lift = math.sin(a.kick * math.pi) * 0.9
+			local angle = a.hold + lift
+			local roll = if side == "Right" then -0.25 else 0.25
+			a.motor.C0 = a.base * CFrame.Angles(angle, 0, if angle > 0 then roll * math.min(1, angle) else 0)
+		end
+	end
+	-- clock buttons dip when slapped
+	for _, m in Stages:GetChildren() do
+		local tbl = m:FindFirstChild("DuelTable")
+		if tbl then
+			for _, name in { "ClockButtonA", "ClockButtonB" } do
+				local btn = tbl:FindFirstChild(name) :: BasePart?
+				local at = btn and btn:GetAttribute("Press")
+				if btn and at then
+					local home = btn:GetAttribute("Home") or btn.Position.Y
+					btn:SetAttribute("Home", home)
+					local k = math.clamp((os.clock() - at) / 0.12, 0, 1)
+					btn.Position = Vector3.new(btn.Position.X, home - 0.18 * (1 - k), btn.Position.Z)
+				end
+			end
+		end
+	end
+end
+
 local function endBattleScene(b: any)
 	if b.rival and b.rivalHome then
 		b.rival:PivotTo(b.rivalHome)
@@ -1332,6 +1508,37 @@ local function endBattleScene(b: any)
 	end
 	if b.piece then
 		b.piece:Destroy()
+	end
+	local npc = b.npc
+	local me = player.Character
+	setHold(me, "Right", 0)
+	setHold(npc, "Left", 0)
+	task.delay(if b.outcome then 1.6 else 0, function()
+		releaseArms(me)
+		releaseArms(npc)
+	end)
+	if npc and b.npcTap then
+		b.npcTap = nil
+		stopAnim(npc, "Tap")
+		if b.outcome == "lose" then
+			playAnim(npc, "Victory")
+		elseif b.outcome == "win" then
+			playAnim(npc, "Defeat")
+		end
+		task.delay(1.8, function()
+			stopAnim(npc, "Victory")
+			stopAnim(npc, "Defeat")
+		end)
+	elseif npc and b.outcome == "lose" then
+		-- the rival celebrates: both arms up
+		setHold(npc, "Left", 2.6)
+		setHold(npc, "Right", 2.6)
+		slap(npc, "Right")
+	elseif npc and b.outcome == "win" then
+		setHold(npc, "Left", -0.2)
+		setHold(npc, "Right", -0.2)
+		setHold(me, "Right", 2.6)
+		setHold(me, "Left", 2.6)
 	end
 	if worldBadge then
 		worldBadge:Destroy()
@@ -1358,15 +1565,26 @@ local function startBattleScene(b: any)
 	b.rivalHome = b.rival and b.rival:GetPivot()
 	local pieceSpot = stageModel:FindFirstChild("PlayerPieceSpot") :: BasePart
 	local set = Config.Sets[S.Equipped] or Config.Sets.Wooden
-	b.piece = Models.Piece("Knight", set.color, 1.15, pieceSpot.CFrame * CFrame.new(0, -0.15, 0), { trim = set.accent, material = setMaterial(S.Equipped) })
+	b.tile = stageModel:GetAttribute("TileSize") or 4
+	b.npc = stageModel:FindFirstChild("RivalNPC")
+	b.piece = Models.Piece("Knight", set.color, b.tile * 0.24, pieceSpot.CFrame * CFrame.new(0, -0.04, 0), { trim = set.accent, material = setMaterial(S.Equipped) })
 	b.piece.Name = "YourPiece"
 	b.piece.Parent = fxFolder
 	worldBadge = makeWorldBadge(b.piece.PrimaryPart)
-	-- camera: behind the player, looking down the pad
+	-- camera: side-on at the clock end of the table, both players in profile (you on the left)
+	local tbl = stageModel:FindFirstChild("DuelTable")
+	local top = tbl and tbl:FindFirstChild("TableTop") :: BasePart?
 	local spot = stageModel:FindFirstChild("PlayerSpot") :: BasePart
+	local centre = if top then top.Position else spot.Position + Vector3.new(0, 3, -4.4)
 	camSaved = true
 	camera.CameraType = Enum.CameraType.Scriptable
-	local goal = CFrame.lookAt(spot.Position + Vector3.new(7, 13, 16), spot.Position + Vector3.new(0, 2, -14))
+	local goal = CFrame.lookAt(centre + Vector3.new(15, 4.2, 1.2), centre + Vector3.new(0, 1.2, 0))
+	setHold(player.Character, "Right", 1.05)
+	b.npcTap = playAnim(b.npc, "Tap", 0.6)
+	if not b.npcTap then
+		setHold(b.npc, "Left", 1.05)
+	end
+	b.rivalSlaps = 0
 	tween(camera, 0.5, { CFrame = goal }, Enum.EasingStyle.Sine)
 	local stageCfg = Config.Stages[b.stage]
 	local opponent = stageCfg.opponent or {}
@@ -1559,6 +1777,7 @@ Net.On("BattleEnd", function(p: any)
 		return
 	end
 	b.ended = true
+	b.outcome = p.outcome
 	battle = nil
 	if p.outcome == "cancelled" then
 		endBattleScene(b)
@@ -1581,7 +1800,7 @@ Net.On("BattleEnd", function(p: any)
 		local conn
 		conn = RunService.RenderStepped:Connect(function()
 			local a = math.clamp((os.clock() - t0) / 0.32, 0, 1)
-			local pos = from.Position:Lerp(to.Position, 1 - (1 - a) ^ 3) + Vector3.new(0, math.sin(a * math.pi) * 3, 0)
+			local pos = from.Position:Lerp(to.Position, 1 - (1 - a) ^ 3) + Vector3.new(0, math.sin(a * math.pi) * 3 * (b.tile or 4) / 4, 0)
 			if b.piece and b.piece.Parent then
 				b.piece:PivotTo(CFrame.new(pos) * (from - from.Position))
 			end
@@ -1619,7 +1838,7 @@ Net.On("BattleEnd", function(p: any)
 		local conn
 		conn = RunService.RenderStepped:Connect(function()
 			local a = math.clamp((os.clock() - t0) / 0.35, 0, 1)
-			local pos = from.Position:Lerp(target, 1 - (1 - a) ^ 3) + Vector3.new(0, math.sin(a * math.pi) * 2, 0)
+			local pos = from.Position:Lerp(target, 1 - (1 - a) ^ 3) + Vector3.new(0, math.sin(a * math.pi) * 2 * (b.tile or 4) / 4, 0)
 			if b.rival and b.rival.Parent then
 				b.rival:PivotTo(CFrame.new(pos) * (from - from.Position))
 			end
@@ -1777,7 +1996,22 @@ RunService.RenderStepped:Connect(function(dt)
 			b.lastMove = now
 			rivalMove(b)
 		end
+		-- the rival slaps the clock at its pressure rate
+		if b.npcTap then
+			b.npcTap:AdjustSpeed(math.clamp(Config.Pressure(b.fight, elapsed) / b.fight.perTap * 0.5, 0.6, 2.4))
+		end
+		if elapsed > b.fight.grace and not b.ended then
+			b.rivalSlaps = (b.rivalSlaps or 0) + dt * Config.Pressure(b.fight, elapsed) / b.fight.perTap
+			if b.rivalSlaps >= 1 then
+				b.rivalSlaps -= 1
+				if not b.npcTap then
+					slap(b.npc, "Left")
+				end
+				pressButton(b, "ClockButtonB")
+			end
+		end
 	end
+	stepArms(dt)
 
 	-- guide arrows: a floating chain of chevrons from the player toward the target
 	local r = root()

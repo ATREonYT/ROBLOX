@@ -85,6 +85,21 @@ do
 		check(`{stage}: 1 tap/s is not enough`, slow.outcome ~= "win", slow.outcome)
 	end
 	check("Stage2 harder than Stage1", Battle.Simulate(Config.Stages.Stage2.fight, 2, 0.1).t > s.t)
+	-- later rivals: beatable at a steady 3.5-4 taps/s (the boss needs 4), never by mashing slowly
+	for _, row in { { "Stage4", 3.5, 2 }, { "Stage5", 3.5, 2.5 }, { "Stage6", 4, 2.5 }, { "Stage7", 4, 3 } } do
+		local w = logBadges(row[1], row[2], `{row[2]} taps/s`)
+		check(`{row[1]}: {row[2]} taps/s wins`, w.outcome == "win", `{w.outcome} {w.t}`)
+		local slow = logBadges(row[1], row[3], `{row[3]} taps/s`)
+		check(`{row[1]}: {row[3]} taps/s is not enough`, slow.outcome ~= "win", `{slow.outcome} {slow.t}`)
+		check(`{row[1]}: winnable inside the 6/s tap cap`, logBadges(row[1], 6, "6 taps/s").outcome == "win")
+	end
+	check("every stage has a named opponent", (function()
+		for _, id in Config.StageOrder do
+			local o = Config.Stages[id].opponent
+			if not (o and o.name and o.title) then return false end
+		end
+		return true
+	end)())
 end
 
 -- 3. Badge scenarios (scripted meter paths) ---------------------------------
@@ -257,7 +272,7 @@ do
 	check("defeat: keeps power and wins", data.Power == powerBefore and data.Wins == 10)
 	-- shop
 	check("buy: unknown set rejected", not Core.Buy(core, data, "Nope"))
-	check("buy: coming-soon set never sold", not Core.Buy(core, data, "Jade"))
+	check("buy: coming-soon set never sold", not Core.Buy(core, data, "Gold"))
 	check("equip: unowned rejected", not Core.Equip(core, data, "Marble"))
 	ok = Core.Buy(core, data, "Marble")
 	check("buy: Marble for 8 wins", ok and data.Wins == 2 and data.Sets.Marble == true, data.Wins)
