@@ -1,0 +1,78 @@
+-- [ChessTreadmillsV2] Paint the imported treadmill meshes. Paste in the Command Bar after Import 3D.
+-- It finds every MeshPart named <Lane>_<Role> anywhere in Workspace and sets its Color and Material.
+local LOOK = {
+	["PawnMill_Body"] = { Color3.fromRGB(30, 34, 45), Enum.Material.SmoothPlastic },
+	["PawnMill_Panel"] = { Color3.fromRGB(52, 58, 74), Enum.Material.SmoothPlastic },
+	["PawnMill_Square"] = { Color3.fromRGB(74, 80, 102), Enum.Material.SmoothPlastic },
+	["PawnMill_Chess"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["PawnMill_Neon"] = { Color3.fromRGB(70, 230, 110), Enum.Material.Neon },
+	["PawnMill_Belt"] = { Color3.fromRGB(34, 36, 44), Enum.Material.Fabric },
+	["PawnMill_Steel"] = { Color3.fromRGB(150, 156, 168), Enum.Material.Metal },
+	["KnightSprint_Body"] = { Color3.fromRGB(30, 34, 45), Enum.Material.SmoothPlastic },
+	["KnightSprint_Panel"] = { Color3.fromRGB(52, 58, 74), Enum.Material.SmoothPlastic },
+	["KnightSprint_Square"] = { Color3.fromRGB(74, 80, 102), Enum.Material.SmoothPlastic },
+	["KnightSprint_Chess"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["KnightSprint_Neon"] = { Color3.fromRGB(60, 130, 255), Enum.Material.Neon },
+	["KnightSprint_Belt"] = { Color3.fromRGB(34, 36, 44), Enum.Material.Fabric },
+	["KnightSprint_Steel"] = { Color3.fromRGB(150, 156, 168), Enum.Material.Metal },
+	["BishopRun_Body"] = { Color3.fromRGB(30, 34, 45), Enum.Material.SmoothPlastic },
+	["BishopRun_Panel"] = { Color3.fromRGB(52, 58, 74), Enum.Material.SmoothPlastic },
+	["BishopRun_Square"] = { Color3.fromRGB(74, 80, 102), Enum.Material.SmoothPlastic },
+	["BishopRun_Chess"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["BishopRun_Neon"] = { Color3.fromRGB(235, 90, 220), Enum.Material.Neon },
+	["BishopRun_Belt"] = { Color3.fromRGB(34, 36, 44), Enum.Material.Fabric },
+	["BishopRun_Steel"] = { Color3.fromRGB(150, 156, 168), Enum.Material.Metal },
+	["RookRig_Body"] = { Color3.fromRGB(30, 34, 45), Enum.Material.SmoothPlastic },
+	["RookRig_Panel"] = { Color3.fromRGB(52, 58, 74), Enum.Material.SmoothPlastic },
+	["RookRig_Square"] = { Color3.fromRGB(74, 80, 102), Enum.Material.SmoothPlastic },
+	["RookRig_Chess"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["RookRig_Neon"] = { Color3.fromRGB(255, 60, 50), Enum.Material.Neon },
+	["RookRig_Belt"] = { Color3.fromRGB(34, 36, 44), Enum.Material.Fabric },
+	["RookRig_Steel"] = { Color3.fromRGB(150, 156, 168), Enum.Material.Metal },
+	["QueenDash_Body"] = { Color3.fromRGB(30, 34, 45), Enum.Material.SmoothPlastic },
+	["QueenDash_Panel"] = { Color3.fromRGB(52, 58, 74), Enum.Material.SmoothPlastic },
+	["QueenDash_Square"] = { Color3.fromRGB(74, 80, 102), Enum.Material.SmoothPlastic },
+	["QueenDash_Chess"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["QueenDash_Neon"] = { Color3.fromRGB(255, 205, 70), Enum.Material.Neon },
+	["QueenDash_Belt"] = { Color3.fromRGB(34, 36, 44), Enum.Material.Fabric },
+	["QueenDash_Steel"] = { Color3.fromRGB(150, 156, 168), Enum.Material.Metal },
+	["QueenDash_Spill"] = { Color3.fromRGB(52, 54, 64), Enum.Material.SmoothPlastic },
+	["QueenDash_Prop"] = { Color3.fromRGB(255, 200, 50), Enum.Material.SmoothPlastic },
+	["KingsEndgame_Body"] = { Color3.fromRGB(30, 34, 45), Enum.Material.SmoothPlastic },
+	["KingsEndgame_Panel"] = { Color3.fromRGB(52, 58, 74), Enum.Material.SmoothPlastic },
+	["KingsEndgame_Square"] = { Color3.fromRGB(74, 80, 102), Enum.Material.SmoothPlastic },
+	["KingsEndgame_Chess"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["KingsEndgame_Neon"] = { Color3.fromRGB(255, 130, 30), Enum.Material.Neon },
+	["KingsEndgame_Belt"] = { Color3.fromRGB(34, 36, 44), Enum.Material.Fabric },
+	["KingsEndgame_Steel"] = { Color3.fromRGB(150, 156, 168), Enum.Material.Metal },
+	["KingsEndgame_Spill"] = { Color3.fromRGB(52, 54, 64), Enum.Material.SmoothPlastic },
+	["KingsEndgame_Prop"] = { Color3.fromRGB(255, 200, 50), Enum.Material.SmoothPlastic },
+	["CastleClimb_Body"] = { Color3.fromRGB(30, 34, 45), Enum.Material.SmoothPlastic },
+	["CastleClimb_Panel"] = { Color3.fromRGB(52, 58, 74), Enum.Material.SmoothPlastic },
+	["CastleClimb_Square"] = { Color3.fromRGB(74, 80, 102), Enum.Material.SmoothPlastic },
+	["CastleClimb_Chess"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["CastleClimb_Neon"] = { Color3.fromRGB(50, 235, 190), Enum.Material.Neon },
+	["CastleClimb_Belt"] = { Color3.fromRGB(34, 36, 44), Enum.Material.Fabric },
+	["CastleClimb_Steel"] = { Color3.fromRGB(150, 156, 168), Enum.Material.Metal },
+	["CastleClimb_Spill"] = { Color3.fromRGB(52, 54, 64), Enum.Material.SmoothPlastic },
+	["CastleClimb_Prop"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["GrandmasterGlide_Body"] = { Color3.fromRGB(30, 34, 45), Enum.Material.SmoothPlastic },
+	["GrandmasterGlide_Panel"] = { Color3.fromRGB(52, 58, 74), Enum.Material.SmoothPlastic },
+	["GrandmasterGlide_Square"] = { Color3.fromRGB(74, 80, 102), Enum.Material.SmoothPlastic },
+	["GrandmasterGlide_Chess"] = { Color3.fromRGB(246, 238, 220), Enum.Material.SmoothPlastic },
+	["GrandmasterGlide_Neon"] = { Color3.fromRGB(150, 80, 255), Enum.Material.Neon },
+	["GrandmasterGlide_Belt"] = { Color3.fromRGB(34, 36, 44), Enum.Material.Fabric },
+	["GrandmasterGlide_Steel"] = { Color3.fromRGB(150, 156, 168), Enum.Material.Metal },
+	["GrandmasterGlide_Spill"] = { Color3.fromRGB(52, 54, 64), Enum.Material.SmoothPlastic },
+	["GrandmasterGlide_Prop"] = { Color3.fromRGB(255, 200, 50), Enum.Material.SmoothPlastic },
+}
+local n = 0
+for _, d in ipairs(workspace:GetDescendants()) do
+	if d:IsA("MeshPart") and LOOK[d.Name] then
+		d.Color, d.Material = LOOK[d.Name][1], LOOK[d.Name][2]
+		d.Anchored = true
+		if d.Name:match("_Neon$") or d.Name:match("_Prop$") then d.CanCollide = false end
+		n += 1
+	end
+end
+print("[ChessTreadmillsV2] painted " .. n .. " mesh parts")

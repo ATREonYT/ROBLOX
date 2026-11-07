@@ -79,3 +79,14 @@ They follow the vault's `Build Playbooks/23 Training Lane Style Guide` (checked 
   The head lags the hands by a frame.
 - `Idle` and `Tap` move only the torso, head and arms. The legs are Weight 0, so a player can walk while one plays.
 - Hit-stop belongs in code, never in the clip: 30–60 ms on a confirmed hit.
+
+## Treadmills v2: chess style (Nov 7, `meshes_v2/`, need Alex to import)
+Made by `tools/blender/kit2.py` (`python3 kit2.py --export --render`). Same ids, size (about 11 x 8 x 14 studs) and axes as v1.
+- Side rails are two chessboard ranks (8 ivory/dark squares each) over a neon strip in the lane colour.
+- The console is a chess clock: two dials with a neon ring, two plunger buttons (the pressed one glows).
+- Uprights are two big pieces of the lane's tier (Grandmaster: queen and king) on a podium with a neon foot ring.
+- Paid tiers (Queen Dash and up) add captured pieces lying around the base and one floating piece `<Id>_Prop`
+  (turn once per 8 s, bob 0.3 studs over 2 s, data in `meshes_v2.json`).
+- Belt: `meshes_v2/BeltChecker.png` is a dark checker for the scrolling belt Texture (StudsPerTile 2.5). Needs upload.
+- After Import 3D, paste `tools/studio/paint_treadmills_v2.lua` in the Command Bar to set every part's Color and Material.
+- Preview: `previews/treadmills_v2.png`.
