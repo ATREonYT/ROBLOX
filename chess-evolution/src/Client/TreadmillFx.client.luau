@@ -312,6 +312,157 @@ Styles.pawn = {
 	end,
 }
 
+-- shared: a flat neon strip on the belt that grows from a start point toward an end point
+local function beltStrip(st: Station, from: Vector3, to: Vector3, width: number, grow: number, color: Color3): Part
+	local dir = to - from
+	local len = dir.Magnitude
+	local p = neonPart(Vector3.new(width, 0.05, 0.05), color, 0)
+	local look = CFrame.lookAt(from, to)
+	local function at(l: number)
+		return st.root.CFrame * (look * CFrame.new(0, 0, -l / 2))
+	end
+	p.CFrame = at(0.05)
+	p.Parent = fxFolder
+	tween(p, grow, { Size = Vector3.new(width, 0.05, len), CFrame = at(len) }, Enum.EasingStyle.Quad)
+	return p
+end
+
+local function fadeAndDestroy(parts: { BasePart }, after: number, t: number)
+	task.delay(after, function()
+		for _, p in ipairs(parts) do
+			tween(p, t, { Transparency = 1 })
+		end
+		task.delay(t + 0.05, function()
+			for _, p in ipairs(parts) do
+				p:Destroy()
+			end
+		end)
+	end)
+end
+
+-- Knight Sprint: a cyan L lights in two beats (straight, then the turn), then three short blue streaks
+-- run to the open end. Streak = two thin speed ribbons sweeping behind the knight heads and a few
+-- angular fragments thrown outside the chassis.
+local KNIGHT_BLUE = Color3.fromRGB(60, 130, 255)
+Styles.knight = {
+	accent = function(st, now)
+		if now < st.nextAccent then
+			return
+		end
+		st.nextAccent = now + 1.15
+		local d = st.data
+		d.flip = -(d.flip or 1)
+		local x0 = d.flip * 1.35
+		local y = 0.84
+		local corner = Vector3.new(x0, y, 0.4)
+		local leg1 = beltStrip(st, Vector3.new(x0, y, -3.5), corner, 0.36, 0.2, st.accent)
+		local parts = { leg1 }
+		task.delay(0.3, function() -- beat two: the turn
+			local leg2 = beltStrip(st, corner + Vector3.new(-d.flip * 0.13, 0, 0), Vector3.new(-x0, y, 0.4), 0.36, 0.16, st.accent)
+			table.insert(parts, leg2)
+			fadeAndDestroy({ leg2 }, 0.4, 0.25)
+			task.delay(0.2, function() -- three short streaks to the open end
+				for i = 0, 2 do
+					task.delay(i * 0.07, function()
+						local sx = -x0 + (i - 1) * 0.45
+						local s = neonPart(Vector3.new(0.2, 0.05, 1.5), KNIGHT_BLUE, 0)
+						s.CFrame = st.root.CFrame * CFrame.new(sx, y + 0.01, 1.0)
+						s.Parent = fxFolder
+						tween(s, 0.38, { CFrame = st.root.CFrame * CFrame.new(sx, y + 0.01, 4.7), Transparency = 0.9 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+						task.delay(0.4, function()
+							s:Destroy()
+						end)
+					end)
+				end
+			end)
+		end)
+		fadeAndDestroy({ leg1 }, 0.7, 0.25)
+	end,
+	streakStart = function(st, _now)
+		local d = st.data
+		local m = Instance.new("Model")
+		m.Name = st.id .. "_Ribbons"
+		local ribbons = {}
+		for _, name in ipairs({ "HeadL", "HeadR" }) do
+			local segs = {}
+			for i = 1, 14 do
+				local seg = neonPart(Vector3.new(0.24, 0.2, 0.95), if i <= 3 then Color3.new(0.85, 0.97, 1) else st.accent, 1)
+				seg.Parent = m
+				segs[i] = seg
+			end
+			table.insert(ribbons, { att = name, segs = segs, phase = if name == "HeadL" then 0 else math.pi })
+		end
+		m.Parent = fxFolder
+		d.ring = m
+		d.ribbons = ribbons
+		d.ringT = 0
+		d.ringFade = nil
+	end,
+	streakStep = function(st, now)
+		local d = st.data
+		if not d.ribbons then
+			return
+		end
+		d.ringT += d.dt or 0
+		local t = d.ringT
+		local grow = math.clamp(t / 0.3, 0, 1)
+		local r = 2.2 + 1.0 * grow
+		local fade = 0
+		if d.ringFade then
+			fade = math.clamp((now - d.ringFade) / 0.5, 0, 1)
+		end
+		local peak = if t > 0.3 and t < 0.75 then math.sin((t - 0.3) / 0.45 * math.pi) else 0
+		r += 0.35 * peak
+		for _, rb in ipairs(d.ribbons) do
+			local centre = att(st, rb.att)
+			local a0 = t * 4.2 + rb.phase
+			for i, seg in ipairs(rb.segs) do
+				local a = a0 - (i - 1) * 0.2
+				local pos = Vector3.new(math.cos(a) * r, math.sin(a * 0.5) * 0.25, math.sin(a) * r)
+				local nxt = Vector3.new(math.cos(a + 0.1) * r, math.sin((a + 0.1) * 0.5) * 0.25, math.sin(a + 0.1) * r)
+				seg.CFrame = centre * CFrame.Angles(math.rad(18), 0, 0) * CFrame.lookAt(pos, nxt)
+				local along = (i - 1) / 13
+				seg.Transparency = math.clamp((1 - grow) + along * 0.85 + fade, 0.05 - 0.05 * peak, 1)
+			end
+		end
+		-- angular fragments outside the chassis, one every 0.7 s, at most 6 alive
+		if not d.ringFade and now >= st.nextBurst and (d.frags or 0) < 6 then
+			st.nextBurst = now + 0.7
+			d.side = -(d.side or 1)
+			local rail = att(st, if d.side < 0 then "RailL" else "RailR")
+			local f = Instance.new("WedgePart")
+			f.Anchored, f.CanCollide, f.CanQuery, f.CanTouch, f.CastShadow = true, false, false, false, false
+			f.Material = Enum.Material.Glass
+			f.Color = Color3.fromRGB(70, 150, 255)
+			f.Size = Vector3.new(0.16, 0.75, 0.5)
+			local out = st.root.CFrame:VectorToWorldSpace(Vector3.new(d.side, 0, 0))
+			local start = rail + out * 1.2 + st.root.CFrame:VectorToWorldSpace(Vector3.new(0, 0, (math.random() - 0.5) * 6))
+			f.CFrame = start
+			f.Transparency = 0.1
+			f.Parent = fxFolder
+			d.frags = (d.frags or 0) + 1
+			tween(f, 0.8, { CFrame = (start + out * 2.4 + Vector3.new(0, 1.3, 0)) * CFrame.Angles(math.random() * 4, math.random() * 4, 0), Transparency = 1 })
+			task.delay(0.82, function()
+				f:Destroy()
+				d.frags -= 1
+			end)
+		end
+	end,
+	streakStop = function(st, now)
+		local d = st.data
+		if d.ring and not d.ringFade then
+			d.ringFade = now
+			local m = d.ring
+			task.delay(0.55, function()
+				m:Destroy()
+				if d.ring == m then
+					d.ring, d.ribbons, d.ringFade = nil, nil, nil
+				end
+			end)
+		end
+	end,
+}
+
 ---------------------------------------------------------------------------
 -- signals: who is training where, and their accepted taps (Power going up)
 ---------------------------------------------------------------------------
