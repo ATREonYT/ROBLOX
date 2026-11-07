@@ -87,6 +87,34 @@ for _, kind in { "desktop", "phone" } do
 		badge(gui, s[3])
 		uiDump(gui, `{out}/{kind}/hud_{s[1]}.json`)
 	end
+	-- fresh spawn: the minimal HUD (vault 30 §2) with a level-up showing
+	do
+		local gui = hudFor(kind == "phone")
+		gui.MainButton.Face.Label.Text = "TRAIN"
+		gui.MainButton.Face.Sub.Text = "+1 per tap"
+		gui.MainButton.Face.BackgroundColor3 = Hud.Colors.green
+		for _, n in { "Wins", "Stage", "SetsButton", "BoardButton", "SettingsButton" } do
+			local c = gui.Rail:FindFirstChild(n)
+			if c then
+				c.Visible = false
+			end
+		end
+		local chip = gui.Bottom.Progress.Level
+		chip.Face.Value.Text = "Lv 3"
+		chip.Face.Track.Fill.Size = roblox.UDim2.fromScale(0.4, 1)
+		gui.Bottom.Progress.LevelUp.Visible = true
+		gui.Bottom.Progress.Bar.Fill.Size = roblox.UDim2.fromScale(0.56, 1)
+		gui.Bottom.Progress.Bar.Label.Text = "Pawn Rival · 14 / 25 Power"
+		gui.Bottom.Power.Row.Value.Text = "14 Power"
+		uiDump(gui, `{out}/{kind}/hud_spawn.json`)
+	end
+	-- the L moment after beating the boss
+	do
+		local gui = hudFor(kind == "phone")
+		gui.Moment.Visible = true
+		gui.Moment.Title.Text = "YOU BEAT GRANDMASTER ORION!"
+		uiDump(gui, `{out}/{kind}/hud_moment.json`)
+	end
 	uiDump(Preview.Build(config), `{out}/{kind}/badges.json`)
 end
 print(`[shots] dumped to {out}/desktop and {out}/phone`)

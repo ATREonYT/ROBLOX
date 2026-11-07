@@ -8,6 +8,7 @@
 local Models = require(script.Parent:WaitForChild("Models"))
 local DuelHud = require(script.Parent:WaitForChild("DuelHud"))
 local BadgeArt = require(script.Parent:WaitForChild("BadgeArt"))
+local FeelKit = require(script.Parent:WaitForChild("FeelKit"))
 
 local Hud = {}
 
@@ -305,6 +306,8 @@ function Hud.Build(config: any): ScreenGui
 	BadgeArt.Paint(disc, "Brilliant", config.BadgeLook.Brilliant)
 	-- 1v1 duel layer (VS cards, combo, sparks, danger edges): hidden until a fight
 	DuelHud.Build(bottom, gui)
+	-- vault feel pieces: Level chip, Level Up line, confetti layer, big-moment layer
+	FeelKit.Build(gui)
 
 	-- Main action button (TRAIN / CHALLENGE / CLICK TO WIN): fixed position, bottom right
 	local mainHolder, mainFace, mainLabel = button(gui, "MainButton", C.green, UDim2.fromOffset(236, 112), UDim2.new(1, -22, 1, -22), "TRAIN", 46, Vector2.new(1, 1))
