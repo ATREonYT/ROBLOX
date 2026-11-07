@@ -1,5 +1,5 @@
 --!strict
--- +1 Chess Evolution: the loop panels (Promote, Shop, Daily, Gifts, Codes) on the right rail.
+-- +1 Chess Evolution: the loop panels (Promote, Shop, Daily, Gifts, Codes), and the HUD shortcuts that open them.
 -- It reuses StarterGui.ChessLoop (built by Kit/LoopHud) and only builds one if that is missing.
 -- The server owns every number; this script shows State and sends requests.
 -- Feel numbers: press scale 0.9 then back over 0.28 s Back (note 14 §4); the panel opens
@@ -110,8 +110,22 @@ end
 ---------------------------------------------------------------------------
 -- Panel: one at a time, close only with X
 ---------------------------------------------------------------------------
-local TITLES = { Promote = "PROMOTION", Shop = "SHOP", Daily = "DAILY REWARDS", Gifts = "FREE GIFTS", Codes = "CODES" }
-local COLORS = { Promote = Color3.fromRGB(255, 196, 40), Shop = Color3.fromRGB(70, 210, 80), Daily = Color3.fromRGB(40, 200, 240), Gifts = Color3.fromRGB(255, 110, 190), Codes = Color3.fromRGB(170, 80, 240) }
+local Hud = require(Kit:WaitForChild("HudBuilder")) :: any
+local TITLES = { Promote = "Promote", Shop = "Shop", Daily = "Daily", Gifts = "Rewards", Codes = "Codes" }
+local COLORS = { Promote = "pink", Shop = "red", Daily = "lemon", Gifts = "go", Codes = "purple" }
+local ICONS = { Promote = "promote", Shop = "crown", Daily = "calendar", Gifts = "gift", Codes = "crown" }
+local PAGE_HEIGHT = { Promote = 490, Codes = 410 } -- the rest use the full 560
+local camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local function fit()
+	-- same scale as ChessHUD, so the two left grids stay lined up
+	local vp = camera.ViewportSize
+	local touch = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+	local s = if touch then math.clamp(math.min(vp.X / 1250, vp.Y / 700), 0.5, 1) else math.clamp(math.min(vp.X / 1500, vp.Y / 860), 0.5, 1.15)
+	G.Scale.Scale = s
+end
+camera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
+fit()
 local openPage: string? = nil
 local refresh: () -> ()
 
@@ -122,7 +136,10 @@ local function show(name: string)
 		end
 	end
 	panel.Title.Text = TITLES[name]
-	panel.Title.TextColor3 = COLORS[name]
+	Hud.Paint(panel.Header, COLORS[name])
+	panel.HeaderIcon.Image = Hud.Icons[ICONS[name]] or ""
+	panel.CodesTab.Visible = name == "Shop"
+	panel.Size = UDim2.fromOffset(760, PAGE_HEIGHT[name] or 560)
 	panel.Status.Text = ""
 	openPage = name
 	dim.Visible = true
@@ -158,8 +175,70 @@ end)
 press(rail.GiftBtn, function()
 	show("Gifts")
 end)
-press(rail.CodesBtn, function()
+press(panel.CodesTab, function()
 	show("Codes")
+end)
+
+---------------------------------------------------------------------------
+-- HUD shortcuts (built in ChessHUD): each one opens the page that does the job
+---------------------------------------------------------------------------
+local hud = playerGui:WaitForChild("ChessHUD", 8) :: any
+local function shortcut(holder: Instance?, page: string)
+	if not holder then
+		return
+	end
+	local b = holder:FindFirstChild("Face") :: GuiButton?
+	if b then
+		(b :: any).Activated:Connect(function()
+			local scale = holder:FindFirstChild("Press") :: UIScale?
+			if scale then
+				scale.Scale = 0.9
+				TweenService:Create(scale, BACK, { Scale = 1 }):Play()
+			end
+			local ok, err = pcall(show, page)
+			if not ok then
+				warn(`[ChessLoop] {holder.Name}: {err}`)
+			end
+		end)
+	end
+end
+if hud then
+	shortcut(hud.Wheel, "Gifts")
+	shortcut(hud.RightOffers.FreeGift, "Gifts")
+	shortcut(hud.Bottom.Clicker.FreeClicker, "Gifts")
+	shortcut(hud.Bottom.Clicker.OpClicker, "Shop")
+	shortcut(hud.RightOffers.Offer1, "Shop")
+	shortcut(hud.RightOffers.Offer2, "Shop")
+	shortcut(hud.Bottom.Buy.Pack1, "Shop")
+	shortcut(hud.Bottom.Buy.Pack2, "Shop")
+	shortcut(hud.Bottom.Buy.Pack3, "Shop")
+	shortcut(hud.Bottom.Buy.PackMore, "Shop")
+	shortcut(hud.TopBar.AutoWins, "Shop")
+	-- Auto Train: the switch when owned, the Shop when not
+	local autoFace = hud.TopBar.AutoTrain:FindFirstChild("Face") :: GuiButton
+	;(autoFace :: any).Activated:Connect(function()
+		if S.Passes and S.Passes.AutoTrain then
+			local r = Net.Request("SetAuto", not S.Auto)
+			if not r.ok then
+				warn(`[ChessLoop] SetAuto: {r.code}`)
+			end
+		else
+			show("Shop")
+		end
+	end)
+	-- Invite Friends: Roblox's own invite window
+	local inviteFace = hud.Invite:FindFirstChild("Face") :: GuiButton
+	;(inviteFace :: any).Activated:Connect(function()
+		local ok, err = pcall(function()
+			game:GetService("SocialService"):PromptGameInvite(player)
+		end)
+		if not ok then
+			warn(`[ChessLoop] invite: {err}`)
+		end
+	end)
+end
+press(panel.Promote.Skip, function()
+	status("Coming soon", Color3.fromRGB(255, 210, 60))
 end)
 
 ---------------------------------------------------------------------------
@@ -261,7 +340,31 @@ refresh = function()
 	local ready = S.Power >= pp and S.Wins >= pw
 	rail.PromoteBtn.Track.Fill.Size = UDim2.fromScale(progress, 1)
 	rail.PromoteBtn.Track.Pct.Text = if ready then "READY!" else `{math.floor(progress * 100)}%`
-	setText(rail.PromoteBtn, if n > 0 then `PROMOTE {n + 1}` else "PROMOTE")
+	-- the +N and the countdowns on the HUD
+	local nextGift: number? = nil
+	for i, g in Config.Playtime do
+		if not (S.GiftsClaimed and S.GiftsClaimed[i]) then
+			nextGift = math.max(0, g.min * 60 - age())
+			break
+		end
+	end
+	if hud then
+		local words = if not nextGift then "Done" elseif nextGift <= 0 then "Ready!" else string.format("%d:%02d", nextGift // 60, nextGift % 60)
+		hud.Wheel.Face.Timer.Text = words
+		hud.Bottom.Clicker.FreeClicker.Face.Timer.Text = words
+		local passes = Config.Passes
+		local function priceText(key: string): string
+			if S.Passes and S.Passes[key] then
+				return "Owned"
+			end
+			return `Only {Hud.Robux} {passes[key].price}`
+		end
+		hud.RightOffers.Offer1.Price.Text = priceText("DoublePower")
+		hud.RightOffers.Offer2.Price.Text = priceText("DoubleWins")
+		local on = S.Auto == true
+		hud.TopBar.AutoTrain.State.Text = if on then "ON" else "OFF"
+		hud.TopBar.AutoTrain.State.TextColor3 = if on then Hud.Colors.priceGreen else Color3.fromRGB(255, 50, 60)
+	end
 
 	-- dots: something to claim (shown, never blinking)
 	rail.DailyBtn.Dot.Visible = S.DailyReady == true
@@ -278,25 +381,29 @@ refresh = function()
 		local pb, wb = Config.Promotion.powerBonus * 100, Config.Promotion.winsBonus * 100
 		p.Before.Text = `+{math.floor(pb * n)}% Power`
 		p.After.Text = `+{math.floor(pb * (n + 1))}% Power`
-		p.WinsLine.Text = `+{math.floor(wb * n)}% Wins  >  +{math.floor(wb * (n + 1))}% Wins`
-		p.NeedPower.Text = `Power {fmt(S.Power)} / {fmt(pp)}`
-		p.NeedPower.TextColor3 = if S.Power >= pp then Color3.fromRGB(110, 235, 90) else Color3.new(1, 1, 1)
-		p.NeedWins.Text = `Wins {fmt(S.Wins)} / {fmt(pw)}`
-		p.NeedWins.TextColor3 = if S.Wins >= pw then Color3.fromRGB(110, 235, 90) else Color3.new(1, 1, 1)
-		p.Go.BackgroundColor3 = if ready then Color3.fromRGB(255, 196, 40) else Color3.fromRGB(110, 116, 132)
+		p.WinsBefore.Text = `+{math.floor(wb * n)}% Wins`
+		p.WinsAfter.Text = `+{math.floor(wb * (n + 1))}% Wins`
+		p.Bar.Fill.Size = UDim2.fromScale(math.max(progress, 0.01), 1)
+		p.Bar.Label.Text = `{fmt(S.Power)}/{fmt(pp)} Power · {fmt(S.Wins)}/{fmt(pw)} Wins`
+		p.Go.BackgroundColor3 = if ready then Color3.fromRGB(110, 240, 40) else Color3.fromRGB(110, 116, 132)
 	elseif openPage == "Daily" then
 		for i in Config.Daily do
 			local t = panel.Daily.Grid:FindFirstChild("Day" .. i)
 			if t then
 				local current = i == S.DailyTile
-				t.BackgroundColor3 = if current and S.DailyReady then Color3.fromRGB(40, 160, 210) else Color3.fromRGB(56, 58, 84)
-				t.Amount.Text = `+{math.floor(Config.Daily[i] * (1 + Config.Promotion.winsBonus * n))}`
+				local claimed = (S.DailyTile and i < S.DailyTile) or (current and not S.DailyReady)
+				local locked = S.DailyTile and i > S.DailyTile
+				t.BackgroundColor3 = if current and S.DailyReady then Color3.fromRGB(255, 190, 30) elseif claimed then Color3.fromRGB(44, 150, 70) else Color3.fromRGB(30, 30, 34)
+				t.Check.Visible = claimed == true
+				t.Lock.Visible = locked == true
+				t.Art.Visible = not claimed and not locked
+				t.Amount.Text = `+{math.floor(Config.Daily[i] * (1 + Config.Promotion.winsBonus * n))} Wins`
 			end
 		end
 		setText(panel.Daily.Claim, if S.DailyReady then "CLAIM" else "COME BACK TOMORROW")
-		panel.Daily.Claim.BackgroundColor3 = if S.DailyReady then Color3.fromRGB(40, 200, 240) else Color3.fromRGB(110, 116, 132)
+		panel.Daily.Claim.BackgroundColor3 = if S.DailyReady then Color3.fromRGB(70, 225, 50) else Color3.fromRGB(110, 116, 132)
 		panel.Daily.Claim.Size = if S.DailyReady then UDim2.fromOffset(200, 54) else UDim2.fromOffset(300, 54)
-		panel.Daily.Claim.Position = UDim2.new(0.5, if S.DailyReady then -100 else -150, 1, -58)
+		panel.Daily.Claim.Position = UDim2.new(0.5, if S.DailyReady then -100 else -150, 1, -54)
 	elseif openPage == "Gifts" then
 		for i, g in Config.Playtime do
 			local t = panel.Gifts.Grid:FindFirstChild("Gift" .. i)
@@ -304,7 +411,7 @@ refresh = function()
 				local claimed = S.GiftsClaimed and S.GiftsClaimed[i]
 				local left = math.max(0, g.min * 60 - age())
 				t.When.Text = if claimed then "Claimed" elseif left <= 0 then "CLAIM" else string.format("%d:%02d", left // 60, left % 60)
-				t.BackgroundColor3 = if claimed then Color3.fromRGB(40, 40, 56) elseif left <= 0 then Color3.fromRGB(220, 80, 160) else Color3.fromRGB(56, 58, 84)
+				t.BackgroundColor3 = if claimed then Color3.fromRGB(40, 40, 56) elseif left <= 0 then Color3.fromRGB(240, 60, 150) else Color3.fromRGB(30, 30, 34)
 			end
 		end
 	elseif openPage == "Shop" then
@@ -317,7 +424,16 @@ refresh = function()
 					elseif pass.id == 0 then "Coming soon"
 					else "BUY"
 				setText(card.Buy, label)
-				card.Buy.BackgroundColor3 = if owned then Color3.fromRGB(40, 160, 210) elseif pass.id == 0 then Color3.fromRGB(110, 116, 132) else Color3.fromRGB(70, 210, 80)
+				card.Buy.BackgroundColor3 = if owned then Color3.fromRGB(40, 160, 210) elseif pass.id == 0 then Color3.fromRGB(110, 116, 132) else Color3.fromRGB(70, 225, 50)
+			end
+		end
+	end
+	if openPage == "Shop" then
+		for _, pack in Config.PowerPacks or {} do
+			local card = panel.Shop.List:FindFirstChild(pack.key)
+			if card and pack.id == 0 then
+				setText(card.Buy, "Coming soon")
+				card.Buy.BackgroundColor3 = Color3.fromRGB(110, 116, 132)
 			end
 		end
 	end

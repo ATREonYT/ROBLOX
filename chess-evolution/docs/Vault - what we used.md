@@ -20,3 +20,12 @@ Still to do from the vault:
 - Offline earnings.
 - The feel test video side by side (06 §9).
 - Hit-stop on slaps (16/17).
+
+## HUD redesign (Nov 7)
+
+| Source | What it changed |
+|---|---|
+| Long reference recording | Layout of every HUD piece, measured at 1512 x 861, and the colours in `Hud.Palette` (sampled from its pixels). |
+| Folk Stud UI skill (`claude/vault-everything` branch) | Stud texture 3014551673, Bevel text outlines, black outlines, kept the icon pack out because most of it has no licence. |
+| LihFolk `HUD Design` note | Corners and edges hold the buttons, centre stays open. Phones fold the paid offers away. |
+| LihFolk glossy icon note | The 14 icons in `assets/hud-icons` (`tools/make_hud_icons.py`): navy ink, two-tone facets, white streak. |

@@ -184,6 +184,13 @@ Config.Passes = {
 }
 Config.AutoTrainRate = 4 -- taps per second, under the hand cap of 6
 
+-- Power packs: the bottom row and the Shop show them. id = 0 means not on sale yet ("Coming soon", never prompts).
+Config.PowerPacks = {
+	{ key = "Pack1", id = 0, price = 120, amount = 1000000, label = "+1M Power" },
+	{ key = "Pack2", id = 0, price = 240, amount = 10000000, label = "+10M Power" },
+	{ key = "Pack3", id = 0, price = 400, amount = 100000000, label = "+100M Power" },
+}
+
 -- Daily rewards: 7 tiles by UTC day. A missed day pauses the streak, never wipes it
 -- (Brief - Game Design §5). Wins scale with promotions so they stay worth claiming.
 Config.Daily = { 15, 25, 40, 60, 90, 130, 250 }
@@ -256,9 +263,10 @@ function Config.Level(power: number, promotions: number): (number, number)
 		l += 1
 	end
 	if l >= p.levels then
-		return p.levels, 1
+		return p.levels, 1, 0, 0
 	end
-	return l + 1, math.clamp((power - at(l)) / (at(l + 1) - at(l)), 0, 1)
+	-- third and fourth values: Power into this level, and the level's size (for the "103/107" on the bar)
+	return l + 1, math.clamp((power - at(l)) / (at(l + 1) - at(l)), 0, 1), power - at(l), at(l + 1) - at(l)
 end
 
 -- Rival pressure (meter per second) at time t.

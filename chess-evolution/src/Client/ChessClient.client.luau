@@ -47,7 +47,7 @@ if not gui then
 	log("HUD built from code (no saved ChessHUD)")
 end
 local G = gui :: any
-G.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+G.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 
 local function face(holder: Instance): any
 	return holder:FindFirstChild("Face")
@@ -224,10 +224,15 @@ local function layout()
 		MainHolder.Position = UDim2.new(1, -18, 1, -math.floor(jumpTop * inv))
 		MainHolder.Size = UDim2.fromOffset(220, 120)
 		G.KeyHint.Visible = false
+		-- the thumb button lives on the right edge on phones, so the paid offers fold away
+		G.RightOffers.Offer1.Visible = false
+		G.RightOffers.Offer2.Visible = false
 	else
 		MainHolder.Position = UDim2.new(1, -22, 1, -22)
 		MainHolder.Size = UDim2.fromOffset(236, 112)
 		G.KeyHint.Visible = true
+		G.RightOffers.Offer1.Visible = true
+		G.RightOffers.Offer2.Visible = true
 	end
 	-- Panels shrink to fit narrow screens (full-screen sheet feel on phones)
 	for _, p in Panels do
@@ -450,31 +455,23 @@ local function setCounters(first: boolean)
 end
 
 -- Progress bar to the next rival
-local barFill: Tween? = nil
 local function refreshProgress()
 	local id = nextStage()
-	local bar = Bottom.Progress.Bar
-	local label, frac
+	-- The bar is the level bar (FeelKit:SetLevel moves it). This fills in its numbers, the Promotions count and the +N chip.
+	local id = nextStage()
 	if id then
-		local st = Config.Stages[id]
-		frac = math.clamp(S.Power / st.power, 0, 1)
-		if S.Power >= st.power then
-			label = `{st.name} · Ready to challenge!`
-		else
-			label = `{st.name} · {Format.Short(S.Power)} / {Format.Short(st.power)} Power`
-		end
-		face(Rail.Stage).Value.Text = `Stage {stageNumber(id)} · {st.name}`
+		face(Rail.Stage).Value.Text = `Stage {stageNumber(id)} · {Config.Stages[id].name}`
 	else
-		frac = 1
-		label = "All rivals beaten · more coming soon"
 		face(Rail.Stage).Value.Text = "Board Run cleared!"
 	end
-	bar.Label.Text = label
-	bar.Fill.BackgroundColor3 = if frac >= 1 then Hud.Colors.gold else Hud.Colors.green
-	if barFill then
-		barFill:Cancel()
+	local _level, _frac, into, span = Config.Level(S.Power, S.Promotions or 0)
+	Bottom.Progress.Bar.Count.Text = if span and span > 0 then `{Format.Short(math.floor(into))}/{Format.Short(math.ceil(span))}` else "MAX"
+	face(Rail.Promos).Value.Text = Format.Short(S.Promotions or 0)
+	local chip = Bottom.Progress:FindFirstChild("Level")
+	if chip then
+		local stationId = if ctx.kind == "station" and ctx.id then ctx.id else "PawnMill"
+		chip.Face.Value.Text = `+{Format.Short(math.max(1, Config.Gain(stationId, S.Equipped)))}`
 	end
-	barFill = tween(bar.Fill, 0.25, { Size = UDim2.fromScale(math.max(frac, 0.04), 1) })
 end
 
 ---------------------------------------------------------------------------
@@ -881,7 +878,7 @@ local guide: any = { step = 0, target = nil, customTarget = nil }
 local function guideTarget(): (number, string?, Vector3?)
 	if S.Power < Config.Stages.Stage1.power and not S.Cleared.Stage1 then
 		local deck = Stations.PawnMill:FindFirstChild("Deck") :: BasePart
-		return 1, Config.Guide[1].text, deck.Position
+		return 1, Config.Guide[1].text, if deck then deck.Position else nil -- the map may still be arriving
 	elseif not S.Cleared.Stage1 then
 		local zone = Stages.Stage1:FindFirstChild("Zone") :: BasePart
 		return 2, Config.Guide[2].text, zone.Position
@@ -929,10 +926,10 @@ local function stagedParts(): { { GuiObject } }
 		return loopRail and loopRail:FindFirstChild(name) :: GuiObject?
 	end
 	return {
-		wins = { Rail.Wins },
+		wins = { Rail.Wins, Rail.Promos },
 		sets = { Rail.SetsButton },
 		promote = { lr("PromoteBtn") },
-		rest = { Rail.Stage, Rail.BoardButton, Rail.SettingsButton, lr("ShopBtn"), lr("DailyBtn"), lr("GiftBtn"), lr("CodesBtn") },
+		rest = { G.SettingsButton, G.TopBar, G.Wheel, G.RightOffers, G.Invite, lr("ShopBtn"), lr("DailyBtn"), lr("GiftBtn") },
 	} :: any
 end
 local function refreshHudStage()
@@ -1232,7 +1229,7 @@ hookButton(Rail.BoardButton, function()
 		boardFace.List.CanvasPosition = Vector2.new(0, math.max(0, (Config.Stages[id].order - 1) * 110 - 40))
 	end
 end)
-hookButton(Rail.SettingsButton, function()
+hookButton(G.SettingsButton, function()
 	refreshSettings()
 	showPanel("Settings")
 end)
@@ -1248,7 +1245,18 @@ local function setBattleHud(on: boolean)
 	meterUI.Visible = on
 	Bottom.Progress.Visible = not on
 	Bottom.Power.Visible = not on
+	Bottom.Buy.Visible = not on
+	Bottom.Clicker.Visible = not on
+	Bottom.Context.Visible = on
 	Rail.Visible = not on or not isTouch
+	G.RightOffers.Visible = not on and hudStage.done
+	G.TopBar.Visible = not on and hudStage.done
+	G.Wheel.Visible = not on and hudStage.done
+	local loop = playerGui:FindFirstChild("ChessLoop")
+	local loopRail = loop and loop:FindFirstChild("LoopRail")
+	if loopRail then
+		(loopRail :: GuiObject).Visible = not on or not isTouch
+	end
 end
 
 local function tileAt(stageModel: Instance, pos: Vector3): BasePart?

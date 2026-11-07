@@ -68,7 +68,7 @@ function FeelKit.Build(gui: ScreenGui)
 	local progress = G.Bottom:FindFirstChild("Progress")
 	if progress and not progress:FindFirstChild("Level") then
 		-- Level chip: a small green square left of the Power bar (the reference's "+1" box spot)
-		local chip = new("Frame", { Name = "Level", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(0, -10, 0, 0), Size = UDim2.fromOffset(70, 46) }, progress)
+		local chip = new("Frame", { Name = "Level", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(0, -12, 0.5, 0), Size = UDim2.fromOffset(40, 38) }, progress)
 		new("UIScale", { Name = "Press" }, chip)
 		local lip = new("Frame", { Name = "Lip", BackgroundColor3 = GREEN:Lerp(INK, 0.45), Position = UDim2.fromOffset(0, 4), Size = UDim2.fromScale(1, 1), ZIndex = 1 }, chip)
 		new("UICorner", { CornerRadius = UDim.new(0, 10) }, lip)
@@ -78,9 +78,9 @@ function FeelKit.Build(gui: ScreenGui)
 		new("UIStroke", { Thickness = 3, Color = INK }, face)
 		new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, WHITE), ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 190, 190)) }) }, face)
 		-- one line ("Lv 3") so it stays above the 12 px phone floor at the 0.557 phone scale
-		text(face, "Value", { Text = "Lv 1", TextSize = 24, Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 30), ZIndex = 4 }, 2.5)
+		text(face, "Value", { Text = "+1", TextSize = 24, Size = UDim2.fromScale(1, 1), ZIndex = 4 }, 2.5)
 		-- thin fill strip inside the bottom edge
-		local track = new("Frame", { Name = "Track", BackgroundColor3 = INK, BackgroundTransparency = 0.35, Position = UDim2.new(0, 6, 1, -9), Size = UDim2.new(1, -12, 0, 5), ZIndex = 3 }, face)
+		local track = new("Frame", { Name = "Track", Visible = false, BackgroundColor3 = INK, BackgroundTransparency = 0.35, Position = UDim2.new(0, 6, 1, -9), Size = UDim2.new(1, -12, 0, 5), ZIndex = 3 }, face)
 		new("UICorner", { CornerRadius = UDim.new(0, 3) }, track)
 		local fill = new("Frame", { Name = "Fill", BackgroundColor3 = Color3.fromRGB(255, 240, 120), Size = UDim2.fromScale(0, 1), ZIndex = 4 }, track)
 		new("UICorner", { CornerRadius = UDim.new(0, 3) }, fill)
@@ -154,8 +154,9 @@ function FeelKit:SetLevel(level: number, progress: number, first: boolean?)
 	if not chip then
 		return
 	end
-	chip.Face.Value.Text = `Lv {level}`
-	local fill = chip.Face.Track.Fill
+	local bar = (self.gui :: any).Bottom.Progress.Bar
+	bar.Label.Text = `Level {level}`
+	local fill = bar.Fill
 	local gained = if self.level then level - self.level else 0
 	self.level = level
 	if first or gained <= 0 then
