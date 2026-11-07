@@ -608,6 +608,8 @@ local function pressMain()
 end
 
 local challenge: (string) -> ()
+local slap: (Model?, string) -> ()
+local pressButton: (any, string) -> ()
 
 local function doAction()
 	refreshContext()
@@ -1510,14 +1512,14 @@ local function armOf(rig: Model?, side: string): Arm?
 	cache[side] = a
 	return a
 end
-local function pressButton(b: any, name: string)
+function pressButton(b: any, name: string)
 	local tbl = b.model and b.model:FindFirstChild("DuelTable")
 	local btn = tbl and tbl:FindFirstChild(name) :: BasePart?
 	if btn then
 		btn:SetAttribute("Press", os.clock())
 	end
 end
-local function slap(rig: Model?, side: string)
+function slap(rig: Model?, side: string)
 	local a = armOf(rig, side)
 	if a then
 		a.kick = 1
