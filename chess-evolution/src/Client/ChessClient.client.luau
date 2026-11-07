@@ -20,6 +20,7 @@ local Models = require(Kit:WaitForChild("Models"))
 local Hud = require(Kit:WaitForChild("HudBuilder"))
 local DuelHud = require(Kit:WaitForChild("DuelHud"))
 local BadgeArt = require(Kit:WaitForChild("BadgeArt"))
+local FeelKit = require(Kit:WaitForChild("FeelKit"))
 local Config = require(ReplicatedStorage:WaitForChild("ChessConfig")) :: any
 
 local function log(msg: string)
@@ -105,6 +106,9 @@ local function play(name: string, pitch: number?)
 end
 local function tapSound()
 	local now = os.clock()
+	if now - tapLadder.last < 1 / 8 then
+		return -- the ladder plays at most 8 a second
+	end
 	if now - tapLadder.last > 1 then
 		tapLadder.step = 0
 	end
@@ -144,13 +148,13 @@ local function hookButton(holder: Instance, fn: () -> ())
 	btn.MouseEnter:Connect(function()
 		local scale = holder:FindFirstChild("Press") :: UIScale?
 		if scale then
-			tween(scale, 0.2, { Scale = 1.05 }, Enum.EasingStyle.Back)
+			tween(scale, 0.3, { Scale = 1.05 }, Enum.EasingStyle.Back)
 		end
 	end)
 	btn.MouseLeave:Connect(function()
 		local scale = holder:FindFirstChild("Press") :: UIScale?
 		if scale then
-			tween(scale, 0.25, { Scale = 1 }, Enum.EasingStyle.Sine)
+			tween(scale, 0.3, { Scale = 1 }, Enum.EasingStyle.Sine)
 		end
 	end)
 end
@@ -192,6 +196,9 @@ end
 
 -- 1v1 duel layer: VS cards, taps per second, combo, sparks, danger edges (Kit/DuelHud)
 local duel = DuelHud.new(gui :: ScreenGui, { tween = tween, reduced = reduced, message = message })
+-- vault feel pieces: Level chip, confetti, +N popups, HUD reveal, big moments (Kit/FeelKit)
+local feel = FeelKit.new(gui :: ScreenGui, { tween = tween, reduced = reduced })
+FeelKit.Default = { feel = feel, reduced = reduced } -- so FeelKit.Moment(gui, "L", text) from other scripts gets confetti
 
 ---------------------------------------------------------------------------
 -- Layout: one UIScale for the whole HUD, phone placement of the main button
@@ -405,7 +412,7 @@ local function popGain(amount: number)
 		end
 	end)
 	local bump = Bottom.Power.Bump :: UIScale
-	bump.Scale = 1.1
+	bump.Scale = 1.15
 	tween(bump, 0.2, { Scale = 1 }, Enum.EasingStyle.Back)
 end
 
@@ -420,14 +427,17 @@ local function setCounters(first: boolean)
 		powerValue.Value, winsValue.Value = S.Power, S.Wins
 	else
 		-- retarget the running tween to the newest value (never stack)
-		powerTween = tween(powerValue, 0.3, { Value = S.Power })
-		winsTween = tween(winsValue, 0.45, { Value = S.Wins })
+		powerTween = tween(powerValue, 0.35, { Value = S.Power })
+		winsTween = tween(winsValue, 0.5, { Value = S.Wins })
 	end
+	local head = player.Character and player.Character:FindFirstChild("Head") :: BasePart?
 	if S.Power > shown.power and not first then
 		popGain(S.Power - shown.power)
+		feel:Popup(head, `+{Format.Short(S.Power - shown.power)}`, "power")
 	end
 	if S.Wins > shown.wins and not first then
 		local f = face(Rail.Wins)
+		feel:Popup(head, `+{Format.Short(S.Wins - shown.wins)} Wins`, "wins")
 		local sc = Rail.Wins:FindFirstChild("Press") :: UIScale
 		sc.Scale = 1.15
 		tween(sc, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
@@ -625,9 +635,8 @@ local function doAction()
 			local m = Stations:FindFirstChild(id)
 			local belt = m and m:FindFirstChild("Belt") :: BasePart?
 			local fx = TIER_FX[id]
-			if belt and fx then
-				studBurst(belt.CFrame, fx.color, if fx.shape == "streak" then 2 else 3, fx.shape)
-			end
+			-- XS event: no particles on a single tap (vault 27 C21); the +N popup and the ladder carry it
+			local _ = belt and fx
 		end
 	elseif ctx.kind == "stage" and MainHolder.Visible then
 		pressMain()
@@ -873,23 +882,80 @@ local function guideTarget(): (number, string?, Vector3?)
 		return 3, if S.Wins >= Config.Sets.Marble.price then Config.Guide[3].text else "Win more to buy the Marble Set", plinth.Position
 	elseif S.Equipped ~= "Marble" then
 		return 4, Config.Guide[4].text, nil
+	elseif Config.Guide[5] and not S.TutorialDone and (S.Promotions or 0) < 1 then
+		return 5, Config.Guide[5].text, nil
 	end
-	return 5, nil, nil
+	return #Config.Guide + 1, nil, nil
 end
 local function refreshGuide()
 	local step, textValue, target = guideTarget()
 	guide.step, guide.target = step, target
 	local holder = G.Guide
-	if step >= 5 then
+	if step > #Config.Guide or S.TutorialDone then
 		holder.Visible = false
 	else
 		holder.Visible = true
-		face(holder).Step.Text = `{step}/4`
+		face(holder).Step.Text = `{step}/{#Config.Guide}`
 		face(holder).Text.Text = textValue
 	end
 	-- spotlight the Chess Sets button on the buy/equip steps
 	local sets = Rail.SetsButton
 	sets:SetAttribute("Spotlight", step == 3 and S.Wins >= Config.Sets.Marble.price or step == 4)
+	local loop = playerGui:FindFirstChild("ChessLoop")
+	local promote = loop and loop:FindFirstChild("PromoteBtn", true)
+	if promote then
+		promote:SetAttribute("Spotlight", step == 5)
+	end
+end
+
+---------------------------------------------------------------------------
+-- HUD stages (vault 30 §2, 13 §2A): a new player sees TRAIN, the Power bar and the quest line.
+-- Wins appear with the first win, Chess Sets on the buy step, Promote on the promote step,
+-- everything else pops in when the tutorial completes (0.06 s apart). Returning players: all at once.
+---------------------------------------------------------------------------
+local hudStage = { known = false, done = false }
+local function stagedParts(): { { GuiObject } }
+	local loop = playerGui:FindFirstChild("ChessLoop")
+	local loopRail = loop and loop:FindFirstChild("LoopRail", true)
+	local function lr(name: string): GuiObject?
+		return loopRail and loopRail:FindFirstChild(name) :: GuiObject?
+	end
+	return {
+		wins = { Rail.Wins },
+		sets = { Rail.SetsButton },
+		promote = { lr("PromoteBtn") },
+		rest = { Rail.Stage, Rail.BoardButton, Rail.SettingsButton, lr("ShopBtn"), lr("DailyBtn"), lr("GiftBtn"), lr("CodesBtn") },
+	} :: any
+end
+local function refreshHudStage()
+	local step = guide.step
+	local done = S.TutorialDone == true or (S.Promotions or 0) >= 1 or step > #Config.Guide
+	local show = {
+		wins = done or S.Cleared.Stage1 == true or S.Wins > 0,
+		sets = done or step >= 3,
+		promote = done or step >= 5,
+		rest = done,
+	}
+	local animate = hudStage.known -- the first state after joining shows everything at once
+	local parts = stagedParts()
+	for key, list in parts do
+		local items = {}
+		for _, item in list do
+			if item then
+				if show[key] then
+					table.insert(items, item)
+				else
+					item.Visible = false
+				end
+			end
+		end
+		feel:Reveal(items, animate)
+	end
+	if done and not hudStage.done and animate then
+		message("TUTORIAL COMPLETE! Everything is unlocked", Color3.fromRGB(255, 220, 90))
+		play("Chime")
+	end
+	hudStage.known, hudStage.done = true, done
 end
 
 ---------------------------------------------------------------------------
@@ -1785,6 +1851,15 @@ Net.On("BattleEnd", function(p: any)
 		return
 	end
 	b.serverMeter = p.meter
+	local stageCfg = Config.Stages[b.stage]
+	if p.outcome == "win" and stageCfg and stageCfg.boss then
+		-- L moment (vault 06 §2): dim, rays, title, confetti, one white flash
+		task.delay(0.9, function()
+			safe("boss moment", function()
+				FeelKit.Moment(gui :: ScreenGui, "L", `YOU BEAT {string.upper((stageCfg.opponent or {}).name or stageCfg.name)}!`, { reduced = reduced, feel = feel })
+			end)
+		end)
+	end
 	local brilliant = table.find(p.badges or {}, "Brilliant") ~= nil
 	for _, key in p.badges or {} do
 		if key ~= "Brilliant" then
@@ -1890,6 +1965,22 @@ onState(refreshProgress)
 onState(refreshGallery)
 onState(refreshStages)
 onState(refreshGuide)
+onState(refreshHudStage)
+local levelFirst = true
+onState(function()
+	local level, progress
+	if Config.Level then
+		level, progress = Config.Level(S.Power, S.Promotions or 0)
+	else
+		level, progress = FeelKit.Level(S.Power)
+	end
+	feel:SetLevel(level, progress, levelFirst)
+	if not levelFirst and feel.level and level > (feel.lastPlayedLevel or level - 1) then
+		play("Chime", 1 + math.min(level, 20) * 0.02)
+	end
+	feel.lastPlayedLevel = level
+	levelFirst = false
+end)
 onState(function()
 	if openPanel == "Sets" then
 		refreshSets()

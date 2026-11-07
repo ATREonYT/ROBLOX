@@ -47,7 +47,7 @@ end
 -- 1. The saved HUD (StarterGui) carries the duel parts, so the owner sees them in Studio.
 local hud = roblox.deserializeModel(fs.readFile("src/StarterGui/ChessHUD.rbxm"))[1]
 local bottom = hud:FindFirstChild("Bottom")
-for _, path in { { "Duel", "YouCard" }, { "Duel", "RivalCard" }, { "Duel", "Vs" }, { "Combo" }, { "Meter", "Bar", "Sparks" } } do
+for _, path in { { "Duel", "YouCard" }, { "Duel", "RivalCard" }, { "Duel", "Vs", "Tag" }, { "Combo" }, { "Meter", "Bar", "Sparks" } } do
 	local node = bottom
 	for _, n in path do
 		node = node and node:FindFirstChild(n)
@@ -90,6 +90,29 @@ end
 -- 4. Kid-safe motion: the danger edges breathe slower than one flash per second.
 check("danger edges: under one flash per second", DuelHud.Tuning.edgeBreath >= 1, DuelHud.Tuning.edgeBreath)
 check("danger edges match the Mistake line", DuelHud.Tuning.dangerAt == Config.Badges.danger[2].enter)
+
+-- 5. Vault feel pieces (FeelKit): saved in the HUD, levels sized like note 13 §2B.
+local FeelKit = loadModule("src/Shared/FeelKit.luau", "FeelKit")
+check("saved HUD has the Level chip", bottom.Progress:FindFirstChild("Level") ~= nil and bottom.Progress:FindFirstChild("LevelUp") ~= nil)
+check("saved HUD has Moment and Confetti layers", hud:FindFirstChild("Moment") ~= nil and hud:FindFirstChild("Confetti") ~= nil)
+check("Moment starts hidden", not hud.Moment.Visible)
+check("level 1 at 0 Power", (FeelKit.Level(0)) == 1)
+check("level 2 at 10 Power", (FeelKit.Level(10)) == 2)
+check("level 4 at 30 Power (10, 10, 10)", (FeelKit.Level(30)) == 4)
+check("level 5 at 42 Power (then 12)", (FeelKit.Level(42)) == 5)
+check("levels cap at 20", (FeelKit.Level(1e9)) == 20)
+local lv, pr = FeelKit.Level(15)
+check("half way through level 2", lv == 2 and math.abs(pr - 0.5) < 1e-9, `{lv} {pr}`)
+-- a level up every second or so: at the Pawn Mill's capped 6 taps/s, the first 9 levels take under 2.5 s each
+local base, ok = 0, true
+for i = 1, 9 do
+	local need = FeelKit.LevelSizes[i]
+	if need / 6 > 4 then
+		ok = false
+	end
+	base += need
+end
+check("early levels arrive within a few seconds of training", ok)
 
 print(`[test_duel] {passed} passed, {failed} failed`)
 if failed > 0 then

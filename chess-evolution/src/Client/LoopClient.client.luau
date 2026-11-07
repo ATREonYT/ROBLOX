@@ -333,7 +333,7 @@ RunService.Heartbeat:Connect(function()
 		return
 	end
 	local ready = S.Power >= (S.PromoPower or math.huge) and S.Wins >= (S.PromoWins or math.huge)
-	if ready then
+	if ready or rail.PromoteBtn:GetAttribute("Spotlight") then
 		local k = 0.5 + 0.5 * math.sin(os.clock() * math.pi)
 		promoteStroke.Color = Color3.new(1, 1, 1):Lerp(Color3.fromRGB(28, 26, 40), 1 - k)
 		promoteStroke.Thickness = 3 + 1.5 * k
