@@ -29,7 +29,7 @@ Before building, load the skill for the job (in `.claude/skills/`):
 - maps, props, lighting: `roblox-cartoony-building`
 - any UI: `roblox-cartoony-ui`
 - character animations: `roblox-ai-animation`
-- effects: `roblox-vfx`; Blender models: `blender-roblox-models`
+- effects: `roblox-vfx`; Blender models: `blender-roblox-models`; 3D model from a picture: `blender-image-to-3d`
 
 Step-by-step notes from 38 video transcripts: `AI Video Library/Video Notes/00 Video Notes Index.md`. Grep them; don't read them whole.
 Run `AI Video Library/16 Cartoony Kid-Appeal Checklist.md` before showing a new game.

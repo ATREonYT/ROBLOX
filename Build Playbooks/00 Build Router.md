@@ -116,6 +116,7 @@ Playbooks in this folder:
 | Effects | `roblox-vfx` | [[11 VFX Moments Playbook]], anime style: [[15 Anime VFX and Animation Playbook]], looks cheap: [[16 Pro Animation and VFX Playbook]], like the hits: [[17 Do It Like the Hits - Animation, VFX and Feel]] + `LihFolk/skills/lihfolk-vfx`, `VFX-ITEMS.md`, [[05 VFX]] |
 | Animations | `roblox-ai-animation` | [[06 Animation]] |
 | Blender models | `blender-roblox-models` | [[04 Building, Maps & 3D Models]] |
+| 3D model from a picture | `blender-image-to-3d` | [[33 Picture to 3D Model (blender-image-to-3d skill)]] |
 | Game feel | | [[14 Premium Feel Playbook]], [[06 Beat the Hits - Polish Playbook]], `GAME-FEEL.md`, `LihFolk/LihFolk Vault V2/47 Game Feel and Juice/` |
 | Match or beat a hit | | [[07 Borrow List - Game by Game]], the game's Teardown note, [[09 Owner Taste Rules]] |
 | A row of tiered stations (training lanes, upgrade pads) | `roblox-cartoony-building` | [[Lesson - Tiered Training Lanes]] |

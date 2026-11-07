@@ -40,6 +40,7 @@ The start page for this vault. Pull in GitHub Desktop to get the newest notes.
 - [[GAME-FEEL|Game feel]] and [[VFX-ITEMS|item VFX]]
 - [[Build Playbooks/Lesson - Tiered Training Lanes|Lesson: tiered training lanes]] (Oct 31, from Stone Skipping)
 - [[CLAUDE|How we build with Claude (general rules)]]
+- [[Build Playbooks/33 Picture to 3D Model (blender-image-to-3d skill)|Picture to 3D model]] (new skill, Nov 7)
 
 ## +1 Cannon Evolution
 - [[cannon-evolution/README|Setup]] and [[reports/+1 Cannon Evolution build notes|build notes]]
