@@ -18,6 +18,8 @@ local Net = require(Kit:WaitForChild("Net"))
 local Format = require(Kit:WaitForChild("Format"))
 local Models = require(Kit:WaitForChild("Models"))
 local Hud = require(Kit:WaitForChild("HudBuilder"))
+local DuelHud = require(Kit:WaitForChild("DuelHud"))
+local BadgeArt = require(Kit:WaitForChild("BadgeArt"))
 local Config = require(ReplicatedStorage:WaitForChild("ChessConfig")) :: any
 
 local function log(msg: string)
@@ -187,6 +189,9 @@ local function toast(textValue: string, color: Color3?)
 		end
 	end)
 end
+
+-- 1v1 duel layer: VS cards, taps per second, combo, sparks, danger edges (Kit/DuelHud)
+local duel = DuelHud.new(gui :: ScreenGui, { tween = tween, reduced = reduced, message = message })
 
 ---------------------------------------------------------------------------
 -- Layout: one UIScale for the whole HUD, phone placement of the main button
@@ -595,6 +600,7 @@ local function doAction()
 	refreshContext()
 	if ctx.kind == "battle" and battle and not battle.ended then
 		pressMain()
+		duel:Tap() -- local feedback only (combo, sparks); the server still counts the taps
 		if takeLocalToken() then
 			battle.sent += 1
 			Net.Send("Tap", "battle", battle.id)
@@ -1201,8 +1207,7 @@ local function showBadge(key: string)
 	badgeState.untilT = now + hold
 	local b = Bottom.Badge
 	b.Visible = true
-	b.Disc.BackgroundColor3 = look.color
-	b.Disc.Glyph.Text = look.glyph
+	BadgeArt.Paint(b.Disc, key, look)
 	b.Label.Text = look.label
 	b.Label.TextColor3 = look.color:Lerp(Color3.new(1, 1, 1), 0.35)
 	local pop = b.Pop :: UIScale
@@ -1211,8 +1216,7 @@ local function showBadge(key: string)
 	-- world badge beside the player's piece
 	if worldBadge then
 		worldBadge.Enabled = true;
-		(worldBadge :: any).Disc.BackgroundColor3 = look.color;
-		(worldBadge :: any).Disc.Glyph.Text = look.glyph
+		BadgeArt.Paint((worldBadge :: any).Disc, key, look)
 		local sc = (worldBadge :: any).Disc:FindFirstChildOfClass("UIScale") :: UIScale
 		sc.Scale = 0.4
 		tween(sc, 0.22, { Scale = 1 }, Enum.EasingStyle.Back)
@@ -1339,6 +1343,9 @@ local function endBattleScene(b: any)
 	end
 	setBattleHud(false)
 	meterUI.Hint.Visible = false
+	safe("duel stop", function()
+		duel:Stop()
+	end)
 end
 
 local function startBattleScene(b: any)
@@ -1361,8 +1368,21 @@ local function startBattleScene(b: any)
 	camera.CameraType = Enum.CameraType.Scriptable
 	local goal = CFrame.lookAt(spot.Position + Vector3.new(7, 13, 16), spot.Position + Vector3.new(0, 2, -14))
 	tween(camera, 0.5, { CFrame = goal }, Enum.EasingStyle.Sine)
-	meterUI.Bar.Rival.Text = string.upper(Config.Stages[b.stage].name)
+	local stageCfg = Config.Stages[b.stage]
+	local opponent = stageCfg.opponent or {}
+	meterUI.Bar.Rival.Text = string.upper(opponent.name or stageCfg.name)
 	setBattleHud(true)
+	safe("duel start", function()
+		duel:Start({
+			playerName = player.DisplayName,
+			userId = player.UserId,
+			rivalName = opponent.name or stageCfg.name,
+			rivalTitle = opponent.title or `Stage {stageCfg.order} rival`,
+			rivalColor = stageCfg.color,
+			rivalModel = b.rival,
+			perTap = b.fight.perTap,
+		})
+	end)
 	-- a brief tile sweep at the start
 	if not reduced() then
 		local tiles = stageModel:FindFirstChild("Tiles") :: Instance
@@ -1751,6 +1771,7 @@ RunService.RenderStepped:Connect(function(dt)
 		meterUI.Hint.Visible = b.display < Config.Badges.danger[1].enter and b.t > Config.Badges.openingQuiet
 		local elapsed = math.max(b.t, now - b.start)
 		meterUI.Timer.Text = tostring(math.max(0, math.ceil(b.fight.timeout - elapsed)))
+		duel:Update(dt, b.display, Config.Pressure(b.fight, elapsed), elapsed)
 		-- rival move every ~1.7 s once pressure starts
 		if elapsed > b.fight.grace and now - b.lastMove > 1.7 then
 			b.lastMove = now
