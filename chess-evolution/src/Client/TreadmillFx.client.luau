@@ -739,6 +739,167 @@ Styles.rook = {
 	end,
 }
 
+-- Queen Dash: gold four-point stars glide down the belt with two thin gold streaks beside them. Streak = a halo
+-- ring turning around the floating crown, a wide halo ring around the whole machine at waist height, and small
+-- star sparkles rising beside the rails.
+local QUEEN_GOLD = Color3.fromRGB(255, 206, 70)
+local QUEEN_WHITE = Color3.fromRGB(255, 244, 200)
+local function queenStar(size: number, color: Color3): Model
+	local m = Instance.new("Model")
+	for _, ry in ipairs({ 0, 90 }) do
+		local b = neonPart(Vector3.new(size * 0.14, 0.05, size), color, 0)
+		b:SetAttribute("Ry", ry)
+		b.Parent = m
+	end
+	local c = neonPart(Vector3.new(size * 0.3, 0.06, size * 0.3), QUEEN_WHITE, 0)
+	c:SetAttribute("Ry", 45)
+	c.Parent = m
+	return m
+end
+local function placeStar(m: Model, cf: CFrame, spin: number, upright: boolean?)
+	for _, b in ipairs(m:GetChildren()) do
+		local ry = math.rad(b:GetAttribute("Ry") :: number)
+		if upright then
+			b.CFrame = cf * CFrame.Angles(math.rad(90), 0, 0) * CFrame.Angles(0, ry + spin, 0)
+		else
+			b.CFrame = cf * CFrame.Angles(0, ry + spin, 0)
+		end
+	end
+end
+local function starTransparency(m: Model, t: number)
+	for _, b in ipairs(m:GetChildren()) do
+		(b :: BasePart).Transparency = t
+	end
+end
+local function segRing(parent: Instance, n: number, size: Vector3, color: Color3): { BasePart }
+	local segs = {}
+	for i = 1, n do
+		local s = neonPart(size, color, 1)
+		s.Parent = parent
+		segs[i] = s
+	end
+	return segs
+end
+local function placeRing(segs: { BasePart }, centre: CFrame, rx: number, rz: number, spin: number, trans: number, gap: number)
+	local n = #segs
+	for i, s in ipairs(segs) do
+		local a = (i / n) * math.pi * 2 + spin
+		local pos = Vector3.new(math.cos(a) * rx, 0, math.sin(a) * rz)
+		local nxt = Vector3.new(math.cos(a + 0.02) * rx, 0, math.sin(a + 0.02) * rz)
+		s.CFrame = centre * CFrame.lookAt(pos, nxt)
+		-- a few gaps make the halo read as a turning ring, like the reference
+		s.Transparency = if (i % gap) == 0 then 1 else trans
+	end
+end
+
+Styles.queen = {
+	accent = function(st, now)
+		if now < st.nextAccent then
+			return
+		end
+		st.nextAccent = now + 0.5
+		local star = queenStar(1.1, QUEEN_GOLD)
+		star.Parent = fxFolder
+		local side = st.data.qside or 1
+		st.data.qside = -side
+		local streaks = {}
+		for _, sx in ipairs({ -1.75, 1.75 }) do
+			local s = neonPart(Vector3.new(0.12, 0.05, 1.3), QUEEN_GOLD, 0.15)
+			s:SetAttribute("X", sx)
+			s.Parent = fxFolder
+			table.insert(streaks, s)
+		end
+		local start = os.clock()
+		local conn
+		conn = RunService.RenderStepped:Connect(function()
+			local k = (os.clock() - start) / 0.95
+			if k >= 1 then
+				conn:Disconnect()
+				star:Destroy()
+				for _, s in ipairs(streaks) do
+					s:Destroy()
+				end
+				return
+			end
+			local z = -3.3 + 7.9 * k
+			local x = side * 0.5 * math.sin(k * math.pi)
+			placeStar(star, localCF(st, Vector3.new(x, 0.86, z)), k * 3)
+			local tr = if k < 0.1 then 1 - k / 0.1 elseif k > 0.75 then (k - 0.75) / 0.25 else 0
+			starTransparency(star, tr)
+			for _, s in ipairs(streaks) do
+				local sx = s:GetAttribute("X") :: number
+				s.CFrame = localCF(st, Vector3.new(sx + (if sx < 0 then -0.3 else 0.3) * math.sin(k * math.pi), 0.85, z - 0.4))
+				s.Transparency = math.max(tr, 0.15)
+			end
+		end)
+	end,
+	streakStart = function(st, _now)
+		local d = st.data
+		local m = Instance.new("Model")
+		m.Name = st.id .. "_Halo"
+		d.crownRing = segRing(m, 26, Vector3.new(0.16, 0.12, 0.8), QUEEN_GOLD)
+		d.bigRing = segRing(m, 40, Vector3.new(0.2, 0.12, 1.1), QUEEN_GOLD)
+		m.Parent = fxFolder
+		d.ring, d.ringT, d.ringFade = m, 0, nil
+		d.sparks = d.sparks or 0
+	end,
+	streakStep = function(st, now)
+		local d = st.data
+		if not d.crownRing then
+			return
+		end
+		d.ringT += d.dt or 0
+		local t = d.ringT
+		local grow = 1 - (1 - math.clamp(t / 0.4, 0, 1)) ^ 3
+		local peak = if t > 0.4 and t < 0.9 then math.sin((t - 0.4) / 0.5 * math.pi) else 0
+		local fade = if d.ringFade then math.clamp((now - d.ringFade) / 0.55, 0, 1) else 0
+		local trans = math.clamp(1 - grow + fade + 0.05 - 0.05 * peak, 0, 1)
+		local crown = att(st, "Crown") * CFrame.Angles(math.rad(10), 0, math.rad(-6))
+		placeRing(d.crownRing, crown, 2.6 + 0.6 * grow + 0.3 * peak, 2.6 + 0.6 * grow + 0.3 * peak, t * 1.6, trans, 7)
+		local waist = att(st, "OuterRing") * CFrame.Angles(math.rad(4), 0, math.rad(5))
+		local s = 0.75 + 0.25 * grow
+		placeRing(d.bigRing, waist, (6.0 + 0.4 * peak) * s, (8.0 + 0.4 * peak) * s, -t * 0.9, trans, 9)
+		if d.ringFade then
+			return
+		end
+		-- small star sparkles rising beside the rails: one every 0.35 s, at most 6 alive
+		if now >= st.nextBurst and d.sparks < 6 then
+			st.nextBurst = now + 0.35
+			d.side = -(d.side or 1)
+			local p0 = localCF(st, Vector3.new(d.side * (5.0 + math.random() * 0.8), 1.2, -3 + math.random() * 8))
+			local star = queenStar(0.7, QUEEN_GOLD)
+			star.Parent = fxFolder
+			d.sparks += 1
+			local start = os.clock()
+			local conn
+			conn = RunService.RenderStepped:Connect(function()
+				local k = (os.clock() - start) / 1.1
+				if k >= 1 then
+					conn:Disconnect()
+					star:Destroy()
+					d.sparks -= 1
+					return
+				end
+				placeStar(star, p0 * CFrame.new(0, 2.8 * (1 - (1 - k) ^ 2), 0), k * 2, true)
+				starTransparency(star, if k < 0.15 then 1 - k / 0.15 elseif k > 0.6 then (k - 0.6) / 0.4 else 0)
+			end)
+		end
+	end,
+	streakStop = function(st, now)
+		local d = st.data
+		if d.ring and not d.ringFade then
+			d.ringFade = now
+			local m = d.ring
+			task.delay(0.6, function()
+				m:Destroy()
+				if d.ring == m then
+					d.ring, d.crownRing, d.bigRing, d.ringFade = nil, nil, nil, nil
+				end
+			end)
+		end
+	end,
+}
+
 ---------------------------------------------------------------------------
 -- signals: who is training where, and their accepted taps (Power going up)
 ---------------------------------------------------------------------------
