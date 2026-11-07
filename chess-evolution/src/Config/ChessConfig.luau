@@ -61,32 +61,32 @@ Config.DefaultSet = "Wooden"
 Config.Stages = {
 	Stage1 = {
 		order = 1, name = "Pawn Pete", rival = "Pawn", rivalId = "PawnPete", power = 25, reward = 10, color = Color3.fromRGB(255, 70, 70),
-		opponent = { name = "Pawn Pete", title = "Club Rookie" },
+		opponent = { name = "Pawn Pete", title = "Park Player" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 2.5 }, { untilT = 16, perSecond = 5 } } },
 	},
 	Stage2 = {
 		order = 2, name = "Knight Nadia", rival = "Knight", rivalId = "KnightNadia", power = 90, reward = 20, color = Color3.fromRGB(60, 140, 255), unlocks = "KnightSprint",
-		opponent = { name = "Knight Nadia", title = "Speed Hopper" },
+		opponent = { name = "Knight Nadia", title = "Club Player" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 3 }, { untilT = 16, perSecond = 6 } } },
 	},
 	Stage3 = {
 		order = 3, name = "Rook Rocco", rival = "Rook", rivalId = "RookRocco", power = 220, reward = 40, color = Color3.fromRGB(255, 190, 40), unlocks = "BishopRun",
-		opponent = { name = "Rook Rocco", title = "Castle Crusher" },
+		opponent = { name = "Rook Rocco", title = "Tournament Player" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 3.2 }, { untilT = 16, perSecond = 6.5 } } },
 	},
 	Stage4 = {
 		order = 4, name = "Bishop Bea", rival = "Bishop", rivalId = "BishopBea", power = 5000, reward = 70, color = Color3.fromRGB(170, 80, 240), unlocks = "RookRig",
-		opponent = { name = "Bishop Bea", title = "Diagonal Demon" },
+		opponent = { name = "Bishop Bea", title = "Candidate Master" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 9 }, { untilT = 16, perSecond = 12 } } },
 	},
 	Stage5 = {
 		order = 5, name = "Queen Quinn", rival = "Queen", rivalId = "QueenQuinn", power = 15000, reward = 120, color = Color3.fromRGB(255, 120, 200), unlocks = "QueenDash",
-		opponent = { name = "Queen Quinn", title = "Board Boss" },
+		opponent = { name = "Queen Quinn", title = "International Master" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 10 }, { untilT = 16, perSecond = 13 } } },
 	},
 	Stage6 = {
 		order = 6, name = "King Kai", rival = "King", rivalId = "KingKai", power = 50000, reward = 200, color = Color3.fromRGB(60, 220, 200), unlocks = "KingsEndgame",
-		opponent = { name = "King Kai", title = "Endgame King" },
+		opponent = { name = "King Kai", title = "Grandmaster" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 11 }, { untilT = 16, perSecond = 13.5 } } },
 	},
 	Stage7 = {
