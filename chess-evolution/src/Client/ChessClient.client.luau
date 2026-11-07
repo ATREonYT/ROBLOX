@@ -17,6 +17,7 @@ local Kit = ReplicatedStorage:WaitForChild("Kit")
 local Net = require(Kit:WaitForChild("Net"))
 local Format = require(Kit:WaitForChild("Format"))
 local Models = require(Kit:WaitForChild("Models"))
+local ChessItems = require(Kit:WaitForChild("ChessItems"))
 local Hud = require(Kit:WaitForChild("HudBuilder"))
 local DuelHud = require(Kit:WaitForChild("DuelHud"))
 local BadgeArt = require(Kit:WaitForChild("BadgeArt"))
@@ -727,59 +728,86 @@ local function sparkles(parent: Instance, color: Color3, rate: number, size: num
 	return e
 end
 
-for _, display in Displays:GetChildren() do
+-- The map streams in, so each case is set up when it arrives (and again if it streams back in).
+local refreshGallery: () -> ()
+local buyOrEquip: (string) -> ()
+local function setupDisplay(display: Instance)
 	local id = display.Name
 	local set = Config.Sets[id]
-	local featured = display:FindFirstChild("Featured") :: Model?
-	local anchor = display:FindFirstChild("PieceAnchor") :: BasePart?
-	if not set or not featured or not anchor then
-		continue
+	if not set or display:FindFirstChild("FX") then
+		return
+	end
+	local featured = display:WaitForChild("Featured", 10) :: Model?
+	local anchor = display:WaitForChild("PieceAnchor", 10) :: BasePart?
+	if not featured or not anchor or display:FindFirstChild("FX") or not display.Parent then
+		return
+	end
+	-- each set has its own chess item (ChessItems): swap in the item if the map still holds an old piece
+	if featured:GetAttribute("SetId") ~= id then
+		local item = ChessItems.Build(id, 1.05, anchor.CFrame * CFrame.new(0, -0.4, 0) * CFrame.Angles(0, math.pi, 0)) -- board face toward the path
+		item.Name = "Featured"
+		featured:Destroy()
+		item.Parent = display
+		featured = item
 	end
 	local entry: any = { model = featured, base = featured:GetPivot(), phase = set.order * 0.9, fx = {} }
 	if not set.available then
 		addLock(display :: Model)
 	end
-	local core = anchor.Position + Vector3.new(0, 3.2, 0)
 	local holder = Instance.new("Folder")
 	holder.Name = "FX"
 	holder.Parent = display
-	if set.fx == "halo" then
-		-- Marble: bright cyan core behind the piece, an orbit ring of three beads, small glints
-		local glow = neonBall(holder, 3.6, set.accent, 0.55)
-		glow.CFrame = CFrame.new(core + Vector3.new(1.2, 0, 0))
-		local light = Instance.new("PointLight")
-		light.Color, light.Range, light.Brightness = set.accent, 14, 1.6
-		light.Parent = glow
-		entry.glow = glow
+	ChessItems.AddFx(featured, id, 1)
+	if set.fx == "orbit" or id == "Cosmic" then
+		-- Gold: three coins circle the board; Cosmic: three small moons
 		entry.orbit = {}
-		for i = 1, 3 do
-			table.insert(entry.orbit, neonBall(holder, 0.55, Color3.fromRGB(200, 250, 255), 0))
+		for _ = 1, 3 do
+			table.insert(entry.orbit, neonBall(holder, if id == "Gold" then 0.6 else 0.45, set.accent, 0))
 		end
-		sparkles(glow, Color3.fromRGB(200, 250, 255), 6, 0.6)
-	elseif set.fx == "orbit" then
-		entry.orbit = {}
-		for i = 1, 4 do
-			table.insert(entry.orbit, neonBall(holder, 0.5, set.accent, 0))
-		end
-		local glow = neonBall(holder, 2.6, set.accent, 0.75)
-		glow.CFrame = CFrame.new(core + Vector3.new(1, 0, 0))
-	elseif set.fx == "aura" then
-		local glow = neonBall(holder, 3.2, set.accent, 0.7)
-		glow.CFrame = CFrame.new(core + Vector3.new(1, 0, 0))
-		local e = sparkles(glow, set.accent, 8, 0.9)
-		e.Texture = "rbxasset://textures/particles/fire_main.dds"
-		e.Speed = NumberRange.new(1, 2)
-		e.Acceleration = Vector3.new(0, 2, 0)
-	elseif set.fx ~= "none" then
-		local glow = neonBall(holder, 2.6, set.accent, 0.7)
-		glow.CFrame = CFrame.new(core + Vector3.new(1, 0, 0))
-		sparkles(glow, set.accent, 3, 0.5)
 	end
-	entry.core = core
+	entry.core = featured:GetPivot().Position
 	gallery[id] = entry
+	-- the case is clickable (reference: click a phone to buy or equip it)
+	local glass = display:WaitForChild("Glass", 5) :: BasePart?
+	if glass and not glass:FindFirstChildOfClass("ClickDetector") then
+		glass.CanQuery = true
+		local cd = Instance.new("ClickDetector")
+		cd.MaxActivationDistance = 60
+		cd.Parent = glass
+		local hl = Instance.new("Highlight")
+		hl.FillTransparency = 1
+		hl.OutlineColor = Color3.new(1, 1, 1)
+		hl.Enabled = false
+		hl.Adornee = featured
+		hl.Parent = holder
+		cd.MouseHoverEnter:Connect(function()
+			hl.Enabled = true
+		end)
+		cd.MouseHoverLeave:Connect(function()
+			hl.Enabled = false
+		end)
+		cd.MouseClick:Connect(function()
+			safe("itemClick", function()
+				buyOrEquip(id)
+			end)
+		end)
+	end
+	if refreshGallery then
+		refreshGallery()
+	end
 end
+for _, display in Displays:GetChildren() do
+	task.spawn(safe, "gallery", function()
+		setupDisplay(display)
+	end)
+end
+Displays.ChildAdded:Connect(function(display)
+	task.spawn(safe, "gallery", function()
+		setupDisplay(display)
+	end)
+end)
 
-local function refreshGallery()
+function refreshGallery()
 	for id, entry in gallery do
 		local set = Config.Sets[id]
 		local display = Displays:FindFirstChild(id)
@@ -1108,11 +1136,10 @@ local function refreshSets()
 	local _ = fit
 end
 
-hookButton(setsFace.Preview.Action, function()
+function buyOrEquip(id: string)
 	if busy then
 		return
 	end
-	local id = selectedSet
 	local set = Config.Sets[id]
 	if not set.available then
 		message("Coming soon!")
@@ -1139,8 +1166,9 @@ hookButton(setsFace.Preview.Action, function()
 		busy = false
 		if r.ok then
 			plinthPulse(id)
-			toast(`{set.name} unlocked!`, Hud.Colors.cyan)
+			toast(`{set.name} unlocked and equipped!`, Hud.Colors.cyan)
 			log(`bought {id}`)
+			Net.Request("Equip", id) -- a new set goes straight into your hand
 		else
 			message(if r.code == "NeedWins" then `Need {set.price} Wins` else "Could not buy. Try again.")
 		end
@@ -1148,6 +1176,9 @@ hookButton(setsFace.Preview.Action, function()
 		busy = false
 		message(`Need {set.price} Wins. Beat rivals to earn Wins!`)
 	end
+end
+hookButton(setsFace.Preview.Action, function()
+	buyOrEquip(selectedSet)
 end)
 
 -- Board Run ---------------------------------------------------------------------
@@ -2168,13 +2199,16 @@ RunService.RenderStepped:Connect(function(dt)
 
 	-- gallery: slow bob and turn of featured pieces, orbiting beads; the nameplate stays still
 	for id, entry in gallery do
+		if not entry.model.Parent then
+			continue -- streamed out; set up again when it streams back in
+		end
 		local bob = math.sin(now * 1.6 + entry.phase) * 0.35
 		local turn = math.sin(now * 0.5 + entry.phase) * 0.35
 		entry.model:PivotTo(entry.base * CFrame.new(0, bob + 0.6, 0) * CFrame.Angles(0, turn, 0))
 		if entry.orbit then
 			for i, bead in entry.orbit do
 				local a = now * 1.4 + i * (math.pi * 2 / #entry.orbit)
-				bead.CFrame = CFrame.new(entry.core + Vector3.new(math.cos(a) * 2.6, math.sin(a * 2) * 0.6 + bob, math.sin(a) * 2.6))
+				bead.CFrame = CFrame.new(entry.core + Vector3.new(math.cos(a) * 3.2, math.sin(a * 2) * 0.6 + bob + 0.6, math.sin(a) * 3.2))
 			end
 		end
 		if entry.glow then

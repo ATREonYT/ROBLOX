@@ -9,6 +9,7 @@
 -- Map.Stages.<StageId>.Zone/PlayerSpot/RivalSpot/Pad/Gate/Barrier/Return, Map.Gallery.<SetId>.Plinth/PieceAnchor.
 
 local Models = require(script.Parent:WaitForChild("Models"))
+local ChessItems = require(script.Parent:WaitForChild("ChessItems"))
 
 local MapBuilder = {}
 
@@ -357,7 +358,8 @@ function MapBuilder.Build(config: any): Model
 		part(m, "Glass", Vector3.new(7.5, 7, 7.5), CFrame.new(x, y + 4.1, z), Color3.fromRGB(210, 235, 255), { Transparency = 0.86, CanCollide = false, CastShadow = false, Material = Enum.Material.Glass })
 		local pieceAnchor = part(m, "PieceAnchor", Vector3.new(1, 1, 1), CFrame.new(x, y + 2.2, z) * CFrame.Angles(0, math.rad(-90), 0), Color3.new(), { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
 		local material = if setId == "Marble" then Enum.Material.Marble elseif setId == "Wooden" then Enum.Material.Wood elseif setId == "Gold" or setId == "Champion" then Enum.Material.Metal else Enum.Material.SmoothPlastic
-		local featured = Models.Piece(if rear then "Queen" else "Knight", set.color, 1.05, pieceAnchor.CFrame, { trim = set.accent, material = material })
+		local _ = material
+		local featured = ChessItems.Build(setId, 1.05, pieceAnchor.CFrame * CFrame.new(0, -0.4, 0) * CFrame.Angles(0, math.pi, 0)) -- each set's own chess item (ChessItems.luau)
 		featured.Name = "Featured"
 		featured.Parent = m
 		-- every case glows in its set's colour, with a soft sparkle (reference: glowing items in cases)
