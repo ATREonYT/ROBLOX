@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local Kit = ReplicatedStorage:WaitForChild("Kit")
 local Net = require(Kit:WaitForChild("Net"))
+local ChessItems = require(Kit:WaitForChild("ChessItems"))
 local Core = require(script.Parent:WaitForChild("Core"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -304,7 +305,21 @@ local function flush()
 	end
 end
 
+-- The equipped set's chess item in the hand, and its aura (ChessItems). Seen by everyone.
+local function wearItem(player: Player)
+	local d = data(player)
+	local character = player.Character
+	if not d or not character then
+		return
+	end
+	local ok, err = pcall(ChessItems.Wear, character, d.Equipped or config.DefaultSet)
+	if not ok then
+		warn("[ChessItems] wear failed: " .. tostring(err))
+	end
+end
+
 local function onCharacter(player: Player, character: Model)
+	task.delay(1, wearItem, player) -- after the rig's hands exist
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
 	if humanoid then
 		humanoid.Died:Connect(function()
@@ -383,6 +398,7 @@ function Game.Init(cfg: any)
 				return Net.fail(why or "Error")
 			end
 			markDirty(player)
+			wearItem(player)
 			return Net.ok({ set = setId })
 		end,
 	})
@@ -512,6 +528,7 @@ function Game.Init(cfg: any)
 		dirty[player] = true
 		local d = data(player)
 		log(`{player.Name}: progress loaded (Wins {d and d.Wins}, Power {d and d.Power})`)
+		wearItem(player)
 	end)
 
 	local function onPlayer(player: Player)
