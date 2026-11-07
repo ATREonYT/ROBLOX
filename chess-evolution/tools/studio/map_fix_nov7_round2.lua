@@ -27,13 +27,31 @@ local atm = Lighting:FindFirstChildOfClass("Atmosphere")
 if atm then atm.Density = 0.32; atm.Haze = 0.6 end
 log("lighting set")
 
--- 2. Stage text centred on every gate
+-- 2. Stage title high on every gate (both text layers), so the rival's name tag never covers it
 for _, st in ipairs(Map.Stages:GetChildren()) do
 	local b = st:FindFirstChild("Barrier", true)
-	local sg = b and b:FindFirstChildOfClass("SurfaceGui")
-	local lbl = sg and sg:FindFirstChildWhichIsA("TextLabel")
-	if lbl then lbl.AnchorPoint = Vector2.new(0.5, 0); lbl.Position = UDim2.fromScale(0.5, 0.14); lbl.Size = UDim2.fromScale(0.6, 0.3) end
+	if b then
+		for _, d in ipairs(b:GetDescendants()) do
+			if d:IsA("TextLabel") then
+				d.AnchorPoint = Vector2.new(0.5, 0); d.Position = UDim2.fromScale(0.5, 0.03); d.Size = UDim2.fromScale(0.6, 0.26)
+			end
+		end
+	end
 end
+
+-- 2b. The floating stage info sign sat right over the rival's head and covered the rival's name tag.
+-- The HUD bar already shows the rival, Power and Wins, so the sign is moved onto the gate and switched off.
+for _, st in ipairs(Map.Stages:GetChildren()) do
+	local s = st:FindFirstChild("Sign")
+	local b = st:FindFirstChild("Barrier", true)
+	if s and b then s.CFrame = CFrame.new(b.Position.X, 11.0, b.Position.Z + 0.6) end
+	local info = s and s:FindFirstChild("Info")
+	if info then info.Enabled = false end
+end
+-- The UI thread set the spawn tile to solid slate (Nov 7); keep it.
+Map.Spawn.Transparency = 0
+Map.Spawn.Material = Enum.Material.Slate
+Map.Spawn.Color = Color3.fromRGB(165, 170, 176)
 
 -- 3. Lane: darker stone floor and a kerb on both sides (reference colour, measured)
 local Lane = Map.Lane
