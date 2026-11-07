@@ -6,6 +6,8 @@
 -- Icons are small 3D chess models in ViewportFrames (our own, no uploaded images).
 
 local Models = require(script.Parent:WaitForChild("Models"))
+local DuelHud = require(script.Parent:WaitForChild("DuelHud"))
+local BadgeArt = require(script.Parent:WaitForChild("BadgeArt"))
 
 local Hud = {}
 
@@ -300,6 +302,9 @@ function Hud.Build(config: any): ScreenGui
 	local ring = new("Frame", { Name = "Ring", BackgroundTransparency = 1, Size = UDim2.fromOffset(66, 66), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(33, 37), ZIndex = 5, Visible = false }, badge)
 	corner(ring, 999)
 	new("UIStroke", { Thickness = 6, Color = Color3.fromRGB(30, 215, 200) }, ring)
+	BadgeArt.Paint(disc, "Brilliant", config.BadgeLook.Brilliant)
+	-- 1v1 duel layer (VS cards, combo, sparks, danger edges): hidden until a fight
+	DuelHud.Build(bottom, gui)
 
 	-- Main action button (TRAIN / CHALLENGE / CLICK TO WIN): fixed position, bottom right
 	local mainHolder, mainFace, mainLabel = button(gui, "MainButton", C.green, UDim2.fromOffset(236, 112), UDim2.new(1, -22, 1, -22), "TRAIN", 46, Vector2.new(1, 1))
