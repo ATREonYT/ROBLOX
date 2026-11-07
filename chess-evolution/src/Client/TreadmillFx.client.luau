@@ -463,6 +463,135 @@ Styles.knight = {
 	end,
 }
 
+-- Bishop Run: two violet light slices travel diagonally across the belt, offset in time, with a small
+-- diamond glint where each ends (diagonal, unlike Knight's right-angle L). Streak = one wide diagonal
+-- ribbon sweeping outside the rails on a tilted orbit and two faceted diamonds lifting beside the arch.
+local BISHOP_GLINT = Color3.fromRGB(240, 210, 255)
+local BISHOP_SLICE = Color3.fromRGB(150, 70, 255)
+local function bishopGlint(st: Station, pos: Vector3)
+	local parts = {}
+	for _, rz in ipairs({ 0, 90 }) do
+		local bar = neonPart(Vector3.new(0.08, 0.05, 0.08), BISHOP_GLINT, 0)
+		bar.CFrame = localCF(st, pos) * CFrame.Angles(0, math.rad(45 + rz), 0)
+		bar.Parent = fxFolder
+		tween(bar, 0.14, { Size = Vector3.new(0.09, 0.05, 1.1) }, Enum.EasingStyle.Back)
+		table.insert(parts, bar)
+	end
+	local dia = neonPart(Vector3.new(0.05, 0.05, 0.05), st.accent, 0)
+	dia.CFrame = localCF(st, pos + Vector3.new(0, 0.12, 0)) * CFrame.Angles(math.rad(45), 0, math.rad(45))
+	dia.Parent = fxFolder
+	tween(dia, 0.14, { Size = Vector3.new(0.34, 0.34, 0.34) }, Enum.EasingStyle.Back)
+	table.insert(parts, dia)
+	fadeAndDestroy(parts, 0.22, 0.3)
+end
+
+local function bishopSlice(st: Station, from: Vector3, to: Vector3)
+	local dir = (to - from).Unit
+	local p = neonPart(Vector3.new(0.42, 0.05, 2.4), BISHOP_SLICE, 0)
+	local function at(pos: Vector3)
+		return st.root.CFrame * CFrame.lookAt(pos, pos + dir)
+	end
+	p.CFrame = at(from)
+	p.Parent = fxFolder
+	tween(p, 0.55, { CFrame = at(to) }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	task.delay(0.55, function()
+		bishopGlint(st, to + dir * 0.9)
+		tween(p, 0.15, { Transparency = 1 })
+		task.delay(0.16, function()
+			p:Destroy()
+		end)
+	end)
+end
+
+Styles.bishop = {
+	accent = function(st, now)
+		if now < st.nextAccent then
+			return
+		end
+		st.nextAccent = now + 1.0
+		local y = 0.84
+		bishopSlice(st, Vector3.new(-1.7, y, -3.2), Vector3.new(1.1, y, 0.0))
+		task.delay(0.3, function()
+			bishopSlice(st, Vector3.new(1.7, y, -0.6), Vector3.new(-1.1, y, 2.6))
+		end)
+	end,
+	streakStart = function(st, _now)
+		local d = st.data
+		local m = Instance.new("Model")
+		m.Name = st.id .. "_Ribbon"
+		local segs = {}
+		for i = 1, 30 do
+			local seg = neonPart(Vector3.new(0.9, 0.1, 1.0), if i <= 4 then st.accent else BISHOP_SLICE, 1)
+			seg.Parent = m
+			segs[i] = seg
+		end
+		local diamonds = {}
+		for _, name in ipairs({ "ArchL", "ArchR" }) do
+			local g = Instance.new("Model")
+			local shell = neonPart(Vector3.new(0.75, 0.75, 0.75), st.accent, 1)
+			shell.Material = Enum.Material.Glass
+			shell.Color = Color3.fromRGB(176, 96, 255)
+			shell.Parent = g
+			local core = neonPart(Vector3.new(0.38, 0.38, 0.38), BISHOP_GLINT, 1)
+			core.Parent = g
+			g.Parent = m
+			table.insert(diamonds, { att = name, shell = shell, core = core, side = if name == "ArchL" then -1 else 1 })
+		end
+		m.Parent = fxFolder
+		d.ring, d.segs, d.diamonds = m, segs, diamonds
+		d.ringT, d.ringFade = 0, nil
+	end,
+	streakStep = function(st, now)
+		local d = st.data
+		if not d.segs then
+			return
+		end
+		d.ringT += d.dt or 0
+		local t = d.ringT
+		local grow = math.clamp(t / 0.35, 0, 1)
+		local peak = if t > 0.35 and t < 0.85 then math.sin((t - 0.35) / 0.5 * math.pi) else 0
+		local fade = if d.ringFade then math.clamp((now - d.ringFade) / 0.55, 0, 1) else 0
+		-- the ribbon: a tilted orbit (diagonal across the machine) just outside the rails
+		local centre = att(st, "DeckCentre") * CFrame.new(0, 1.9, 0.6) * CFrame.Angles(0, 0, math.rad(17))
+		local rx, rz = 6.4 + 0.5 * peak, 9.0 + 0.5 * peak
+		local a0 = t * 3.2
+		for i, seg in ipairs(d.segs) do
+			local a = a0 - (i - 1) * 0.085
+			local pos = Vector3.new(math.cos(a) * rx, 0, math.sin(a) * rz)
+			local nxt = Vector3.new(math.cos(a + 0.05) * rx, 0, math.sin(a + 0.05) * rz)
+			seg.CFrame = centre * CFrame.lookAt(pos, nxt)
+			local along = (i - 1) / 29
+			seg.Size = Vector3.new(0.9 * (1 - along * 0.65) * (1 + 0.35 * peak), 0.1, 0.95)
+			seg.Transparency = math.clamp((1 - grow) + along * 0.75 + fade, 0, 1)
+		end
+		-- two faceted diamonds lift beside the arch, then hover and turn
+		local lift = 1 - (1 - grow) ^ 3
+		for _, g in ipairs(d.diamonds) do
+			local base = att(st, g.att)
+			local bob = math.sin(t * 2.4 + g.side) * 0.15
+			local cf = base * CFrame.new(g.side * 0.9 * lift, 2.0 * lift + 0.35 * peak + bob, 0.2) * CFrame.Angles(0, t * 1.8 * g.side, 0) * CFrame.Angles(math.rad(45), 0, math.rad(45))
+			g.shell.CFrame = cf
+			g.core.CFrame = cf
+			local tr = math.clamp((1 - grow) + fade, 0, 1)
+			g.shell.Transparency = math.max(tr, 0.15)
+			g.core.Transparency = tr
+		end
+	end,
+	streakStop = function(st, now)
+		local d = st.data
+		if d.ring and not d.ringFade then
+			d.ringFade = now
+			local m = d.ring
+			task.delay(0.6, function()
+				m:Destroy()
+				if d.ring == m then
+					d.ring, d.segs, d.diamonds, d.ringFade = nil, nil, nil, nil
+				end
+			end)
+		end
+	end,
+}
+
 ---------------------------------------------------------------------------
 -- signals: who is training where, and their accepted taps (Power going up)
 ---------------------------------------------------------------------------
