@@ -592,6 +592,153 @@ Styles.bishop = {
 	end,
 }
 
+-- Rook Rig: red square outlines march down the belt toward the open end. Streak = a glowing square outline
+-- on the floor around the whole fortress with small spark bursts at its corners, and ember pixels rising
+-- from the tower tops.
+local ROOK_RED = Color3.fromRGB(255, 64, 36)
+local ROOK_EMBER = Color3.fromRGB(255, 150, 40)
+local function squareOutline(parent: Instance, w: number, d: number, bar: number, h: number, color: Color3, t: number): { BasePart }
+	local bars = {}
+	for _, spec in ipairs({
+		{ Vector3.new(w, h, bar), Vector3.new(0, 0, -d / 2) },
+		{ Vector3.new(w, h, bar), Vector3.new(0, 0, d / 2) },
+		{ Vector3.new(bar, h, d), Vector3.new(-w / 2, 0, 0) },
+		{ Vector3.new(bar, h, d), Vector3.new(w / 2, 0, 0) },
+	}) do
+		local b = neonPart(spec[1], color, t)
+		b:SetAttribute("Off", spec[2])
+		b.Parent = parent
+		table.insert(bars, b)
+	end
+	return bars
+end
+local function placeOutline(bars: { BasePart }, cf: CFrame, w: number, d: number, bar: number, h: number)
+	local offs = { Vector3.new(0, 0, -d / 2), Vector3.new(0, 0, d / 2), Vector3.new(-w / 2, 0, 0), Vector3.new(w / 2, 0, 0) }
+	for i, b in ipairs(bars) do
+		b.Size = if i <= 2 then Vector3.new(w + bar, h, bar) else Vector3.new(bar, h, d + bar)
+		b.CFrame = cf * CFrame.new(offs[i] + Vector3.new(0, h / 2, 0))
+	end
+end
+
+Styles.rook = {
+	accent = function(st, now)
+		if now < st.nextAccent then
+			return
+		end
+		st.nextAccent = now + 0.75
+		local m = Instance.new("Model")
+		local bars = squareOutline(m, 2.6, 1.7, 0.16, 0.05, ROOK_RED, 0)
+		local inner = squareOutline(m, 2.2, 1.3, 0.07, 0.05, ROOK_EMBER, 0.2)
+		m.Parent = fxFolder
+		local start = os.clock()
+		local conn
+		conn = RunService.RenderStepped:Connect(function()
+			local k = (os.clock() - start) / 1.15
+			if k >= 1 then
+				conn:Disconnect()
+				m:Destroy()
+				return
+			end
+			local z = -2.8 + 7.0 * k
+			local cf = localCF(st, Vector3.new(0, 0.8, z))
+			placeOutline(bars, cf, 2.6, 1.7, 0.16, 0.05)
+			placeOutline(inner, cf, 2.2, 1.3, 0.07, 0.06)
+			local tr = if k < 0.12 then 1 - k / 0.12 elseif k > 0.7 then (k - 0.7) / 0.3 else 0
+			for _, b in ipairs(bars) do
+				b.Transparency = tr
+			end
+			for _, b in ipairs(inner) do
+				b.Transparency = math.max(tr, 0.25)
+			end
+		end)
+	end,
+	streakStart = function(st, _now)
+		local d = st.data
+		local m = Instance.new("Model")
+		m.Name = st.id .. "_Square"
+		d.outer = squareOutline(m, 1, 1, 0.24, 0.12, ROOK_RED, 1)
+		d.outerInner = squareOutline(m, 1, 1, 0.1, 0.12, ROOK_EMBER, 1)
+		m.Parent = fxFolder
+		d.ring, d.ringT, d.ringFade = m, 0, nil
+		d.embers = d.embers or 0
+	end,
+	streakStep = function(st, now)
+		local d = st.data
+		if not d.outer then
+			return
+		end
+		d.ringT += d.dt or 0
+		local t = d.ringT
+		local grow = 1 - (1 - math.clamp(t / 0.35, 0, 1)) ^ 3
+		local peak = if t > 0.35 and t < 0.8 then math.sin((t - 0.35) / 0.45 * math.pi) else 0
+		local fade = if d.ringFade then math.clamp((now - d.ringFade) / 0.55, 0, 1) else 0
+		local W, D = 11.4 * (0.7 + 0.3 * grow) + 0.6 * peak, 14.2 * (0.7 + 0.3 * grow) + 0.6 * peak
+		local cf = att(st, "OuterRing")
+		local h = 0.12 + 0.25 * peak
+		placeOutline(d.outer, cf, W, D, 0.24, h)
+		placeOutline(d.outerInner, cf, W - 0.7, D - 0.7, 0.1, 0.1)
+		local base = 1 - grow + fade
+		for _, b in ipairs(d.outer) do
+			b.Transparency = math.clamp(base, 0, 1)
+		end
+		for _, b in ipairs(d.outerInner) do
+			b.Transparency = math.clamp(base + 0.35, 0, 1)
+		end
+		if d.ringFade then
+			return
+		end
+		-- a small spark burst at one corner every 0.8 s (never a flash: short shards that fade)
+		if now >= st.nextBurst then
+			st.nextBurst = now + 0.8
+			d.corner = ((d.corner or 0) % 4) + 1
+			local cx = if d.corner == 1 or d.corner == 4 then -W / 2 else W / 2
+			local cz = if d.corner <= 2 then -D / 2 else D / 2
+			local origin = cf * CFrame.new(cx, 0.15, cz)
+			for i = 1, 5 do
+				local a = (i / 5) * math.pi * 2 + math.random() * 0.6
+				local s = neonPart(Vector3.new(0.08, 0.08, 0.55), ROOK_EMBER, 0)
+				local dir = Vector3.new(math.cos(a), 0.6 + math.random() * 0.5, math.sin(a)).Unit
+				s.CFrame = CFrame.lookAt(origin.Position, origin.Position + dir)
+				s.Parent = fxFolder
+				tween(s, 0.35, { CFrame = CFrame.lookAt(origin.Position + dir * 1.3, origin.Position + dir * 2), Transparency = 1, Size = Vector3.new(0.05, 0.05, 0.2) }, Enum.EasingStyle.Quad)
+				task.delay(0.37, function()
+					s:Destroy()
+				end)
+			end
+		end
+		-- ember pixels rising from the tower tops: one every 0.3 s, at most 8 alive
+		if now >= (d.nextEmber or 0) and d.embers < 8 then
+			d.nextEmber = now + 0.3
+			d.side = -(d.side or 1)
+			local top = att(st, if d.side < 0 then "TowerL" else "TowerR")
+			local e = neonPart(Vector3.new(0.26, 0.26, 0.26), if math.random() < 0.5 then ROOK_RED else ROOK_EMBER, 0)
+			local p0 = top.Position + Vector3.new((math.random() - 0.5) * 2.2, 0, (math.random() - 0.5) * 2.2)
+			e.CFrame = CFrame.new(p0)
+			e.Parent = fxFolder
+			d.embers += 1
+			local drift = Vector3.new((math.random() - 0.5) * 1.2, 3 + math.random(), (math.random() - 0.5) * 1.2)
+			tween(e, 1.4, { CFrame = CFrame.new(p0 + drift), Transparency = 1, Size = Vector3.new(0.14, 0.14, 0.14) }, Enum.EasingStyle.Sine)
+			task.delay(1.42, function()
+				e:Destroy()
+				d.embers -= 1
+			end)
+		end
+	end,
+	streakStop = function(st, now)
+		local d = st.data
+		if d.ring and not d.ringFade then
+			d.ringFade = now
+			local m = d.ring
+			task.delay(0.6, function()
+				m:Destroy()
+				if d.ring == m then
+					d.ring, d.outer, d.outerInner, d.ringFade = nil, nil, nil, nil
+				end
+			end)
+		end
+	end,
+}
+
 ---------------------------------------------------------------------------
 -- signals: who is training where, and their accepted taps (Power going up)
 ---------------------------------------------------------------------------
