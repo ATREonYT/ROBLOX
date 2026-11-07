@@ -52,6 +52,13 @@ if fs.isFile("src/Shared/HudBuilder.luau") then
 	print(`[build] src/StarterGui/ChessHUD.rbxm ({#hud:GetDescendants()} parts)`)
 end
 
+if fs.isFile("src/Shared/LoopHud.luau") then
+	local LoopHud = loadModule("src/Shared/LoopHud.luau", "LoopHud")
+	local loop = LoopHud.Build(config)
+	fs.writeFile("src/StarterGui/ChessLoop.rbxm", roblox.serializeModel({ loop }))
+	print(`[build] src/StarterGui/ChessLoop.rbxm ({#loop:GetDescendants()} parts)`)
+end
+
 -- Place ------------------------------------------------------------------------
 local game = Instance.new("DataModel")
 local function classAndName(fileName)

@@ -20,5 +20,6 @@ if not workspace:FindFirstChild("Map") then
 end
 
 require(Server:WaitForChild("Rivals")).Spawn(Config, workspace:WaitForChild("Map"))
+require(Server:WaitForChild("Leaderboard")).Start(Config, workspace:WaitForChild("Map"))
 PlayerData.Start()
 print("[Chess] server ready")

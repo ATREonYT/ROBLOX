@@ -152,12 +152,57 @@ Config.Guide = {
 	{ key = "Challenge", text = "Go to Stage 1 and Challenge the Pawn Rival", until_ = "clearStage1" },
 	{ key = "Buy", text = "Buy the Marble Set in Chess Sets", until_ = "ownMarble" },
 	{ key = "Equip", text = "Equip Marble, then train for +2 per tap!", until_ = "equipMarble" },
+	{ key = "Promote", text = "Fill the bar and tap PROMOTE for +50% Power forever", until_ = "promoted" },
 }
 
 -- Sounds: 0 until the owner uploads ours (tools/sfx). Never invent IDs.
 Config.Sounds = {
 	Tap = 0, Gain = 0, Capture = 0, Win = 0, Lose = 0, Chime = 0, Brilliant = 0, Warn = 0, Click = 0, Music = 0,
 }
+
+-- Promotion (this game's rebirth: a pawn that reaches the end becomes a queen) ----
+-- Blueprint - Plus One Evolution §4 and note 12 §3: first one by ~90 s, cost x3.2 each time,
+-- +50% Power and +25% Wins per promotion. Resets Power and Wins; sets, cleared stages and
+-- unlocked treadmills stay.
+Config.Promotion = {
+	first = { power = 400, wins = 20 },
+	base = { power = 4000, wins = 150 },
+	growth = 3.2,
+	powerBonus = 0.5,
+	winsBonus = 0.25,
+	levels = 20, -- display-only level bar per promotion (note 13 §2B): about one level a second
+	levelCurve = 1.3,
+}
+
+-- Game passes. id 0 = not made yet: the shop shows the price and "Coming soon" and never
+-- prompts (repo rule). Alex makes each pass on the Creator Dashboard and pastes its id here.
+-- Plain names only (no "VIP", note 09).
+Config.Passes = {
+	DoublePower = { order = 1, id = 0, price = 399, name = "2x Power", text = "Every tap gives double Power" },
+	DoubleWins = { order = 2, id = 0, price = 399, name = "2x Wins", text = "Every duel win pays double" },
+	AutoTrain = { order = 3, id = 0, price = 199, name = "Auto Train", text = "Trains for you while you stand on a treadmill" },
+}
+Config.AutoTrainRate = 4 -- taps per second, under the hand cap of 6
+
+-- Daily rewards: 7 tiles by UTC day. A missed day pauses the streak, never wipes it
+-- (Brief - Game Design §5). Wins scale with promotions so they stay worth claiming.
+Config.Daily = { 15, 25, 40, 60, 90, 130, 250 }
+
+-- Playtime gifts (this session): minutes -> Wins. Note 20 rule 10, exit hook.
+Config.Playtime = {
+	{ min = 2, wins = 5 }, { min = 5, wins = 10 }, { min = 10, wins = 20 }, { min = 15, wins = 30 },
+	{ min = 25, wins = 50 }, { min = 40, wins = 80 }, { min = 60, wins = 140 }, { min = 90, wins = 250 },
+}
+
+-- Codes (upper case). Each works once per player.
+Config.Codes = {
+	CHECKMATE = { wins = 25, text = "+25 Wins" },
+	PROMOTE = { wins = 50, text = "+50 Wins" },
+	CASTLE = { wins = 100, text = "+100 Wins" },
+}
+
+-- Leaderboard board by spawn (top 10 by Wins, refresh every 60 s).
+Config.Leaderboard = { storeName = "ChessEvolution_TopWins_v1", refresh = 60, size = 10 }
 
 -- Helpers -------------------------------------------------------------------
 local function sortedKeys(map: { [string]: any }): { string }
@@ -179,6 +224,41 @@ function Config.Gain(stationId: string, setId: string): number
 	local station = Config.Stations[stationId]
 	local set = Config.Sets[setId] or Config.Sets[Config.DefaultSet]
 	return if station then station.basePower * set.multiplier else 0
+end
+
+-- Promotion cost after n promotions.
+function Config.PromotionCost(n: number): (number, number)
+	local p = Config.Promotion
+	if n <= 0 then
+		return p.first.power, p.first.wins
+	end
+	local k = p.growth ^ (n - 1)
+	return math.floor(p.base.power * k), math.floor(p.base.wins * k)
+end
+
+-- Multipliers. Additive inside a source, multiplied across sources (note 12 §4).
+function Config.PowerMult(promotions: number, passes: { [string]: boolean }?): number
+	return (1 + Config.Promotion.powerBonus * promotions) * (if passes and passes.DoublePower then 2 else 1)
+end
+function Config.WinsMult(promotions: number, passes: { [string]: boolean }?): number
+	return (1 + Config.Promotion.winsBonus * promotions) * (if passes and passes.DoubleWins then 2 else 1)
+end
+
+-- Display-only level from Power toward the next promotion: returns level, progress 0..1.
+function Config.Level(power: number, promotions: number): (number, number)
+	local p = Config.Promotion
+	local goal = Config.PromotionCost(promotions)
+	local function at(l: number): number
+		return goal * (l / p.levels) ^ p.levelCurve
+	end
+	local l = 0
+	while l < p.levels and power >= at(l + 1) do
+		l += 1
+	end
+	if l >= p.levels then
+		return p.levels, 1
+	end
+	return l + 1, math.clamp((power - at(l)) / (at(l + 1) - at(l)), 0, 1)
 end
 
 -- Rival pressure (meter per second) at time t.

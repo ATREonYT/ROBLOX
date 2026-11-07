@@ -33,6 +33,9 @@
     "StarterGui": {
       "ChessHUD": {
         "$path": "src/StarterGui/ChessHUD.rbxm"
+      },
+      "ChessLoop": {
+        "$path": "src/StarterGui/ChessLoop.rbxm"
       }
     },
     "StarterPlayer": {
@@ -40,6 +43,9 @@
         "$className": "StarterPlayerScripts",
         "ChessClient": {
           "$path": "src/Client/ChessClient.client.luau"
+        },
+        "LoopClient": {
+          "$path": "src/Client/LoopClient.client.luau"
         }
       }
     }

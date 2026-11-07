@@ -244,7 +244,7 @@ do
 	check("battle: 2 taps/s wins", result and result.outcome == "win", result and result.outcome)
 	check("battle: 10 wins first clear", data.Wins == 10 and result.reward == 10, data.Wins)
 	check("battle: power kept", data.Power == powerBefore)
-	-- replay: no second payout
+	-- replay: every win pays (the reference's Wins counter), but unlocks only once
 	clock += 1
 	ok, battle = Core.Challenge(core, data, s, "Stage1", near)
 	for i = 1, 400 do
@@ -257,7 +257,8 @@ do
 			break
 		end
 	end
-	check("replay: practice win pays nothing", result.outcome == "win" and result.reward == 0 and data.Wins == 10, data.Wins)
+	check("replay: win pays again", result.outcome == "win" and result.reward == 10 and data.Wins == 20, data.Wins)
+	check("replay: no second unlock", result.unlocked == nil and not result.firstClear)
 	-- defeat keeps progress
 	clock += 1
 	ok, battle = Core.Challenge(core, data, s, "Stage1", near)
@@ -269,14 +270,14 @@ do
 		end
 	end
 	check("defeat: lose with no taps", result.outcome == "lose")
-	check("defeat: keeps power and wins", data.Power == powerBefore and data.Wins == 10)
+	check("defeat: keeps power and wins", data.Power == powerBefore and data.Wins == 20)
 	-- shop
 	check("buy: unknown set rejected", not Core.Buy(core, data, "Nope"))
 	check("buy: coming-soon set never sold", not Core.Buy(core, data, "Gold"))
 	check("equip: unowned rejected", not Core.Equip(core, data, "Marble"))
 	ok = Core.Buy(core, data, "Marble")
-	check("buy: Marble for 8 wins", ok and data.Wins == 2 and data.Sets.Marble == true, data.Wins)
-	check("buy: twice rejected", not Core.Buy(core, data, "Marble") and data.Wins == 2)
+	check("buy: Marble for 8 wins", ok and data.Wins == 12 and data.Sets.Marble == true, data.Wins)
+	check("buy: twice rejected", not Core.Buy(core, data, "Marble") and data.Wins == 12)
 	check("equip: Marble", Core.Equip(core, data, "Marble") and data.Equipped == "Marble")
 	clock += 1
 	local okTap, amount = Core.Tap(core, data, s, { kind = "train", station = "PawnMill" }, near)
@@ -315,6 +316,71 @@ do
 	local s2 = Core.NewSession()
 	ok, code = Core.Challenge(core, fresh, s2, "Stage1", near)
 	check("challenge: needs 25 power", not ok and code == "NeedPower", code)
+
+	-- Promotion (rebirth) -------------------------------------------------
+	local pd = Core.NewData(Config)
+	local ps = Core.NewSession()
+	local cp, cw = Config.PromotionCost(0)
+	check("promote: first costs 400 Power / 20 Wins", cp == 400 and cw == 20, `{cp}/{cw}`)
+	local p1, w1 = Config.PromotionCost(1)
+	local p2 = Config.PromotionCost(2)
+	check("promote: cost grows x3.2", p1 == 4000 and w1 == 150 and p2 == 12800, `{p1}/{p2}`)
+	pd.Power, pd.Wins = 399, 20
+	ok, code = Core.Promote(core, pd, ps)
+	check("promote: needs Power", not ok and code == "NeedPower", code)
+	pd.Power, pd.Wins = 400, 19
+	ok, code = Core.Promote(core, pd, ps)
+	check("promote: needs Wins", not ok and code == "NeedWins", code)
+	pd.Wins = 25
+	pd.Sets.Marble = true
+	pd.Cleared.Stage1 = true
+	ok = Core.Promote(core, pd, ps)
+	check("promote: resets Power and Wins, keeps sets and stages", ok and pd.Power == 0 and pd.Wins == 0 and pd.Promotions == 1 and pd.Sets.Marble and pd.Cleared.Stage1)
+	clock += 1
+	local okT, amt = Core.Tap(core, pd, ps, { kind = "train", station = "PawnMill" }, near)
+	check("promote: +50% Power per tap", okT and amt == 1.5, amt)
+	ps.passes.DoublePower = true
+	clock += 1
+	okT, amt = Core.Tap(core, pd, ps, { kind = "train", station = "PawnMill" }, near)
+	check("pass: 2x Power multiplies on top", okT and amt == 3, amt)
+	check("wins mult: 1 promotion + 2x Wins = 2.5", Config.WinsMult(1, { DoubleWins = true }) == 2.5)
+	local lv, prog = Config.Level(0, 0)
+	local lvTop = Config.Level(400, 0)
+	check("level bar: starts at 1, ends at 20", lv == 1 and prog == 0 and lvTop == 20, `{lv} {lvTop}`)
+	local _, lvMid = nil, Config.Level(200, 0)
+	check("level bar: halfway power is past level 10", lvMid > 10, lvMid)
+
+	-- Daily rewards
+	local dd = Core.NewData(Config)
+	local day = 20000 * 86400
+	ok, res = Core.ClaimDaily(core, dd, day + 100)
+	check("daily: day 1 pays 15", ok and res.wins == 15 and res.tile == 1 and dd.Wins == 15, res)
+	check("daily: twice the same day rejected", not Core.ClaimDaily(core, dd, day + 5000))
+	ok, res = Core.ClaimDaily(core, dd, day + 86400 * 3)
+	check("daily: a missed day pauses, never wipes (day 2 next)", ok and res.tile == 2, res and res.tile)
+
+	-- Playtime gifts
+	local gs = Core.NewSession()
+	gs.joinedAt = 0
+	ok, code = Core.ClaimGift(core, dd, gs, 1, 60)
+	check("gift: not before its minutes", not ok and code == "NotYet", code)
+	ok = Core.ClaimGift(core, dd, gs, 1, 121)
+	check("gift: claim after 2 min", ok)
+	check("gift: once per session", not Core.ClaimGift(core, dd, gs, 1, 500))
+
+	-- Codes
+	local before = dd.Wins
+	ok = Core.Redeem(core, dd, " checkmate ")
+	check("code: case and spaces ignored", ok and dd.Wins == before + 25)
+	ok, code = Core.Redeem(core, dd, "CHECKMATE")
+	check("code: once per player", not ok and code == "Used", code)
+	ok, code = Core.Redeem(core, dd, "FREEROBUX")
+	check("code: unknown rejected", not ok and code == "BadCode", code)
+
+	-- Kid-safe: passes without a real id never prompt (Coming soon)
+	for key, pass in Config.Passes do
+		check(`pass {key}: has a price and a plain name`, pass.price > 0 and not string.find(string.upper(pass.name), "VIP"))
+	end
 end
 
 print(`[test] {passed} passed, {failed} failed`)

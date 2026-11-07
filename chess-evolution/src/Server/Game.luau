@@ -11,6 +11,7 @@ local Kit = ReplicatedStorage:WaitForChild("Kit")
 local Net = require(Kit:WaitForChild("Net"))
 local Core = require(script.Parent:WaitForChild("Core"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local T = Net.T
 local Game = {}
@@ -102,6 +103,16 @@ local function snapshot(player: Player): any
 		station = s and s.station,
 		lastStation = s and s.lastStation,
 		battle = s and s.battle and s.battle.id,
+		Promotions = d.Promotions or 0,
+		PromoPower = (config.PromotionCost(d.Promotions or 0)),
+		PromoWins = select(2, config.PromotionCost(d.Promotions or 0)),
+		TutorialDone = (d.Promotions or 0) >= 1,
+		Passes = s and s.passes or {},
+		Auto = s and s.auto or false,
+		DailyReady = (d.DailyDay or -1) < Core.Day(os.time()),
+		DailyTile = ((d.DailyStreak or 0) % #config.Daily) + 1,
+		GiftsClaimed = s and s.gifts or {},
+		SessionAge = s and math.floor(os.clock() - s.joinedAt) or 0,
 	}
 end
 
@@ -205,7 +216,9 @@ local function stepBattles(dt: number)
 				if result.reward > 0 then
 					markDirty(player)
 					updateLeaderstats(player)
-					task.spawn(PlayerData.SaveNowAsync, player) -- a first clear is saved right away
+					if result.firstClear then
+						task.spawn(PlayerData.SaveNowAsync, player) -- a first clear is saved right away
+					end
 				end
 				dirty[player] = true
 				BattleEndPush:Fire(player, {
@@ -214,6 +227,7 @@ local function stepBattles(dt: number)
 					outcome = result.outcome,
 					reward = result.reward,
 					unlocked = result.unlocked,
+					firstClear = result.firstClear,
 					badges = badges,
 					meter = if result.outcome == "win" then 100 elseif result.outcome == "lose" then 0 else 50,
 				})
@@ -238,6 +252,47 @@ local function checkTraining()
 			end
 		end
 	end
+end
+
+-- Auto Train (pass): taps the treadmill the player stands on, below the hand cap.
+local autoAcc: { [Player]: number } = {}
+local function stepAuto(dt: number)
+	for player, s in sessions do
+		if s.auto and s.passes.AutoTrain and not s.battle and s.lastStation then
+			autoAcc[player] = (autoAcc[player] or 0) + dt * config.AutoTrainRate
+			while autoAcc[player] >= 1 do
+				autoAcc[player] -= 1
+				local d = data(player)
+				if d and nearFn(player)("station", s.lastStation) then
+					local gain = config.Gain(s.lastStation, d.Equipped) * config.PowerMult(d.Promotions or 0, s.passes)
+					d.Power += gain
+					d.Stats.Taps += 1
+					s.station = s.lastStation
+					player:SetAttribute("Training", s.lastStation)
+					markDirty(player)
+				end
+			end
+		else
+			autoAcc[player] = 0
+		end
+	end
+end
+
+-- Game passes: always asked from Roblox on the server, never trusted from the client.
+local function checkPasses(player: Player)
+	local s = sessions[player]
+	if not s then
+		return
+	end
+	for key, pass in config.Passes do
+		if pass.id ~= 0 then
+			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.id)
+			if ok and owns then
+				s.passes[key] = true
+			end
+		end
+	end
+	dirty[player] = true
 end
 
 local function flush()
@@ -371,6 +426,78 @@ function Game.Init(cfg: any)
 			return Net.ok()
 		end,
 	})
+	-- Promotion, daily, playtime gifts, codes, shop ------------------------------
+	local function simple(name: string, args: { any }, fn: (Player, any, Core.Session, ...any) -> (boolean, any), save: boolean)
+		Net.Handle(name, {
+			rate = { burst = 3, perSecond = 1 },
+			args = args,
+			handler = function(player: Player, ...)
+				local d = data(player)
+				local s = sessions[player]
+				if not d or not s then
+					return Net.fail("NotLoaded")
+				end
+				local ok, res = fn(player, d, s, ...)
+				if not ok then
+					return Net.fail(res or "Error")
+				end
+				markDirty(player)
+				updateLeaderstats(player)
+				if save then
+					task.spawn(PlayerData.SaveNowAsync, player)
+				end
+				log(`{player.Name}: {name} ok`)
+				return Net.ok(res)
+			end,
+		})
+	end
+	simple("Promote", {}, function(player, d, s)
+		local ok, why = Core.Promote(core, d, s)
+		if ok then
+			player:SetAttribute("Training", nil)
+			return true, { promotions = d.Promotions }
+		end
+		return false, why
+	end, true)
+	simple("ClaimDaily", {}, function(_player, d)
+		return Core.ClaimDaily(core, d, os.time())
+	end, true)
+	simple("ClaimGift", { T.integer(1, #cfg.Playtime) }, function(_player, d, s, i)
+		return Core.ClaimGift(core, d, s, i, os.clock())
+	end, false)
+	simple("Redeem", { T.string(24) }, function(_player, d, _s, code)
+		return Core.Redeem(core, d, code)
+	end, true)
+	local passKeys = {}
+	for k in cfg.Passes do
+		table.insert(passKeys, k)
+	end
+	simple("SetAuto", { T.boolean }, function(_player, _d, s, on)
+		if on and not s.passes.AutoTrain then
+			return false, "NeedPass"
+		end
+		s.auto = on
+		return true, { auto = on }
+	end, false)
+	-- Buying a pass: the prompt only opens for a real id; id 0 says "Coming soon" (repo rule).
+	simple("BuyPass", { T.oneOf(passKeys) }, function(player, _d, s, key)
+		local pass = cfg.Passes[key]
+		if s.passes[key] then
+			return false, "Owned"
+		end
+		if pass.id == 0 then
+			return false, "ComingSoon"
+		end
+		MarketplaceService:PromptGamePassPurchase(player, pass.id)
+		return true, { prompted = key }
+	end, false)
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, passId: number, bought: boolean)
+		if bought then
+			task.spawn(checkPasses, player) -- re-ask Roblox; never trust this event alone
+			log(`{player.Name}: pass {passId} bought, re-checking`)
+		end
+	end)
+
 	Net.Handle("Hello", {
 		rate = { burst = 3, perSecond = 1 },
 		args = {},
@@ -389,6 +516,8 @@ function Game.Init(cfg: any)
 
 	local function onPlayer(player: Player)
 		sessions[player] = Core.NewSession()
+		sessions[player].joinedAt = os.clock()
+		task.spawn(checkPasses, player)
 		local stats = Instance.new("Folder")
 		stats.Name = "leaderstats"
 		local wins = Instance.new("IntValue")
@@ -414,10 +543,12 @@ function Game.Init(cfg: any)
 		sessions[player] = nil
 		dirty[player] = nil
 		battleSent[player] = nil
+		autoAcc[player] = nil
 	end)
 
 	RunService.Heartbeat:Connect(function(dt)
 		stepBattles(dt)
+		stepAuto(dt)
 		local now = os.clock()
 		if now - lastZoneCheck >= 0.2 then
 			lastZoneCheck = now

@@ -21,6 +21,10 @@ export type Session = {
 	tokensAt: number,
 	lastStage: string?,
 	lastStation: string?,
+	passes: { [string]: boolean }, -- game passes Roblox confirmed (checked on the server)
+	auto: boolean, -- Auto Train switched on
+	joinedAt: number, -- os.clock() at join, for playtime gifts
+	gifts: { [number]: boolean },
 }
 
 function Core.new(config: any, clock: () -> number)
@@ -43,11 +47,18 @@ function Core.NewData(config: any): { [string]: any }
 		BookShown = false,
 		Guide = 1,
 		Stats = { Taps = 0, Battles = 0, Victories = 0 },
+		Promotions = 0,
+		DailyDay = -1, -- UTC day index of the last claim
+		DailyStreak = 0, -- tiles claimed (1..7, then loops)
+		Codes = {},
 	}
 end
 
 function Core.NewSession(): Session
-	return { station = nil, battle = nil, tokens = -1, tokensAt = 0, lastStage = nil, lastStation = nil }
+	return {
+		station = nil, battle = nil, tokens = -1, tokensAt = 0, lastStage = nil, lastStation = nil,
+		passes = {}, auto = false, joinedAt = 0, gifts = {},
+	}
 end
 
 -- Unlock rules ---------------------------------------------------------------
@@ -123,7 +134,7 @@ function Core.Tap(core: any, data: any, s: Session, ctx: any, isNear: (string, s
 		if not takeToken(core, s) then
 			return false, "TooFast"
 		end
-		local gain = cfg.Gain(id, data.Equipped)
+		local gain = cfg.Gain(id, data.Equipped) * cfg.PowerMult(data.Promotions or 0, s.passes)
 		data.Power += gain
 		data.Stats.Taps += 1
 		s.station, s.lastStation = id, id
@@ -189,12 +200,15 @@ function Core.StepBattle(core: any, data: any, s: Session, dt: number): (any?, {
 	local result = { id = battle.id, stage = battle.stage, outcome = state.outcome, reward = 0, unlocked = nil, t = state.t }
 	if state.outcome == "win" then
 		data.Stats.Victories += 1
+		-- Every win pays (the reference's Wins counter); a first clear also unlocks the next
+		-- treadmill. Promotions and 2x Wins scale the pay.
+		local pay = math.floor(stage.reward * cfg.WinsMult(data.Promotions or 0, s.passes))
+		data.Wins += pay
+		result.reward = pay
 		if not data.Cleared[battle.stage] then
-			-- First clear: granted exactly once (the flag is written in the same step).
 			data.Cleared[battle.stage] = true
-			data.Wins += stage.reward
-			result.reward = stage.reward
 			result.unlocked = stage.unlocks
+			result.firstClear = true
 		end
 	end
 	s.battle = nil
@@ -229,6 +243,79 @@ function Core.Equip(core: any, data: any, setId: string): (boolean, string?)
 	end
 	data.Equipped = setId
 	return true, nil
+end
+
+-- Promotion (rebirth): needs Power and Wins, resets both, adds a permanent bonus.
+function Core.Promote(core: any, data: any, s: Session): (boolean, string?)
+	if s.battle then
+		return false, "Busy"
+	end
+	local n = data.Promotions or 0
+	local power, wins = core.cfg.PromotionCost(n)
+	if data.Power < power then
+		return false, "NeedPower"
+	end
+	if data.Wins < wins then
+		return false, "NeedWins"
+	end
+	data.Power = 0
+	data.Wins = 0
+	data.Promotions = n + 1
+	s.station = nil
+	return true, nil
+end
+
+-- UTC day index from a unix time.
+function Core.Day(unix: number): number
+	return math.floor(unix / 86400)
+end
+
+-- Daily reward: one tile per UTC day. A missed day pauses the streak (never wipes it).
+function Core.ClaimDaily(core: any, data: any, unix: number): (boolean, any)
+	local today = Core.Day(unix)
+	if (data.DailyDay or -1) >= today then
+		return false, "Claimed"
+	end
+	local tiles = core.cfg.Daily
+	local tile = ((data.DailyStreak or 0) % #tiles) + 1
+	local pay = math.floor(tiles[tile] * (1 + core.cfg.Promotion.winsBonus * (data.Promotions or 0)))
+	data.DailyDay = today
+	data.DailyStreak = (data.DailyStreak or 0) + 1
+	data.Wins += pay
+	return true, { tile = tile, wins = pay }
+end
+
+-- Playtime gift i, once per session after its minutes have passed.
+function Core.ClaimGift(core: any, data: any, s: Session, i: number, now: number): (boolean, any)
+	local gift = core.cfg.Playtime[i]
+	if not gift then
+		return false, "Unknown"
+	end
+	if s.gifts[i] then
+		return false, "Claimed"
+	end
+	if now - s.joinedAt < gift.min * 60 then
+		return false, "NotYet"
+	end
+	s.gifts[i] = true
+	data.Wins += gift.wins
+	return true, { gift = i, wins = gift.wins }
+end
+
+-- Codes: once per player, case-insensitive.
+function Core.Redeem(core: any, data: any, code: string): (boolean, any)
+	local key = string.upper((string.gsub(code, "%s", "")))
+	local entry = core.cfg.Codes[key]
+	if not entry then
+		return false, "BadCode"
+	end
+	data.Codes = data.Codes or {}
+	if data.Codes[key] then
+		return false, "Used"
+	end
+	data.Codes[key] = true
+	data.Wins += entry.wins
+	return true, { code = key, wins = entry.wins, text = entry.text }
 end
 
 -- Ends training and any battle (left the deck, died, reset, left the game).
