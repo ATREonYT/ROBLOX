@@ -207,9 +207,9 @@ local isTouch = false
 local function layout()
 	local vp = camera.ViewportSize
 	isTouch = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-	local scale = math.clamp(math.min(vp.X / 1500, vp.Y / 860), 0.5, 1.15)
+	local scale = math.clamp(math.min(vp.X / 1340, vp.Y / 770), 0.5, 1.3)
 	if isTouch then
-		scale = math.clamp(math.min(vp.X / 1250, vp.Y / 700), 0.5, 1)
+		scale = math.clamp(math.min(vp.X / 1140, vp.Y / 640), 0.5, 1.1)
 	end
 	(G.Scale :: UIScale).Scale = scale
 	local inv = 1 / scale
@@ -229,7 +229,7 @@ local function layout()
 		G.RightOffers.Offer2.Visible = false
 	else
 		MainHolder.Position = UDim2.new(1, -22, 1, -22)
-		MainHolder.Size = UDim2.fromOffset(236, 112)
+		MainHolder.Size = UDim2.fromOffset(160, 100) -- fits right of the auto clickers at the larger HUD scale
 		G.KeyHint.Visible = true
 		G.RightOffers.Offer1.Visible = true
 		G.RightOffers.Offer2.Visible = true

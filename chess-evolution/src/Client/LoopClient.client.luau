@@ -121,7 +121,7 @@ local function fit()
 	-- same scale as ChessHUD, so the two left grids stay lined up
 	local vp = camera.ViewportSize
 	local touch = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-	local s = if touch then math.clamp(math.min(vp.X / 1250, vp.Y / 700), 0.5, 1) else math.clamp(math.min(vp.X / 1500, vp.Y / 860), 0.5, 1.15)
+	local s = if touch then math.clamp(math.min(vp.X / 1140, vp.Y / 640), 0.5, 1.1) else math.clamp(math.min(vp.X / 1340, vp.Y / 770), 0.5, 1.3)
 	G.Scale.Scale = s
 end
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)

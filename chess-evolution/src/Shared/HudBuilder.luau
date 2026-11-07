@@ -389,8 +389,8 @@ function Hud.Build(config: any): ScreenGui
 		local holder = new("Frame", { Name = name, BackgroundTransparency = 1, Position = UDim2.fromOffset(0, y), Size = UDim2.fromOffset(205, 56) }, rail)
 		new("UIScale", { Name = "Press" }, holder)
 		local f = new("Frame", { Name = "Face", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1) }, holder)
-		icon(f, "Icon", key, UDim2.fromOffset(58, 58), UDim2.fromOffset(0, -1))
-		text(f, "Value", { Text = "0", TextSize = 40, TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(64, 0), Size = UDim2.new(1, -64, 1, 0), ZIndex = 5, StrokeThickness = 3.5 })
+		icon(f, "Icon", key, UDim2.fromOffset(66, 66), UDim2.fromOffset(0, -5))
+		text(f, "Value", { Text = "0", TextSize = 46, TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(70, 0), Size = UDim2.new(1, -64, 1, 0), ZIndex = 5, StrokeThickness = 3.5 })
 	end
 	counter("Wins", "trophy", 0, C.slabGold)
 	counter("Promos", "promote", 63, Color3.fromRGB(255, 70, 80))
@@ -581,7 +581,7 @@ function Hud.Build(config: any): ScreenGui
 	FeelKit.Build(gui)
 
 	-- Main action button (TRAIN / CHALLENGE / CLICK TO WIN): fixed position, bottom right
-	local mainHolder, mainFace, mainLabel = button(gui, "MainButton", C.green, UDim2.fromOffset(236, 112), UDim2.new(1, -22, 1, -22), "TRAIN", 46, Vector2.new(1, 1))
+	local mainHolder, mainFace, mainLabel = button(gui, "MainButton", C.green, UDim2.fromOffset(160, 100), UDim2.new(1, -22, 1, -22), "TRAIN", 46, Vector2.new(1, 1))
 	mainLabel.Size = UDim2.new(1, -16, 0.6, 0)
 	mainLabel.Position = UDim2.new(0, 8, 0.04, 0)
 	mainLabel.TextScaled = true
@@ -592,7 +592,7 @@ function Hud.Build(config: any): ScreenGui
 	}), Offset = Vector2.new(-1, 0) }, new("Frame", { Name = "ShineFx", BackgroundColor3 = WHITE, BackgroundTransparency = 0, Size = UDim2.fromScale(1, 1), ZIndex = 6 }, mainFace))
 	corner(mainFace:FindFirstChild("ShineFx") :: Instance)
 	mainHolder.Visible = false
-	text(gui, "KeyHint", { Text = "", TextSize = 18, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -22, 1, -138), Size = UDim2.fromOffset(236, 22), TextColor3 = Color3.fromRGB(230, 230, 240) })
+	text(gui, "KeyHint", { Text = "", TextSize = 18, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -22, 1, -126), Size = UDim2.fromOffset(160, 22), TextColor3 = Color3.fromRGB(230, 230, 240) })
 
 	-- Message line + guide (top centre) -----------------------------------------
 	text(gui, "Message", { Text = "", TextSize = 50, TextColor3 = Color3.fromRGB(255, 225, 40), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 112), Size = UDim2.fromOffset(1100, 60), TextTransparency = 1, StrokeThickness = 4 })
