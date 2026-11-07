@@ -56,7 +56,7 @@ T.pair(function(s)
 	-- knight head support: pedestal, silver collar, then the head (muzzle turned out and toward the entry)
 	P(B, "Chassis", "Pedestal", "Block", Vector3.new(2.0, 3.3, 2.2), Vector3.new(x, 1.65, -4.1), COBALT, SP, nil, { CanCollide = true })
 	P(B, "Trim", "PedestalBand", "Block", Vector3.new(2.1, 0.45, 2.3), Vector3.new(x, 3.35, -4.1), SILVER, METAL)
-	local yaw = if s < 0 then 180 + 42 else -42 -- muzzle points out to its side, turned toward the runner
+	local yaw = 210 -- both heads look the same way, toward the left and the entry (as in the art)
 	local base = T.cf(B, Vector3.new(x, 3.55, -4.1), Vector3.new(0, yaw, 0))
 	local K = 1.3 -- head scale
 	local function H(name, shape, size, pos, color, mat, rot, opts)
