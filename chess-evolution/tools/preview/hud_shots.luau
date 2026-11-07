@@ -116,5 +116,40 @@ for _, kind in { "desktop", "phone" } do
 		uiDump(gui, `{out}/{kind}/hud_moment.json`)
 	end
 	uiDump(Preview.Build(config), `{out}/{kind}/badges.json`)
+	-- the loop rail + Promote panel (ChessLoop) over the training HUD
+	if kind == "desktop" then
+		local LoopHud = loadModule("src/Shared/LoopHud.luau", "LoopHud")
+		for _, page in { "Promote", "Shop" } do
+			local gui = hudFor(false)
+			gui.MainButton.Face.Label.Text = "TRAIN"
+			gui.MainButton.Face.Sub.Text = "+3 per tap"
+			gui.MainButton.Face.BackgroundColor3 = Hud.Colors.green
+			local loop = LoopHud.Build(config)
+			for _, c in loop:GetChildren() do
+				c.Parent = gui
+			end
+			gui.LoopRail.PromoteBtn.Track.Fill.Size = roblox.UDim2.fromScale(0.72, 1)
+			gui.LoopRail.PromoteBtn.Track.Pct.Text = "72%"
+			gui.LoopRail.DailyBtn.Dot.Visible = true
+			gui.Dim.Visible = true
+			gui.Panel.Visible = true
+			gui.Panel[page].Visible = true
+			gui.Panel.Title.Text = if page == "Promote" then "PROMOTION" else "SHOP"
+			if page == "Promote" then
+				gui.Panel.Promote.NeedPower.Text = "Power 288 / 400"
+				gui.Panel.Promote.NeedWins.Text = "Wins 22 / 20"
+				gui.Panel.Promote.NeedWins.TextColor3 = roblox.Color3.fromRGB(110, 235, 90)
+			else
+				for _, card in gui.Panel.Shop.List:GetChildren() do
+					if card:IsA("Frame") then
+						card.Buy.Label.Text = "Coming soon"
+						card.Buy.BackgroundColor3 = roblox.Color3.fromRGB(110, 116, 132)
+					end
+				end
+				gui.Panel.Title.TextColor3 = roblox.Color3.fromRGB(70, 210, 80)
+			end
+			uiDump(gui, `{out}/{kind}/loop_{string.lower(page)}.json`)
+		end
+	end
 end
 print(`[shots] dumped to {out}/desktop and {out}/phone`)

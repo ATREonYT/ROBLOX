@@ -4,7 +4,13 @@ Made in Blender (bpy) by `tools/blender/rivals.py`, converted by `tools/blender/
 Rebuild: `python3 chess-evolution/tools/blender/rivals.py` then `lune run chess-evolution/tools/blender/build_rivals.luau`.
 Add `--render` (and `SHOT=lineup|duel|anim:Tap`) to the Python run for preview pictures in `previews/`.
 
-## Rivals.rbxm (no uploads needed)
+## Rivals: real Roblox avatars (Alex asked for these, Nov 7)
+The live rivals are real R15 Roblox avatars kept in Alex's place under `ServerStorage > ChessRivals`, one Model per
+rival id. The blocky `Rivals.rbxm` below is only a fallback. Free "NPC rig" models from the Toolbox are NOT safe:
+the ones we checked (Old Man Jack, Teacher, DJ, Woman NPC, Rig Girl, Pirate) all hid `Runtime` / `ScreenBuilder`
+scripts inside their attachments, so they were deleted. Don't use Toolbox rigs.
+
+## Rivals.rbxm (fallback, no uploads needed)
 Folder `Rivals` with 7 R15 rigs made of plain Parts. Original characters, no real people.
 
 | Stage | Model | Look |
@@ -42,3 +48,34 @@ Pivot at the table centre on the ground. Anchors (invisible parts):
 - `SeatA` at +Z (player, hub side, facing -Z) and `SeatB` at -Z (rival, facing +Z), at ground level.
 - `ClockButtonA` (green, player side) and `ClockButtonB` (red, rival side) are the neon clock buttons.
 - `BoardTop` is the board's top surface centre.
+
+## Treadmill and piece meshes (`meshes/`, need Alex to import)
+Made by `tools/blender/kit.py` (`python3 kit.py --export --pieces`). The sizes, colours, triangle counts and prop spin data are in `meshes.json`.
+They follow the vault's `Build Playbooks/23 Training Lane Style Guide` (checked side by side with sheet 1 in `previews/side_by_side_sheet1.png`):
+- **Shared shape for every tier:** the body is dark (30, 34, 45), with thin neon lines on the rails, glowing corner blocks, slim uprights,
+  a tall console with a dark glass screen and short handlebars with neon grips. The belt is dark and the rollers sit recessed.
+- **One colour per lane plus white:** each tier has its own neon colour (`NEON` in kit.py), and its chess shape is white.
+  - Pawn Mill: pawn handlebar caps.
+  - Knight Sprint: two knights hold up the console.
+  - Bishop Run: mitre finials.
+  - Rook Rig: rook towers.
+  - Queen Dash: crown console.
+  - King's Endgame: stepped supports.
+  - Castle Climb: castle gate.
+  - Grandmaster Glide: a king and a queen as the uprights.
+- **Higher tiers win by shape, not glow (§3):** from Queen Dash up, each lane adds a dark rubble "spill" with neon specks and one
+  moving prop, `<Id>_Prop`. Spin the prop about Y once every 8 s around `spin.centre_roblox`. These meshes have no particles,
+  no lights and no flashing.
+- The game's code still does the motion (§2): the belt texture scrolls about 2 studs per second, the neon breathes between 0.8
+  and 1.0 (once every 3 s, or 2.5 s on paid lanes), there are at most 3 moving things per lane, and the row stays under 150 particles.
+- Objects in each `<Id>.obj`: `_Body`, `_Panel`, `_Chess`, `_Neon` (Neon), `_Steel` (Metal), `_Belt` (optional, since the game's Belt part scrolls),
+  and on higher tiers `_Spill` and `_Prop`. Units are studs and Y is up. The runner faces -Z, the console is at the -Z end, and the origin
+  is the deck centre on the ground. Keep the game's invisible anchors (Deck, Align, Console, Screen, LabelAnchor, FX).
+- `meshes/Piece_<Kind>.obj`: one closed mesh per piece, about 4 studs tall, with the base on y = 0. Recolour each set with Color and Material.
+- Import: Studio > Import 3D > the .obj, at scale 1. Then set each MeshPart's Color and Material from `meshes.json`.
+
+## Animation rules used (vault notes 16, 17 and 19)
+- `Tap` uses five poses per strike: anticipation (Cubic In), a contact in 1 frame (Linear), follow-through, then recovery (Cubic Out).
+  The head lags the hands by a frame.
+- `Idle` and `Tap` move only the torso, head and arms. The legs are Weight 0, so a player can walk while one plays.
+- Hit-stop belongs in code, never in the clip: 30–60 ms on a confirmed hit.
