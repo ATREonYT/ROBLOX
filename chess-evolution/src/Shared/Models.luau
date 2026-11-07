@@ -138,16 +138,20 @@ end
 ---------------------------------------------------------------------------
 -- Treadmills. `cf` = deck centre on the floor, runner faces cf.LookVector.
 ---------------------------------------------------------------------------
-local THEMES = {
-	PawnMill = { chassis = Color3.fromRGB(80, 200, 90), rail = IVORY, console = Color3.fromRGB(150, 100, 60), consoleMat = Enum.Material.Wood, screen = Color3.fromRGB(120, 255, 140) },
-	KnightSprint = { chassis = Color3.fromRGB(40, 90, 230), rail = Color3.fromRGB(230, 236, 250), console = Color3.fromRGB(28, 50, 140), screen = Color3.fromRGB(80, 230, 255) },
-	BishopRun = { chassis = Color3.fromRGB(130, 60, 160), rail = IVORY, console = Color3.fromRGB(90, 40, 120), screen = Color3.fromRGB(200, 120, 255) },
-	RookRig = { chassis = Color3.fromRGB(220, 50, 50), rail = CHARCOAL, console = CHARCOAL, screen = Color3.fromRGB(255, 90, 70) },
-	QueenDash = { chassis = IVORY, rail = GOLD, console = Color3.fromRGB(240, 220, 170), screen = Color3.fromRGB(255, 220, 90) },
-	KingsEndgame = { chassis = CHARCOAL, rail = GOLD, console = Color3.fromRGB(30, 30, 36), screen = Color3.fromRGB(255, 200, 60) },
+-- Note 23 (Alex's treadmill references): dark voxel body (30,34,45), one neon colour per lane
+-- plus white, neon edge strips 0.2 thick, glowing corner blocks, a dark console with a glowing
+-- screen. Neon colours match the models thread's kit.py so meshes and parts read as one family.
+local DARK = Color3.fromRGB(30, 34, 45)
+local PANEL = Color3.fromRGB(44, 50, 64)
+local NEON: { [string]: Color3 } = {
+	PawnMill = Color3.fromRGB(70, 230, 110), KnightSprint = Color3.fromRGB(60, 130, 255), BishopRun = Color3.fromRGB(235, 90, 220),
+	RookRig = Color3.fromRGB(255, 60, 50), QueenDash = Color3.fromRGB(255, 205, 70), KingsEndgame = Color3.fromRGB(255, 130, 30),
+	CastleClimb = Color3.fromRGB(50, 235, 190), GrandmasterGlide = Color3.fromRGB(150, 80, 255),
 }
-THEMES.CastleClimb = { chassis = Color3.fromRGB(40, 180, 200), rail = IVORY, console = Color3.fromRGB(30, 110, 130), screen = Color3.fromRGB(120, 255, 240) }
-THEMES.GrandmasterGlide = { chassis = Color3.fromRGB(30, 26, 50), rail = Color3.fromRGB(170, 90, 255), console = Color3.fromRGB(20, 18, 34), screen = Color3.fromRGB(190, 120, 255) }
+local THEMES = {}
+for id, neon in NEON do
+	THEMES[id] = { chassis = DARK, rail = PANEL, console = DARK, screen = neon, neon = neon }
+end
 Models.TreadmillThemes = THEMES
 
 function Models.Treadmill(id: string, cf: CFrame): Model
@@ -157,7 +161,11 @@ function Models.Treadmill(id: string, cf: CFrame): Model
 	local function at(x: number, y: number, z: number): CFrame
 		return cf * CFrame.new(x, y, z)
 	end
-	local solid = { Material = Enum.Material.Plastic, TopSurface = Enum.SurfaceType.Studs }
+	local solid = { Material = Enum.Material.SmoothPlastic }
+	local glow = { Material = Enum.Material.Neon, CanCollide = false, CastShadow = false }
+	local neonFolder = Instance.new("Folder")
+	neonFolder.Name = "Neon" -- the client breathes these 0.8 <-> 1.0 (note 23 §2)
+	neonFolder.Parent = m
 	-- chassis (low entry at the back, +Z)
 	local base = part(m, "Chassis", Vector3.new(8, 1.2, 12), at(0, 0.6, 0), th.chassis, solid)
 	m.PrimaryPart = base
@@ -178,9 +186,20 @@ function Models.Treadmill(id: string, cf: CFrame): Model
 	for _, x in { -3.3, 3.3 } do
 		part(m, "Skirt", Vector3.new(1.4, 1.8, 11.6), at(x, 1.5, 0.2), th.chassis, solid)
 	end
+	-- neon edge strips (0.2 thick) on the skirt tops and outer sides, glowing corner blocks
+	for _, x in { -3.3, 3.3 } do
+		part(neonFolder, "EdgeTop", Vector3.new(1.42, 0.2, 11.62), at(x, 2.5, 0.2), th.neon, glow)
+		part(neonFolder, "EdgeSide", Vector3.new(0.2, 0.2, 11.62), at(x + (if x < 0 then -0.71 else 0.71), 0.9, 0.2), th.neon, glow)
+		for _, z in { -5.6, 6.0 } do
+			part(m, "Corner", Vector3.new(1.6, 2.6, 1.6), at(x * 1.06, 1.3, z), PANEL, solid)
+			part(neonFolder, "CornerGlow", Vector3.new(1.0, 0.25, 1.0), at(x * 1.06, 2.66, z), th.neon, glow)
+		end
+	end
+	part(neonFolder, "EdgeBack", Vector3.new(8.02, 0.2, 0.2), at(0, 1.2, 6.0), th.neon, glow)
 	-- chunky rails on posts
 	for _, x in { -3.3, 3.3 } do
 		part(m, "Rail", Vector3.new(0.9, 0.9, 7.2), at(x, 5.0, -1.4), th.rail, { Material = Enum.Material.SmoothPlastic })
+		part(neonFolder, "RailGlow", Vector3.new(0.92, 0.2, 7.22), at(x, 5.5, -1.4), th.neon, glow)
 		part(m, "Post", Vector3.new(0.8, 2.8, 0.8), at(x, 3.4, 1.9), th.rail)
 	end
 	-- front console
@@ -188,6 +207,7 @@ function Models.Treadmill(id: string, cf: CFrame): Model
 	part(m, "ConsolePost", Vector3.new(1.4, 4.4, 1.0), at(0, 3.4, -5.6), th.console, consoleProps)
 	local console = part(m, "Console", Vector3.new(6.6, 1.8, 1.6), at(0, 5.6, -5.4) * CFrame.Angles(math.rad(25), 0, 0), th.console, consoleProps)
 	local screen = part(m, "Screen", Vector3.new(4.6, 1.1, 0.2), console.CFrame * CFrame.new(0, 0.1, -0.75), th.screen, { Material = Enum.Material.Neon, CanCollide = false, Transparency = 0.35 })
+	part(neonFolder, "ConsoleEdge", Vector3.new(6.62, 0.2, 1.62), console.CFrame * CFrame.new(0, 0.91, 0), th.neon, glow)
 	local light = Instance.new("PointLight")
 	light.Name = "ConsoleLight"
 	light.Color = th.screen
@@ -206,7 +226,7 @@ function Models.Treadmill(id: string, cf: CFrame): Model
 		end
 	elseif id == "KnightSprint" then
 		for _, x in { -3.6, 3.6 } do
-			local knight = Models.Piece("Knight", Color3.fromRGB(230, 236, 250), 0.75, at(x, 1.2, -5.2) * CFrame.Angles(0, if x < 0 then math.rad(-20) else math.rad(20), 0), { trim = Color3.fromRGB(40, 90, 230) })
+			local knight = Models.Piece("Knight", Color3.fromRGB(230, 236, 250), 0.75, at(x, 1.2, -5.2) * CFrame.Angles(0, if x < 0 then math.rad(-20) else math.rad(20), 0), { trim = th.neon })
 			knight.Name = "KnightSupport"
 			knight.Parent = m
 		end
@@ -218,7 +238,7 @@ function Models.Treadmill(id: string, cf: CFrame): Model
 	elseif id == "BishopRun" then
 		for _, x in { -3.3, 3.3 } do
 			for _, z in { -5.0, 2.2 } do
-				local b = Models.Piece("Bishop", IVORY, 0.38, at(x, 4.5, z), { trim = th.chassis })
+				local b = Models.Piece("Bishop", IVORY, 0.38, at(x, 4.5, z), { trim = th.neon })
 				b.Name = "MitreFinial"
 				b.Parent = m
 			end
@@ -229,12 +249,12 @@ function Models.Treadmill(id: string, cf: CFrame): Model
 	elseif id == "RookRig" then
 		for _, x in { -4.3, 4.3 } do
 			for _, z in { -5.2, 4.8 } do
-				local tower = Models.Piece("Rook", CHARCOAL, 0.7, at(x, 1.2, z), { trim = th.chassis })
+				local tower = Models.Piece("Rook", IVORY, 0.7, at(x, 1.2, z), { trim = th.neon })
 				tower.Name = "Tower"
 				tower.Parent = m
 			end
 		end
-		part(m, "Crossbar", Vector3.new(9.6, 1.4, 1.4), at(0, 7.4, -5.2), CHARCOAL)
+		part(m, "Crossbar", Vector3.new(9.6, 1.4, 1.4), at(0, 7.4, -5.2), PANEL)
 	elseif id == "QueenDash" then
 		for i = 0, 6 do
 			local a = (i - 3) * 0.32

@@ -46,6 +46,9 @@
         },
         "LoopClient": {
           "$path": "src/Client/LoopClient.client.luau"
+        },
+        "WorldFx": {
+          "$path": "src/Client/WorldFx.client.luau"
         }
       }
     }
