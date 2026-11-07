@@ -900,6 +900,134 @@ Styles.queen = {
 	end,
 }
 
+-- King's Endgame: a gold circle with four diamond points opens on the belt, then gold step rungs light one after
+-- another toward the open end. Streak = a wide gold halo ring around the machine, slow gold rays turning behind the
+-- cross, and small gold diamonds drifting up beside the pillars.
+local KING_GOLD = Color3.fromRGB(255, 196, 56)
+local KING_WHITE = Color3.fromRGB(255, 240, 190)
+Styles.king = {
+	accent = function(st, now)
+		if now < st.nextAccent then
+			return
+		end
+		st.nextAccent = now + 0.95
+		-- the circle with its four diamonds, opening from the centre and fading
+		local m = Instance.new("Model")
+		local segs = segRing(m, 22, Vector3.new(0.12, 0.05, 0.42), KING_GOLD)
+		local dias = {}
+		for i = 1, 4 do
+			local dpart = neonPart(Vector3.new(0.34, 0.06, 0.34), KING_WHITE, 1)
+			dpart.Parent = m
+			dias[i] = dpart
+		end
+		m.Parent = fxFolder
+		local centre = localCF(st, Vector3.new(0, 0.86, -1.6))
+		local start = os.clock()
+		local conn
+		conn = RunService.RenderStepped:Connect(function()
+			local k = (os.clock() - start) / 0.85
+			if k >= 1 then
+				conn:Disconnect()
+				m:Destroy()
+				return
+			end
+			local r = 0.6 + 1.0 * (1 - (1 - math.min(k / 0.4, 1)) ^ 3)
+			local tr = if k < 0.15 then 1 - k / 0.15 elseif k > 0.6 then (k - 0.6) / 0.4 else 0
+			placeRing(segs, centre, r, r, k * 0.6, tr, 100)
+			for i, dpart in ipairs(dias) do
+				local a = (i / 4) * math.pi * 2 + k * 0.6
+				dpart.CFrame = centre * CFrame.new(math.cos(a) * r, 0.01, math.sin(a) * r) * CFrame.Angles(0, math.rad(45) - a, 0)
+				dpart.Transparency = tr
+			end
+		end)
+		-- then the step rungs light toward the open end, one after another
+		for i = 0, 3 do
+			task.delay(0.3 + i * 0.09, function()
+				local rung = neonPart(Vector3.new(2.6 - i * 0.35, 0.05, 0.22), KING_GOLD, 0)
+				rung.CFrame = localCF(st, Vector3.new(0, 0.86, 1.4 + i * 0.95))
+				rung.Size = Vector3.new(0.2, 0.05, 0.22)
+				rung.Parent = fxFolder
+				tween(rung, 0.12, { Size = Vector3.new(2.6 - i * 0.35, 0.05, 0.22) }, Enum.EasingStyle.Quad)
+				fadeAndDestroy({ rung }, 0.25, 0.3)
+			end)
+		end
+	end,
+	streakStart = function(st, _now)
+		local d = st.data
+		local m = Instance.new("Model")
+		m.Name = st.id .. "_Halo"
+		d.halo = segRing(m, 40, Vector3.new(0.22, 0.12, 1.1), KING_GOLD)
+		d.rays = {}
+		for i = 1, 8 do
+			local ray = neonPart(Vector3.new(0.14, 1.6, 0.06), if i % 2 == 0 then KING_WHITE else KING_GOLD, 1)
+			ray.Parent = m
+			d.rays[i] = ray
+		end
+		m.Parent = fxFolder
+		d.ring, d.ringT, d.ringFade = m, 0, nil
+		d.gems = d.gems or 0
+	end,
+	streakStep = function(st, now)
+		local d = st.data
+		if not d.halo then
+			return
+		end
+		d.ringT += d.dt or 0
+		local t = d.ringT
+		local grow = 1 - (1 - math.clamp(t / 0.4, 0, 1)) ^ 3
+		local peak = if t > 0.4 and t < 0.9 then math.sin((t - 0.4) / 0.5 * math.pi) else 0
+		local fade = if d.ringFade then math.clamp((now - d.ringFade) / 0.55, 0, 1) else 0
+		local trans = math.clamp(1 - grow + fade, 0, 1)
+		local waist = att(st, "OuterRing") * CFrame.Angles(math.rad(-4), 0, math.rad(4))
+		local s = 0.75 + 0.25 * grow
+		placeRing(d.halo, waist, (6.1 + 0.4 * peak) * s, (7.9 + 0.4 * peak) * s, t * 0.8, trans, 10)
+		-- rays behind the cross: long thin beams turning slowly
+		local cross = att(st, "Cross") * CFrame.new(0, 0, -0.5)
+		for i, ray in ipairs(d.rays) do
+			local a = (i / #d.rays) * math.pi * 2 + t * 0.5
+			local len = (if i % 2 == 0 then 1.2 else 1.9) * grow + 0.4 * peak
+			ray.Size = Vector3.new(0.14, math.max(len, 0.05), 0.06)
+			ray.CFrame = cross * CFrame.Angles(0, 0, a) * CFrame.new(0, 1.6 + len / 2, 0)
+			ray.Transparency = math.clamp(trans + 0.1, 0, 1)
+		end
+		if d.ringFade then
+			return
+		end
+		-- small gold diamonds drifting up beside the pillars: one every 0.4 s, at most 6 alive
+		if now >= st.nextBurst and d.gems < 6 then
+			st.nextBurst = now + 0.4
+			d.side = -(d.side or 1)
+			local p0 = localCF(st, Vector3.new(d.side * (5.3 + math.random() * 0.6), 2 + math.random() * 3, -4 + math.random() * 4))
+			local g = neonPart(Vector3.new(0.3, 0.55, 0.3), KING_GOLD, 1)
+			g.CFrame = p0 * CFrame.Angles(0, math.rad(45), 0)
+			g.Parent = fxFolder
+			d.gems += 1
+			tween(g, 0.25, { Transparency = 0 })
+			tween(g, 1.3, { CFrame = (p0 + Vector3.new(0, 2.2, 0)) * CFrame.Angles(0, math.rad(225), 0) }, Enum.EasingStyle.Sine)
+			task.delay(0.9, function()
+				tween(g, 0.4, { Transparency = 1 })
+			end)
+			task.delay(1.32, function()
+				g:Destroy()
+				d.gems -= 1
+			end)
+		end
+	end,
+	streakStop = function(st, now)
+		local d = st.data
+		if d.ring and not d.ringFade then
+			d.ringFade = now
+			local m = d.ring
+			task.delay(0.6, function()
+				m:Destroy()
+				if d.ring == m then
+					d.ring, d.halo, d.rays, d.ringFade = nil, nil, nil, nil
+				end
+			end)
+		end
+	end,
+}
+
 ---------------------------------------------------------------------------
 -- signals: who is training where, and their accepted taps (Power going up)
 ---------------------------------------------------------------------------
