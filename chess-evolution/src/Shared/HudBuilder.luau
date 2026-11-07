@@ -451,8 +451,8 @@ function Hud.Build(config: any): ScreenGui
 	(giftHolder:FindFirstChild("Shadow") :: Frame).Visible = false;
 	(giftFace:FindFirstChildOfClass("UIStroke") :: UIStroke).Enabled = false;
 	(giftFace:FindFirstChild("Studs") :: ImageLabel).Visible = false
-	icon(giftFace, "Icon", "gift", UDim2.fromOffset(92, 92), UDim2.new(0.5, 0, 0, 0), 4, Vector2.new(0.5, 0))
-	text(giftFace, "Label", { Text = "Free Gift!", TextSize = 26, Position = UDim2.fromOffset(0, 88), Size = UDim2.new(1, 0, 0, 28), ZIndex = 6, StrokeThickness = 3 })
+	icon(giftFace, "Icon", "gift", UDim2.fromOffset(106, 106), UDim2.new(0.5, 0, 0, -8), 4, Vector2.new(0.5, 0))
+	text(giftFace, "Label", { Text = "Free Gift!", TextSize = 28, Position = UDim2.fromOffset(0, 94), Size = UDim2.new(1, 0, 0, 28), ZIndex = 6, StrokeThickness = 3 })
 	local function offer(name: string, y: number, label: string, key: string, color: Color3?): any
 		local h, f, l = button(right, name, color or C.slabGold, UDim2.fromOffset(196, 67), UDim2.fromOffset(0, y), label, 29)
 		l.Size = UDim2.new(1, 0, 0, 40)
@@ -484,9 +484,9 @@ function Hud.Build(config: any): ScreenGui
 	new("UIScale", { Name = "Bump" }, power)
 	local powerRow = new("Frame", { Name = "Row", BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0) }, power)
 	new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, powerRow)
-	local pIcon = icon(powerRow, "Icon", "power", UDim2.fromOffset(60, 48), UDim2.new())
+	local pIcon = icon(powerRow, "Icon", "power", UDim2.fromOffset(66, 52), UDim2.new())
 	pIcon.LayoutOrder = 1
-	text(powerRow, "Value", { Text = "0 Power", TextSize = 44, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1), LayoutOrder = 2, StrokeThickness = 3.5 })
+	text(powerRow, "Value", { Text = "0 Power", TextSize = 48, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1), LayoutOrder = 2, StrokeThickness = 3.5 })
 	text(power, "Gain", { Text = "+1", TextSize = 34, TextColor3 = Color3.fromRGB(140, 255, 120), AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, -110, 0.5, -26), Size = UDim2.fromOffset(120, 40), TextTransparency = 1, StrokeThickness = 3 });
 	(power:FindFirstChild("Gain"):FindFirstChild("Outline") :: UIStroke).Transparency = 1
 
@@ -581,7 +581,7 @@ function Hud.Build(config: any): ScreenGui
 	FeelKit.Build(gui)
 
 	-- Main action button (TRAIN / CHALLENGE / CLICK TO WIN): fixed position, bottom right
-	local mainHolder, mainFace, mainLabel = button(gui, "MainButton", C.green, UDim2.fromOffset(160, 100), UDim2.new(1, -22, 1, -22), "TRAIN", 46, Vector2.new(1, 1))
+	local mainHolder, mainFace, mainLabel = button(gui, "MainButton", C.green, UDim2.fromOffset(150, 100), UDim2.new(1, -22, 1, -22), "TRAIN", 46, Vector2.new(1, 1))
 	mainLabel.Size = UDim2.new(1, -16, 0.6, 0)
 	mainLabel.Position = UDim2.new(0, 8, 0.04, 0)
 	mainLabel.TextScaled = true
@@ -592,7 +592,7 @@ function Hud.Build(config: any): ScreenGui
 	}), Offset = Vector2.new(-1, 0) }, new("Frame", { Name = "ShineFx", BackgroundColor3 = WHITE, BackgroundTransparency = 0, Size = UDim2.fromScale(1, 1), ZIndex = 6 }, mainFace))
 	corner(mainFace:FindFirstChild("ShineFx") :: Instance)
 	mainHolder.Visible = false
-	text(gui, "KeyHint", { Text = "", TextSize = 18, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -22, 1, -126), Size = UDim2.fromOffset(160, 22), TextColor3 = Color3.fromRGB(230, 230, 240) })
+	text(gui, "KeyHint", { Text = "", TextSize = 18, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -22, 1, -126), Size = UDim2.fromOffset(150, 22), TextColor3 = Color3.fromRGB(230, 230, 240) })
 
 	-- Message line + guide (top centre) -----------------------------------------
 	text(gui, "Message", { Text = "", TextSize = 50, TextColor3 = Color3.fromRGB(255, 225, 40), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 112), Size = UDim2.fromOffset(1100, 60), TextTransparency = 1, StrokeThickness = 4 })

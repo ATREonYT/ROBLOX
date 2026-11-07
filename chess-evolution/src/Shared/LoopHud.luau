@@ -142,7 +142,7 @@ local function theme(gui: any)
 	end
 	promo.Bar.Fill.BackgroundColor3 = Color3.fromHex("#E21228")
 	P(panel.Codes.Redeem, "go")
-	local cards = { DoublePower = "gold", DoubleWins = "blueCard", AutoTrain = "red", Pack1 = "red", Pack2 = "cyan", Pack3 = "rainbow" }
+	local cards = { Hero = "gold", Bundle = "blueCard", DoublePower = "red", DoubleWins = "gold", AutoTrain = "cyan", Pack1 = "red", Pack2 = "cyan", Pack3 = "rainbow" }
 	for key, look in cards do
 		local c = panel.Shop.List:FindFirstChild(key)
 		if c then
@@ -259,29 +259,66 @@ function Loop.Build(config: any): ScreenGui
 	local _go = go
 	Hud.Rainbow(button(pPromote, "Skip", "Skip", WHITE, UDim2.fromOffset(250, 68), UDim2.fromOffset(372, 292)))
 
-	-- Shop: wide offer banners that scroll under the header
+	-- Shop: gold hero offer, cyan feature card, then compact rows. The header stays; the list scrolls and clips under it.
 	local pShop = page("Shop")
-	pShop.Size = UDim2.new(1, -32, 1, -100)
+	pShop.Position = UDim2.fromOffset(14, 112)
+	pShop.Size = UDim2.new(1, -28, 1, -124)
 	local shopList = new("ScrollingFrame", { Name = "List", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ScrollBarThickness = 6, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, BorderSizePixel = 0, ZIndex = 22 }, pShop)
-	new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center }, shopList)
-	new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 8) }, shopList)
+	new("UIListLayout", { Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Left }, shopList)
+	new("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 2) }, shopList)
+	local function bigBuy(card: Instance, words: string, size: UDim2, pos: UDim2)
+		local b = button(card, "Buy", words, C.go, size, pos)
+		Hud.Paint(b, "go")
+		local l = b:FindFirstChild("Label") :: TextLabel
+		l.Size = UDim2.new(1, -14, 0.78, 0)
+		l.Position = UDim2.new(0, 7, 0.11, 0)
+	end
+	-- 1. Gold hero: the best existing offer, big art in the middle, price at the bottom right
+	local heroPass = config.Passes.DoublePower
+	local hero = tile(shopList, "Hero", 1, UDim2.new(1, -14, 0, 217))
+	new("UIGradient", { Rotation = 90 }, hero)
+	Hud.Studs(hero).ZIndex = 4
+	Hud.Icon(hero, "Art", "crown", UDim2.fromOffset(240, 210), UDim2.new(0.56, 0, 0, 3), 6, Vector2.new(0.5, 0))
+	label(hero, "Name", heroPass.name, UDim2.fromOffset(290, 74), UDim2.fromOffset(22, 8), { TextXAlignment = Enum.TextXAlignment.Left })
+	for i, words in { "Every tap gives double Power", "Works on every treadmill", "Stacks with Promotions" } do
+		label(hero, "Line" .. i, words, UDim2.fromOffset(290, 30), UDim2.fromOffset(22, 54 + i * 36), { TextXAlignment = Enum.TextXAlignment.Left })
+	end
+	label(hero, "Soon", "Coming soon", UDim2.fromOffset(186, 34), UDim2.new(1, -200, 0, 74))
+	bigBuy(hero, `{Hud.Robux} {heroPass.price}`, UDim2.fromOffset(186, 76), UDim2.new(1, -200, 1, -90))
+	-- 2. Cyan feature: the Power packs as framed reward tiles. A preview until the packs go on sale.
+	local packs = config.PowerPacks or {}
+	local feat = tile(shopList, "Bundle", 2, UDim2.new(1, -14, 0, 203))
+	new("UIGradient", { Rotation = 90 }, feat)
+	Hud.Studs(feat).ZIndex = 4
+	label(feat, "Name", "Power Packs", UDim2.fromOffset(280, 62), UDim2.fromOffset(22, 12), { TextXAlignment = Enum.TextXAlignment.Left })
+	label(feat, "Soon", "Preview: coming soon", UDim2.fromOffset(280, 30), UDim2.fromOffset(22, 78), { TextXAlignment = Enum.TextXAlignment.Left })
+	bigBuy(feat, `From {Hud.Robux} {if packs[1] then packs[1].price else 0}`, UDim2.fromOffset(262, 72), UDim2.new(0, 22, 1, -84))
+	for i, pack in packs do
+		local f = new("Frame", { Name = "Reward" .. i, BackgroundColor3 = Color3.fromRGB(14, 56, 130), BackgroundTransparency = 0.15, Size = UDim2.fromOffset(140, 177), Position = UDim2.fromOffset(322 + (i - 1) * 146, 13), ZIndex = 5 }, feat)
+		round(f, 8)
+		outline(f)
+		Hud.Icon(f, "Art", "power", UDim2.fromOffset(120, 100), UDim2.new(0.5, 0, 0, 10), 6, Vector2.new(0.5, 0))
+		label(f, "Amount", string.match(pack.label, "^%S+") or pack.label, UDim2.new(1, -12, 0, 38), UDim2.new(0, 6, 1, -68), { TextColor3 = Color3.fromRGB(255, 235, 70) })
+		label(f, "Word", "Power", UDim2.new(1, -12, 0, 26), UDim2.new(0, 6, 1, -32))
+	end
+	-- 3. Compact rows further down
 	local function banner(key: string, order: number, color: Color3, art: string, title: string, desc: string, price: number)
-		local card = tile(shopList, key, order, UDim2.new(1, -24, 0, 126))
+		local card = tile(shopList, key, order, UDim2.new(1, -14, 0, 96))
 		card.BackgroundColor3 = color
 		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(205, 205, 205)) }, card)
 		Hud.Studs(card, 0.55).ZIndex = 4
-		Hud.Icon(card, "Art", art, UDim2.fromOffset(106, 106), UDim2.fromOffset(12, 10), 6)
-		label(card, "Name", title, UDim2.fromOffset(330, 50), UDim2.fromOffset(126, 10), { TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(255, 232, 80) })
-		label(card, "Text", desc, UDim2.fromOffset(330, 50), UDim2.fromOffset(126, 62), { TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top })
-		label(card, "Price", `{Hud.Robux} {price}`, UDim2.fromOffset(190, 40), UDim2.new(1, -206, 0, 10), { TextColor3 = HC.priceGreen })
-		button(card, "Buy", "BUY", C.go, UDim2.fromOffset(190, 62), UDim2.new(1, -206, 1, -72))
+		Hud.Icon(card, "Art", art, UDim2.fromOffset(78, 78), UDim2.fromOffset(10, 9), 6)
+		label(card, "Name", title, UDim2.fromOffset(340, 40), UDim2.fromOffset(98, 8), { TextXAlignment = Enum.TextXAlignment.Left })
+		label(card, "Text", desc, UDim2.fromOffset(340, 38), UDim2.fromOffset(98, 50), { TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top })
+		label(card, "Price", `{Hud.Robux} {price}`, UDim2.fromOffset(176, 30), UDim2.new(1, -190, 0, 6), { TextColor3 = HC.priceGreen })
+		button(card, "Buy", "BUY", C.go, UDim2.fromOffset(176, 48), UDim2.new(1, -190, 1, -56))
 	end
 	local bannerColors = { DoublePower = HC.slabRed, DoubleWins = Color3.fromRGB(240, 165, 20), AutoTrain = Color3.fromRGB(30, 150, 235) }
 	local bannerArt = { DoublePower = "power", DoubleWins = "trophy", AutoTrain = "cursor" }
 	for key, pass in config.Passes do
-		banner(key, pass.order, bannerColors[key] or C.tile, bannerArt[key] or "crown", pass.name, pass.text, pass.price)
+		banner(key, 2 + pass.order, bannerColors[key] or C.tile, bannerArt[key] or "crown", pass.name, pass.text, pass.price)
 	end
-	for i, pack in config.PowerPacks or {} do
+	for i, pack in packs do
 		banner(pack.key, 10 + i, if i == 3 then Color3.fromRGB(150, 50, 230) else if i == 2 then HC.slabBlue else Color3.fromRGB(205, 30, 60), "power", pack.label, "Instant Power", pack.price)
 	end
 

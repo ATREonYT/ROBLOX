@@ -208,7 +208,7 @@ local isTouch = false
 local function layout()
 	local vp = camera.ViewportSize
 	isTouch = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-	local scale = math.clamp(math.min(vp.X / 1340, vp.Y / 770), 0.5, 1.3)
+	local scale = math.clamp(math.min(vp.X / 1330, vp.Y / 861), 0.5, 1.3)
 	if isTouch then
 		scale = math.clamp(math.min(vp.X / 1140, vp.Y / 640), 0.5, 1.1)
 	end
@@ -230,7 +230,7 @@ local function layout()
 		G.RightOffers.Offer2.Visible = false
 	else
 		MainHolder.Position = UDim2.new(1, -22, 1, -22)
-		MainHolder.Size = UDim2.fromOffset(160, 100) -- fits right of the auto clickers at the larger HUD scale
+		MainHolder.Size = UDim2.fromOffset(150, 100) -- fits right of the auto clickers at the larger HUD scale
 		G.KeyHint.Visible = true
 		G.RightOffers.Offer1.Visible = true
 		G.RightOffers.Offer2.Visible = true
@@ -894,7 +894,7 @@ local arrows: { BasePart } = {}
 for i = 1, 7 do
 	local a = Instance.new("WedgePart")
 	a.Name = "GuideArrow"
-	a.Size = Vector3.new(0.3, 1.2, 1.4)
+	a.Size = Vector3.new(0.2, 0.8, 0.9)
 	a.Color = Color3.new(1, 1, 1)
 	a.Material = Enum.Material.Neon
 	a.Anchored, a.CanCollide, a.CanQuery, a.CanTouch, a.CastShadow = true, false, false, false, false
@@ -2184,7 +2184,7 @@ RunService.RenderStepped:Connect(function(dt)
 		for i, a in arrows do
 			local d = 5 + (i - 1) * 4 + (now * 3 % 4)
 			if d < flat.Magnitude - 3 then
-				local pos = from + dir * d + Vector3.new(0, 0.6 + math.sin(now * 3 + i) * 0.15, 0)
+				local pos = from + dir * d + Vector3.new(0, 0.3 + math.sin(now * 3 + i) * 0.08, 0)
 				a.CFrame = CFrame.lookAt(pos, pos + dir) * CFrame.Angles(-math.pi / 2, 0, 0)
 				a.Transparency = 0.15 + math.max(0, (i - 5) * 0.2)
 			else
