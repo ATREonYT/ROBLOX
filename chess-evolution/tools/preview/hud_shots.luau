@@ -82,7 +82,7 @@ for _, kind in { "desktop", "phone" } do
 	for _, s in scenes do
 		local gui = hudFor(kind == "phone")
 		local pose = s[2]
-		pose.playerName, pose.rivalName, pose.rivalTitle, pose.rivalColor = "atredev", "Pawn Pete", "Club rival · Stage 1", config.Stages.Stage1.color
+		pose.playerName, pose.rivalName, pose.rivalTitle, pose.rivalColor = "atredev", "Pawn Pete", "Club rival", config.Stages.Stage1.color
 		DuelHud.Pose(gui, pose)
 		badge(gui, s[3])
 		uiDump(gui, `{out}/{kind}/hud_{s[1]}.json`)

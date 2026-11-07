@@ -81,9 +81,15 @@ local function card(parent: Instance, side: string, color: Color3): Frame
 		Size = UDim2.new(0.5, -46, 1, 0),
 	}, parent)
 	new("UIScale", { Name = "Lift" }, holder)
-	local shadow = new("Frame", { Name = "Shadow", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, 4), ZIndex = 1 }, holder)
+	local shadow = new("Frame", { Name = "Shadow", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, -12), ZIndex = 1 }, holder)
 	new("UICorner", { CornerRadius = UDim.new(0, 14) }, shadow)
-	local face = new("Frame", { Name = "Face", BackgroundColor3 = Color3.fromRGB(44, 46, 66), Size = UDim2.fromScale(1, 1), ZIndex = 2 }, holder)
+	-- the darker "lip" 4 px under the face, in the side's colour (vault: 30 UI and UX Playbook §4)
+	-- (a strip under the bottom edge only, so it never tints the see-through face)
+	local lip = new("Frame", { Name = "Lip", BackgroundColor3 = color:Lerp(INK, 0.45), Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, -18), ZIndex = 1 }, holder)
+	new("UICorner", { CornerRadius = UDim.new(0, 14) }, lip)
+	new("UIStroke", { Thickness = 3, Color = INK }, lip)
+	-- see-through dark panel (Alex's Oct 30 style call: see-through panels)
+	local face = new("Frame", { Name = "Face", BackgroundColor3 = Color3.fromRGB(34, 36, 54), BackgroundTransparency = 0.18, Size = UDim2.fromScale(1, 1), ZIndex = 2 }, holder)
 	new("UICorner", { CornerRadius = UDim.new(0, 14) }, face)
 	new("UIStroke", { Name = "Edge", Thickness = 3, Color = INK }, face)
 	-- coloured side band behind the portrait
@@ -113,8 +119,8 @@ local function card(parent: Instance, side: string, color: Color3): Frame
 	new("ViewportFrame", { Name = "View", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 6, Visible = false, Ambient = Color3.fromRGB(200, 200, 210), LightDirection = Vector3.new(-1, -2, -1.5) }, portrait)
 	local xa = if right then Enum.TextXAlignment.Right else Enum.TextXAlignment.Left
 	local textX = if right then 0 else 72
-	text(face, "NameText", { Text = if right then "RIVAL" else "YOU", TextSize = 24, TextXAlignment = xa, Position = UDim2.fromOffset(textX + (if right then 8 else 0), 4), Size = UDim2.new(1, -80, 0, 28), ZIndex = 4, TextTruncate = Enum.TextTruncate.AtEnd }, 3)
-	text(face, "Sub", { Text = "", TextSize = 16, TextXAlignment = xa, TextColor3 = Color3.fromRGB(205, 210, 230), Position = UDim2.fromOffset(if right then 78 else textX, 32), Size = UDim2.new(1, -150, 0, 20), ZIndex = 4, TextTruncate = Enum.TextTruncate.AtEnd }, 2)
+	text(face, "NameText", { Text = if right then "RIVAL" else "YOU", TextSize = 26, TextXAlignment = xa, Position = UDim2.fromOffset(textX + (if right then 8 else 0), 2), Size = UDim2.new(1, -80, 0, 30), ZIndex = 4, TextTruncate = Enum.TextTruncate.AtEnd }, 3)
+	text(face, "Sub", { Text = "", TextSize = 22, TextXAlignment = xa, TextColor3 = Color3.fromRGB(205, 210, 230), Position = UDim2.fromOffset(if right then 86 else textX, 31), Size = UDim2.new(1, -158, 0, 26), ZIndex = 4, TextTruncate = Enum.TextTruncate.AtEnd }, 2)
 	-- taps per second, on the inner side (towards VS)
 	text(face, "Rate", {
 		Text = "0/s",
@@ -132,14 +138,14 @@ local function card(parent: Instance, side: string, color: Color3): Frame
 		BackgroundColor3 = GOLD,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(if right then 1 else 0, if right then -40 else 40, 0, 0), -- over the portrait, clear of the badge slot
-		Size = UDim2.fromOffset(66, 24),
+		Size = UDim2.fromOffset(78, 28),
 		ZIndex = 7,
 		Visible = false,
 	}, holder)
 	new("UICorner", { CornerRadius = UDim.new(0, 8) }, lead)
 	new("UIStroke", { Thickness = 3, Color = INK }, lead)
 	shade(lead)
-	text(lead, "Label", { Text = "LEAD", TextSize = 18, Size = UDim2.fromScale(1, 1), ZIndex = 8 }, 2)
+	text(lead, "Label", { Text = "LEAD", TextSize = 22, Size = UDim2.fromScale(1, 1), ZIndex = 8 }, 2)
 	return holder
 end
 
@@ -153,21 +159,26 @@ function DuelHud.Build(bottom: Frame, gui: ScreenGui)
 	local duel = new("Frame", { Name = "Duel", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 60), Position = UDim2.fromOffset(0, 0), Visible = false }, bottom)
 	card(duel, "You", GREEN)
 	card(duel, "Rival", RED)
-	local vs = new("Frame", { Name = "Vs", BackgroundColor3 = RED, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(74, 56), Rotation = -4, ZIndex = 6 }, duel)
+	-- VS tag: a container (pops as one) holding the darker lip and the tag on top
+	local box = new("Frame", { Name = "Vs", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(74, 60), Rotation = -4, ZIndex = 5 }, duel)
+	new("UIScale", { Name = "Thump" }, box)
+	local vsLip = new("Frame", { Name = "Lip", BackgroundColor3 = Color3.fromRGB(150, 40, 30), Position = UDim2.fromOffset(0, 4), Size = UDim2.fromOffset(74, 56), ZIndex = 5 }, box)
+	new("UICorner", { CornerRadius = UDim.new(0, 12) }, vsLip)
+	new("UIStroke", { Thickness = 4, Color = INK }, vsLip)
+	local vs = new("Frame", { Name = "Tag", BackgroundColor3 = RED, Size = UDim2.fromOffset(74, 56), ZIndex = 6 }, box)
 	new("UICorner", { CornerRadius = UDim.new(0, 12) }, vs)
 	new("UIStroke", { Thickness = 4, Color = INK }, vs)
 	new("UIGradient", {
 		Rotation = 90,
 		Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, GOLD), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 120, 40)) }),
 	}, vs)
-	new("UIScale", { Name = "Thump" }, vs)
 	text(vs, "Label", { Text = "VS", TextSize = 36, Size = UDim2.fromScale(1, 1), ZIndex = 7 }, 3.5)
 
 	-- Combo: left of the meter, at its height (the right side has "Keep clicking!")
 	local combo = new("Frame", { Name = "Combo", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(0, -12, 0, 94), Size = UDim2.fromOffset(170, 70), Visible = false }, bottom)
 	new("UIScale", { Name = "Pop" }, combo)
 	text(combo, "Count", { Text = "x12", TextSize = 44, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(1, 0, 0, 46), ZIndex = 8 }, 4)
-	text(combo, "Word", { Text = "POPPING OFF!", TextSize = 20, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(255, 150, 50), Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 24), ZIndex = 8 }, 2.5)
+	text(combo, "Word", { Text = "POPPING OFF!", TextSize = 24, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(255, 150, 50), Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 28), ZIndex = 8 }, 2.5)
 
 	-- Spark layer above the meter bar (sparks are pooled at runtime)
 	local meter = bottom:FindFirstChild("Meter")
@@ -270,13 +281,15 @@ function DuelHud:Start(info: any)
 	self.edges.Visible = false
 	self.duel.Visible = true
 	-- entrance: cards slide in from the sides, VS thumps
+	-- entrance: the motion table's pop-in (0.6 -> 1, 0.25 s Back), staggered 0.06 s: you, VS, rival
 	if not self.deps.reduced() then
-		you.Position = UDim2.new(0, -60, 0, 0)
-		rival.Position = UDim2.new(1, 60, 0, 0)
-		self.deps.tween(you, 0.28, { Position = UDim2.fromScale(0, 0) }, Enum.EasingStyle.Back)
-		self.deps.tween(rival, 0.28, { Position = UDim2.fromScale(1, 0) }, Enum.EasingStyle.Back)
-		self.duel.Vs.Thump.Scale = 1.8
-		self.deps.tween(self.duel.Vs.Thump, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+		local order = { you.Lift, self.duel.Vs.Thump, rival.Lift }
+		for i, sc in order do
+			sc.Scale = 0.6
+			task.delay((i - 1) * 0.06, function()
+				self.deps.tween(sc, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+			end)
+		end
 	end
 end
 
@@ -340,7 +353,7 @@ function DuelHud:Tap()
 		combo.Word.TextColor3 = color
 		combo.Count.TextColor3 = WHITE:Lerp(color, 0.6)
 		-- one running pop, retargeted (never stacked)
-		combo.Pop.Scale = if self.deps.reduced() then 1 else 1.22
+		combo.Pop.Scale = if self.deps.reduced() then 1 else 1.15 -- counter bump 1.15 -> 1
 		self.deps.tween(combo.Pop, 0.14, { Scale = 1 }, Enum.EasingStyle.Quad)
 	end
 	-- the player's portrait bounces, sparks fly toward the rival
@@ -399,7 +412,7 @@ function DuelHud:Update(dt: number, display: number, pressure: number, elapsed: 
 		for _, c in { you, rival } do
 			local on = c.Name == (leader or "") .. "Card"
 			c.Lead.Visible = on
-			self.deps.tween(c.Lift, 0.18, { Scale = if on then 1.06 else 0.96 }, Enum.EasingStyle.Back)
+			self.deps.tween(c.Lift, 0.25, { Scale = if on then 1.06 else 0.96 }, Enum.EasingStyle.Back)
 			c.Face.Edge.Color = if on then GOLD else INK
 			c.Face.Edge.Thickness = if on then 4 else 3
 		end

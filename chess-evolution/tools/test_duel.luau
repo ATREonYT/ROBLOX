@@ -47,7 +47,7 @@ end
 -- 1. The saved HUD (StarterGui) carries the duel parts, so the owner sees them in Studio.
 local hud = roblox.deserializeModel(fs.readFile("src/StarterGui/ChessHUD.rbxm"))[1]
 local bottom = hud:FindFirstChild("Bottom")
-for _, path in { { "Duel", "YouCard" }, { "Duel", "RivalCard" }, { "Duel", "Vs" }, { "Combo" }, { "Meter", "Bar", "Sparks" } } do
+for _, path in { { "Duel", "YouCard" }, { "Duel", "RivalCard" }, { "Duel", "Vs", "Tag" }, { "Combo" }, { "Meter", "Bar", "Sparks" } } do
 	local node = bottom
 	for _, n in path do
 		node = node and node:FindFirstChild(n)
