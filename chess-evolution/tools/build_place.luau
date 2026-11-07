@@ -120,7 +120,7 @@ end
 local project = serde.decode("json", fs.readFile("default.project.json"))
 mountTree(project.tree, game)
 map.Parent = game:GetService("Workspace")
-MapBuilder.Light(game:GetService("Lighting"))
+MapBuilder.Light(game:GetService("Lighting"), game:GetService("Workspace"))
 local name = project.name
 fs.writeDir("places")
 fs.writeFile(`places/{name}.rbxl`, roblox.serializePlace(game))

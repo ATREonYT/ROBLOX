@@ -30,9 +30,11 @@ Config.Stations = {
 	PawnMill = { order = 1, name = "Pawn Mill", basePower = 1, built = true, row = "front" },
 	KnightSprint = { order = 2, name = "Knight Sprint", basePower = 2, built = true, row = "front", unlock = { stage = "Stage2" } },
 	BishopRun = { order = 3, name = "Bishop Run", basePower = 5, built = false, row = "front" },
-	RookRig = { order = 4, name = "Rook Rig", basePower = 12, built = false, row = "rear" },
+	RookRig = { order = 4, name = "Rook Rig", basePower = 12, built = false, row = "front" },
 	QueenDash = { order = 5, name = "Queen Dash", basePower = 30, built = false, row = "rear" },
 	KingsEndgame = { order = 6, name = "King's Endgame", basePower = 80, built = false, row = "rear" },
+	CastleClimb = { order = 7, name = "Castle Climb", basePower = 200, built = false, row = "rear" },
+	GrandmasterGlide = { order = 8, name = "Grandmaster Glide", basePower = 500, built = false, row = "rear" },
 }
 
 -- Chess Sets (equipment) -----------------------------------------------------
@@ -45,6 +47,9 @@ Config.Sets = {
 	Sapphire = { order = 5, name = "Sapphire Set", multiplier = 16, price = 900, available = false, color = Color3.fromRGB(40, 90, 230), accent = Color3.fromRGB(110, 160, 255), fx = "spark" },
 	Gold = { order = 6, name = "Gold Set", multiplier = 32, price = 3000, available = false, color = Color3.fromRGB(255, 196, 40), accent = Color3.fromRGB(255, 220, 90), fx = "orbit" },
 	Obsidian = { order = 7, name = "Obsidian Set", multiplier = 64, price = 10000, available = false, color = Color3.fromRGB(40, 30, 60), accent = Color3.fromRGB(170, 90, 255), fx = "aura" },
+	Crystal = { order = 9, name = "Crystal Set", multiplier = 256, price = 120000, available = false, color = Color3.fromRGB(200, 240, 255), accent = Color3.fromRGB(120, 230, 255), fx = "spark" },
+	Cosmic = { order = 10, name = "Cosmic Set", multiplier = 512, price = 400000, available = false, color = Color3.fromRGB(40, 30, 110), accent = Color3.fromRGB(120, 90, 255), fx = "aura" },
+	Champion = { order = 11, name = "Champion Set", multiplier = 1024, price = 1500000, available = false, color = Color3.fromRGB(255, 215, 90), accent = Color3.fromRGB(255, 120, 60), fx = "crown" },
 	Royal = { order = 8, name = "Royal Set", multiplier = 128, price = 40000, available = false, color = Color3.fromRGB(150, 60, 220), accent = Color3.fromRGB(255, 120, 230), fx = "crown" },
 }
 Config.DefaultSet = "Wooden"

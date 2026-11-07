@@ -146,6 +146,8 @@ local THEMES = {
 	QueenDash = { chassis = IVORY, rail = GOLD, console = Color3.fromRGB(240, 220, 170), screen = Color3.fromRGB(255, 220, 90) },
 	KingsEndgame = { chassis = CHARCOAL, rail = GOLD, console = Color3.fromRGB(30, 30, 36), screen = Color3.fromRGB(255, 200, 60) },
 }
+THEMES.CastleClimb = { chassis = Color3.fromRGB(40, 180, 200), rail = IVORY, console = Color3.fromRGB(30, 110, 130), screen = Color3.fromRGB(120, 255, 240) }
+THEMES.GrandmasterGlide = { chassis = Color3.fromRGB(30, 26, 50), rail = Color3.fromRGB(170, 90, 255), console = Color3.fromRGB(20, 18, 34), screen = Color3.fromRGB(190, 120, 255) }
 Models.TreadmillThemes = THEMES
 
 function Models.Treadmill(id: string, cf: CFrame): Model
