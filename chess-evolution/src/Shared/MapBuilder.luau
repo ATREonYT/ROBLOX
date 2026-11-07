@@ -360,6 +360,30 @@ function MapBuilder.Build(config: any): Model
 		local featured = Models.Piece(if rear then "Queen" else "Knight", set.color, 1.05, pieceAnchor.CFrame, { trim = set.accent, material = material })
 		featured.Name = "Featured"
 		featured.Parent = m
+		-- every case glows in its set's colour, with a soft sparkle (reference: glowing items in cases)
+		local glow = Instance.new("PointLight")
+		glow.Name = "CaseGlow"
+		glow.Color = set.accent
+		glow.Range = 9
+		glow.Brightness = if set.available then 2.2 else 1.2
+		glow.Parent = pieceAnchor
+		local att = Instance.new("Attachment")
+		att.Name = "Sparkle"
+		att.Parent = pieceAnchor
+		local pe = Instance.new("ParticleEmitter")
+		pe.Name = "CaseSparkle"
+		pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		pe.Color = ColorSequence.new(set.accent, Color3.new(1, 1, 1))
+		pe.LightEmission = 0.8
+		pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.45), NumberSequenceKeypoint.new(1, 0) })
+		pe.Transparency = NumberSequence.new(0.2)
+		pe.Lifetime = NumberRange.new(0.8, 1.4)
+		pe.Rate = if set.available then 6 else 3
+		pe.Speed = NumberRange.new(0.6, 1.4)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.Shape = Enum.ParticleEmitterShape.Box
+		pe.Parent = att
+		part(m, "GlowRing", Vector3.new(0.2, 6.2, 6.2), CFrame.new(x, y + 0.65, z) * CFrame.Angles(0, 0, math.pi / 2), set.accent, { Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Transparency = 0.55, CanCollide = false, CastShadow = false })
 		-- floating label like the reference: name, red multiplier badge, state
 		local plate = part(m, "Nameplate", Vector3.new(1, 1, 1), CFrame.new(x, y + 9.4, z), Color3.new(), { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
 		local bb = billboard(plate, "Sign", UDim2.fromScale(7, 2.6), {

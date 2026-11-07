@@ -181,17 +181,36 @@ function Rivals.Spawn(config: any, map: Instance)
 		local seat = tbl and tbl:FindFirstChild("SeatB") :: BasePart?
 		if model and seat and not model:FindFirstChild("RivalNPC") then
 			-- the Blender-made rig (assets/Rivals.rbxm, pivot at the feet) when it is installed
+			-- 1st choice: the real Roblox avatars Alex generated in Studio (ServerStorage.ChessRivals);
+			-- 2nd: the part-built rigs from assets/Rivals.rbxm; last: a default body built here.
+			local real = game:GetService("ServerStorage"):FindFirstChild("ChessRivals")
 			local assets = game:GetService("ReplicatedStorage"):FindFirstChild("ChessAssets")
-			local made = assets and assets:FindFirstChild("Rivals") and assets.Rivals:FindFirstChild(stage.rivalId or "")
+			local made = (real and real:FindFirstChild(stage.rivalId or ""))
+				or (assets and assets:FindFirstChild("Rivals") and assets.Rivals:FindFirstChild(stage.rivalId or ""))
 			if made then
 				local rig = made:Clone()
 				rig.Name = "RivalNPC"
 				rig:SetAttribute("StageId", stageId)
 				local hum = rig:FindFirstChildOfClass("Humanoid")
+				local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
 				if hum then
 					hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 				end
-				rig:PivotTo(seat.CFrame)
+				for _, p in rig:GetDescendants() do
+					if p:IsA("BasePart") then
+						p.Anchored = p == root
+						p.CanCollide = false
+					elseif p:IsA("Script") or p:IsA("LocalScript") then
+						p:Destroy() -- no Animate/Health scripts: the client drives the animations
+					end
+				end
+				if hum and root then
+					-- stand the feet on the pad whatever the rig's own pivot is
+					local target = seat.CFrame * CFrame.new(0, hum.HipHeight + root.Size.Y / 2, 0)
+					rig:PivotTo(target * (root.CFrame:Inverse() * rig:GetPivot()))
+				else
+					rig:PivotTo(seat.CFrame)
+				end
 				nameTag(rig, stage)
 				rig.Parent = model
 				continue
