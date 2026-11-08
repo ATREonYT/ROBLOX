@@ -65,3 +65,14 @@ TARGET      Roblox Studio. Export groups as FBX per collection plus simple colli
 - Alex asked for the hub to be even (mirrored): hub |x| <= 90, both stands span |x| 30..87, y -48..48, water a straight channel across the back. The one-to-one (lopsided, 45-degree water) version is kept as the v5 numbers in git history.
 - Treadmill stand rebuilt from the close-up: one flat floor 1.5 high, chamfered edge, dark kerb at the wall, three sunken pits with sloped ends. Machines are not built (map only).
 - Still different from the reference: the camera of the close-up renders is approximate; colours follow the close-ups (the overview is hazier); trees in front of the stands stay removed (Alex's earlier ask).
+
+## v7 result (Nov 8, replica)
+- Back to the one-to-one layout (Alex: "perfect replica"); the mirrored v6 is in git history.
+- Surfaces: 4x4-stud blocks in slightly different shades (grass checker, walls/stone/paths per block) under half-stud inset studs.
+- Colours calibrated on the renders against the close-ups; plastic has almost no reflection, brighter fill light.
+- Treadmill stand: continuous lower apron 1.5, raised rear shelf 4.5, two broad ramps flanking the centre with risers.
+- Lane banks: grey skirting, dark rust band, orange studded wall, green lip, ledge, upper wall. Thin gates; stage 2-3 gates
+  live in Stage_Frames_Unlocked (hidden in renders, lane_view was taken after they unlocked), first visible gate is stage 4.
+- Trees: four types, mixed sizes; big framing trees at the phone stand ends; a big near-right tree at the lane mouth.
+- Proof: review/v7_compare_overlay.jpg (screenshot, render, 50% overlay for all four views). Stud tiles in textures/.
+- Still off: the treadmill close-up camera shows less wall than the screenshot; the phone close-up camera sits a bit far.

@@ -9,41 +9,42 @@ HERE = "/Users/Alex/ROBLOX/chess-evolution/map/v2/"
 
 
 # ---------------------------------------------------------------- sizes (studs) ---
-# v5: every number below is measured from ref/hub_overview.png through the solved camera
-# (analysis/cam_hub_free.json) unless it says "close-up" or "inferred".
-MARK = "v6f-even-layout"
-EVEN = True   # Alex (Nov 8): "make this even" -> hub mirrored about the main path
-SX0, SX1, SY = 30, 87, 48             # even: both stands span |x| 30..87, y -48..48
+# v7: one-to-one replica (Alex, Nov 8: "perfect replica"). Every number is measured from ref/hub_overview.png through
+# the solved camera (analysis/cam_hub_free.json) unless it says "close-up" or "inferred".
+MARK = "v7d-replica"
 PATH_W, PATH_EDGE = 11, 1.0              # 9 orange + a 1-stud brown edge each side
 SPAWN_HALF = 2.25                        # 4.5-stud pad
-HUB_XL, HUB_XR = -90, 90                 # even: same width both sides (reference was -111..66)
-HUB_YB, HUB_YF, HUB_YF_R = -74, 74, 74   # water bank, front wall (same both sides of the lane)
-BACK_Y = -130                            # far bank behind the water (inferred: off screen)
+HUB_XL, HUB_XR = -111, 66                # wall face behind Terrace A / behind Terrace B
+HUB_YB, HUB_YF, HUB_YF_R = -71, 74, 83   # water bank at the path end, front wall left / right of the lane
+BACK_Y = -200                            # far bank behind the water (inferred: off screen)
+CROSS_X0, CROSS_X1 = -32, 25             # cross path runs from Terrace A's front to Terrace B's front
 # water: a channel running at 45 degrees down-left from the end of the main path (bank points solved on hub_overview)
-WATER_POLY = [(HUB_XL, -92), (HUB_XR, -92), (HUB_XR, -74), (HUB_XL, -74)]   # even: straight channel across the back
-PATH_Y0 = -72                            # main path stops 1 stud short of the water
+WATER_POLY = [(-21.5, -71), (-9.5, -71), (-1.25, -79.25), (-112, -190), (-112, -161.5)]
+PATH_Y0 = -70                            # main path stops 1 stud short of the water
+TA = (-110, -32, -46, 58)                # treadmill stand x0, x1, y0, y1
+TB = (25, 63, -41, 42)                   # phone stand x0, x1, y0, y1 (incl. its sloped ends)
 LANE_XL, LANE_XR, LANE_Y0 = -23, 23, 74  # lane 46 wide, starts at the front wall
 BAY_PITCH, BAYS = 56, 14
 LANE_Y1 = LANE_Y0 + BAY_PITCH * BAYS     # 858
-WALL_T, LEDGE, WALL_H1, WALL_H2 = 4, 10, 11.5, 21   # two-step wall: lower face, grass ledge, upper face to the top land
-LEDGE_R, LEDGE_FR = LEDGE, LEDGE               # the ledge is wider behind Terrace B (20) and on the block right of the lane (14)
+WALL_T, LEDGE, WALL_H1, WALL_H2 = 4, 9, 11.5, 21   # two-step wall: lower face, grass ledge, upper face to the top land
+LEDGE_R, LEDGE_FR = 20, 14               # the ledge is wider behind Terrace B (20) and on the block right of the lane (14)
 WALL_D = 2 * WALL_T + LEDGE              # wall depth from face to the upper land
 SEG = 8
 
 COL = {  # sRGB hex, measured from lit faces in the screenshots (Nov 8 sample pass)
-    "grass": "3FE80A", "grass_cap": "52F218", "path": "FF9410", "spawn": "A9B6BA",
-    "wall_face": "CC4A20", "wall_band": "7E2A12", "wall_skirt": "8E9CA1",
-    "stone": "ABBCC1", "stone_dark": "8E9EA4", "stone_low": "9EAFB4",
-    "lane": "B9C8CB", "kerb": "98A7AB", "lime": "6CFF15", "red": "FF1B3B", "charcoal": "363B44",
+    "grass": "28EE00", "grass_cap": "3CF500", "path": "F58304", "spawn": "A9B6BA",
+    "wall_face": "C33E22", "wall_band": "7E2A12", "wall_skirt": "8E9CA1",
+    "stone": "AABDC5", "stone_dark": "8C9FA8", "stone_low": "9CB0B8",
+    "lane": "ACC7BE", "kerb": "93A6AE", "lime": "6CFF15", "red": "FF1430", "charcoal": "363B44",
     "yellow": "FFCC12", "magenta": "F01EF5", "water": "3CCBFA", "water_bed": "1E6FC4",
     "rock": "8A969B", "rail": "A8501E", "trunk": "D5531F", "birch": "ECE7DA",
-    "leaf": "3EE80A", "leaf2": "2ECB04", "bush": "4CF012", "sprig": "38D608",
+    "leaf": "2AEA00", "leaf2": "1CCC00", "bush": "38F200", "sprig": "38D608",
     "portal_shell": "3A2FF0", "portal_inner": "FF3FD3",
 }
 COL.update({"path_edge": "A04A1C", "spawn": "C8D8F0", "pad_green": "3EE07A", "pad_cyan": "2FD9F0",
             "pad_red": "FF2B3B", "pad_black": "24222C"})
 # gate colours read from lane_view (stage 2 green, 3 blue, 4 magenta, 5 yellow, 6 and 7 orange, 8 red ...)
-STAGE_COL = ["B0B6BE", "50C846", "326EEB", "E63CC8", "FAC828", "F58228", "F0602A",
+STAGE_COL = ["B0B6BE", "DCE3E8", "DCE3E8", "E63CC8", "FAC828", "F58228", "F0602A",
              "E13237", "9646E6", "28C8D2", "8CE646", "5A78FF", "FFAA3C", "BE5AFF"]
 
 def lin(h):
@@ -62,22 +63,24 @@ def stud_image():
         for i in range(n):
             x, y = (i + 0.5) / n - 0.5, (j + 0.5) / n - 0.5     # y up in image space
             v = 1.0                                         # flat plate
-            a = 0.22; e = 0.045                             # stud half size, edge width
+            a = 0.25; e = 0.06                              # close-ups: inset square studs about half a stud wide
             if abs(x) < a and abs(y) < a:
-                v = 1.03
-                if y > a - e or x < -a + e: v = 0.70       # top / left edge: shadow line
-                elif y < -a + e or x > a - e: v = 1.12     # bottom / right edge: highlight
-            if abs(x) > 0.485 or abs(y) > 0.485: v = 0.95  # faint plate seam
+                v = 1.0
+                if y > a - e or x < -a + e: v = 0.60       # top / left inner edge: dark line
+                elif y < -a + e or x > a - e: v = 1.16     # bottom / right inner edge: light line
             px += [v, v, v, 1.0]
     img.pixels = px; img.pack()
     return img
 
 # per-material tile variation seen in the screenshots: grass checker, cobbled stone tiles, soft lane and wall tiles
-VAR = {"grass": ("checker", 4, 0.07), "grass_cap": ("checker", 4, 0.06), "leaf": ("noise", 2, 0.06),
-       "leaf2": ("noise", 2, 0.06), "bush": ("noise", 2, 0.05),
-       "stone": ("noise", 2, 0.07), "stone_dark": ("noise", 2, 0.07), "stone_low": ("noise", 2, 0.07),
-       "lane": ("noise", 4, 0.035), "kerb": ("noise", 2, 0.04), "path": ("noise", 2, 0.04),
-       "wall_face": ("noise", 2, 0.045), "trunk": ("noise", 1, 0.05), "rock": ("noise", 1, 0.08)}
+# block pattern under the studs (close-ups): every surface is built from 4x4-stud blocks, each a slightly different
+# shade. Grass alternates light and dark blocks like a checker; walls, stone and paths vary block by block.
+VAR = {"grass": ("checker", 4, 0.085), "grass_cap": ("checker", 4, 0.07), "leaf": ("noise", 2, 0.07),
+       "leaf2": ("noise", 2, 0.07), "bush": ("noise", 2, 0.06),
+       "stone": ("noise", 4, 0.06), "stone_dark": ("noise", 4, 0.06), "stone_low": ("noise", 4, 0.06),
+       "lane": ("noise", 4, 0.045), "kerb": ("noise", 2, 0.04), "path": ("noise", 4, 0.05),
+       "wall_face": ("noise", 4, 0.075), "trunk": ("noise", 2, 0.06), "rock": ("noise", 2, 0.08),
+       "path_edge": ("noise", 4, 0.05)}
 
 def stud_image_mixed():
     """Tree close-up: square studs, about a third of them sunk in (dark hole, light lower lip) instead of raised."""
@@ -108,7 +111,7 @@ def stud_image_mixed():
 MIXED = {"leaf", "leaf2", "bush", "trunk", "birch", "sprig"}
 
 MATS = {}
-def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
+def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.8):
     k = (key, studs, alpha)
     if k in MATS: return MATS[k]
     hexc = COL.get(key, key)
@@ -116,6 +119,8 @@ def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
     m.use_nodes = True; nt = m.node_tree; N = nt.nodes; L = nt.links
     b = N["Principled BSDF"]; rgb = (*lin(hexc), 1)
     b.inputs["Roughness"].default_value = rough
+    try: b.inputs["Specular IOR Level"].default_value = 0.08   # Roblox plastic: almost no sky reflection, keeps colours saturated
+    except KeyError: b.inputs["Specular"].default_value = 0.08
     if studs:
         geo = N.new("ShaderNodeNewGeometry")
         tex = N.new("ShaderNodeTexImage"); tex.projection = 'BOX'; tex.projection_blend = 0.0
@@ -220,8 +225,9 @@ def instance(c, src, name, loc, rot_z=0.0, scale=1.0):
 def walk_rects():
     """Everything the player walks on at ground level. The two-step walls wrap around this outline."""
     L = LEDGE   # rect x0, x1, y0, y1, ledge widths for the -x, +x, -y, +y sides
-    return [(HUB_XL, HUB_XR, BACK_Y, HUB_YF, (L, L, L, L)),          # hub, water channel and far bank
-            (LANE_XL, LANE_XR, HUB_YF - 1, LANE_Y1, (L, L, L, L))]   # lane
+    return [(HUB_XL, HUB_XR, BACK_Y, HUB_YF, (L, LEDGE_R, L, L)),           # hub, water channel and far bank
+            (LANE_XR, HUB_XR, HUB_YF, HUB_YF_R, (L, LEDGE_R, L, LEDGE_FR)),  # right block's front wall sits 9 further out
+            (LANE_XL, LANE_XR, HUB_YF - 1, LANE_Y1, (L, L, L, L))]          # lane
 
 def terrain_mesh(c):
     """Two-step walls from a 1-stud height field: within WALL_T of the walk area -> lower face (12.5),
@@ -241,7 +247,7 @@ def terrain_mesh(c):
         return 1 if n <= 1 else 2
     H = [[level(X0 + i + 0.5, Y0 + j + 0.5) for i in range(nx)] for j in range(ny)]
     hz = (0.0, WALL_H1, WALL_H2)
-    bm = bmesh.new(); MF, MC, MG = 0, 1, 2      # material slots: face, cap band, grass top
+    bm = bmesh.new(); MF, MC, MG, MS, MB = 0, 1, 2, 3, 4   # slots: face, cap band, grass top, grey skirt, rust band
     def quad(p, slot):
         vs = [bm.verts.new(v) for v in p]; f = bm.faces.new(vs); f.material_index = slot
     # tops: merge row runs
@@ -256,7 +262,8 @@ def terrain_mesh(c):
     def side(p0, p1, zlo, zhi, outward):
         """vertical face from p0 to p1 (counter-clockwise seen from outside), split into face + 0.6 cap band"""
         zc = zhi - 0.6
-        for (a, b, s) in ((zlo, zc, MF), (zc, zhi, MC)):
+        parts = ((zlo, 0.8, MS), (0.8, 2.4, MB), (2.4, zc, MF), (zc, zhi, MC)) if zlo == 0 else ((zlo, zc, MF), (zc, zhi, MC))
+        for (a, b, s) in parts:   # lane_view banks: grey skirting, dark rust band, orange studded wall, green lip
             quad([(p1[0], p1[1], a), (p0[0], p0[1], a), (p0[0], p0[1], b), (p1[0], p1[1], b)], s)   # normal faces the low side
     # x-boundaries (between column i-1 and i), merged along y
     for i in range(1, nx):
@@ -284,7 +291,7 @@ def terrain_mesh(c):
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
     bmesh.ops.dissolve_limit(bm, angle_limit=0.01, verts=bm.verts, edges=bm.edges, delimit={'MATERIAL'})
     me = bpy.data.meshes.new("Terrain"); bm.to_mesh(me); bm.free()
-    for k in ("wall_face", "grass_cap", "grass"): me.materials.append(mat(k))
+    for k in ("wall_face", "grass_cap", "grass", "wall_skirt", "wall_band"): me.materials.append(mat(k))
     ob = bpy.data.objects.new("Walls_Terrain", me); c.objects.link(ob)
     return ob
 
@@ -311,11 +318,11 @@ def module_bay():
 def stage_gate(c, stage, y):
     """Stage gate over a divider (lane_view): two studded posts, a top bar, a see-through coloured pane."""
     col = STAGE_COL[(stage - 1) % len(STAGE_COL)]; COL.setdefault(col, col)
-    m = mat(col); pane = mat(col, studs=False, alpha=0.32, emit=0.25, rough=0.2)
-    h = (LANE_XR - LANE_XL) / 2 - 1.5; t = 2.0; Hh = 24
-    g = _merge(c, f"Stage{stage:02d}_Gate", [(-h, -h + t, y - 1, y + 1, 0.8, Hh), (h - t, h, y - 1, y + 1, 0.8, Hh),
-                                              (-h, h, y - 1, y + 1, Hh - 2, Hh)], m)
-    box(c, f"Stage{stage:02d}_Pane", -h + t, h - t, y - 0.15, y + 0.15, 0.8, Hh - 2, pane)
+    m = mat(col); pane = mat(col, studs=False, alpha=0.06 if stage < 4 else 0.16, emit=0.2, rough=0.2)
+    h = (LANE_XR - LANE_XL) / 2 - 1.5; t = 1.0; Hh = 22                 # thin posts and crossbar (lane_view)
+    g = _merge(c, f"Stage{stage:02d}_Gate", [(-h, -h + t, y - 0.5, y + 0.5, 0.8, Hh), (h - t, h, y - 0.5, y + 0.5, 0.8, Hh),
+                                              (-h, h, y - 0.5, y + 0.5, Hh - 1, Hh)], m)
+    box(c, f"Stage{stage:02d}_Pane", -h + t, h - t, y - 0.1, y + 0.1, 0.8, Hh - 1, pane)
     return g
 
 def _merge(c, name, boxes, m):
@@ -349,13 +356,17 @@ def module_trees():
     box(t3, "Trunk", -1.2, 1.2, -1.2, 1.2, 0, 15, mat("birch"))
     box(t3, "Canopy0", -6, 6, -6, 6, 12, 18, L2); box(t3, "Canopy1", -4, 4, -4, 4, 18, 22, L1)
     box(t3, "Canopy2", -2, 2, -2, 2, 22, 24, L2)
-    return [t1, t2, t3]
+    t4 = coll("Tree_TallPine", root)                                             # taller, narrower pine
+    box(t4, "Trunk", -1.2, 1.2, -1.2, 1.2, 0, 13, T)
+    for k, (w, z) in enumerate(((13, 10), (10.5, 13.5), (8, 17), (6, 20.5), (4, 24), (2, 27))):
+        box(t4, f"Canopy{k}", -w/2, w/2, -w/2, w/2, z, z + 3, L2 if k % 2 == 0 else L1)
+    return [t1, t2, t3, t4]
 
 # ---------------------------------------------------------------- the map ---
 def prism(c, name, pts, z0, z1, m):
     """Upright prism over a convex polygon (any winding)."""
     area = sum(pts[i][0] * pts[i-1][1] - pts[i-1][0] * pts[i][1] for i in range(len(pts)))
-    if area > 0: pts = pts[::-1]                      # make it clockwise seen from above
+    if area < 0: pts = pts[::-1]                      # make it clockwise seen from above (area here is minus the usual sign)
     n = len(pts); v = [(x, y, z0) for x, y in pts] + [(x, y, z1) for x, y in pts]
     f = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))]
     f += [(i, (i + 1) % n + 0, (i + 1) % n + n, i + n)[::-1] for i in range(n)]
@@ -371,73 +382,64 @@ def carve(ob, cutter):
 
 def build_hub():
     c = coll("Hub"); G = mat("grass")
-    wy0, wy1 = WATER_POLY[0][1], WATER_POLY[2][1]          # straight channel: grass in three slabs, banks are grass
-    box(c, "HubGrass", HUB_XL, HUB_XR, wy1, HUB_YF, -4, 0, G)
-    box(c, "FarBank", HUB_XL, HUB_XR, BACK_Y, wy0, -4, 0, G)
-    box(c, "ChannelFloor", HUB_XL, HUB_XR, wy0, wy1, -4.6, -4.4, G)
+    g1 = box(c, "HubGrass", HUB_XL, HUB_XR, BACK_Y, HUB_YF, -4, 0, G)
+    box(c, "HubGrassRight", LANE_XR, HUB_XR, HUB_YF, HUB_YF_R, -4, 0, G)
+    carve(g1, prism(c, "WaterCut", WATER_POLY, -1.5, 2, G))    # the cutter overhangs the slab edge (x -112) on purpose
     # orange paths with a 1-stud brown edge, flush with the grass
     hw = PATH_W / 2; e = PATH_EDGE; P, E = mat("path"), mat("path_edge")
     box(c, "PathMainEdge", -hw, hw, PATH_Y0, HUB_YF, -0.2, 0.14, E)
     box(c, "PathMain", -hw + e, hw - e, PATH_Y0, HUB_YF, -0.2, 0.16, P)
-    box(c, "PathCrossEdge", -SX0, SX0, -hw, hw, -0.2, 0.14, E)
-    box(c, "PathCross", -SX0, SX0, -hw + e, hw - e, -0.2, 0.16, P)
+    box(c, "PathCrossEdge", CROSS_X0, CROSS_X1, -hw, hw, -0.2, 0.14, E)
+    box(c, "PathCross", CROSS_X0, CROSS_X1, -hw + e, hw - e, -0.2, 0.16, P)
     box(c, "PathCrossing", -hw + e, hw - e, -hw, hw, -0.2, 0.161, P)      # no edge across the crossing
     box(c, "Spawn", -SPAWN_HALF, SPAWN_HALF, -SPAWN_HALF, SPAWN_HALF, 0.16, 0.4, mat("spawn"))
     col_box("HubFloor", HUB_XL, HUB_XR, BACK_Y, HUB_YF, -4, 0.15)
 
 def build_terrace_a():
-    """Treadmill stand on the left, rebuilt from terraceA_closeup + hub_overview (Alex, Nov 8: "same as the reference").
-    One flat stone floor 1.5 above the grass with a chamfered edge on the three open sides and a dark kerb at the wall.
-    Back row against the wall: four machine spots on the floor. Middle row: three sunken pits with sloped ends
-    (empty, the wide one the two red treadmills stand in, empty), with the yellow and blue spots on the floor at
-    either end. Front: an open apron where the cross path arrives. Ref footprint x -110..-32, y -46..58, scaled to the
-    even footprint |x| 30..87, y -48..48 (x * 0.73, y * 0.92). Machines themselves are not built (map only)."""
+    """Treadmill stand (hub_overview + terraceA_closeup), x -110..-32, y -46..58. One continuous lower apron 1.5 high,
+    a distinct raised rear shelf 4.5 high along the wall (the back row of machines), and two broad ramps flanking the
+    centre approach that rise from the apron to the shelf, with vertical risers beside them and flush joins top and
+    bottom. A small dark step on the front edge, sloped ends. Machines are not built (map only)."""
     c = coll("Terrace_A"); S, SD, SL = mat("stone"), mat("stone_dark"), mat("stone_low")
-    x0, x1, y0, y1 = -SX1, -SX0, -SY, SY; F, PIT, CH = 1.5, 0.1, 2.0     # floor top, pit floor, chamfer width
-    px0, px1 = -61, -42                                                   # pit row (ref x -74..-48)
-    pits = [(-33, -17), (-12.5, 20.5), (23.5, 35.5)]                      # ref y -30..-12, -8..28, 31..44
-    box(c, "BackKerb", x0, x0 + 1.2, y0 + CH, y1 - CH, 0, F + 0.3, SD)   # dark kerb along the wall
-    box(c, "FloorBack", x0 + 1.2, px0, y0 + CH, y1 - CH, 0, F, S)
-    box(c, "FloorFront", px1, x1 - CH, y0 + CH, y1 - CH, 0, F, S)
-    ys = [y0 + CH] + [v for p in pits for v in p] + [y1 - CH]
-    for k in range(0, len(ys), 2):                                        # floor between and beyond the pits
-        box(c, "PitRowFloor", px0, px1, ys[k], ys[k + 1], 0, F, S)
-    for k, (a, b) in enumerate(pits):
-        box(c, f"Pit{k+1}Floor", px0, px1, a, b, PIT - 0.5, PIT, SL)
-        wedge(c, f"Pit{k+1}SlopeA", px0, px1, a, a + 3, PIT, F, SD, "-y")  # sloped ends, as in the close-up
-        wedge(c, f"Pit{k+1}SlopeB", px0, px1, b - 3, b, PIT, F, SD, "+y")
-        box(c, f"Pit{k+1}LipBack", px0 - 0.6, px0, a, b, 0, F + 0.15, SD)  # thin dark lip on the long sides
-        box(c, f"Pit{k+1}LipFront", px1, px1 + 0.6, a, b, 0, F + 0.15, SD)
-    wedge(c, "ChamferFront", x1 - CH, x1, y0 + CH, y1 - CH, 0, F, SL, "-x")  # chamfered outer edge
-    wedge(c, "ChamferEndA", x0, x1 - CH, y0, y0 + CH, 0, F, SL, "+y")
-    wedge(c, "ChamferEndB", x0, x1 - CH, y1 - CH, y1, 0, F, SL, "-y")
-    box(c, "Skirt", x0, x1 + 0.8, y0 - 0.8, y1 + 0.8, 0, 0.4, SD)           # darker step around the base
-    col_box("TerraceA_Floor", x0, x1, y0, y1, 0, F)
+    x0, x1, y0, y1 = TA; F, SH, CH = 1.5, 4.5, 2.5               # apron top, shelf top, end slope width
+    xs, xr = -84, -64                                            # shelf front riser, foot of the ramps
+    ramps = [(-30, -12), (31, 47)]                               # flank the two red machines in the centre
+    box(c, "RearShelf", x0, xs, y0 + CH, y1 - CH, 0, SH, S)
+    box(c, "Apron", xs, x1 - 2, y0 + CH, y1 - CH, 0, F, SL)
+    box(c, "FrontStep", x1 - 2, x1, y0 + CH, y1 - CH, 0, F - 0.7, SD)
+    for k, (a, b) in enumerate(ramps):
+        wedge(c, f"Ramp{k+1}", xs, xr, a, b, F, SH, SD, "-x")    # real slope: apron height at xr, shelf height at xs
+        box(c, f"Ramp{k+1}Base", xs, xr, a, b, 0, F, SL)
+    wedge(c, "EndSlopeA", x0, x1, y0, y0 + CH, 0, F, SD, "+y")
+    wedge(c, "EndSlopeB", x0, x1, y1 - CH, y1, 0, F, SD, "-y")
+    box(c, "ShelfEndA", x0, xs, y0 + CH - 0.01, y0 + CH + 0.01, 0, SH, S)
+    col_box("TerraceA_Shelf", x0, xs, y0, y1, 0, SH); col_box("TerraceA_Apron", xs, x1, y0, y1, 0, F)
 
 def build_terrace_b():
-    """Phone stand on the right (terraceB_closeup design, even footprint |x| 30..87, y -48..48): low front rim,
-    a sunken trough with five coloured pads and sloped ends, a raised rear shelf with six dark display pads."""
+    """Phone stand on the right (hub_overview + terraceB_closeup): x 25..63, y -41..42. Low front rim, a sunken trough
+    with five coloured pads and sloped ends, a raised rear shelf with six dark display pads, big sloped outer ends."""
     c = coll("Terrace_B"); S, SD, SL = mat("stone"), mat("stone_dark"), mat("stone_low")
-    x0, x1, y0, y1 = SX0, SX1, -SY + 7, SY - 7; RIM, SHELF, FL = 2.0, 5.0, 0.6   # close-up: the display shelf stands well above the trough
-    tx0, tx1, ty0, ty1 = x0 + 4, x0 + 22, -28, 28
+    X0, X1, Y0, Y1 = TB; x0, x1, y0, y1 = X0, X1, Y0 + 7, Y1 - 7
+    RIM, SHELF, FL = 2.0, 5.0, 0.6        # close-up: the display shelf stands well above the trough
+    tx0, tx1, ty0, ty1 = x0 + 4, x0 + 18, -24, 26
     box(c, "FrontRim", x0, tx0, y0, y1, 0, RIM, S)
     box(c, "Back", tx1, x1, y0, y1, 0, RIM, SL)
-    box(c, "RearShelf", tx1 + 3, x1, y0, y1, RIM, SHELF, S)
+    box(c, "RearShelf", tx1 + 2, x1, y0, y1, RIM, SHELF, S)
     box(c, "TroughFloor", tx0, tx1, ty0, ty1, 0, FL, SL)
     wedge(c, "TroughRamp", tx0, tx1, ty0 - 6, ty0, FL, RIM, SD, "-y")
     wedge(c, "TroughRamp", tx0, tx1, ty1, ty1 + 6, FL, RIM, SD, "+y")
     box(c, "TroughEnd", tx0, tx1, y0, ty0 - 6, 0, RIM, S); box(c, "TroughEnd", tx0, tx1, ty1 + 6, y1, 0, RIM, S)
-    wedge(c, "EndSlope", x0, x1, -SY, y0, 0, RIM, SD, "+y")
-    wedge(c, "EndSlope", x0, x1, y1, SY, 0, RIM, SD, "-y")
+    wedge(c, "EndSlope", x0, x1, Y0, y0, 0, SHELF, SD, "+y")       # big sloped ends from the shelf top to the grass
+    wedge(c, "EndSlope", x0, x1, y1, Y1, 0, SHELF, SD, "-y")
     tc = (tx0 + tx1) / 2
     for k, key in enumerate(("pad_green", "pad_cyan", "pad_red", "pad_black", "pad_black")):
-        cy = 22 - 11 * k
-        box(c, f"TroughPad{k+1}", tc - 4, tc + 4, cy - 4, cy + 4, FL, FL + 0.25, mat(key))
-    sc = (tx1 + 3 + x1) / 2
+        cy = 20 - 10 * k
+        box(c, f"TroughPad{k+1}", tc - 3.5, tc + 3.5, cy - 3.5, cy + 3.5, FL, FL + 0.25, mat(key))
+    sc = (tx1 + 2 + x1) / 2
     for k in range(6):
-        cy = 32.5 - 13 * k
-        box(c, f"ShelfPad{k+1}", sc - 4.5, sc + 4.5, cy - 4.5, cy + 4.5, SHELF, SHELF + 0.25, mat("pad_black"))
-    col_box("TerraceB_Rim", x0, x1, y0, y1, 0, RIM); col_box("TerraceB_Shelf", tx1 + 3, x1, y0, y1, 0, SHELF)
+        cy = 30 - 11 * k
+        box(c, f"ShelfPad{k+1}", sc - 3.5, sc + 3.5, cy - 3.5, cy + 3.5, SHELF, SHELF + 0.25, mat("pad_black"))
+    col_box("TerraceB_Rim", x0, x1, y0, y1, 0, RIM); col_box("TerraceB_Shelf", tx1 + 2, x1, y0, y1, 0, SHELF)
 
 def beam(c, name, p0, p1, z0, z1, w, m):
     """Straight beam between two ground points (any angle), w wide."""
@@ -451,16 +453,16 @@ def build_water():
     c = coll("Water")
     prism(c, "Bed", WATER_POLY, -4.5, -4, mat("water_bed", studs=False))
     prism(c, "WaterSurface", WATER_POLY, -4, -1.2, mat("water", studs=False, alpha=0.8, emit=0.15, rough=0.1))
-    cx, cy = -22, -84
+    cx, cy = -17, -82
     for k, (w, d, z) in enumerate(((11, 8, 0.4), (8, 6, 1.6), (5, 4, 2.8), (2.5, 2, 3.8))):
         box(c, f"Rock{k}", cx - w/2 + k * 0.8, cx + w/2 + k * 0.8, cy - d/2, cy + d/2, -4, z, mat("rock"))
     R = mat("rail")
-    for nm, p0, p1 in (("RailL", (-20, -73.2), (-8, -73.2)), ("RailR", (8, -73.2), (20, -73.2))):   # even: one each side of the path
+    for nm, p0, p1 in (("RailBank", (-27.5, -76.5), (-21, -70.5)), ("RailEnd", (-6.5, -70.5), (-2.5, -75))):
         beam(c, nm, p0, p1, 1.8, 2.3, 0.4, R)
         for t in (0, 0.5, 1):
             x, y = p0[0] + t * (p1[0] - p0[0]), p0[1] + t * (p1[1] - p0[1])
             box(c, nm + "Post", x - 0.4, x + 0.4, y - 0.4, y + 0.4, -3, 2.6, R)
-    col_box("WaterBed", HUB_XL, HUB_XR, -92, -74, -4, -1.5)
+    col_box("WaterBed", -111, -1, -189, -71, -4, -1.5)
 
 def build_portal():
     """World 2 portal: stepped block arch at (-15, 27) on the grass left of the main path, turned 45 degrees
@@ -480,11 +482,14 @@ def build_portal():
     for ob in obs: ob.matrix_world = turn @ ob.matrix_world
 
 def build_lane(bay):
-    c = coll("Lane"); g = coll("Stage_Frames"); xc = (LANE_XL + LANE_XR) / 2
+    """Gates for stages 2 and 3 go in Stage_Frames_Unlocked, hidden in renders: lane_view was taken after those two
+    were unlocked (unlocked gates vanish in game), so its first visible gate is the magenta stage 4 one."""
+    c = coll("Lane"); g = coll("Stage_Frames"); u = coll("Stage_Frames_Unlocked"); u.hide_render = True
+    xc = (LANE_XL + LANE_XR) / 2
     for i in range(BAYS):
         y = LANE_Y0 + i * BAY_PITCH
         instance(c, bay, f"Bay{i+1:02d}", (xc, y, 0))
-        if i < BAYS - 1: stage_gate(g, i + 2, y + 54)       # gate into stage i+2 over each divider; none at the entrance
+        if i < BAYS - 1: stage_gate(u if i + 2 < 4 else g, i + 2, y + 54)       # gate into stage i+2 over each divider; none at the entrance
     col_box("LaneFloor", LANE_XL, LANE_XR, LANE_Y0, LANE_Y1, -1, 0.3)
 
 def build_walls():
@@ -506,27 +511,35 @@ def build_foliage(trees):
     for x in range(HUB_XL - 10, LANE_XL - r1 + 1, 15): spots += [(x, HUB_YF + r1, Z), (x + 7, HUB_YF + r2, Z)]
     for y in range(HUB_YF + r2 + 10, LANE_Y1, 17):
         spots += [(LANE_XL - r1, y, Z), (LANE_XR + r1, y + 8, Z), (LANE_XL - r2, y + 8, Z), (LANE_XR + r2, y, Z)]
-    for y in range(BACK_Y + 8, HUB_YF + 30, 15): spots += [(HUB_XR + r1, y, Z), (HUB_XR + r2, y + 7, Z)]
-    for x in range(LANE_XR + r1, HUB_XR + 11, 15):   spots += [(x, HUB_YF + r1, Z), (x + 7, HUB_YF + r2, Z)]
-    for x in range(HUB_XL + 8, HUB_XR, 16):          # far bank behind the water
-        spots += [(x, -100, 0), (x + 8, -116, 0)]
+    R1, R2 = rows(LEDGE_R)
+    for y in range(BACK_Y + 8, HUB_YF_R + 30, 15): spots += [(HUB_XR + R1, y, Z), (HUB_XR + R2, y + 7, Z)]
+    F1, F2 = rows(LEDGE_FR)
+    for x in range(LANE_XR + r1, HUB_XR + 30, 15):   spots += [(x, HUB_YF_R + F1, Z), (x + 7, HUB_YF_R + F2, Z)]
+    # trees standing on the wide ledges (hub_overview right side)
+    for y in range(-40, HUB_YF_R, 22): spots.append((HUB_XR + WALL_T + LEDGE_R / 2, y, WALL_H1))
+    for x in range(LANE_XR + 18, HUB_XR, 22): spots.append((x, HUB_YF_R + WALL_T + LEDGE_FR / 2, WALL_H1))
+    for t in range(0, 120, 16):                       # far bank, beyond the 45-degree channel
+        spots += [(-4 - t * 0.7, -94 - t * 0.7, 0), (8 - t * 0.7, -100 - t * 0.7, 0)]
     # on the hub floor: the pine left of the lane mouth (hub_overview); behind the stands (Alex): rear corners
-    spots += [(-36, 64, 0), (36, 64, 0), (-80, -54, 0), (-80, 54, 0), (80, -54, 0), (80, 54, 0)]   # pines at the lane mouth; trees behind both stands' back corners
+    spots += [(-36, 64, 0), (-104, -41, 4.5), (-104, 53, 4.5), (44, -47, 0), (44, 48, 0)]   # pine at the lane mouth; trees behind A; B framed at both outer ends
     for k, (x, y, z) in enumerate(spots):
-        t = trees[0] if (abs(x), y, z) == (36, 64, 0) else (trees[k % 2] if k % 7 else trees[2])   # lane_view: mostly stepped pines and box trees, few pale trunks
+        r = rnd.random()                           # lane_view mix: stepped pines, big box trees, a few pale trunks, tall pines
+        t = trees[0] if (x, y, z) == (-36, 64, 0) else trees[0 if r < 0.4 else 1 if r < 0.75 else 3 if r < 0.9 else 2]
+        big = (x, y) in ((44, -47), (44, 48))
         j = 0 if z < Z else 1
-        instance(c, t, f"Tree{k:03d}", (x + j * rnd.uniform(-1.5, 1.5), y + j * rnd.uniform(-2, 2), z),
-                 rnd.choice((0, 90, 180, 270)), rnd.uniform(0.85, 1.05))
+        instance(c, t, f"Tree{k:03d}", (x + j * rnd.uniform(-3, 3), y + j * rnd.uniform(-4, 4), z),
+                 rnd.choice((0, 90, 180, 270)), 1.3 if big else rnd.uniform(0.7, 1.3))
+    instance(c, trees[1], "Tree_LaneAnchor", (LANE_XR + 16, LANE_Y0 + 30, Z), 90, 1.5)   # big near-right tree in lane_view
     B, Sp, R = mat("bush"), mat("sprig"), mat("rock")
-    for (x, y) in ((14, -28), (-14, -28), (16, -55), (-16, -55), (16, 30), (-16, 30), (60, 64), (-60, 64)):   # low two-tier bushes
+    for (x, y) in ((12, -28), (-26, 16), (16, -55), (-42, -60), (42, 56), (-60, 66), (14, 40)):   # low two-tier bushes
         w = rnd.uniform(5, 7)
         box(c, "Bush", x - w/2, x + w/2, y - w/2.5, y + w/2.5, 0, w * 0.55, B)
         box(c, "BushTop", x - w/4, x + w/4, y - w/5, y + w/5, w * 0.55, w * 0.85, B)
     for k in range(40):                                 # grass sprigs on the hub grass
-        x = rnd.uniform(-28, 28); y = rnd.uniform(-70, 70)
+        x = rnd.uniform(-30, 22); y = rnd.uniform(-68, 70)
         if abs(x) < 7 or abs(y) < 7: continue
         box(c, "Sprig", x - 0.3, x + 0.3, y - 0.3, y + 0.3, 0, rnd.uniform(1.0, 2.0), Sp)
-    for (x, y, w) in ((-22, -40, 2.5), (22, -40, 2.5), (-45, -62, 2.5), (45, -62, 2.5)):
+    for (x, y, w) in ((-22, -40, 2.5), (18, 30, 2), (-80, 64, 3), (45, -55, 2.5)):
         box(c, "RockBlock", x - w/2, x + w/2, y - w/2, y + w/2, 0, w * 0.7, R)
 
 # ---------------------------------------------------------------- scene, light, cameras ---
@@ -537,14 +550,14 @@ def setup_scene():
     try: sc.eevee.taa_render_samples = 24
     except Exception: pass
     w = bpy.data.worlds.new("Daylight"); sc.world = w; w.use_nodes = True
-    bg = w.node_tree.nodes["Background"]; bg.inputs[0].default_value = (*lin("EEF2F6"), 1); bg.inputs[1].default_value = 0.5
+    bg = w.node_tree.nodes["Background"]; bg.inputs[0].default_value = (*lin("EEF2F6"), 1); bg.inputs[1].default_value = 0.8   # fill: shaded wall faces keep their detail
     WN = w.node_tree.nodes; WL = w.node_tree.links
     sky = WN.new("ShaderNodeBackground"); sky.inputs[0].default_value = (*lin("9CCBFF"), 1); sky.inputs[1].default_value = 1.0
     lp = WN.new("ShaderNodeLightPath"); mx = WN.new("ShaderNodeMixShader")
     WL.new(lp.outputs["Is Camera Ray"], mx.inputs[0]); WL.new(bg.outputs[0], mx.inputs[1]); WL.new(sky.outputs[0], mx.inputs[2])
     WL.new(mx.outputs[0], WN["World Output"].inputs["Surface"])
     sun = bpy.data.objects.new("Sun", bpy.data.lights.new("Sun", 'SUN'))
-    sun.data.energy = 2.5; sun.data.angle = math.radians(3); sun.data.color = (1.0, 0.97, 0.9)
+    sun.data.energy = 2.2; sun.data.angle = math.radians(3); sun.data.color = (1.0, 0.97, 0.9)
     sun.rotation_euler = (math.radians(38), math.radians(8), math.radians(-30))
     coll("CAMERAS").objects.link(sun)
 
@@ -566,11 +579,11 @@ CAMS = {
     # CAM_HubRef is the camera solved from ref/hub_overview.png (analysis/fit_cam2.py): same spot, angle and lens
     "CAM_HubRef":      ((35.139, -66.478, 69.952), None, 81.187, None, 0.1, (40.403, -3.067, 34.819), (1507, 858)),
     "CAM_Overhead":    ((-20, 380, 600), (-20, 380, 0), None, 1100, 0.1, None, (2160, 680)),
-    "CAM_LaneHigh":    ((0, 50, 42), (0, 250, 0), 70, None, 0.1, None, (1500, 868)),
+    "CAM_LaneHigh":    ((14, 66, 34), (-4, 150, 0), 70, None, 0.1, None, (1500, 868)),
     "CAM_LaneEye":     ((2.5, 80, 5.2), (0, 400, 4), 70, None, 0.1, None, (1500, 860)),
     "CAM_LaneSection": ((0, 100, 14), (0, 200, 14), None, 110, 1.0, None, (1500, 860)),
-    "CAM_TerraceA":    ((-17, 0, 10), (-70, 0, 0), 70, None, 0.1, None, (1500, 860)),
-    "CAM_TerraceB":    ((14, 0, 12), (60, 0, 1.5), 62, None, 0.1, None, (1500, 590)),
+    "CAM_TerraceA":    ((0, 3, 13), (-32, 3, 3), 70, None, 0.1, None, (1500, 860)),
+    "CAM_TerraceB":    ((-15, 0, 11), (25, 0, 2), 35.6, None, 0.1, None, (1500, 590)),
 }
 
 def build():
@@ -588,9 +601,18 @@ def build():
             bv.limit_method = 'ANGLE'; bv.use_clamp_overlap = True; bv.harden_normals = True
             for p in ob.data.polygons: p.use_smooth = True
     for n, (loc, look, vf, orth, cs, rot, _) in CAMS.items(): camera(n, loc, look, vf or 70, orth, cs, rot)
+    tb = bpy.data.objects["CAM_TerraceB"].data          # the phone close-up is a crop of the upper middle of a full screen
+    tb.shift_x, tb.shift_y = 0.099, 0.202
+    export_textures()
     bpy.context.scene.camera = bpy.data.objects["CAM_HubRef"]
     bpy.ops.wm.save_as_mainfile(filepath=HERE + "ChessMap_v2.blend")
     return len(bpy.data.objects)
+
+def export_textures():
+    """Save the stud tiles as PNGs next to the blend (for Studio) and keep them packed inside the blend."""
+    os.makedirs(HERE + "textures", exist_ok=True)
+    for img in (stud_image(), stud_image_mixed()):
+        img.filepath_raw = f"{HERE}textures/{img.name}.png"; img.file_format = 'PNG'; img.save(); img.pack()
 
 def render(cam, out, w=1500, h=860):
     sc = bpy.context.scene; sc.camera = bpy.data.objects[cam]
