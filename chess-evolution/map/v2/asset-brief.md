@@ -58,3 +58,10 @@ TARGET      Roblox Studio. Export groups as FBX per collection plus simple colli
 - Sheet and compare: `review/v4_four_panel_sheet.jpg`, `review/v4_compare.jpg`.
 - Portal turned 45 degrees to face the spawn corner; no trees inside the hub, so the stands are clear (Alex).
 - Four trees at the rear corners of both stands, on the raised back shelf (Alex: trees behind the stands).
+
+## v5/v6 result (Nov 8)
+- Camera of `ref/hub_overview.png` solved (`analysis/`), every layout number measured in studs through it; `CAM_HubRef` in the blend is that camera.
+- Walls rebuilt as one height-field mesh: lower face 11.5, grass ledge, upper face to 21, wrapping every corner.
+- Alex asked for the hub to be even (mirrored): hub |x| <= 90, both stands span |x| 30..87, y -48..48, water a straight channel across the back. The one-to-one (lopsided, 45-degree water) version is kept as the v5 numbers in git history.
+- Treadmill stand rebuilt from the close-up: one flat floor 1.5 high, chamfered edge, dark kerb at the wall, three sunken pits with sloped ends. Machines are not built (map only).
+- Still different from the reference: the camera of the close-up renders is approximate; colours follow the close-ups (the overview is hazier); trees in front of the stands stay removed (Alex's earlier ask).
