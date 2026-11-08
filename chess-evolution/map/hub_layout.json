@@ -1,0 +1,3219 @@
+{
+ "note": "+1 Chess Evolution hub map, laid out like Alex's reference screenshot (Nov 8).",
+ "ref_colors": {
+  "grass": "6EE946",
+  "grass_top": "83F34A",
+  "path": "EA9237",
+  "path_edge": "D9792A",
+  "brick": "BD532D",
+  "brick_dark": "A04939",
+  "stone": "AAB7BA",
+  "stone_dark": "8E9A9E",
+  "water": "50C8F0",
+  "river_bed": "2F86C8",
+  "wood": "A8582A"
+ },
+ "parts": [
+  {
+   "group": "Ground",
+   "name": "Grass",
+   "pos": [
+    0.0,
+    -1.0,
+    6.0
+   ],
+   "size": [
+    420,
+    2,
+    112
+   ],
+   "color": "grass",
+   "material": "Plastic"
+  },
+  {
+   "group": "Ground",
+   "name": "GrassFar",
+   "pos": [
+    0.0,
+    -1.0,
+    144.0
+   ],
+   "size": [
+    420,
+    2,
+    132
+   ],
+   "color": "grass",
+   "material": "Plastic"
+  },
+  {
+   "group": "Ground",
+   "name": "RiverBed",
+   "pos": [
+    0.0,
+    -4.5,
+    70.0
+   ],
+   "size": [
+    420,
+    1,
+    16
+   ],
+   "color": "river_bed",
+   "material": "Plastic"
+  },
+  {
+   "group": "Ground",
+   "name": "RiverBankL",
+   "pos": [
+    0.0,
+    -2.0,
+    61.5
+   ],
+   "size": [
+    420,
+    4,
+    1
+   ],
+   "color": "brick_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "Ground",
+   "name": "RiverBankR",
+   "pos": [
+    0.0,
+    -2.0,
+    78.5
+   ],
+   "size": [
+    420,
+    4,
+    1
+   ],
+   "color": "brick_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "Ground",
+   "name": "Water",
+   "pos": [
+    0.0,
+    -2.6,
+    70.0
+   ],
+   "size": [
+    420,
+    2.8,
+    16
+   ],
+   "color": "water",
+   "material": "SmoothPlastic",
+   "transparency": 0.15,
+   "collide": false
+  },
+  {
+   "group": "Bridge",
+   "name": "Deck",
+   "pos": [
+    0.0,
+    -0.09999999999999998,
+    70.0
+   ],
+   "size": [
+    12,
+    1.0,
+    20
+   ],
+   "color": "wood",
+   "material": "WoodPlanks"
+  },
+  {
+   "group": "Bridge",
+   "name": "Rail",
+   "pos": [
+    -6.5,
+    2.7,
+    70.0
+   ],
+   "size": [
+    0.8000000000000007,
+    0.6000000000000001,
+    20
+   ],
+   "color": "wood",
+   "material": "Plastic"
+  },
+  {
+   "group": "Bridge",
+   "name": "Post",
+   "pos": [
+    -6.5,
+    1.7,
+    61.0
+   ],
+   "size": [
+    1.0,
+    2.6,
+    1.0
+   ],
+   "color": "wood",
+   "material": "Plastic"
+  },
+  {
+   "group": "Bridge",
+   "name": "Post",
+   "pos": [
+    -6.5,
+    1.7,
+    70.0
+   ],
+   "size": [
+    1.0,
+    2.6,
+    1.0
+   ],
+   "color": "wood",
+   "material": "Plastic"
+  },
+  {
+   "group": "Bridge",
+   "name": "Post",
+   "pos": [
+    -6.5,
+    1.7,
+    79.0
+   ],
+   "size": [
+    1.0,
+    2.6,
+    1.0
+   ],
+   "color": "wood",
+   "material": "Plastic"
+  },
+  {
+   "group": "Bridge",
+   "name": "Rail",
+   "pos": [
+    6.5,
+    2.7,
+    70.0
+   ],
+   "size": [
+    0.8000000000000007,
+    0.6000000000000001,
+    20
+   ],
+   "color": "wood",
+   "material": "Plastic"
+  },
+  {
+   "group": "Bridge",
+   "name": "Post",
+   "pos": [
+    6.5,
+    1.7,
+    61.0
+   ],
+   "size": [
+    1.0,
+    2.6,
+    1.0
+   ],
+   "color": "wood",
+   "material": "Plastic"
+  },
+  {
+   "group": "Bridge",
+   "name": "Post",
+   "pos": [
+    6.5,
+    1.7,
+    70.0
+   ],
+   "size": [
+    1.0,
+    2.6,
+    1.0
+   ],
+   "color": "wood",
+   "material": "Plastic"
+  },
+  {
+   "group": "Bridge",
+   "name": "Post",
+   "pos": [
+    6.5,
+    1.7,
+    79.0
+   ],
+   "size": [
+    1.0,
+    2.6,
+    1.0
+   ],
+   "color": "wood",
+   "material": "Plastic"
+  },
+  {
+   "group": "Paths",
+   "name": "PathMain",
+   "pos": [
+    0.0,
+    0.2,
+    8.0
+   ],
+   "size": [
+    12,
+    0.4,
+    104
+   ],
+   "color": "path",
+   "material": "Plastic"
+  },
+  {
+   "group": "Paths",
+   "name": "PathCross",
+   "pos": [
+    -14.0,
+    0.2,
+    0.0
+   ],
+   "size": [
+    16,
+    0.4,
+    12
+   ],
+   "color": "path",
+   "material": "Plastic"
+  },
+  {
+   "group": "Paths",
+   "name": "PathEdge",
+   "pos": [
+    -6.5,
+    0.25,
+    -25.0
+   ],
+   "size": [
+    1.0,
+    0.5,
+    38
+   ],
+   "color": "path_edge",
+   "material": "Plastic"
+  },
+  {
+   "group": "Paths",
+   "name": "PathEdge",
+   "pos": [
+    -6.5,
+    0.25,
+    33.0
+   ],
+   "size": [
+    1.0,
+    0.5,
+    54
+   ],
+   "color": "path_edge",
+   "material": "Plastic"
+  },
+  {
+   "group": "Paths",
+   "name": "PathEdge",
+   "pos": [
+    6.5,
+    0.25,
+    8.0
+   ],
+   "size": [
+    1.0,
+    0.5,
+    104
+   ],
+   "color": "path_edge",
+   "material": "Plastic"
+  },
+  {
+   "group": "Paths",
+   "name": "PathEdge",
+   "pos": [
+    -14.5,
+    0.25,
+    -6.5
+   ],
+   "size": [
+    15,
+    0.5,
+    1
+   ],
+   "color": "path_edge",
+   "material": "Plastic"
+  },
+  {
+   "group": "Paths",
+   "name": "PathEdge",
+   "pos": [
+    -14.5,
+    0.25,
+    6.5
+   ],
+   "size": [
+    15,
+    0.5,
+    1
+   ],
+   "color": "path_edge",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "Floor",
+   "pos": [
+    -42.0,
+    0.5,
+    -6.0
+   ],
+   "size": [
+    40,
+    1,
+    76
+   ],
+   "color": "stone",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "RearTier",
+   "pos": [
+    -53.0,
+    2.75,
+    -6.0
+   ],
+   "size": [
+    18,
+    3.5,
+    64
+   ],
+   "color": "stone",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "TierStep",
+   "pos": [
+    -43.0,
+    1.875,
+    -6.0
+   ],
+   "size": [
+    2,
+    1.75,
+    64
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "EndStep",
+   "pos": [
+    -53.0,
+    2.15,
+    -39.0
+   ],
+   "size": [
+    18,
+    2.3,
+    2
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "EndStep",
+   "pos": [
+    -53.0,
+    1.6,
+    -41.0
+   ],
+   "size": [
+    18,
+    1.2000000000000002,
+    2
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "EndStep",
+   "pos": [
+    -53.0,
+    2.15,
+    27.0
+   ],
+   "size": [
+    18,
+    2.3,
+    2
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "EndStep",
+   "pos": [
+    -53.0,
+    1.6,
+    29.0
+   ],
+   "size": [
+    18,
+    1.2000000000000002,
+    2
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "Rim",
+   "pos": [
+    -22.3,
+    0.8,
+    -25.5
+   ],
+   "size": [
+    0.6000000000000014,
+    1.6,
+    37
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "TreadmillPad",
+   "name": "Rim",
+   "pos": [
+    -22.3,
+    0.8,
+    19.5
+   ],
+   "size": [
+    0.6000000000000014,
+    1.6,
+    25
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "DisplayPad",
+   "name": "Base",
+   "pos": [
+    37.0,
+    0.5,
+    9.0
+   ],
+   "size": [
+    54,
+    1,
+    34
+   ],
+   "color": "stone",
+   "material": "Plastic"
+  },
+  {
+   "group": "DisplayPad",
+   "name": "Ledge",
+   "pos": [
+    37.0,
+    2.75,
+    -1.5
+   ],
+   "size": [
+    54,
+    3.5,
+    13
+   ],
+   "color": "stone",
+   "material": "Plastic"
+  },
+  {
+   "group": "DisplayPad",
+   "name": "Step",
+   "pos": [
+    37.0,
+    2.15,
+    6.0
+   ],
+   "size": [
+    54,
+    2.3,
+    2
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "DisplayPad",
+   "name": "Step",
+   "pos": [
+    37.0,
+    1.6,
+    8.0
+   ],
+   "size": [
+    54,
+    1.2000000000000002,
+    2
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "DisplayPad",
+   "name": "BackWall",
+   "pos": [
+    37.0,
+    5.5,
+    -8.5
+   ],
+   "size": [
+    54,
+    2.0,
+    1
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "DisplayPad",
+   "name": "Rim",
+   "pos": [
+    37.0,
+    0.8,
+    26.3
+   ],
+   "size": [
+    54,
+    1.6,
+    0.6000000000000014
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "DisplayPad",
+   "name": "Rim",
+   "pos": [
+    64.3,
+    0.8,
+    8.8
+   ],
+   "size": [
+    0.5999999999999943,
+    1.6,
+    35.6
+   ],
+   "color": "stone_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "LeftWall",
+   "pos": [
+    -71.0,
+    7.5,
+    0.5
+   ],
+   "size": [
+    18,
+    15,
+    121
+   ],
+   "color": "brick",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "LeftWallTop",
+   "pos": [
+    -71.0,
+    15.6,
+    0.5
+   ],
+   "size": [
+    19.199999999999996,
+    1.1999999999999993,
+    122.2
+   ],
+   "color": "grass_top",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "LeftWallUpper",
+   "pos": [
+    -130.0,
+    14.0,
+    0.5
+   ],
+   "size": [
+    100,
+    28,
+    121
+   ],
+   "color": "brick",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "LeftWallUpperTop",
+   "pos": [
+    -130.0,
+    28.6,
+    0.5
+   ],
+   "size": [
+    101.19999999999999,
+    1.1999999999999993,
+    122.2
+   ],
+   "color": "grass_top",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "RightWall",
+   "pos": [
+    75.0,
+    7.5,
+    0.5
+   ],
+   "size": [
+    18,
+    15,
+    121
+   ],
+   "color": "brick",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "RightWallTop",
+   "pos": [
+    75.0,
+    15.6,
+    0.5
+   ],
+   "size": [
+    19.19999999999999,
+    1.1999999999999993,
+    122.2
+   ],
+   "color": "grass_top",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "RightWallUpper",
+   "pos": [
+    132.0,
+    14.0,
+    0.5
+   ],
+   "size": [
+    96,
+    28,
+    121
+   ],
+   "color": "brick",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "RightWallUpperTop",
+   "pos": [
+    132.0,
+    28.6,
+    0.5
+   ],
+   "size": [
+    97.19999999999999,
+    1.1999999999999993,
+    122.2
+   ],
+   "color": "grass_top",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "BackWallL",
+   "pos": [
+    -58.0,
+    10.1,
+    -52.0
+   ],
+   "size": [
+    44,
+    20.2,
+    16
+   ],
+   "color": "brick",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "BackWallLTop",
+   "pos": [
+    -58.0,
+    20.799999999999997,
+    -52.0
+   ],
+   "size": [
+    45.199999999999996,
+    1.1999999999999993,
+    17.200000000000003
+   ],
+   "color": "grass_top",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "BackWallR",
+   "pos": [
+    51.0,
+    10.1,
+    -52.0
+   ],
+   "size": [
+    30,
+    20.2,
+    16
+   ],
+   "color": "brick",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "BackWallRTop",
+   "pos": [
+    51.0,
+    20.799999999999997,
+    -52.0
+   ],
+   "size": [
+    31.199999999999996,
+    1.1999999999999993,
+    17.200000000000003
+   ],
+   "color": "grass_top",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "FrontBank",
+   "pos": [
+    0.0,
+    14.0,
+    109.5
+   ],
+   "size": [
+    420,
+    28,
+    61
+   ],
+   "color": "brick",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "FrontBankTop",
+   "pos": [
+    0.0,
+    28.6,
+    109.5
+   ],
+   "size": [
+    421.2,
+    1.1999999999999993,
+    62.19999999999999
+   ],
+   "color": "grass_top",
+   "material": "Plastic"
+  },
+  {
+   "group": "Walls",
+   "name": "RightWallCorner",
+   "pos": [
+    65.0,
+    7.5,
+    8.5
+   ],
+   "size": [
+    2,
+    15,
+    105
+   ],
+   "color": "brick_dark",
+   "material": "Plastic"
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage1_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -80.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "b0b6be",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage1_R",
+   "pos": [
+    16.5,
+    10.5,
+    -80.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "b0b6be",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage1_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -80.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "b0b6be",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage2_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -120.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "50c846",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage2_R",
+   "pos": [
+    16.5,
+    10.5,
+    -120.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "50c846",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage2_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -120.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "50c846",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage3_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -160.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "326eeb",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage3_R",
+   "pos": [
+    16.5,
+    10.5,
+    -160.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "326eeb",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage3_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -160.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "326eeb",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage4_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -200.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "9646e6",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage4_R",
+   "pos": [
+    16.5,
+    10.5,
+    -200.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "9646e6",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage4_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -200.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "9646e6",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage5_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -240.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "fac828",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage5_R",
+   "pos": [
+    16.5,
+    10.5,
+    -240.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "fac828",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage5_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -240.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "fac828",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage6_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -280.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "f58228",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage6_R",
+   "pos": [
+    16.5,
+    10.5,
+    -280.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "f58228",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage6_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -280.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "f58228",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage7_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -320.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "e13237",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage7_R",
+   "pos": [
+    16.5,
+    10.5,
+    -320.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "e13237",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage7_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -320.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "e13237",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage8_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -360.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "f05abe",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage8_R",
+   "pos": [
+    16.5,
+    10.5,
+    -360.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "f05abe",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage8_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -360.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "f05abe",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage9_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -400.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "28c8d2",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage9_R",
+   "pos": [
+    16.5,
+    10.5,
+    -400.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "28c8d2",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage9_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -400.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "28c8d2",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage10_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -440.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "8ce646",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage10_R",
+   "pos": [
+    16.5,
+    10.5,
+    -440.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "8ce646",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage10_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -440.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "8ce646",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage11_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -480.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "5a78ff",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage11_R",
+   "pos": [
+    16.5,
+    10.5,
+    -480.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "5a78ff",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage11_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -480.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "5a78ff",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage12_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -520.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "ffaa3c",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage12_R",
+   "pos": [
+    16.5,
+    10.5,
+    -520.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "ffaa3c",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage12_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -520.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "ffaa3c",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage13_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -560.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "be5aff",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage13_R",
+   "pos": [
+    16.5,
+    10.5,
+    -560.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "be5aff",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage13_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -560.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "be5aff",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage14_L",
+   "pos": [
+    -16.5,
+    10.5,
+    -600.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "ffd750",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage14_R",
+   "pos": [
+    16.5,
+    10.5,
+    -600.5
+   ],
+   "size": [
+    3,
+    21,
+    3
+   ],
+   "color": "ffd750",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "StageGates",
+   "name": "Stage14_Top",
+   "pos": [
+    0.0,
+    19.0,
+    -600.5
+   ],
+   "size": [
+    36,
+    4,
+    3
+   ],
+   "color": "ffd750",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Lane",
+   "name": "LaneFloor",
+   "pos": [
+    0.0,
+    0.5,
+    -328.0
+   ],
+   "size": [
+    36,
+    1,
+    568
+   ],
+   "color": "stone",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Lane",
+   "name": "LaneWallL",
+   "pos": [
+    -27.0,
+    9.75,
+    -340.0
+   ],
+   "size": [
+    18,
+    19.5,
+    560
+   ],
+   "color": "brick",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Lane",
+   "name": "LaneWallR",
+   "pos": [
+    27.0,
+    9.75,
+    -340.0
+   ],
+   "size": [
+    18,
+    19.5,
+    560
+   ],
+   "color": "brick",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -70.0,
+    18.7,
+    -20.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -70.0,
+    21.9,
+    -20.0
+   ],
+   "size": [
+    12.0,
+    3.400000000000002,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -70.0,
+    25.1,
+    -20.0
+   ],
+   "size": [
+    9.0,
+    3.400000000000002,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -70.0,
+    28.3,
+    -20.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -70.0,
+    18.7,
+    20.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -70.0,
+    21.9,
+    20.0
+   ],
+   "size": [
+    12.0,
+    3.400000000000002,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -70.0,
+    25.1,
+    20.0
+   ],
+   "size": [
+    9.0,
+    3.400000000000002,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -70.0,
+    28.3,
+    20.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -72.0,
+    18.7,
+    50.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -72.0,
+    21.9,
+    50.0
+   ],
+   "size": [
+    12.0,
+    3.400000000000002,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -72.0,
+    25.1,
+    50.0
+   ],
+   "size": [
+    9.0,
+    3.400000000000002,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -72.0,
+    28.3,
+    50.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -100.0,
+    31.700000000000003,
+    -30.0
+   ],
+   "size": [
+    2.0,
+    5.0000000000000036,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -100.0,
+    34.900000000000006,
+    -30.0
+   ],
+   "size": [
+    12.0,
+    3.3999999999999986,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -100.0,
+    38.099999999999994,
+    -30.0
+   ],
+   "size": [
+    9.0,
+    3.3999999999999986,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -100.0,
+    41.3,
+    -30.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -120.0,
+    31.700000000000003,
+    10.0
+   ],
+   "size": [
+    2.0,
+    5.0000000000000036,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -120.0,
+    34.900000000000006,
+    10.0
+   ],
+   "size": [
+    12.0,
+    3.3999999999999986,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -120.0,
+    38.099999999999994,
+    10.0
+   ],
+   "size": [
+    9.0,
+    3.3999999999999986,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -120.0,
+    41.3,
+    10.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -110.0,
+    31.700000000000003,
+    45.0
+   ],
+   "size": [
+    2.0,
+    5.0000000000000036,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -110.0,
+    34.900000000000006,
+    45.0
+   ],
+   "size": [
+    12.0,
+    3.3999999999999986,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -110.0,
+    38.099999999999994,
+    45.0
+   ],
+   "size": [
+    9.0,
+    3.3999999999999986,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -110.0,
+    41.3,
+    45.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    75.0,
+    18.7,
+    -30.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    75.0,
+    21.9,
+    -30.0
+   ],
+   "size": [
+    12.0,
+    3.400000000000002,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    75.0,
+    25.1,
+    -30.0
+   ],
+   "size": [
+    9.0,
+    3.400000000000002,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    75.0,
+    28.3,
+    -30.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    75.0,
+    18.7,
+    30.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    75.0,
+    21.9,
+    30.0
+   ],
+   "size": [
+    12.0,
+    3.400000000000002,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    75.0,
+    25.1,
+    30.0
+   ],
+   "size": [
+    9.0,
+    3.400000000000002,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    75.0,
+    28.3,
+    30.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    100.0,
+    31.700000000000003,
+    0.0
+   ],
+   "size": [
+    2.0,
+    5.0000000000000036,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    100.0,
+    34.900000000000006,
+    0.0
+   ],
+   "size": [
+    12.0,
+    3.3999999999999986,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    100.0,
+    38.099999999999994,
+    0.0
+   ],
+   "size": [
+    9.0,
+    3.3999999999999986,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    100.0,
+    41.3,
+    0.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    120.0,
+    31.700000000000003,
+    -35.0
+   ],
+   "size": [
+    2.0,
+    5.0000000000000036,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    120.0,
+    34.900000000000006,
+    -35.0
+   ],
+   "size": [
+    12.0,
+    3.3999999999999986,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    120.0,
+    38.099999999999994,
+    -35.0
+   ],
+   "size": [
+    9.0,
+    3.3999999999999986,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    120.0,
+    41.3,
+    -35.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -58.0,
+    23.2,
+    -52.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -58.0,
+    26.4,
+    -52.0
+   ],
+   "size": [
+    12.0,
+    3.400000000000002,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -58.0,
+    29.6,
+    -52.0
+   ],
+   "size": [
+    9.0,
+    3.400000000000002,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -58.0,
+    32.8,
+    -52.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    50.0,
+    23.2,
+    -52.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    50.0,
+    26.4,
+    -52.0
+   ],
+   "size": [
+    12.0,
+    3.400000000000002,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    50.0,
+    29.6,
+    -52.0
+   ],
+   "size": [
+    9.0,
+    3.400000000000002,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    50.0,
+    32.8,
+    -52.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    38.0,
+    2.5,
+    -34.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    38.0,
+    5.7,
+    -34.0
+   ],
+   "size": [
+    12.0,
+    3.4000000000000004,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    38.0,
+    8.9,
+    -34.0
+   ],
+   "size": [
+    9.0,
+    3.4000000000000012,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    38.0,
+    12.100000000000001,
+    -34.0
+   ],
+   "size": [
+    6.0,
+    3.4000000000000004,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    46.0,
+    2.5,
+    -42.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    46.0,
+    5.7,
+    -42.0
+   ],
+   "size": [
+    12.0,
+    3.4000000000000004,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    46.0,
+    8.9,
+    -42.0
+   ],
+   "size": [
+    9.0,
+    3.4000000000000012,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    46.0,
+    12.100000000000001,
+    -42.0
+   ],
+   "size": [
+    6.0,
+    3.4000000000000004,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    44.0,
+    2.5,
+    50.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    44.0,
+    5.7,
+    50.0
+   ],
+   "size": [
+    12.0,
+    3.4000000000000004,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    44.0,
+    8.9,
+    50.0
+   ],
+   "size": [
+    9.0,
+    3.4000000000000012,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    44.0,
+    12.100000000000001,
+    50.0
+   ],
+   "size": [
+    6.0,
+    3.4000000000000004,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -18.0,
+    2.5,
+    34.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -18.0,
+    5.7,
+    34.0
+   ],
+   "size": [
+    12.0,
+    3.4000000000000004,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -18.0,
+    8.9,
+    34.0
+   ],
+   "size": [
+    9.0,
+    3.4000000000000012,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -18.0,
+    12.100000000000001,
+    34.0
+   ],
+   "size": [
+    6.0,
+    3.4000000000000004,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -50.0,
+    2.5,
+    50.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -50.0,
+    5.7,
+    50.0
+   ],
+   "size": [
+    12.0,
+    3.4000000000000004,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -50.0,
+    8.9,
+    50.0
+   ],
+   "size": [
+    9.0,
+    3.4000000000000012,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -50.0,
+    12.100000000000001,
+    50.0
+   ],
+   "size": [
+    6.0,
+    3.4000000000000004,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -30.0,
+    2.5,
+    46.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -30.0,
+    5.7,
+    46.0
+   ],
+   "size": [
+    12.0,
+    3.4000000000000004,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -30.0,
+    8.9,
+    46.0
+   ],
+   "size": [
+    9.0,
+    3.4000000000000012,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -30.0,
+    12.100000000000001,
+    46.0
+   ],
+   "size": [
+    6.0,
+    3.4000000000000004,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -14.0,
+    2.5,
+    -36.0
+   ],
+   "size": [
+    2.0,
+    5.0,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -14.0,
+    5.7,
+    -36.0
+   ],
+   "size": [
+    12.0,
+    3.4000000000000004,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -14.0,
+    8.9,
+    -36.0
+   ],
+   "size": [
+    9.0,
+    3.4000000000000012,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -14.0,
+    12.100000000000001,
+    -36.0
+   ],
+   "size": [
+    6.0,
+    3.4000000000000004,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    -40.0,
+    31.700000000000003,
+    100.0
+   ],
+   "size": [
+    2.0,
+    5.0000000000000036,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -40.0,
+    34.900000000000006,
+    100.0
+   ],
+   "size": [
+    12.0,
+    3.3999999999999986,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -40.0,
+    38.099999999999994,
+    100.0
+   ],
+   "size": [
+    9.0,
+    3.3999999999999986,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    -40.0,
+    41.3,
+    100.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Trunk",
+   "pos": [
+    30.0,
+    31.700000000000003,
+    100.0
+   ],
+   "size": [
+    2.0,
+    5.0000000000000036,
+    2.0
+   ],
+   "color": "wood",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    30.0,
+    34.900000000000006,
+    100.0
+   ],
+   "size": [
+    12.0,
+    3.3999999999999986,
+    12.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    30.0,
+    38.099999999999994,
+    100.0
+   ],
+   "size": [
+    9.0,
+    3.3999999999999986,
+    9.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  },
+  {
+   "group": "Trees",
+   "name": "Leaves",
+   "pos": [
+    30.0,
+    41.3,
+    100.0
+   ],
+   "size": [
+    6.0,
+    3.3999999999999986,
+    6.0
+   ],
+   "color": "grass_top",
+   "material": "Plastic",
+   "preview_only": true
+  }
+ ],
+ "moves": {
+  "Stations": {
+   "KingsEndgame": [
+    -52.4,
+    null,
+    -30
+   ],
+   "CastleClimb": [
+    -52.1,
+    null,
+    -14
+   ],
+   "GrandmasterGlide": [
+    -52.6,
+    null,
+    2
+   ],
+   "QueenDash": [
+    -52.4,
+    null,
+    18
+   ],
+   "RookRig": [
+    -30.9,
+    null,
+    -33
+   ],
+   "KnightSprint": [
+    -31,
+    null,
+    -15
+   ],
+   "PawnMill": [
+    -32.1,
+    null,
+    3
+   ],
+   "BishopRun": [
+    -30.9,
+    null,
+    21
+   ]
+  },
+  "SetDisplays": {
+   "Wooden": [
+    19.0,
+    null,
+    17,
+    "faceZ"
+   ],
+   "Marble": [
+    27.8,
+    null,
+    17,
+    "faceZ"
+   ],
+   "Jade": [
+    36.6,
+    null,
+    17,
+    "faceZ"
+   ],
+   "Ruby": [
+    45.400000000000006,
+    null,
+    17,
+    "faceZ"
+   ],
+   "Sapphire": [
+    54.2,
+    null,
+    17,
+    "faceZ"
+   ],
+   "Gold": [
+    14.5,
+    null,
+    -1.5,
+    "faceZ"
+   ],
+   "Obsidian": [
+    23.3,
+    null,
+    -1.5,
+    "faceZ"
+   ],
+   "Royal": [
+    32.1,
+    null,
+    -1.5,
+    "faceZ"
+   ],
+   "Crystal": [
+    40.900000000000006,
+    null,
+    -1.5,
+    "faceZ"
+   ],
+   "Cosmic": [
+    49.7,
+    null,
+    -1.5,
+    "faceZ"
+   ],
+   "Champion": [
+    58.5,
+    null,
+    -1.5,
+    "faceZ"
+   ]
+  },
+  "Scenery.Trees": {
+   "Tree@-34,-41": [
+    -30,
+    null,
+    46
+   ],
+   "HubTree3": [
+    -14,
+    null,
+    -36
+   ]
+  },
+  "Scenery": {
+   "Bush@64,18": [
+    58,
+    null,
+    44
+   ],
+   "Bush@67,19": [
+    60,
+    null,
+    44
+   ],
+   "Bush@60,-30": [
+    58,
+    null,
+    -30
+   ],
+   "Bush@62,-30": [
+    60,
+    null,
+    -30
+   ]
+  }
+ },
+ "shopzone": {
+  "pos": [
+   37,
+   6,
+   9
+  ],
+  "size": [
+   54,
+   12,
+   34
+  ]
+ }
+}
