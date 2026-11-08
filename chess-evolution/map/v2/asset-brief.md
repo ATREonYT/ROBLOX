@@ -57,3 +57,4 @@ TARGET      Roblox Studio. Export groups as FBX per collection plus simple colli
 - No gate at the lane entrance (Alex): frames start at stage 2.
 - Sheet and compare: `review/v4_four_panel_sheet.jpg`, `review/v4_compare.jpg`.
 - Portal turned 45 degrees to face the spawn corner; no trees inside the hub, so the stands are clear (Alex).
+- Four trees at the rear corners of both stands, on the raised back shelf (Alex: trees behind the stands).

@@ -403,7 +403,9 @@ def build_foliage(trees):
         spots += [(-HUB_X - 34 if y < HUB_Y1 + 20 else -LANE_HALF - 34, y + 9, WALL2_H),
                   (HUB_X + 34 if y < HUB_Y1 + 20 else LANE_HALF + 34, y, WALL2_H)]
     # a few inside the four grass pockets, clear of paths and terraces
-    # (no trees inside the hub: Alex asked to clear the view of the stands)
+    # no trees in front of the stands (Alex); instead trees stand at the rear corners of both stands,
+    # on the raised back shelf, as in the terrace close-up
+    spots += [(-57, -29, 5.0), (-57, 29, 5.0), (56, -27, 4.2), (56, 27, 4.2)]
     for k, (x, y, z) in enumerate(spots):
         t = trees[k % 3] if k % 7 else trees[2]
         instance(c, t, f"Tree{k:03d}", (x + rnd.uniform(-1.5, 1.5), y + rnd.uniform(-2, 2), z),
