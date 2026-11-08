@@ -17,7 +17,7 @@ local ELBOW = { 78, 34 } -- degrees: forearm up, + squeeze on the pump
 local BOB = 0.06 -- studs, body bob on the pump
 local SWAY = 5 -- degrees, slow waist turn
 local NOD = 4 -- degrees, head nod
-local CAM_DIST = 8 -- studs from the face (FOV 30)
+local CAM_DIST = 6.2 -- studs from the face (FOV 30): head about half the card wide, like the reference
 
 type Joint = { part0: BasePart, part1: BasePart, c0: CFrame, c1: CFrame, rot: CFrame, name: string }
 
@@ -133,7 +133,7 @@ function AvatarPortrait:SetCharacter(character: Model?): boolean
 	local headY = if head then head.Position.Y else 1.5
 	local headSize = if head then head.Size.Y else 1.2
 	-- the reference's crop: hair near the top edge, fists beside the head, cut at the belly
-	local aim = Vector3.new(0, headY - headSize * 0.45, 0)
+	local aim = Vector3.new(0, headY - headSize * 0.35, 0)
 	local cam = self.camera :: Camera
 	cam.FieldOfView = 30
 	cam.CFrame = CFrame.lookAt(aim + Vector3.new(0, headSize * 0.2, -CAM_DIST), aim)
