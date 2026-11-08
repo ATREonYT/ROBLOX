@@ -56,3 +56,4 @@ TARGET      Roblox Studio. Export groups as FBX per collection plus simple colli
   and both trees have flat splayed root planks, as in Alex's tree close-up. Normal square studs everywhere else.
 - No gate at the lane entrance (Alex): frames start at stage 2.
 - Sheet and compare: `review/v4_four_panel_sheet.jpg`, `review/v4_compare.jpg`.
+- Portal turned 45 degrees to face the spawn corner; no trees inside the hub, so the stands are clear (Alex).

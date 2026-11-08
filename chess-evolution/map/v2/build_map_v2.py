@@ -343,7 +343,10 @@ def build_portal():
     box(c, "ArchR", cx - 1.5, cx + 1.5, cy + 2.5, cy + 4.5, 8.5, 10, m)
     box(c, "ArchTop", cx - 1.5, cx + 1.5, cy - 3, cy + 3, 10, 11.3, m)
     box(c, "Inner", cx - 0.3, cx + 0.3, cy - 3.5, cy + 3.5, 0.6, 10, inner)
-    col_box("Portal", cx - 1.5, cx + 1.5, cy - 5, cy + 5, 0, 11.3)
+    obs = list(c.objects) + [col_box("Portal", cx - 1.5, cx + 1.5, cy - 5, cy + 5, 0, 11.3)]
+    from mathutils import Matrix                    # Alex: turn it 45 degrees so it faces the spawn corner, not straight right
+    turn = Matrix.Translation((cx, cy, 0)) @ Matrix.Rotation(math.radians(-45), 4, 'Z') @ Matrix.Translation((-cx, -cy, 0))
+    for ob in obs: ob.matrix_world = turn @ ob.matrix_world
 
 def build_lane(bay):
     c = coll("Lane"); f = coll("Stage_Frames")
@@ -400,7 +403,7 @@ def build_foliage(trees):
         spots += [(-HUB_X - 34 if y < HUB_Y1 + 20 else -LANE_HALF - 34, y + 9, WALL2_H),
                   (HUB_X + 34 if y < HUB_Y1 + 20 else LANE_HALF + 34, y, WALL2_H)]
     # a few inside the four grass pockets, clear of paths and terraces
-    spots += [(-14, -48, 0), (16, -50, 0), (-20, 22, 0), (19, 46, 0)]
+    # (no trees inside the hub: Alex asked to clear the view of the stands)
     for k, (x, y, z) in enumerate(spots):
         t = trees[k % 3] if k % 7 else trees[2]
         instance(c, t, f"Tree{k:03d}", (x + rnd.uniform(-1.5, 1.5), y + rnd.uniform(-2, 2), z),
