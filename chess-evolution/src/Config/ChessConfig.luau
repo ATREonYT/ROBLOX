@@ -24,18 +24,21 @@ Config.Input = {
 }
 
 -- Treadmills ---------------------------------------------------------------
--- order: display order. unlock: nil = free; { stage = "Stage2" } = clear that stage.
+-- order: display order. unlock: nil = free; { rebirths = 2 } = needs 2 rebirths (promotions).
 -- built = false: a locked display only (model shown, never usable yet).
+-- Alex, Nov 8: standing on a treadmill gives its Elo by itself (basePower every TreadmillTick
+-- seconds, x rebirth bonus). Chess sets do NOT multiply treadmills; sets only boost taps.
 Config.Stations = {
 	PawnMill = { order = 1, name = "Pawn Mill", basePower = 1, built = true, row = "front" },
-	KnightSprint = { order = 2, name = "Knight Sprint", basePower = 2, built = true, row = "front", unlock = { stage = "Stage2" } },
-	BishopRun = { order = 3, name = "Bishop Run", basePower = 5, built = true, row = "front", unlock = { stage = "Stage3" } },
-	RookRig = { order = 4, name = "Rook Rig", basePower = 12, built = true, row = "front", unlock = { stage = "Stage4" } },
-	QueenDash = { order = 5, name = "Queen Dash", basePower = 30, built = true, row = "rear", unlock = { stage = "Stage5" } },
-	KingsEndgame = { order = 6, name = "King's Endgame", basePower = 80, built = true, row = "rear", unlock = { stage = "Stage6" } },
-	CastleClimb = { order = 7, name = "Castle Climb", basePower = 200, built = true, row = "rear", unlock = { stage = "Stage7" } },
+	KnightSprint = { order = 2, name = "Knight Sprint", basePower = 2, built = true, row = "front", unlock = { rebirths = 1 } },
+	BishopRun = { order = 3, name = "Bishop Run", basePower = 5, built = true, row = "front", unlock = { rebirths = 2 } },
+	RookRig = { order = 4, name = "Rook Rig", basePower = 12, built = true, row = "front", unlock = { rebirths = 3 } },
+	QueenDash = { order = 5, name = "Queen Dash", basePower = 30, built = true, row = "rear", unlock = { rebirths = 4 } },
+	KingsEndgame = { order = 6, name = "King's Endgame", basePower = 80, built = true, row = "rear", unlock = { rebirths = 5 } },
+	CastleClimb = { order = 7, name = "Castle Climb", basePower = 200, built = true, row = "rear", unlock = { rebirths = 6 } },
 	GrandmasterGlide = { order = 8, name = "Grandmaster Glide", basePower = 500, built = false, row = "rear" },
 }
+Config.TreadmillTick = 0.5 -- seconds between automatic treadmill gains while you stand on one
 
 -- Chess Sets (equipment) -----------------------------------------------------
 -- price in Wins. available = false: a padlocked "Coming soon" display, never sold.
@@ -65,32 +68,32 @@ Config.Stages = {
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 2.5 }, { untilT = 16, perSecond = 5 } } },
 	},
 	Stage2 = {
-		order = 2, name = "Knight Nadia", rival = "Knight", rivalId = "KnightNadia", power = 90, reward = 20, color = Color3.fromRGB(60, 140, 255), unlocks = "KnightSprint",
+		order = 2, name = "Knight Nadia", rival = "Knight", rivalId = "KnightNadia", power = 90, reward = 20, color = Color3.fromRGB(60, 140, 255),
 		opponent = { name = "Knight Nadia", title = "Club Player" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 3 }, { untilT = 16, perSecond = 6 } } },
 	},
 	Stage3 = {
-		order = 3, name = "Rook Rocco", rival = "Rook", rivalId = "RookRocco", power = 220, reward = 40, color = Color3.fromRGB(255, 190, 40), unlocks = "BishopRun",
+		order = 3, name = "Rook Rocco", rival = "Rook", rivalId = "RookRocco", power = 220, reward = 40, color = Color3.fromRGB(255, 190, 40),
 		opponent = { name = "Rook Rocco", title = "Tournament Player" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 3.2 }, { untilT = 16, perSecond = 6.5 } } },
 	},
 	Stage4 = {
-		order = 4, name = "Bishop Bea", rival = "Bishop", rivalId = "BishopBea", power = 5000, reward = 70, color = Color3.fromRGB(170, 80, 240), unlocks = "RookRig",
+		order = 4, name = "Bishop Bea", rival = "Bishop", rivalId = "BishopBea", power = 5000, reward = 70, color = Color3.fromRGB(170, 80, 240),
 		opponent = { name = "Bishop Bea", title = "Candidate Master" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 9 }, { untilT = 16, perSecond = 12 } } },
 	},
 	Stage5 = {
-		order = 5, name = "Queen Quinn", rival = "Queen", rivalId = "QueenQuinn", power = 15000, reward = 120, color = Color3.fromRGB(255, 120, 200), unlocks = "QueenDash",
+		order = 5, name = "Queen Quinn", rival = "Queen", rivalId = "QueenQuinn", power = 15000, reward = 120, color = Color3.fromRGB(255, 120, 200),
 		opponent = { name = "Queen Quinn", title = "International Master" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 10 }, { untilT = 16, perSecond = 13 } } },
 	},
 	Stage6 = {
-		order = 6, name = "King Kai", rival = "King", rivalId = "KingKai", power = 50000, reward = 200, color = Color3.fromRGB(60, 220, 200), unlocks = "KingsEndgame",
+		order = 6, name = "King Kai", rival = "King", rivalId = "KingKai", power = 50000, reward = 200, color = Color3.fromRGB(60, 220, 200),
 		opponent = { name = "King Kai", title = "Grandmaster" },
 		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 11 }, { untilT = 16, perSecond = 13.5 } } },
 	},
 	Stage7 = {
-		order = 7, name = "Grandmaster Orion", rival = "King", rivalId = "GrandmasterOrion", power = 250000, reward = 500, color = Color3.fromRGB(255, 200, 40), unlocks = "CastleClimb", boss = true,
+		order = 7, name = "Grandmaster Orion", rival = "King", rivalId = "GrandmasterOrion", power = 250000, reward = 500, color = Color3.fromRGB(255, 200, 40), boss = true,
 		opponent = { name = "Grandmaster Orion", title = "World Champion" },
 		fight = { perTap = 4, grace = 1, timeout = 20, phases = { { untilT = 10, perSecond = 12.5 }, { untilT = 20, perSecond = 15 } } },
 	},
@@ -148,11 +151,12 @@ Config.BadgeLook = {
 
 -- First-session guide: advances only on real server-confirmed actions.
 Config.Guide = {
-	{ key = "Train", text = "Walk onto the Pawn Mill and tap TRAIN", until_ = "power25" },
-	{ key = "Challenge", text = "Go to Stage 1 and Challenge the Pawn Rival", until_ = "clearStage1" },
-	{ key = "Buy", text = "Buy the Marble Set in Chess Sets", until_ = "ownMarble" },
-	{ key = "Equip", text = "Equip Marble, then train for +2 per tap!", until_ = "equipMarble" },
-	{ key = "Promote", text = "Fill the bar and tap PROMOTE for +50% Power forever", until_ = "promoted" },
+	{ key = "Train", text = "Tap anywhere to get Elo!", until_ = "power25" },
+	{ key = "Challenge", text = "Challenge Pawn Pete at Stage 1!", until_ = "clearStage1" },
+	{ key = "Buy", text = "Buy the Marble Set for 8 Wins!", until_ = "ownMarble" },
+	{ key = "Equip", text = "Tap! Marble gives +2 Elo per tap!", until_ = "trainMarble" },
+	{ key = "Stage2", text = "Next rival: Knight Nadia at Stage 2", until_ = "clearStage2" },
+	{ key = "Promote", text = "Rebirth to unlock Knight Sprint!", until_ = "promoted" },
 }
 
 -- Sounds: 0 until the owner uploads ours (tools/sfx). Never invent IDs.
@@ -180,18 +184,25 @@ Config.Promotion = {
 -- prompts (repo rule). Alex makes each pass on the Creator Dashboard and pastes its id here.
 -- Plain names only (no "VIP", note 09).
 Config.Passes = {
-	DoublePower = { order = 1, id = 0, price = 399, name = "2x Power", text = "Every tap gives double Power" },
+	DoublePower = { order = 1, id = 0, price = 399, name = "2x Elo", text = "Every tap gives double Elo" },
 	DoubleWins = { order = 2, id = 0, price = 399, name = "2x Wins", text = "Every duel win pays double" },
-	AutoTrain = { order = 3, id = 0, price = 199, name = "Auto Train", text = "Trains for you while you stand on a treadmill" },
+	AutoTrain = { order = 3, id = 0, price = 199, name = "Auto Train", text = "Taps for you, 4 times a second" },
 }
 Config.AutoTrainRate = 4 -- taps per second, under the hand cap of 6
 
 -- Power packs: the bottom row and the Shop show them. id = 0 means not on sale yet ("Coming soon", never prompts).
 Config.PowerPacks = {
-	{ key = "Pack1", id = 0, price = 120, amount = 1000000, label = "+1M Power" },
-	{ key = "Pack2", id = 0, price = 240, amount = 10000000, label = "+10M Power" },
-	{ key = "Pack3", id = 0, price = 400, amount = 100000000, label = "+100M Power" },
+	-- amounts and prices match the UI kit references one to one:
+	-- Shop catalog = Pack1-3, Shop wide offers = Pack4-6, HUD bottom row = Pack2, Pack3, Pack7.
+	{ key = "Pack1", id = 3729655521, price = 40, amount = 100000, label = "+100K Elo" },
+	{ key = "Pack2", id = 3729653263, price = 120, amount = 1000000, label = "+1M Elo" },
+	{ key = "Pack3", id = 3729653316, price = 240, amount = 10000000, label = "+10M Elo" },
+	{ key = "Pack4", id = 3729655643, price = 600, amount = 250000000, label = "+250M Elo" },
+	{ key = "Pack5", id = 3729655704, price = 900, amount = 500000000, label = "+500M Elo" },
+	{ key = "Pack6", id = 3729655748, price = 1200, amount = 1000000000, label = "+1B Elo" },
+	{ key = "Pack7", id = 3729653975, price = 400, amount = 100000000, label = "+100M Elo" },
 }
+Config.HudPacks = { "Pack2", "Pack3", "Pack7" } -- the three packs on the HUD's bottom row
 
 -- Daily rewards: 7 tiles by UTC day. A missed day pauses the streak, never wipes it
 -- (Brief - Game Design §5). Wins scale with promotions so they stay worth claiming.
@@ -228,11 +239,23 @@ Config.StationOrder = sortedKeys(Config.Stations)
 Config.SetOrder = sortedKeys(Config.Sets)
 Config.StageOrder = sortedKeys(Config.Stages)
 
--- Power per tap for a station with a set: base x multiplier.
-function Config.Gain(stationId: string, setId: string): number
+-- Treadmill Elo per tick (before the rebirth bonus). Sets do not multiply treadmills (Alex, Nov 8);
+-- setId is ignored and kept so older callers still work.
+function Config.Gain(stationId: string, _setId: string?): number
 	local station = Config.Stations[stationId]
-	local set = Config.Sets[setId] or Config.Sets[Config.DefaultSet]
-	return if station then station.basePower * set.multiplier else 0
+	return if station then station.basePower else 0
+end
+
+-- Elo per tap anywhere on the screen: the equipped chess set's multiplier (Wooden 1, Marble 2...).
+function Config.TapGain(setId: string?): number
+	local set = Config.Sets[setId or Config.DefaultSet] or Config.Sets[Config.DefaultSet]
+	return set.multiplier
+end
+
+-- Rebirths a treadmill needs (0 = free).
+function Config.StationRebirths(stationId: string): number
+	local station = Config.Stations[stationId]
+	return if station and station.unlock and station.unlock.rebirths then station.unlock.rebirths else 0
 end
 
 -- Promotion cost after n promotions.

@@ -185,12 +185,20 @@ local function toast(textValue: string, color: Color3?)
 	t.Text = textValue
 	t.TextColor3 = color or Color3.fromRGB(255, 220, 90)
 	t.TextTransparency = 0
+	-- the outline must fade with the text, or it stays behind as an unreadable dark strip (audit Nov 8)
+	local outline = t:FindFirstChildOfClass("UIStroke")
+	if outline then
+		outline.Transparency = 0
+	end
 	local sc = t:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", t)
 	sc.Scale = 0.6
 	tween(sc, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
 	task.delay(1.8, function()
 		if t.Text == textValue then
 			tween(t, 0.3, { TextTransparency = 1 })
+			if outline then
+				tween(outline, 0.3, { Transparency = 1 })
+			end
 		end
 	end)
 end
@@ -273,8 +281,12 @@ local function stationOpen(id: string): (boolean, string?)
 	if not st.built then
 		return false, "Coming soon"
 	end
-	if st.unlock and not S.Cleared[st.unlock.stage] then
+	if st.unlock and st.unlock.stage and not S.Cleared[st.unlock.stage] then
 		return false, `Clear Stage {string.sub(st.unlock.stage, -1)} to unlock`
+	end
+	local need = Config.StationRebirths(id)
+	if (S.Promotions or 0) < need then
+		return false, `Needs {need} Rebirth` .. (if need > 1 then "s" else "")
 	end
 	return true, nil
 end
@@ -345,22 +357,51 @@ local function refreshContext()
 		end
 	end
 	ctx.kind, ctx.id = kind, id
+	-- the sign of the machine you stand on would sit over the guide line: hide it while you train
+	local onStation = if kind == "station" then id else nil
+	if onStation ~= ctx.signHidden then
+		for _, sid in { ctx.signHidden, onStation } do
+			local m = sid and Stations:FindFirstChild(sid)
+			local a = m and m:FindFirstChild("LabelAnchor")
+			local bb = a and a:FindFirstChild("Label") :: BillboardGui?
+			if bb then
+				bb.Enabled = sid ~= onStation
+			end
+		end
+		ctx.signHidden = onStation
+	end
 	local keyHint = if isTouch then "" else "Press E or click"
+	-- the result card owns the screen: no TRAIN/CHALLENGE button behind it
+	local covering = false
+	for _, n in { "ResultPanel", "SetsPanel", "BoardPanel", "SettingsPanel" } do
+		local p = G:FindFirstChild(n)
+		if p and p:IsA("GuiObject") and p.Visible then
+			covering = true
+		end
+	end
+	if kind ~= "battle" and covering then
+		setMain(false)
+		contextLine("")
+		G.KeyHint.Text = ""
+		return
+	end
 	if kind == "battle" then
 		setMain(true, "CLICK TO WIN", "Push the meter!", Hud.Colors.red)
+		contextLine("") -- the meter is the only thing to read in a duel
 		G.KeyHint.Text = keyHint
 	elseif kind == "station" then
 		local st = Config.Stations[id]
 		local open, why = stationOpen(id)
 		if open then
-			local gain = Config.Gain(id, S.Equipped)
-			setMain(true, "TRAIN", `+{gain} per tap`, Hud.Colors.green)
-			contextLine(`{st.name} · +{gain} per tap`)
+			-- no TRAIN button (Alex, Nov 8): the treadmill pays by itself while you stand on it
+			local perSec = Format.Short(Config.Gain(id) * Config.PowerMult(S.Promotions or 0, S.Passes) / Config.TreadmillTick)
+			setMain(false)
+			contextLine(`{st.name} · +{perSec} Elo every second`)
 		else
 			setMain(false)
 			contextLine(`{st.name} · {why}`, Color3.fromRGB(255, 210, 90))
 		end
-		G.KeyHint.Text = if open then keyHint else ""
+		G.KeyHint.Text = ""
 	elseif kind == "stage" then
 		local st = Config.Stages[id]
 		local n = stageNumber(id)
@@ -370,10 +411,13 @@ local function refreshContext()
 			contextLine(`Stage {n} · Clear Stage {n - 1} first`, Color3.fromRGB(255, 210, 90))
 		elseif S.Power < st.power then
 			setMain(false)
-			contextLine(`{st.name} · Need {st.power} Power (you have {Format.Short(S.Power)})`, Color3.fromRGB(255, 210, 90))
+			contextLine(`{st.name} · Need {Format.Short(st.power)} Elo (you have {Format.Short(S.Power)})`, Color3.fromRGB(255, 210, 90))
 		else
-			setMain(true, "CHALLENGE", if first then `First clear +{st.reward} Wins` else "Practice (no reward)", Hud.Colors.gold)
-			contextLine(`{st.name} · {st.power} Power · ` .. (if first then `+{st.reward} Wins` else "Cleared"))
+			-- the server pays every win (Core.StepBattle), scaled by promotions and 2x Wins; a first clear also unlocks
+			local pay = math.floor(st.reward * Config.WinsMult(S.Promotions or 0, S.Passes))
+			local unlockName = st.unlocks and Config.Stations[st.unlocks] and Config.Stations[st.unlocks].name
+			setMain(true, "CHALLENGE", `Win +{Format.Short(pay)} Wins`, Hud.Colors.gold)
+			contextLine(`{st.name} · {Format.Short(S.Power)}/{Format.Short(st.power)} Elo · ` .. (if first and unlockName then `first win unlocks {unlockName}` elseif first then "first clear" else "cleared"))
 		end
 		G.KeyHint.Text = keyHint
 	else
@@ -392,7 +436,7 @@ local winsValue = Instance.new("NumberValue")
 local powerTween: Tween? = nil
 local winsTween: Tween? = nil
 powerValue.Changed:Connect(function(v)
-	Bottom.Power.Row.Value.Text = `{Format.Short(math.floor(v + 0.5))} Power`
+	Bottom.Power.Row.Value.Text = `{Format.Short(math.floor(v + 0.5))} Elo`
 end)
 winsValue.Changed:Connect(function(v)
 	face(Rail.Wins).Value.Text = Format.Short(math.floor(v + 0.5))
@@ -425,6 +469,126 @@ local function popGain(amount: number)
 	tween(bump, 0.2, { Scale = 1 }, Enum.EasingStyle.Back)
 end
 
+-- Elo pop-ups like the reference's Subscribers: icon + "+N" lands at a random spot around your
+-- character on screen at (almost) full size, drifts up a little, then shrinks and fades (0.8 s in all).
+-- One pop per click, never merged (Alex's 240 fps clips, Nov 8; vault findings). Capped at 12 on screen.
+local eloPops = Instance.new("ScreenGui")
+eloPops.Name = "EloPops"
+eloPops.ResetOnSpawn = false
+eloPops.IgnoreGuiInset = true
+eloPops.DisplayOrder = 5
+eloPops.Parent = playerGui
+local eloGT: any = nil
+pcall(function()
+	eloGT = require(ReplicatedStorage:WaitForChild("ChessEvolutionUI"):WaitForChild("GlyphText", 5) :: ModuleScript)
+end)
+local eloIconImage = ""
+do
+	local evo = game:GetService("StarterGui"):FindFirstChild("ChessEvolutionUI")
+	local ic = evo and evo:FindFirstChild("PowerIcon", true)
+	if ic and ic:IsA("ImageLabel") then
+		eloIconImage = ic.Image
+	end
+end
+local liveEloPops: { Frame } = {}
+local lastTapPopAt = 0
+local lastFxPopAt = 0 -- treadmill gains pop from the server's "Fx" push
+local winsShownUntil = 0 -- while a result card or return toast is showing the Wins, no extra popup
+local function eloPop(amount: number)
+	local r = root()
+	local cam = workspace.CurrentCamera
+	if not r or not cam then
+		return
+	end
+	local at, onScreen = cam:WorldToViewportPoint(r.Position + Vector3.new(0, 1.5, 0))
+	if not onScreen then
+		return
+	end
+	if #liveEloPops >= 12 then
+		local oldest = table.remove(liveEloPops, 1)
+		if oldest then
+			oldest:Destroy()
+		end
+	end
+	local vh = cam.ViewportSize.Y
+	local h = math.floor(math.clamp(vh * 0.055, 26, 70))
+	local words = `+{Format.Short(amount)}`
+	local w = math.floor(h * (1.1 + 0.55 * #words))
+	-- a random spot in a ring around the character, never right on top of it
+	local side = if math.random() < 0.5 then -1 else 1
+	local ox = side * (h * 1.2 + math.random() * h * 3.2)
+	local oy = -h * 2.6 + math.random() * h * 3.6
+	local f = Instance.new("Frame")
+	f.Name = "EloPop"
+	f.BackgroundTransparency = 1
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.Size = UDim2.fromOffset(w, h)
+	f.Position = UDim2.fromOffset(math.floor(at.X + ox), math.floor(at.Y + oy))
+	local sc = Instance.new("UIScale")
+	sc.Scale = 0.85
+	sc.Parent = f
+	local icon = Instance.new("ImageLabel")
+	icon.BackgroundTransparency = 1
+	icon.Image = eloIconImage
+	icon.Size = UDim2.fromOffset(h, h)
+	icon.Parent = f
+	local label = Instance.new("TextLabel")
+	label.Name = "Amount"
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(math.floor(h * 1.05), 0)
+	label.Size = UDim2.fromOffset(w - math.floor(h * 1.05), h)
+	label.Font = Enum.Font.FredokaOne
+	label.Text = words
+	label.TextScaled = true
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Color3.new(1, 1, 1)
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = math.max(2, math.floor(h / 14))
+	stroke.Color = Color3.fromRGB(28, 24, 40)
+	stroke.Parent = label
+	label.Parent = f
+	if eloGT then
+		-- the kit's own rounded font (same glyphs as the HUD numbers)
+		label:SetAttribute("BoxW", w - math.floor(h * 1.05))
+		label:SetAttribute("BoxH", h)
+		label:SetAttribute("FitSize", h * 0.95)
+		label:SetAttribute("DX", -((w - math.floor(h * 1.05)) - eloGT.Width(words, h * 0.95)) / 2)
+		pcall(eloGT.Set, label, words, Color3.new(1, 1, 1))
+	end
+	f.Parent = eloPops
+	table.insert(liveEloPops, f)
+	local function fadeAll(t: number, goal: number)
+		for _, d in f:GetDescendants() do
+			if d:IsA("ImageLabel") then
+				tween(d, t, { ImageTransparency = goal })
+			elseif d:IsA("TextLabel") and not d:FindFirstChild("Glyphs") then
+				tween(d, t, { TextTransparency = goal })
+			elseif d:IsA("UIStroke") and d.Enabled then
+				tween(d, t, { Transparency = goal })
+			end
+		end
+	end
+	if reduced() then
+		sc.Scale = 1
+	else
+		tween(sc, 0.06, { Scale = 1 }, Enum.EasingStyle.Quad)
+	end
+	tween(f, 0.8, { Position = f.Position + UDim2.fromOffset(0, -math.floor(h * 0.6)) }, Enum.EasingStyle.Quad)
+	task.delay(0.58, function()
+		if f.Parent then
+			fadeAll(0.2, 1)
+			tween(sc, 0.2, { Scale = 0.6 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		end
+	end)
+	task.delay(0.8, function()
+		local i = table.find(liveEloPops, f)
+		if i then
+			table.remove(liveEloPops, i)
+		end
+		f:Destroy()
+	end)
+end
+
 local function setCounters(first: boolean)
 	if powerTween then
 		powerTween:Cancel()
@@ -442,11 +606,21 @@ local function setCounters(first: boolean)
 	local head = player.Character and player.Character:FindFirstChild("Head") :: BasePart?
 	if S.Power > shown.power and not first then
 		popGain(S.Power - shown.power)
-		feel:Popup(head, `+{Format.Short(S.Power - shown.power)}`, "power")
+		-- taps already showed their own pop the moment you clicked; only gains with no click
+		-- behind them (the Auto Train pass) pop here
+		if os.clock() - lastTapPopAt > 0.6 and os.clock() - lastFxPopAt > 0.6 then
+			local gain = S.Power - shown.power
+			safe("elo pop", function()
+				eloPop(gain)
+			end)
+		end
 	end
 	if S.Wins > shown.wins and not first then
 		local f = face(Rail.Wins)
-		feel:Popup(head, `+{Format.Short(S.Wins - shown.wins)} Wins`, "wins")
+		-- one celebration per grant: the result card and the return toast already show their Wins
+		if os.clock() > winsShownUntil then
+			feel:Popup(head, `+{Format.Short(S.Wins - shown.wins)} Wins`, "wins")
+		end
 		local sc = Rail.Wins:FindFirstChild("Press") :: UIScale
 		sc.Scale = 1.15
 		tween(sc, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
@@ -470,8 +644,7 @@ local function refreshProgress()
 	face(Rail.Promos).Value.Text = Format.Short(S.Promotions or 0)
 	local chip = Bottom.Progress:FindFirstChild("Level")
 	if chip then
-		local stationId = if ctx.kind == "station" and ctx.id then ctx.id else "PawnMill"
-		chip.Face.Value.Text = `+{Format.Short(math.max(1, Config.Gain(stationId, S.Equipped)))}`
+		chip.Face.Value.Text = `+{Format.Short(Config.TapGain(S.Equipped) * Config.PowerMult(S.Promotions or 0, S.Passes))}`
 	end
 end
 
@@ -609,8 +782,37 @@ local challenge: (string) -> ()
 local slap: (Model?, string) -> ()
 local pressButton: (any, string) -> ()
 
-local function doAction()
+-- An open menu or result card owns input: E / the action button must not start a duel or
+-- train behind it (playtest Nov 8: extra taps after a win started a hidden second duel).
+local MODALS_HUD = { "ResultPanel", "SetsPanel", "BoardPanel", "SettingsPanel" }
+local MODALS_UI = { "Evolve", "Rebirth", "Shop", "ShopCatalog", "ShopWideOffers", "Daily", "Rewards", "OfflineRewards", "SpinWheel" }
+local resultLockUntil = 0 -- taps still in flight when a duel ends must not start the next one
+local function modalOpen(): boolean
+	for _, n in MODALS_HUD do
+		local p = G:FindFirstChild(n)
+		if p and p:IsA("GuiObject") and p.Visible then
+			return true
+		end
+	end
+	local ev = playerGui:FindFirstChild("ChessEvolutionUI")
+	if ev then
+		for _, n in MODALS_UI do
+			local f = ev:FindFirstChild(n)
+			if f and f:IsA("GuiObject") and f.Visible then
+				return true
+			end
+		end
+	end
+	local loop = playerGui:FindFirstChild("ChessLoop")
+	local lp = loop and loop:FindFirstChild("Panel")
+	return lp ~= nil and lp:IsA("GuiObject") and lp.Visible
+end
+
+local function doAction(fromScreen: boolean?)
 	refreshContext()
+	if ctx.kind ~= "battle" and (modalOpen() or os.clock() < resultLockUntil) then
+		return
+	end
 	if ctx.kind == "battle" and battle and not battle.ended then
 		pressMain()
 		duel:Tap() -- local feedback only (combo, sparks); the server still counts the taps
@@ -622,30 +824,61 @@ local function doAction()
 			slap(player.Character, "Right")
 			pressButton(battle, "ClockButtonA")
 		end
-	elseif ctx.kind == "station" then
-		local id = ctx.id
-		if not stationOpen(id) then
-			return
-		end
-		pressMain()
-		if takeLocalToken() then
-			Net.Send("Tap", "train", id)
-			if os.clock() > trainingUntil then
-				alignOnDeck(id)
-			end
-			trainingUntil = os.clock() + 1.1
-			tapSound()
-			local m = Stations:FindFirstChild(id)
-			local belt = m and m:FindFirstChild("Belt") :: BasePart?
-			local fx = TIER_FX[id]
-			-- XS event: no particles on a single tap (vault 27 C21); the +N popup and the ladder carry it
-			local _ = belt and fx
-		end
-	elseif ctx.kind == "stage" and MainHolder.Visible then
+	elseif ctx.kind == "stage" and MainHolder.Visible and not fromScreen then
 		pressMain()
 		challenge(ctx.id)
+	elseif ctx.kind ~= "battle" then
+		-- Tap anywhere (Alex, Nov 8): the equipped set's Elo, x rebirths and passes. Treadmills pay by themselves.
+		if takeLocalToken() then
+			Net.Send("Tap", "train", "Tap")
+			lastTapPopAt = os.clock()
+			local perTap = Config.TapGain(S.Equipped) * Config.PowerMult(S.Promotions or 0, S.Passes)
+			safe("elo pop", function()
+				eloPop(perTap)
+			end)
+			tapSound()
+		end
 	end
 end
+
+-- Which open treadmill deck am I standing on (nil if none)?
+local function standingOnDeck(): string?
+	if ctx.kind ~= "station" or not ctx.id or battle then
+		return nil
+	end
+	local m = Stations:FindFirstChild(ctx.id)
+	local deck = m and m:FindFirstChild("Deck") :: BasePart?
+	local r = root()
+	if not deck or not r or not inside(r.Position, deck, 0.5) or not stationOpen(ctx.id) then
+		return nil
+	end
+	return ctx.id
+end
+
+-- Tap anywhere on the screen (not on a button) to train while on a treadmill, or to push in a duel,
+-- like the reference. Taps on UI are already handled by the UI (gameProcessed).
+UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
+	if gameProcessed then
+		return
+	end
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+	-- a screen tap never starts a duel; only the CHALLENGE button or E does
+	safe("screen tap", function()
+		doAction(true)
+	end)
+end)
+
+-- Treadmill gains (server "Fx" push): one pop per gain while you stand on an open treadmill.
+Net.On("Fx", function(p: any)
+	if type(p) == "table" and p.kind == "tread" and type(p.gain) == "number" then
+		lastFxPopAt = os.clock()
+		safe("tread pop", function()
+			eloPop(p.gain)
+		end)
+	end
+end)
 
 -- the main button's own action (press() already ran in hookButton; doAction handles the rest)
 face(MainHolder).Activated:Connect(function()
@@ -902,42 +1135,104 @@ for i = 1, 7 do
 	a.Parent = fxFolder
 	arrows[i] = a
 end
-local guide: any = { step = 0, target = nil, customTarget = nil }
+local guide: any = { step = 0, target = nil, customTarget = nil, sub = nil }
+-- Step 4 ends on the first confirmed Elo gain with Marble equipped, so the player sees +2 land.
+-- A player who joins with Marble already equipped has done it before: skip the step.
+local marbleTrained: boolean? = nil
+local marbleBase: number? = nil
 local function guideTarget(): (number, string?, Vector3?)
-	if S.Power < Config.Stages.Stage1.power and not S.Cleared.Stage1 then
+	if marbleTrained == nil and S.loaded then
+		marbleTrained = S.Equipped == "Marble" and S.Sets.Marble == true
+	end
+	if S.Equipped == "Marble" and not marbleTrained then
+		if marbleBase == nil then
+			marbleBase = S.Power
+		elseif S.Power > marbleBase then
+			marbleTrained = true
+		end
+	else
+		marbleBase = nil
+	end
+	-- Big tutorial (Alex, Nov 8): one short order in big letters, and a small line under it with
+	-- the exact numbers. guide.sub carries the small line.
+	local s1, s2 = Config.Stages.Stage1, Config.Stages.Stage2
+	local p = Format.Short(math.floor(S.Power))
+	if S.Power < s1.power and not S.Cleared.Stage1 then
 		local deck = Stations.PawnMill:FindFirstChild("Deck") :: BasePart
-		return 1, Config.Guide[1].text, if deck then deck.Position else nil -- the map may still be arriving
+		guide.sub = if S.Power < 4 then "or stand on the green treadmill for free Elo" else `{p}/{s1.power} Elo to fight {s1.name}`
+		return 1, "TAP ANYWHERE FOR ELO!", if deck then deck.Position else nil -- the map may still be arriving
 	elseif not S.Cleared.Stage1 then
 		local zone = Stages.Stage1:FindFirstChild("Zone") :: BasePart
-		return 2, Config.Guide[2].text, zone.Position
+		guide.sub = `You have {p} Elo! Walk to Stage 1 and press CHALLENGE`
+		return 2, `CHALLENGE {string.upper(s1.name)}!`, zone.Position
 	elseif not S.Sets.Marble then
 		local plinth = Displays.Marble:FindFirstChild("Plinth") :: BasePart
-		return 3, if S.Wins >= Config.Sets.Marble.price then Config.Guide[3].text else "Win more to buy the Marble Set", plinth.Position
-	elseif S.Equipped ~= "Marble" then
-		return 4, Config.Guide[4].text, nil
-	elseif Config.Guide[5] and not S.TutorialDone and (S.Promotions or 0) < 1 then
-		return 5, Config.Guide[5].text, nil
+		local price = Config.Sets.Marble.price
+		if S.Wins >= price then
+			guide.sub = `Tap Evolve  -  Marble doubles your Elo per tap`
+			return 3, "BUY THE MARBLE SET!", plinth.Position
+		end
+		guide.sub = `{Format.Short(S.Wins)}/{price} Wins for the Marble Set`
+		return 3, "WIN DUELS FOR WINS!", plinth.Position
+	elseif S.Equipped ~= "Marble" and not marbleTrained then
+		local plinth = Displays.Marble:FindFirstChild("Plinth") :: BasePart
+		guide.sub = "Tap Evolve and equip it"
+		return 4, "EQUIP THE MARBLE SET!", plinth.Position
+	elseif not marbleTrained then
+		guide.sub = `Marble gives +{Config.TapGain("Marble")} Elo every tap`
+		return 4, "TAP ANYWHERE!", nil
+	elseif not S.Cleared.Stage2 and Stages:FindFirstChild("Stage2") then
+		local zone = Stages.Stage2:FindFirstChild("Zone") :: BasePart?
+		if S.Power >= s2.power then
+			guide.sub = "Walk to Stage 2 and press CHALLENGE"
+			return 5, `CHALLENGE {string.upper(s2.name)}!`, if zone then zone.Position else nil
+		end
+		guide.sub = `{p}/{s2.power} Elo to fight {s2.name}`
+		return 5, "TAP FOR MORE ELO!", nil
+	elseif Config.Guide[6] and not S.TutorialDone and (S.Promotions or 0) < 1 then
+		local needP, needW = Config.PromotionCost(S.Promotions or 0)
+		if S.Power >= needP and S.Wins >= needW then
+			guide.sub = "Tap Rebirth  -  unlocks Knight Sprint and +50% Elo"
+			return 6, "REBIRTH NOW!", nil
+		end
+		guide.sub = `{p}/{Format.Short(needP)} Elo and {Format.Short(S.Wins)}/{needW} Wins  -  unlocks Knight Sprint`
+		return 6, "GET READY TO REBIRTH!", nil
 	end
+	guide.sub = nil
 	return #Config.Guide + 1, nil, nil
 end
 local function refreshGuide()
 	local step, textValue, target = guideTarget()
 	guide.step, guide.target = step, target
 	local holder = G.Guide
-	if step > #Config.Guide or S.TutorialDone then
-		holder.Visible = false
+	local fighting = S.battle ~= nil or (battle ~= nil and not battle.ended)
+	if step > #Config.Guide or S.TutorialDone or fighting then
+		holder.Visible = false -- the duel owns the screen; the guide comes back after it
 	else
 		holder.Visible = true
-		face(holder).Step.Text = `{step}/{#Config.Guide}`
-		face(holder).Text.Text = textValue
+		local f = face(holder)
+		f.Step.Text = `STEP {step}/{#Config.Guide}`
+		local sub = f:FindFirstChild("Sub") :: TextLabel?
+		if sub then
+			sub.Text = guide.sub or ""
+		end
+		if f.Text.Text ~= textValue then
+			f.Text.Text = textValue
+			-- a new order pops in big, then settles (one pop per change, no flashing)
+			local pop = f:FindFirstChild("Pop") :: UIScale?
+			if pop then
+				pop.Scale = 1.3
+				tween(pop, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+			end
+		end
 	end
 	-- spotlight the Chess Sets button on the buy/equip steps
 	local sets = Rail.SetsButton
-	sets:SetAttribute("Spotlight", step == 3 and S.Wins >= Config.Sets.Marble.price or step == 4)
+	sets:SetAttribute("Spotlight", step == 3 and S.Wins >= Config.Sets.Marble.price or (step == 4 and S.Equipped ~= "Marble"))
 	local loop = playerGui:FindFirstChild("ChessLoop")
 	local promote = loop and loop:FindFirstChild("PromoteBtn", true)
 	if promote then
-		promote:SetAttribute("Spotlight", step == 5)
+		promote:SetAttribute("Spotlight", step == 6)
 	end
 end
 
@@ -966,7 +1261,7 @@ local function refreshHudStage()
 	local show = {
 		wins = done or S.Cleared.Stage1 == true or S.Wins > 0,
 		sets = done or step >= 3,
-		promote = done or step >= 5,
+		promote = done or step >= 6,
 		rest = done,
 	}
 	local animate = hudStage.known -- the first state after joining shows everything at once
@@ -1112,10 +1407,13 @@ local function refreshSets()
 	local pv = setsFace.Preview
 	setPreviewModel(pv.Viewport, if set.order > 4 then "Queen" else "Knight", set.color, set.accent, setMaterial(selectedSet))
 	pv.NameText.Text = set.name
-	pv.Mult.Text = `x{set.multiplier} Power per tap`
+	pv.Mult.Text = `x{set.multiplier} Elo per tap`
 	local stationId = currentStation()
 	local st = Config.Stations[stationId]
-	pv.Change.Text = `{st.name}: +{Config.Gain(stationId, S.Equipped)} → +{Config.Gain(stationId, selectedSet)} per tap`
+	local _ = st
+	pv.Change.Text = if selectedSet == S.Equipped
+		then `Tap: +{Config.TapGain(selectedSet)} Elo per tap (equipped)`
+		else `Tap: +{Config.TapGain(S.Equipped)} → +{Config.TapGain(selectedSet)} Elo per tap`
 	local action = face(pv.Action)
 	if not set.available then
 		action.Label.Text = "Coming soon"
@@ -1150,12 +1448,12 @@ function buyOrEquip(id: string)
 	end
 	busy = true
 	if S.Sets[id] then
-		local before = Config.Gain(currentStation(), S.Equipped)
+		local before = Config.TapGain(S.Equipped)
 		local r = Net.Request("Equip", id)
 		busy = false
 		if r.ok then
-			local after = Config.Gain(currentStation(), id)
-			toast(`{Config.Stations[currentStation()].name}: +{before} → +{after} per tap!`, Color3.fromRGB(150, 255, 140))
+			local after = Config.TapGain(id)
+			toast(`Tap: +{before} → +{after} Elo per tap!`, Color3.fromRGB(150, 255, 140))
 			play("Chime")
 			log(`equipped {id}`)
 		else
@@ -1166,7 +1464,8 @@ function buyOrEquip(id: string)
 		busy = false
 		if r.ok then
 			plinthPulse(id)
-			toast(`{set.name} unlocked and equipped!`, Hud.Colors.cyan)
+			local mult = Config.PowerMult(S.Promotions or 0, S.Passes)
+			toast(`{set.name} equipped! Tap: +{Format.Short(Config.TapGain(S.Equipped) * mult)} -> +{Format.Short(Config.TapGain(id) * mult)} Elo per tap`, Hud.Colors.cyan)
 			log(`bought {id}`)
 			Net.Request("Equip", id) -- a new set goes straight into your hand
 		else
@@ -1201,7 +1500,7 @@ local function refreshBoard()
 		local f = face(row)
 		f.Number.Text = tostring(i)
 		f.NameText.Text = st.name
-		f.Info.Text = `{st.power} Power · +{st.reward} Wins first clear`
+		f.Info.Text = `{Format.Short(st.power)} Elo · +{st.reward} Wins a win`
 		f.Unlock.Text = if st.unlocks then `Unlocks {Config.Stations[st.unlocks].name}` else ""
 		local status = face(f.Status)
 		if S.Cleared[id] then
@@ -1264,6 +1563,29 @@ hookButton(G.SettingsButton, function()
 	refreshSettings()
 	showPanel("Settings")
 end)
+-- The new UI (StarterGui.ChessEvolutionUI) opens these panels through a BindableEvent.
+do
+	local ui = ReplicatedStorage:FindFirstChild("ChessEvolutionUI")
+	local ev = ui and ui:FindFirstChild("OpenPanel")
+	if ev and ev:IsA("BindableEvent") then
+		ev.Event:Connect(function(name: string)
+			if name == "Sets" then
+				refreshSets()
+				showPanel("Sets")
+			elseif name == "Board" then
+				refreshBoard()
+				showPanel("Board")
+			elseif name == "Settings" then
+				refreshSettings()
+				showPanel("Settings")
+			elseif name == "Close" then
+				if openPanel then
+					closePanels()
+				end
+			end
+		end)
+	end
+end
 
 ---------------------------------------------------------------------------
 -- Battle scene
@@ -1327,7 +1649,7 @@ local function showBadge(key: string)
 	b.Label.TextColor3 = look.color:Lerp(Color3.new(1, 1, 1), 0.35)
 	local pop = b.Pop :: UIScale
 	pop.Scale = 0.5
-	tween(pop, 0.22, { Scale = 1 }, Enum.EasingStyle.Back)
+	tween(pop, 0.3, { Scale = 1 }, Enum.EasingStyle.Back) -- reference menu pop: 0.3 s back-out
 	-- world badge beside the player's piece
 	if worldBadge then
 		worldBadge.Enabled = true;
@@ -1839,7 +2161,7 @@ local function showResult(r: any)
 		title.Label.Text = if tie then "Draw!" else "Defeat"
 		title.BackgroundColor3 = if tie then Hud.Colors.purple else Hud.Colors.red
 		resultFace.Line1.Text = if tie then "Exactly even! Free retry." else `{st.name} won this time`
-		resultFace.Line2.Text = "You keep your Power and Wins"
+		resultFace.Line2.Text = "You keep your Elo and Wins"
 		resultFace.Line2.TextColor3 = Color3.new(1, 1, 1)
 		primary.Label.Text = "    Retry"
 		primary.BackgroundColor3 = Hud.Colors.red
@@ -1901,6 +2223,58 @@ Net.On("Battle", function(p: any)
 	end
 end)
 
+-- Lost a duel: a big tumbling arc back to the spawn, a dust puff on landing, then one short line.
+local function flingHome(rivalName: string)
+	local r, h = root(), humanoid()
+	local spawnPart = map:FindFirstChild("Spawn") :: BasePart?
+	if not r or not h or not spawnPart then
+		return
+	end
+	-- wait for the duel hold to let go (the server anchors you during the fight)
+	local waited = 0
+	while r.Anchored and waited < 1.5 do
+		waited += task.wait()
+	end
+	local start = r.Position
+	local look = spawnPart.CFrame.LookVector
+	local goal = spawnPart.Position + look * 4 + Vector3.new(0, h.HipHeight + r.Size.Y / 2 + 0.3, 0)
+	local dist = (goal - start).Magnitude
+	local height = math.clamp(dist * 0.35, 14, 40)
+	local dur = math.clamp(0.9 + dist / 120, 1.1, 1.8)
+	local spinAxis = (goal - start).Unit:Cross(Vector3.yAxis)
+	if spinAxis.Magnitude < 0.1 then
+		spinAxis = Vector3.xAxis
+	end
+	spinAxis = spinAxis.Unit
+	h.PlatformStand = true
+	play("Lose")
+	local t0 = os.clock()
+	local done = false
+	local conn: RBXScriptConnection
+	conn = RunService.RenderStepped:Connect(function()
+		if not r.Parent then
+			conn:Disconnect()
+			return
+		end
+		local a = math.clamp((os.clock() - t0) / dur, 0, 1)
+		local pos = start:Lerp(goal, a) + Vector3.new(0, math.sin(a * math.pi) * height, 0)
+		-- two tumbles in the air, upright again for the landing
+		local spin = if a < 0.85 then CFrame.fromAxisAngle(spinAxis, -a / 0.85 * math.pi * 4) else CFrame.identity
+		r.CFrame = CFrame.lookAt(pos, pos + Vector3.new(look.X, 0, look.Z)) * spin
+		r.AssemblyLinearVelocity = Vector3.zero
+		r.AssemblyAngularVelocity = Vector3.zero
+		if a >= 1 and not done then
+			done = true
+			conn:Disconnect()
+			r.CFrame = CFrame.lookAt(goal, goal + Vector3.new(look.X, 0, look.Z))
+			h.PlatformStand = false
+			h:ChangeState(Enum.HumanoidStateType.GettingUp)
+			studBurst(CFrame.new(goal - Vector3.new(0, h.HipHeight + r.Size.Y / 2, 0)), Color3.fromRGB(235, 235, 235), 10, "stud")
+			message(`{rivalName} flung you back! Train more Elo and try again`, Color3.fromRGB(255, 210, 90))
+		end
+	end)
+end
+
 Net.On("BattleEnd", function(p: any)
 	local b = battle
 	if not b or p.id ~= b.id then
@@ -1909,6 +2283,13 @@ Net.On("BattleEnd", function(p: any)
 	b.ended = true
 	b.outcome = p.outcome
 	battle = nil
+	if p.outcome == "win" then
+		winsShownUntil = os.clock() + 5 -- the Victory card shows the Wins; no second popup over your head
+	end
+	resultLockUntil = os.clock() + 2.5
+	task.delay(0.2, function()
+		safe("guide", refreshGuide) -- the guide line comes back once the duel is over
+	end)
 	if p.outcome == "cancelled" then
 		endBattleScene(b)
 		refreshContext()
@@ -2000,7 +2381,15 @@ Net.On("BattleEnd", function(p: any)
 	task.delay(if brilliant then 1.5 else 1.0, function()
 		endBattleScene(b)
 		refreshContext()
-		showResult(p)
+		if p.outcome == "lose" then
+			-- Alex (Nov 8): no Defeat card. Like the reference, the rival flings you back to the start.
+			local rivalName = (stageCfg and ((stageCfg.opponent or {}).name or stageCfg.name)) or "Your rival"
+			safe("fling home", function()
+				flingHome(rivalName)
+			end)
+		else
+			showResult(p)
+		end
 	end)
 	log(`battle {p.id}: {p.outcome} +{p.reward or 0} wins`)
 end)
@@ -2017,6 +2406,8 @@ local function applyState(snap: any)
 	for k, v in snap do
 		S[k] = v
 	end
+	-- a finished duel is sent as a missing key; without this the old duel sticks and hides the guide
+	S.battle = snap.battle
 	S.Settings = S.Settings or { Music = true, Sound = true, Reduced = false }
 	setCounters(firstState)
 	firstState = false
@@ -2065,10 +2456,200 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------------------------
+-- Auto Wins (top bar switch, clip 2 of Nov 8): walk the lane to the next rival.
+-- Strong enough: fight it (auto taps, same 6/s cap as a hand). Too weak: walk to the
+-- newest beaten stage's trophy (its Return pad pays Wins and sends you to the hub), repeat.
+---------------------------------------------------------------------------
+local function lastCleared(): string?
+	local best = nil
+	for _, id in Config.StageOrder do
+		if S.Cleared and S.Cleared[id] then
+			best = id
+		end
+	end
+	return best
+end
+local function trophyWins(id: string): number
+	return math.floor(Config.Stages[id].reward * Config.WinsMult(S.Promotions or 0, S.Passes))
+end
+-- Return pads of beaten stages show their trophy: "Return" over "+N Wins" (the reference's pads)
+local function refreshTrophies()
+	for _, m in Stages:GetChildren() do
+		local ret = Config.Stages[m.Name] and m:FindFirstChild("Return")
+		local bb = ret and ret:FindFirstChild("ReturnLabel") :: BillboardGui?
+		local line1 = bb and bb:FindFirstChild("Line1") :: TextLabel?
+		if bb and line1 then
+			local line2 = bb:FindFirstChild("Line2") :: TextLabel?
+			if not line2 then
+				local l2 = line1:Clone()
+				l2.Name = "Line2"
+				l2.LayoutOrder = line1.LayoutOrder + 1
+				l2.TextColor3 = Hud.Colors.gold
+				l2.Parent = bb
+				line2 = l2
+			end
+			local on = S.Cleared and S.Cleared[m.Name] == true
+			;(line2 :: TextLabel).Visible = on
+			if on then
+				(line2 :: TextLabel).Text = `+{trophyWins(m.Name)} Wins`
+			end
+			line1.Size = if on then UDim2.fromScale(1, 0.5) else UDim2.fromScale(1, 1);
+			(line2 :: TextLabel).Size = UDim2.fromScale(1, 0.5)
+			bb.Size = if on then UDim2.fromScale(5, 3) else UDim2.fromScale(5, 1.5)
+		end
+	end
+end
+-- Treadmill signs follow the real unlock state: "Clear Stage N" until the server confirms it, then "OPEN".
+local function refreshStationSigns()
+	for _, m in Stations:GetChildren() do
+		local st = Config.Stations[m.Name]
+		local anchor = m:FindFirstChild("LabelAnchor")
+		local lab = anchor and anchor:FindFirstChild("Label")
+		local l1 = lab and lab:FindFirstChild("Line1") :: TextLabel?
+		local l2 = lab and lab:FindFirstChild("Line2") :: TextLabel?
+		if st and l1 and l2 then
+			local open, whyNot = stationOpen(m.Name)
+			-- two stable lines: the machine's name, then the Elo it pays each second while you stand on it.
+			-- A locked machine also shows the rebirth pill above it (RebirthNeed, built in Studio).
+			local perSec = Format.Short(Config.Gain(m.Name) * Config.PowerMult(S.Promotions or 0, S.Passes) / Config.TreadmillTick)
+			l1.Text = st.name or m.Name
+			if open then
+				l2.Text = `+{perSec} Elo/sec · ` .. (if st.unlock then "OPEN" else "FREE")
+				l2.TextColor3 = Color3.fromRGB(120, 255, 120)
+			else
+				local status = if st.built then "LOCKED" else (whyNot or "Coming soon")
+				l2.Text = `+{perSec} Elo/sec · {status}`
+				l2.TextColor3 = Color3.fromRGB(255, 210, 90)
+			end
+			local need = anchor and anchor:FindFirstChild("RebirthNeed") :: BillboardGui?
+			if need then
+				need.Enabled = st.built and not open
+			end
+		end
+	end
+end
+onState(function()
+	safe("stationSigns", refreshStationSigns)
+end)
+-- the map streams in: signs that arrive after the last State get their text too
+local signsQueued = false
+Stations.DescendantAdded:Connect(function(d)
+	if signsQueued or not (d.Name == "Label" or d.Name == "Line2" or d.Name == "RebirthNeed") then
+		return
+	end
+	signsQueued = true
+	task.delay(0.2, function()
+		signsQueued = false
+		safe("stationSigns", refreshStationSigns)
+	end)
+end)
+onState(function()
+	safe("trophies", refreshTrophies)
+end)
+
+local autoState = { tapAt = 0, tickAt = 0, resultAt = nil :: number?, challengeAt = 0, sayAt = 0, was = false }
+local function autoSay(t: string)
+	if os.clock() - autoState.sayAt > 5 then
+		autoState.sayAt = os.clock()
+		message(t, Color3.fromRGB(255, 210, 90))
+	end
+end
+-- One MoveTo step towards a spot; true once there. Off the lane (hub, treadmills) it steps
+-- onto the lane's centre line first, so it never cuts across the treadmill rows, and it keeps
+-- to the centre line until level with the target, so it never clips an earlier Return pad.
+local function walkTowards(target: Vector3, arrive: number): boolean
+	local r, h = root(), humanoid()
+	if not r or not h or h.Health <= 0 or h.WalkSpeed <= 0 then
+		return false
+	end
+	local here = r.Position
+	local flat = Vector3.new(target.X, here.Y, target.Z)
+	if (flat - here).Magnitude <= arrive then
+		return true
+	end
+	local dest = flat
+	if here.Z > -44 and math.abs(here.X) > 8 then
+		dest = Vector3.new(0, here.Y, math.clamp(here.Z, -30, 0))
+	elseif math.abs(here.Z - target.Z) > 6 and math.abs(target.X) > 4 then
+		dest = Vector3.new(0, here.Y, target.Z)
+	end
+	h:MoveTo(dest)
+	return false
+end
+local function stepAutoWins()
+	local nxt = nextStage()
+	local now = os.clock()
+	if nxt and (S.Power or 0) >= Config.Stages[nxt].power then
+		local zone = Stages:FindFirstChild(nxt) and Stages[nxt]:FindFirstChild("Zone") :: BasePart?
+		if zone and walkTowards(zone.Position, 3) and now - autoState.challengeAt > 2.5 then
+			autoState.challengeAt = now
+			task.spawn(challenge, nxt)
+		end
+		return
+	end
+	local farm = lastCleared()
+	if farm then
+		local ret = Stages:FindFirstChild(farm) and Stages[farm]:FindFirstChild("Return") :: BasePart?
+		if ret then
+			walkTowards(ret.Position, 0.5) -- the Return pad check above collects and sends you home
+		end
+		if nxt then
+			autoSay(`Auto Wins: collecting +{trophyWins(farm)} Wins. {Config.Stages[nxt].name} needs {Format.Short and Format.Short(Config.Stages[nxt].power) or Config.Stages[nxt].power} Elo`)
+		end
+	elseif nxt then
+		local zone = Stages:FindFirstChild(nxt) and Stages[nxt]:FindFirstChild("Zone") :: BasePart?
+		if zone then
+			walkTowards(zone.Position + Vector3.new(0, 0, 14), 3)
+		end
+		autoSay(`Auto Wins: train to {Config.Stages[nxt].power} Elo to fight {Config.Stages[nxt].name}`)
+	end
+end
+RunService.Heartbeat:Connect(function()
+	local on = player:GetAttribute("AutoWins") == true
+	if on ~= autoState.was then
+		autoState.was = on
+		message(if on then "Auto Wins ON" else "Auto Wins OFF", if on then Hud.Colors.gold else nil)
+		local r, h = root(), humanoid()
+		if not on and r and h then
+			h:MoveTo(r.Position) -- stop where you are
+		end
+	end
+	if not on then
+		return
+	end
+	local now = os.clock()
+	if battle and not battle.ended then
+		if now - autoState.tapAt >= 1 / 6 then
+			autoState.tapAt = now
+			safe("auto tap", doAction)
+		end
+		return
+	end
+	if now - autoState.tickAt < 0.25 then
+		return
+	end
+	autoState.tickAt = now
+	if openPanel == "Result" then
+		autoState.resultAt = autoState.resultAt or now
+		if now - (autoState.resultAt :: number) > 1.4 then
+			autoState.resultAt = nil
+			closePanels()
+		end
+		return
+	end
+	autoState.resultAt = nil
+	if battle or not S.Cleared then
+		return
+	end
+	safe("auto wins", stepAutoWins)
+end)
+
+---------------------------------------------------------------------------
 -- Frame loop: context, belts, run anim, meter, guide arrows, gallery motion
 ---------------------------------------------------------------------------
 local lastContext = 0
 local lastReturn = 0
+local lastDeck: string? = nil
 local spotlightPhase = 0
 RunService.RenderStepped:Connect(function(dt)
 	local now = os.clock()
@@ -2085,14 +2666,31 @@ RunService.RenderStepped:Connect(function(dt)
 				local ret = m:FindFirstChild("Return") :: BasePart?
 				if ret and inside(r.Position, ret, 0.5) then
 					lastReturn = now
-					task.spawn(Net.Request, "Return")
+					task.spawn(function()
+						winsShownUntil = os.clock() + 2
+						local res = Net.Request("Return")
+						if res.ok and res.data and (res.data.trophy or 0) > 0 then
+							winsShownUntil = os.clock() + 1
+							toast(`Return bonus +{res.data.trophy} Wins`, Hud.Colors.gold)
+							play("Gain")
+						end
+					end)
 				end
 			end
 		end
 	end
 
-	-- training: run animation and belt speed for me and for other players
-	local myTraining = ctx.kind == "station" and now < trainingUntil
+	-- training: run animation and belt speed for me and for other players.
+	-- Like the reference, standing on an open treadmill's deck starts you running right away
+	-- (no TRAIN press); each tap anywhere on the screen then gives Elo.
+	local deckId = standingOnDeck()
+	if deckId ~= lastDeck then
+		lastDeck = deckId
+		if deckId then
+			alignOnDeck(deckId)
+		end
+	end
+	local myTraining = ctx.kind == "station" and (now < trainingUntil or deckId == ctx.id)
 	if myTraining then
 		if not runTrack then
 			runTrack = loadRun()

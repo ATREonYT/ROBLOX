@@ -73,6 +73,9 @@ function Core.StationOpen(cfg: any, data: any, id: string): (boolean, string?)
 	if station.unlock and station.unlock.stage and not data.Cleared[station.unlock.stage] then
 		return false, "Locked"
 	end
+	if station.unlock and station.unlock.rebirths and (data.Promotions or 0) < station.unlock.rebirths then
+		return false, "NeedRebirths"
+	end
 	return true, nil
 end
 
@@ -120,27 +123,36 @@ function Core.Tap(core: any, data: any, s: Session, ctx: any, isNear: (string, s
 		battle.taps += 1
 		return true, battle.state.fight.perTap
 	elseif ctx.kind == "train" then
-		local id = ctx.station
+		-- A tap anywhere on the screen (Alex, Nov 8): the equipped set's Elo, x rebirths and passes.
+		-- Treadmills pay by themselves (Core.TreadmillGain), so a tap needs no station.
 		if s.battle then
 			return false, "Busy"
-		end
-		local open, why = Core.StationOpen(cfg, data, id)
-		if not open then
-			return false, why
-		end
-		if not isNear("station", id) then
-			return false, "TooFar"
 		end
 		if not takeToken(core, s) then
 			return false, "TooFast"
 		end
-		local gain = cfg.Gain(id, data.Equipped) * cfg.PowerMult(data.Promotions or 0, s.passes)
+		local gain = cfg.TapGain(data.Equipped) * cfg.PowerMult(data.Promotions or 0, s.passes)
 		data.Power += gain
 		data.Stats.Taps += 1
-		s.station, s.lastStation = id, id
 		return true, gain
 	end
 	return false, "Invalid"
+end
+
+-- One automatic treadmill gain for standing on an open treadmill (the caller checks the deck).
+function Core.TreadmillGain(core: any, data: any, s: Session, id: string): (boolean, any)
+	local cfg = core.cfg
+	if s.battle then
+		return false, "Busy"
+	end
+	local open, why = Core.StationOpen(cfg, data, id)
+	if not open then
+		return false, why
+	end
+	local gain = cfg.Gain(id) * cfg.PowerMult(data.Promotions or 0, s.passes)
+	data.Power += gain
+	s.station, s.lastStation = id, id
+	return true, gain
 end
 
 function Core.Challenge(core: any, data: any, s: Session, stageId: string, isNear: (string, string) -> boolean): (boolean, any)

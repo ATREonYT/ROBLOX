@@ -49,6 +49,9 @@
         },
         "WorldFx": {
           "$path": "src/Client/WorldFx.client.luau"
+        },
+        "ChessEvolutionHUD": {
+          "$path": "src/Client/ChessEvolutionHUD.client.luau"
         }
       }
     }
