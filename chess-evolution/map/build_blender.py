@@ -37,7 +37,15 @@ def build(json_path, blend_out):
         x, y, z = p["pos"]; sx, sy, sz = p["size"]
         me = bpy.data.meshes.new(p["name"])
         import bmesh
-        bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0); bm.to_mesh(me); bm.free()
+        bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0)
+        if p.get("kind") == "Wedge":
+            # unit cube in Blender axes (x, y=-Rz, z=up); drop the top edge on the low side
+            ax, sign = {"+x": (0, 1), "-x": (0, -1), "+z": (1, -1), "-z": (1, 1)}[p["low"]]
+            for v in bm.verts:
+                if v.co.z > 0 and v.co[ax] * sign > 0:
+                    v.co.z = -0.5
+            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bm.to_mesh(me); bm.free()
         ob = bpy.data.objects.new(p["name"], me)
         ob.location = (x, -z, y); ob.scale = (sx, sz, sy)
         ob.data.materials.append(mat(p["color"], 1 - p.get("transparency", 0)))

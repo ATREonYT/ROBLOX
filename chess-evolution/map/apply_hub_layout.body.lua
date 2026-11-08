@@ -31,15 +31,25 @@ local function hex(h) return Color3.fromHex(h) end
 for _, d in ipairs(P) do
 	local f = folders[d.g]
 	if not f then f = Instance.new("Folder"); f.Name = d.g; f.Parent = hub; folders[d.g] = f end
-	local p = Instance.new("Part")
+	local p = Instance.new(d.low and "WedgePart" or "Part")
 	p.Name = d.n; p.Anchored = true
-	p.Size = Vector3.new(d.s[1], d.s[2], d.s[3]); p.Position = Vector3.new(d.p[1], d.p[2], d.p[3])
+	local pos = Vector3.new(d.p[1], d.p[2], d.p[3])
+	if d.low then
+		-- a WedgePart is high at local +Z and low at local -Z, so look toward the low side
+		local dir = ({["+x"] = Vector3.xAxis, ["-x"] = -Vector3.xAxis, ["+z"] = Vector3.zAxis, ["-z"] = -Vector3.zAxis})[d.low]
+		local across = (dir.X ~= 0) and d.s[3] or d.s[1]
+		local along = (dir.X ~= 0) and d.s[1] or d.s[3]
+		p.Size = Vector3.new(across, d.s[2], along)
+		p.CFrame = CFrame.lookAt(pos, pos + dir)
+	else
+		p.Size = Vector3.new(d.s[1], d.s[2], d.s[3]); p.Position = pos
+	end
 	p.Color = hex(d.c); p.Transparency = d.t; p.CanCollide = d.cc
 	p.Material = Enum.Material[d.m] or Enum.Material.Plastic
 	p.TopSurface = Enum.SurfaceType.Smooth; p.BottomSurface = Enum.SurfaceType.Smooth
-	if p.Material == Enum.Material.Plastic and d.t == 0 then
+	if p.Material == Enum.Material.Plastic and d.t == 0 and not d.low then
 		local faces = {Enum.NormalId.Top}
-		if d.g == "Walls" or d.n == "Ledge" or d.n == "RearTier" then faces = {Enum.NormalId.Top, Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right} end
+		if d.g == "Walls" or d.n == "BackTier" or d.n == "RearTier" or d.n == "Platform" then faces = {Enum.NormalId.Top, Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right} end
 		for _, face in ipairs(faces) do
 			local t = Instance.new("Texture"); t.Name = "Studs"; t.Texture = STUDS; t.Face = face
 			t.StudsPerTileU = 2; t.StudsPerTileV = 2; t.Parent = p
@@ -54,8 +64,10 @@ say(("built Map.Hub with %d parts"):format(#P))
 local function moveModel(m, spec)
 	local pv = m:GetPivot()
 	local bb = m:GetBoundingBox() -- targets are footprint centres, so shift by the centre, keep the pivot's height
-	local pos = pv.Position + Vector3.new(spec[1] - bb.X, 0, spec[3] - bb.Z)
-	if spec[2] then pos = Vector3.new(pos.X, spec[2], pos.Z) end
+	-- spec[2] is a height change, remembered so running this twice does not stack it
+	local dy = (spec[2] or 0) - (m:GetAttribute("HubDY") or 0)
+	m:SetAttribute("HubDY", spec[2] or 0)
+	local pos = pv.Position + Vector3.new(spec[1] - bb.X, dy, spec[3] - bb.Z)
 	local cf = CFrame.new(pos) * (pv - pv.Position)
 	if spec[4] == "faceZ" and not m:GetAttribute("HubFacedZ") then
 		cf = cf * CFrame.Angles(0, math.rad(90), 0); m:SetAttribute("HubFacedZ", true)
@@ -78,7 +90,7 @@ for folderPath, list in pairs(MOVES) do
 		else target = f:FindFirstChild(key) end
 		if target then
 			if target:IsA("Model") then moveModel(target, spec)
-			else target.Position = Vector3.new(spec[1], spec[2] or target.Position.Y, spec[3]) end
+			else target.Position = Vector3.new(spec[1], target.Position.Y, spec[3]) end
 		else say("not found: " .. folderPath .. "." .. key) end
 	end end
 end
