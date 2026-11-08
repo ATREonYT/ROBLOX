@@ -98,6 +98,18 @@ do
 		check(`{row[1]}: {row[3]} taps/s is not enough`, slow.outcome ~= "win", `{slow.outcome} {slow.t}`)
 		check(`{row[1]}: winnable inside the 6/s tap cap`, logBadges(row[1], 6, "6 taps/s").outcome == "win")
 	end
+	-- Elo advantage (Alex, Nov 8): smooth, and 2x the rival's Elo makes the fight easy
+	local f1 = Config.Stages.Stage1.fight
+	check("ease: at his Elo the fight is unchanged", Config.DuelFight(f1, 25, 25).perTap == f1.perTap)
+	check("ease: 2x Elo, 2 taps/s wins", Battle.Simulate(Config.DuelFight(f1, 50, 25), 2, 0.1).outcome == "win")
+	check("ease: 1x Elo, 2 taps/s loses", Battle.Simulate(Config.DuelFight(f1, 25, 25), 2, 0.1).outcome ~= "win")
+	check("ease: 1.5x Elo is between 1x and 2x", (function()
+		local a, m, b = Config.DuelFight(f1, 25, 25).perTap, Config.DuelFight(f1, 37.5, 25).perTap, Config.DuelFight(f1, 50, 25).perTap
+		return a < m and m < b
+	end)())
+	check("ease: stops at 4x", Config.DuelFight(f1, 1000, 25).perTap == Config.DuelFight(f1, 100, 25).perTap)
+	local boss = Config.Stages.Stage7
+	check("ease: boss at 2x Elo, 3 taps/s wins", Battle.Simulate(Config.DuelFight(boss.fight, boss.power * 2, boss.power), 3, 0.1).outcome == "win")
 	check("every stage has a named opponent", (function()
 		for _, id in Config.StageOrder do
 			local o = Config.Stages[id].opponent

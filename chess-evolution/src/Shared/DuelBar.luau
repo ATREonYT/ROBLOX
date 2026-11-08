@@ -1,7 +1,7 @@
 --!strict
 -- +1 Chess Evolution: the duel screen, laid out like the reference tapping duel (Nov 8).
 -- Bottom centre: a green (you) / red (rival) tug bar with a dark knob at the split, the two names
--- above its ends and "Click Fast!" under it. Mid screen: the 3-2-1-GO countdown.
+-- above its ends and "Click Fast!" under it. Mid screen: the 3-2-1-GO countdown. Top: the "Stage N" title.
 -- The place keeps a saved copy in StarterGui (src/StarterGui/DuelBar.rbxm) so Alex can see and
 -- edit it in Studio; ChessClient reuses that copy and only calls Build when it is missing.
 local DuelBar = {}
@@ -164,6 +164,17 @@ function DuelBar.Build(parent: Instance?): ScreenGui
 	local countScale = Instance.new("UIScale")
 	countScale.Name = "Pop"
 	countScale.Parent = count
+
+	-- the huge white "Stage N" that opens each duel (reference long recording, build guide section 3)
+	local title = label(gui, "Title", "Stage 1", Color3.new(1, 1, 1), UDim2.fromScale(0.42, 0.13), UDim2.fromScale(0.5, 0.14), Vector2.new(0.5, 0.5), Enum.TextXAlignment.Center)
+	title.Visible = false
+	local ts = title:FindFirstChildOfClass("UIStroke")
+	if ts then
+		ts.Thickness = 5
+	end
+	local titleScale = Instance.new("UIScale")
+	titleScale.Name = "Pop"
+	titleScale.Parent = title
 
 	gui.Parent = parent
 	return gui

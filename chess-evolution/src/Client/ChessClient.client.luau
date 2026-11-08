@@ -499,108 +499,14 @@ local liveEloPops: { Frame } = {}
 local lastTapPopAt = 0
 local lastFxPopAt = 0 -- treadmill gains pop from the server's "Fx" push
 local winsShownUntil = 0 -- while a result card or return toast is showing the Wins, no extra popup
+-- Tap pop-ups live in the world now (build guide section 2, from Cannon Effects.floatingText):
+-- Kit/TapPops, one "+N" per tap or treadmill tick at a random spot around you, never merged.
+local tapPops = require(Kit:WaitForChild("TapPops")).new({ icon = eloIconImage, reduced = reduced })
 local function eloPop(amount: number)
 	local r = root()
-	local cam = workspace.CurrentCamera
-	if not r or not cam then
-		return
+	if r then
+		tapPops:Pop(r, `+{Format.Short(amount)}`)
 	end
-	local at, onScreen = cam:WorldToViewportPoint(r.Position + Vector3.new(0, 1.5, 0))
-	if not onScreen then
-		return
-	end
-	if #liveEloPops >= 12 then
-		local oldest = table.remove(liveEloPops, 1)
-		if oldest then
-			oldest:Destroy()
-		end
-	end
-	local vh = cam.ViewportSize.Y
-	local h = math.floor(math.clamp(vh * 0.055, 26, 70))
-	local words = `+{Format.Short(amount)}`
-	local w = math.floor(h * (1.1 + 0.55 * #words))
-	-- like the reference: a random spot anywhere around the character (on it too), a new one each tap
-	local ang = math.random() * math.pi * 2
-	local rad = h * (0.5 + math.random() * 3.1)
-	local ox = math.cos(ang) * rad * 1.25
-	local oy = math.sin(ang) * rad * 0.8 - h * 0.9
-	local f = Instance.new("Frame")
-	f.Name = "EloPop"
-	f.BackgroundTransparency = 1
-	f.AnchorPoint = Vector2.new(0.5, 0.5)
-	f.Size = UDim2.fromOffset(w, h)
-	f.Position = UDim2.fromOffset(math.floor(at.X + ox), math.floor(at.Y + oy))
-	local sc = Instance.new("UIScale")
-	sc.Scale = 0.85
-	sc.Parent = f
-	local icon = Instance.new("ImageLabel")
-	icon.BackgroundTransparency = 1
-	icon.Image = eloIconImage
-	icon.Size = UDim2.fromOffset(h, h)
-	icon.Parent = f
-	local label = Instance.new("TextLabel")
-	label.Name = "Amount"
-	label.BackgroundTransparency = 1
-	label.Position = UDim2.fromOffset(math.floor(h * 1.05), 0)
-	label.Size = UDim2.fromOffset(w - math.floor(h * 1.05), h)
-	label.Font = Enum.Font.FredokaOne
-	label.Text = words
-	label.TextScaled = true
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.TextColor3 = Color3.new(1, 1, 1)
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = math.max(2, math.floor(h / 14))
-	stroke.Color = Color3.fromRGB(28, 24, 40)
-	stroke.Parent = label
-	label.Parent = f
-	if eloGT then
-		-- the kit's own rounded font (same glyphs as the HUD numbers)
-		label:SetAttribute("BoxW", w - math.floor(h * 1.05))
-		label:SetAttribute("BoxH", h)
-		label:SetAttribute("FitSize", h * 0.95)
-		label:SetAttribute("DX", -((w - math.floor(h * 1.05)) - eloGT.Width(words, h * 0.95)) / 2)
-		pcall(eloGT.Set, label, words, Color3.new(1, 1, 1))
-	end
-	f.Parent = eloPops
-	table.insert(liveEloPops, f)
-	local function fadeAll(t: number, goal: number)
-		for _, d in f:GetDescendants() do
-			if d:IsA("ImageLabel") then
-				tween(d, t, { ImageTransparency = goal })
-			elseif d:IsA("TextLabel") and not d:FindFirstChild("Glyphs") then
-				tween(d, t, { TextTransparency = goal })
-			elseif d:IsA("UIStroke") and d.Enabled then
-				tween(d, t, { Transparency = goal })
-			end
-		end
-	end
-	if reduced() then
-		sc.Scale = 1
-	else
-		sc.Scale = 0.4
-		f.Rotation = math.random(-10, 10)
-		tween(sc, 0.12, { Scale = 1.12 }, Enum.EasingStyle.Back)
-		task.delay(0.12, function()
-			tween(sc, 0.1, { Scale = 1 }, Enum.EasingStyle.Quad)
-		end)
-		tween(f, 0.8, { Rotation = 0 }, Enum.EasingStyle.Quad)
-	end
-	-- a small drift: up and a little to one side
-	local dx = math.floor((math.random() - 0.5) * h * 0.9)
-	tween(f, 0.8, { Position = f.Position + UDim2.fromOffset(dx, -math.floor(h * 0.7)) }, Enum.EasingStyle.Quad)
-	task.delay(0.58, function()
-		if f.Parent then
-			fadeAll(0.2, 1)
-			tween(sc, 0.2, { Scale = 0.6 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		end
-	end)
-	task.delay(0.8, function()
-		local i = table.find(liveEloPops, f)
-		if i then
-			table.remove(liveEloPops, i)
-		end
-		f:Destroy()
-	end)
 end
 
 local function setCounters(first: boolean)
@@ -1892,6 +1798,9 @@ local function armOf(rig: Model?, side: string): any
 	if side == "Waist" then
 		local torso = rig:FindFirstChild("UpperTorso")
 		joint = torso and torso:FindFirstChild("Waist")
+	elseif side == "Root" then
+		local lower = rig:FindFirstChild("LowerTorso")
+		joint = lower and lower:FindFirstChild("Root")
 	else
 		local upper = rig:FindFirstChild(side .. "UpperArm")
 		joint = upper and upper:FindFirstChild(side .. "Shoulder")
@@ -1959,6 +1868,11 @@ function slap(rig: Model?, side: string)
 	if w then
 		w.at = os.clock()
 	end
+	-- your own taps also lunge your body toward the board (build guide section 3)
+	local rt = if rig and rig == player.Character then armOf(rig, "Root") else nil
+	if rt then
+		rt.at = os.clock()
+	end
 end
 local function setHold(rig: Model?, side: string, hold: number)
 	local a = armOf(rig, side)
@@ -1998,7 +1912,10 @@ RunService.PreSimulation:Connect(function()
 			a.holdNow += (a.hold - a.holdNow) * 0.2
 			local t = now - a.at
 			local pose
-			if key == "Waist" then
+			if key == "Root" then
+				local l = if t < 0 then 0 elseif t < 0.08 then t / 0.08 elseif t < 0.23 then 1 - (t - 0.08) / 0.15 else 0
+				pose = CFrame.new(0, 0, -0.35 * l * l * (3 - 2 * l))
+			elseif key == "Waist" then
 				local lean = if t > 0.05 and t < 0.26 then 0.14 * math.sin(math.pi * (t - 0.05) / 0.21) else 0
 				pose = CFrame.Angles(-lean, 0, 0)
 			else
@@ -2038,7 +1955,7 @@ end
 D.DUEL_HOLD = 0.35 -- the over-the-shoulder shot holds this long
 D.DUEL_SWEEP = 1.0 -- then the camera swings round to the side view
 D.DUEL_STEP = 0.7 -- each of 3, 2, 1
-D.SIDE_DIST, D.SIDE_UP = 14, 5.2 -- the side view: distance and height from the middle of the duel
+D.SIDE_DIST, D.SIDE_UP = 11, 4.6 -- the side view: distance and height from the middle of the duel
 D.GOLD_COUNT = Color3.fromRGB(255, 206, 52)
 D.GREEN_GO = Color3.fromRGB(96, 232, 64)
 
@@ -2134,6 +2051,35 @@ function D.dropAura(rig: Model?)
 			att:Destroy()
 		end)
 	end
+end
+
+-- the huge white "Stage N" that opens a duel (reference long recording, build guide section 3)
+function D.showTitle(text: string)
+	local t = duelUI:FindFirstChild("Title") :: TextLabel?
+	if not t then
+		return
+	end
+	local pop = t:FindFirstChild("Pop") :: UIScale?
+	t.Text = text
+	t.TextTransparency = 0
+	local st = t:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Transparency = 0
+	end
+	t.Visible = true
+	if pop then
+		pop.Scale = if reduced() then 1 else 0.6
+		tween(pop, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+	end
+	task.delay(1.1, function()
+		tween(t, 0.25, { TextTransparency = 1 })
+		if st then
+			tween(st, 0.25, { Transparency = 1 })
+		end
+		task.delay(0.26, function()
+			t.Visible = false
+		end)
+	end)
 end
 
 function D.showCount(b: any, text: string, color: Color3, sound: string)
@@ -2464,6 +2410,7 @@ local function startBattleScene(b: any)
 	duelUI.Hint.Text.Text = if isTouch then "Tap Fast!" else "Click Fast!"
 	duelUI.Count.Visible = false
 	setBattleHud(true)
+	D.showTitle(`Stage {stageCfg.order or 1}`)
 	-- both fighters hold their hands over the board; auras on
 	for _, rig in { player.Character, b.npc } do
 		setHold(rig, "Right", 1.05)
@@ -2490,8 +2437,7 @@ local function startBattleScene(b: any)
 			camera.CFrame = D.introCam(b, (t - D.DUEL_HOLD) / D.DUEL_SWEEP)
 		else
 			b.kickCam = math.max(0, (b.kickCam or 0) - dt * 6)
-			local fightT = math.max(0, os.clock() - b.goAt)
-			local push = 3 * math.min(1, fightT / 12) + (if reduced() then 0 else 0.3 * b.kickCam)
+			local push = 0 -- build guide section 3 and vault note 28: the camera holds still while you tap
 			camera.CFrame = D.sideCam(b, push)
 		end
 	end)
@@ -2516,24 +2462,34 @@ end
 
 -- Glass shards where the rival breaks through his gate
 function D.shatter(at: Vector3, dir: Vector3, color: Color3)
+	-- 8 pooled shards (build guide section 3): made once, reused on every win, parked out of sight after
 	if reduced() then
 		return
 	end
-	for _ = 1, 14 do
-		local s = Instance.new("Part")
-		s.Size = Vector3.new(0.9, 0.9, 0.12) * (0.5 + math.random())
+	D.shards = D.shards or {}
+	for i = 1, 8 do
+		local s = D.shards[i]
+		if not s or not s.Parent then
+			s = Instance.new("Part")
+			s.Name = "Shard"
+			s.Material = Enum.Material.Neon
+			s.CanCollide, s.CanQuery, s.CanTouch, s.CastShadow = false, false, false, false
+			s.Anchored = true
+			s.Parent = fxFolder
+			D.shards[i] = s
+		end
+		s.Size = Vector3.new(1.1, 1.1, 0.12) * (0.5 + math.random())
 		s.CFrame = CFrame.new(at + Vector3.new(math.random() * 5 - 2.5, math.random() * 5 - 2.5, math.random() * 5 - 2.5))
 			* CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6)
 		s.Color = color
-		s.Material = Enum.Material.Neon
 		s.Transparency = 0.25
-		s.CanCollide, s.CanQuery, s.CanTouch, s.CastShadow = false, false, false, false
-		s.Parent = fxFolder
+		s.Anchored = false
 		s.AssemblyLinearVelocity = dir * (18 + math.random() * 14) + Vector3.new(math.random() * 16 - 8, math.random() * 14, math.random() * 16 - 8)
 		s.AssemblyAngularVelocity = Vector3.new(math.random() * 20 - 10, math.random() * 20 - 10, math.random() * 20 - 10)
 		tween(s, 1.1, { Transparency = 1 })
 		task.delay(1.2, function()
-			s:Destroy()
+			s.Anchored = true
+			s.CFrame = CFrame.new(0, -400, 0)
 		end)
 	end
 end
@@ -2542,6 +2498,7 @@ end
 -- camera comes back behind you, the HUD returns and the +Wins pop lands.
 function D.winCinematic(b: any, p: any)
 	b.cinematic = true
+	duelUI.Enabled = false -- the bar goes as soon as you win
 	duelUI.Count.Visible = false
 	local stageCfg = Config.Stages[b.stage]
 	local npc = b.npc :: Model?
@@ -2550,7 +2507,7 @@ function D.winCinematic(b: any, p: any)
 	local home = npc and npc:GetPivot() or CFrame.new(b.them)
 	local start = home.Position
 	local through = if barrier then Vector3.new(start.X, barrier.Position.Y - 2, barrier.Position.Z) else start + b.axis * 6
-	local goal = through + b.axis * 42 + Vector3.new(0, 24, 0)
+	local goal = through + b.axis * 30 + Vector3.new(0, 12, 0)
 	local dur = 1.3
 	if npc and b.npcTap then
 		stopAnim(npc, "Tap")
@@ -2559,8 +2516,9 @@ function D.winCinematic(b: any, p: any)
 	setHold(player.Character, "Right", 2.6)
 	setHold(player.Character, "Left", 2.6)
 	-- the shot: low and close, between the rival and his gate, so he flies at the camera and past it
-	local camPos = start + b.axis * 3.4 + b.side * 3.8 + Vector3.new(0, 2.4, 0)
-	camera.CFrame = CFrame.lookAt(camPos, start + Vector3.new(0, 2.2, 0))
+	-- a wide shot from your side of the board, so his whole flight through the gate stays in frame
+	local camPos = start - b.axis * 7 + b.side * 9 + Vector3.new(0, 4.5, 0)
+	camera.CFrame = CFrame.lookAt(camPos, start:Lerp(through, 0.5) + Vector3.new(0, 2.2, 0))
 	play("Capture")
 	local t0 = os.clock()
 	local smashed = false
@@ -2587,7 +2545,7 @@ function D.winCinematic(b: any, p: any)
 		end
 		-- the camera stays put and follows him with its eyes
 		local sh = hit.trauma * hit.trauma * math.rad(2.2)
-		camera.CFrame = CFrame.lookAt(camPos, pos + Vector3.new(0, 2, 0))
+		camera.CFrame = CFrame.lookAt(camPos, pos:Lerp(through, 0.45) + Vector3.new(0, 2, 0))
 			* CFrame.Angles(sh * math.noise(now * 18, 1.5), sh * math.noise(now * 18, 7.5), 0)
 		if not smashed and (pos - through):Dot(b.axis) >= 0 then
 			smashed = true

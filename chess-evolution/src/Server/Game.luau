@@ -199,7 +199,7 @@ local function challenge(player: Player, stageId: string): any
 	local stage = config.Stages[stageId]
 	battleSent[player] = 0
 	log(`{player.Name}: challenge {stageId} ({battle.id})`)
-	return Net.ok({ id = battle.id, stage = stageId, fight = stage.fight, intro = config.DuelIntro or 0, book = battle.book, firstClear = battle.firstClear })
+	return Net.ok({ id = battle.id, stage = stageId, fight = battle.state.fight, intro = config.DuelIntro or 0, book = battle.book, firstClear = battle.firstClear })
 end
 
 local function stepBattles(dt: number)

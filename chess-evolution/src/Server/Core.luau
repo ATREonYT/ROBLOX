@@ -181,7 +181,7 @@ function Core.Challenge(core: any, data: any, s: Session, stageId: string, isNea
 	local battle = {
 		id = `{stageId}-{core.nextId}`,
 		stage = stageId,
-		state = Battle.new(stage.fight),
+		state = Battle.new(cfg.DuelFight(stage.fight, data.Power, stage.power)), -- easier the more Elo you have
 		ev = Badges.new(cfg.Badges, stage.fight.grace),
 		taps = 0,
 		wait = cfg.DuelIntro or 0, -- the intro and countdown: no taps, no pressure

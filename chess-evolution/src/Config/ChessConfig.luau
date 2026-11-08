@@ -300,6 +300,27 @@ function Config.Level(power: number, promotions: number): (number, number)
 	return l + 1, math.clamp((power - at(l)) / (at(l + 1) - at(l)), 0, 1), power - at(l), at(l + 1) - at(l)
 end
 
+-- Elo advantage (Alex, Nov 8: "the more Elo you have the easier it is"). Every doubling of your Elo
+-- over the rival's makes each tap push further and his push weaker, on a smooth curve (log2 of the
+-- ratio, no steps). At his Elo it is the full fight; at 2x it is easy; it stops getting easier at 4x.
+Config.EloEase = {
+	maxDoublings = 2, -- 4x his Elo is as easy as it gets
+	tapPerDoubling = 1, -- each doubling adds 100% to every tap (2x Elo = taps push twice as far)
+	pressureCut = 0.5, -- and divides his push by (1 + 0.5 per doubling): 2x Elo = 2/3 of his push
+}
+
+-- The fight for this duel, scaled by your Elo against the rival's requirement.
+function Config.DuelFight(fight: any, power: number, need: number): any
+	local ease = Config.EloEase
+	local ratio = if need > 0 then math.max(power, 1) / need else 1
+	local k = math.clamp(math.log(math.max(ratio, 1e-6), 2), 0, ease.maxDoublings)
+	local phases = {}
+	for i, ph in fight.phases do
+		phases[i] = { untilT = ph.untilT, perSecond = ph.perSecond / (1 + ease.pressureCut * k) }
+	end
+	return { perTap = fight.perTap * (1 + ease.tapPerDoubling * k), grace = fight.grace, timeout = fight.timeout, phases = phases, ease = k }
+end
+
 -- Rival pressure (meter per second) at time t.
 function Config.Pressure(fight: any, t: number): number
 	if t < fight.grace then
