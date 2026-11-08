@@ -1,3 +1,13 @@
-{"grass": "4FD23A", "grass_top": "5ED93E", "path": "D16027", "path_edge": "B8501E",
- "brick": "BD624E", "brick_dark": "9C4E40", "stone": "919CA0", "stone_dark": "7A8488",
- "water": "3AA8E0", "river_bed": "2A6EB0", "wood": "9A5228"}
+{
+ "grass": "4BC333",
+ "grass_top": "57CF38",
+ "path": "C05A24",
+ "path_edge": "A84A1C",
+ "brick": "C0604A",
+ "brick_dark": "9E4C3A",
+ "stone": "838F95",
+ "stone_dark": "6E787C",
+ "water": "3AA8E0",
+ "river_bed": "2A6EB0",
+ "wood": "9A5228"
+}
