@@ -17,8 +17,9 @@ local Net = require(ReplicatedStorage:WaitForChild("Kit"):WaitForChild("Net"))
 
 local TAG = "[GlassSmash]"
 local LAUNCH_DELAY = 0.32 -- lands right after the capture beat in ChessClient (0.3 s)
-local LAUNCH_SPEED = 70 -- studs/s toward the glass
-local LAUNCH_UP = 32
+local LAUNCH_SPEED = 55 -- studs/s toward the glass while the push lasts
+local LAUNCH_UP = 14
+local PUSH_TIME = 0.28 -- a short driven push guarantees they go through the pane
 local SHARDS = 18
 local RAGDOLL_TIME = 2.6 -- how long the flying copy stays before fading
 local GLASS_BACK = 2.4 -- glass rebuilds after this
@@ -180,12 +181,8 @@ local function ragdoll(rig: Model)
 		m.Enabled = false
 	end
 	if hum then
-		hum.BreakJointsOnDeath = false
-		hum.RequiresNeck = false
 		hum.PlatformStand = true
-		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 		pcall(function()
-			hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
 			hum:ChangeState(Enum.HumanoidStateType.Physics)
 		end)
 	end
@@ -197,7 +194,7 @@ local function ragdoll(rig: Model)
 			local isRoot = d.Name == "HumanoidRootPart"
 			local isAcc = d.Parent and d.Parent:IsA("Accessory")
 			d.CanCollide = not isRoot and not isAcc
-			if isRoot or isAcc then
+			if isAcc then
 				d.Massless = true
 			end
 		elseif d:IsA("BillboardGui") or d:IsA("Script") or d:IsA("LocalScript") then
@@ -232,7 +229,8 @@ local function shatter(barrier: BasePart, at: Vector3, dir: Vector3)
 		w.CastShadow = false
 		w.Massless = false
 		w.Parent = fxFolder
-		local out = dir * rng:NextNumber(18, 42) + Vector3.new(rng:NextNumber(-14, 14), rng:NextNumber(4, 22), rng:NextNumber(-14, 14))
+		local side = dir:Cross(Vector3.yAxis)
+		local out = dir * rng:NextNumber(18, 42) + side * rng:NextNumber(-12, 12) + Vector3.new(0, rng:NextNumber(4, 22), 0)
 		w.AssemblyLinearVelocity = out
 		w.AssemblyAngularVelocity = Vector3.new(rng:NextNumber(-18, 18), rng:NextNumber(-18, 18), rng:NextNumber(-18, 18))
 		task.delay(1.6 + rng:NextNumber(0, 0.6), function()
@@ -291,12 +289,13 @@ local function smash(stageId: string)
 	end
 	busy[stageId] = true
 
-	-- straight at the glass, level, plus a hop
+	-- straight back through the pane (along its normal, toward it), level, plus a hop
 	local from = root.Position
-	local flat = Vector3.new(barrier.Position.X - from.X, 0, barrier.Position.Z - from.Z)
-	local dir = if flat.Magnitude > 0.1 then flat.Unit else -root.CFrame.LookVector
-	-- where the flight line meets the pane (the pane's normal is its LookVector)
 	local n = barrier.CFrame.LookVector
+	local toPane = barrier.Position - from
+	local flatN = Vector3.new(n.X, 0, n.Z)
+	local dir = if flatN.Magnitude > 0.1 then flatN.Unit * (if toPane:Dot(n) >= 0 then 1 else -1) else -root.CFrame.LookVector
+	local flat = Vector3.new(toPane.X, 0, toPane.Z)
 	local denom = dir:Dot(n)
 	local dist = if math.abs(denom) > 0.05 then (barrier.Position - from):Dot(n) / denom else flat.Magnitude
 	local hit = from + dir * dist + Vector3.new(0, 2, 0)
@@ -316,15 +315,27 @@ local function smash(stageId: string)
 	ragdoll(copy)
 	local rng = Random.new()
 	local spinAxis = dir:Cross(Vector3.yAxis)
-	RunService.Heartbeat:Wait() -- let the humanoid settle into Physics first, or it eats the push
-	for _, d in copy:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.AssemblyLinearVelocity = dir * LAUNCH_SPEED + Vector3.new(0, LAUNCH_UP, 0)
-		end
-	end
+	-- a plain velocity kick gets eaten by the rig, so drive the torso for a moment, then let go
 	local copyRoot = copy:FindFirstChild("UpperTorso") or copy:FindFirstChild("HumanoidRootPart")
 	if copyRoot and copyRoot:IsA("BasePart") then
-		copyRoot.AssemblyAngularVelocity = -spinAxis * rng:NextNumber(8, 12) + Vector3.new(0, rng:NextNumber(-4, 4), 0)
+		local att = Instance.new("Attachment")
+		att.Parent = copyRoot
+		local lv = Instance.new("LinearVelocity")
+		lv.Attachment0 = att
+		lv.RelativeTo = Enum.ActuatorRelativeTo.World
+		lv.MaxForce = 1e6
+		lv.VectorVelocity = dir * LAUNCH_SPEED + Vector3.new(0, LAUNCH_UP, 0)
+		lv.Parent = copyRoot
+		local av = Instance.new("AngularVelocity")
+		av.Attachment0 = att
+		av.RelativeTo = Enum.ActuatorRelativeTo.World
+		av.MaxTorque = 1e5
+		av.AngularVelocity = -spinAxis * rng:NextNumber(7, 11) + Vector3.new(0, rng:NextNumber(-3, 3), 0)
+		av.Parent = copyRoot
+		task.delay(PUSH_TIME, function()
+			lv:Destroy()
+			av:Destroy()
+		end)
 	end
 	play("Whoosh", 0.6, 1.1)
 	play("Oof", 0.9, rng:NextNumber(0.95, 1.1))
