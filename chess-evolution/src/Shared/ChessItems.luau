@@ -14,7 +14,7 @@ local ChessItems = {}
 
 -- The held board is a Tool; the game has no other tools, so the client hides the hotbar
 -- (otherwise a "ChessItem" slot shows and pressing 1 would put the board away).
-if game:GetService("RunService"):IsClient() then
+if game ~= nil and game:GetService("RunService"):IsClient() then
 	task.spawn(function()
 		for _ = 1, 10 do
 			if pcall(function()
