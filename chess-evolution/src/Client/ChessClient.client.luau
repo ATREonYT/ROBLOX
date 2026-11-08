@@ -1051,18 +1051,8 @@ end
 ---------------------------------------------------------------------------
 -- Guide (first session): Train -> Challenge -> Buy -> Equip, from real state
 ---------------------------------------------------------------------------
-local arrows: { BasePart } = {}
-for i = 1, 7 do
-	local a = Instance.new("WedgePart")
-	a.Name = "GuideArrow"
-	a.Size = Vector3.new(0.2, 0.8, 0.9)
-	a.Color = Color3.new(1, 1, 1)
-	a.Material = Enum.Material.Neon
-	a.Anchored, a.CanCollide, a.CanQuery, a.CanTouch, a.CastShadow = true, false, false, false, false
-	a.Transparency = 1
-	a.Parent = fxFolder
-	arrows[i] = a
-end
+-- tutorial arrows: Cannon's dart chain (Kit.GuideDarts, build guide §5)
+local darts = require(Kit:WaitForChild("GuideDarts")).new(fxFolder)
 local guide: any = { step = 0, target = nil, customTarget = nil, sub = nil }
 -- Step 4 ends on the first confirmed Elo gain with Marble equipped, so the player sees +2 land.
 -- A player who joins with Marble already equipped has done it before: skip the step.
@@ -3371,30 +3361,17 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	stepArms(dt)
 
-	-- guide arrows: a floating chain of chevrons from the player toward the target
+	-- guide arrows: Cannon's floating dart chain from you to the target (Kit.GuideDarts);
+	-- hidden in a duel and while you train on a treadmill
 	local r = root()
 	local target = guide.customTarget or (if guide.step <= 3 then guide.target else nil)
 	if guide.customTarget and r and (r.Position - guide.customTarget).Magnitude < 14 then
 		guide.customTarget = nil
 	end
-	if r and target and not battle and (r.Position - target).Magnitude > 10 then
-		local from = r.Position - Vector3.new(0, 1.2, 0)
-		local flat = Vector3.new(target.X - from.X, 0, target.Z - from.Z)
-		local dir = flat.Unit
-		for i, a in arrows do
-			local d = 5 + (i - 1) * 4 + (now * 3 % 4)
-			if d < flat.Magnitude - 3 then
-				local pos = from + dir * d + Vector3.new(0, 0.3 + math.sin(now * 3 + i) * 0.08, 0)
-				a.CFrame = CFrame.lookAt(pos, pos + dir) * CFrame.Angles(-math.pi / 2, 0, 0)
-				a.Transparency = 0.15 + math.max(0, (i - 5) * 0.2)
-			else
-				a.Transparency = 1
-			end
-		end
+	if r and target and not battle and standingOnDeck() == nil then
+		darts:Draw(r.Position, target + Vector3.new(0, 2, 0))
 	else
-		for _, a in arrows do
-			a.Transparency = 1
-		end
+		darts:Hide()
 	end
 
 	-- gallery: slow bob and turn of featured pieces, orbiting beads; the nameplate stays still
