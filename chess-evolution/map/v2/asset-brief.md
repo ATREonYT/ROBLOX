@@ -48,3 +48,11 @@ TARGET      Roblox Studio. Export groups as FBX per collection plus simple colli
 - Fuller trees (six-tier pine, big offset-cube tree, pale trunk), chunky studded bushes, neutral greys, red-orange walls.
 - Still worse than the screenshots: the lime strip between stages reads thinner than the reference, trees are bigger
   blocks without the small stud overhangs, no small grass tufts on top of walls.
+
+## Colour, shading and tree pass (Nov 8, v4)
+- Colours measured from lit faces in the screenshots (24 px medians), lighting lowered so lit faces land on them.
+- Soft rounded block edges (bevel, hardened normals) plus contact shading in corners on every visual mesh.
+- Trees, bushes and trunks use a mixed sheet of raised and sunken square studs; one tree has a leaning trunk
+  and both trees have flat splayed root planks, as in Alex's tree close-up. Normal square studs everywhere else.
+- No gate at the lane entrance (Alex): frames start at stage 2.
+- Sheet and compare: `review/v4_four_panel_sheet.jpg`, `review/v4_compare.jpg`.

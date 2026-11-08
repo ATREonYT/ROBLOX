@@ -17,15 +17,15 @@ WALL_H, SHELF_D, WALL2_H = 18, 10, 30    # wall, grass shelf depth, second step 
 SEG = 8                                   # wall section length
 WATER = (-24, 8, -76, -60)               # recess x0, x1, y0, y1
 
-COL = {  # sRGB hex, tuned to the screenshots' lit colours
-    "grass": "6BEF3C", "grass_cap": "7AF54A", "path": "EE8C2E", "spawn": "A9B2B6",
-    "wall_face": "DE5A2A", "wall_band": "8A3A22", "wall_skirt": "8F999E",
-    "stone": "C2C4C6", "stone_dark": "A3A6A9", "stone_low": "B4B7B9",
-    "lane": "C6C8CA", "kerb": "A7AAAD", "lime": "7DF03A", "red": "E8333A", "charcoal": "3A3E46",
-    "yellow": "F6C928", "magenta": "E23AE6", "water": "56D3F7", "water_bed": "2E7FC4",
-    "rock": "8C9297", "rail": "9C5A2C", "trunk": "C9612C", "birch": "ECE7DA",
-    "leaf": "62DF38", "leaf2": "4ECB2E", "bush": "7AE64A", "sprig": "58D232",
-    "portal_shell": "4A3FE0", "portal_inner": "FF4FD3",
+COL = {  # sRGB hex, measured from lit faces in the screenshots (Nov 8 sample pass)
+    "grass": "3FE80A", "grass_cap": "52F218", "path": "FF9410", "spawn": "A9B6BA",
+    "wall_face": "CC4A20", "wall_band": "7E2A12", "wall_skirt": "8E9CA1",
+    "stone": "ABBCC1", "stone_dark": "8E9EA4", "stone_low": "9EAFB4",
+    "lane": "B9C8CB", "kerb": "98A7AB", "lime": "6CFF15", "red": "FF1B3B", "charcoal": "363B44",
+    "yellow": "FFCC12", "magenta": "F01EF5", "water": "3CCBFA", "water_bed": "1E6FC4",
+    "rock": "8A969B", "rail": "A8501E", "trunk": "D5531F", "birch": "ECE7DA",
+    "leaf": "3EE80A", "leaf2": "2ECB04", "bush": "4CF012", "sprig": "38D608",
+    "portal_shell": "3A2FF0", "portal_inner": "FF3FD3",
 }
 STAGE_COL = ["B0B6BE", "50C846", "326EEB", "E63CC8", "FAC828", "F58228", "E13237",
              "9646E6", "28C8D2", "8CE646", "5A78FF", "FFAA3C", "BE5AFF", "FFD750"]
@@ -57,11 +57,39 @@ def stud_image():
     return img
 
 # per-material tile variation seen in the screenshots: grass checker, cobbled stone tiles, soft lane and wall tiles
-VAR = {"grass": ("checker", 4, 0.11), "grass_cap": ("checker", 4, 0.09), "leaf": ("noise", 2, 0.06),
+VAR = {"grass": ("checker", 4, 0.07), "grass_cap": ("checker", 4, 0.06), "leaf": ("noise", 2, 0.06),
        "leaf2": ("noise", 2, 0.06), "bush": ("noise", 2, 0.05),
        "stone": ("noise", 2, 0.07), "stone_dark": ("noise", 2, 0.07), "stone_low": ("noise", 2, 0.07),
        "lane": ("noise", 4, 0.035), "kerb": ("noise", 2, 0.04), "path": ("noise", 2, 0.04),
        "wall_face": ("noise", 2, 0.045), "trunk": ("noise", 1, 0.05), "rock": ("noise", 1, 0.08)}
+
+def stud_image_mixed():
+    """Tree close-up: square studs, about a third of them sunk in (dark hole, light lower lip) instead of raised."""
+    name = "StudTileMixed"
+    if name in bpy.data.images: return bpy.data.images[name]
+    g, n = 8, 32; N = g * n; rnd = random.Random(5)
+    sunk = [[rnd.random() < 0.38 for _ in range(g)] for _ in range(g)]
+    img = bpy.data.images.new(name, N, N, alpha=False); px = []
+    for J in range(N):
+        for I in range(N):
+            gi, gj = I // n, J // n
+            x, y = ((I % n) + 0.5) / n - 0.5, ((J % n) + 0.5) / n - 0.5
+            v = 1.0; a = 0.24; e = 0.06
+            if abs(x) < a and abs(y) < a:
+                if sunk[gj][gi]:
+                    v = 0.80                                    # hole floor in soft shadow
+                    if y < -a + e or x > a - e: v = 0.92       # lit inner lip
+                    if y > a - e or x < -a + e: v = 0.68       # shadow under the top edge
+                else:
+                    v = 1.03
+                    if y > a - e or x < -a + e: v = 0.72
+                    elif y < -a + e or x > a - e: v = 1.12
+            if abs(x) > 0.485 or abs(y) > 0.485: v = 0.95
+            px += [v, v, v, 1.0]
+    img.pixels = px; img.pack()
+    return img
+
+MIXED = {"leaf", "leaf2", "bush", "trunk", "birch", "sprig"}
 
 MATS = {}
 def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
@@ -74,9 +102,14 @@ def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
     b.inputs["Roughness"].default_value = rough
     if studs:
         geo = N.new("ShaderNodeNewGeometry")
-        tex = N.new("ShaderNodeTexImage"); tex.image = stud_image(); tex.projection = 'BOX'; tex.projection_blend = 0.0
+        tex = N.new("ShaderNodeTexImage"); tex.projection = 'BOX'; tex.projection_blend = 0.0
         tex.interpolation = 'Linear'
-        L.new(geo.outputs["Position"], tex.inputs["Vector"])   # world grid: studs line up across every block
+        if key in MIXED:                                        # 8x8-stud sheet of raised and sunken studs
+            tex.image = stud_image_mixed(); sc8 = N.new("ShaderNodeVectorMath"); sc8.operation = 'SCALE'
+            sc8.inputs["Scale"].default_value = 1 / 8; L.new(geo.outputs["Position"], sc8.inputs[0]); L.new(sc8.outputs[0], tex.inputs["Vector"])
+        else:
+            tex.image = stud_image()
+            L.new(geo.outputs["Position"], tex.inputs["Vector"])   # world grid: studs line up across every block
         mix = N.new("ShaderNodeMix"); mix.data_type = 'RGBA'; mix.blend_type = 'MULTIPLY'
         mix.inputs["Factor"].default_value = 1.0
         mix.inputs[6].default_value = rgb
@@ -97,6 +130,11 @@ def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
                 L.new(wn.outputs["Value"], mr.inputs[0]); var_out = mr.outputs[0]
             mix2 = N.new("ShaderNodeMix"); mix2.data_type = 'RGBA'; mix2.blend_type = 'MULTIPLY'; mix2.inputs["Factor"].default_value = 1.0
             L.new(col_out, mix2.inputs[6]); L.new(var_out, mix2.inputs[7]); col_out = mix2.outputs[2]
+        ao = N.new("ShaderNodeAmbientOcclusion"); ao.inputs["Distance"].default_value = 2.5; ao.samples = 8
+        aomr = N.new("ShaderNodeMapRange"); aomr.inputs[3].default_value = 0.62; aomr.inputs[4].default_value = 1.0
+        L.new(ao.outputs["AO"], aomr.inputs[0])
+        mix3 = N.new("ShaderNodeMix"); mix3.data_type = 'RGBA'; mix3.blend_type = 'MULTIPLY'; mix3.inputs["Factor"].default_value = 1.0
+        L.new(col_out, mix3.inputs[6]); L.new(aomr.outputs[0], mix3.inputs[7]); col_out = mix3.outputs[2]
         L.new(col_out, b.inputs["Base Color"])
         bump = N.new("ShaderNodeBump"); bump.inputs["Strength"].default_value = 0.6; bump.inputs["Distance"].default_value = 0.05
         L.new(tex.outputs["Color"], bump.inputs["Height"]); L.new(bump.outputs["Normal"], b.inputs["Normal"])
@@ -106,7 +144,7 @@ def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
         b.inputs["Alpha"].default_value = alpha
         try: m.surface_render_method = 'BLENDED'
         except Exception: m.blend_method = 'BLEND'
-    if key.startswith("wall_"): emit = max(emit, 0.22)   # screenshot walls stay bright orange even in shadow
+    if key.startswith("wall_"): emit = max(emit, 0.12)   # screenshot walls stay bright orange even in shadow
     if emit:
         b.inputs["Emission Color"].default_value = rgb; b.inputs["Emission Strength"].default_value = emit
     # section fill: inside faces (seen only when a camera cuts through a block) render flat dark grey
@@ -212,13 +250,18 @@ def module_trees():
     root = coll("MODULES"); T, L1, L2 = mat("trunk"), mat("leaf"), mat("leaf2")
     t1 = coll("Tree_Stepped", root)
     box(t1, "Trunk", -1.5, 1.5, -1.5, 1.5, 0, 9, T)
-    for dx, dy in ((2, 0), (-2, 0), (0, 2), (0, -2)):                       # root flares
-        box(t1, "Root", -1 + dx, 1 + dx, -1 + dy, 1 + dy, 0, 1.2, T)
+    for x0, x1, y0, y1 in ((1, 5, -0.8, 0.8), (-5, -1, -0.8, 0.8), (-0.8, 0.8, 1, 5), (-0.8, 0.8, -5, -1)):
+        box(t1, "Root", x0, x1, y0, y1, 0, 0.7, T)                                # flat root planks
     for k, (w, z) in enumerate(((17, 7), (14, 10.5), (11, 14), (8, 17.5), (5, 21), (2.5, 24))):
         box(t1, f"Canopy{k}", -w/2, w/2, -w/2, w/2, z, z + 3, L1 if k % 2 == 0 else L2)
     t2 = coll("Tree_OffsetBox", root)
-    box(t2, "Trunk", -1.5, 1.5, -1.5, 1.5, 0, 11, T)
-    box(t2, "Branch", 1.5, 5, -1, 1, 8, 10, T)
+    lean = 1.6                                                                   # trunk leans like the close-up
+    v = [(-1.5,-1.5,0),(1.5,-1.5,0),(1.5,1.5,0),(-1.5,1.5,0),(-1.5+lean,-1.5,11),(1.5+lean,-1.5,11),(1.5+lean,1.5,11),(-1.5+lean,1.5,11)]
+    _obj(t2, "Trunk", v, [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)], T)
+    for nm, (x0, x1, y0, y1) in (("RootE", (1, 5.5, -1, 0.6)), ("RootW", (-5, -1, -0.4, 1.2)),
+                                 ("RootN", (-0.8, 0.8, 1, 5)), ("RootS", (-0.4, 1.2, -5.5, -1))):
+        box(t2, nm, x0, x1, y0, y1, 0, 0.7, T)                                   # flat splayed root planks
+    box(t2, "Branch", 3, 6, -1, 1, 8, 10, T)
     box(t2, "Canopy0", -6, 7, -6, 6, 9, 17, L1)
     box(t2, "Canopy1", -8, 0, -4, 5, 14, 21, L2)
     box(t2, "Canopy2", 2, 9, -3, 4, 16, 20, L2)
@@ -307,7 +350,7 @@ def build_lane(bay):
     for i in range(BAYS):
         y = LANE_Y0 + i * BAY_PITCH
         instance(c, bay, f"Bay{i+1:02d}", (0, y, 0))
-        stage_frame(f, i, y + 1.85)
+        if i > 0: stage_frame(f, i, y + 1.85)      # Alex: no gate at the lane entrance, walk straight into stage 1
     col_box("LaneFloor", -LANE_HALF, LANE_HALF, LANE_Y0, LANE_Y1, -1, 0.3)
 
 def build_walls(wall):
@@ -380,14 +423,14 @@ def setup_scene():
     try: sc.eevee.taa_render_samples = 24
     except Exception: pass
     w = bpy.data.worlds.new("Daylight"); sc.world = w; w.use_nodes = True
-    bg = w.node_tree.nodes["Background"]; bg.inputs[0].default_value = (*lin("EEF2F6"), 1); bg.inputs[1].default_value = 1.0
+    bg = w.node_tree.nodes["Background"]; bg.inputs[0].default_value = (*lin("EEF2F6"), 1); bg.inputs[1].default_value = 0.5
     WN = w.node_tree.nodes; WL = w.node_tree.links
     sky = WN.new("ShaderNodeBackground"); sky.inputs[0].default_value = (*lin("9CCBFF"), 1); sky.inputs[1].default_value = 1.0
     lp = WN.new("ShaderNodeLightPath"); mx = WN.new("ShaderNodeMixShader")
     WL.new(lp.outputs["Is Camera Ray"], mx.inputs[0]); WL.new(bg.outputs[0], mx.inputs[1]); WL.new(sky.outputs[0], mx.inputs[2])
     WL.new(mx.outputs[0], WN["World Output"].inputs["Surface"])
     sun = bpy.data.objects.new("Sun", bpy.data.lights.new("Sun", 'SUN'))
-    sun.data.energy = 3.0; sun.data.angle = math.radians(3); sun.data.color = (1.0, 0.97, 0.9)
+    sun.data.energy = 2.5; sun.data.angle = math.radians(3); sun.data.color = (1.0, 0.97, 0.9)
     sun.rotation_euler = (math.radians(38), math.radians(8), math.radians(-30))
     coll("CAMERAS").objects.link(sun)
 
@@ -421,6 +464,12 @@ def build():
     bpy.context.view_layer.layer_collection.children["MODULES"].exclude = True
     build_hub(); build_terrace_a(); build_terrace_b(); build_water(); build_portal()
     build_lane(bay); build_walls(wall); build_foliage(trees)
+    col = bpy.data.collections["COLLISION"]
+    for ob in bpy.data.objects:
+        if ob.type == 'MESH' and ob.name not in col.objects and "Water" not in ob.name:
+            bv = ob.modifiers.new("Bevel", 'BEVEL'); bv.width = 0.18; bv.segments = 3
+            bv.limit_method = 'ANGLE'; bv.use_clamp_overlap = True; bv.harden_normals = True   # flat faces, soft rounded edges
+            for p in ob.data.polygons: p.use_smooth = True
     for n, (loc, look, vf, orth, cs) in CAMS.items(): camera(n, loc, look, vf or 70, orth, cs)
     bpy.context.scene.camera = bpy.data.objects["CAM_ThreeQuarter"]
     bpy.ops.wm.save_as_mainfile(filepath=HERE + "ChessMap_v2.blend")
