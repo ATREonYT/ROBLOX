@@ -33,10 +33,18 @@ TARGET      Roblox Studio. Export groups as FBX per collection plus simple colli
 - `ChessMap_v2.blend` is the editable scene; `build_map_v2.py` rebuilds it from scratch (run inside Blender).
 - Final sizes changed from the first estimate after comparing with the screenshots: lane 28 wide, walls 18 tall
   with a second step at 30, Terrace B floor sunk to 0.5 inside a rim at 3 with a shelf at 4.2, frames 15 tall.
-- `review/v2_four_panel_sheet.jpg` (overhead, three-quarter, lane cut, player eye) and `review/v2_compare.jpg` (screenshots vs Blender).
+- `review/v3_four_panel_sheet.jpg` (overhead, three-quarter, lane cut, player eye) and `review/v3_compare.jpg` (screenshots vs Blender).
 - `export/<Group>.fbx`: one FBX per collection (Hub, Terrace_A, Terrace_B, Water, Portal, Lane, Stage_Frames, Walls,
   Foliage) plus `COLLISION.fbx` (simple boxes). Reusable modules: Module_StageBay, Module_Wall, three trees, each at its own origin.
 - Checks (raycasts): lane centre is clear from y 62 to 620 (only the stage frame crossbars, 15 up); paths sit 0.15 on grass;
   Terrace A ramps run 1.2 to 5 and Terrace B end ramps 0.5 to 3, both flush with the level they meet.
 - Still worse than the screenshots: blocky trees are simpler, grass has no darker checker squares, the stud texture is
   a Blender stand-in (Studio uses its own studs), the far lane and wall backs are guesses.
+
+## Texture pass (Nov 8, v3)
+- Square Roblox-style studs on every surface (dark top/left edge, light bottom/right), with stronger bump.
+- Tile variation read from the screenshots: 4-stud grass checker, 2-stud stone tiles, soft lane and wall tiles.
+- Stage barriers: grey curbs either side of a lime strip at every stage boundary; side kerbs on the lane.
+- Fuller trees (six-tier pine, big offset-cube tree, pale trunk), chunky studded bushes, neutral greys, red-orange walls.
+- Still worse than the screenshots: the lime strip between stages reads thinner than the reference, trees are bigger
+  blocks without the small stud overhangs, no small grass tufts on top of walls.

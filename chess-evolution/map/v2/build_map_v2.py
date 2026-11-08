@@ -19,9 +19,9 @@ WATER = (-24, 8, -76, -60)               # recess x0, x1, y0, y1
 
 COL = {  # sRGB hex, tuned to the screenshots' lit colours
     "grass": "6BEF3C", "grass_cap": "7AF54A", "path": "EE8C2E", "spawn": "A9B2B6",
-    "wall_face": "F06A2C", "wall_band": "8A3A22", "wall_skirt": "8F999E",
-    "stone": "B3BDC1", "stone_dark": "97A2A7", "stone_low": "A6B0B4",
-    "lane": "B8BFC3", "kerb": "A1A9AD", "lime": "7DF03A", "red": "E8333A", "charcoal": "3A3E46",
+    "wall_face": "DE5A2A", "wall_band": "8A3A22", "wall_skirt": "8F999E",
+    "stone": "C2C4C6", "stone_dark": "A3A6A9", "stone_low": "B4B7B9",
+    "lane": "C6C8CA", "kerb": "A7AAAD", "lime": "7DF03A", "red": "E8333A", "charcoal": "3A3E46",
     "yellow": "F6C928", "magenta": "E23AE6", "water": "56D3F7", "water_bed": "2E7FC4",
     "rock": "8C9297", "rail": "9C5A2C", "trunk": "C9612C", "birch": "ECE7DA",
     "leaf": "62DF38", "leaf2": "4ECB2E", "bush": "7AE64A", "sprig": "58D232",
@@ -36,22 +36,32 @@ def lin(h):
 
 # ---------------------------------------------------------------- materials ---
 def stud_image():
-    """One stud per tile, used as a colour multiplier and a bump: the shared stud grid."""
-    name = "StudTile"
+    """One square stud per tile, as in the screenshots: flat plate, a raised square lit from the top-left,
+    dark edge on its top and left, light edge on its bottom and right. Used as colour multiplier and bump."""
+    name = "StudTileSquare"
     if name in bpy.data.images: return bpy.data.images[name]
     n = 64; img = bpy.data.images.new(name, n, n, alpha=False)
     px = []
     for j in range(n):
         for i in range(n):
-            x, y = (i + 0.5) / n - 0.5, (j + 0.5) / n - 0.5
-            r = math.hypot(x, y)
-            v = 0.93                                    # flat plate
-            if r < 0.30: v = 1.0 + 0.10 * (y + x)       # stud top, lit from top-left
-            elif r < 0.34: v = 0.74                     # stud rim shadow
-            if abs(x) > 0.47 or abs(y) > 0.47: v = 0.86  # faint tile seam
+            x, y = (i + 0.5) / n - 0.5, (j + 0.5) / n - 0.5     # y up in image space
+            v = 1.0                                         # flat plate
+            a = 0.22; e = 0.045                             # stud half size, edge width
+            if abs(x) < a and abs(y) < a:
+                v = 1.03
+                if y > a - e or x < -a + e: v = 0.70       # top / left edge: shadow line
+                elif y < -a + e or x > a - e: v = 1.12     # bottom / right edge: highlight
+            if abs(x) > 0.485 or abs(y) > 0.485: v = 0.95  # faint plate seam
             px += [v, v, v, 1.0]
     img.pixels = px; img.pack()
     return img
+
+# per-material tile variation seen in the screenshots: grass checker, cobbled stone tiles, soft lane and wall tiles
+VAR = {"grass": ("checker", 4, 0.11), "grass_cap": ("checker", 4, 0.09), "leaf": ("noise", 2, 0.06),
+       "leaf2": ("noise", 2, 0.06), "bush": ("noise", 2, 0.05),
+       "stone": ("noise", 2, 0.07), "stone_dark": ("noise", 2, 0.07), "stone_low": ("noise", 2, 0.07),
+       "lane": ("noise", 4, 0.035), "kerb": ("noise", 2, 0.04), "path": ("noise", 2, 0.04),
+       "wall_face": ("noise", 2, 0.045), "trunk": ("noise", 1, 0.05), "rock": ("noise", 1, 0.08)}
 
 MATS = {}
 def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
@@ -70,8 +80,25 @@ def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
         mix = N.new("ShaderNodeMix"); mix.data_type = 'RGBA'; mix.blend_type = 'MULTIPLY'
         mix.inputs["Factor"].default_value = 1.0
         mix.inputs[6].default_value = rgb
-        L.new(tex.outputs["Color"], mix.inputs[7]); L.new(mix.outputs[2], b.inputs["Base Color"])
-        bump = N.new("ShaderNodeBump"); bump.inputs["Strength"].default_value = 0.35; bump.inputs["Distance"].default_value = 0.05
+        L.new(tex.outputs["Color"], mix.inputs[7]); col_out = mix.outputs[2]
+        if key in VAR:
+            kind, cell, amp = VAR[key]
+            if kind == "checker":
+                add = N.new("ShaderNodeVectorMath"); add.operation = 'ADD'; add.inputs[1].default_value = (0.01, 0.01, 1.0)
+                L.new(geo.outputs["Position"], add.inputs[0])
+                chk = N.new("ShaderNodeTexChecker"); chk.inputs["Scale"].default_value = 0.5 / cell
+                chk.inputs["Color1"].default_value = (1 + amp,) * 3 + (1,); chk.inputs["Color2"].default_value = (1 - amp,) * 3 + (1,)
+                L.new(add.outputs[0], chk.inputs["Vector"]); var_out = chk.outputs["Color"]
+            else:
+                snap = N.new("ShaderNodeVectorMath"); snap.operation = 'SNAP'; snap.inputs[1].default_value = (cell, cell, cell)
+                L.new(geo.outputs["Position"], snap.inputs[0])
+                wn = N.new("ShaderNodeTexWhiteNoise"); wn.noise_dimensions = '3D'; L.new(snap.outputs[0], wn.inputs["Vector"])
+                mr = N.new("ShaderNodeMapRange"); mr.inputs[3].default_value = 1 - amp; mr.inputs[4].default_value = 1 + amp
+                L.new(wn.outputs["Value"], mr.inputs[0]); var_out = mr.outputs[0]
+            mix2 = N.new("ShaderNodeMix"); mix2.data_type = 'RGBA'; mix2.blend_type = 'MULTIPLY'; mix2.inputs["Factor"].default_value = 1.0
+            L.new(col_out, mix2.inputs[6]); L.new(var_out, mix2.inputs[7]); col_out = mix2.outputs[2]
+        L.new(col_out, b.inputs["Base Color"])
+        bump = N.new("ShaderNodeBump"); bump.inputs["Strength"].default_value = 0.6; bump.inputs["Distance"].default_value = 0.05
         L.new(tex.outputs["Color"], bump.inputs["Height"]); L.new(bump.outputs["Normal"], b.inputs["Normal"])
     else:
         b.inputs["Base Color"].default_value = rgb
@@ -79,7 +106,7 @@ def mat(key, studs=True, alpha=1.0, emit=0.0, rough=0.55):
         b.inputs["Alpha"].default_value = alpha
         try: m.surface_render_method = 'BLENDED'
         except Exception: m.blend_method = 'BLEND'
-    if key.startswith("wall_"): emit = max(emit, 0.3)   # screenshot walls stay bright orange even in shadow
+    if key.startswith("wall_"): emit = max(emit, 0.22)   # screenshot walls stay bright orange even in shadow
     if emit:
         b.inputs["Emission Color"].default_value = rgb; b.inputs["Emission Strength"].default_value = emit
     # section fill: inside faces (seen only when a camera cuts through a block) render flat dark grey
@@ -157,7 +184,9 @@ def module_bay():
     box(c, "Floor", -h, h, 0, BAY_PITCH, -1, 0.3, mat("lane"))
     box(c, "KerbL", -h, -h + 1.5, 0, BAY_PITCH, 0.3, 0.8, mat("kerb"))
     box(c, "KerbR", h - 1.5, h, 0, BAY_PITCH, 0.3, 0.8, mat("kerb"))
-    box(c, "Divider", -h + 1.5, h - 1.5, 0, 1.2, 0.3, 0.45, mat("lime"))       # thin lime strip at the boundary
+    box(c, "BarrierFront", -h + 1.5, h - 1.5, 0, 0.8, 0.3, 0.8, mat("kerb"))     # stage barrier: grey curb
+    box(c, "Divider", -h + 1.5, h - 1.5, 0.8, 3.8, 0.3, 0.55, mat("lime"))        # lime strip between the curbs
+    box(c, "BarrierBack", -h + 1.5, h - 1.5, 3.8, 4.6, 0.3, 0.8, mat("kerb"))    # second grey curb
     box(c, "RedMat", 0.5, 12.5, 11, 27, 0.3, 0.6, mat("red"))                    # right of centre
     box(c, "Plate1", 9.5, 12.0, 14, 16.5, 0.6, 0.85, mat("charcoal"))           # two plates on its right side
     box(c, "Plate2", 9.5, 12.0, 19, 21.5, 0.6, 0.85, mat("charcoal"))
@@ -178,23 +207,27 @@ def stage_frame(c, i, y):
     return _obj(c, f"Stage{i+1:02d}_Frame", v, f, m)
 
 def module_trees():
-    """Three reusable trees at their own origins: stepped canopy, offset boxes, pale trunk."""
-    root = coll("MODULES")
+    """Three reusable trees at their own origins, sized like the screenshots: a tall stepped pine of square slabs,
+    a big offset-cube tree, and a pale-trunk tree. All studded."""
+    root = coll("MODULES"); T, L1, L2 = mat("trunk"), mat("leaf"), mat("leaf2")
     t1 = coll("Tree_Stepped", root)
-    box(t1, "Trunk", -1, 1, -1, 1, 0, 7, mat("trunk"))
-    for dx, dy in ((1.5, 0), (-1.5, 0), (0, 1.5), (0, -1.5)):              # root flares
-        box(t1, "Root", -1 + dx, 1 + dx, -1 + dy, 1 + dy, 0, 0.8, mat("trunk"))
-    for k, (w, z) in enumerate(((11, 6), (8, 9), (5, 12), (2.5, 15))):
-        box(t1, f"Canopy{k}", -w/2, w/2, -w/2, w/2, z, z + 3, mat("leaf"))
+    box(t1, "Trunk", -1.5, 1.5, -1.5, 1.5, 0, 9, T)
+    for dx, dy in ((2, 0), (-2, 0), (0, 2), (0, -2)):                       # root flares
+        box(t1, "Root", -1 + dx, 1 + dx, -1 + dy, 1 + dy, 0, 1.2, T)
+    for k, (w, z) in enumerate(((17, 7), (14, 10.5), (11, 14), (8, 17.5), (5, 21), (2.5, 24))):
+        box(t1, f"Canopy{k}", -w/2, w/2, -w/2, w/2, z, z + 3, L1 if k % 2 == 0 else L2)
     t2 = coll("Tree_OffsetBox", root)
-    box(t2, "Trunk", -1, 1, -1, 1, 0, 9, mat("trunk"))
-    box(t2, "Canopy0", -4, 6, -4, 5, 7, 13, mat("leaf"))
-    box(t2, "Canopy1", -6, 1, -3, 4, 11, 16, mat("leaf2"))
-    box(t2, "Canopy2", -1, 4, -2, 3, 15, 18, mat("leaf"))
+    box(t2, "Trunk", -1.5, 1.5, -1.5, 1.5, 0, 11, T)
+    box(t2, "Branch", 1.5, 5, -1, 1, 8, 10, T)
+    box(t2, "Canopy0", -6, 7, -6, 6, 9, 17, L1)
+    box(t2, "Canopy1", -8, 0, -4, 5, 14, 21, L2)
+    box(t2, "Canopy2", 2, 9, -3, 4, 16, 20, L2)
+    box(t2, "Canopy3", -3, 4, -3, 3, 20, 24, L1)
     t3 = coll("Tree_PaleTrunk", root)
-    box(t3, "Trunk", -0.8, 0.8, -0.8, 0.8, 0, 12, mat("birch"))
-    box(t3, "Canopy0", -4, 4, -4, 4, 9, 14, mat("leaf2"))
-    box(t3, "Canopy1", -2.5, 2.5, -2.5, 2.5, 14, 17, mat("leaf"))
+    box(t3, "Trunk", -1.2, 1.2, -1.2, 1.2, 0, 15, mat("birch"))
+    box(t3, "Canopy0", -6, 6, -6, 6, 12, 18, L2)
+    box(t3, "Canopy1", -4, 4, -4, 4, 18, 22, L1)
+    box(t3, "Canopy2", -2, 2, -2, 2, 22, 24, L2)
     return [t1, t2, t3]
 
 # ---------------------------------------------------------------- the map ---
@@ -274,7 +307,7 @@ def build_lane(bay):
     for i in range(BAYS):
         y = LANE_Y0 + i * BAY_PITCH
         instance(c, bay, f"Bay{i+1:02d}", (0, y, 0))
-        stage_frame(f, i, y + 1.2)
+        stage_frame(f, i, y + 1.85)
     col_box("LaneFloor", -LANE_HALF, LANE_HALF, LANE_Y0, LANE_Y1, -1, 0.3)
 
 def build_walls(wall):
@@ -319,8 +352,8 @@ def build_foliage(trees):
     for x in range(LANE_HALF + 8, HUB_X, 16):       spots.append((x, HUB_Y1 + D1, WALL_H))
     for x in range(-HUB_X + 6, HUB_X, 16):
         if not (WATER[0] - 4 < x < WATER[1] + 4): spots.append((x, HUB_Y0 - D1, WALL_H))
-    for y in range(LANE_Y0 + 8, LANE_Y1, 18):       spots += [(-LANE_HALF - D1, y, WALL_H), (LANE_HALF + D1, y, WALL_H)]
-    for y in range(HUB_Y0 - 20, LANE_Y1, 26):       # second row on the upper land
+    for y in range(LANE_Y0 + 8, LANE_Y1, 20):       spots += [(-LANE_HALF - D1, y, WALL_H), (LANE_HALF + D1, y, WALL_H)]
+    for y in range(HUB_Y0 - 20, LANE_Y1, 24):       # second row on the upper land
         spots += [(-HUB_X - 34 if y < HUB_Y1 + 20 else -LANE_HALF - 34, y + 9, WALL2_H),
                   (HUB_X + 34 if y < HUB_Y1 + 20 else LANE_HALF + 34, y, WALL2_H)]
     # a few inside the four grass pockets, clear of paths and terraces
@@ -328,10 +361,10 @@ def build_foliage(trees):
     for k, (x, y, z) in enumerate(spots):
         t = trees[k % 3] if k % 7 else trees[2]
         instance(c, t, f"Tree{k:03d}", (x + rnd.uniform(-1.5, 1.5), y + rnd.uniform(-2, 2), z),
-                 rnd.choice((0, 90, 180, 270)), rnd.uniform(0.85, 1.15))
+                 rnd.choice((0, 90, 180, 270)), rnd.uniform(0.7, 0.95))
     B, S, R = mat("bush"), mat("sprig"), mat("rock")
     for (x, y) in ((-12, -30), (14, -26), (-15, 16), (15, 20), (-21, -50), (21, -44), (14, 52)):
-        w = rnd.uniform(3, 5); box(c, "Bush", x - w/2, x + w/2, y - w/3, y + w/3, 0, w * 0.55, B)
+        w = rnd.uniform(4, 6); box(c, "Bush", x - w/2, x + w/2, y - w/2.5, y + w/2.5, 0, w * 0.7, B); box(c, "BushTop", x - w/4, x + w/4, y - w/5, y + w/5, w * 0.7, w * 0.95, B)
     for k in range(26):                         # grass sprigs in the pockets
         x = rnd.choice((-1, 1)) * rnd.uniform(9, 22); y = rnd.uniform(-55, 55)
         if abs(y) < 9 or (abs(x) > 22 and abs(y) < 40): continue
@@ -347,7 +380,12 @@ def setup_scene():
     try: sc.eevee.taa_render_samples = 24
     except Exception: pass
     w = bpy.data.worlds.new("Daylight"); sc.world = w; w.use_nodes = True
-    bg = w.node_tree.nodes["Background"]; bg.inputs[0].default_value = (*lin("9CCBFF"), 1); bg.inputs[1].default_value = 1.15
+    bg = w.node_tree.nodes["Background"]; bg.inputs[0].default_value = (*lin("EEF2F6"), 1); bg.inputs[1].default_value = 1.0
+    WN = w.node_tree.nodes; WL = w.node_tree.links
+    sky = WN.new("ShaderNodeBackground"); sky.inputs[0].default_value = (*lin("9CCBFF"), 1); sky.inputs[1].default_value = 1.0
+    lp = WN.new("ShaderNodeLightPath"); mx = WN.new("ShaderNodeMixShader")
+    WL.new(lp.outputs["Is Camera Ray"], mx.inputs[0]); WL.new(bg.outputs[0], mx.inputs[1]); WL.new(sky.outputs[0], mx.inputs[2])
+    WL.new(mx.outputs[0], WN["World Output"].inputs["Surface"])
     sun = bpy.data.objects.new("Sun", bpy.data.lights.new("Sun", 'SUN'))
     sun.data.energy = 3.0; sun.data.angle = math.radians(3); sun.data.color = (1.0, 0.97, 0.9)
     sun.rotation_euler = (math.radians(38), math.radians(8), math.radians(-30))
