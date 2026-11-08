@@ -1,0 +1,10721 @@
+{
+ "order": [
+  "HumanoidRootPart",
+  "LowerTorso",
+  "UpperTorso",
+  "Head",
+  "LeftUpperArm",
+  "LeftLowerArm",
+  "LeftHand",
+  "RightUpperArm",
+  "RightLowerArm",
+  "RightHand",
+  "LeftUpperLeg",
+  "LeftLowerLeg",
+  "LeftFoot",
+  "RightUpperLeg",
+  "RightLowerLeg",
+  "RightFoot"
+ ],
+ "limbs": {
+  "HumanoidRootPart": {
+   "size": [
+    2,
+    2,
+    1
+   ],
+   "center": [
+    0,
+    0,
+    0
+   ],
+   "parent": null,
+   "motor": null,
+   "joint": null
+  },
+  "LowerTorso": {
+   "size": [
+    2,
+    0.4,
+    1
+   ],
+   "center": [
+    0,
+    -0.8,
+    0
+   ],
+   "parent": "HumanoidRootPart",
+   "motor": "Root",
+   "joint": [
+    0,
+    -0.6,
+    0
+   ]
+  },
+  "UpperTorso": {
+   "size": [
+    2,
+    1.6,
+    1
+   ],
+   "center": [
+    0,
+    0.2,
+    0
+   ],
+   "parent": "LowerTorso",
+   "motor": "Waist",
+   "joint": [
+    0,
+    -0.6,
+    0
+   ]
+  },
+  "Head": {
+   "size": [
+    1.7,
+    1.6,
+    1.6
+   ],
+   "center": [
+    0,
+    1.8,
+    0
+   ],
+   "parent": "UpperTorso",
+   "motor": "Neck",
+   "joint": [
+    0,
+    1.0,
+    0
+   ]
+  },
+  "LeftUpperArm": {
+   "size": [
+    1,
+    1.15,
+    1
+   ],
+   "center": [
+    -1.5,
+    0.43,
+    0
+   ],
+   "parent": "UpperTorso",
+   "motor": "LeftShoulder",
+   "joint": [
+    -1.5,
+    0.75,
+    0
+   ]
+  },
+  "LeftLowerArm": {
+   "size": [
+    1,
+    1.0,
+    1
+   ],
+   "center": [
+    -1.5,
+    -0.65,
+    0
+   ],
+   "parent": "LeftUpperArm",
+   "motor": "LeftElbow",
+   "joint": [
+    -1.5,
+    -0.15,
+    0
+   ]
+  },
+  "LeftHand": {
+   "size": [
+    1,
+    0.45,
+    1
+   ],
+   "center": [
+    -1.5,
+    -1.37,
+    0
+   ],
+   "parent": "LeftLowerArm",
+   "motor": "LeftWrist",
+   "joint": [
+    -1.5,
+    -1.15,
+    0
+   ]
+  },
+  "RightUpperArm": {
+   "size": [
+    1,
+    1.15,
+    1
+   ],
+   "center": [
+    1.5,
+    0.43,
+    0
+   ],
+   "parent": "UpperTorso",
+   "motor": "RightShoulder",
+   "joint": [
+    1.5,
+    0.75,
+    0
+   ]
+  },
+  "RightLowerArm": {
+   "size": [
+    1,
+    1.0,
+    1
+   ],
+   "center": [
+    1.5,
+    -0.65,
+    0
+   ],
+   "parent": "RightUpperArm",
+   "motor": "RightElbow",
+   "joint": [
+    1.5,
+    -0.15,
+    0
+   ]
+  },
+  "RightHand": {
+   "size": [
+    1,
+    0.45,
+    1
+   ],
+   "center": [
+    1.5,
+    -1.37,
+    0
+   ],
+   "parent": "RightLowerArm",
+   "motor": "RightWrist",
+   "joint": [
+    1.5,
+    -1.15,
+    0
+   ]
+  },
+  "LeftUpperLeg": {
+   "size": [
+    1,
+    0.9,
+    1
+   ],
+   "center": [
+    -0.5,
+    -1.45,
+    0
+   ],
+   "parent": "LowerTorso",
+   "motor": "LeftHip",
+   "joint": [
+    -0.5,
+    -1.0,
+    0
+   ]
+  },
+  "LeftLowerLeg": {
+   "size": [
+    1,
+    0.8,
+    1
+   ],
+   "center": [
+    -0.5,
+    -2.3,
+    0
+   ],
+   "parent": "LeftUpperLeg",
+   "motor": "LeftKnee",
+   "joint": [
+    -0.5,
+    -1.9,
+    0
+   ]
+  },
+  "LeftFoot": {
+   "size": [
+    1,
+    0.3,
+    1.2
+   ],
+   "center": [
+    -0.5,
+    -2.85,
+    -0.1
+   ],
+   "parent": "LeftLowerLeg",
+   "motor": "LeftAnkle",
+   "joint": [
+    -0.5,
+    -2.7,
+    0
+   ]
+  },
+  "RightUpperLeg": {
+   "size": [
+    1,
+    0.9,
+    1
+   ],
+   "center": [
+    0.5,
+    -1.45,
+    0
+   ],
+   "parent": "LowerTorso",
+   "motor": "RightHip",
+   "joint": [
+    0.5,
+    -1.0,
+    0
+   ]
+  },
+  "RightLowerLeg": {
+   "size": [
+    1,
+    0.8,
+    1
+   ],
+   "center": [
+    0.5,
+    -2.3,
+    0
+   ],
+   "parent": "RightUpperLeg",
+   "motor": "RightKnee",
+   "joint": [
+    0.5,
+    -1.9,
+    0
+   ]
+  },
+  "RightFoot": {
+   "size": [
+    1,
+    0.3,
+    1.2
+   ],
+   "center": [
+    0.5,
+    -2.85,
+    -0.1
+   ],
+   "parent": "RightLowerLeg",
+   "motor": "RightAnkle",
+   "joint": [
+    0.5,
+    -2.7,
+    0
+   ]
+  }
+ },
+ "rivals": [
+  {
+   "id": "PawnPete",
+   "display": "Pawn Pete",
+   "stage": 1,
+   "scale": 1.0,
+   "colors": {
+    "HumanoidRootPart": [
+     80,
+     200,
+     90
+    ],
+    "LowerTorso": [
+     60,
+     70,
+     110
+    ],
+    "UpperTorso": [
+     80,
+     200,
+     90
+    ],
+    "Head": [
+     255,
+     214,
+     170
+    ],
+    "LeftUpperArm": [
+     80,
+     200,
+     90
+    ],
+    "RightUpperArm": [
+     80,
+     200,
+     90
+    ],
+    "LeftLowerArm": [
+     255,
+     214,
+     170
+    ],
+    "RightLowerArm": [
+     255,
+     214,
+     170
+    ],
+    "LeftHand": [
+     255,
+     214,
+     170
+    ],
+    "RightHand": [
+     255,
+     214,
+     170
+    ],
+    "LeftUpperLeg": [
+     60,
+     70,
+     110
+    ],
+    "RightUpperLeg": [
+     60,
+     70,
+     110
+    ],
+    "LeftLowerLeg": [
+     60,
+     70,
+     110
+    ],
+    "RightLowerLeg": [
+     60,
+     70,
+     110
+    ],
+    "LeftFoot": [
+     240,
+     240,
+     240
+    ],
+    "RightFoot": [
+     240,
+     240,
+     240
+    ]
+   },
+   "extras": [
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      -0.31,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      0.41,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Mouth",
+     "limb": "Head",
+     "size": [
+      0.5,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0,
+      1.42,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "MouthCorner",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      -0.27,
+      1.48,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "MouthCorner",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0.27,
+      1.48,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairTop",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.2,
+      1.76
+     ],
+     "pos": [
+      0,
+      2.6500000000000004,
+      0.02
+     ],
+     "color": [
+      120,
+      72,
+      36
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairBack",
+     "limb": "Head",
+     "size": [
+      1.86,
+      1.2,
+      0.45
+     ],
+     "pos": [
+      0,
+      2.05,
+      0.9050000000000001
+     ],
+     "color": [
+      120,
+      72,
+      36
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideL",
+     "limb": "Head",
+     "size": [
+      0.25,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      -0.895,
+      2.2,
+      0.1
+     ],
+     "color": [
+      120,
+      72,
+      36
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideR",
+     "limb": "Head",
+     "size": [
+      0.25,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      0.895,
+      2.2,
+      0.1
+     ],
+     "color": [
+      120,
+      72,
+      36
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Fringe",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.2,
+      0.3
+     ],
+     "pos": [
+      0,
+      2.55,
+      -0.72
+     ],
+     "color": [
+      120,
+      72,
+      36
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CapCrown",
+     "limb": "Head",
+     "size": [
+      1.9,
+      0.45,
+      1.8
+     ],
+     "pos": [
+      0,
+      2.75,
+      0.02
+     ],
+     "color": [
+      80,
+      200,
+      90
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CapBrim",
+     "limb": "Head",
+     "size": [
+      1.3,
+      0.14,
+      0.8
+     ],
+     "pos": [
+      0,
+      2.58,
+      1.15
+     ],
+     "color": [
+      80,
+      200,
+      90
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CapButton",
+     "limb": "Head",
+     "size": [
+      0.3,
+      0.12,
+      0.3
+     ],
+     "pos": [
+      0,
+      3.0300000000000002,
+      0.02
+     ],
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HoodieHood",
+     "limb": "UpperTorso",
+     "size": [
+      1.9,
+      0.5,
+      0.5
+     ],
+     "pos": [
+      0,
+      0.85,
+      0.55
+     ],
+     "color": [
+      60,
+      170,
+      70
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Pocket",
+     "limb": "UpperTorso",
+     "size": [
+      1.2,
+      0.45,
+      0.06
+     ],
+     "pos": [
+      0,
+      -0.25,
+      -0.53
+     ],
+     "color": [
+      60,
+      170,
+      70
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "PawnBadge",
+     "limb": "UpperTorso",
+     "size": [
+      0.36,
+      0.5,
+      0.06
+     ],
+     "pos": [
+      0.5,
+      0.45,
+      -0.53
+     ],
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KnightNadia",
+   "display": "Knight Nadia",
+   "stage": 2,
+   "scale": 1.0,
+   "colors": {
+    "HumanoidRootPart": [
+     40,
+     90,
+     220
+    ],
+    "LowerTorso": [
+     35,
+     40,
+     60
+    ],
+    "UpperTorso": [
+     40,
+     90,
+     220
+    ],
+    "Head": [
+     198,
+     140,
+     100
+    ],
+    "LeftUpperArm": [
+     40,
+     90,
+     220
+    ],
+    "RightUpperArm": [
+     40,
+     90,
+     220
+    ],
+    "LeftLowerArm": [
+     40,
+     90,
+     220
+    ],
+    "RightLowerArm": [
+     40,
+     90,
+     220
+    ],
+    "LeftHand": [
+     198,
+     140,
+     100
+    ],
+    "RightHand": [
+     198,
+     140,
+     100
+    ],
+    "LeftUpperLeg": [
+     35,
+     40,
+     60
+    ],
+    "RightUpperLeg": [
+     35,
+     40,
+     60
+    ],
+    "LeftLowerLeg": [
+     35,
+     40,
+     60
+    ],
+    "RightLowerLeg": [
+     35,
+     40,
+     60
+    ],
+    "LeftFoot": [
+     250,
+     250,
+     250
+    ],
+    "RightFoot": [
+     250,
+     250,
+     250
+    ]
+   },
+   "extras": [
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      -0.31,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      -0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      6
+     ]
+    },
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      0.41,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      -6
+     ]
+    },
+    {
+     "name": "Mouth",
+     "limb": "Head",
+     "size": [
+      0.5,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0,
+      1.42,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "MouthCorner",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      -0.27,
+      1.48,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "MouthCorner",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0.27,
+      1.48,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairTop",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.35,
+      1.76
+     ],
+     "pos": [
+      0,
+      2.725,
+      0.02
+     ],
+     "color": [
+      30,
+      22,
+      20
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairBack",
+     "limb": "Head",
+     "size": [
+      1.86,
+      1.2,
+      0.45
+     ],
+     "pos": [
+      0,
+      2.05,
+      0.9050000000000001
+     ],
+     "color": [
+      30,
+      22,
+      20
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideL",
+     "limb": "Head",
+     "size": [
+      0.25,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      -0.895,
+      2.2,
+      0.1
+     ],
+     "color": [
+      30,
+      22,
+      20
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideR",
+     "limb": "Head",
+     "size": [
+      0.25,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      0.895,
+      2.2,
+      0.1
+     ],
+     "color": [
+      30,
+      22,
+      20
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Fringe",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.3,
+      0.3
+     ],
+     "pos": [
+      0,
+      2.5,
+      -0.72
+     ],
+     "color": [
+      30,
+      22,
+      20
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Headband",
+     "limb": "Head",
+     "size": [
+      1.9,
+      0.25,
+      1.8
+     ],
+     "pos": [
+      0,
+      2.4,
+      0.0
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Ponytail",
+     "limb": "Head",
+     "size": [
+      0.6,
+      1.2,
+      0.5
+     ],
+     "pos": [
+      0,
+      1.85,
+      1.15
+     ],
+     "color": [
+      30,
+      22,
+      20
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      -20,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Zip",
+     "limb": "UpperTorso",
+     "size": [
+      0.12,
+      1.5,
+      0.06
+     ],
+     "pos": [
+      0,
+      0.2,
+      -0.53
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "KnightBadge",
+     "limb": "UpperTorso",
+     "size": [
+      0.42,
+      0.5,
+      0.06
+     ],
+     "pos": [
+      -0.55,
+      0.45,
+      -0.53
+     ],
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Collar",
+     "limb": "UpperTorso",
+     "size": [
+      1.3,
+      0.25,
+      1.1
+     ],
+     "pos": [
+      0,
+      0.98,
+      0
+     ],
+     "color": [
+      30,
+      70,
+      180
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RookRocco",
+   "display": "Rook Rocco",
+   "stage": 3,
+   "scale": 1.05,
+   "colors": {
+    "HumanoidRootPart": [
+     220,
+     50,
+     50
+    ],
+    "LowerTorso": [
+     220,
+     50,
+     50
+    ],
+    "UpperTorso": [
+     220,
+     50,
+     50
+    ],
+    "Head": [
+     234,
+     184,
+     140
+    ],
+    "LeftUpperArm": [
+     220,
+     50,
+     50
+    ],
+    "RightUpperArm": [
+     220,
+     50,
+     50
+    ],
+    "LeftLowerArm": [
+     234,
+     184,
+     140
+    ],
+    "RightLowerArm": [
+     234,
+     184,
+     140
+    ],
+    "LeftHand": [
+     234,
+     184,
+     140
+    ],
+    "RightHand": [
+     234,
+     184,
+     140
+    ],
+    "LeftUpperLeg": [
+     220,
+     50,
+     50
+    ],
+    "RightUpperLeg": [
+     220,
+     50,
+     50
+    ],
+    "LeftLowerLeg": [
+     220,
+     50,
+     50
+    ],
+    "RightLowerLeg": [
+     220,
+     50,
+     50
+    ],
+    "LeftFoot": [
+     46,
+     48,
+     56
+    ],
+    "RightFoot": [
+     46,
+     48,
+     56
+    ]
+   },
+   "extras": [
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      -0.31,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      -0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      -4
+     ]
+    },
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      0.41,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      4
+     ]
+    },
+    {
+     "name": "Mouth",
+     "limb": "Head",
+     "size": [
+      0.46,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0.06,
+      1.4300000000000002,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      8
+     ]
+    },
+    {
+     "name": "Lens",
+     "limb": "Head",
+     "size": [
+      0.52,
+      0.48,
+      0.05
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8600000000000001
+     ],
+     "color": [
+      20,
+      20,
+      26
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Lens",
+     "limb": "Head",
+     "size": [
+      0.52,
+      0.48,
+      0.05
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8600000000000001
+     ],
+     "color": [
+      20,
+      20,
+      26
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Bridge",
+     "limb": "Head",
+     "size": [
+      0.22,
+      0.08,
+      0.05
+     ],
+     "pos": [
+      0,
+      1.92,
+      -0.8600000000000001
+     ],
+     "color": [
+      30,
+      30,
+      36
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "FlatTop",
+     "limb": "Head",
+     "size": [
+      1.8,
+      0.7,
+      1.7
+     ],
+     "pos": [
+      0,
+      2.9000000000000004,
+      0.0
+     ],
+     "color": [
+      25,
+      20,
+      18
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Stripe",
+     "limb": "UpperTorso",
+     "size": [
+      0.12,
+      1.6,
+      0.06
+     ],
+     "pos": [
+      -0.4,
+      0.2,
+      -0.53
+     ],
+     "color": [
+      250,
+      250,
+      250
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Stripe",
+     "limb": "UpperTorso",
+     "size": [
+      0.12,
+      1.6,
+      0.06
+     ],
+     "pos": [
+      0.4,
+      0.2,
+      -0.53
+     ],
+     "color": [
+      250,
+      250,
+      250
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "LegStripe",
+     "limb": "LeftUpperLeg",
+     "size": [
+      0.1,
+      0.9,
+      0.06
+     ],
+     "pos": [
+      -0.98,
+      -1.45,
+      0
+     ],
+     "color": [
+      250,
+      250,
+      250
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "LegStripe",
+     "limb": "RightUpperLeg",
+     "size": [
+      0.1,
+      0.9,
+      0.06
+     ],
+     "pos": [
+      0.98,
+      -1.45,
+      0
+     ],
+     "color": [
+      250,
+      250,
+      250
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Collar",
+     "limb": "UpperTorso",
+     "size": [
+      1.3,
+      0.25,
+      1.1
+     ],
+     "pos": [
+      0,
+      0.98,
+      0
+     ],
+     "color": [
+      180,
+      30,
+      30
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BishopBea",
+   "display": "Bishop Bea",
+   "stage": 4,
+   "scale": 1.0,
+   "colors": {
+    "HumanoidRootPart": [
+     140,
+     70,
+     170
+    ],
+    "LowerTorso": [
+     246,
+     238,
+     220
+    ],
+    "UpperTorso": [
+     140,
+     70,
+     170
+    ],
+    "Head": [
+     250,
+     205,
+     180
+    ],
+    "LeftUpperArm": [
+     140,
+     70,
+     170
+    ],
+    "RightUpperArm": [
+     140,
+     70,
+     170
+    ],
+    "LeftLowerArm": [
+     250,
+     205,
+     180
+    ],
+    "RightLowerArm": [
+     250,
+     205,
+     180
+    ],
+    "LeftHand": [
+     250,
+     205,
+     180
+    ],
+    "RightHand": [
+     250,
+     205,
+     180
+    ],
+    "LeftUpperLeg": [
+     246,
+     238,
+     220
+    ],
+    "RightUpperLeg": [
+     246,
+     238,
+     220
+    ],
+    "LeftLowerLeg": [
+     246,
+     238,
+     220
+    ],
+    "RightLowerLeg": [
+     246,
+     238,
+     220
+    ],
+    "LeftFoot": [
+     140,
+     70,
+     170
+    ],
+    "RightFoot": [
+     140,
+     70,
+     170
+    ]
+   },
+   "extras": [
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      -0.31,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      0.41,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Mouth",
+     "limb": "Head",
+     "size": [
+      0.5,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0,
+      1.42,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "MouthCorner",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      -0.27,
+      1.48,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "MouthCorner",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0.27,
+      1.48,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Lens",
+     "limb": "Head",
+     "size": [
+      0.52,
+      0.48,
+      0.05
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8600000000000001
+     ],
+     "color": [
+      190,
+      225,
+      255
+     ],
+     "mat": "Glass",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Lens",
+     "limb": "Head",
+     "size": [
+      0.52,
+      0.48,
+      0.05
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8600000000000001
+     ],
+     "color": [
+      190,
+      225,
+      255
+     ],
+     "mat": "Glass",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Bridge",
+     "limb": "Head",
+     "size": [
+      0.22,
+      0.08,
+      0.05
+     ],
+     "pos": [
+      0,
+      1.92,
+      -0.8600000000000001
+     ],
+     "color": [
+      30,
+      30,
+      36
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairTop",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.35,
+      1.76
+     ],
+     "pos": [
+      0,
+      2.725,
+      0.02
+     ],
+     "color": [
+      200,
+      110,
+      60
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairBack",
+     "limb": "Head",
+     "size": [
+      1.86,
+      1.2,
+      0.45
+     ],
+     "pos": [
+      0,
+      2.05,
+      0.9050000000000001
+     ],
+     "color": [
+      200,
+      110,
+      60
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideL",
+     "limb": "Head",
+     "size": [
+      0.25,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      -0.895,
+      2.2,
+      0.1
+     ],
+     "color": [
+      200,
+      110,
+      60
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideR",
+     "limb": "Head",
+     "size": [
+      0.25,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      0.895,
+      2.2,
+      0.1
+     ],
+     "color": [
+      200,
+      110,
+      60
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Fringe",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.3,
+      0.3
+     ],
+     "pos": [
+      0,
+      2.5,
+      -0.72
+     ],
+     "color": [
+      200,
+      110,
+      60
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Bun",
+     "limb": "Head",
+     "size": [
+      0.8,
+      0.8,
+      0.8
+     ],
+     "pos": [
+      0,
+      3.05,
+      0.35
+     ],
+     "color": [
+      200,
+      110,
+      60
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Diagonal",
+     "limb": "UpperTorso",
+     "size": [
+      0.2,
+      2.0,
+      0.06
+     ],
+     "pos": [
+      0,
+      0.2,
+      -0.53
+     ],
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      40
+     ]
+    },
+    {
+     "name": "Collar",
+     "limb": "UpperTorso",
+     "size": [
+      1.3,
+      0.25,
+      1.1
+     ],
+     "pos": [
+      0,
+      0.98,
+      0
+     ],
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "QueenQuinn",
+   "display": "Queen Quinn",
+   "stage": 5,
+   "scale": 1.05,
+   "colors": {
+    "HumanoidRootPart": [
+     246,
+     238,
+     220
+    ],
+    "LowerTorso": [
+     255,
+     200,
+     50
+    ],
+    "UpperTorso": [
+     246,
+     238,
+     220
+    ],
+    "Head": [
+     141,
+     92,
+     62
+    ],
+    "LeftUpperArm": [
+     246,
+     238,
+     220
+    ],
+    "RightUpperArm": [
+     246,
+     238,
+     220
+    ],
+    "LeftLowerArm": [
+     141,
+     92,
+     62
+    ],
+    "RightLowerArm": [
+     141,
+     92,
+     62
+    ],
+    "LeftHand": [
+     141,
+     92,
+     62
+    ],
+    "RightHand": [
+     141,
+     92,
+     62
+    ],
+    "LeftUpperLeg": [
+     255,
+     200,
+     50
+    ],
+    "RightUpperLeg": [
+     255,
+     200,
+     50
+    ],
+    "LeftLowerLeg": [
+     255,
+     200,
+     50
+    ],
+    "RightLowerLeg": [
+     255,
+     200,
+     50
+    ],
+    "LeftFoot": [
+     255,
+     200,
+     50
+    ],
+    "RightFoot": [
+     255,
+     200,
+     50
+    ]
+   },
+   "extras": [
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      -0.31,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      -0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      4
+     ]
+    },
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      0.41,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      -4
+     ]
+    },
+    {
+     "name": "Mouth",
+     "limb": "Head",
+     "size": [
+      0.5,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0,
+      1.42,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "MouthCorner",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      -0.27,
+      1.48,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "MouthCorner",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0.27,
+      1.48,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairTop",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.35,
+      1.76
+     ],
+     "pos": [
+      0,
+      2.725,
+      0.02
+     ],
+     "color": [
+      20,
+      16,
+      14
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairBack",
+     "limb": "Head",
+     "size": [
+      1.86,
+      1.2,
+      0.5
+     ],
+     "pos": [
+      0,
+      2.05,
+      0.93
+     ],
+     "color": [
+      20,
+      16,
+      14
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideL",
+     "limb": "Head",
+     "size": [
+      0.35,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      -0.945,
+      2.2,
+      0.1
+     ],
+     "color": [
+      20,
+      16,
+      14
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideR",
+     "limb": "Head",
+     "size": [
+      0.35,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      0.945,
+      2.2,
+      0.1
+     ],
+     "color": [
+      20,
+      16,
+      14
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Fringe",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.3,
+      0.3
+     ],
+     "pos": [
+      0,
+      2.5,
+      -0.72
+     ],
+     "color": [
+      20,
+      16,
+      14
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "LongHair",
+     "limb": "Head",
+     "size": [
+      1.9,
+      1.7,
+      0.5
+     ],
+     "pos": [
+      0,
+      1.5,
+      0.95
+     ],
+     "color": [
+      20,
+      16,
+      14
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "TiaraBand",
+     "limb": "Head",
+     "size": [
+      1.7,
+      0.2,
+      0.2
+     ],
+     "pos": [
+      0,
+      2.92,
+      -0.82
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Neon",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "TiaraGem",
+     "limb": "Head",
+     "size": [
+      0.34,
+      0.34,
+      0.2
+     ],
+     "pos": [
+      0,
+      3.1799999999999997,
+      -0.82
+     ],
+     "color": [
+      255,
+      80,
+      160
+     ],
+     "mat": "Neon",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      45
+     ]
+    },
+    {
+     "name": "Sash",
+     "limb": "UpperTorso",
+     "size": [
+      0.3,
+      2.1,
+      0.06
+     ],
+     "pos": [
+      0,
+      0.2,
+      -0.53
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      -35
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KingKai",
+   "display": "King Kai",
+   "stage": 6,
+   "scale": 1.1,
+   "colors": {
+    "HumanoidRootPart": [
+     46,
+     48,
+     56
+    ],
+    "LowerTorso": [
+     46,
+     48,
+     56
+    ],
+    "UpperTorso": [
+     46,
+     48,
+     56
+    ],
+    "Head": [
+     234,
+     184,
+     140
+    ],
+    "LeftUpperArm": [
+     46,
+     48,
+     56
+    ],
+    "RightUpperArm": [
+     46,
+     48,
+     56
+    ],
+    "LeftLowerArm": [
+     234,
+     184,
+     140
+    ],
+    "RightLowerArm": [
+     234,
+     184,
+     140
+    ],
+    "LeftHand": [
+     234,
+     184,
+     140
+    ],
+    "RightHand": [
+     234,
+     184,
+     140
+    ],
+    "LeftUpperLeg": [
+     46,
+     48,
+     56
+    ],
+    "RightUpperLeg": [
+     46,
+     48,
+     56
+    ],
+    "LeftLowerLeg": [
+     46,
+     48,
+     56
+    ],
+    "RightLowerLeg": [
+     46,
+     48,
+     56
+    ],
+    "LeftFoot": [
+     20,
+     20,
+     24
+    ],
+    "RightFoot": [
+     20,
+     20,
+     24
+    ]
+   },
+   "extras": [
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      -0.31,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      -0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      -6
+     ]
+    },
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      0.41,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      6
+     ]
+    },
+    {
+     "name": "Mouth",
+     "limb": "Head",
+     "size": [
+      0.46,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0.06,
+      1.4300000000000002,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      8
+     ]
+    },
+    {
+     "name": "HairBase",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.35,
+      1.76
+     ],
+     "pos": [
+      0,
+      2.7,
+      0.02
+     ],
+     "color": [
+      250,
+      220,
+      90
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Spike",
+     "limb": "Head",
+     "size": [
+      0.5,
+      0.6,
+      0.5
+     ],
+     "pos": [
+      -0.5,
+      3.05,
+      0
+     ],
+     "color": [
+      250,
+      220,
+      90
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      20
+     ]
+    },
+    {
+     "name": "Spike",
+     "limb": "Head",
+     "size": [
+      0.5,
+      0.7,
+      0.5
+     ],
+     "pos": [
+      0,
+      3.1,
+      -0.2
+     ],
+     "color": [
+      250,
+      220,
+      90
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Spike",
+     "limb": "Head",
+     "size": [
+      0.5,
+      0.6,
+      0.5
+     ],
+     "pos": [
+      0.5,
+      3.05,
+      0
+     ],
+     "color": [
+      250,
+      220,
+      90
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      -20
+     ]
+    },
+    {
+     "name": "PhoneBand",
+     "limb": "Head",
+     "size": [
+      2.1,
+      0.2,
+      0.3
+     ],
+     "pos": [
+      0,
+      2.85,
+      0.1
+     ],
+     "color": [
+      30,
+      30,
+      36
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EarCup",
+     "limb": "Head",
+     "size": [
+      0.35,
+      0.8,
+      0.8
+     ],
+     "pos": [
+      -1.0,
+      1.8,
+      0.05
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EarCup",
+     "limb": "Head",
+     "size": [
+      0.35,
+      0.8,
+      0.8
+     ],
+     "pos": [
+      1.0,
+      1.8,
+      0.05
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Shirt",
+     "limb": "UpperTorso",
+     "size": [
+      0.7,
+      1.5,
+      0.06
+     ],
+     "pos": [
+      0,
+      0.22,
+      -0.53
+     ],
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Tie",
+     "limb": "UpperTorso",
+     "size": [
+      0.3,
+      1.2,
+      0.08
+     ],
+     "pos": [
+      0,
+      0.3,
+      -0.57
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GrandmasterOrion",
+   "display": "Grandmaster Orion",
+   "stage": 7,
+   "scale": 1.3,
+   "colors": {
+    "HumanoidRootPart": [
+     90,
+     40,
+     150
+    ],
+    "LowerTorso": [
+     255,
+     200,
+     50
+    ],
+    "UpperTorso": [
+     90,
+     40,
+     150
+    ],
+    "Head": [
+     255,
+     214,
+     170
+    ],
+    "LeftUpperArm": [
+     90,
+     40,
+     150
+    ],
+    "RightUpperArm": [
+     90,
+     40,
+     150
+    ],
+    "LeftLowerArm": [
+     255,
+     214,
+     170
+    ],
+    "RightLowerArm": [
+     255,
+     214,
+     170
+    ],
+    "LeftHand": [
+     255,
+     214,
+     170
+    ],
+    "RightHand": [
+     255,
+     214,
+     170
+    ],
+    "LeftUpperLeg": [
+     30,
+     28,
+     40
+    ],
+    "RightUpperLeg": [
+     30,
+     28,
+     40
+    ],
+    "LeftLowerLeg": [
+     30,
+     28,
+     40
+    ],
+    "RightLowerLeg": [
+     30,
+     28,
+     40
+    ],
+    "LeftFoot": [
+     20,
+     20,
+     24
+    ],
+    "RightFoot": [
+     20,
+     20,
+     24
+    ]
+   },
+   "extras": [
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      -0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      -0.31,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      -0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      -10
+     ]
+    },
+    {
+     "name": "Eye",
+     "limb": "Head",
+     "size": [
+      0.26,
+      0.38,
+      0.06
+     ],
+     "pos": [
+      0.36,
+      1.85,
+      -0.8200000000000001
+     ],
+     "color": [
+      30,
+      30,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "EyeShine",
+     "limb": "Head",
+     "size": [
+      0.1,
+      0.12,
+      0.04
+     ],
+     "pos": [
+      0.41,
+      1.95,
+      -0.8500000000000001
+     ],
+     "color": [
+      255,
+      255,
+      255
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Brow",
+     "limb": "Head",
+     "size": [
+      0.42,
+      0.1,
+      0.06
+     ],
+     "pos": [
+      0.38,
+      2.17,
+      -0.8300000000000001
+     ],
+     "color": [
+      40,
+      30,
+      25
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      10
+     ]
+    },
+    {
+     "name": "Mouth",
+     "limb": "Head",
+     "size": [
+      0.46,
+      0.1,
+      0.05
+     ],
+     "pos": [
+      0.06,
+      1.4300000000000002,
+      -0.8200000000000001
+     ],
+     "color": [
+      120,
+      40,
+      40
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      8
+     ]
+    },
+    {
+     "name": "HairTop",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.45,
+      1.76
+     ],
+     "pos": [
+      0,
+      2.7750000000000004,
+      0.02
+     ],
+     "color": [
+      215,
+      220,
+      230
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairBack",
+     "limb": "Head",
+     "size": [
+      1.86,
+      1.2,
+      0.45
+     ],
+     "pos": [
+      0,
+      2.05,
+      0.9050000000000001
+     ],
+     "color": [
+      215,
+      220,
+      230
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideL",
+     "limb": "Head",
+     "size": [
+      0.25,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      -0.895,
+      2.2,
+      0.1
+     ],
+     "color": [
+      215,
+      220,
+      230
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "HairSideR",
+     "limb": "Head",
+     "size": [
+      0.25,
+      0.9,
+      1.5
+     ],
+     "pos": [
+      0.895,
+      2.2,
+      0.1
+     ],
+     "color": [
+      215,
+      220,
+      230
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Fringe",
+     "limb": "Head",
+     "size": [
+      1.86,
+      0.25,
+      0.3
+     ],
+     "pos": [
+      0,
+      2.525,
+      -0.72
+     ],
+     "color": [
+      215,
+      220,
+      230
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Goatee",
+     "limb": "Head",
+     "size": [
+      0.6,
+      0.4,
+      0.14
+     ],
+     "pos": [
+      0,
+      1.1800000000000002,
+      -0.8300000000000001
+     ],
+     "color": [
+      215,
+      220,
+      230
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Mustache",
+     "limb": "Head",
+     "size": [
+      0.8,
+      0.14,
+      0.1
+     ],
+     "pos": [
+      0,
+      1.55,
+      -0.8500000000000001
+     ],
+     "color": [
+      215,
+      220,
+      230
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CrownBand",
+     "limb": "Head",
+     "size": [
+      1.5,
+      0.35,
+      1.5
+     ],
+     "pos": [
+      0,
+      3.35,
+      0
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Metal",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CrownPoint",
+     "limb": "Head",
+     "size": [
+      0.32,
+      0.45,
+      0.32
+     ],
+     "pos": [
+      -0.55,
+      3.7,
+      -0.55
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Metal",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CrownPoint",
+     "limb": "Head",
+     "size": [
+      0.32,
+      0.45,
+      0.32
+     ],
+     "pos": [
+      0.55,
+      3.7,
+      -0.55
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Metal",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CrownPoint",
+     "limb": "Head",
+     "size": [
+      0.32,
+      0.45,
+      0.32
+     ],
+     "pos": [
+      -0.55,
+      3.7,
+      0.55
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Metal",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CrownPoint",
+     "limb": "Head",
+     "size": [
+      0.32,
+      0.45,
+      0.32
+     ],
+     "pos": [
+      0.55,
+      3.7,
+      0.55
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Metal",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CrownCross",
+     "limb": "Head",
+     "size": [
+      0.2,
+      0.7,
+      0.2
+     ],
+     "pos": [
+      0,
+      3.8499999999999996,
+      -0.55
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Metal",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CrownCrossBar",
+     "limb": "Head",
+     "size": [
+      0.5,
+      0.18,
+      0.2
+     ],
+     "pos": [
+      0,
+      3.95,
+      -0.55
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Metal",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CrownJewel",
+     "limb": "Head",
+     "size": [
+      0.3,
+      0.3,
+      0.12
+     ],
+     "pos": [
+      0,
+      3.35,
+      -0.78
+     ],
+     "color": [
+      70,
+      200,
+      255
+     ],
+     "mat": "Neon",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      45
+     ]
+    },
+    {
+     "name": "Lapel",
+     "limb": "UpperTorso",
+     "size": [
+      0.35,
+      1.3,
+      0.08
+     ],
+     "pos": [
+      -0.4,
+      0.35,
+      -0.55
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      -15
+     ]
+    },
+    {
+     "name": "Lapel",
+     "limb": "UpperTorso",
+     "size": [
+      0.35,
+      1.3,
+      0.08
+     ],
+     "pos": [
+      0.4,
+      0.35,
+      -0.55
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      15
+     ]
+    },
+    {
+     "name": "Shirt",
+     "limb": "UpperTorso",
+     "size": [
+      0.5,
+      1.4,
+      0.06
+     ],
+     "pos": [
+      0,
+      0.3,
+      -0.53
+     ],
+     "color": [
+      20,
+      20,
+      26
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "KingPin",
+     "limb": "UpperTorso",
+     "size": [
+      0.3,
+      0.42,
+      0.1
+     ],
+     "pos": [
+      -0.6,
+      0.6,
+      -0.6
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "Neon",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "Cape",
+     "limb": "UpperTorso",
+     "size": [
+      2.3,
+      2.9,
+      0.18
+     ],
+     "pos": [
+      0,
+      -0.4,
+      0.62
+     ],
+     "color": [
+      150,
+      20,
+      40
+     ],
+     "mat": "Fabric",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "name": "CapeCollar",
+     "limb": "UpperTorso",
+     "size": [
+      2.4,
+      0.45,
+      0.6
+     ],
+     "pos": [
+      0,
+      1.0,
+      0.45
+     ],
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "mat": "SmoothPlastic",
+     "shape": "Block",
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    }
+   ]
+  }
+ ],
+ "duel": [
+  {
+   "name": "Leg",
+   "size": [
+    0.8,
+    1.7000000000000002,
+    0.8
+   ],
+   "pos": [
+    -2.6,
+    0.8500000000000001,
+    -1.6
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Leg",
+   "size": [
+    0.8,
+    1.7000000000000002,
+    0.8
+   ],
+   "pos": [
+    2.6,
+    0.8500000000000001,
+    -1.6
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Leg",
+   "size": [
+    0.8,
+    1.7000000000000002,
+    0.8
+   ],
+   "pos": [
+    -2.6,
+    0.8500000000000001,
+    1.6
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Leg",
+   "size": [
+    0.8,
+    1.7000000000000002,
+    0.8
+   ],
+   "pos": [
+    2.6,
+    0.8500000000000001,
+    1.6
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Foot",
+   "size": [
+    6.6,
+    0.3,
+    4.4
+   ],
+   "pos": [
+    0,
+    0.15,
+    0
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Top",
+   "size": [
+    6.8,
+    0.4,
+    4.6
+   ],
+   "pos": [
+    0,
+    1.9000000000000001,
+    0
+   ],
+   "color": [
+    150,
+    95,
+    50
+   ],
+   "mat": "Wood",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "TopTrim",
+   "size": [
+    7.0,
+    0.16,
+    4.8
+   ],
+   "pos": [
+    0,
+    1.6800000000000002,
+    0
+   ],
+   "color": [
+    255,
+    200,
+    50
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.47,
+    2.13,
+    -1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.47,
+    2.13,
+    -1.05
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.47,
+    2.13,
+    -0.63
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.47,
+    2.13,
+    -0.20999999999999996
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.47,
+    2.13,
+    0.20999999999999996
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.47,
+    2.13,
+    0.6300000000000001
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.47,
+    2.13,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.47,
+    2.13,
+    1.47
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.05,
+    2.13,
+    -1.47
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.05,
+    2.13,
+    -1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.05,
+    2.13,
+    -0.63
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.05,
+    2.13,
+    -0.20999999999999996
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.05,
+    2.13,
+    0.20999999999999996
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.05,
+    2.13,
+    0.6300000000000001
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.05,
+    2.13,
+    1.05
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -1.05,
+    2.13,
+    1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.63,
+    2.13,
+    -1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.63,
+    2.13,
+    -1.05
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.63,
+    2.13,
+    -0.63
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.63,
+    2.13,
+    -0.20999999999999996
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.63,
+    2.13,
+    0.20999999999999996
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.63,
+    2.13,
+    0.6300000000000001
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.63,
+    2.13,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.63,
+    2.13,
+    1.47
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.20999999999999996,
+    2.13,
+    -1.47
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.20999999999999996,
+    2.13,
+    -1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.20999999999999996,
+    2.13,
+    -0.63
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.20999999999999996,
+    2.13,
+    -0.20999999999999996
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.20999999999999996,
+    2.13,
+    0.20999999999999996
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.20999999999999996,
+    2.13,
+    0.6300000000000001
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.20999999999999996,
+    2.13,
+    1.05
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    -0.20999999999999996,
+    2.13,
+    1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.20999999999999996,
+    2.13,
+    -1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.20999999999999996,
+    2.13,
+    -1.05
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.20999999999999996,
+    2.13,
+    -0.63
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.20999999999999996,
+    2.13,
+    -0.20999999999999996
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.20999999999999996,
+    2.13,
+    0.20999999999999996
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.20999999999999996,
+    2.13,
+    0.6300000000000001
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.20999999999999996,
+    2.13,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.20999999999999996,
+    2.13,
+    1.47
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.6300000000000001,
+    2.13,
+    -1.47
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.6300000000000001,
+    2.13,
+    -1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.6300000000000001,
+    2.13,
+    -0.63
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.6300000000000001,
+    2.13,
+    -0.20999999999999996
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.6300000000000001,
+    2.13,
+    0.20999999999999996
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.6300000000000001,
+    2.13,
+    0.6300000000000001
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.6300000000000001,
+    2.13,
+    1.05
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    0.6300000000000001,
+    2.13,
+    1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.05,
+    2.13,
+    -1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.05,
+    2.13,
+    -1.05
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.05,
+    2.13,
+    -0.63
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.05,
+    2.13,
+    -0.20999999999999996
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.05,
+    2.13,
+    0.20999999999999996
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.05,
+    2.13,
+    0.6300000000000001
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.05,
+    2.13,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.05,
+    2.13,
+    1.47
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.47,
+    2.13,
+    -1.47
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.47,
+    2.13,
+    -1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.47,
+    2.13,
+    -0.63
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.47,
+    2.13,
+    -0.20999999999999996
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.47,
+    2.13,
+    0.20999999999999996
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.47,
+    2.13,
+    0.6300000000000001
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.47,
+    2.13,
+    1.05
+   ],
+   "color": [
+    60,
+    62,
+    72
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Square",
+   "size": [
+    0.42,
+    0.06,
+    0.42
+   ],
+   "pos": [
+    1.47,
+    2.13,
+    1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "BoardRim",
+   "size": [
+    3.6,
+    0.08,
+    3.6
+   ],
+   "pos": [
+    0,
+    2.1,
+    0
+   ],
+   "color": [
+    110,
+    70,
+    36
+   ],
+   "mat": "Wood",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBase",
+   "size": [
+    0.34,
+    0.12,
+    0.34
+   ],
+   "pos": [
+    -1.05,
+    2.22,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBody",
+   "size": [
+    0.22,
+    0.3,
+    0.22
+   ],
+   "pos": [
+    -1.05,
+    2.43,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceHead",
+   "size": [
+    0.3,
+    0.22,
+    0.3
+   ],
+   "pos": [
+    -1.05,
+    2.69,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBase",
+   "size": [
+    0.34,
+    0.12,
+    0.34
+   ],
+   "pos": [
+    -0.21,
+    2.22,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBody",
+   "size": [
+    0.22,
+    0.3,
+    0.22
+   ],
+   "pos": [
+    -0.21,
+    2.43,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceHead",
+   "size": [
+    0.3,
+    0.22,
+    0.3
+   ],
+   "pos": [
+    -0.21,
+    2.69,
+    1.05
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBase",
+   "size": [
+    0.34,
+    0.12,
+    0.34
+   ],
+   "pos": [
+    0.63,
+    2.22,
+    0.63
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBody",
+   "size": [
+    0.22,
+    0.3,
+    0.22
+   ],
+   "pos": [
+    0.63,
+    2.43,
+    0.63
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceHead",
+   "size": [
+    0.3,
+    0.22,
+    0.3
+   ],
+   "pos": [
+    0.63,
+    2.69,
+    0.63
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBase",
+   "size": [
+    0.34,
+    0.12,
+    0.34
+   ],
+   "pos": [
+    0.21,
+    2.22,
+    1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBody",
+   "size": [
+    0.22,
+    0.6,
+    0.22
+   ],
+   "pos": [
+    0.21,
+    2.58,
+    1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceHead",
+   "size": [
+    0.34,
+    0.3,
+    0.34
+   ],
+   "pos": [
+    0.21,
+    2.99,
+    1.47
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBase",
+   "size": [
+    0.34,
+    0.12,
+    0.34
+   ],
+   "pos": [
+    -0.63,
+    2.22,
+    -1.05
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBody",
+   "size": [
+    0.22,
+    0.3,
+    0.22
+   ],
+   "pos": [
+    -0.63,
+    2.43,
+    -1.05
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceHead",
+   "size": [
+    0.3,
+    0.22,
+    0.3
+   ],
+   "pos": [
+    -0.63,
+    2.69,
+    -1.05
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBase",
+   "size": [
+    0.34,
+    0.12,
+    0.34
+   ],
+   "pos": [
+    0.21,
+    2.22,
+    -0.63
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBody",
+   "size": [
+    0.22,
+    0.3,
+    0.22
+   ],
+   "pos": [
+    0.21,
+    2.43,
+    -0.63
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceHead",
+   "size": [
+    0.3,
+    0.22,
+    0.3
+   ],
+   "pos": [
+    0.21,
+    2.69,
+    -0.63
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBase",
+   "size": [
+    0.34,
+    0.12,
+    0.34
+   ],
+   "pos": [
+    1.05,
+    2.22,
+    -1.05
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBody",
+   "size": [
+    0.22,
+    0.3,
+    0.22
+   ],
+   "pos": [
+    1.05,
+    2.43,
+    -1.05
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceHead",
+   "size": [
+    0.3,
+    0.22,
+    0.3
+   ],
+   "pos": [
+    1.05,
+    2.69,
+    -1.05
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBase",
+   "size": [
+    0.34,
+    0.12,
+    0.34
+   ],
+   "pos": [
+    -0.21,
+    2.22,
+    -1.47
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceBody",
+   "size": [
+    0.22,
+    0.6,
+    0.22
+   ],
+   "pos": [
+    -0.21,
+    2.58,
+    -1.47
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "PieceHead",
+   "size": [
+    0.34,
+    0.3,
+    0.34
+   ],
+   "pos": [
+    -0.21,
+    2.99,
+    -1.47
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "ClockBody",
+   "size": [
+    1.8,
+    0.8,
+    0.8
+   ],
+   "pos": [
+    2.6,
+    2.5,
+    0
+   ],
+   "color": [
+    46,
+    48,
+    56
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "ClockFaceA",
+   "size": [
+    0.6,
+    0.5,
+    0.06
+   ],
+   "pos": [
+    2.2,
+    2.5500000000000003,
+    -0.42
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "ClockFaceB",
+   "size": [
+    0.6,
+    0.5,
+    0.06
+   ],
+   "pos": [
+    3.0,
+    2.5500000000000003,
+    0.42
+   ],
+   "color": [
+    246,
+    238,
+    220
+   ],
+   "mat": "SmoothPlastic",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "ClockButtonA",
+   "size": [
+    0.5,
+    0.25,
+    0.5
+   ],
+   "pos": [
+    2.2,
+    3.02,
+    0
+   ],
+   "color": [
+    80,
+    200,
+    90
+   ],
+   "mat": "Neon",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "ClockButtonB",
+   "size": [
+    0.5,
+    0.25,
+    0.5
+   ],
+   "pos": [
+    3.0,
+    3.02,
+    0
+   ],
+   "color": [
+    220,
+    50,
+    50
+   ],
+   "mat": "Neon",
+   "shape": "Block",
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  }
+ ],
+ "anchors": {
+  "SeatA": [
+   [
+    0,
+    0,
+    4.4
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ],
+  "SeatB": [
+   [
+    0,
+    0,
+    -4.6
+   ],
+   [
+    0,
+    180,
+    0
+   ]
+  ],
+  "BoardTop": [
+   [
+    0,
+    2.16,
+    0
+   ],
+   [
+    0,
+    0,
+    0
+   ]
+  ]
+ },
+ "anims": [
+  {
+   "name": "Idle",
+   "loop": true,
+   "priority": "Idle",
+   "frames": [
+    {
+     "t": 0.0,
+     "ease": "Sine",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99144,
+        -0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.9374,
+        0.34119,
+        0.02386,
+        -0.06555
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.90631,
+        0.42262,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.9374,
+        0.34119,
+        -0.02386,
+        0.06555
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.90631,
+        0.42262,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 1.0,
+     "ease": "Sine",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.99753,
+        -0.06101,
+        0.03483,
+        -0.00213
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99316,
+        -0.10439,
+        0.05205,
+        -0.00547
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.94322,
+        0.32478,
+        0.02271,
+        -0.06596
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.89879,
+        0.43837,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.92493,
+        0.37369,
+        -0.02613,
+        0.06468
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.91355,
+        0.40674,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 2.0,
+     "ease": "Sine",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99144,
+        -0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.9374,
+        0.34119,
+        0.02386,
+        -0.06555
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.90631,
+        0.42262,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.9374,
+        0.34119,
+        -0.02386,
+        0.06555
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.90631,
+        0.42262,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "Tap",
+   "loop": true,
+   "priority": "Action",
+   "frames": [
+    {
+     "t": 0.0,
+     "ease": "Cubic-In",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.99316,
+        -0.10439,
+        -0.05205,
+        0.00547
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98595,
+        -0.16499,
+        0.02582,
+        -0.00432
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.91132,
+        0.40575,
+        0.02837,
+        -0.06373
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.89101,
+        0.45399,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.4812,
+        0.8681,
+        -0.10659,
+        0.05908
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.91355,
+        0.40674,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        0.96593,
+        0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.1,
+     "ease": "Linear",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.98722,
+        -0.13874,
+        -0.0777,
+        0.01092
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98481,
+        -0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.77289,
+        0.62587,
+        0.06578,
+        -0.08123
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.9205,
+        0.39073,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        0.99452,
+        0.10453,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.95499,
+        0.29197,
+        -0.0153,
+        0.05005
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.87462,
+        0.48481,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        0.99452,
+        -0.10453,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.133,
+     "ease": "Cubic-Out",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.98597,
+        -0.14735,
+        -0.0776,
+        0.0116
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98069,
+        -0.19063,
+        -0.04282,
+        0.00832
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.77289,
+        0.62587,
+        0.06578,
+        -0.08123
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.9205,
+        0.39073,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        0.99452,
+        0.10453,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.97104,
+        0.23313,
+        -0.01222,
+        0.05089
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.85264,
+        0.5225,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        0.97437,
+        -0.22495,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.2,
+     "ease": "Cubic-In",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.99316,
+        -0.10439,
+        0.05205,
+        -0.00547
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98595,
+        -0.16499,
+        -0.02582,
+        0.00432
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.4812,
+        0.8681,
+        0.10659,
+        -0.05908
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.91355,
+        0.40674,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        0.96593,
+        0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.91132,
+        0.40575,
+        -0.02837,
+        0.06373
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.89101,
+        0.45399,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.3,
+     "ease": "Linear",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.98722,
+        -0.13874,
+        0.0777,
+        -0.01092
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98481,
+        -0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.95499,
+        0.29197,
+        0.0153,
+        -0.05005
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.87462,
+        0.48481,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        0.99452,
+        -0.10453,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.77289,
+        0.62587,
+        -0.06578,
+        0.08123
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.9205,
+        0.39073,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        0.99452,
+        0.10453,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.333,
+     "ease": "Cubic-Out",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.98597,
+        -0.14735,
+        0.0776,
+        -0.0116
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98069,
+        -0.19063,
+        0.04282,
+        -0.00832
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.97104,
+        0.23313,
+        0.01222,
+        -0.05089
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.85264,
+        0.5225,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        0.97437,
+        -0.22495,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.77289,
+        0.62587,
+        -0.06578,
+        0.08123
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.9205,
+        0.39073,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        0.99452,
+        0.10453,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.4,
+     "ease": "Cubic-In",
+     "poses": {
+      "UpperTorso": {
+       "q": [
+        0.99316,
+        -0.10439,
+        -0.05205,
+        0.00547
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98595,
+        -0.16499,
+        0.02582,
+        -0.00432
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.91132,
+        0.40575,
+        0.02837,
+        -0.06373
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.89101,
+        0.45399,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.4812,
+        0.8681,
+        -0.10659,
+        0.05908
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.91355,
+        0.40674,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        0.96593,
+        0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "Victory",
+   "loop": false,
+   "priority": "Action",
+   "frames": [
+    {
+     "t": 0.0,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        0.0,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99144,
+        -0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.9374,
+        0.34119,
+        0.02386,
+        -0.06555
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.90631,
+        0.42262,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.9374,
+        0.34119,
+        -0.02386,
+        0.06555
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.90631,
+        0.42262,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.15,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        -0.45,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99144,
+        -0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99144,
+        -0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.98481,
+        0.0,
+        0.0,
+        -0.17365
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.96593,
+        0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.98481,
+        0.0,
+        0.0,
+        0.17365
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.96593,
+        0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.93969,
+        0.34202,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.86603,
+        -0.5,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.93969,
+        0.34202,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.86603,
+        -0.5,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.38,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        1.1,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99144,
+        0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.12665,
+        0.96199,
+        0.23985,
+        -0.03158
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.12665,
+        0.96199,
+        -0.23985,
+        0.03158
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.99144,
+        0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.95372,
+        -0.30071,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.99905,
+        -0.04362,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.62,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        -0.25,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99905,
+        -0.04362,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99144,
+        -0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.25268,
+        0.94303,
+        0.20906,
+        -0.05602
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.99619,
+        0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.25268,
+        0.94303,
+        -0.20906,
+        0.05602
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.99619,
+        0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.9763,
+        0.21644,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.93969,
+        -0.34202,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.9763,
+        0.21644,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.93969,
+        -0.34202,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.85,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        0.0,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99619,
+        0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.87851,
+        0.24479,
+        -0.18215,
+        -0.36758
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.70711,
+        0.70711,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.08682,
+        0.9924,
+        -0.08682,
+        0.0076
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 1.05,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        0.0,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99905,
+        0.04362,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.87851,
+        0.24479,
+        -0.18215,
+        -0.36758
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.70711,
+        0.70711,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.34072,
+        0.93612,
+        -0.0819,
+        0.02981
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.81915,
+        0.57358,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 1.25,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        0.1,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99452,
+        0.10453,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.87851,
+        0.24479,
+        -0.18215,
+        -0.36758
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.70711,
+        0.70711,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.04345,
+        0.99525,
+        -0.08707,
+        0.0038
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 1.5,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        0.0,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99619,
+        0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.87851,
+        0.24479,
+        -0.18215,
+        -0.36758
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.70711,
+        0.70711,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.08682,
+        0.9924,
+        -0.08682,
+        0.0076
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "Defeat",
+   "loop": false,
+   "priority": "Action",
+   "frames": [
+    {
+     "t": 0.0,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        0.0,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99144,
+        -0.13053,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.9374,
+        0.34119,
+        0.02386,
+        -0.06555
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.90631,
+        0.42262,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.9374,
+        0.34119,
+        -0.02386,
+        0.06555
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.90631,
+        0.42262,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.25,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        0.0,
+        0.3
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.99255,
+        0.12187,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98769,
+        0.15643,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.8924,
+        0.23912,
+        0.09905,
+        -0.36964
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.8924,
+        0.23912,
+        -0.09905,
+        0.36964
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.99756,
+        0.06976,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.99619,
+        -0.08716,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 0.8,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        -0.25,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.96126,
+        -0.27564,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98769,
+        -0.15643,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.99844,
+        0.04359,
+        0.00152,
+        -0.03487
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.99905,
+        0.04362,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.99844,
+        0.04359,
+        -0.00152,
+        0.03487
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.99905,
+        0.04362,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.96593,
+        -0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.96593,
+        -0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 1.25,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        -0.25,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.9763,
+        -0.21644,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.99027,
+        -0.13917,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.24684,
+        0.92122,
+        0.29046,
+        -0.07783
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.5373,
+        0.84339,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.24684,
+        0.92122,
+        -0.29046,
+        0.07783
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.5373,
+        0.84339,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.96593,
+        -0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.96593,
+        -0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    },
+    {
+     "t": 1.6,
+     "ease": "Cubic",
+     "poses": {
+      "LowerTorso": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0.0,
+        -0.25,
+        -0.0
+       ]
+      },
+      "UpperTorso": {
+       "q": [
+        0.9703,
+        -0.24192,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "Head": {
+       "q": [
+        0.98346,
+        -0.17341,
+        0.05154,
+        -0.00909
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperArm": {
+       "q": [
+        0.24684,
+        0.92122,
+        0.29046,
+        -0.07783
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerArm": {
+       "q": [
+        0.5373,
+        0.84339,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperArm": {
+       "q": [
+        0.24684,
+        0.92122,
+        -0.29046,
+        0.07783
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerArm": {
+       "q": [
+        0.5373,
+        0.84339,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightHand": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftUpperLeg": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftLowerLeg": {
+       "q": [
+        0.96593,
+        -0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "LeftFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightUpperLeg": {
+       "q": [
+        0.98481,
+        0.17365,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightLowerLeg": {
+       "q": [
+        0.96593,
+        -0.25882,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      },
+      "RightFoot": {
+       "q": [
+        1.0,
+        0.0,
+        0.0,
+        -0.0
+       ],
+       "p": [
+        0,
+        0,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "hipHeight": 2.0
+}

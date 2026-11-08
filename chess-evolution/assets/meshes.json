@@ -1,0 +1,682 @@
+{
+ "units": "studs",
+ "axes": "Roblox: runner faces -Z, console at -Z end, origin = deck centre on the ground",
+ "treadmills": {
+  "PawnMill": {
+   "file": "meshes/PawnMill.obj",
+   "parts": {
+    "PawnMill_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "PawnMill_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 552
+    },
+    "PawnMill_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 2720
+    },
+    "PawnMill_Neon": {
+     "color": [
+      70,
+      230,
+      110
+     ],
+     "material": "Neon",
+     "tris": 180
+    },
+    "PawnMill_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
+    },
+    "PawnMill_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 592
+    }
+   },
+   "size": [
+    8.66,
+    8.26,
+    13.06
+   ]
+  },
+  "KnightSprint": {
+   "file": "meshes/KnightSprint.obj",
+   "parts": {
+    "KnightSprint_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "KnightSprint_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1200
+    },
+    "KnightSprint_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1552
+    },
+    "KnightSprint_Neon": {
+     "color": [
+      60,
+      130,
+      255
+     ],
+     "material": "Neon",
+     "tris": 180
+    },
+    "KnightSprint_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
+    },
+    "KnightSprint_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 376
+    }
+   },
+   "size": [
+    9.3,
+    8.26,
+    13.9
+   ]
+  },
+  "BishopRun": {
+   "file": "meshes/BishopRun.obj",
+   "parts": {
+    "BishopRun_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "BishopRun_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 552
+    },
+    "BishopRun_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1972
+    },
+    "BishopRun_Neon": {
+     "color": [
+      235,
+      90,
+      220
+     ],
+     "material": "Neon",
+     "tris": 180
+    },
+    "BishopRun_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
+    },
+    "BishopRun_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 592
+    }
+   },
+   "size": [
+    8.66,
+    9.79,
+    13.06
+   ]
+  },
+  "RookRig": {
+   "file": "meshes/RookRig.obj",
+   "parts": {
+    "RookRig_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "RookRig_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 660
+    },
+    "RookRig_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1632
+    },
+    "RookRig_Neon": {
+     "color": [
+      255,
+      60,
+      50
+     ],
+     "material": "Neon",
+     "tris": 180
+    },
+    "RookRig_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
+    },
+    "RookRig_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 376
+    }
+   },
+   "size": [
+    9.72,
+    8.97,
+    14.27
+   ]
+  },
+  "QueenDash": {
+   "file": "meshes/QueenDash.obj",
+   "parts": {
+    "QueenDash_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "QueenDash_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 552
+    },
+    "QueenDash_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 804
+    },
+    "QueenDash_Neon": {
+     "color": [
+      255,
+      205,
+      70
+     ],
+     "material": "Neon",
+     "tris": 288
+    },
+    "QueenDash_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
+    },
+    "QueenDash_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 376
+    },
+    "QueenDash_Spill": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 864
+    },
+    "QueenDash_Prop": {
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "material": "SmoothPlastic",
+     "tris": 824,
+     "spin": {
+      "centre_roblox": [
+       -0.0,
+       10.73,
+       -5.5
+      ],
+      "turnSeconds": 8,
+      "axis": "Y"
+     }
+    }
+   },
+   "size": [
+    12.0,
+    11.14,
+    13.26
+   ]
+  },
+  "KingsEndgame": {
+   "file": "meshes/KingsEndgame.obj",
+   "parts": {
+    "KingsEndgame_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "KingsEndgame_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 984
+    },
+    "KingsEndgame_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 480
+    },
+    "KingsEndgame_Neon": {
+     "color": [
+      255,
+      130,
+      30
+     ],
+     "material": "Neon",
+     "tris": 228
+    },
+    "KingsEndgame_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
+    },
+    "KingsEndgame_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 376
+    },
+    "KingsEndgame_Spill": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 864
+    },
+    "KingsEndgame_Prop": {
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "material": "SmoothPlastic",
+     "tris": 216,
+     "spin": {
+      "centre_roblox": [
+       -0.0,
+       9.8,
+       -5.4
+      ],
+      "turnSeconds": 8,
+      "axis": "Y"
+     }
+    }
+   },
+   "size": [
+    12.0,
+    10.67,
+    13.06
+   ]
+  },
+  "CastleClimb": {
+   "file": "meshes/CastleClimb.obj",
+   "parts": {
+    "CastleClimb_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "CastleClimb_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 876
+    },
+    "CastleClimb_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 912
+    },
+    "CastleClimb_Neon": {
+     "color": [
+      50,
+      235,
+      190
+     ],
+     "material": "Neon",
+     "tris": 228
+    },
+    "CastleClimb_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
+    },
+    "CastleClimb_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 376
+    },
+    "CastleClimb_Spill": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 864
+    },
+    "CastleClimb_Prop": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 816,
+     "spin": {
+      "centre_roblox": [
+       -0.0,
+       10.49,
+       -5.4
+      ],
+      "turnSeconds": 8,
+      "axis": "Y"
+     }
+    }
+   },
+   "size": [
+    12.0,
+    11.12,
+    13.06
+   ]
+  },
+  "GrandmasterGlide": {
+   "file": "meshes/GrandmasterGlide.obj",
+   "parts": {
+    "GrandmasterGlide_Body": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 1188
+    },
+    "GrandmasterGlide_Panel": {
+     "color": [
+      52,
+      58,
+      74
+     ],
+     "material": "SmoothPlastic",
+     "tris": 552
+    },
+    "GrandmasterGlide_Chess": {
+     "color": [
+      246,
+      238,
+      220
+     ],
+     "material": "SmoothPlastic",
+     "tris": 3110
+    },
+    "GrandmasterGlide_Neon": {
+     "color": [
+      150,
+      80,
+      255
+     ],
+     "material": "Neon",
+     "tris": 228
+    },
+    "GrandmasterGlide_Belt": {
+     "color": [
+      34,
+      36,
+      44
+     ],
+     "material": "Fabric",
+     "tris": 108
+    },
+    "GrandmasterGlide_Steel": {
+     "color": [
+      150,
+      156,
+      168
+     ],
+     "material": "Metal",
+     "tris": 376
+    },
+    "GrandmasterGlide_Spill": {
+     "color": [
+      30,
+      34,
+      45
+     ],
+     "material": "SmoothPlastic",
+     "tris": 864
+    },
+    "GrandmasterGlide_Prop": {
+     "color": [
+      255,
+      200,
+      50
+     ],
+     "material": "SmoothPlastic",
+     "tris": 762,
+     "spin": {
+      "centre_roblox": [
+       -0.0,
+       9.52,
+       -5.4
+      ],
+      "turnSeconds": 8,
+      "axis": "Y"
+     }
+    }
+   },
+   "size": [
+    12.0,
+    10.48,
+    14.51
+   ]
+  }
+ },
+ "pieces": {
+  "Pawn": {
+   "file": "meshes/Piece_Pawn.obj",
+   "tris": 680,
+   "size": [
+    2.5,
+    3.6,
+    2.5
+   ]
+  },
+  "Knight": {
+   "file": "meshes/Piece_Knight.obj",
+   "tris": 776,
+   "size": [
+    2.82,
+    4.09,
+    2.6
+   ]
+  },
+  "Bishop": {
+   "file": "meshes/Piece_Bishop.obj",
+   "tris": 926,
+   "size": [
+    2.5,
+    4.1,
+    2.5
+   ]
+  },
+  "Rook": {
+   "file": "meshes/Piece_Rook.obj",
+   "tris": 816,
+   "size": [
+    2.7,
+    4.12,
+    2.7
+   ]
+  },
+  "Queen": {
+   "file": "meshes/Piece_Queen.obj",
+   "tris": 2300,
+   "size": [
+    2.7,
+    4.37,
+    2.7
+   ]
+  },
+  "King": {
+   "file": "meshes/Piece_King.obj",
+   "tris": 762,
+   "size": [
+    2.8,
+    4.8,
+    2.8
+   ]
+  }
+ }
+}
