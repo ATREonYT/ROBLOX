@@ -59,6 +59,14 @@ if fs.isFile("src/Shared/LoopHud.luau") then
 	print(`[build] src/StarterGui/ChessLoop.rbxm ({#loop:GetDescendants()} parts)`)
 end
 
+if fs.isFile("src/Shared/DuelBar.luau") then
+	-- the reference duel screen (Nov 8): tug bar, names, "Click Fast!", countdown
+	local DuelBar = loadModule("src/Shared/DuelBar.luau", "DuelBar")
+	local duelBar = DuelBar.Build(nil)
+	fs.writeFile("src/StarterGui/DuelBar.rbxm", roblox.serializeModel({ duelBar }))
+	print(`[build] src/StarterGui/DuelBar.rbxm ({#duelBar:GetDescendants()} parts)`)
+end
+
 -- Place ------------------------------------------------------------------------
 local game = Instance.new("DataModel")
 local function classAndName(fileName)

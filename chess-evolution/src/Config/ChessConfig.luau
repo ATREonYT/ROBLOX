@@ -38,6 +38,9 @@ Config.Stations = {
 	CastleClimb = { order = 7, name = "Castle Climb", basePower = 200, built = true, row = "rear", unlock = { rebirths = 6 } },
 	GrandmasterGlide = { order = 8, name = "Grandmaster Glide", basePower = 500, built = false, row = "rear" },
 }
+-- Duel intro (reference, Nov 8): camera sweep, then 3-2-1-GO. The rival only pushes, and taps only
+-- count, after this many seconds; the client plays the same timeline (ChessClient DUEL_* times).
+Config.DuelIntro = 3.4
 Config.TreadmillTick = 0.5 -- seconds between automatic treadmill gains while you stand on one
 
 -- Chess Sets (equipment) -----------------------------------------------------
@@ -60,42 +63,45 @@ Config.DefaultSet = "Wooden"
 -- Stages (Board Run) -------------------------------------------------------
 -- fight: perTap = meter per accepted tap; grace = seconds with no pressure;
 -- phases = { { untilT, perSecond } ... } rival pressure; timeout = seconds.
+-- Nov 8 (Alex: "make it more intense"): the rival pushes back hard. Pressure / perTap is the tap
+-- rate you need just to hold the middle: Stage 1 needs 2.5 taps a second (3.5 after 9 s), so if
+-- you stop, the bar slides to his side in about 5 s. Taps are capped near 6 a second.
 -- An earlier stage must be cleared before a later one opens (gate).
 Config.Stages = {
 	Stage1 = {
 		order = 1, name = "Pawn Pete", rival = "Pawn", rivalId = "PawnPete", power = 25, reward = 10, color = Color3.fromRGB(255, 70, 70),
 		opponent = { name = "Pawn Pete", title = "Park Player" },
-		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 2.5 }, { untilT = 16, perSecond = 5 } } },
+		fight = { perTap = 4, grace = 0.5, timeout = 16, phases = { { untilT = 9, perSecond = 10 }, { untilT = 16, perSecond = 14 } } },
 	},
 	Stage2 = {
 		order = 2, name = "Knight Nadia", rival = "Knight", rivalId = "KnightNadia", power = 90, reward = 20, color = Color3.fromRGB(60, 140, 255),
 		opponent = { name = "Knight Nadia", title = "Club Player" },
-		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 3 }, { untilT = 16, perSecond = 6 } } },
+		fight = { perTap = 4, grace = 0.5, timeout = 16, phases = { { untilT = 9, perSecond = 12 }, { untilT = 16, perSecond = 16 } } },
 	},
 	Stage3 = {
 		order = 3, name = "Rook Rocco", rival = "Rook", rivalId = "RookRocco", power = 220, reward = 40, color = Color3.fromRGB(255, 190, 40),
 		opponent = { name = "Rook Rocco", title = "Tournament Player" },
-		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 3.2 }, { untilT = 16, perSecond = 6.5 } } },
+		fight = { perTap = 4, grace = 0.5, timeout = 16, phases = { { untilT = 9, perSecond = 13 }, { untilT = 16, perSecond = 17 } } },
 	},
 	Stage4 = {
 		order = 4, name = "Bishop Bea", rival = "Bishop", rivalId = "BishopBea", power = 5000, reward = 70, color = Color3.fromRGB(170, 80, 240),
 		opponent = { name = "Bishop Bea", title = "Candidate Master" },
-		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 9 }, { untilT = 16, perSecond = 12 } } },
+		fight = { perTap = 4, grace = 0.5, timeout = 16, phases = { { untilT = 9, perSecond = 14.5 }, { untilT = 16, perSecond = 18 } } },
 	},
 	Stage5 = {
 		order = 5, name = "Queen Quinn", rival = "Queen", rivalId = "QueenQuinn", power = 15000, reward = 120, color = Color3.fromRGB(255, 120, 200),
 		opponent = { name = "Queen Quinn", title = "International Master" },
-		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 10 }, { untilT = 16, perSecond = 13 } } },
+		fight = { perTap = 4, grace = 0.5, timeout = 16, phases = { { untilT = 9, perSecond = 15.5 }, { untilT = 16, perSecond = 18.5 } } },
 	},
 	Stage6 = {
 		order = 6, name = "King Kai", rival = "King", rivalId = "KingKai", power = 50000, reward = 200, color = Color3.fromRGB(60, 220, 200),
 		opponent = { name = "King Kai", title = "Grandmaster" },
-		fight = { perTap = 4, grace = 1, timeout = 16, phases = { { untilT = 9, perSecond = 11 }, { untilT = 16, perSecond = 13.5 } } },
+		fight = { perTap = 4, grace = 0.5, timeout = 16, phases = { { untilT = 9, perSecond = 16.5 }, { untilT = 16, perSecond = 19 } } },
 	},
 	Stage7 = {
 		order = 7, name = "Grandmaster Orion", rival = "King", rivalId = "GrandmasterOrion", power = 250000, reward = 500, color = Color3.fromRGB(255, 200, 40), boss = true,
 		opponent = { name = "Grandmaster Orion", title = "World Champion" },
-		fight = { perTap = 4, grace = 1, timeout = 20, phases = { { untilT = 10, perSecond = 12.5 }, { untilT = 20, perSecond = 15 } } },
+		fight = { perTap = 4, grace = 0.5, timeout = 20, phases = { { untilT = 10, perSecond = 17.5 }, { untilT = 20, perSecond = 20 } } },
 	},
 }
 Config.FutureStages = 3

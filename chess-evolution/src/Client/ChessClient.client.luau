@@ -205,6 +205,9 @@ end
 
 -- 1v1 duel layer: VS cards, taps per second, combo, sparks, danger edges (Kit/DuelHud)
 local duel = DuelHud.new(gui :: ScreenGui, { tween = tween, reduced = reduced, message = message })
+-- The reference duel screen (Kit/DuelBar, Nov 8): the saved StarterGui copy, or one built here.
+local duelUI: any = playerGui:WaitForChild("DuelBar", 3) or require(Kit:WaitForChild("DuelBar")).Build(playerGui)
+duelUI.Enabled = false
 -- vault feel pieces: Level chip, confetti, +N popups, HUD reveal, big moments (Kit/FeelKit)
 local feel = FeelKit.new(gui :: ScreenGui, { tween = tween, reduced = reduced })
 FeelKit.Default = { feel = feel, reduced = reduced } -- so FeelKit.Moment(gui, "L", text) from other scripts gets confetti
@@ -416,7 +419,9 @@ local function refreshContext()
 			-- the server pays every win (Core.StepBattle), scaled by promotions and 2x Wins; a first clear also unlocks
 			local pay = math.floor(st.reward * Config.WinsMult(S.Promotions or 0, S.Passes))
 			local unlockName = st.unlocks and Config.Stations[st.unlocks] and Config.Stations[st.unlocks].name
-			setMain(true, "CHALLENGE", `Win +{Format.Short(pay)} Wins`, Hud.Colors.gold)
+			-- Nov 8 (reference): no CHALLENGE button. Walk up to the rival and press Battle over his head.
+			setMain(false)
+			local _ = pay
 			contextLine(`{st.name} · {Format.Short(S.Power)}/{Format.Short(st.power)} Elo · ` .. (if first and unlockName then `first win unlocks {unlockName}` elseif first then "first clear" else "cleared"))
 		end
 		G.KeyHint.Text = keyHint
@@ -514,10 +519,11 @@ local function eloPop(amount: number)
 	local h = math.floor(math.clamp(vh * 0.055, 26, 70))
 	local words = `+{Format.Short(amount)}`
 	local w = math.floor(h * (1.1 + 0.55 * #words))
-	-- a random spot in a ring around the character, never right on top of it
-	local side = if math.random() < 0.5 then -1 else 1
-	local ox = side * (h * 1.2 + math.random() * h * 3.2)
-	local oy = -h * 2.6 + math.random() * h * 3.6
+	-- like the reference: a random spot anywhere around the character (on it too), a new one each tap
+	local ang = math.random() * math.pi * 2
+	local rad = h * (0.5 + math.random() * 3.1)
+	local ox = math.cos(ang) * rad * 1.25
+	local oy = math.sin(ang) * rad * 0.8 - h * 0.9
 	local f = Instance.new("Frame")
 	f.Name = "EloPop"
 	f.BackgroundTransparency = 1
@@ -571,9 +577,17 @@ local function eloPop(amount: number)
 	if reduced() then
 		sc.Scale = 1
 	else
-		tween(sc, 0.06, { Scale = 1 }, Enum.EasingStyle.Quad)
+		sc.Scale = 0.4
+		f.Rotation = math.random(-10, 10)
+		tween(sc, 0.12, { Scale = 1.12 }, Enum.EasingStyle.Back)
+		task.delay(0.12, function()
+			tween(sc, 0.1, { Scale = 1 }, Enum.EasingStyle.Quad)
+		end)
+		tween(f, 0.8, { Rotation = 0 }, Enum.EasingStyle.Quad)
 	end
-	tween(f, 0.8, { Position = f.Position + UDim2.fromOffset(0, -math.floor(h * 0.6)) }, Enum.EasingStyle.Quad)
+	-- a small drift: up and a little to one side
+	local dx = math.floor((math.random() - 0.5) * h * 0.9)
+	tween(f, 0.8, { Position = f.Position + UDim2.fromOffset(dx, -math.floor(h * 0.7)) }, Enum.EasingStyle.Quad)
 	task.delay(0.58, function()
 		if f.Parent then
 			fadeAll(0.2, 1)
@@ -781,6 +795,8 @@ end
 local challenge: (string) -> ()
 local slap: (Model?, string) -> ()
 local pressButton: (any, string) -> ()
+local duelTap: (any) -> ()
+local D: any = {} -- the reference duel's helpers (kept in one table: this script is near Luau's 200-locals limit)
 
 -- An open menu or result card owns input: E / the action button must not start a duel or
 -- train behind it (playtest Nov 8: extra taps after a win started a hidden second duel).
@@ -814,14 +830,18 @@ local function doAction(fromScreen: boolean?)
 		return
 	end
 	if ctx.kind == "battle" and battle and not battle.ended then
+		if os.clock() < (battle.goAt or 0) then
+			return -- still counting down: taps count from GO!
+		end
 		pressMain()
-		duel:Tap() -- local feedback only (combo, sparks); the server still counts the taps
+		duelTap(battle) -- local feedback only (sparkles, bar knob); the server still counts the taps
 		if takeLocalToken() then
 			battle.sent += 1
 			Net.Send("Tap", "battle", battle.id)
 			tapSound()
 			battle.kick = (battle.kick or 0) + 1
-			slap(player.Character, "Right")
+			battle.hand = if battle.hand == "Right" then "Left" else "Right"
+			slap(player.Character, battle.hand)
 			pressButton(battle, "ClockButtonA")
 		end
 	elseif ctx.kind == "stage" and MainHolder.Visible and not fromScreen then
@@ -1109,9 +1129,11 @@ local function refreshStages()
 		local gate = m:FindFirstChild("Gate")
 		local barrier = gate and gate:FindFirstChild("Barrier") :: BasePart?
 		local open = stageOpen(id)
+		-- Nov 8 layout: each rival stands right in front of his own gate; it opens once you beat him
+		local passed = S.Cleared[id] == true or (barrier ~= nil and barrier:GetAttribute("Smashed") == true)
 		if barrier then
-			barrier.CanCollide = not open
-			barrier.Transparency = if open then 1 else 0.5
+			barrier.CanCollide = not passed
+			barrier.Transparency = if passed then 1 else 0.5
 		end
 		local glow = m:FindFirstChild("PadGlow") :: BasePart?
 		if glow then
@@ -1162,9 +1184,9 @@ local function guideTarget(): (number, string?, Vector3?)
 		guide.sub = if S.Power < 4 then "or stand on the green treadmill for free Elo" else `{p}/{s1.power} Elo to fight {s1.name}`
 		return 1, "TAP ANYWHERE FOR ELO!", if deck then deck.Position else nil -- the map may still be arriving
 	elseif not S.Cleared.Stage1 then
-		local zone = Stages.Stage1:FindFirstChild("Zone") :: BasePart
-		guide.sub = `You have {p} Elo! Walk to Stage 1 and press CHALLENGE`
-		return 2, `CHALLENGE {string.upper(s1.name)}!`, zone.Position
+		local zone = (Stages.Stage1:FindFirstChild("RivalStand") or Stages.Stage1:FindFirstChild("Zone")) :: BasePart
+		guide.sub = `You have {p} Elo! Walk up to {s1.name} and press Battle`
+		return 2, `BATTLE {string.upper(s1.name)}!`, zone.Position
 	elseif not S.Sets.Marble then
 		local plinth = Displays.Marble:FindFirstChild("Plinth") :: BasePart
 		local price = Config.Sets.Marble.price
@@ -1182,10 +1204,10 @@ local function guideTarget(): (number, string?, Vector3?)
 		guide.sub = `Marble gives +{Config.TapGain("Marble")} Elo every tap`
 		return 4, "TAP ANYWHERE!", nil
 	elseif not S.Cleared.Stage2 and Stages:FindFirstChild("Stage2") then
-		local zone = Stages.Stage2:FindFirstChild("Zone") :: BasePart?
+		local zone = (Stages.Stage2:FindFirstChild("RivalStand") or Stages.Stage2:FindFirstChild("Zone")) :: BasePart?
 		if S.Power >= s2.power then
-			guide.sub = "Walk to Stage 2 and press CHALLENGE"
-			return 5, `CHALLENGE {string.upper(s2.name)}!`, if zone then zone.Position else nil
+			guide.sub = `Walk up to {s2.name} and press Battle`
+			return 5, `BATTLE {string.upper(s2.name)}!`, if zone then zone.Position else nil
 		end
 		guide.sub = `{p}/{s2.power} Elo to fight {s2.name}`
 		return 5, "TAP FOR MORE ELO!", nil
@@ -1594,22 +1616,27 @@ local meterUI = Bottom.Meter
 local mBar = meterUI.Bar
 local camSaved: any = nil
 
+-- Nov 8 (reference): the whole HUD goes during a duel; only the duel bar shows.
+D.hidden = {} :: { [ScreenGui]: boolean }
 local function setBattleHud(on: boolean)
-	meterUI.Visible = on
-	Bottom.Progress.Visible = not on
-	Bottom.Power.Visible = not on
-	Bottom.Buy.Visible = not on
-	Bottom.Clicker.Visible = not on
-	Bottom.Context.Visible = on
-	Rail.Visible = not on or not isTouch
-	G.RightOffers.Visible = not on and hudStage.done
-	G.TopBar.Visible = not on and hudStage.done
-	G.Wheel.Visible = not on and hudStage.done
-	local loop = playerGui:FindFirstChild("ChessLoop")
-	local loopRail = loop and loop:FindFirstChild("LoopRail")
-	if loopRail then
-		(loopRail :: GuiObject).Visible = not on or not isTouch
+	if on then
+		for _, g in playerGui:GetChildren() do
+			if g:IsA("ScreenGui") and g ~= duelUI and g.Enabled then
+				D.hidden[g] = true
+				g.Enabled = false
+			end
+		end
+		duelUI.Enabled = true
+	else
+		for g in D.hidden do
+			if g.Parent then
+				g.Enabled = true
+			end
+		end
+		table.clear(D.hidden)
+		duelUI.Enabled = false
 	end
+	meterUI.Visible = false
 end
 
 local function tileAt(stageModel: Instance, pos: Vector3): BasePart?
@@ -1847,43 +1874,90 @@ task.defer(function()
 	end
 end)
 
--- 3D duel at the table: both people slap their side of the chess clock.
--- Arms move through the shoulder joint's C0, so the avatar's own animations keep playing.
-type Arm = { motor: Motor6D, base: CFrame, kick: number, hold: number }
-local arms: { [Model]: { [string]: Arm } } = {}
-local function armOf(rig: Model?, side: string): Arm?
+-- Duel arms (Nov 8, vault note 17 section 4): code poses layered onto each joint's Transform in
+-- PreSimulation, so they work on Motor6D rigs and on the 2026 AnimationConstraint player rigs
+-- (where C0 can't be set). Each tap is a five-pose strike: hands over the board, wind up, slam,
+-- overshoot, settle; the waist dips into the slam.
+local arms: { [Model]: { [string]: any } } = {}
+local function armOf(rig: Model?, side: string): any
 	if not rig then
 		return nil
 	end
 	arms[rig] = arms[rig] or {}
 	local cache = arms[rig]
-	if cache[side] and cache[side].motor.Parent then
+	if cache[side] and cache[side].joint.Parent then
 		return cache[side]
 	end
-	local upper = rig:FindFirstChild(side .. "UpperArm")
-	local motor = upper and upper:FindFirstChild(side .. "Shoulder")
-	if not (motor and motor:IsA("Motor6D")) then
-		local torso = rig:FindFirstChild("Torso") -- R6 avatars
-		motor = torso and torso:FindFirstChild(side .. " Shoulder")
+	local joint
+	if side == "Waist" then
+		local torso = rig:FindFirstChild("UpperTorso")
+		joint = torso and torso:FindFirstChild("Waist")
+	else
+		local upper = rig:FindFirstChild(side .. "UpperArm")
+		joint = upper and upper:FindFirstChild(side .. "Shoulder")
 	end
-	if not (motor and motor:IsA("Motor6D")) then
+	if not (joint and (joint:IsA("Motor6D") or joint:IsA("AnimationConstraint"))) then
 		return nil
 	end
-	local a = { motor = motor, base = motor.C0, kick = 0, hold = 0 }
+	local a = { joint = joint, at = -1, hold = 0, holdNow = 0 }
 	cache[side] = a
 	return a
 end
+function D.strike(t: number): number
+	if t < 0 or t > 0.26 then
+		return 0
+	elseif t < 0.05 then -- wind up
+		local k = t / 0.05
+		return 0.8 * (1 - (1 - k) ^ 2)
+	elseif t < 0.085 then -- slam
+		local k = (t - 0.05) / 0.035
+		return 0.8 - 1.15 * k * k
+	end
+	local k = (t - 0.085) / 0.175 -- overshoot, then settle
+	return -0.35 * (1 - k) ^ 2 * math.cos(k * math.pi * 1.5)
+end
 function pressButton(b: any, name: string)
-	local tbl = b.model and b.model:FindFirstChild("DuelTable")
+	local tbl = b.model and (b.model:FindFirstChild("DuelTable") or b.model:FindFirstChild("DuelBoard"))
 	local btn = tbl and tbl:FindFirstChild(name) :: BasePart?
 	if btn then
 		btn:SetAttribute("Press", os.clock())
+	end
+	-- a piece on that side of the board hops with the slam
+	local pieces = tbl and tbl:FindFirstChild("Pieces")
+	if pieces and not reduced() then
+		local want = if name == "ClockButtonA" then "Player" else "Rival"
+		local mine = {}
+		for _, pc in pieces:GetChildren() do
+			if pc:GetAttribute("Side") == want and not pc:GetAttribute("Hopping") then
+				table.insert(mine, pc)
+			end
+		end
+		local pc = mine[math.random(1, math.max(1, #mine))] :: Model?
+		if pc then
+			pc:SetAttribute("Hopping", true)
+			local home = pc:GetPivot()
+			local t0 = os.clock()
+			local conn: RBXScriptConnection
+			conn = RunService.RenderStepped:Connect(function()
+				local k = math.clamp((os.clock() - t0) / 0.2, 0, 1)
+				pc:PivotTo(home * CFrame.new(0, math.sin(k * math.pi) * 0.22, 0) * CFrame.Angles(0, k * math.pi * 0.5, 0))
+				if k >= 1 then
+					conn:Disconnect()
+					pc:PivotTo(home)
+					pc:SetAttribute("Hopping", nil)
+				end
+			end)
+		end
 	end
 end
 function slap(rig: Model?, side: string)
 	local a = armOf(rig, side)
 	if a then
-		a.kick = 1
+		a.at = os.clock()
+	end
+	local w = armOf(rig, "Waist")
+	if w then
+		w.at = os.clock()
 	end
 end
 local function setHold(rig: Model?, side: string, hold: number)
@@ -1892,34 +1966,55 @@ local function setHold(rig: Model?, side: string, hold: number)
 		a.hold = hold
 	end
 end
+function D.animated(rig: Model): boolean
+	local hum = rig:FindFirstChildOfClass("Humanoid")
+	local animator = hum and hum:FindFirstChildOfClass("Animator")
+	return animator ~= nil and #animator:GetPlayingAnimationTracks() > 0
+end
 local function releaseArms(rig: Model?)
 	if rig and arms[rig] then
-		for _, a in arms[rig] do
-			if a.motor.Parent then
-				a.motor.C0 = a.base
+		if not D.animated(rig) then
+			for _, a in arms[rig] do
+				if a.joint.Parent then
+					a.joint.Transform = CFrame.identity
+				end
 			end
 		end
 		arms[rig] = nil
 	end
 end
-local function stepArms(dt: number)
-	for rig, sides in arms do
+RunService.PreSimulation:Connect(function()
+	local now = os.clock()
+	for rig, parts in arms do
 		if not rig.Parent then
 			arms[rig] = nil
 			continue
 		end
-		for side, a in sides do
-			a.kick = math.max(0, a.kick - dt * 9)
-			-- up-and-slam: the arm lifts high early in the kick, then slams to the hold angle
-			local lift = math.sin(a.kick * math.pi) * 0.9
-			local angle = a.hold + lift
-			local roll = if side == "Right" then -0.25 else 0.25
-			a.motor.C0 = a.base * CFrame.Angles(angle, 0, if angle > 0 then roll * math.min(1, angle) else 0)
+		local animated = D.animated(rig)
+		for key, a in parts do
+			if not a.joint.Parent then
+				continue
+			end
+			a.holdNow += (a.hold - a.holdNow) * 0.2
+			local t = now - a.at
+			local pose
+			if key == "Waist" then
+				local lean = if t > 0.05 and t < 0.26 then 0.14 * math.sin(math.pi * (t - 0.05) / 0.21) else 0
+				pose = CFrame.Angles(-lean, 0, 0)
+			else
+				local angle = a.holdNow + D.strike(t)
+				local roll = if key == "Right" then -0.25 else 0.25
+				pose = CFrame.Angles(angle, 0, if angle > 0 then roll * math.min(1, angle) else 0)
+			end
+			a.joint.Transform = if animated then pose * a.joint.Transform else pose
 		end
 	end
+end)
+local function stepArms(_dt: number)
+	-- clock buttons dip when slapped
 	-- clock buttons dip when slapped
 	for _, m in Stages:GetChildren() do
-		local tbl = m:FindFirstChild("DuelTable")
+		local tbl = m:FindFirstChild("DuelTable") or m:FindFirstChild("DuelBoard")
 		if tbl then
 			for _, name in { "ClockButtonA", "ClockButtonB" } do
 				local btn = tbl:FindFirstChild(name) :: BasePart?
@@ -1935,22 +2030,363 @@ local function stepArms(dt: number)
 	end
 end
 
-local function endBattleScene(b: any)
-	if b.rival and b.rivalHome then
-		b.rival:PivotTo(b.rivalHome)
-		for _, p in b.rival:GetDescendants() do
-			if p:IsA("BasePart") then
-				p.Transparency = 0
+-- Reference duel (Alex, Nov 8) ---------------------------------------------------------
+-- You walk up to the rival in front of his gate and press Battle. The camera starts over his
+-- shoulder, swings round to the side view of you both at the chess board, counts 3-2-1-GO (GO lands
+-- on the server's Config.DuelIntro), then slowly pushes in while you tap. On a win he is flung
+-- through his gate and the camera comes back behind you.
+D.DUEL_HOLD = 0.35 -- the over-the-shoulder shot holds this long
+D.DUEL_SWEEP = 1.0 -- then the camera swings round to the side view
+D.DUEL_STEP = 0.7 -- each of 3, 2, 1
+D.SIDE_DIST, D.SIDE_UP = 14, 5.2 -- the side view: distance and height from the middle of the duel
+D.GOLD_COUNT = Color3.fromRGB(255, 206, 52)
+D.GREEN_GO = Color3.fromRGB(96, 232, 64)
+
+function D.duelGeometry(b: any, stageModel: Instance)
+	local spot = stageModel:FindFirstChild("PlayerSpot") :: BasePart
+	local stand = (stageModel:FindFirstChild("RivalStand") or stageModel:FindFirstChild("RivalPlate")) :: BasePart
+	local them = stand.Position
+	local me = Vector3.new(spot.Position.X, them.Y, spot.Position.Z)
+	local axis = (them - me) * Vector3.new(1, 0, 1)
+	axis = if axis.Magnitude > 0.1 then axis.Unit else Vector3.new(0, 0, -1)
+	-- the camera stands on the side both players are turned toward (the open lane)
+	local side = Vector3.yAxis:Cross(axis)
+	if side:Dot(spot.CFrame.LookVector) < 0 then
+		side = -side
+	end
+	b.me, b.them, b.axis, b.side = me, them, axis, side
+	b.centre = (me + them) / 2 + Vector3.new(0, 3, 0)
+	-- the intro shot: just behind the rival's shoulder, looking at you
+	local startPos = them + axis * 2.6 - side * 1.5 + Vector3.new(0, 4.6, 0)
+	local h = (startPos - b.centre) * Vector3.new(1, 0, 1)
+	b.th0 = math.atan2(h:Dot(axis), h:Dot(side))
+	b.r0 = h.Magnitude
+	b.y0 = startPos.Y
+	b.look0 = me + Vector3.new(0, 3.6, 0)
+end
+
+function D.introCam(b: any, e: number): CFrame
+	local s = e * e * (3 - 2 * e)
+	local th = b.th0 * (1 - s)
+	local r = b.r0 + (D.SIDE_DIST - b.r0) * s ^ 1.6
+	local y = b.y0 + (b.centre.Y + D.SIDE_UP - b.y0) * s
+	local flat = b.side * math.cos(th) * r + b.axis * math.sin(th) * r
+	local pos = Vector3.new(b.centre.X + flat.X, y, b.centre.Z + flat.Z)
+	return CFrame.lookAt(pos, b.look0:Lerp(b.centre + Vector3.new(0, 0.4, 0), s))
+end
+
+function D.sideCam(b: any, push: number): CFrame
+	local pos = b.centre + b.side * (D.SIDE_DIST - push) + Vector3.new(0, D.SIDE_UP - push * 0.35, 0)
+	return CFrame.lookAt(pos, b.centre + Vector3.new(0, 0.4, 0))
+end
+
+-- sparkles and a slow swirl around a fighter (Roblox's own particle pictures only)
+function D.addAura(rig: Model?, color: Color3): { ParticleEmitter }
+	local hrp = rig and rig:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp then
+		return {}
+	end
+	local old = hrp:FindFirstChild("DuelAura")
+	if old then
+		old:Destroy()
+	end
+	local att = Instance.new("Attachment")
+	att.Name = "DuelAura"
+	att.Parent = hrp
+	local sp = Instance.new("ParticleEmitter")
+	sp.Name = "Sparkle"
+	sp.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sp.Color = ColorSequence.new(color)
+	sp.LightEmission = 1
+	sp.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.75), NumberSequenceKeypoint.new(1, 0) })
+	sp.Lifetime = NumberRange.new(0.4, 0.8)
+	sp.Speed = NumberRange.new(2, 5)
+	sp.SpreadAngle = Vector2.new(180, 180)
+	sp.Rate = if reduced() then 0 else 12
+	sp.Parent = att
+	local sw = Instance.new("ParticleEmitter")
+	sw.Name = "Swirl"
+	sw.Texture = "rbxasset://textures/particles/forcefield_vortex_main.dds"
+	sw.Color = ColorSequence.new(color)
+	sw.LightEmission = 0.8
+	sw.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.4), NumberSequenceKeypoint.new(1, 3.4) })
+	sw.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.5), NumberSequenceKeypoint.new(1, 1) })
+	sw.Lifetime = NumberRange.new(0.5, 0.7)
+	sw.Speed = NumberRange.new(0, 0)
+	sw.Rotation = NumberRange.new(0, 360)
+	sw.RotSpeed = NumberRange.new(-260, -200)
+	sw.LockedToPart = true
+	sw.Rate = if reduced() then 0 else 5
+	sw.Parent = att
+	return { sp, sw }
+end
+
+function D.dropAura(rig: Model?)
+	local hrp = rig and rig:FindFirstChild("HumanoidRootPart")
+	local att = hrp and hrp:FindFirstChild("DuelAura")
+	if att then
+		for _, e in att:GetChildren() do
+			if e:IsA("ParticleEmitter") then
+				e.Enabled = false
 			end
 		end
+		task.delay(1, function()
+			att:Destroy()
+		end)
+	end
+end
+
+function D.showCount(b: any, text: string, color: Color3, sound: string)
+	if b.ended then
+		return
+	end
+	local c = duelUI.Count
+	c.Text = text
+	c.TextColor3 = color
+	c.Visible = true
+	c.Pop.Scale = 1.7
+	tween(c.Pop, 0.28, { Scale = 1 }, Enum.EasingStyle.Back)
+	play(sound)
+end
+
+function duelTap(b: any)
+	b.kickCam = 1
+	if b.myAura and b.myAura[1] and not reduced() then
+		b.myAura[1]:Emit(3)
+	end
+	local knob = duelUI.Bar.Knob.Pop
+	knob.Scale = 1.25
+	tween(knob, 0.12, { Scale = 1 })
+	local icon = duelUI.Hint.Icon.Pop
+	icon.Scale = 0.82
+	tween(icon, 0.14, { Scale = 1 }, Enum.EasingStyle.Back)
+end
+
+-- the rival's body: hide for the fling's end, show again on his plate
+function D.setRigVisible(b: any, rig: Model?, visible: boolean)
+	if not rig then
+		return
+	end
+	b.rigAlpha = b.rigAlpha or {}
+	for _, p in rig:GetDescendants() do
+		if p:IsA("BasePart") or p:IsA("Decal") then
+			if b.rigAlpha[p] == nil then
+				b.rigAlpha[p] = (p :: any).Transparency
+			end
+			(p :: any).Transparency = if visible then b.rigAlpha[p] else 1
+		elseif p:IsA("BillboardGui") then
+			p.Enabled = visible
+		end
+	end
+end
+
+-- The chess pieces play during the fight (Alex, Nov 8): about every 0.55 s whoever is pushing the bar
+-- moves one of their pieces a legal-looking step (pawns forward, knights in an L, the rest one or two
+-- squares), and a big swing captures one of the other side's pieces (it shrinks into the board).
+-- Everything goes back to its start square when the duel ends.
+D.MOVES = {
+	Pawn = { { 0, 1 } },
+	Knight = { { 1, 2 }, { -1, 2 }, { 2, 1 }, { -2, 1 }, { 1, -2 }, { -1, -2 }, { 2, -1 }, { -2, -1 } },
+	Bishop = { { 1, 1 }, { -1, 1 }, { 2, 2 }, { -2, 2 }, { 1, -1 }, { -1, -1 } },
+	Rook = { { 0, 1 }, { 0, 2 }, { 1, 0 }, { -1, 0 }, { 2, 0 }, { -2, 0 }, { 0, -1 } },
+	Queen = { { 0, 1 }, { 0, 2 }, { 1, 1 }, { -1, 1 }, { 2, 2 }, { -2, 2 }, { 1, 0 }, { -1, 0 }, { 0, -1 } },
+	King = { { 0, 1 }, { 1, 0 }, { -1, 0 }, { 1, 1 }, { -1, 1 }, { 0, -1 } },
+}
+
+function D.boardStart(b: any)
+	local tbl = b.model and b.model:FindFirstChild("DuelBoard")
+	local sqF = tbl and tbl:FindFirstChild("Squares")
+	local pcF = tbl and tbl:FindFirstChild("Pieces")
+	b.board = nil
+	if not (sqF and pcF and b.axis) then
+		return
+	end
+	local squares, step = {}, 0.44
+	for _, q in sqF:GetChildren() do
+		if q:IsA("BasePart") then
+			table.insert(squares, q.Position)
+			step = q.Size.X
+		end
+	end
+	local pieces = {}
+	for _, pc in pcF:GetChildren() do
+		if pc:IsA("Model") then
+			pc:SetAttribute("Hopping", nil)
+			table.insert(pieces, { model = pc, home = pc:GetPivot(), at = pc:GetPivot().Position, side = pc:GetAttribute("Side"), alive = true })
+		end
+	end
+	-- "forward" for you is along the board's grid toward the rival
+	local ax = b.axis
+	local fwd = if math.abs(ax.X) > math.abs(ax.Z) then Vector3.new(math.sign(ax.X), 0, 0) else Vector3.new(0, 0, math.sign(ax.Z))
+	b.board = { squares = squares, pieces = pieces, step = step, fwd = fwd, right = Vector3.new(fwd.Z, 0, -fwd.X), clock = 0, last = 50 }
+end
+
+function D.onBoard(bd: any, pos: Vector3): boolean
+	for _, q in bd.squares do
+		if math.abs(q.X - pos.X) < bd.step * 0.3 and math.abs(q.Z - pos.Z) < bd.step * 0.3 then
+			return true
+		end
+	end
+	return false
+end
+
+function D.pieceAt(bd: any, pos: Vector3): any
+	for _, p in bd.pieces do
+		if p.alive and math.abs(p.at.X - pos.X) < bd.step * 0.3 and math.abs(p.at.Z - pos.Z) < bd.step * 0.3 then
+			return p
+		end
+	end
+	return nil
+end
+
+-- one move for `side`; with `capture` it first looks for one of the other side's pieces to take
+function D.boardMove(bd: any, side: string, capture: boolean)
+	local mine = {}
+	for _, p in bd.pieces do
+		if p.alive and p.side == side and not p.model:GetAttribute("Hopping") then
+			table.insert(mine, p)
+		end
+	end
+	if #mine == 0 then
+		return
+	end
+	local dir = if side == "Player" then 1 else -1
+	local best: any = nil
+	for pass = (if capture then 1 else 2), 2 do
+		for _ = 1, 12 do
+			local p = mine[math.random(1, #mine)]
+			local moves = D.MOVES[p.model.Name] or D.MOVES.King
+			local m = moves[math.random(1, #moves)]
+			local pawn = p.model.Name == "Pawn"
+			if pawn and pass == 1 then
+				m = { if math.random() < 0.5 then 1 else -1, 1 } -- pawns take on the diagonal
+			end
+			local target = p.at + bd.right * (m[1] * bd.step * dir) + bd.fwd * (m[2] * bd.step * dir)
+			if D.onBoard(bd, target) then
+				local occ = D.pieceAt(bd, target)
+				if pass == 1 and occ and occ.side ~= side and occ.model.Name ~= "King" then
+					best = { p = p, to = target, take = occ }
+					break
+				elseif pass == 2 and not occ then
+					best = { p = p, to = target }
+					break
+				end
+			end
+		end
+		if best then
+			break
+		end
+	end
+	if not best then
+		return
+	end
+	local p, take = best.p, best.take
+	local from, to = p.at, best.to
+	p.at = to
+	if take then
+		take.alive = false
+	end
+	local pc = p.model
+	pc:SetAttribute("Hopping", true)
+	local rot = p.home.Rotation
+	local high = if pc.Name == "Knight" then 0.55 else 0.22
+	local t0 = os.clock()
+	local conn: RBXScriptConnection
+	conn = RunService.RenderStepped:Connect(function()
+		if bd.ended or not pc.Parent then
+			conn:Disconnect()
+			return
+		end
+		local k = math.clamp((os.clock() - t0) / 0.24, 0, 1)
+		local e = k * k * (3 - 2 * k)
+		pc:PivotTo(CFrame.new(from:Lerp(to, e) + Vector3.new(0, math.sin(k * math.pi) * high, 0)) * rot)
+		if k >= 1 then
+			conn:Disconnect()
+			pc:SetAttribute("Hopping", nil)
+			if take and take.model.Parent then
+				-- the taken piece shrinks into the board with a little gold burst
+				local victim = take.model
+				victim:SetAttribute("Hopping", true)
+				if not reduced() then
+					studBurst(CFrame.new(to + Vector3.new(0, 0.2, 0)), Color3.fromRGB(255, 214, 80), 5, "stud")
+				end
+				local s0 = os.clock()
+				local c2: RBXScriptConnection
+				c2 = RunService.RenderStepped:Connect(function()
+					if bd.ended or not victim.Parent then
+						c2:Disconnect()
+						return
+					end
+					local q = math.clamp((os.clock() - s0) / 0.18, 0, 1)
+					victim:ScaleTo(math.max(0.02, 1 - q))
+					if q >= 1 then
+						c2:Disconnect()
+					end
+				end)
+			end
+		end
+	end)
+end
+
+-- called every frame of the fight: the side that pushed the bar since the last move moves next
+function D.boardTick(b: any, dt: number)
+	local bd = b.board
+	if not bd or b.ended or os.clock() < (b.goAt or 0) then
+		return
+	end
+	bd.clock += dt
+	if bd.clock < 0.55 then
+		return
+	end
+	bd.clock = 0
+	local swing = b.display - bd.last
+	bd.last = b.display
+	local side = if swing >= 0 then "Player" else "Rival"
+	D.boardMove(bd, side, math.abs(swing) > 4 and math.random() < 0.45)
+end
+
+function D.boardReset(b: any)
+	local bd = b.board
+	if not bd then
+		return
+	end
+	bd.ended = true
+	b.board = nil
+	for _, p in bd.pieces do
+		if p.model.Parent then
+			if p.model:GetScale() ~= 1 then
+				p.model:ScaleTo(1)
+			end
+			p.model:PivotTo(p.home)
+			p.model:SetAttribute("Hopping", nil)
+		end
+	end
+end
+
+local function endBattleScene(b: any)
+	D.boardReset(b)
+	if b.camConn then
+		b.camConn:Disconnect()
+		b.camConn = nil
+	end
+	duelUI.Count.Visible = false
+	if b.rival and b.rivalHome then
+		b.rival:PivotTo(b.rivalHome)
 	end
 	if b.piece then
 		b.piece:Destroy()
 	end
 	local npc = b.npc
 	local me = player.Character
-	setHold(me, "Right", 0)
-	setHold(npc, "Left", 0)
+	D.dropAura(me)
+	D.dropAura(npc)
+	for _, rig in { me, npc } do
+		setHold(rig, "Right", 0)
+		setHold(rig, "Left", 0)
+	end
+	if npc and b.outcome ~= "win" then
+		playAnim(npc, "Idle")
+	end
 	task.delay(if b.outcome then 1.6 else 0, function()
 		releaseArms(me)
 		releaseArms(npc)
@@ -1960,23 +2396,15 @@ local function endBattleScene(b: any)
 		stopAnim(npc, "Tap")
 		if b.outcome == "lose" then
 			playAnim(npc, "Victory")
-		elseif b.outcome == "win" then
-			playAnim(npc, "Defeat")
 		end
 		task.delay(1.8, function()
 			stopAnim(npc, "Victory")
-			stopAnim(npc, "Defeat")
 		end)
 	elseif npc and b.outcome == "lose" then
 		-- the rival celebrates: both arms up
 		setHold(npc, "Left", 2.6)
 		setHold(npc, "Right", 2.6)
 		slap(npc, "Right")
-	elseif npc and b.outcome == "win" then
-		setHold(npc, "Left", -0.2)
-		setHold(npc, "Right", -0.2)
-		setHold(me, "Right", 2.6)
-		setHold(me, "Left", 2.6)
 	end
 	if worldBadge then
 		worldBadge:Destroy()
@@ -1991,6 +2419,11 @@ local function endBattleScene(b: any)
 	safe("duel stop", function()
 		duel:Stop()
 	end)
+	for _, pp in Stages:GetDescendants() do
+		if pp:IsA("ProximityPrompt") and pp.Name == "BattlePrompt" then
+			pp.Enabled = stageOpen(pp:GetAttribute("StageId") or "")
+		end
+	end
 end
 
 local function startBattleScene(b: any)
@@ -2001,71 +2434,212 @@ local function startBattleScene(b: any)
 	b.model = stageModel
 	b.rival = stageModel:FindFirstChild("Rival")
 	b.rivalHome = b.rival and b.rival:GetPivot()
-	local pieceSpot = stageModel:FindFirstChild("PlayerPieceSpot") :: BasePart
 	local set = Config.Sets[S.Equipped] or Config.Sets.Wooden
 	b.tile = stageModel:GetAttribute("TileSize") or 4
 	b.npc = stageModel:FindFirstChild("RivalNPC")
-	b.piece = Models.Piece("Knight", set.color, b.tile * 0.24, pieceSpot.CFrame * CFrame.new(0, -0.04, 0), { trim = set.accent, material = setMaterial(S.Equipped) })
+	-- the badge anchor: an invisible piece above your head
+	local plate = stageModel:FindFirstChild("PlayerSpot") :: BasePart
+	b.piece = Models.Piece("Knight", set.color, b.tile * 0.24, plate.CFrame * CFrame.new(0, 4.5, 0), { trim = set.accent, material = setMaterial(S.Equipped) })
 	b.piece.Name = "YourPiece"
-	if stageModel:GetAttribute("NoBoard") then
-		-- reference layout (Nov 7): no board on the mat. The piece is only the badge anchor,
-		-- hidden above the player's head on the standing plate.
-		local plate = stageModel:FindFirstChild("PlayerSpot") :: BasePart
-		b.piece:PivotTo(plate.CFrame * CFrame.new(0, 4.5, 0))
-		for _, part in b.piece:GetDescendants() do
-			if part:IsA("BasePart") then
-				part.Transparency = 1
-			end
+	for _, part in b.piece:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Transparency = 1
 		end
 	end
 	b.piece.Parent = fxFolder
 	worldBadge = makeWorldBadge(b.piece.PrimaryPart)
-	-- camera: side-on at the clock end of the table, both players in profile (you on the left)
-	local tbl = stageModel:FindFirstChild("DuelTable")
-	local top = tbl and tbl:FindFirstChild("TableTop") :: BasePart?
-	local spot = stageModel:FindFirstChild("PlayerSpot") :: BasePart
-	local rivalPlate = stageModel:FindFirstChild("RivalPlate") :: BasePart?
-	local centre = if top then top.Position
-		elseif rivalPlate then (spot.Position + rivalPlate.Position) / 2 + Vector3.new(0, 2.5, 0)
-		else spot.Position + Vector3.new(0, 3, -4.4)
-	camSaved = true
-	camera.CameraType = Enum.CameraType.Scriptable
-	local goal = CFrame.lookAt(centre + Vector3.new(15, 4.2, 1.2), centre + Vector3.new(0, 1.2, 0))
-	setHold(player.Character, "Right", 1.05)
-	b.npcTap = playAnim(b.npc, "Tap", 0.6)
-	if not b.npcTap then
-		setHold(b.npc, "Left", 1.05)
-	end
-	b.rivalSlaps = 0
-	tween(camera, 0.5, { CFrame = goal }, Enum.EasingStyle.Sine)
-	local stageCfg = Config.Stages[b.stage]
-	local opponent = stageCfg.opponent or {}
-	meterUI.Bar.Rival.Text = string.upper(opponent.name or stageCfg.name)
-	setBattleHud(true)
-	safe("duel start", function()
-		duel:Start({
-			playerName = player.DisplayName,
-			userId = player.UserId,
-			rivalName = opponent.name or stageCfg.name,
-			rivalTitle = opponent.title or `Stage {stageCfg.order} rival`,
-			rivalColor = stageCfg.color,
-			rivalModel = b.rival,
-			perTap = b.fight.perTap,
-		})
-	end)
-	-- a brief tile sweep at the start
-	if not reduced() then
-		local tiles = stageModel:FindFirstChild("Tiles") :: Instance
-		for _, t in tiles:GetChildren() do
-			local tile = t :: BasePart
-			local r = tonumber(string.sub(tile.Name, 5, 5)) or 0
-			task.delay(r * 0.06, function()
-				local orig = tile.Color
-				tile.Color = Config.Stages[b.stage].color
-				tween(tile, 0.3, { Color = orig })
-			end)
+	for _, pp in Stages:GetDescendants() do
+		if pp:IsA("ProximityPrompt") and pp.Name == "BattlePrompt" then
+			pp.Enabled = false
 		end
 	end
+	local stageCfg = Config.Stages[b.stage]
+	local opponent = stageCfg.opponent or {}
+	-- the duel screen: names over the bar ends, the bar at the middle
+	duelUI.Bar.You.Text = `@{player.Name}`
+	duelUI.Bar.Rival.Text = opponent.name or stageCfg.name
+	duelUI.Bar.Rival.TextColor3 = stageCfg.color
+	duelUI.Bar.Fill.Size = UDim2.fromScale(0.5, 1)
+	duelUI.Bar.Knob.Position = UDim2.fromScale(0.5, 0.5)
+	duelUI.Hint.Text.Text = if isTouch then "Tap Fast!" else "Click Fast!"
+	duelUI.Count.Visible = false
+	setBattleHud(true)
+	-- both fighters hold their hands over the board; auras on
+	for _, rig in { player.Character, b.npc } do
+		setHold(rig, "Right", 1.05)
+		setHold(rig, "Left", 1.05)
+	end
+	stopAnim(b.npc, "Idle")
+	b.rivalSlaps = 0
+	b.myAura = D.addAura(player.Character, Color3.fromRGB(255, 255, 255))
+	b.rivalAura = D.addAura(b.npc, stageCfg.color:Lerp(Color3.new(1, 1, 1), 0.35))
+	-- camera: over his shoulder, a sweep to the side view, then a slow push-in while you tap
+	D.duelGeometry(b, stageModel)
+	D.boardStart(b)
+	camSaved = true
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.CFrame = D.introCam(b, 0)
+	b.camConn = RunService.RenderStepped:Connect(function(dt)
+		if b.cinematic then
+			return
+		end
+		local t = os.clock() - b.t0
+		if t < D.DUEL_HOLD then
+			camera.CFrame = D.introCam(b, 0)
+		elseif t < D.DUEL_HOLD + D.DUEL_SWEEP then
+			camera.CFrame = D.introCam(b, (t - D.DUEL_HOLD) / D.DUEL_SWEEP)
+		else
+			b.kickCam = math.max(0, (b.kickCam or 0) - dt * 6)
+			local fightT = math.max(0, os.clock() - b.goAt)
+			local push = 3 * math.min(1, fightT / 12) + (if reduced() then 0 else 0.3 * b.kickCam)
+			camera.CFrame = D.sideCam(b, push)
+		end
+	end)
+	-- 3, 2, 1, GO! (GO lands when the server starts counting taps)
+	local intro = b.intro or 0
+	if intro > 0 then
+		for i, n in { "3", "2", "1" } do
+			task.delay(math.max(0, intro - (4 - i) * D.DUEL_STEP), function()
+				D.showCount(b, n, D.GOLD_COUNT, "Click")
+			end)
+		end
+		task.delay(intro, function()
+			D.showCount(b, "GO!", D.GREEN_GO, "Chime")
+			task.delay(0.6, function()
+				if duelUI.Count.Text == "GO!" then
+					duelUI.Count.Visible = false
+				end
+			end)
+		end)
+	end
+end
+
+-- Glass shards where the rival breaks through his gate
+function D.shatter(at: Vector3, dir: Vector3, color: Color3)
+	if reduced() then
+		return
+	end
+	for _ = 1, 14 do
+		local s = Instance.new("Part")
+		s.Size = Vector3.new(0.9, 0.9, 0.12) * (0.5 + math.random())
+		s.CFrame = CFrame.new(at + Vector3.new(math.random() * 5 - 2.5, math.random() * 5 - 2.5, math.random() * 5 - 2.5))
+			* CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6)
+		s.Color = color
+		s.Material = Enum.Material.Neon
+		s.Transparency = 0.25
+		s.CanCollide, s.CanQuery, s.CanTouch, s.CastShadow = false, false, false, false
+		s.Parent = fxFolder
+		s.AssemblyLinearVelocity = dir * (18 + math.random() * 14) + Vector3.new(math.random() * 16 - 8, math.random() * 14, math.random() * 16 - 8)
+		s.AssemblyAngularVelocity = Vector3.new(math.random() * 20 - 10, math.random() * 20 - 10, math.random() * 20 - 10)
+		tween(s, 1.1, { Transparency = 1 })
+		task.delay(1.2, function()
+			s:Destroy()
+		end)
+	end
+end
+
+-- Win: the rival is flung through his gate (close shot as he flies past the camera), then the
+-- camera comes back behind you, the HUD returns and the +Wins pop lands.
+function D.winCinematic(b: any, p: any)
+	b.cinematic = true
+	duelUI.Count.Visible = false
+	local stageCfg = Config.Stages[b.stage]
+	local npc = b.npc :: Model?
+	local gate = b.model and b.model:FindFirstChild("Gate")
+	local barrier = gate and gate:FindFirstChild("Barrier") :: BasePart?
+	local home = npc and npc:GetPivot() or CFrame.new(b.them)
+	local start = home.Position
+	local through = if barrier then Vector3.new(start.X, barrier.Position.Y - 2, barrier.Position.Z) else start + b.axis * 6
+	local goal = through + b.axis * 42 + Vector3.new(0, 24, 0)
+	local dur = 1.3
+	if npc and b.npcTap then
+		stopAnim(npc, "Tap")
+		b.npcTap = nil
+	end
+	setHold(player.Character, "Right", 2.6)
+	setHold(player.Character, "Left", 2.6)
+	-- the shot: low and close, between the rival and his gate, so he flies at the camera and past it
+	local camPos = start + b.axis * 3.4 + b.side * 3.8 + Vector3.new(0, 2.4, 0)
+	camera.CFrame = CFrame.lookAt(camPos, start + Vector3.new(0, 2.2, 0))
+	play("Capture")
+	local t0 = os.clock()
+	local smashed = false
+	-- the impact when he breaks the gate (vault note 19 R2 and note 28): a 0.08 s hit-stop, then a +3 FOV
+	-- kick that springs back and a small shake with no roll (trauma 0.35, shown squared). Skipped with Reduced Motion.
+	local hit = { freezeEnd = 0, at = -1, trauma = 0, fov = camera.FieldOfView }
+	local conn: RBXScriptConnection
+	conn = RunService.RenderStepped:Connect(function(dt)
+		local now = os.clock()
+		if now < hit.freezeEnd then
+			return -- hit-stop: everything holds still for a moment
+		end
+		if hit.at > 0 then
+			local k = now - hit.at
+			camera.FieldOfView = hit.fov + 3 * math.exp(-k * 7) * math.cos(k * 11)
+			hit.trauma = math.max(0, hit.trauma - dt * 1.2)
+		end
+		local a = math.clamp((now - t0) / dur, 0, 1)
+		local e = 1 - (1 - a) ^ 1.4
+		local pos = start:Lerp(goal, e) + Vector3.new(0, math.sin(a * math.pi) * 5, 0)
+		local spin = CFrame.fromAxisAngle(b.side, -e * math.pi * 5)
+		if npc and npc.Parent then
+			npc:PivotTo(CFrame.new(pos) * spin * home.Rotation)
+		end
+		-- the camera stays put and follows him with its eyes
+		local sh = hit.trauma * hit.trauma * math.rad(2.2)
+		camera.CFrame = CFrame.lookAt(camPos, pos + Vector3.new(0, 2, 0))
+			* CFrame.Angles(sh * math.noise(now * 18, 1.5), sh * math.noise(now * 18, 7.5), 0)
+		if not smashed and (pos - through):Dot(b.axis) >= 0 then
+			smashed = true
+			play("Win")
+			if not reduced() then
+				hit.freezeEnd = now + 0.08
+				t0 += 0.08
+				hit.at = now + 0.04
+				hit.trauma = 0.35
+			end
+			if barrier and barrier.Transparency < 1 then
+				D.shatter(through + Vector3.new(0, 2, 0), b.axis, barrier.Color)
+				barrier:SetAttribute("Smashed", true)
+				barrier.Transparency = 1
+				barrier.CanCollide = false
+			end
+		end
+		if a >= 1 then
+			conn:Disconnect()
+			camera.FieldOfView = hit.fov
+			D.setRigVisible(b, npc, false)
+			-- back behind you (0.45 s), then the normal camera, the HUD and the +Wins pop
+			local r = root()
+			if r then
+				local look = (b.axis * Vector3.new(1, 0, 1)).Unit
+				local behind = CFrame.lookAt(r.Position - look * 11 + Vector3.new(0, 5, 0), r.Position + look * 4 + Vector3.new(0, 1, 0))
+				tween(camera, 0.45, { CFrame = behind }, Enum.EasingStyle.Quad)
+			end
+			task.delay(0.48, function()
+				endBattleScene(b)
+				refreshContext()
+				local head = player.Character and player.Character:FindFirstChild("Head") :: BasePart?
+				if (p.reward or 0) > 0 and head then
+					feel:Popup(head, `+{Format.Short(p.reward)} Wins`, "wins")
+				end
+				if stageCfg and stageCfg.boss then
+					safe("boss moment", function()
+						FeelKit.Moment(gui :: ScreenGui, "L", `YOU BEAT {string.upper((stageCfg.opponent or {}).name or stageCfg.name)}!`, { reduced = reduced, feel = feel })
+					end)
+				end
+				-- the rival is back on his plate a moment later, ready for a rematch
+				task.delay(2.2, function()
+					if npc and npc.Parent then
+						npc:PivotTo(home)
+						D.setRigVisible(b, npc, true)
+						studBurst(CFrame.new(start), Color3.fromRGB(235, 235, 235), 8, "stud")
+						playAnim(npc, "Idle")
+					end
+				end)
+			end)
+		end
+	end)
 end
 
 local function captureFlash(tile: BasePart?, color: Color3)
@@ -2189,7 +2763,7 @@ challenge = function(stageId: string)
 	local r = Net.Request("Challenge", stageId)
 	if not r.ok then
 		local why = {
-			NeedPower = `Need {Config.Stages[stageId].power} Power. Train more!`,
+			NeedPower = `Need {Format.Short(Config.Stages[stageId].power)} Elo. Tap for more Elo!`,
 			Locked = "Clear the stage before this one first",
 			TooFar = "Walk up to the battle pad",
 			Busy = "Finish your current battle first",
@@ -2201,7 +2775,8 @@ challenge = function(stageId: string)
 	local d = r.data
 	battle = {
 		id = d.id, stage = d.stage, fight = d.fight, sent = 0, serverTaps = 0, serverMeter = 50, display = 50,
-		t = 0, start = os.clock(), ended = false, lastMove = 0,
+		t = 0, start = os.clock() + (d.intro or 0), ended = false, lastMove = 0,
+		intro = d.intro or 0, t0 = os.clock(), goAt = os.clock() + (d.intro or 0),
 	}
 	bucket.tokens = Config.Input.tapBurst
 	closePanels()
@@ -2220,6 +2795,58 @@ Net.On("Battle", function(p: any)
 	battle.serverMeter, battle.serverTaps, battle.t = p.meter, p.taps, p.t
 	for _, key in p.badges or {} do
 		showBadge(key)
+	end
+end)
+
+-- Battle prompt over each rival (reference, Nov 8): walk up to him and press Battle (E, or tap it).
+function D.stageOf(inst: Instance): Instance?
+	local at: Instance? = inst
+	while at and at.Parent ~= Stages do
+		at = at.Parent
+	end
+	return at
+end
+function D.hookPrompt(stageModel: Instance?)
+	local id = stageModel and stageModel.Name
+	if not stageModel or not id or not Config.Stages[id] then
+		return
+	end
+	local npc = stageModel:FindFirstChild("RivalNPC")
+	local hrp = npc and npc:FindFirstChild("HumanoidRootPart")
+	if not hrp or hrp:FindFirstChild("BattlePrompt") then
+		return
+	end
+	local st = Config.Stages[id]
+	local pp = Instance.new("ProximityPrompt")
+	pp.Name = "BattlePrompt"
+	pp.ActionText = "Battle"
+	pp.ObjectText = (st.opponent or {}).name or st.name
+	pp.KeyboardKeyCode = Enum.KeyCode.E
+	pp.HoldDuration = 0
+	pp.MaxActivationDistance = 12
+	pp.RequiresLineOfSight = false
+	pp:SetAttribute("StageId", id)
+	pp.Enabled = stageOpen(id) and not battle
+	pp.Parent = hrp
+	pp.Triggered:Connect(function()
+		if not battle then
+			challenge(id)
+		end
+	end)
+end
+for _, m in Stages:GetChildren() do
+	D.hookPrompt(m)
+end
+Stages.DescendantAdded:Connect(function(d)
+	if d.Name == "RivalNPC" or d.Name == "HumanoidRootPart" then
+		task.defer(D.hookPrompt, D.stageOf(d))
+	end
+end)
+onState(function()
+	for _, pp in Stages:GetDescendants() do
+		if pp:IsA("ProximityPrompt") and pp.Name == "BattlePrompt" then
+			pp.Enabled = stageOpen(pp:GetAttribute("StageId") or "") and not battle
+		end
 	end
 end)
 
@@ -2297,6 +2924,18 @@ Net.On("BattleEnd", function(p: any)
 	end
 	b.serverMeter = p.meter
 	local stageCfg = Config.Stages[b.stage]
+	if p.outcome == "win" then
+		-- Nov 8 (reference): no Victory card. The rival is flung through his gate, the camera comes
+		-- back behind you, then the +Wins pop. The guide line carries the next step.
+		for _, key in p.badges or {} do
+			showBadge(key)
+		end
+		safe("win fling", function()
+			D.winCinematic(b, p)
+		end)
+		log(`battle {p.id}: win +{p.reward or 0} wins`)
+		return
+	end
 	if p.outcome == "win" and stageCfg and stageCfg.boss then
 		-- L moment (vault 06 §2): dim, rays, title, confetti, one white flash
 		task.delay(0.9, function()
@@ -2740,6 +3379,8 @@ RunService.RenderStepped:Connect(function(dt)
 		local frac = b.display / 100
 		mBar.Fill.Size = UDim2.fromScale(math.max(frac, 0.02), 1)
 		mBar.Knob.Position = UDim2.fromScale(frac, 0.5)
+		duelUI.Bar.Fill.Size = UDim2.fromScale(math.clamp(frac, 0, 1), 1)
+		duelUI.Bar.Knob.Position = UDim2.fromScale(math.clamp(frac, 0, 1), 0.5)
 		local leading = b.display >= 50
 		mBar.You.TextColor3 = if leading then Color3.fromRGB(255, 255, 160) else Color3.new(1, 1, 1)
 		mBar.Rival.TextColor3 = if leading then Color3.new(1, 1, 1) else Color3.fromRGB(255, 220, 220)
@@ -2757,15 +3398,18 @@ RunService.RenderStepped:Connect(function(dt)
 			b.npcTap:AdjustSpeed(math.clamp(Config.Pressure(b.fight, elapsed) / b.fight.perTap * 0.5, 0.6, 2.4))
 		end
 		if elapsed > b.fight.grace and not b.ended then
-			b.rivalSlaps = (b.rivalSlaps or 0) + dt * Config.Pressure(b.fight, elapsed) / b.fight.perTap
+			b.rivalSlaps = (b.rivalSlaps or 0) + dt * math.clamp(Config.Pressure(b.fight, elapsed) / b.fight.perTap * 3, 3, 9)
 			if b.rivalSlaps >= 1 then
 				b.rivalSlaps -= 1
-				if not b.npcTap then
-					slap(b.npc, "Left")
-				end
+				b.rivalHand = if b.rivalHand == "Left" then "Right" else "Left"
+				slap(b.npc, b.rivalHand)
 				pressButton(b, "ClockButtonB")
+				if b.rivalAura and b.rivalAura[1] and not reduced() then
+					b.rivalAura[1]:Emit(2)
+				end
 			end
 		end
+		D.boardTick(b, dt)
 	end
 	stepArms(dt)
 

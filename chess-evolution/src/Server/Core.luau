@@ -116,6 +116,9 @@ function Core.Tap(core: any, data: any, s: Session, ctx: any, isNear: (string, s
 		if not battle or battle.id ~= ctx.battle or battle.state.done then
 			return false, "Stale"
 		end
+		if (battle.wait or 0) > 0 then
+			return false, "Wait" -- still counting down
+		end
 		if not takeToken(core, s) then
 			return false, "TooFast"
 		end
@@ -181,6 +184,7 @@ function Core.Challenge(core: any, data: any, s: Session, stageId: string, isNea
 		state = Battle.new(stage.fight),
 		ev = Badges.new(cfg.Badges, stage.fight.grace),
 		taps = 0,
+		wait = cfg.DuelIntro or 0, -- the intro and countdown: no taps, no pressure
 		book = not data.BookShown,
 		firstClear = not data.Cleared[stageId],
 	}
@@ -197,6 +201,14 @@ function Core.StepBattle(core: any, data: any, s: Session, dt: number): (any?, {
 	local battle = s.battle
 	if not battle then
 		return nil, {}
+	end
+	if (battle.wait or 0) > 0 then
+		battle.wait -= dt
+		if battle.wait > 0 then
+			return nil, {}
+		end
+		dt = -battle.wait -- the part of this step after GO
+		battle.wait = 0
 	end
 	local state = battle.state
 	Battle.Step(state, dt)

@@ -36,6 +36,9 @@
       },
       "ChessLoop": {
         "$path": "src/StarterGui/ChessLoop.rbxm"
+      },
+      "DuelBar": {
+        "$path": "src/StarterGui/DuelBar.rbxm"
       }
     },
     "StarterPlayer": {
