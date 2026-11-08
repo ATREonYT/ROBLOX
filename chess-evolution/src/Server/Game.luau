@@ -22,6 +22,7 @@ local core: any
 local sessions: { [Player]: Core.Session } = {}
 local dirty: { [Player]: boolean } = {}
 local battleSent: { [Player]: number } = {}
+local trophyAt: { [Player]: number } = {} -- last trophy (Return pad Wins) paid
 local StatePush, BattlePush, BattleEndPush, FxPush
 
 local function log(msg: string)
@@ -129,6 +130,9 @@ end
 -- Character control during a fight: stand on the player spot and hold still.
 local function holdCharacter(player: Player, stageId: string?, hold: boolean)
 	local character = player.Character
+	if character then
+		character:SetAttribute("Dueling", hold or nil) -- ChessItems puts the board down during a duel
+	end
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then
 		return
@@ -174,7 +178,6 @@ local function onTap(player: Player, kind: string, id: string)
 	local ctx = if kind == "battle" then { kind = "battle", battle = id } else { kind = "train", station = id }
 	local ok, amount = Core.Tap(core, d, s, ctx, nearFn(player))
 	if ok and kind == "train" then
-		player:SetAttribute("Training", id)
 		markDirty(player)
 		updateLeaderstats(player)
 	elseif not ok and kind == "train" and amount ~= "TooFast" then
@@ -199,7 +202,7 @@ local function challenge(player: Player, stageId: string): any
 	local stage = config.Stages[stageId]
 	battleSent[player] = 0
 	log(`{player.Name}: challenge {stageId} ({battle.id})`)
-	return Net.ok({ id = battle.id, stage = stageId, fight = stage.fight, book = battle.book, firstClear = battle.firstClear })
+	return Net.ok({ id = battle.id, stage = stageId, fight = battle.state.fight, intro = config.DuelIntro or 0, book = battle.book, firstClear = battle.firstClear })
 end
 
 local function stepBattles(dt: number)
@@ -255,26 +258,63 @@ local function checkTraining()
 	end
 end
 
--- Auto Train (pass): taps the treadmill the player stands on, below the hand cap.
+-- Auto Train (pass): taps for you anywhere, below the hand cap. Same Elo as a hand tap.
 local autoAcc: { [Player]: number } = {}
 local function stepAuto(dt: number)
 	for player, s in sessions do
-		if s.auto and s.passes.AutoTrain and not s.battle and s.lastStation then
+		if s.auto and s.passes.AutoTrain and not s.battle then
 			autoAcc[player] = (autoAcc[player] or 0) + dt * config.AutoTrainRate
 			while autoAcc[player] >= 1 do
 				autoAcc[player] -= 1
 				local d = data(player)
-				if d and nearFn(player)("station", s.lastStation) then
-					local gain = config.Gain(s.lastStation, d.Equipped) * config.PowerMult(d.Promotions or 0, s.passes)
-					d.Power += gain
+				if d then
+					d.Power += config.TapGain(d.Equipped) * config.PowerMult(d.Promotions or 0, s.passes)
 					d.Stats.Taps += 1
-					s.station = s.lastStation
-					player:SetAttribute("Training", s.lastStation)
 					markDirty(player)
 				end
 			end
 		else
 			autoAcc[player] = 0
+		end
+	end
+end
+
+-- Treadmills pay by themselves (Alex, Nov 8): standing on an open treadmill's deck gives its Elo
+-- every TreadmillTick seconds. The client shows the pop when the "Fx" push arrives.
+local treadAcc: { [Player]: number } = {}
+local function stepTreadmills(dt: number)
+	local map = mapFolder()
+	local stations = map and map:FindFirstChild("Stations")
+	if not stations then
+		return
+	end
+	for player, s in sessions do
+		local root = rootOf(player)
+		local d = data(player)
+		local on: string? = nil
+		if root and d and not s.battle then
+			for _, m in stations:GetChildren() do
+				local deck = m:FindFirstChild("Deck")
+				if deck and deck:IsA("BasePart") and config.Stations[m.Name] and insideZone(root, deck, 1, 8) then
+					on = m.Name
+					break
+				end
+			end
+		end
+		if not on or not Core.StationOpen(config, d, on) then
+			treadAcc[player] = 0
+			continue
+		end
+		treadAcc[player] = (treadAcc[player] or 0) + dt
+		if treadAcc[player] >= config.TreadmillTick then
+			treadAcc[player] -= config.TreadmillTick
+			local ok, gain = Core.TreadmillGain(core, d, s, on :: string)
+			if ok then
+				player:SetAttribute("Training", on)
+				markDirty(player)
+				updateLeaderstats(player)
+				FxPush:Fire(player, { kind = "tread", station = on, gain = gain })
+			end
 		end
 	end
 end
@@ -435,11 +475,35 @@ function Game.Init(cfg: any)
 			local map = mapFolder()
 			local spawn = map and map:FindFirstChild("Spawn") :: BasePart?
 			local character = player.Character
-			if spawn and character and rootOf(player) then
+			local root = rootOf(player)
+			local paid = 0
+			if spawn and character and root then
+				-- Trophy: standing on a beaten stage's Return pad pays that stage's Wins, at most once
+				-- per walk from the hub (Auto Wins farms this; clip 2 of Nov 8).
+				local d = data(player)
+				local stagesFolder = map and map:FindFirstChild("Stages")
+				if d and s and stagesFolder then
+					for id, st in config.Stages do
+						local m = stagesFolder:FindFirstChild(id)
+						local pad = m and m:FindFirstChild("Return")
+						if pad and pad:IsA("BasePart") and d.Cleared[id] and insideZone(root, pad, config.Input.distanceSlack, 8) then
+							local walk = math.max(2, (pad.Position - spawn.Position).Magnitude / 22)
+							if os.clock() - (trophyAt[player] or -math.huge) >= walk then
+								trophyAt[player] = os.clock()
+								paid = math.floor(st.reward * config.WinsMult(d.Promotions or 0, s.passes))
+								d.Wins += paid
+								markDirty(player)
+								updateLeaderstats(player)
+								log(`{player.Name}: trophy {id} +{paid} wins`)
+							end
+							break
+						end
+					end
+				end
 				endSession(player, "return")
 				character:PivotTo(CFrame.lookAt(spawn.Position + Vector3.new(0, 4, 0), spawn.Position + Vector3.new(0, 4, -10)))
 			end
-			return Net.ok()
+			return Net.ok({ trophy = paid })
 		end,
 	})
 	-- Promotion, daily, playtime gifts, codes, shop ------------------------------
@@ -507,6 +571,56 @@ function Game.Init(cfg: any)
 		MarketplaceService:PromptGamePassPurchase(player, pass.id)
 		return true, { prompted = key }
 	end, false)
+	-- Power packs (developer products). id 0 = not made yet: "ComingSoon", never prompts.
+	local packKeys, packById = {}, {}
+	for _, pack in cfg.PowerPacks or {} do
+		table.insert(packKeys, pack.key)
+		if pack.id ~= 0 then
+			packById[pack.id] = pack
+		end
+	end
+	simple("BuyPack", { T.oneOf(packKeys) }, function(player, _d, _s, key)
+		for _, pack in cfg.PowerPacks do
+			if pack.key == key then
+				if pack.id == 0 then
+					return false, "ComingSoon"
+				end
+				MarketplaceService:PromptProductPurchase(player, pack.id)
+				return true, { prompted = key }
+			end
+		end
+		return false, "Unknown"
+	end, false)
+	-- Receipts: PlayerData grants each PurchaseId exactly once and saves before we confirm.
+	MarketplaceService.ProcessReceipt = function(info: any)
+		local player = Players:GetPlayerByUserId(info.PlayerId)
+		local pack = packById[info.ProductId]
+		if not player or not pack then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		local result = PlayerData.ProcessPurchaseAsync(player, {
+			Id = info.PurchaseId,
+			Product = pack.key,
+			Robux = info.CurrencySpent or pack.price,
+			Time = os.time(),
+		}, function(profile: any): boolean
+			local d = profile.Data and profile.Data.Chess
+			if not d then
+				return false
+			end
+			d.Power += pack.amount
+			return true
+		end)
+		if result == "granted" then
+			dirty[player] = true
+			updateLeaderstats(player)
+			log(`{player.Name}: bought {pack.key} (+{pack.amount} Power)`)
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		elseif result == "duplicate" then
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, passId: number, bought: boolean)
 		if bought then
 			task.spawn(checkPasses, player) -- re-ask Roblox; never trust this event alone
@@ -561,11 +675,14 @@ function Game.Init(cfg: any)
 		dirty[player] = nil
 		battleSent[player] = nil
 		autoAcc[player] = nil
+		treadAcc[player] = nil
+		trophyAt[player] = nil
 	end)
 
 	RunService.Heartbeat:Connect(function(dt)
 		stepBattles(dt)
 		stepAuto(dt)
+		stepTreadmills(dt)
 		local now = os.clock()
 		if now - lastZoneCheck >= 0.2 then
 			lastZoneCheck = now

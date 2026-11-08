@@ -114,20 +114,72 @@ local Hud = require(Kit:WaitForChild("HudBuilder")) :: any
 local TITLES = { Promote = "Promote", Shop = "Shop", Daily = "Daily", Gifts = "Rewards", Codes = "Codes" }
 local COLORS = { Promote = "pink", Shop = "red", Daily = "lemon", Gifts = "go", Codes = "purple" }
 local ICONS = { Promote = "promote", Shop = "crown", Daily = "calendar", Gifts = "gift", Codes = "crown" }
-local PAGE_HEIGHT = { Promote = 490, Codes = 410 } -- the rest use the full 560
+local PAGE_HEIGHT = { Promote = 624, Codes = 410 } -- the rest use the full 560
 local camera = workspace.CurrentCamera
 local UserInputService = game:GetService("UserInputService")
+-- 1512 x 861 is the recording's size; everything is measured at that size
+local canvas = Vector2.new(1512, 861)
+local function layoutPanel(name: string)
+	local shop = name == "Shop"
+	panel.AnchorPoint = if shop then Vector2.new(0.5, 0) else Vector2.new(0.5, 0.5)
+	panel.Position = if shop then UDim2.fromScale(0.5, 0.115) else UDim2.fromScale(0.5, 0.5)
+	panel.Size = if shop
+		then UDim2.fromOffset(math.min(816, canvas.X - 40), math.floor(canvas.Y * 0.695))
+		else UDim2.fromOffset(760, math.min(PAGE_HEIGHT[name] or 560, canvas.Y - 30))
+	panel.Header.Size = UDim2.new(1, 0, 0, if shop then 103 else 76)
+	panel.Title.Size = if shop then UDim2.fromOffset(240, 84) else UDim2.fromOffset(300, 60)
+	panel.Title.Position = if shop then UDim2.new(0.5, -96, 0, 9) else UDim2.new(0.5, -120, 0, 8)
+	panel.HeaderIcon.Size = if shop then UDim2.fromOffset(96, 96) else UDim2.fromOffset(70, 70)
+	panel.HeaderIcon.Position = if shop then UDim2.new(0.5, -124, 0, 3) else UDim2.new(0.5, -158, 0, 3)
+	panel.Close.Size = if shop then UDim2.fromOffset(72, 72) else UDim2.fromOffset(52, 52)
+	panel.Close.Position = if shop then UDim2.new(1, -86, 0, 15) else UDim2.new(1, -66, 0, 12)
+	panel.CodesTab.Size = UDim2.fromOffset(130, 58)
+	panel.CodesTab.Position = UDim2.new(1, -226, 0, 22)
+end
 local function fit()
 	-- same scale as ChessHUD, so the two left grids stay lined up
 	local vp = camera.ViewportSize
 	local touch = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-	local s = if touch then math.clamp(math.min(vp.X / 1250, vp.Y / 700), 0.5, 1) else math.clamp(math.min(vp.X / 1500, vp.Y / 860), 0.5, 1.15)
+	local s = if touch then math.clamp(math.min(vp.X / 1140, vp.Y / 640), 0.5, 1.1) else math.clamp(math.min(vp.X / 1330, vp.Y / 861), 0.5, 1.3)
 	G.Scale.Scale = s
+	canvas = vp / s
 end
 camera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
 fit()
 local openPage: string? = nil
 local refresh: () -> ()
+
+-- Promote cards: your own avatar flexing, like the reference's Evolve window. Runs only while the page is open.
+local portraits: { [string]: any } = {}
+local function playPortraits(on: boolean)
+	for _, side in { "Before", "After" } do
+		local ok, err = pcall(function()
+			local p = portraits[side]
+			if not p then
+				local AvatarPortrait = require(Kit:WaitForChild("AvatarPortrait")) :: any
+				p = AvatarPortrait.new(panel.Promote[side .. "Card"].Avatar)
+				portraits[side] = p
+			end
+			if on then
+				p:Play(player.Character)
+			else
+				p:Stop()
+			end
+		end)
+		if not ok then
+			warn(`[ChessLoop] avatar card {side}: {err}`)
+		end
+	end
+end
+local function rankName(n: number): string
+	local ranks = Config.Promotion.ranks or {}
+	if #ranks == 0 then
+		return `Rank {n + 1}`
+	elseif n < #ranks then
+		return ranks[n + 1]
+	end
+	return `{ranks[#ranks]} {n - #ranks + 2}`
+end
 
 local function show(name: string)
 	for _, p in panel:GetChildren() do
@@ -139,9 +191,13 @@ local function show(name: string)
 	Hud.Paint(panel.Header, COLORS[name])
 	panel.HeaderIcon.Image = Hud.Icons[ICONS[name]] or ""
 	panel.CodesTab.Visible = name == "Shop"
-	panel.Size = UDim2.fromOffset(760, PAGE_HEIGHT[name] or 560)
+	layoutPanel(name)
+	if name == "Shop" then
+		panel.Shop.List.CanvasPosition = Vector2.zero
+	end
 	panel.Status.Text = ""
 	openPage = name
+	playPortraits(name == "Promote")
 	dim.Visible = true
 	panel.Visible = true
 	panel.Pop.Scale = 0.85
@@ -151,6 +207,7 @@ end
 
 local function hide()
 	openPage = nil
+	playPortraits(false)
 	local t = TweenService:Create(panel.Pop, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.85 })
 	t:Play()
 	task.delay(0.12, function()
@@ -236,6 +293,23 @@ if hud then
 			warn(`[ChessLoop] invite: {err}`)
 		end
 	end)
+end
+press(panel.Shop.List.Hero.Buy, function()
+	local r = Net.Request("BuyPass", "DoublePower")
+	if not r.ok then
+		status(why(r), Color3.fromRGB(255, 210, 60))
+	end
+end)
+press(panel.Shop.List.Bundle.Buy, function()
+	status("Coming soon", Color3.fromRGB(255, 210, 60))
+end)
+for _, pack in Config.PowerPacks or {} do
+	local card = panel.Shop.List:FindFirstChild(pack.key)
+	if card then
+		press(card.Buy, function()
+			status("Coming soon", Color3.fromRGB(255, 210, 60))
+		end)
+	end
 end
 press(panel.Promote.Skip, function()
 	status("Coming soon", Color3.fromRGB(255, 210, 60))
@@ -383,6 +457,8 @@ refresh = function()
 		p.After.Text = `+{math.floor(pb * (n + 1))}% Power`
 		p.WinsBefore.Text = `+{math.floor(wb * n)}% Wins`
 		p.WinsAfter.Text = `+{math.floor(wb * (n + 1))}% Wins`
+		p.BeforeCard.Rank.Text = rankName(n)
+		p.AfterCard.Rank.Text = rankName(n + 1)
 		p.Bar.Fill.Size = UDim2.fromScale(math.max(progress, 0.01), 1)
 		p.Bar.Label.Text = `{fmt(S.Power)}/{fmt(pp)} Power · {fmt(S.Wins)}/{fmt(pw)} Wins`
 		p.Go.BackgroundColor3 = if ready then Color3.fromRGB(110, 240, 40) else Color3.fromRGB(110, 116, 132)
@@ -429,6 +505,10 @@ refresh = function()
 		end
 	end
 	if openPage == "Shop" then
+		local heroPass = Config.Passes.DoublePower
+		local heroOwned = S.Passes and S.Passes.DoublePower
+		setText(panel.Shop.List.Hero.Buy, if heroOwned then "Owned" else `{Hud.Robux} {heroPass.price}`)
+		panel.Shop.List.Hero.Soon.Visible = heroPass.id == 0 and not heroOwned
 		for _, pack in Config.PowerPacks or {} do
 			local card = panel.Shop.List:FindFirstChild(pack.key)
 			if card and pack.id == 0 then

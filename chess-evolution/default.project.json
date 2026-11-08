@@ -36,6 +36,9 @@
       },
       "ChessLoop": {
         "$path": "src/StarterGui/ChessLoop.rbxm"
+      },
+      "DuelBar": {
+        "$path": "src/StarterGui/DuelBar.rbxm"
       }
     },
     "StarterPlayer": {
@@ -49,6 +52,9 @@
         },
         "WorldFx": {
           "$path": "src/Client/WorldFx.client.luau"
+        },
+        "ChessEvolutionHUD": {
+          "$path": "src/Client/ChessEvolutionHUD.client.luau"
         }
       }
     }

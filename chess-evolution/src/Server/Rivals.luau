@@ -91,8 +91,8 @@ local function nameTag(rig: Model, stage: any)
 	end
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "RivalTag"
-	bb.Size = UDim2.fromScale(7, 2)
-	bb.StudsOffset = Vector3.new(0, 3.1, 0)
+	bb.Size = UDim2.fromScale(9, 2.8)
+	bb.StudsOffset = Vector3.new(0, 3.4, 0)
 	bb.LightInfluence = 0
 	bb.MaxDistance = 90
 	bb.Adornee = head
@@ -100,7 +100,9 @@ local function nameTag(rig: Model, stage: any)
 	local list = Instance.new("UIListLayout")
 	list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	list.Parent = bb
-	for i, row in { { stage.opponent.name, Color3.new(1, 1, 1), 0.58 }, { stage.opponent.title, stage.color, 0.42 } } do
+	-- like the reference: the name big in the rival's colour, his Elo in white under it
+	local elo = if stage.power >= 1000 then `{math.floor(stage.power / 100) / 10}K Elo` else `{stage.power} Elo`
+	for i, row in { { stage.opponent.name, stage.color, 0.58 }, { elo, Color3.new(1, 1, 1), 0.42 } } do
 		local t = Instance.new("TextLabel")
 		t.Name = "Line" .. i
 		t.LayoutOrder = i
@@ -178,9 +180,11 @@ function Rivals.Spawn(config: any, map: Instance)
 		local stage = config.Stages[stageId]
 		local model = stages:FindFirstChild(stageId)
 		local tbl = model and model:FindFirstChild("DuelTable")
-		-- the duel table's far seat, or (reference layout, Nov 7) the rival's dark standing plate
-		local seat = (tbl and tbl:FindFirstChild("SeatB") or (model and model:FindFirstChild("RivalPlate"))) :: BasePart?
-		if seat and not tbl and model then
+		-- Nov 8 layout: RivalStand marks the rival's feet on his plate, right in front of the gate,
+		-- turned toward the duel camera. Older layouts: the duel table's far seat, or the plate itself.
+		local stand = model and model:FindFirstChild("RivalStand") :: BasePart?
+		local seat = (stand or (tbl and tbl:FindFirstChild("SeatB")) or (model and model:FindFirstChild("RivalPlate"))) :: BasePart?
+		if seat and not tbl and not stand and model then
 			-- stand on the plate's top, facing the player's plate
 			local mine = model:FindFirstChild("PlayerSpot") :: BasePart?
 			local top = seat.Position + Vector3.new(0, seat.Size.Y / 2, 0)

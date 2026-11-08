@@ -312,7 +312,7 @@ function MapBuilder.Build(config: any): Model
 		local cf = CFrame.lookAt(Vector3.new(x, y, z), Vector3.new(x - 10, y, z)) -- runner faces the cliff, console at the back (reference)
 		local machine = Models.Treadmill(id, cf)
 		machine:SetAttribute("Built", st.built == true)
-		local unlock = if not st.built then "Coming soon" elseif st.unlock then `Clear Stage {string.sub(st.unlock.stage, -1)}` else "FREE"
+		local unlock = if not st.built then "Coming soon" elseif st.unlock and st.unlock.stage then `Clear Stage {string.sub(st.unlock.stage, -1)}` elseif st.unlock and st.unlock.rebirths then `{st.unlock.rebirths} Rebirth{if st.unlock.rebirths == 1 then "" else "s"}` else "FREE"
 		local anchor = machine:FindFirstChild("LabelAnchor") :: BasePart
 		billboard(anchor, "Label", UDim2.fromScale(9, 2.8), {
 			{ text = `+{st.basePower} Power`, color = Color3.fromRGB(255, 255, 255), scale = 1 },

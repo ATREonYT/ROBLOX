@@ -12,21 +12,6 @@
 
 local ChessItems = {}
 
--- The held board is a Tool; the game has no other tools, so the client hides the hotbar
--- (otherwise a "ChessItem" slot shows and pressing 1 would put the board away).
-if game ~= nil and game:GetService("RunService"):IsClient() then
-	task.spawn(function()
-		for _ = 1, 10 do
-			if pcall(function()
-				game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
-			end) then
-				break
-			end
-			task.wait(1)
-		end
-	end)
-end
-
 -- Alex's pack textures (assets/vfx-pack/*.png). 0 = not uploaded yet, the built-in picture is used.
 ChessItems.PackIds = {
 	glint_star4 = 0, -- 4-point star glint: Marble, Royal, Champion
@@ -150,6 +135,8 @@ function ChessItems.Build(setId: string, scale: number?, at: CFrame?): Model
 		for j = 0, n - 1 do
 			local lightSq = (i + j) % 2 == 0
 			local sq = part(m, "Square", Vector3.new(q, q, 0.08 * s), centre * CFrame.new((i - 1.5) * q, (j - 1.5) * q, -frameT / 2 - 0.04 * s), if lightSq then look.light else look.dark, look.sq)
+			-- the back gets the same squares (mirrored), so the board reads as a chess board from both sides
+			part(m, "SquareBack", Vector3.new(q, q, 0.08 * s), centre * CFrame.new(-(i - 1.5) * q, (j - 1.5) * q, frameT / 2 + 0.04 * s), if lightSq then look.light else look.dark, look.sq, if look.sq == GLASS then { Transparency = 0.25 } else nil)
 			if look.sq == GLASS then
 				sq.Transparency = if lightSq then 0.15 else 0.35
 			end
@@ -396,35 +383,31 @@ function ChessItems.Unwear(character: Model)
 	end
 end
 
--- The held board is a Tool, so Roblox's own hold pose raises the right arm and the board is held up
--- in front (like the reference's phone) instead of hanging at the hip and clipping into the leg (Alex, Nov 8).
--- HOLD = where the board's centre sits, in the hand's frame while the arm is raised forward:
--- hand -Z is up and hand -Y points forward, so the board stands upright just above the fist,
--- its top leaning a little away, with its chess face toward the player (and camera) behind it.
-local HOLD = CFrame.new(0, -0.35, -0.95) * CFrame.fromMatrix(Vector3.zero, Vector3.new(-1, 0, 0), Vector3.new(0, -0.26, -0.97), Vector3.new(0, -0.97, 0.26))
+-- The board is held in front of the chest with both hands, like the phone in the reference
+-- (Alex, Nov 8). It is welded to the chest, so it can never be put away (no Tool, no hotbar slot),
+-- and ChessItems.StartPose (client) bends both arms so the hands hold its sides.
+-- HOLD = the board's centre in the UpperTorso's frame: in front of the chest, a little low,
+-- turned so its chess face looks back at the player and camera, top tipped slightly away.
+local HOLD = CFrame.new(0, -0.2, -1.15) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(math.rad(-30), 0, 0)
 ChessItems.HOLD = HOLD
+local BOARD_SCALE = 0.42
 
 function ChessItems.Wear(character: Model, setId: string)
 	ChessItems.Unwear(character)
-	local hand = (character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")) :: BasePart?
+	local torso = (character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")) :: BasePart?
 	local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not hand or not hrp or not humanoid then
+	if not torso or not hrp then
 		return
 	end
 	local tier = ORDER[setId] or 1
-	-- the board, built around its centre part, which becomes the Tool's Handle
-	local item = ChessItems.Build(setId, 0.42)
+	local item = ChessItems.Build(setId, BOARD_SCALE)
 	local core = item.PrimaryPart :: BasePart
-	local tool = Instance.new("Tool")
-	tool.Name = "ChessItem"
-	tool.CanBeDropped = false
-	tool.ManualActivationOnly = true
-	tool.RequiresHandle = true
-	tool:SetAttribute("SetId", setId)
-	core.Name = "Handle"
+	-- move the board (built at the origin) so its centre sits at HOLD, then weld it to the chest
+	local target = torso.CFrame * HOLD
+	local from = core.CFrame
 	for _, p in item:GetDescendants() do
 		if p:IsA("BasePart") then
+			p.CFrame = target * from:Inverse() * p.CFrame
 			p.Anchored = false
 			p.Massless = true
 			p.CanCollide = false
@@ -438,18 +421,15 @@ function ChessItems.Wear(character: Model, setId: string)
 			end
 		end
 	end
-	for _, c in item:GetChildren() do
-		c.Parent = tool
-	end
-	item:Destroy()
-	-- Grip so that Handle = hand * gripAttachment * Grip:Inverse() = hand * HOLD
-	local att = hand:FindFirstChild("RightGripAttachment") :: Attachment?
-	local g = if att then att.CFrame else CFrame.new(0, -hand.Size.Y / 2, 0)
-	tool.Grip = HOLD:Inverse() * g
+	local w = Instance.new("WeldConstraint")
+	w.Part0 = torso
+	w.Part1 = core
+	w.Parent = core
+	item.Name = "ChessItem"
 	if tier >= 2 then
-		ChessItems.AddFx({ PrimaryPart = core } :: any, setId, 0.32, false)
+		ChessItems.AddFx(item, setId, 0.32, false)
 	end
-	tool.Parent = character -- parented to the character = equipped (held)
+	item.Parent = character
 	-- body aura (tier 3+): a flat ring part at the feet, the same effect rising around the body
 	if tier >= 3 then
 		local list = (ChessItems.Fx :: any)[setId]
@@ -481,6 +461,80 @@ function ChessItems.Wear(character: Model, setId: string)
 		end
 	end
 	character:SetAttribute("ChessItem", setId)
+end
+
+
+---------------------------------------------------------------------------
+-- Both-hands hold pose (client, every character holding a board). Layered onto each joint's
+-- Transform in PreSimulation, after the walk/run/idle animation, so legs and body still animate
+-- but the arms stay on the board. Works on Motor6D and AnimationConstraint rigs (R15).
+-- Skipped while the character is in a duel (the duel poses the arms itself) and the board hides.
+---------------------------------------------------------------------------
+-- Solved against the R15 rig's own joint attachments (Studio, Nov 8): upper arms hang and turn in,
+-- elbows bend forward 60 degrees, so the hands land on the board's sides at (+-0.72, -0.18, -1.14)
+-- from the chest. (Raising the upper arms instead pushed the hands outward.)
+local POSE = {
+	RightShoulder = CFrame.Angles(0, math.rad(40), 0),
+	LeftShoulder = CFrame.Angles(0, math.rad(-40), 0),
+	RightElbow = CFrame.Angles(math.rad(60), 0, 0),
+	LeftElbow = CFrame.Angles(math.rad(60), 0, 0),
+	RightWrist = CFrame.identity,
+	LeftWrist = CFrame.identity,
+}
+local PARENT = { RightShoulder = "RightUpperArm", LeftShoulder = "LeftUpperArm", RightElbow = "RightLowerArm", LeftElbow = "LeftLowerArm", RightWrist = "RightHand", LeftWrist = "LeftHand" }
+
+local poseStarted = false
+function ChessItems.StartPose()
+	if poseStarted then
+		return
+	end
+	poseStarted = true
+	local Players = game:GetService("Players")
+	local RunService = game:GetService("RunService")
+	local blend: { [Model]: number } = {}
+	RunService.PreSimulation:Connect(function(dt)
+		for _, plr in Players:GetPlayers() do
+			local ch = plr.Character
+			local item = ch and ch:FindFirstChild("ChessItem")
+			if not ch or not item or not item:IsA("Model") then
+				continue
+			end
+			local dueling = ch:GetAttribute("Dueling") == true
+			-- the board hides during a duel (both hands are on the chess clock)
+			for _, d in item:GetDescendants() do
+				if d:IsA("BasePart") and d.Name ~= "Core" then
+					d.LocalTransparencyModifier = if dueling then 1 else 0
+				elseif d:IsA("ParticleEmitter") then
+					d.Enabled = not dueling
+				end
+			end
+			-- ease in and out over 0.15 s so the arms don't snap
+			local k = blend[ch] or 0
+			k = math.clamp(k + (if dueling then -dt else dt) / 0.15, 0, 1)
+			blend[ch] = k
+			if k <= 0 then
+				continue
+			end
+			for name, rot in POSE do
+				local partWithJoint = ch:FindFirstChild(PARENT[name])
+				local joint = partWithJoint and partWithJoint:FindFirstChild(name)
+				if joint and (joint:IsA("Motor6D") or joint:IsA("AnimationConstraint")) then
+					local want = if k >= 1 then rot else CFrame.identity:Lerp(rot, k)
+					-- replace the arm's animated rotation with the hold pose
+					local cur = (joint :: any).Transform :: CFrame
+					;(joint :: any).Transform = CFrame.new(cur.Position) * want
+				end
+			end
+		end
+		for ch in blend do
+			if not ch.Parent then
+				blend[ch] = nil
+			end
+		end
+	end)
+end
+if game ~= nil and game:GetService("RunService"):IsClient() then
+	task.defer(ChessItems.StartPose)
 end
 
 return ChessItems

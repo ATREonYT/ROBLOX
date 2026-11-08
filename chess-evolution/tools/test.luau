@@ -38,8 +38,10 @@ local VERBOSE = process.env.VERBOSE == "1"
 
 -- 1. Config gains ----------------------------------------------------------
 check("Pawn+Wooden = 1", Config.Gain("PawnMill", "Wooden") == 1)
-check("Pawn+Marble = 2", Config.Gain("PawnMill", "Marble") == 2)
-check("Knight+Marble = 4", Config.Gain("KnightSprint", "Marble") == 4)
+-- Nov 8: sets no longer multiply treadmills; a tap anywhere pays the set's multiplier
+check("Pawn treadmill ignores the set = 1", Config.Gain("PawnMill", "Marble") == 1)
+check("Knight treadmill = 2", Config.Gain("KnightSprint", "Marble") == 2)
+check("Marble tap = 2", Config.TapGain("Marble") == 2)
 check("Marble costs 8", Config.Sets.Marble.price == 8)
 check("stage 1 = 25 power, 10 wins", Config.Stages.Stage1.power == 25 and Config.Stages.Stage1.reward == 10)
 check("stage 2 = 90 power, 20 wins", Config.Stages.Stage2.power == 90 and Config.Stages.Stage2.reward == 20)
@@ -69,30 +71,45 @@ local function has(log, key)
 end
 
 do
-	local s = logBadges("Stage1", 2, "2 taps/s")
-	check("Pawn: 2 taps/s wins", s.outcome == "win", s.outcome)
-	check("Pawn: 2 taps/s wins in ~8-10 s", s.t >= 7.5 and s.t <= 10.5, s.t)
+	-- Nov 8 (Alex: "more intense"): the rival pushes back hard; stop tapping and the bar slides away fast
+	local s = logBadges("Stage1", 4, "4 taps/s")
+	check("Pawn: 4 taps/s wins", s.outcome == "win", s.outcome)
+	check("Pawn: 4 taps/s wins in ~7.5-9.5 s", s.t >= 7.5 and s.t <= 9.5, s.t)
+	check("Pawn: 2 taps/s is not enough", logBadges("Stage1", 2, "2 taps/s").outcome ~= "win")
 	local idle, log = logBadges("Stage1", 0, "idle")
 	check("Pawn: idle loses", idle.outcome == "lose", idle.outcome)
+	check("Pawn: idle loses inside 6 s (the bar visibly slides)", idle.t <= 6, idle.t)
 	local a, b, c = has(log, "Inaccuracy"), has(log, "Mistake"), has(log, "Blunder")
 	check("Pawn idle: ?! then ? then ?? before defeat", a and b and c and a < b and b < c and c < idle.t, `{a} {b} {c} end {idle.t}`)
 	for _, stage in { "Stage2", "Stage3" } do
-		local w = logBadges(stage, 2.5, "2.5 taps/s")
-		check(`{stage}: 2.5 taps/s wins`, w.outcome == "win", w.outcome)
+		local w = logBadges(stage, 5, "5 taps/s")
+		check(`{stage}: 5 taps/s wins`, w.outcome == "win", w.outcome)
 		local i2, l2 = logBadges(stage, 0, "idle")
 		check(`{stage}: idle loses through all three bands`, i2.outcome == "lose" and has(l2, "Inaccuracy") and has(l2, "Mistake") and has(l2, "Blunder"))
-		local slow = logBadges(stage, 1, "1 tap/s")
-		check(`{stage}: 1 tap/s is not enough`, slow.outcome ~= "win", slow.outcome)
+		local slow = logBadges(stage, 2.5, "2.5 taps/s")
+		check(`{stage}: 2.5 taps/s is not enough`, slow.outcome ~= "win", slow.outcome)
 	end
-	check("Stage2 harder than Stage1", Battle.Simulate(Config.Stages.Stage2.fight, 2, 0.1).t > s.t)
-	-- later rivals: beatable at a steady 3.5-4 taps/s (the boss needs 4), never by mashing slowly
-	for _, row in { { "Stage4", 3.5, 2 }, { "Stage5", 3.5, 2.5 }, { "Stage6", 4, 2.5 }, { "Stage7", 4, 3 } } do
+	check("Stage2 harder than Stage1", Battle.Simulate(Config.Stages.Stage2.fight, 4, 0.1).t > s.t)
+	-- later rivals: beatable at a steady 5-5.5 taps/s, never by tapping slowly
+	for _, row in { { "Stage4", 5, 3.5 }, { "Stage5", 5, 4 }, { "Stage6", 5.5, 4 }, { "Stage7", 5.5, 4.5 } } do
 		local w = logBadges(row[1], row[2], `{row[2]} taps/s`)
 		check(`{row[1]}: {row[2]} taps/s wins`, w.outcome == "win", `{w.outcome} {w.t}`)
 		local slow = logBadges(row[1], row[3], `{row[3]} taps/s`)
 		check(`{row[1]}: {row[3]} taps/s is not enough`, slow.outcome ~= "win", `{slow.outcome} {slow.t}`)
 		check(`{row[1]}: winnable inside the 6/s tap cap`, logBadges(row[1], 6, "6 taps/s").outcome == "win")
 	end
+	-- Elo advantage (Alex, Nov 8): smooth, and 2x the rival's Elo makes the fight easy
+	local f1 = Config.Stages.Stage1.fight
+	check("ease: at his Elo the fight is unchanged", Config.DuelFight(f1, 25, 25).perTap == f1.perTap)
+	check("ease: 2x Elo, 2 taps/s wins", Battle.Simulate(Config.DuelFight(f1, 50, 25), 2, 0.1).outcome == "win")
+	check("ease: 1x Elo, 2 taps/s loses", Battle.Simulate(Config.DuelFight(f1, 25, 25), 2, 0.1).outcome ~= "win")
+	check("ease: 1.5x Elo is between 1x and 2x", (function()
+		local a, m, b = Config.DuelFight(f1, 25, 25).perTap, Config.DuelFight(f1, 37.5, 25).perTap, Config.DuelFight(f1, 50, 25).perTap
+		return a < m and m < b
+	end)())
+	check("ease: stops at 4x", Config.DuelFight(f1, 1000, 25).perTap == Config.DuelFight(f1, 100, 25).perTap)
+	local boss = Config.Stages.Stage7
+	check("ease: boss at 2x Elo, 3 taps/s wins", Battle.Simulate(Config.DuelFight(boss.fight, boss.power * 2, boss.power), 3, 0.1).outcome == "win")
 	check("every stage has a named opponent", (function()
 		for _, id in Config.StageOrder do
 			local o = Config.Stages[id].opponent
@@ -215,9 +232,9 @@ do
 	end
 	check("rate cap: burst only", accepted <= Config.Input.tapBurst + 2, accepted)
 	clock += 2
-	check("train: far from deck rejected", not Core.Tap(core, data, s, { kind = "train", station = "PawnMill" }, far))
-	check("train: Knight locked before Stage 2", not Core.Tap(core, data, s, { kind = "train", station = "KnightSprint" }, near))
-	check("train: unbuilt station rejected", not Core.Tap(core, data, s, { kind = "train", station = "RookRig" }, near))
+	check("tap anywhere: far from any treadmill still pays", (Core.Tap(core, data, s, { kind = "train", station = "Tap" }, far)))
+	clock += 2
+	check("treadmill: Knight Sprint locked before a rebirth", not Core.TreadmillGain(core, data, s, "KnightSprint"))
 	-- locked gate
 	local ok, code = Core.Challenge(core, data, s, "Stage2", near)
 	check("gate: Stage 2 locked before Stage 1", not ok and code == "Locked", code)
@@ -233,7 +250,7 @@ do
 	local result
 	for i = 1, 400 do
 		clock += 0.05
-		if i % 10 == 0 then
+		if i % 4 == 0 then
 			Core.Tap(core, data, s, { kind = "battle", battle = battle.id }, near)
 		end
 		result = Core.StepBattle(core, data, s, 0.05)
@@ -241,7 +258,7 @@ do
 			break
 		end
 	end
-	check("battle: 2 taps/s wins", result and result.outcome == "win", result and result.outcome)
+	check("battle: 5 taps/s wins", result and result.outcome == "win", result and result.outcome)
 	check("battle: 10 wins first clear", data.Wins == 10 and result.reward == 10, data.Wins)
 	check("battle: power kept", data.Power == powerBefore)
 	-- replay: every win pays (the reference's Wins counter), but unlocks only once
@@ -249,7 +266,7 @@ do
 	ok, battle = Core.Challenge(core, data, s, "Stage1", near)
 	for i = 1, 400 do
 		clock += 0.05
-		if i % 8 == 0 then
+		if i % 4 == 0 then
 			Core.Tap(core, data, s, { kind = "battle", battle = battle.id }, near)
 		end
 		result = Core.StepBattle(core, data, s, 0.05)
@@ -290,9 +307,14 @@ do
 	data.Cleared.Stage2 = nil
 	ok, battle = Core.Challenge(core, data, s, "Stage2", near)
 	check("Stage 2 opens after Stage 1", ok)
+	-- Nov 8: the 3-2-1-GO intro: taps do not count and the rival does not push until it ends
+	local okWait, codeWait = Core.Tap(core, data, s, { kind = "battle", battle = battle.id }, near)
+	check("duel intro: taps wait for GO", not okWait and codeWait == "Wait", codeWait)
+	Core.StepBattle(core, data, s, (Config.DuelIntro or 0) - 0.1)
+	check("duel intro: no pressure before GO", battle.state.meter == 50 and battle.state.t == 0, battle.state.meter)
 	for i = 1, 400 do
 		clock += 0.05
-		if i % 6 == 0 then
+		if i % 4 == 0 then
 			Core.Tap(core, data, s, { kind = "battle", battle = battle.id }, near)
 		end
 		result = Core.StepBattle(core, data, s, 0.05)
@@ -301,10 +323,10 @@ do
 		end
 	end
 	check("Stage 2 win pays 20", result.outcome == "win" and result.reward == 20, result and result.outcome)
-	check("Knight Sprint unlocked", result.unlocked == "KnightSprint")
+	check("Stage 2 first clear flagged", result.firstClear == true)
 	clock += 1
-	okTap, amount = Core.Tap(core, data, s, { kind = "train", station = "KnightSprint" }, near)
-	check("Marble on Knight Sprint = +4", okTap and amount == 4, amount)
+	okTap, amount = Core.Tap(core, data, s, { kind = "train", station = "Tap" }, near)
+	check("Marble tap anywhere = +2", okTap and amount == 2, amount)
 	-- cleanup mid-battle (death / reset / leave)
 	clock += 1
 	ok, battle = Core.Challenge(core, data, s, "Stage1", near)
