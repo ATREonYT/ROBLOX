@@ -27,3 +27,7 @@ Backups in the place: `ServerStorage.UIPolishBackup_Nov8` (ChessEvolutionHUD and
   - Beating Pawn Pete gave 10 Wins, and the trophy shows 10.
   - Buying Marble left 2 Wins, and the next tap gave +2 Elo (149 → 151).
   - The Evolve, Skip and Close presses gave 0 Elo.
+- Level bar tidy-up, set in Studio by hand:
+  - `ProgressFill` now fills the track snugly, with 7% top and bottom inset and x 0.2774.
+  - `bar()` full width changed from 914 to 922, so a full bar reaches the track's inner edge.
+  - "Level N" and "a/b" are centred vertically on the track.
