@@ -16,7 +16,7 @@ Backups in the place: `ServerStorage.UIPolishBackup_Nov8` (ChessEvolutionHUD and
 ## Readable numbers, Evolve purchase and glass panels (Nov 8, later)
 
 - **Why the numbers were blank:** `GlyphText` drew every live number (Elo, level, progress, Wins, prices, button labels) from two glyph sheet images, `rbxassetid://121275995208927` and `129374761563746`. In Play both report `AssetFetchStatus.Failure`, so the text was simply never drawn.
-- `install_live_text.command.lua` (Command Bar): replaces `GlyphText.Set` with a real outlined TextLabel (FredokaOne, dark outline, sized from the same BoxW/BoxH/FitSize). It also makes the panel fade treat live text as fully visible. ChessClient's Elo pops use the same module, so they show again too.
+- `install_live_text.command.lua` (Command Bar): replaces `GlyphText.Set` with a real outlined TextLabel (FredokaOne, dark outline, sized from the same BoxW/BoxH/FitSize). It also makes the panel fade treat live text as fully visible.
 - Evolve panel, set in Studio by hand (the backup is `ServerStorage.UIPolishBackup_Nov8.Evolve_beforeMarbleFlow`):
   - The Buy button is 1.2× and Skip is 0.75× and greyed, so Skip is secondary.
   - New `WinsBalanceIcon` and `WinsBalance_Live` show the Wins balance in the header.
