@@ -114,7 +114,7 @@ local Hud = require(Kit:WaitForChild("HudBuilder")) :: any
 local TITLES = { Promote = "Promote", Shop = "Shop", Daily = "Daily", Gifts = "Rewards", Codes = "Codes" }
 local COLORS = { Promote = "pink", Shop = "red", Daily = "lemon", Gifts = "go", Codes = "purple" }
 local ICONS = { Promote = "promote", Shop = "crown", Daily = "calendar", Gifts = "gift", Codes = "crown" }
-local PAGE_HEIGHT = { Promote = 490, Codes = 410 } -- the rest use the full 560
+local PAGE_HEIGHT = { Promote = 624, Codes = 410 } -- the rest use the full 560
 local camera = workspace.CurrentCamera
 local UserInputService = game:GetService("UserInputService")
 -- 1512 x 861 is the recording's size; everything is measured at that size
@@ -149,6 +149,38 @@ fit()
 local openPage: string? = nil
 local refresh: () -> ()
 
+-- Promote cards: your own avatar flexing, like the reference's Evolve window. Runs only while the page is open.
+local portraits: { [string]: any } = {}
+local function playPortraits(on: boolean)
+	for _, side in { "Before", "After" } do
+		local ok, err = pcall(function()
+			local p = portraits[side]
+			if not p then
+				local AvatarPortrait = require(Kit:WaitForChild("AvatarPortrait")) :: any
+				p = AvatarPortrait.new(panel.Promote[side .. "Card"].Avatar)
+				portraits[side] = p
+			end
+			if on then
+				p:Play(player.Character)
+			else
+				p:Stop()
+			end
+		end)
+		if not ok then
+			warn(`[ChessLoop] avatar card {side}: {err}`)
+		end
+	end
+end
+local function rankName(n: number): string
+	local ranks = Config.Promotion.ranks or {}
+	if #ranks == 0 then
+		return `Rank {n + 1}`
+	elseif n < #ranks then
+		return ranks[n + 1]
+	end
+	return `{ranks[#ranks]} {n - #ranks + 2}`
+end
+
 local function show(name: string)
 	for _, p in panel:GetChildren() do
 		if p:IsA("Frame") and TITLES[p.Name] then
@@ -165,6 +197,7 @@ local function show(name: string)
 	end
 	panel.Status.Text = ""
 	openPage = name
+	playPortraits(name == "Promote")
 	dim.Visible = true
 	panel.Visible = true
 	panel.Pop.Scale = 0.85
@@ -174,6 +207,7 @@ end
 
 local function hide()
 	openPage = nil
+	playPortraits(false)
 	local t = TweenService:Create(panel.Pop, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.85 })
 	t:Play()
 	task.delay(0.12, function()
@@ -423,6 +457,8 @@ refresh = function()
 		p.After.Text = `+{math.floor(pb * (n + 1))}% Power`
 		p.WinsBefore.Text = `+{math.floor(wb * n)}% Wins`
 		p.WinsAfter.Text = `+{math.floor(wb * (n + 1))}% Wins`
+		p.BeforeCard.Rank.Text = rankName(n)
+		p.AfterCard.Rank.Text = rankName(n + 1)
 		p.Bar.Fill.Size = UDim2.fromScale(math.max(progress, 0.01), 1)
 		p.Bar.Label.Text = `{fmt(S.Power)}/{fmt(pp)} Power · {fmt(S.Wins)}/{fmt(pw)} Wins`
 		p.Go.BackgroundColor3 = if ready then Color3.fromRGB(110, 240, 40) else Color3.fromRGB(110, 116, 132)

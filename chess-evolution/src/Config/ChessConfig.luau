@@ -172,6 +172,8 @@ Config.Promotion = {
 	winsBonus = 0.25,
 	levels = 20, -- display-only level bar per promotion (note 13 §2B): about one level a second
 	levelCurve = 1.3,
+	-- display only: the rank written on the Promote window's avatar cards (Before = now, After = next)
+	ranks = { "Pawn", "Knight", "Bishop", "Rook", "Queen", "King", "Grandmaster" },
 }
 
 -- Game passes. id 0 = not made yet: the shop shows the price and "Coming soon" and never

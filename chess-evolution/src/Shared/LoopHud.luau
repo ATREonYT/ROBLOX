@@ -140,6 +140,9 @@ local function theme(gui: any)
 	for _, n in { "WinsBeforePlate", "WinsAfterPlate" } do
 		P(promo[n], "cyan")
 	end
+	for _, n in { "BeforeCard", "AfterCard" } do
+		P(promo[n], "evolve")
+	end
 	promo.Bar.Fill.BackgroundColor3 = Color3.fromHex("#E21228")
 	P(panel.Codes.Redeem, "go")
 	local cards = { Hero = "gold", Bundle = "blueCard", DoublePower = "red", DoubleWins = "gold", AutoTrain = "cyan", Pack1 = "red", Pack2 = "cyan", Pack3 = "rainbow" }
@@ -231,33 +234,54 @@ function Loop.Build(config: any): ScreenGui
 		return new("Frame", { Name = name, Visible = false, BackgroundTransparency = 1, Size = UDim2.new(1, -32, 1, -128), Position = UDim2.new(0, 16, 0, 84), ZIndex = 22 }, panel)
 	end
 
-	-- Promote: Before -> After, like the reference's rebirth window
+	-- Promote: Before -> After, like the reference's Evolve window (clip 3, Nov 8): your own avatar flexes in
+	-- a square card on each side, its rank written over the bottom edge. AvatarPortrait animates the cards.
 	local pPromote = page("Promote")
 	label(pPromote, "BeforeHead", "Before", UDim2.fromOffset(200, 36), UDim2.fromOffset(54, 0))
 	label(pPromote, "AfterHead", "After", UDim2.fromOffset(200, 36), UDim2.fromOffset(474, 0))
+	local function card(name: string, x: number)
+		local f = new("Frame", { Name = name .. "Card", BackgroundColor3 = HC.slabBlue, Size = UDim2.fromOffset(176, 176), Position = UDim2.fromOffset(x, 38), ZIndex = 4 }, pPromote)
+		round(f, 12)
+		outline(f)
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(205, 205, 205)) }, f)
+		local vf = new("ViewportFrame", {
+			Name = "Avatar",
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -8, 1, -8),
+			Position = UDim2.fromOffset(4, 4),
+			Ambient = Color3.fromRGB(190, 190, 196),
+			LightColor = Color3.fromRGB(255, 250, 240),
+			LightDirection = Vector3.new(-0.4, -1, 0.6),
+			ZIndex = 5,
+		}, f)
+		round(vf, 10)
+		label(f, "Rank", "", UDim2.new(1, -12, 0, 40), UDim2.new(0, 6, 1, -44), { ZIndex = 7, TextColor3 = Color3.fromRGB(255, 176, 40) })
+	end
+	card("Before", 66)
+	card("After", 486)
+	Hud.Icon(pPromote, "Arrow1", "arrow", UDim2.fromOffset(84, 60), UDim2.fromOffset(322, 96), 6)
 	local function plate(name: string, color: Color3, x: number, y: number): TextLabel
-		local f = new("Frame", { Name = name .. "Plate", BackgroundColor3 = color, Size = UDim2.fromOffset(300, 66), Position = UDim2.fromOffset(x, y), ZIndex = 4 }, pPromote)
+		local f = new("Frame", { Name = name .. "Plate", BackgroundColor3 = color, Size = UDim2.fromOffset(300, 52), Position = UDim2.fromOffset(x, y), ZIndex = 4 }, pPromote)
 		round(f, 10)
 		outline(f)
 		Hud.Studs(f, 0.55).ZIndex = 4
-		return label(pPromote, name, "", UDim2.fromOffset(280, 48), UDim2.fromOffset(x + 10, y + 9))
+		return label(pPromote, name, "", UDim2.fromOffset(280, 40), UDim2.fromOffset(x + 10, y + 6))
 	end
-	plate("Before", HC.slabRed, 4, 38)
-	plate("After", HC.slabRed, 424, 38)
-	plate("WinsBefore", HC.slabBlue, 4, 118)
-	plate("WinsAfter", HC.slabBlue, 424, 118)
-	Hud.Icon(pPromote, "Arrow1", "arrow", UDim2.fromOffset(84, 60), UDim2.fromOffset(322, 41), 6)
-	Hud.Icon(pPromote, "Arrow2", "arrow", UDim2.fromOffset(84, 60), UDim2.fromOffset(322, 121), 6)
-	local pTrack = new("Frame", { Name = "Bar", BackgroundColor3 = WHITE, Size = UDim2.fromOffset(720, 48), Position = UDim2.fromOffset(4, 198), ZIndex = 4 }, pPromote)
+	plate("Before", HC.slabRed, 4, 226)
+	plate("After", HC.slabRed, 424, 226)
+	plate("WinsBefore", HC.slabBlue, 4, 286)
+	plate("WinsAfter", HC.slabBlue, 424, 286)
+	Hud.Icon(pPromote, "Arrow2", "arrow", UDim2.fromOffset(84, 60), UDim2.fromOffset(322, 252), 6)
+	local pTrack = new("Frame", { Name = "Bar", BackgroundColor3 = WHITE, Size = UDim2.fromOffset(720, 44), Position = UDim2.fromOffset(4, 350), ZIndex = 4 }, pPromote)
 	round(pTrack, 8)
 	outline(pTrack)
 	local pFill = new("Frame", { Name = "Fill", BackgroundColor3 = HC.slabRed, Size = UDim2.fromScale(0, 1), ZIndex = 4 }, pTrack)
 	round(pFill, 8)
 	label(pTrack, "Label", "", UDim2.new(1, -20, 1, -8), UDim2.fromOffset(10, 4))
-	label(pPromote, "Note", "Promoting resets your Power and Wins! Sets and treadmills stay.", UDim2.new(1, -20, 0, 30), UDim2.fromOffset(10, 254), { TextColor3 = Color3.fromRGB(120, 255, 200) })
-	local go = button(pPromote, "Go", "Promote", C.go, UDim2.fromOffset(250, 68), UDim2.fromOffset(106, 292))
+	label(pPromote, "Note", "Promoting resets your Power and Wins! Sets and treadmills stay.", UDim2.new(1, -20, 0, 28), UDim2.fromOffset(10, 400), { TextColor3 = Color3.fromRGB(120, 255, 200) })
+	local go = button(pPromote, "Go", "Promote", C.go, UDim2.fromOffset(250, 64), UDim2.fromOffset(106, 436))
 	local _go = go
-	Hud.Rainbow(button(pPromote, "Skip", "Skip", WHITE, UDim2.fromOffset(250, 68), UDim2.fromOffset(372, 292)))
+	Hud.Rainbow(button(pPromote, "Skip", "Skip", WHITE, UDim2.fromOffset(250, 64), UDim2.fromOffset(372, 436)))
 
 	-- Shop: gold hero offer, cyan feature card, then compact rows. The header stays; the list scrolls and clips under it.
 	local pShop = page("Shop")
