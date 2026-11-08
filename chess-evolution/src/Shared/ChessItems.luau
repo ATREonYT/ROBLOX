@@ -12,6 +12,21 @@
 
 local ChessItems = {}
 
+-- The held board is a Tool; the game has no other tools, so the client hides the hotbar
+-- (otherwise a "ChessItem" slot shows and pressing 1 would put the board away).
+if game:GetService("RunService"):IsClient() then
+	task.spawn(function()
+		for _ = 1, 10 do
+			if pcall(function()
+				game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+			end) then
+				break
+			end
+			task.wait(1)
+		end
+	end)
+end
+
 -- Alex's pack textures (assets/vfx-pack/*.png). 0 = not uploaded yet, the built-in picture is used.
 ChessItems.PackIds = {
 	glint_star4 = 0, -- 4-point star glint: Marble, Royal, Champion
@@ -366,6 +381,12 @@ end
 local ORDER = { Wooden = 1, Marble = 2, Jade = 3, Ruby = 4, Sapphire = 5, Gold = 6, Obsidian = 7, Royal = 8, Crystal = 9, Cosmic = 10, Champion = 11 }
 
 function ChessItems.Unwear(character: Model)
+	local player = game:GetService("Players"):GetPlayerFromCharacter(character)
+	local backpack = player and player:FindFirstChildOfClass("Backpack")
+	local stray = backpack and backpack:FindFirstChild("ChessItem")
+	if stray then
+		stray:Destroy()
+	end
 	for _, name in { "ChessItem", "ChessAura" } do
 		local old = character:FindFirstChild(name)
 		while old do
@@ -375,24 +396,40 @@ function ChessItems.Unwear(character: Model)
 	end
 end
 
+-- The held board is a Tool, so Roblox's own hold pose raises the right arm and the board is held up
+-- in front (like the reference's phone) instead of hanging at the hip and clipping into the leg (Alex, Nov 8).
+-- HOLD = where the board's centre sits, in the hand's frame while the arm is raised forward:
+-- hand -Z is up and hand -Y points forward, so the board stands upright just above the fist,
+-- its top leaning a little away, with its chess face toward the player (and camera) behind it.
+local HOLD = CFrame.new(0, -0.35, -0.95) * CFrame.fromMatrix(Vector3.zero, Vector3.new(-1, 0, 0), Vector3.new(0, -0.26, -0.97), Vector3.new(0, -0.97, 0.26))
+ChessItems.HOLD = HOLD
+
 function ChessItems.Wear(character: Model, setId: string)
 	ChessItems.Unwear(character)
 	local hand = (character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")) :: BasePart?
 	local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not hand or not hrp then
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not hand or not hrp or not humanoid then
 		return
 	end
 	local tier = ORDER[setId] or 1
-	-- item: a small board held in the hand, face outward
-	local grip = hand.CFrame * CFrame.new(0.2, -0.6, 0) * CFrame.Angles(0, math.rad(-90), 0) -- held at the side, face outward
-	local item = ChessItems.Build(setId, 0.33, grip)
-	item.Name = "ChessItem"
+	-- the board, built around its centre part, which becomes the Tool's Handle
+	local item = ChessItems.Build(setId, 0.42)
 	local core = item.PrimaryPart :: BasePart
+	local tool = Instance.new("Tool")
+	tool.Name = "ChessItem"
+	tool.CanBeDropped = false
+	tool.ManualActivationOnly = true
+	tool.RequiresHandle = true
+	tool:SetAttribute("SetId", setId)
+	core.Name = "Handle"
 	for _, p in item:GetDescendants() do
 		if p:IsA("BasePart") then
 			p.Anchored = false
 			p.Massless = true
 			p.CanCollide = false
+			p.CanTouch = false
+			p.CanQuery = false
 			if p ~= core then
 				local w = Instance.new("WeldConstraint")
 				w.Part0 = core
@@ -401,14 +438,18 @@ function ChessItems.Wear(character: Model, setId: string)
 			end
 		end
 	end
-	local w = Instance.new("WeldConstraint")
-	w.Part0 = hand
-	w.Part1 = core
-	w.Parent = core
-	if tier >= 2 then
-		ChessItems.AddFx(item, setId, 0.28, false)
+	for _, c in item:GetChildren() do
+		c.Parent = tool
 	end
-	item.Parent = character
+	item:Destroy()
+	-- Grip so that Handle = hand * gripAttachment * Grip:Inverse() = hand * HOLD
+	local att = hand:FindFirstChild("RightGripAttachment") :: Attachment?
+	local g = if att then att.CFrame else CFrame.new(0, -hand.Size.Y / 2, 0)
+	tool.Grip = HOLD:Inverse() * g
+	if tier >= 2 then
+		ChessItems.AddFx({ PrimaryPart = core } :: any, setId, 0.32, false)
+	end
+	tool.Parent = character -- parented to the character = equipped (held)
 	-- body aura (tier 3+): a flat ring part at the feet, the same effect rising around the body
 	if tier >= 3 then
 		local list = (ChessItems.Fx :: any)[setId]
