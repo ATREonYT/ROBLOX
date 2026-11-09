@@ -16,7 +16,7 @@ from mathutils import Vector, Matrix
 
 HERE = "/Users/Alex/ROBLOX/chess-evolution/map/v2/"
 PACK = HERE + "texture_pack/"
-MARK = "v3h"
+MARK = "v3k"
 V3 = "/Users/Alex/ROBLOX/chess-evolution/map/v3/"
 CLAY = False                                # blockout pass: every surface flat grey
 
@@ -41,7 +41,7 @@ LIP = 2.6                                        # 2.6-stud green lip (terraceA_
 LEDGE_R, LEDGE_FR, LEDGE_LANE_R = 22, 15, 3      # wider ledge behind the phone stand / right block; narrow strip right of the lane
 
 # texture pack material per role (texture_pack/Material_Map.json)
-ROLE = {"grass": "Grass_Lime", "grass_bright": "Grass_Bright", "grass_cap": "Grass_Cap", "path": "Path_Orange",
+ROLE = {"grass": "Grass_Lime", "grass_top": "Grass_Top", "grass_bright": "Grass_Bright", "grass_cap": "Grass_Cap", "path": "Path_Orange",
         "path_edge": "Path_Edge_Brown", "wall_face": "Dirt_Wall_Orange", "wall_shade": "Dirt_Wall_Shade",
         "wall_band": "Dirt_Wall_Shade", "wall_skirt": "Paving_Riser", "paving": "Paving_Grey", "paving_light": "Paving_Light",
         "bay": "Paving_Bay_Grey", "riser": "Paving_Riser", "trim": "Paving_Dark_Trim", "lane": "Paving_Grey",
@@ -82,6 +82,25 @@ def _img(rel, noncolor=False):
     img.colorspace_settings.name = 'Non-Color' if noncolor else 'sRGB'
     return img
 
+# Stud surfaces (v06, Alex Nov 9: "baseplate texture with studs inside of it, in and out studs on the trees"),
+# measured in the screenshots: grass = baseplate (groove grid, one raised stud per 1-stud cell), leaves and trunks =
+# raised and sunken studs in a checker, path = groove grid with a sunken stud per cell. Textures from
+# scripts/make_studs.py; the bevel light comes from the sun through the normal map. Base colours are flat and tuned to
+# the screenshots' lit tops (compare/notes.md, v06).
+TEX = V3 + "textures/"
+# name: (stud kind, base colour, gain on the linear colour). v06b trims from v06a samples at the same spots:
+#   hub grass ref (21,233,1) vs (56,238,26); pine lit side (71,245,0) vs (58,196,13); trunk (215,80,30) vs (173,73,30);
+#   bank tops are a brighter yellow-lime than the hub floor in lane_view: (104,255,12)
+STUD = {"Grass_Lime": ("baseplate", "0AD600", 1.0), "Grass_Cap": ("baseplate", "0AD600", 1.0),
+        "Grass_Bright": ("baseplate", "0AD600", 1.0), "Grass_Top": ("baseplate", "5CF004", 1.0),
+        "Leaves_Lime": ("inout", "38FF00", 1.05), "Leaves_Sunny": ("inout", "44FF00", 1.1), "Leaves_Green": ("inout", "30EC00", 1.0),
+        "Shrub_Lime": ("inout", "40F000", 1.05), "Bark_Orange": ("inout", "F04A1A", 1.0), "Path_Orange": ("inlet", "E8800A", 1.0)}
+STUD_NORMAL = 2.0
+STUD_HL = (0.6, 0.35, 0.0)   # v06d: lime highlight on raised stud tops
+def _stud_img(f):
+    img = bpy.data.images.get(f) or bpy.data.images.load(TEX + f)
+    img.colorspace_settings.name = 'Non-Color'; return img
+
 MATS = {}
 def pmat(name, alpha=1.0, emit=0.0):
     """Pack material: colour tile through the UVs (1 repeat per 8 studs, set per face), normal map at 0.32."""
@@ -95,6 +114,23 @@ def pmat(name, alpha=1.0, emit=0.0):
     rgb = lin(e.get("approx_srgb", "#A0A0A0"))
     if CLAY:
         b.inputs["Base Color"].default_value = (0.42, 0.42, 0.42, 1)
+    elif name in STUD:
+        kind, hexcol, gain = STUD[name]
+        sh = N.new("ShaderNodeTexImage"); sh.image = _stud_img(f"{kind}_shade.png")
+        mx = N.new("ShaderNodeMix"); mx.data_type = 'RGBA'; mx.blend_type = 'MULTIPLY'; mx.inputs["Factor"].default_value = 1.0
+        mx.inputs[6].default_value = (*[c * gain for c in lin(hexcol)], 1); L.new(sh.outputs["Color"], mx.inputs[7])
+        sc = N.new("ShaderNodeVectorMath"); sc.operation = 'SCALE'; sc.inputs["Scale"].default_value = 1.5
+        # lit stud tops pick up a lime highlight (screenshot stud edges raise red, not only green): + max(S-1,0)*STUD_HL
+        hs = N.new("ShaderNodeVectorMath"); hs.operation = 'MULTIPLY_ADD'; L.new(sh.outputs["Color"], hs.inputs[0])
+        hs.inputs[1].default_value = (1.5, 1.5, 1.5); hs.inputs[2].default_value = (-1.0, -1.0, -1.0)
+        hm = N.new("ShaderNodeVectorMath"); hm.operation = 'MAXIMUM'; L.new(hs.outputs[0], hm.inputs[0]); hm.inputs[1].default_value = (0, 0, 0)
+        hc = N.new("ShaderNodeVectorMath"); hc.operation = 'MULTIPLY_ADD'; L.new(hm.outputs[0], hc.inputs[0])
+        hc.inputs[1].default_value = STUD_HL; L.new(mx.outputs[2], sc.inputs[0]); L.new(sc.outputs[0], hc.inputs[2])
+        L.new(hc.outputs[0], b.inputs["Base Color"])
+        ni = N.new("ShaderNodeTexImage"); ni.image = _stud_img(f"{kind}_normal.png")
+        nm = N.new("ShaderNodeNormalMap"); nm.inputs["Strength"].default_value = STUD_NORMAL
+        L.new(ni.outputs["Color"], nm.inputs["Color"]); L.new(nm.outputs["Normal"], b.inputs["Normal"])
+        rgb = lin(hexcol)
     else:
         tex = N.new("ShaderNodeTexImage"); tex.image = _img(e["color"]); tex.interpolation = 'Linear'
         col = tex.outputs["Color"]
@@ -276,7 +312,7 @@ def terrain_mesh(c):
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.001)
     bmesh.ops.dissolve_limit(bm, angle_limit=0.01, verts=bm.verts, edges=bm.edges, delimit={'MATERIAL'})
     me = bpy.data.meshes.new("Terrain"); bm.to_mesh(me); bm.free()
-    for k in ("wall_face", "grass_cap", "grass", "wall_skirt", "wall_band"): me.materials.append(mat(k))
+    for k in ("wall_face", "grass_cap", "grass_top", "wall_skirt", "wall_band"): me.materials.append(mat(k))
     ob = bpy.data.objects.new("Walls_Terrain", me); c.objects.link(ob)
     return ob
 
@@ -610,7 +646,7 @@ def build_foliage():
 
 # ---------------------------------------------------------------- scene, light, cameras ---
 # Phase 5 lighting (v05): Standard view transform, sky sampled from terraceA_closeup/lane_view (64,185,254)
-SKY, AMBIENT, SUN_E, SUN_TILT, EXPOSURE = "3FB6FF", 1.0, 2.2, 24, -0.25   # v05a read ~15/255 bright at 0.0
+SKY, AMBIENT, SUN_E, SUN_TILT, EXPOSURE = "3FB6FF", 1.0, 3.1, 24, -0.5   # v06d: less fill, more sun: v06c side faces read G 210 vs screenshot 171-189;   # v06b read ~18/255 bright at -0.25   # v05a read ~15/255 bright at 0.0
 def setup_scene():
     sc = bpy.context.scene
     ids = [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties['engine'].enum_items]

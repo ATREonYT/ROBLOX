@@ -89,3 +89,28 @@ against the old crop at 0.59/255 mean difference.
 6. **Trees on the top land and along the lane banks follow a regular pattern, not the screenshot's tree-for-tree layout.** The screenshots only show them partly, behind the HUD.
 7. **The "1 Like = 1 Sub" sign** uses Blender's default font instead of the game's rounded one.
 8. **Not modelled:** HUD, players, name tags, price and lock labels (BillboardGuis), and the yellow-to-magenta trail by the water.
+
+## v06 (studs and colour match)
+
+- **Stud textures (`textures/`, made by `scripts/make_studs.py`):** one 512 px tile holds 8x8 studs, mapped with world UVs at one stud per stud-unit.
+  - `baseplate`: raised studs with a groove, on all grass (ground, caps, bank tops).
+  - `inout`: a checker of raised and sunken studs, on tree leaves, shrubs and trunks.
+  - `inlet`: sunken studs, on the orange path.
+  - Each texture is a shade map (multiplied into the colour) plus a normal map (strength 2.0), so the scene's sun lights the stud edges.
+- **Colours, render vs screenshot:** trunk (219,81,29) vs (215,80,30); pine lit side (58,252,16) vs (71,245,0); hub grass in the treadmill view (34,238,21) vs (21,233,1); phone grass (40,231,28) vs (38,227,19); lane wall (214,74,43) vs (210,68,45). Stone is within 6/255.
+- **Exposure:** -0.5 (the stud shading brightened the whole scene by about 18/255 at -0.25).
+- **Class agreement:** hub 0.689, treadmill 0.798, phone 0.856, lane 0.647 (about the same as v05; the studs add detail, not shape).
+- **Checks:** `verify("v06")` passes (53 images packed and readable, 163 materials, routes unchanged). `tools/kidsafe_check.py chess-evolution` passes.
+- **Kid-appeal checklist (map lines only):**
+  - Hard edges and no chamfers on purpose: the screenshots are a hard-edged stud style, and the reference wins over the checklist's chamfer line.
+  - Ground saturation is higher than the checklist's "soften the ground" line, again because the screenshots are that bright.
+  - Paths are wider than 10 studs; the hub sees the machines, the phone stand and the lane from spawn.
+  - Repeated props and trees are instanced (one mesh per shape).
+  - Studio-only lines (LightingStyle, ColorCorrection, Anchored/CanCollide, phone test) can only be set and checked once the map goes into Studio.
+- **Fresh critic (v06c), worst first:** (1) lane trees merged into the green banks, (2) every green side face as bright as the tops, (3) the hub's front-right tree is too far left and hides the end of the phone stand, (4) the back row of machines looks smaller than in the screenshot, (5) grass studs too faint.
+- **Fixed in v06d (the final v06 file):**
+  - Light: fill 1.35 -> 1.0, sun 1.9 -> 3.1. Darkest 10% of greens, render vs screenshot: lane G 188 vs 171, treadmill 188 vs 189, phone 181 vs 180 (was 210/207/... in v06c). Tops are unchanged (mid greens within 3/255).
+  - Grass studs: stronger rim (0.40) and lighter raised tops (0.16), plus a lime highlight on raised stud tops (`STUD_HL`). Foreground grass, render vs screenshot: G spread 20.5 vs 19.1, R spread 25.5 vs 26.3 (was 14.0 and 7.1).
+  - The lane trees now read as separate crowns against the banks.
+- **Left as is:** the hub's front-right tree position (critic 3), and the back-row machines are Alex's new studded designs (critic 4).
+- Sheet: `compare/final_sheet_v06.jpg` (tag v06d).
