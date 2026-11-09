@@ -1,0 +1,52 @@
+{
+ "v00": {
+  "phone": 38.6,
+  "hub": 65.8,
+  "treadmill": 54.6,
+  "lane": 61.3
+ },
+ "v01": {
+  "hub": 66.1,
+  "treadmill": 53.4,
+  "phone": 38.8,
+  "lane": 63.0
+ },
+ "v02": {
+  "hub": 68.3,
+  "treadmill": 53.0,
+  "phone": 38.4,
+  "lane": 64.0
+ },
+ "v03": {
+  "hub": 67.7,
+  "treadmill": 51.7,
+  "phone": 38.4,
+  "lane": 63.8
+ },
+ "v04a": {
+  "hub": 67.7,
+  "treadmill": 51.4
+ },
+ "v04b": {
+  "hub": 68.0,
+  "treadmill": 51.7
+ },
+ "v04": {
+  "hub": 67.8,
+  "treadmill": 51.4,
+  "phone": 38.7,
+  "lane": 64.0
+ },
+ "v05a": {
+  "hub": 64.8,
+  "treadmill": 54.6,
+  "phone": 41.3,
+  "lane": 64.8
+ },
+ "v05": {
+  "hub": 65.2,
+  "treadmill": 52.3,
+  "phone": 38.1,
+  "lane": 64.2
+ }
+}
