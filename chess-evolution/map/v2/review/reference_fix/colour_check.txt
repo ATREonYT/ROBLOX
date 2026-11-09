@@ -1,0 +1,10 @@
+tread approach     target #F1840E  ref #F48409  render #F68319  max-channel error 11
+tread paving       target #ACBDBE  ref #AEBFC0  render #B0BEBE  max-channel error 4
+phone apron        target #B4C3C6  ref #B6C5C8  render #B4C5C7  max-channel error 2
+phone rear dirt    target #AB441C  ref #AC441B  render #AF4724  max-channel error 8
+lane left face     target #D85529  ref #DF5625  render #D9592E  max-channel error 5
+lane right grass   target #5FFC0E  ref #61FE0D  render #9F5C23  max-channel error 160
+lane floor         target #B1C4C2  ref #B5C5C6  render #ADBBBB  max-channel error 9
+lane red pad       target #FF1933  ref #FF1932  render #F52030  max-channel error 10
+lane yellow tile   target #F4C61C  ref #FFC919  render #FFD32B  max-channel error 15
+hub water          target #74F5FD  ref #72F5FD  render #41F1FF  max-channel error 51

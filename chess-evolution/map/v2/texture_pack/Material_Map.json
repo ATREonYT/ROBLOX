@@ -1,0 +1,382 @@
+[
+  {
+    "material": "Grass_Lime",
+    "color": "Color/Grass_Lime.png",
+    "approx_srgb": "#77F31A",
+    "normal": "Normals/Grass_Studs_Normal.png",
+    "roughness": 0.85,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Grass_Bright",
+    "color": "Color/Grass_Bright.png",
+    "approx_srgb": "#85FF27",
+    "normal": "Normals/Grass_Studs_Normal.png",
+    "roughness": 0.85,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Grass_Cap",
+    "color": "Color/Grass_Cap.png",
+    "approx_srgb": "#5BE614",
+    "normal": "Normals/Grass_Studs_Normal.png",
+    "roughness": 0.85,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Path_Orange",
+    "color": "Color/Path_Orange.png",
+    "approx_srgb": "#FA9B24",
+    "normal": "Normals/Path_Studs_Normal.png",
+    "roughness": 0.76,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Path_Edge_Brown",
+    "color": "Color/Path_Edge_Brown.png",
+    "approx_srgb": "#A54E22",
+    "normal": "Normals/Dirt_Studs_Normal.png",
+    "roughness": 0.84,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Dirt_Wall_Orange",
+    "color": "Color/Dirt_Wall_Orange.png",
+    "approx_srgb": "#CF5126",
+    "normal": "Normals/Dirt_Studs_Normal.png",
+    "roughness": 0.87,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Dirt_Wall_Shade",
+    "color": "Color/Dirt_Wall_Shade.png",
+    "approx_srgb": "#AC3B23",
+    "normal": "Normals/Dirt_Studs_Normal.png",
+    "roughness": 0.87,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Paving_Grey",
+    "color": "Color/Paving_Grey.png",
+    "approx_srgb": "#A0A8A9",
+    "normal": "Normals/Paving_Studs_Normal.png",
+    "roughness": 0.82,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Paving_Light",
+    "color": "Color/Paving_Light.png",
+    "approx_srgb": "#B5BDBE",
+    "normal": "Normals/Paving_Studs_Normal.png",
+    "roughness": 0.8,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Paving_Bay_Grey",
+    "color": "Color/Paving_Bay_Grey.png",
+    "approx_srgb": "#8C9596",
+    "normal": "Normals/Paving_Studs_Normal.png",
+    "roughness": 0.82,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Paving_Riser",
+    "color": "Color/Paving_Riser.png",
+    "approx_srgb": "#828D8D",
+    "normal": "Normals/Paving_Studs_Normal.png",
+    "roughness": 0.82,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Paving_Dark_Trim",
+    "color": "Color/Paving_Dark_Trim.png",
+    "approx_srgb": "#53595B",
+    "normal": "Normals/Paving_Studs_Normal.png",
+    "roughness": 0.83,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Stone_Shore",
+    "color": "Color/Stone_Shore.png",
+    "approx_srgb": "#777878",
+    "normal": "Normals/Stone_Studs_Normal.png",
+    "roughness": 0.89,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Leaves_Lime",
+    "color": "Color/Leaves_Lime.png",
+    "approx_srgb": "#71F31C",
+    "normal": "Normals/Leaves_Studs_Normal.png",
+    "roughness": 0.86,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Leaves_Sunny",
+    "color": "Color/Leaves_Sunny.png",
+    "approx_srgb": "#86FA32",
+    "normal": "Normals/Leaves_Studs_Normal.png",
+    "roughness": 0.86,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Leaves_Green",
+    "color": "Color/Leaves_Green.png",
+    "approx_srgb": "#53CE20",
+    "normal": "Normals/Leaves_Studs_Normal.png",
+    "roughness": 0.86,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Shrub_Lime",
+    "color": "Color/Shrub_Lime.png",
+    "approx_srgb": "#9CEA37",
+    "normal": "Normals/Leaves_Studs_Normal.png",
+    "roughness": 0.86,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Bark_Orange",
+    "color": "Color/Bark_Orange.png",
+    "approx_srgb": "#C35B2F",
+    "normal": "Normals/Bark_Studs_Normal.png",
+    "roughness": 0.86,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Bark_Pale",
+    "color": "Color/Bark_Pale.png",
+    "approx_srgb": "#DAD8BF",
+    "normal": "Normals/Bark_Studs_Normal.png",
+    "roughness": 0.86,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 8
+  },
+  {
+    "material": "Water_Cyan",
+    "color": "Color/Water_Cyan.png",
+    "approx_srgb": "#32D9F1",
+    "normal": null,
+    "roughness": 0.34,
+    "tile_width_studs": 24,
+    "tile_height_studs": 24,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Display_Mint",
+    "color": "Color/Display_Mint.png",
+    "approx_srgb": "#52F986",
+    "normal": null,
+    "roughness": 0.53,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Display_Cyan",
+    "color": "Color/Display_Cyan.png",
+    "approx_srgb": "#26DDF8",
+    "normal": null,
+    "roughness": 0.52,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Display_Red",
+    "color": "Color/Display_Red.png",
+    "approx_srgb": "#FF4149",
+    "normal": null,
+    "roughness": 0.54,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Display_Black",
+    "color": "Color/Display_Black.png",
+    "approx_srgb": "#1D2029",
+    "normal": null,
+    "roughness": 0.59,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Stage_Pad_Red",
+    "color": "Color/Stage_Pad_Red.png",
+    "approx_srgb": "#FF2B36",
+    "normal": null,
+    "roughness": 0.62,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Stage_Marker",
+    "color": "Color/Stage_Marker.png",
+    "approx_srgb": "#343237",
+    "normal": null,
+    "roughness": 0.67,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Stage_Tile_Magenta",
+    "color": "Color/Stage_Tile_Magenta.png",
+    "approx_srgb": "#EF36EE",
+    "normal": null,
+    "roughness": 0.61,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Stage_Tile_Yellow",
+    "color": "Color/Stage_Tile_Yellow.png",
+    "approx_srgb": "#FFD632",
+    "normal": null,
+    "roughness": 0.61,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Stage_Divider_Lime",
+    "color": "Color/Stage_Divider_Lime.png",
+    "approx_srgb": "#61F031",
+    "normal": null,
+    "roughness": 0.65,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Gate_Lime",
+    "color": "Color/Gate_Lime.png",
+    "approx_srgb": "#7DFF38",
+    "normal": null,
+    "roughness": 0.43,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Gate_Cyan",
+    "color": "Color/Gate_Cyan.png",
+    "approx_srgb": "#30E9FF",
+    "normal": null,
+    "roughness": 0.43,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Gate_Blue",
+    "color": "Color/Gate_Blue.png",
+    "approx_srgb": "#4488FF",
+    "normal": null,
+    "roughness": 0.43,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Gate_Purple",
+    "color": "Color/Gate_Purple.png",
+    "approx_srgb": "#974AFF",
+    "normal": null,
+    "roughness": 0.43,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Gate_Pink",
+    "color": "Color/Gate_Pink.png",
+    "approx_srgb": "#FF5DCA",
+    "normal": null,
+    "roughness": 0.43,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Gate_Orange",
+    "color": "Color/Gate_Orange.png",
+    "approx_srgb": "#FF9C25",
+    "normal": null,
+    "roughness": 0.43,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Gate_Yellow",
+    "color": "Color/Gate_Yellow.png",
+    "approx_srgb": "#FFE448",
+    "normal": null,
+    "roughness": 0.43,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Portal_Blue",
+    "color": "Color/Portal_Blue.png",
+    "approx_srgb": "#4029E6",
+    "normal": null,
+    "roughness": 0.52,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  },
+  {
+    "material": "Portal_Magenta",
+    "color": "Color/Portal_Magenta.png",
+    "approx_srgb": "#FA29E7",
+    "normal": null,
+    "roughness": 0.4,
+    "tile_width_studs": 8,
+    "tile_height_studs": 8,
+    "studs_per_tile": 0
+  }
+]

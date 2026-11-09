@@ -1,0 +1,75 @@
+ROBLOX MAP TEXTURE PACK
+
+38 seamless 512 × 512 RGB color tiles
+7 matching tangent-space normal maps for the studded materials
+Texture_Preview.png shows the full palette.
+Material_Map.json maps the color textures to their optional normal maps,
+base colors, roughness values, and starting repeat sizes.
+
+The tiles and colors were recreated from the visible map reference.
+They are approximations of how the source surfaces look in the screenshots.
+The gate panels' transparency is a material setting. The gate PNGs are
+opaque color swatches. The pack covers environment surfaces and display
+bases for a map-only rebuild.
+
+MATCH THE LEFT MAP
+
+Hub lawn and lane banks
+  Grass_Lime on the main lawn and bank tops. Use Grass_Bright in selected
+  sunlit grass patches and Grass_Cap on narrow green rim pieces.
+
+Orange path and trench walls
+  Path_Orange for the walking surface and Path_Edge_Brown for the separate
+  narrow border geometry. Use Dirt_Wall_Orange on exposed vertical walls.
+  Dirt_Wall_Shade works on recessed sides. Give wall faces their own UVs.
+
+Display stands and lane paving
+  Paving_Grey for the main platform, Paving_Light for the shelf tops and
+  exposed trim, Paving_Bay_Grey for darker bay floors, and Paving_Riser for
+  risers and sloped transitions. Use Paving_Dark_Trim on thin edging.
+  Display stand lower pads go mint, cyan, red, black, black. Use
+  Display_Black on the six upper plinths.
+
+Vegetation and water
+  Leaves_Lime for primary canopies, Leaves_Sunny for brighter tops,
+  Leaves_Green for shaded conifer tiers, and Shrub_Lime for low shrubs.
+  Use Bark_Orange and Bark_Pale for the two trunk colors. Use Water_Cyan
+  on the flat water surface and Stone_Shore on the gray shoreline blocks.
+
+Stage lane and portal
+  Paving_Grey under the bays. Use Stage_Pad_Red on the large rectangles,
+  Stage_Marker on the small dark markers, Stage_Tile_Magenta and
+  Stage_Tile_Yellow on the side tiles, and Stage_Divider_Lime on the
+  thin cross strips. Gate colors work as frame tints. Apply the matching
+  tint with roughly 84% transparency as a starting point for a separate
+  gate panel. Use Portal_Blue for the shell and Portal_Magenta for its core.
+
+BLENDER
+
+In Blender 5.1, choose File > Append, open Map_Materials.blend, and
+select the materials you need from the Material folder. The PNGs are
+packed inside the file. Assign the appended materials to your meshes.
+
+As an alternative, in Blender 4.x or later, open Import_Materials_Blender.py as an external
+file in the Scripting workspace's Text Editor and choose Run Script.
+The script adds the Map_ materials to the current file and packs the
+images. Assign materials to the matching meshes. It does not auto-assign
+materials to objects. Each studded tile contains 8 × 8 studs. Scale the
+UVs to repeat once per 8 world studs in each direction as a starting
+point. A 32 × 16-stud face would use four by two UV repeats. The water
+texture starts at one repeat per 24 studs.
+
+For manual setup, connect the color PNG to Base Color using sRGB.
+Set the normal PNG to Non-Color and connect it through a Normal Map
+node. Start with strength 0.32. Use repeat wrapping and keep the UV
+spacing consistent across adjoining pieces.
+
+ROBLOX STUDIO
+
+Upload the required Color PNGs as image assets. For Parts, apply a
+repeating Texture to the corresponding face. Start at StudsPerTileU
+and StudsPerTileV of 8 for studded surfaces. Use separate textures
+on the top and the exposed walls. For UV-mapped meshes, carry over
+the same UV repeats and use the color PNG as the color texture.
+The color PNGs include shallow shading on the studs, so they still
+read as raised when used on their own.
